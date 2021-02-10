@@ -1,0 +1,6 @@
+.idea
+*.pyc
+*.png
+*.pdf
+tensorboard_logs
+Corpora
