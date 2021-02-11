@@ -55,23 +55,3 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         """
         self.encoder.eval()
         return self.expander(torch.mean(self.encoder(sample), 3))
-
-
-def train_speaker_embedding():
-    pass
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
-def show_model(model):
-    print(model)
-    print("\n\nNumber of Parameters: {}".format(count_parameters(model)))
-
-
-if __name__ == '__main__':
-    sse = SiameseSpeakerEmbedding()
-    # show_model(sse)
-
-    print(sse(torch.rand((1, 1, 512, 2721)), torch.rand((1, 1, 512, 1233)), torch.Tensor([-1])))

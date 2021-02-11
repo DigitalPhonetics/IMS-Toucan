@@ -3,7 +3,7 @@ import random
 import torch
 import torchviz
 
-from FastSpeech.FastSpeech2 import FastSpeech2
+from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 
 
 def featurize_corpus(path_to_corpus):
@@ -12,11 +12,6 @@ def featurize_corpus(path_to_corpus):
     # store features in Dataset dict
     # repeat for all pairs
     # Dump dict to file
-    pass
-
-
-def collect_features(text, wave):
-    # return: pitch, energy, speech features, text features, durations, speaker embeddings
     pass
 
 
@@ -82,23 +77,10 @@ def show_model(model):
 
 
 if __name__ == '__main__':
-    fast = FastSpeech2(idim=131, odim=256)
-    # idim is how many ids are in the id vector you put in I believe
+    sse = SiameseSpeakerEmbedding()
 
-    # show_model(fast)
+    # show_model(sse)
 
-    out = fast(text_tensors=torch.randint(high=120, size=(1, 23)),
-               text_lengths=torch.tensor([23]),
-               gold_speech=torch.rand((1, 1234, 256)),
-               speech_lengths=torch.tensor([1234]),
-               gold_durations=torch.tensor([[1]]),
-               durations_lengths=torch.tensor([1]),
-               gold_pitch=torch.tensor([[1]]),
-               pitch_lengths=torch.tensor([1]),
-               gold_energy=torch.tensor([[1]]),
-               energy_lengths=torch.tensor([1]),
-               spembs=torch.rand(256).unsqueeze(0))
+    out = sse(torch.rand((1, 1, 512, 2721)), torch.rand((1, 1, 512, 1233)), torch.Tensor([-1]))
 
-    print(out)
-
-    torchviz.make_dot(out[0].mean(), dict(fast.named_parameters())).render("fastspeech2_graph", format="png")
+    torchviz.make_dot(out.mean(), dict(sse.named_parameters())).render("speaker_emb_graph", format="png")
