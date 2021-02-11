@@ -1,0 +1,15 @@
+librosa==0.8.0
+matplotlib==3.3.4
+pyloudnorm==0.1.0
+scikit-learn==0.24.1
+scipy==1.6.0
+SoundFile==0.10.3.post1
+tensorboard==2.4.1
+torch==1.7.1
+torchaudio==0.7.2
+torchvision==0.8.2
+torchviz==0.0.1
+numpy~=1.19.2
+phonemizer
+spacy==3.0.1
+cleantext
