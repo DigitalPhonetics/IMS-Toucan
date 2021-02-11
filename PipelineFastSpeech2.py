@@ -81,12 +81,8 @@ def show_model(model):
     print("\n\nNumber of Parameters: {}".format(count_parameters(model)))
 
 
-if __name__ == '__main__':
+def plot_model():
     fast = FastSpeech2(idim=131, odim=256)
-    # idim is how many ids are in the id vector you put in I believe
-
-    # show_model(fast)
-
     out = fast(text_tensors=torch.randint(high=120, size=(1, 23)),
                text_lengths=torch.tensor([23]),
                gold_speech=torch.rand((1, 1234, 256)),
@@ -98,7 +94,8 @@ if __name__ == '__main__':
                gold_energy=torch.tensor([[1]]),
                energy_lengths=torch.tensor([1]),
                spembs=torch.rand(256).unsqueeze(0))
-
-    print(out)
-
     torchviz.make_dot(out[0].mean(), dict(fast.named_parameters())).render("fastspeech2_graph", format="png")
+
+
+if __name__ == '__main__':
+    pass

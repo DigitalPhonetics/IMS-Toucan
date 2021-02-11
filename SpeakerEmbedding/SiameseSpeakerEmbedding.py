@@ -55,3 +55,6 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         """
         self.encoder.eval()
         return self.expander(torch.mean(self.encoder(sample), 3))
+
+    def get_conf(self):
+        return "SiameseSpeakerEmbedding"

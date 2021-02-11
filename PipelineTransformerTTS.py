@@ -81,27 +81,15 @@ def show_model(model):
     print("\n\nNumber of Parameters: {}".format(count_parameters(model)))
 
 
-if __name__ == '__main__':
+def plot_model():
     trans = Transformer(idim=131, odim=256, spk_embed_dim=256)
-    # idim is how many ids are in the id vector you put in I believe
-    # show_model(trans)
-    """
-    args = [torch.randint(high=120, size=(1, 10)),
-            torch.tensor([10]),
-            torch.rand((1, 100, 256)),
-            torch.tensor([100]),
-            torch.rand(256).unsqueeze(0)]
-    writer = SummaryWriter('tensorboard_logs/transformer_tts/test')
-    writer.add_graph(trans, args)
-    writer.close()
-    """
-
     out = trans(text=torch.randint(high=120, size=(1, 23)),
                 text_lengths=torch.tensor([23]),
                 speech=torch.rand((1, 1234, 256)),
                 speech_lengths=torch.tensor([1234]),
                 spembs=torch.rand(256).unsqueeze(0))
-
-    # print(out)
-
     torchviz.make_dot(out[0].mean(), dict(trans.named_parameters())).render("transformertts_graph", format="png")
+
+
+if __name__ == '__main__':
+    pass
