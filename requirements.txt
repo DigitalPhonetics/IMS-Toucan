@@ -12,4 +12,4 @@ torchviz==0.0.1
 numpy~=1.19.2
 phonemizer
 spacy==3.0.1
-cleantext
+clean-text
