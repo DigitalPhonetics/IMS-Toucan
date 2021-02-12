@@ -26,6 +26,10 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump):
                     wave, sr = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
                     if ap is None:
                         ap = AudioPreprocessor(input_sr=sr, melspec_buckets=512, output_sr=16000)
+                    # yeet the file if the audio is too short
+                    print(len(wave))
+                    if len(wave) < 100:
+                        continue
                     spec = ap.audio_to_mel_spec_tensor(wave)
                     if speaker not in speaker_to_melspecs:
                         speaker_to_melspecs[speaker] = list()
