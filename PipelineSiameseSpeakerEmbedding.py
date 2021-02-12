@@ -1,7 +1,9 @@
+import json
 import os
 import random
 import time
 
+import soundfile as sf
 import torch
 import torchviz
 
@@ -10,11 +12,25 @@ from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 
 
-def featurize_corpus(path_to_corpus):
-    # make a dict with keys being speakers and values being lists of all their utterances as melspec matrices
+def featurize_corpus(path_to_raw_corpus, path_to_dump):
+    # make a dict with keys being speakers and values
+    # being lists of all their utterances as melspec matrices
     # then dump this as json
-    ap = AudioPreprocessor(input_sr=16000, melspec_buckets=512)
-    pass
+    speaker_to_melspecs = dict()
+    ap = None
+    for speaker in os.listdir(path_to_raw_corpus):
+        for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
+            for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
+                if ".wav" in wav:
+                    wave, sr = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
+                    if ap is None:
+                        ap = AudioPreprocessor(input_sr=sr, melspec_buckets=512, output_sr=16000)
+                    spec = ap.audio_to_mel_spec_tensor(wave)
+                    if speaker not in speaker_to_melspecs:
+                        speaker_to_melspecs[speaker] = list()
+                    speaker_to_melspecs[speaker].append(spec.numpy())
+    with open(path_to_dump, 'w') as fp:
+        json.dump(speaker_to_melspecs, fp)
 
 
 def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, batchsize=64, device="cuda"):
@@ -86,10 +102,12 @@ if __name__ == '__main__':
             os.mkdir("Models/SpeakerEmbedding")
     path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train.json"
     path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid.json"
+    path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/datasets/VoxCeleb2/audio-files/train/aac/"
+    path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/datasets/VoxCeleb2/audio-files/test/aac/"
 
     print("Stage 2: Feature Extraction")
-    featurize_corpus(path_to_feature_dump_train)
-    featurize_corpus(path_to_feature_dump_valid)
+    featurize_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
+    featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
     print("Stage 3: Data Loading")
     train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train)
