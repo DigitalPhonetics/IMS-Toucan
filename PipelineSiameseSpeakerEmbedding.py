@@ -19,6 +19,7 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump):
     speaker_to_melspecs = dict()
     ap = None
     for speaker in os.listdir(path_to_raw_corpus):
+        print("Featurizing speaker {}".format(speaker))
         for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
             for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
                 if ".wav" in wav:
@@ -47,7 +48,8 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
         train_losses = list()
         # train one epoch
         for index in index_list:
-            train_loss = net(train_dataset[index])[0]
+            train_datapoint = train_dataset[index]
+            train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
             train_losses.append(train_loss / batchsize)  # for accumulative gradient
             train_losses[-1].backward()
             batch_counter += 1
@@ -59,9 +61,9 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
         with torch.no_grad():
             net.eval()
             val_losses = list()
-            val_indexes = range(len(eval_dataset))
-            for validation_datapoint_index in val_indexes:
-                val_losses.append(net(eval_dataset[validation_datapoint_index])[0])
+            for validation_datapoint_index in range(len(eval_dataset)):
+                eval_datapoint = eval_dataset[validation_datapoint_index]
+                val_losses.append(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2]))
             val_loss = sum(val_losses) / len(val_losses)
             if val_loss_highscore > val_loss:
                 val_loss_highscore = val_loss
@@ -75,13 +77,13 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
             net.train()
 
 
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+def count_parameters(net):
+    return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
-def show_model(model):
-    print(model)
-    print("\n\nNumber of Parameters: {}".format(count_parameters(model)))
+def show_model(net):
+    print(net)
+    print("\n\nNumber of Parameters: {}".format(count_parameters(net)))
 
 
 def plot_model():
@@ -102,17 +104,19 @@ if __name__ == '__main__':
             os.mkdir("Models/SpeakerEmbedding")
     path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train.json"
     path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid.json"
-    path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/datasets/VoxCeleb2/audio-files/train/aac/"
-    path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/datasets/VoxCeleb2/audio-files/test/aac/"
+    path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                               "datasets/VoxCeleb2/audio-files/train/aac/"
+    path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                               "datasets/VoxCeleb2/audio-files/test/aac/"
 
     print("Stage 2: Feature Extraction")
     featurize_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
     featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
     print("Stage 3: Data Loading")
-    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train)
-    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid)
+    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=500000)
+    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=10000)
 
     print("Stage 4: Model Training")
-    net = SiameseSpeakerEmbedding()
-    train_loop(net, train_data, valid_data, "Models/SpeakerEmbedding")
+    model = SiameseSpeakerEmbedding()
+    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding")
