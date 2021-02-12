@@ -12,12 +12,13 @@ from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 
 
-def featurize_corpus(path_to_raw_corpus, path_to_dump):
+def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=20):
     # make a dict with keys being speakers and values
     # being lists of all their utterances as melspec matrices
     # then dump this as json
     speaker_to_melspecs = dict()
     ap = None
+    done_with_speaker = False
     for speaker in os.listdir(path_to_raw_corpus):
         print("Featurizing speaker {}".format(speaker))
         for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
@@ -31,12 +32,19 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump):
                     if ap is None:
                         ap = AudioPreprocessor(input_sr=sr, melspec_buckets=512, output_sr=16000)
                     # yeet the file if the audio is too short
-                    if len(wave) < 3000:
+                    if len(wave) < 6000:
                         continue
                     spec = ap.audio_to_mel_spec_tensor(wave)
                     if speaker not in speaker_to_melspecs:
                         speaker_to_melspecs[speaker] = list()
                     speaker_to_melspecs[speaker].append(spec.numpy())
+                    if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
+                        done_with_speaker = True
+                        break
+            if done_with_speaker:
+                done_with_speaker = False
+                break
+
     with open(path_to_dump, 'w') as fp:
         json.dump(speaker_to_melspecs, fp)
 
@@ -122,8 +130,8 @@ if __name__ == '__main__':
     featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
     print("Stage 3: Data Loading")
-    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=500000, device=device)
-    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=10000, device=device)
+    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
+    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
 
     print("Stage 4: Model Training")
     model = SiameseSpeakerEmbedding()
