@@ -94,6 +94,7 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Stage 1: Preparation")
+    device = torch.device("cuda:3")
     if not os.path.exists("Corpora"):
         os.mkdir("Corpora")
         if not os.path.exists("Corpora/SpeakerEmbedding"):
@@ -105,7 +106,7 @@ if __name__ == '__main__':
     path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train.json"
     path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid.json"
     path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                               "datasets/VoxCeleb2/audio-files/train/aac/"
+                               "datasets/VoxCeleb2/audio-files/train/dev/aac/"
     path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
                                "datasets/VoxCeleb2/audio-files/test/aac/"
 
@@ -114,9 +115,9 @@ if __name__ == '__main__':
     featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
     print("Stage 3: Data Loading")
-    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=500000)
-    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=10000)
+    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=500000, device=device)
+    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=10000, device=device)
 
     print("Stage 4: Model Training")
     model = SiameseSpeakerEmbedding()
-    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding")
+    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)
