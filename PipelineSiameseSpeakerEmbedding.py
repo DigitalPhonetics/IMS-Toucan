@@ -109,33 +109,38 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    show_model(SiameseSpeakerEmbedding())
+    start_stage = 3
+    stop_stage = 99
 
-    print("Stage 1: Preparation")
-    device = torch.device("cuda:3")
-    if not os.path.exists("Corpora"):
-        os.mkdir("Corpora")
-        if not os.path.exists("Corpora/SpeakerEmbedding"):
-            os.mkdir("Corpora/SpeakerEmbedding")
-    if not os.path.exists("Models"):
-        os.mkdir("Models")
-        if not os.path.exists("Models/SpeakerEmbedding"):
-            os.mkdir("Models/SpeakerEmbedding")
-    path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train.json"
-    path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid.json"
-    path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                               "datasets/VoxCeleb2/audio-files/train/dev/aac/"
-    path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                               "datasets/VoxCeleb2/audio-files/test/aac/"
+    if start_stage <= 1 < stop_stage:
+        print("Stage 1: Preparation")
+        device = torch.device("cuda:3")
+        if not os.path.exists("Corpora"):
+            os.mkdir("Corpora")
+            if not os.path.exists("Corpora/SpeakerEmbedding"):
+                os.mkdir("Corpora/SpeakerEmbedding")
+        if not os.path.exists("Models"):
+            os.mkdir("Models")
+            if not os.path.exists("Models/SpeakerEmbedding"):
+                os.mkdir("Models/SpeakerEmbedding")
+        path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train.json"
+        path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid.json"
+        path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                                   "datasets/VoxCeleb2/audio-files/train/dev/aac/"
+        path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                                   "datasets/VoxCeleb2/audio-files/test/aac/"
 
-    print("Stage 2: Feature Extraction")
-    featurize_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
-    featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
+        if start_stage <= 2 < stop_stage:
+            print("Stage 2: Feature Extraction")
+            featurize_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
+            featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
-    print("Stage 3: Data Loading")
-    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
-    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
+            if start_stage <= 3 < stop_stage:
+                print("Stage 3: Data Loading")
+                train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=250000, device=device)
+                valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
 
-    print("Stage 4: Model Training")
-    model = SiameseSpeakerEmbedding()
-    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)
+                if start_stage <= 4 < stop_stage:
+                    print("Stage 4: Model Training")
+                    model = SiameseSpeakerEmbedding()
+                    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)

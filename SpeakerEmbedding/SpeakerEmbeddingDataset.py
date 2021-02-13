@@ -37,9 +37,9 @@ class SpeakerEmbeddingDataset(Dataset):
 
     def __getitem__(self, item):
         try:
-            samp_1 = torch.Tensor(self.datapoints[item][0]).to(self.device)
-            samp_2 = torch.Tensor(self.datapoints[item][1]).to(self.device)
-            label = torch.Tensor(self.datapoints[item][2]).to(self.device)
+            samp_1 = torch.Tensor(self.datapoints[item][0]).unsqueeze(0).unsqueeze(0).to(self.device)
+            samp_2 = torch.Tensor(self.datapoints[item][1]).unsqueeze(0).unsqueeze(0).to(self.device)
+            label = torch.Tensor(self.datapoints[item][2]).unsqueeze(0).unsqueeze(0).to(self.device)
             return samp_1, samp_2, label
         except IndexError:
             print("An element was queried that is not in the dataset: {}".format(item))
