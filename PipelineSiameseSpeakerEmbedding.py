@@ -12,7 +12,7 @@ from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 
 
-def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=20):
+def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=25):
     # make a dict with keys being speakers and values
     # being lists of all their utterances as melspec matrices
     # then dump this as json
@@ -34,10 +34,10 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                     # yeet the file if the audio is too short
                     if len(wave) < 6000:
                         continue
-                    spec = ap.audio_to_mel_spec_tensor(wave)
+                    clean_wave = ap.audio_to_wave_tensor(wave)
                     if speaker not in speaker_to_melspecs:
                         speaker_to_melspecs[speaker] = list()
-                    speaker_to_melspecs[speaker].append(spec.numpy().tolist())
+                    speaker_to_melspecs[speaker].append(clean_wave.numpy().tolist())
                     if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
                         done_with_speaker = True
                         break
@@ -134,8 +134,8 @@ if __name__ == '__main__':
 
         if start_stage <= 2 < stop_stage:
             print("Stage 2: Feature Extraction")
-            featurize_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
-            featurize_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
+            build_sub_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
+            build_sub_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
             if start_stage <= 3 < stop_stage:
                 print("Stage 3: Data Loading")

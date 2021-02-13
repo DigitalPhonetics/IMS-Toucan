@@ -110,11 +110,17 @@ class AudioPreprocessor:
         ax[1].label_outer()
         plt.show()
 
-    def audio_to_wave_tensor(self, audio, normalize=True):
-        if normalize:
-            return self.apply_mu_law(self.normalize_audio(audio))
+    def audio_to_wave_tensor(self, audio, normalize=True, mulaw=False):
+        if mulaw:
+            if normalize:
+                return self.apply_mu_law(self.normalize_audio(audio))
+            else:
+                return self.apply_mu_law(torch.tensor(audio))
         else:
-            return self.apply_mu_law(torch.tensor(audio))
+            if normalize:
+                return self.normalize_audio(audio)
+            else:
+                return torch.tensor(audio)
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
