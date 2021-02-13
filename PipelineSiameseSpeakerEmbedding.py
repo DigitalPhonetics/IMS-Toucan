@@ -16,11 +16,12 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
     # make a dict with keys being speakers and values
     # being lists of all their utterances as melspec matrices
     # then dump this as json
-    speaker_to_melspecs = dict()
+    known_speakers = set()
     ap = None
     done_with_speaker = False
     for speaker in os.listdir(path_to_raw_corpus):
         print("Featurizing speaker {}".format(speaker))
+        speaker_to_melspecs = dict()
         for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
             for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
                 if ".wav" in wav:
@@ -35,8 +36,8 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                     if len(wave) < 6000:
                         continue
                     spec = ap.audio_to_mel_spec_tensor(wave)
-                    print(spec.shape)
-                    if speaker not in speaker_to_melspecs:
+                    if speaker not in known_speakers:
+                        known_speakers.add(speaker)
                         speaker_to_melspecs[speaker] = list()
                     speaker_to_melspecs[speaker].append(spec.numpy())
                     if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
@@ -44,10 +45,9 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                         break
             if done_with_speaker:
                 done_with_speaker = False
+                with open(os.path.join(path_to_dump, speaker + ".json"), 'w') as fp:
+                    json.dump(speaker_to_melspecs, fp)
                 break
-
-    with open(path_to_dump, 'w') as fp:
-        json.dump(speaker_to_melspecs, fp)
 
 
 def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, batchsize=64, device="cuda"):
@@ -109,7 +109,7 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    start_stage = 3
+    start_stage = 1
     stop_stage = 99
 
     if start_stage <= 1 < stop_stage:
@@ -123,8 +123,8 @@ if __name__ == '__main__':
             os.mkdir("Models")
             if not os.path.exists("Models/SpeakerEmbedding"):
                 os.mkdir("Models/SpeakerEmbedding")
-        path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train.json"
-        path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid.json"
+        path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train/"
+        path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid/"
         path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
                                    "datasets/VoxCeleb2/audio-files/train/dev/aac/"
         path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \

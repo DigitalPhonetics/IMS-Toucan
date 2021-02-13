@@ -10,6 +10,11 @@ complex systems.
 - Train Speaker Embedding Function
 - Prepare TransformerTTS Dataset
 - Train TransformerTTS
+- Build Pitch Extractor
+- Build Energy Extractor
 - Prepare FastSpeech Dataset
 - Train FastSpeech
 - Build easy Inference Interface
+- Implement Neural Vocoder
+- Prepare Data for Neural Vocoder
+- Train Neural Vocoder

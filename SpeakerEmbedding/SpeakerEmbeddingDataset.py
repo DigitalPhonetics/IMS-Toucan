@@ -1,4 +1,5 @@
 import json
+import os
 import random
 
 import torch
@@ -6,9 +7,11 @@ from torch.utils.data import Dataset
 
 
 class SpeakerEmbeddingDataset(Dataset):
-    def __init__(self, path_to_feature_dump, size=500000, device="cuda"):
-        with open(path_to_feature_dump, 'r') as fp:
-            speaker_to_melspec = json.load(fp)
+    def __init__(self, path_to_feature_dump, size=250000, device="cuda"):
+        speaker_to_melspec = dict()
+        for el in os.listdir(path_to_feature_dump):
+            with open(os.path.join(path_to_feature_dump, el), 'r') as fp:
+                speaker_to_melspec.update(json.load(fp))
         self.len = size
         pure_pairs = list()
         impure_pairs = list()
