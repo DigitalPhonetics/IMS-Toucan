@@ -37,7 +37,7 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                     spec = ap.audio_to_mel_spec_tensor(wave)
                     if speaker not in speaker_to_melspecs:
                         speaker_to_melspecs[speaker] = list()
-                    speaker_to_melspecs[speaker].append(list(spec.numpy()))
+                    speaker_to_melspecs[speaker].append(spec.numpy().tolist())
                     if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
                         done_with_speaker = True
                         break
