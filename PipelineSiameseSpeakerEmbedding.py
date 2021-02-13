@@ -117,12 +117,16 @@ if __name__ == '__main__':
         device = torch.device("cuda:3")
         if not os.path.exists("Corpora"):
             os.mkdir("Corpora")
-            if not os.path.exists("Corpora/SpeakerEmbedding"):
-                os.mkdir("Corpora/SpeakerEmbedding")
+        if not os.path.exists("Corpora/SpeakerEmbedding"):
+            os.mkdir("Corpora/SpeakerEmbedding")
+        if not os.path.exists("Corpora/SpeakerEmbedding/train"):
+            os.mkdir("Corpora/SpeakerEmbedding/train")
+        if not os.path.exists("Corpora/SpeakerEmbedding/valid"):
+            os.mkdir("Corpora/SpeakerEmbedding/valid")
         if not os.path.exists("Models"):
             os.mkdir("Models")
-            if not os.path.exists("Models/SpeakerEmbedding"):
-                os.mkdir("Models/SpeakerEmbedding")
+        if not os.path.exists("Models/SpeakerEmbedding"):
+            os.mkdir("Models/SpeakerEmbedding")
         path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train/"
         path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid/"
         path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
