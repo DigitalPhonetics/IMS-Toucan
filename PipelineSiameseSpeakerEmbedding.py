@@ -16,7 +16,6 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
     # make a dict with keys being speakers and values
     # being lists of all their utterances as melspec matrices
     # then dump this as json
-    known_speakers = set()
     ap = None
     done_with_speaker = False
     for speaker in os.listdir(path_to_raw_corpus):
@@ -36,8 +35,7 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                     if len(wave) < 6000:
                         continue
                     spec = ap.audio_to_mel_spec_tensor(wave)
-                    if speaker not in known_speakers:
-                        known_speakers.add(speaker)
+                    if speaker not in speaker_to_melspecs:
                         speaker_to_melspecs[speaker] = list()
                     speaker_to_melspecs[speaker].append(list(spec.numpy()))
                     if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
@@ -45,9 +43,9 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                         break
             if done_with_speaker:
                 done_with_speaker = False
-                with open(os.path.join(path_to_dump, speaker + ".json"), 'w') as fp:
-                    json.dump(speaker_to_melspecs, fp)
                 break
+        with open(os.path.join(path_to_dump, speaker + ".json"), 'w') as fp:
+            json.dump(speaker_to_melspecs, fp)
 
 
 def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, batchsize=64, device="cuda"):
