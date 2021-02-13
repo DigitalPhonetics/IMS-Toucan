@@ -39,7 +39,7 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                     if speaker not in known_speakers:
                         known_speakers.add(speaker)
                         speaker_to_melspecs[speaker] = list()
-                    speaker_to_melspecs[speaker].append(spec.numpy())
+                    speaker_to_melspecs[speaker].append(list(spec.numpy()))
                     if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
                         done_with_speaker = True
                         break
