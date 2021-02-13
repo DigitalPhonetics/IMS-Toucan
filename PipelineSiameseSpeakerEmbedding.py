@@ -12,14 +12,14 @@ from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 
 
-def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=25):
+def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=20):
     # make a dict with keys being speakers and values
     # being lists of all their utterances as melspec matrices
     # then dump this as json
     ap = None
     done_with_speaker = False
     for speaker in os.listdir(path_to_raw_corpus):
-        print("Featurizing speaker {}".format(speaker))
+        print("Collecting and normalizing speaker {}".format(speaker))
         speaker_to_melspecs = dict()
         for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
             for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
     if start_stage <= 1 < stop_stage:
         print("Stage 1: Preparation")
-        device = torch.device("cuda:3")
+        device = torch.device("cpu")
         if not os.path.exists("Corpora"):
             os.mkdir("Corpora")
         if not os.path.exists("Corpora/SpeakerEmbedding"):
