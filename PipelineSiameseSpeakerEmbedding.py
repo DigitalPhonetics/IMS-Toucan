@@ -35,6 +35,7 @@ def featurize_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                     if len(wave) < 6000:
                         continue
                     spec = ap.audio_to_mel_spec_tensor(wave)
+                    print(spec.shape)
                     if speaker not in speaker_to_melspecs:
                         speaker_to_melspecs[speaker] = list()
                     speaker_to_melspecs[speaker].append(spec.numpy())
@@ -108,6 +109,8 @@ def plot_model():
 
 
 if __name__ == '__main__':
+    show_model(SiameseSpeakerEmbedding())
+
     print("Stage 1: Preparation")
     device = torch.device("cuda:3")
     if not os.path.exists("Corpora"):

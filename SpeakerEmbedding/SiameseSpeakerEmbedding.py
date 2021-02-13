@@ -10,22 +10,22 @@ from SpeakerEmbedding.ContrastiveLoss import ContrastiveLoss
 class SiameseSpeakerEmbedding(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(1, 1, (20, 20))
+        self.conv1 = torch.nn.Conv2d(1, 1, (50, 50))
         self.acti1 = torch.nn.LeakyReLU()
-        self.drop1 = torch.nn.Dropout2d(0.2)
+        self.drop1 = torch.nn.Dropout(0.2)
         self.pool1 = torch.nn.MaxPool2d(2)
-        self.conv2 = torch.nn.Conv2d(1, 1, (20, 20))
+        self.conv2 = torch.nn.Conv2d(1, 1, (50, 50))
         self.acti2 = torch.nn.LeakyReLU()
-        self.drop2 = torch.nn.Dropout2d(0.2)
+        self.drop2 = torch.nn.Dropout(0.2)
         self.pool2 = torch.nn.MaxPool2d(2)
-        self.conv3 = torch.nn.Conv2d(1, 1, (20, 20))
+        self.conv3 = torch.nn.Conv2d(1, 1, (50, 50))
         self.acti3 = torch.nn.LeakyReLU()
-        self.drop3 = torch.nn.Dropout2d(0.2)
+        self.drop3 = torch.nn.Dropout(0.2)
         self.encoder = torch.nn.Sequential(self.conv1, self.acti1, self.drop1, self.pool1,
                                            self.conv2, self.acti2, self.drop2, self.pool2,
                                            self.conv3, self.acti3, self.drop3)
         self.expander = torch.nn.Sequential(torch.nn.Linear(94, 256),
-                                            torch.nn.Tanh())
+                                            torch.nn.Sigmoid())
         self.comparator = torch.nn.CosineSimilarity()
         self.criterion = ContrastiveLoss()
 
