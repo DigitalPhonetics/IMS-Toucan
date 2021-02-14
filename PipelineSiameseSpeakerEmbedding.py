@@ -50,6 +50,7 @@ def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
 
 def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, batchsize=64, device="cuda"):
     start_time = time.time()
+    loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(net.get_conf())
     val_loss_highscore = 100.0
@@ -87,7 +88,11 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
             print("Epoch:        {}".format(epoch))
             print("Train Loss:   {}".format(sum(train_losses)))
             print("Valid Loss:   {}".format(val_loss))
-            print("Time elapsed: {}".format(time.time() - start_time))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            loss_plot[0].append(float(sum(train_losses)))
+            loss_plot[1].append(float(val_loss))
+            with open(os.path.join("Models/SpeakerEmbedding", "train_val_loss.json"), 'w') as fp:
+                json.dump(loss_plot, fp)
             net.train()
 
 
@@ -111,7 +116,7 @@ if __name__ == '__main__':
 
     if 1 in do_stages:
         print("Stage 1: Preparation")
-        device = torch.device("cpu")
+        device = torch.device("cuda:2")
         if not os.path.exists("Corpora"):
             os.mkdir("Corpora")
         if not os.path.exists("Corpora/SpeakerEmbedding"):
@@ -138,8 +143,8 @@ if __name__ == '__main__':
 
     if 3 in do_stages:
         print("Stage 3: Data Loading")
-        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=4, device=device)
-        valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=4, device=device)
+        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
+        valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
 
     if 4 in do_stages:
         print("Stage 4: Model Training")

@@ -8,6 +8,7 @@ import torchviz
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerTTS import Transformer
+from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 
 
 class CSS10SingleSpeakerFeaturizer():
@@ -81,4 +82,5 @@ def plot_model():
 if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
-    pass
+    device = torch.device("cpu")
+    css10 = TransformerTTSDataset("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", device=device)
