@@ -1,5 +1,7 @@
 import json
 import os
+import random
+import time
 
 import soundfile as sf
 import torch
@@ -56,8 +58,52 @@ class CSS10SingleSpeakerFeaturizer():
         return features
 
 
-def train_loop(net, train_dataset, eval_dataset, epochs, batchsize):
-    pass
+def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=100, batchsize=64):
+    start_time = time.time()
+    loss_plot = [[], []]
+    with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
+        conf.write(net.get_conf())
+    val_loss_highscore = 100.0
+    batch_counter = 0
+    net.train()
+    net.to(device)
+    optimizer = torch.optim.Adam(net.parameters())
+    for epoch in range(epochs):
+        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
+        train_losses = list()
+        # train one epoch
+        for index in index_list:
+            train_datapoint = train_dataset[index]
+            train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2], train_datapoint[3])
+            train_losses.append(train_loss / batchsize)  # for accumulative gradient
+            train_losses[-1].backward()
+            batch_counter += 1
+            if batch_counter % batchsize == 0:
+                print("Step:         {}".format(batch_counter))
+                optimizer.step()
+                optimizer.zero_grad()
+        # evaluate after epoch
+        with torch.no_grad():
+            net.eval()
+            val_losses = list()
+            for validation_datapoint_index in range(len(eval_dataset)):
+                eval_datapoint = eval_dataset[validation_datapoint_index]
+                val_losses.append(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2], eval_datapoint[3]))
+            val_loss = sum(val_losses) / len(val_losses)
+            if val_loss_highscore > val_loss:
+                val_loss_highscore = val_loss
+                torch.save({"model": net.state_dict(),
+                            "optimizer": optimizer.state_dict()},
+                           os.path.join(save_directory, "checkpoint_{}.pt".format(round(float(val_loss), 4))))
+            print("Epoch:        {}".format(epoch))
+            print("Train Loss:   {}".format(sum(train_losses)))
+            print("Valid Loss:   {}".format(val_loss))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            loss_plot[0].append(float(sum(train_losses)))
+            loss_plot[1].append(float(val_loss))
+            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
+                json.dump(loss_plot, fp)
+            net.train()
 
 
 def count_parameters(model):
@@ -70,7 +116,7 @@ def show_model(model):
 
 
 def plot_model():
-    trans = Transformer(idim=131, odim=80, spk_embed_dim=128)
+    trans = Transformer(idim=132, odim=80, spk_embed_dim=128)
     out = trans(text=torch.randint(high=120, size=(1, 23)),
                 text_lengths=torch.tensor([23]),
                 speech=torch.rand((1, 1234, 80)),
@@ -83,4 +129,17 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     device = torch.device("cpu")
-    css10 = TransformerTTSDataset("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", device=device)
+    css10_valid = TransformerTTSDataset("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json",
+                                        device=device,
+                                        type="valid")
+    css10_train = TransformerTTSDataset("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json",
+                                        device=device,
+                                        type="train")
+    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
+    if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
+        os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
+    train_loop(net=model,
+               train_dataset=css10_train,
+               eval_dataset=css10_valid,
+               device=device,
+               save_directory="Models/TransformerTTS/SingleSpeaker/CSS10")

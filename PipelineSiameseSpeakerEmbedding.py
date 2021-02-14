@@ -48,7 +48,7 @@ def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
             json.dump(speaker_to_melspecs, fp)
 
 
-def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, batchsize=64, device="cuda"):
+def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=100, batchsize=32):
     start_time = time.time()
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
@@ -91,7 +91,7 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
             loss_plot[0].append(float(sum(train_losses)))
             loss_plot[1].append(float(val_loss))
-            with open(os.path.join("Models/SpeakerEmbedding", "train_val_loss.json"), 'w') as fp:
+            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
                 json.dump(loss_plot, fp)
             net.train()
 

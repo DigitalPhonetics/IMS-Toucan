@@ -629,3 +629,6 @@ class Transformer(torch.nn.Module, ABC):
             raise NotImplementedError("support only add or concat.")
 
         return hs
+
+    def get_conf(self):
+        return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
