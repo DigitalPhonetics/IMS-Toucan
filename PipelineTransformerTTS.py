@@ -1,7 +1,3 @@
-import json
-import os
-
-import soundfile as sf
 import torch
 import torchviz
 
@@ -41,51 +37,6 @@ class MultiSpeakerFeaturizer():
         return text_tensor, text_length, speech_tensor, speech_length, speaker_embedding
 
 
-class CSS10SingleSpeakerFeaturizer():
-    def __init__(self):
-        self.tf = TextFrontend(language="en",
-                               use_panphon_vectors=False,
-                               use_shallow_pos=False,
-                               use_sentence_type=False,
-                               use_positional_information=False,
-                               use_word_boundaries=False,
-                               use_chinksandchunks_ipb=True,
-                               use_explicit_eos=True)
-        self.ap = None
-        self.file_to_trans = dict()
-        self.file_to_spec = dict()
-
-    def featurize_corpus(self):
-        with open("Corpora/CSS10/transcript.txt", encoding="utf8") as f:
-            transcriptions = f.read()
-        trans_lines = transcriptions.split("\n")
-        for line in trans_lines:
-            print(line)
-            if line.strip() != "":
-                self.file_to_trans[line.split("|")[0]] = self.tf.string_to_tensor(line.split("|")[2]).numpy().tolist()
-        for file in self.file_to_trans.keys():
-            print(file)
-            wave, sr = sf.read(os.path.join("Corpora/CSS10/", file))
-            if self.ap is None:
-                self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80)
-            self.file_to_spec[file] = self.ap.audio_to_mel_spec_tensor(wave).numpy().tolist()
-        if not os.path.exists("Corpora/TransformerTTS/SingleSpeaker/CSS10/"):
-            os.makedirs("Corpora/TransformerTTS/SingleSpeaker/CSS10/")
-        with open(os.path.join("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json"), 'w') as fp:
-            json.dump(self.collect_features(), fp)
-
-    def collect_features(self):
-        features = list()
-        for file in self.file_to_trans:
-            text_tensor = self.file_to_trans[file]
-            text_length = len(self.file_to_trans[file])
-            speech_tensor = self.file_to_spec[file]
-            speech_length = len(self.file_to_spec[file][0])
-            if speech_length > 100:
-                features.append([text_tensor, text_length, speech_tensor, speech_length])
-        return features
-
-
 def train_loop(net, train_dataset, eval_dataset, epochs, batchsize):
     pass
 
@@ -110,5 +61,4 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    fe = CSS10SingleSpeakerFeaturizer()
-    fe.featurize_corpus()
+    pass

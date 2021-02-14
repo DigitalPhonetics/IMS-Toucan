@@ -55,7 +55,7 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
     val_loss_highscore = 100.0
     batch_counter = 0
     net.train()
-    net.to_device(device)
+    net.to(device)
     optimizer = torch.optim.Adam(net.parameters())
     for epoch in range(epochs):
         index_list = random.sample(range(len(train_dataset)), len(train_dataset))
