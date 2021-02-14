@@ -107,7 +107,7 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    start_stage = 1
+    start_stage = 3
     stop_stage = 99
 
     if start_stage <= 1 < stop_stage:

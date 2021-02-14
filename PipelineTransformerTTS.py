@@ -56,10 +56,11 @@ class CSS10SingleSpeakerFeaturizer():
         self.file_to_spec = dict()
 
     def featurize_corpus(self):
-        with open("Corpora/CSS10/transcript.txt") as f:
+        with open("Corpora/CSS10/transcript.txt", encoding="utf8") as f:
             transcriptions = f.read()
         trans_lines = transcriptions.split("\n")
         for line in trans_lines:
+            print(line)
             if line.strip() != "":
                 self.file_to_trans[line.split("|")[0]] = self.tf.string_to_tensor(line.split("|")[2]).numpy().tolist()
         for file in self.file_to_trans.keys():

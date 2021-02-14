@@ -24,10 +24,11 @@ class SpeakerEmbeddingDataset(Dataset):
         # collect some pure samples
         for _ in range(int(size / 2)):
             speaker = random.choice(speakers)
-            specs = set()
-            while len(specs) < 2:
-                specs.add(random.choice(speaker_to_melspec[speaker]))
-            pure_pairs.append(list(specs) + [[-1]])
+            spec_1 = random.choice(speaker_to_melspec[speaker])
+            spec_2 = random.choice(speaker_to_melspec[speaker])
+            while spec_1 == spec_2:
+                spec_2 = random.choice(speaker_to_melspec[speaker])
+            pure_pairs.append([spec_1, spec_2, [-1]])
         # collect some impure samples
         for _ in range(int(size / 2)):
             speaker_1 = random.choice(speakers)
