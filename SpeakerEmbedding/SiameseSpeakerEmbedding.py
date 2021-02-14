@@ -2,6 +2,8 @@
 A relation network approach at speaker embedding
 """
 
+import os
+
 import torch
 
 from SpeakerEmbedding.ContrastiveLoss import ContrastiveLoss
@@ -10,15 +12,15 @@ from SpeakerEmbedding.ContrastiveLoss import ContrastiveLoss
 class SiameseSpeakerEmbedding(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=10, kernel_size=(30, 30))
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=10, kernel_size=(10, 10))
         self.acti1 = torch.nn.LeakyReLU()
         self.drop1 = torch.nn.Dropout2d(0.2)
         self.pool1 = torch.nn.MaxPool2d(2)
-        self.conv2 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(30, 30))
+        self.conv2 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(10, 10))
         self.acti2 = torch.nn.LeakyReLU()
         self.drop2 = torch.nn.Dropout2d(0.2)
         self.pool2 = torch.nn.MaxPool2d(2)
-        self.conv3 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(30, 30))
+        self.conv3 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(10, 10))
         self.acti3 = torch.nn.LeakyReLU()
         self.drop3 = torch.nn.Dropout2d(0.2)
         self.encoder_fine = torch.nn.Sequential(self.conv1, self.acti1, self.drop1, self.pool1)
@@ -29,15 +31,15 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         self.channel_reducer_2 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
         self.channel_reducer_3 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
 
-        self.expander = torch.nn.Sequential(torch.nn.Linear(424, 256),
+        self.expander = torch.nn.Sequential(torch.nn.Linear(72, 128),
                                             torch.nn.Sigmoid())
         self.comparator = torch.nn.CosineSimilarity()
         self.criterion = ContrastiveLoss()
 
     def forward(self, sample1, sample2, label):
         """
-        :param sample1: batch of spectrograms with 512 buckets
-        :param sample2: batch of spectrograms with 512 buckets
+        :param sample1: batch of spectrograms with 100 buckets
+        :param sample2: batch of spectrograms with 100 buckets
         :param label: batch of distance labels (-1 means same class and +1 means different class)
         :return: loss to optimize for
         """
@@ -77,7 +79,7 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
 
     def inference(self, sample):
         """
-        :param sample: spectrogram to be embedded (512 buckets)
+        :param sample: spectrogram to be embedded (100 buckets)
         :return: embedding for speaker
         """
         encoded_fine_1 = self.encoder_fine(sample)
@@ -95,3 +97,10 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
 
     def get_conf(self):
         return "SiameseSpeakerEmbedding"
+
+
+def build_spk_emb_model():
+    model = SiameseSpeakerEmbedding()
+    params = torch.load(os.path.join("Models", "SpeakerEmbedding", "checkpoint_NUMBER.pt"))["model"]
+    model.load_state_dict(params)
+    return model

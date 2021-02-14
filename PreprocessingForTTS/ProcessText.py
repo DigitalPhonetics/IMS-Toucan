@@ -104,7 +104,7 @@ class TextFrontend:
                                    131, 131, 131, 131, 131]
         else:
             self.default_vector = 131
-        with open("ipa_vector_lookup.csv", encoding='utf8') as f:
+        with open("PreprocessingForTTS/ipa_vector_lookup.csv", encoding='utf8') as f:
             features = f.read()
         features_list = features.split("\n")
         for index in range(1, len(features_list)):
