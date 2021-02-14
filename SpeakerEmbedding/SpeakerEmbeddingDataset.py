@@ -18,7 +18,7 @@ class SpeakerEmbeddingDataset(Dataset):
         pure_pairs = list()
         impure_pairs = list()
         self.device = device
-        self.ap = AudioPreprocessor(input_sr=sr, melspec_buckets=512)
+        self.ap = AudioPreprocessor(input_sr=sr, melspec_buckets=80)
         speakers = list(speaker_to_melspec.keys())
         print("Data loaded. Preparing random sampling.")
         # collect some pure samples

@@ -3,7 +3,7 @@ from torch.utils.data import Dataset
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, device="cuda"):
+    def __init__(self, device="cuda", spemb=False):
         pass
 
     def __getitem__(self, index):

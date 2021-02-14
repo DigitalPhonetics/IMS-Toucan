@@ -79,5 +79,6 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    fe = CSS10SingleSpeakerFeaturizer()
-    fe.featurize_corpus()
+    # fe = CSS10SingleSpeakerFeaturizer()
+    # fe.featurize_corpus()
+    pass

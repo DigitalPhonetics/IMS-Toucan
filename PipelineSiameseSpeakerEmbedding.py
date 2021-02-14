@@ -83,11 +83,11 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, epochs=100, bat
                 val_loss_highscore = val_loss
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict()},
-                           save_directory / "checkpoint_{}.pt".format(round(val_loss, 4)))
+                           os.path.join(save_directory, "checkpoint_{}.pt".format(round(float(val_loss), 4))))
             print("Epoch:        {}".format(epoch))
             print("Train Loss:   {}".format(sum(train_losses)))
             print("Valid Loss:   {}".format(val_loss))
-            print("Time elapsed: {}".format(start_time - time.time()))
+            print("Time elapsed: {}".format(time.time() - start_time))
             net.train()
 
 
@@ -138,8 +138,8 @@ if __name__ == '__main__':
 
     if 3 in do_stages:
         print("Stage 3: Data Loading")
-        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
-        valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
+        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=4, device=device)
+        valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=4, device=device)
 
     if 4 in do_stages:
         print("Stage 4: Model Training")
