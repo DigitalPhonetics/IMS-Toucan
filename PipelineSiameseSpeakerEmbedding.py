@@ -132,17 +132,17 @@ if __name__ == '__main__':
         path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
                                    "datasets/VoxCeleb2/audio-files/test/aac/"
 
-        if start_stage <= 2 < stop_stage:
-            print("Stage 2: Feature Extraction")
-            build_sub_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
-            build_sub_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
+    if start_stage <= 2 < stop_stage:
+        print("Stage 2: Feature Extraction")
+        build_sub_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
+        build_sub_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
-            if start_stage <= 3 < stop_stage:
-                print("Stage 3: Data Loading")
-                train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
-                valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
+    if start_stage <= 3 < stop_stage:
+        print("Stage 3: Data Loading")
+        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
+        valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
 
-                if start_stage <= 4 < stop_stage:
-                    print("Stage 4: Model Training")
-                    model = SiameseSpeakerEmbedding()
-                    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)
+    if start_stage <= 4 < stop_stage:
+        print("Stage 4: Model Training")
+        model = SiameseSpeakerEmbedding()
+        train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)
