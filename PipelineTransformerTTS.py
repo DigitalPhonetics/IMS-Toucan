@@ -1,6 +1,5 @@
 import json
 import os
-import random
 
 import soundfile as sf
 import torch
@@ -22,7 +21,7 @@ class MultiSpeakerFeaturizer():
                                use_word_boundaries=False,
                                use_chinksandchunks_ipb=True,
                                use_explicit_eos=True)
-        self.ap = AudioPreprocessor(input_sr=999999, output_sr=16000, melspec_buckets=100)
+        self.ap = AudioPreprocessor(input_sr=999999, output_sr=16000, melspec_buckets=80)
         self.spemb_ext = SiamSpemb.build_spk_emb_model()
 
     def featurize_corpus(self, path_to_corpus):
@@ -57,11 +56,6 @@ class CSS10SingleSpeakerFeaturizer():
         self.file_to_spec = dict()
 
     def featurize_corpus(self):
-        # load pair of text and speech
-        # apply collect_features()
-        # store features in Dataset dict
-        # repeat for all pairs
-        # Dump dict to file
         with open("Corpora/CSS10/transcript.txt") as f:
             transcriptions = f.read()
         trans_lines = transcriptions.split("\n")
@@ -72,7 +66,7 @@ class CSS10SingleSpeakerFeaturizer():
             print(file)
             wave, sr = sf.read(os.path.join("Corpora/CSS10/", file))
             if self.ap is None:
-                self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=100)
+                self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80)
             self.file_to_spec[file] = self.ap.audio_to_mel_spec_tensor(wave).numpy().tolist()
         if not os.path.exists("Corpora/TransformerTTS/SingleSpeaker/CSS10/"):
             os.makedirs("Corpora/TransformerTTS/SingleSpeaker/CSS10/")
@@ -92,27 +86,7 @@ class CSS10SingleSpeakerFeaturizer():
 
 
 def train_loop(net, train_dataset, eval_dataset, epochs, batchsize):
-    optimizer = None
-    scheduler = None
-    batch_counter = 0
-    net.train()
-    net.to_device("cuda")
-    for _ in range(epochs):
-        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
-        for index in index_list:
-            net(train_dataset[index]).backward()
-            batch_counter += 1
-            print("Iteration {}".format(batch_counter))
-            if batch_counter % batchsize == 0:
-                print("Updating weights")
-                optimizer.step()
-                optimizer.zero_gradient()
-                with torch.no_grad():
-                    pass
-                    net.eval()
-                    # calculate loss on eval_dataset
-                    # save model if eval_loss in 5 best
-                    net.train()
+    pass
 
 
 def count_parameters(model):
@@ -125,12 +99,12 @@ def show_model(model):
 
 
 def plot_model():
-    trans = Transformer(idim=131, odim=256, spk_embed_dim=256)
+    trans = Transformer(idim=131, odim=80, spk_embed_dim=128)
     out = trans(text=torch.randint(high=120, size=(1, 23)),
                 text_lengths=torch.tensor([23]),
-                speech=torch.rand((1, 1234, 256)),
+                speech=torch.rand((1, 1234, 80)),
                 speech_lengths=torch.tensor([1234]),
-                spembs=torch.rand(256).unsqueeze(0))
+                spembs=torch.rand(128).unsqueeze(0))
     torchviz.make_dot(out[0].mean(), dict(trans.named_parameters())).render("transformertts_graph", format="png")
 
 

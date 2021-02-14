@@ -30,7 +30,7 @@ def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_spe
                         print("File {} seems to be faulty".format(os.path.join(speaker, sub, wav)))
                         continue
                     if ap is None:
-                        ap = AudioPreprocessor(input_sr=sr, melspec_buckets=100, output_sr=16000)
+                        ap = AudioPreprocessor(input_sr=sr, melspec_buckets=80, output_sr=16000)
                     # yeet the file if the audio is too short
                     if len(wave) < 6000:
                         continue
@@ -102,7 +102,7 @@ def show_model(net):
 
 def plot_model():
     sse = SiameseSpeakerEmbedding()
-    out = sse(torch.rand((1, 1, 100, 2721)), torch.rand((1, 1, 100, 1233)), torch.Tensor([-1]))
+    out = sse(torch.rand((1, 1, 80, 2721)), torch.rand((1, 1, 80, 1233)), torch.Tensor([-1]))
     torchviz.make_dot(out.mean(), dict(sse.named_parameters())).render("speaker_emb_graph", format="png")
 
 

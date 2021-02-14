@@ -27,7 +27,7 @@ class AudioPreprocessor:
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
-        self.mel_spec_orig_sr = MelSpectrogram(sample_rate=input_sr, n_mels=melspec_buckets)
+        self.mel_spec_orig_sr = MelSpectrogram(sample_rate=input_sr, n_mels=melspec_buckets, f_min=40.0, f_max=8000.0)
         self.mel_spec_new_sr = MelSpectrogram(sample_rate=self.final_sr, n_mels=melspec_buckets)
 
     def apply_mu_law(self, audio):

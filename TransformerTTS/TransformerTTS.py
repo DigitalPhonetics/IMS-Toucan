@@ -155,7 +155,7 @@ class Transformer(torch.nn.Module, ABC):
             encoder_concat_after: bool = False,
             decoder_concat_after: bool = False,
             reduction_factor: int = 1,
-            spk_embed_dim: int = 256,
+            spk_embed_dim: int = None,
             spk_embed_integration_type: str = "add",
             # training related
             transformer_enc_dropout_rate: float = 0.1,
@@ -217,40 +217,33 @@ class Transformer(torch.nn.Module, ABC):
         # define transformer encoder
         if eprenet_conv_layers != 0:
             # encoder prenet
-            encoder_input_layer = torch.nn.Sequential(
-                EncoderPrenet(
-                    idim=idim,
-                    embed_dim=embed_dim,
-                    elayers=0,
-                    econv_layers=eprenet_conv_layers,
-                    econv_chans=eprenet_conv_chans,
-                    econv_filts=eprenet_conv_filts,
-                    use_batch_norm=use_batch_norm,
-                    dropout_rate=eprenet_dropout_rate,
-                    padding_idx=self.padding_idx,
-                ),
-                torch.nn.Linear(eprenet_conv_chans, adim),
-            )
+            encoder_input_layer = torch.nn.Sequential(EncoderPrenet(idim=idim,
+                                                                    embed_dim=embed_dim,
+                                                                    elayers=0,
+                                                                    econv_layers=eprenet_conv_layers,
+                                                                    econv_chans=eprenet_conv_chans,
+                                                                    econv_filts=eprenet_conv_filts,
+                                                                    use_batch_norm=use_batch_norm,
+                                                                    dropout_rate=eprenet_dropout_rate,
+                                                                    padding_idx=self.padding_idx),
+                                                      torch.nn.Linear(eprenet_conv_chans, adim))
         else:
-            encoder_input_layer = torch.nn.Embedding(
-                num_embeddings=idim, embedding_dim=adim, padding_idx=self.padding_idx
-            )
-        self.encoder = Encoder(
-            idim=idim,
-            attention_dim=adim,
-            attention_heads=aheads,
-            linear_units=eunits,
-            num_blocks=elayers,
-            input_layer=encoder_input_layer,
-            dropout_rate=transformer_enc_dropout_rate,
-            positional_dropout_rate=transformer_enc_positional_dropout_rate,
-            attention_dropout_rate=transformer_enc_attn_dropout_rate,
-            pos_enc_class=pos_enc_class,
-            normalize_before=encoder_normalize_before,
-            concat_after=encoder_concat_after,
-            positionwise_layer_type=positionwise_layer_type,
-            positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-        )
+            encoder_input_layer = torch.nn.Embedding(num_embeddings=idim, embedding_dim=adim,
+                                                     padding_idx=self.padding_idx)
+        self.encoder = Encoder(idim=idim,
+                               attention_dim=adim,
+                               attention_heads=aheads,
+                               linear_units=eunits,
+                               num_blocks=elayers,
+                               input_layer=encoder_input_layer,
+                               dropout_rate=transformer_enc_dropout_rate,
+                               positional_dropout_rate=transformer_enc_positional_dropout_rate,
+                               attention_dropout_rate=transformer_enc_attn_dropout_rate,
+                               pos_enc_class=pos_enc_class,
+                               normalize_before=encoder_normalize_before,
+                               concat_after=encoder_concat_after,
+                               positionwise_layer_type=positionwise_layer_type,
+                               positionwise_conv_kernel_size=positionwise_conv_kernel_size)
 
         # define projection layer
         if self.spk_embed_dim is not None:
@@ -263,70 +256,54 @@ class Transformer(torch.nn.Module, ABC):
         if dprenet_layers != 0:
             # decoder prenet
             decoder_input_layer = torch.nn.Sequential(
-                DecoderPrenet(
-                    idim=odim,
-                    n_layers=dprenet_layers,
-                    n_units=dprenet_units,
-                    dropout_rate=dprenet_dropout_rate,
-                ),
+                DecoderPrenet(idim=odim,
+                              n_layers=dprenet_layers,
+                              n_units=dprenet_units,
+                              dropout_rate=dprenet_dropout_rate),
                 torch.nn.Linear(dprenet_units, adim),
             )
         else:
             decoder_input_layer = "linear"
-        self.decoder = Decoder(
-            odim=odim,  # odim is needed when no prenet is used
-            attention_dim=adim,
-            attention_heads=aheads,
-            linear_units=dunits,
-            num_blocks=dlayers,
-            dropout_rate=transformer_dec_dropout_rate,
-            positional_dropout_rate=transformer_dec_positional_dropout_rate,
-            self_attention_dropout_rate=transformer_dec_attn_dropout_rate,
-            src_attention_dropout_rate=transformer_enc_dec_attn_dropout_rate,
-            input_layer=decoder_input_layer,
-            use_output_layer=False,
-            pos_enc_class=pos_enc_class,
-            normalize_before=decoder_normalize_before,
-            concat_after=decoder_concat_after,
-        )
+        self.decoder = Decoder(odim=odim,  # odim is needed when no prenet is used
+                               attention_dim=adim,
+                               attention_heads=aheads,
+                               linear_units=dunits,
+                               num_blocks=dlayers,
+                               dropout_rate=transformer_dec_dropout_rate,
+                               positional_dropout_rate=transformer_dec_positional_dropout_rate,
+                               self_attention_dropout_rate=transformer_dec_attn_dropout_rate,
+                               src_attention_dropout_rate=transformer_enc_dec_attn_dropout_rate,
+                               input_layer=decoder_input_layer,
+                               use_output_layer=False,
+                               pos_enc_class=pos_enc_class,
+                               normalize_before=decoder_normalize_before,
+                               concat_after=decoder_concat_after)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.prob_out = torch.nn.Linear(adim, reduction_factor)
 
         # define postnet
-        self.postnet = (
-            None
-            if postnet_layers == 0
-            else PostNet(
-                idim=idim,
-                odim=odim,
-                n_layers=postnet_layers,
-                n_chans=postnet_chans,
-                n_filts=postnet_filts,
-                use_batch_norm=use_batch_norm,
-                dropout_rate=postnet_dropout_rate,
-            )
-        )
+        self.postnet = PostNet(idim=idim,
+                               odim=odim,
+                               n_layers=postnet_layers,
+                               n_chans=postnet_chans,
+                               n_filts=postnet_filts,
+                               use_batch_norm=use_batch_norm,
+                               dropout_rate=postnet_dropout_rate)
 
         # define loss function
-        self.criterion = TransformerLoss(
-            use_masking=use_masking,
-            use_weighted_masking=use_weighted_masking,
-            bce_pos_weight=bce_pos_weight,
-        )
+        self.criterion = TransformerLoss(use_masking=use_masking,
+                                         use_weighted_masking=use_weighted_masking,
+                                         bce_pos_weight=bce_pos_weight)
         if self.use_guided_attn_loss:
-            self.attn_criterion = GuidedMultiHeadAttentionLoss(
-                sigma=guided_attn_loss_sigma,
-                alpha=guided_attn_loss_lambda,
-            )
+            self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                               alpha=guided_attn_loss_lambda)
 
         # initialize parameters
-        self._reset_parameters(
-            init_type=init_type,
-            init_enc_alpha=init_enc_alpha,
-            init_dec_alpha=init_enc_alpha,
-        )
+        self._reset_parameters(init_type=init_type,
+                               init_enc_alpha=init_enc_alpha,
+                               init_dec_alpha=init_enc_alpha)
 
     def _reset_parameters(self, init_type, init_enc_alpha=1.0, init_dec_alpha=1.0):
         # initialize parameters

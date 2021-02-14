@@ -31,15 +31,15 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         self.channel_reducer_2 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
         self.channel_reducer_3 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
 
-        self.expander = torch.nn.Sequential(torch.nn.Linear(72, 128),
+        self.expander = torch.nn.Sequential(torch.nn.Linear(52, 128),
                                             torch.nn.Sigmoid())
         self.comparator = torch.nn.CosineSimilarity()
         self.criterion = ContrastiveLoss()
 
     def forward(self, sample1, sample2, label):
         """
-        :param sample1: batch of spectrograms with 100 buckets
-        :param sample2: batch of spectrograms with 100 buckets
+        :param sample1: batch of spectrograms with 80 buckets
+        :param sample2: batch of spectrograms with 80 buckets
         :param label: batch of distance labels (-1 means same class and +1 means different class)
         :return: loss to optimize for
         """
@@ -79,7 +79,7 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
 
     def inference(self, sample):
         """
-        :param sample: spectrogram to be embedded (100 buckets)
+        :param sample: spectrogram to be embedded (80 buckets)
         :return: embedding for speaker
         """
         encoded_fine_1 = self.encoder_fine(sample)
