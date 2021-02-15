@@ -65,8 +65,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=
         conf.write(net.get_conf())
     val_loss_highscore = 100.0
     batch_counter = 0
+    net = net.to(device)
     net.train()
-    net.to(device)
     optimizer = torch.optim.Adam(net.parameters())
     for epoch in range(epochs):
         index_list = random.sample(range(len(train_dataset)), len(train_dataset))
@@ -74,7 +74,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=
         # train one epoch
         for index in index_list:
             train_datapoint = train_dataset[index]
-            train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2], train_datapoint[3])
+            train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2], train_datapoint[3])[0]
             train_losses.append(train_loss / batchsize)  # for accumulative gradient
             train_losses[-1].backward()
             batch_counter += 1
@@ -88,7 +88,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=
             val_losses = list()
             for validation_datapoint_index in range(len(eval_dataset)):
                 eval_datapoint = eval_dataset[validation_datapoint_index]
-                val_losses.append(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2], eval_datapoint[3]))
+                val_losses.append(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2], eval_datapoint[3])[0])
             val_loss = sum(val_losses) / len(val_losses)
             if val_loss_highscore > val_loss:
                 val_loss_highscore = val_loss
@@ -126,7 +126,7 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    # print("Extracting features")
+    print("Extracting features")
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
@@ -134,12 +134,12 @@ if __name__ == '__main__':
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
     print("Building datasets")
-    css10_valid = TransformerTTSDataset(feature_list,
-                                        device=device,
-                                        type="valid")
     css10_train = TransformerTTSDataset(feature_list,
                                         device=device,
                                         type="train")
+    css10_valid = TransformerTTSDataset(feature_list,
+                                        device=device,
+                                        type="valid")
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
@@ -149,6 +149,3 @@ if __name__ == '__main__':
                eval_dataset=css10_valid,
                device=device,
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10")
-
-# speech = torch.transpose(torch.Tensor(self.feature_list[index][2]), 1, 2).to(self.device)
-# IndexError: Dimension out of range (expected to be in range of [-2, 1], but got 2)

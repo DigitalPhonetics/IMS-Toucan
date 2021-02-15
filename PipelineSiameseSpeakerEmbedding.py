@@ -56,7 +56,7 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
     val_loss_highscore = 100.0
     batch_counter = 0
     net.train()
-    net.to(device)
+    net = net.to(device)
     optimizer = torch.optim.Adam(net.parameters())
     for epoch in range(epochs):
         index_list = random.sample(range(len(train_dataset)), len(train_dataset))
@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
     if 1 in do_stages:
         print("Stage 1: Preparation")
-        device = torch.device("cuda:2")
+        device = torch.device("cpu")
         if not os.path.exists("Corpora"):
             os.mkdir("Corpora")
         if not os.path.exists("Corpora/SpeakerEmbedding"):
