@@ -126,20 +126,29 @@ def plot_model():
 
 
 if __name__ == '__main__':
+    # print("Extracting features")
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
+    print("Loading data")
     device = torch.device("cpu")
-    css10_valid = TransformerTTSDataset("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json",
+    with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
+        feature_list = json.load(fp)
+    print("Building datasets")
+    css10_valid = TransformerTTSDataset(feature_list,
                                         device=device,
                                         type="valid")
-    css10_train = TransformerTTSDataset("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json",
+    css10_train = TransformerTTSDataset(feature_list,
                                         device=device,
                                         type="train")
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
+    print("Training model")
     train_loop(net=model,
                train_dataset=css10_train,
                eval_dataset=css10_valid,
                device=device,
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10")
+
+# speech = torch.transpose(torch.Tensor(self.feature_list[index][2]), 1, 2).to(self.device)
+# IndexError: Dimension out of range (expected to be in range of [-2, 1], but got 2)

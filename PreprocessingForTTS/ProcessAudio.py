@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 
 
 class AudioPreprocessor:
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=256):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80):
         self.sr = input_sr
         self.new_sr = output_sr
         self.vad = VoiceActivityDetection(sample_rate=input_sr)
@@ -28,7 +28,8 @@ class AudioPreprocessor:
         else:
             self.resample = lambda x: x
         self.mel_spec_orig_sr = MelSpectrogram(sample_rate=input_sr, n_mels=melspec_buckets, f_min=40.0, f_max=8000.0)
-        self.mel_spec_new_sr = MelSpectrogram(sample_rate=self.final_sr, n_mels=melspec_buckets)
+        self.mel_spec_new_sr = MelSpectrogram(sample_rate=self.final_sr, n_mels=melspec_buckets, f_min=40.0,
+                                              f_max=8000.0)
 
     def apply_mu_law(self, audio):
         """
