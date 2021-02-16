@@ -59,11 +59,11 @@ class CSS10SingleSpeakerFeaturizer():
         return features
 
 
-def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=150, batchsize=64):
+def train_loop(net, train_dataset, eval_dataset, device, save_directory, config, epochs=150, batchsize=64):
     start_time = time.time()
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
-        conf.write(net.get_conf())
+        conf.write(config)
     val_loss_highscore = 100.0
     batch_counter = 0
     net = net.to(device)
@@ -157,9 +157,10 @@ if __name__ == '__main__':
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(net=torch.nn.parallel.DistributedDataParallel(model, device_ids=[torch.device("cuda:1"),
-                                                                                torch.device("cuda:2")]),
+    train_loop(net=torch.nn.DataParallel(model, device_ids=[torch.device("cuda:1"),
+                                                            torch.device("cuda:2")]),
                train_dataset=css10_train,
                eval_dataset=css10_valid,
                device=device,
+               config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10")
