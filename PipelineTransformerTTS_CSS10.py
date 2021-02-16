@@ -58,7 +58,7 @@ class CSS10SingleSpeakerFeaturizer():
         return features
 
 
-def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=100, batchsize=64):
+def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=150, batchsize=64):
     start_time = time.time()
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
@@ -96,10 +96,10 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=
                             "optimizer": optimizer.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(round(float(val_loss), 4))))
             print("Epoch:        {}".format(epoch))
-            print("Train Loss:   {}".format(sum(train_losses)))
+            print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
             print("Valid Loss:   {}".format(val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            loss_plot[0].append(float(sum(train_losses)))
+            loss_plot[0].append(float(sum(train_losses) / len(train_losses)))
             loss_plot[1].append(float(val_loss))
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
                 json.dump(loss_plot, fp)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cpu")
+    device = torch.device("cuda")
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
     print("Building datasets")
