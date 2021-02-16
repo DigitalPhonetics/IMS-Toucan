@@ -157,7 +157,8 @@ if __name__ == '__main__':
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(net=torch.nn.DataParallel(model, device_ids=[torch.device("cuda:1"), torch.device("cuda:2")]),
+    train_loop(net=torch.nn.parallel.DistributedDataParallel(model, device_ids=[torch.device("cuda:1"),
+                                                                                torch.device("cuda:2")]),
                train_dataset=css10_train,
                eval_dataset=css10_valid,
                device=device,
