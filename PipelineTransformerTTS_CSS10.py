@@ -6,6 +6,7 @@ import time
 import soundfile as sf
 import torch
 import torchviz
+from torch.nn.utils.rnn import pad_sequence
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
@@ -73,15 +74,31 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, epochs=
         train_losses = list()
         # train one epoch
         for index in index_list:
-            train_datapoint = train_dataset[index]
-            train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2], train_datapoint[3])[0]
-            train_losses.append(train_loss / batchsize)  # for accumulative gradient
-            train_losses[-1].backward()
+            # accumulate batch
+            texts = list()
+            text_lens = list()
+            speeches = list()
+            speech_lens = list()
+            for _ in range(batchsize):
+                train_datapoint = train_dataset[index]
+                texts.append(train_datapoint[0])
+                text_lens.append(train_datapoint[1])
+                speeches.append(train_datapoint[2])
+                speech_lens.append(train_datapoint[3])
+            # 0-pad elements in batch
+            text_batch_padded = pad_sequence(texts, batch_first=True).to(device)
+            speech_batch_padded = pad_sequence(speeches, batch_first=True).to(device)
+            # push batch through network
+            train_loss = net(text_batch_padded,
+                             torch.cat(text_lens, 0).to(device),
+                             speech_batch_padded,
+                             torch.cat(speech_lens, 0).to(device)
+                             )[0]
             batch_counter += 1
-            if batch_counter % batchsize == 0:
-                print("Step:         {}".format(batch_counter))
-                optimizer.step()
-                optimizer.zero_grad()
+            print("Step:         {}".format(batch_counter * batchsize))
+            train_loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
         # evaluate after epoch
         with torch.no_grad():
             net.eval()
@@ -134,12 +151,8 @@ if __name__ == '__main__':
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
     print("Building datasets")
-    css10_train = TransformerTTSDataset(feature_list,
-                                        device=device,
-                                        type="train")
-    css10_valid = TransformerTTSDataset(feature_list,
-                                        device=device,
-                                        type="valid")
+    css10_train = TransformerTTSDataset(feature_list, type="train")
+    css10_valid = TransformerTTSDataset(feature_list, type="valid")
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")

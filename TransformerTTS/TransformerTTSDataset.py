@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, feature_list, device="cuda", spemb=False, type="train"):
+    def __init__(self, feature_list, device=torch.device("cpu"), spemb=False, type="train"):
         if type == "train":
             self.feature_list = feature_list[:-100]
         elif type == "valid":
@@ -16,9 +16,9 @@ class TransformerTTSDataset(Dataset):
 
     def __getitem__(self, index):
         # create tensors on correct device
-        text = torch.LongTensor(self.feature_list[index][0]).unsqueeze(0).to(self.device)
+        text = torch.LongTensor(self.feature_list[index][0]).to(self.device)
         text_len = torch.LongTensor([self.feature_list[index][1]]).to(self.device)
-        speech = torch.transpose(torch.Tensor(self.feature_list[index][2]).unsqueeze(0), 1, 2).to(self.device)
+        speech = torch.transpose(torch.Tensor(self.feature_list[index][2]), 0, 1).to(self.device)
         speech_len = torch.LongTensor([self.feature_list[index][3]]).to(self.device)
         if self.spemb:
             spemb = torch.Tensor(self.feature_list[index][4]).to(self.device)
