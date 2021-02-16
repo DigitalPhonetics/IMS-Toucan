@@ -86,10 +86,10 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
                             "optimizer": optimizer.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(round(float(val_loss), 4))))
             print("Epoch:        {}".format(epoch))
-            print("Train Loss:   {}".format(sum(train_losses)))
+            print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
             print("Valid Loss:   {}".format(val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            loss_plot[0].append(float(sum(train_losses)))
+            loss_plot[0].append(float(sum(train_losses) / len(train_losses)))
             loss_plot[1].append(float(val_loss))
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
                 json.dump(loss_plot, fp)
@@ -100,7 +100,7 @@ def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
-def show_model(net):
+def show_model(net=SiameseSpeakerEmbedding()):
     print(net)
     print("\n\nNumber of Parameters: {}".format(count_parameters(net)))
 
@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
     if 3 in do_stages:
         print("Stage 3: Data Loading")
-        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=100000, device=device)
+        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=50000, device=device)
         valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
 
     if 4 in do_stages:

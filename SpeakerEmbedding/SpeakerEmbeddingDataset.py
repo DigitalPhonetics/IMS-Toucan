@@ -40,6 +40,7 @@ class SpeakerEmbeddingDataset(Dataset):
             specs.append(random.choice(speaker_to_melspec[speaker_2]))
             impure_pairs.append(specs + [[1]])
         # combine the two
+        del speaker_to_melspec
         self.datapoints = pure_pairs + impure_pairs
 
     def __getitem__(self, item):
