@@ -13,3 +13,4 @@ numpy~=1.19.2
 phonemizer
 spacy==3.0.1
 clean-text
+unidecode

@@ -181,7 +181,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cuda")
+    device = torch.device("cuda:2")
     distributed = False
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
@@ -199,8 +199,8 @@ if __name__ == '__main__':
                    device=device,
                    config=model.get_conf(),
                    save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=2,
-                   batches_per_update=32)
+                   batchsize=1,
+                   batches_per_update=64)
     else:
         train_loop(net=torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3]),
                    train_dataset=css10_train,
