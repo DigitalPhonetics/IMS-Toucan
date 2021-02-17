@@ -93,7 +93,6 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, config,
             speech_lens.append(train_datapoint[3])
             if (index + 1) % batchsize == 0:
                 # 0-pad elements in batch
-                torch.cuda.empty_cache()
                 text_batch_padded = pad_sequence(texts, batch_first=True).to(device)
                 speech_batch_padded = pad_sequence(speeches, batch_first=True).to(device)
                 # push batch through network
@@ -102,16 +101,22 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, config,
                                  speech_batch_padded,
                                  torch.cat(speech_lens, 0).to(device)
                                  )[0]
-                batch_counter += 1
-                print("Step:         {}".format(batch_counter * batchsize))
-                train_loss.backward()
-                optimizer.step()
                 # reset for next batch
                 optimizer.zero_grad()
                 texts = list()
                 text_lens = list()
                 speeches = list()
                 speech_lens = list()
+                del text_batch_padded
+                del speech_batch_padded
+                torch.cuda.empty_cache()
+                batch_counter += 1
+                # do the step
+                print("Step:         {}".format(batch_counter * batchsize))
+                train_loss.backward()
+                train_losses.append(float(train_loss))
+                optimizer.step()
+
         # evaluate after epoch
         with torch.no_grad():
             net.eval()

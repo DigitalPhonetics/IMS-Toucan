@@ -587,7 +587,7 @@ class Transformer(torch.nn.Module, ABC):
                     dtype=torch.bool in PyTorch 1.2+ (including 1.2)
 
         """
-        x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
+        x_masks = make_non_pad_mask(ilens).to(ilens.device)
         return x_masks.unsqueeze(-2)
 
     def _target_mask(self, olens: torch.Tensor) -> torch.Tensor:
