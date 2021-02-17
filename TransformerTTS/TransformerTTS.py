@@ -602,7 +602,7 @@ class Transformer(torch.nn.Module, ABC):
                 dtype=torch.bool in PyTorch 1.2+ (including 1.2)
 
         """
-        y_masks = make_non_pad_mask(olens).to(next(self.parameters()).device)
+        y_masks = make_non_pad_mask(olens).to(olens.device)
         s_masks = subsequent_mask(y_masks.size(-1), device=y_masks.device).unsqueeze(0)
         return y_masks.unsqueeze(-2) & s_masks
 
