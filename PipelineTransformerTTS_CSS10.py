@@ -80,11 +80,11 @@ def train_loop(net, train_dataset,
         conf.write(config)
     val_loss_highscore = 100.0
     batch_counter = 0
-    loss_accumulator = list()
     net = net.to(device)
     net.train()
     optimizer = torch.optim.Adam(net.parameters())
     for epoch in range(epochs):
+        optimizer.zero_grad()  # get rid of remaining gradients from previous epoch
         index_list = random.sample(range(len(train_dataset)), len(train_dataset))
         train_losses = list()
         # train one epoch
@@ -105,29 +105,28 @@ def train_loop(net, train_dataset,
                 text_batch_padded = pad_sequence(texts, batch_first=True).to(device)
                 speech_batch_padded = pad_sequence(speeches, batch_first=True).to(device)
                 # push batch through network
-                loss_accumulator.append(net(text_batch_padded,
-                                            torch.cat(text_lens, 0).to(device),
-                                            speech_batch_padded,
-                                            torch.cat(speech_lens, 0).to(device)
-                                            )[0])
+                train_loss = net(text_batch_padded,
+                                 torch.cat(text_lens, 0).to(device),
+                                 speech_batch_padded,
+                                 torch.cat(speech_lens, 0).to(device)
+                                 )[0]
+                train_losses.append(float(train_loss))
+                train_loss = train_loss / batches_per_update
+                train_loss.backward()
                 # reset for next batch
-                optimizer.zero_grad()
                 texts = list()
                 text_lens = list()
                 speeches = list()
                 speech_lens = list()
                 del text_batch_padded
                 del speech_batch_padded
+                del train_loss
                 torch.cuda.empty_cache()
                 if batch_counter % batches_per_update == 0:
                     # do the step
-                    print("Step:         {}".format(batch_counter * batchsize))
-                    for tr_loss in loss_accumulator:
-                        tr_loss_average = tr_loss / len(loss_accumulator)
-                        tr_loss_average.backward()
-                        train_losses.append(float(tr_loss))
+                    print("Sample: {}".format(batch_counter * batchsize))
                     optimizer.step()
-                    loss_accumulator = list()  # reset loss accumulator
+                    optimizer.zero_grad()
         # evaluate on valid after every epoch
         with torch.no_grad():
             net.eval()
