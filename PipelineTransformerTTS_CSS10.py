@@ -134,10 +134,10 @@ def train_loop(net,
             val_losses = list()
             for validation_datapoint_index in range(len(eval_dataset)):
                 eval_datapoint = eval_dataset[validation_datapoint_index]
-                val_losses.append(net(eval_datapoint[0].unsqueeze(0),
-                                      eval_datapoint[1],
-                                      eval_datapoint[2].unsqueeze(0),
-                                      eval_datapoint[3]
+                val_losses.append(net(eval_datapoint[0].unsqueeze(0).to(device),
+                                      eval_datapoint[1].to(device),
+                                      eval_datapoint[2].unsqueeze(0).to(device),
+                                      eval_datapoint[3].to(device)
                                       )[0])
             val_loss = float(sum(val_losses) / len(val_losses))
             if val_loss_highscore > val_loss:
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cuda:2")
+    device = torch.device("cuda")
     distributed = False
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
@@ -199,8 +199,8 @@ if __name__ == '__main__':
                    device=device,
                    config=model.get_conf(),
                    save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=1,
-                   batches_per_update=64)
+                   batchsize=2,
+                   batches_per_update=32)
     else:
         train_loop(net=torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3]),
                    train_dataset=css10_train,
