@@ -138,12 +138,12 @@ def train_loop(net, train_dataset,
                                       eval_datapoint[2].unsqueeze(0),
                                       eval_datapoint[3]
                                       )[0])
-            val_loss = sum(val_losses) / len(val_losses)
+            val_loss = float(sum(val_losses) / len(val_losses))
             if val_loss_highscore > val_loss:
                 val_loss_highscore = val_loss
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict()},
-                           os.path.join(save_directory, "checkpoint_{}_{}.pt".format(round(float(val_loss), 4),
+                           os.path.join(save_directory, "checkpoint_{}_{}.pt".format(round(val_loss, 4),
                                                                                      batch_counter * batchsize)))
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cuda:2")
+    device = torch.device("cpu")
     distributed = False
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
