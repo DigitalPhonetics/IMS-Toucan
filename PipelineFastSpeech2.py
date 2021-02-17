@@ -1,5 +1,3 @@
-import random
-
 import torch
 import torchviz
 
@@ -20,56 +18,9 @@ def collect_features(text, wave):
     pass
 
 
-def train_loop(net, train_dataset, eval_dataset, epochs, batchsize):
-    optimizer = None
-    scheduler = None
-    batch_counter = 0
-    net.train()
-    net.to_device("cuda")
-    for _ in range(epochs):
-        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
-        for index in index_list:
-            net(train_dataset[index]).backward()
-            batch_counter += 1
-            print("Iteration {}".format(batch_counter))
-            if batch_counter % batchsize == 0:
-                print("Updating weights")
-                optimizer.step()
-                optimizer.zero_gradient()
-                with torch.no_grad():
-                    pass
-                    net.eval()
-                    # calculate loss on eval_dataset
-                    # save model if eval_loss in 5 best
-                    net.train()
+def train_loop():
     pass
 
-
-"""
-# 2. LR Scheduler step
-            for scheduler in schedulers:
-                if isinstance(scheduler, AbsValEpochStepScheduler):
-                    scheduler.step(reporter.get_value(*val_scheduler_criterion))
-                elif isinstance(scheduler, AbsEpochStepScheduler):
-                    scheduler.step()
-
-
-
-# 4. Save/Update the checkpoint
-                torch.save(
-                    {
-                        "model": model.state_dict(),
-                        "reporter": reporter.state_dict(),
-                        "optimizers": [o.state_dict() for o in optimizers],
-                        "schedulers": [
-                            s.state_dict() if s is not None else None
-                            for s in schedulers
-                        ],
-                        "scaler": scaler.state_dict() if scaler is not None else None,
-                    },
-                    output_dir / "checkpoint.pth",
-                )
-"""
 
 
 def count_parameters(model):

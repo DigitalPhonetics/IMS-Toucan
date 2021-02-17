@@ -1,3 +1,7 @@
+"""
+Train a speaker embedding function on the vox celeb 2 corpus
+"""
+
 import json
 import os
 import random
