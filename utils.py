@@ -1,5 +1,6 @@
 from abc import ABC
 
+import numpy as np
 import torch
 
 
@@ -283,5 +284,4 @@ def force_gatherable(data, device):
     elif data is None:
         return None
     else:
-        warnings.warn(f"{type(data)} may not be gatherable by DataParallel")
         return data
