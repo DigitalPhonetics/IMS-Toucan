@@ -1,2 +1,3 @@
 if __name__ == '__main__':
-    print(0 % 12 == 0)
+    for el1, el2 in enumerate([0, 1, 2, 3]):
+        print(el1, el2)

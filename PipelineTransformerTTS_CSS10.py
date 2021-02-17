@@ -10,7 +10,6 @@ import time
 import soundfile as sf
 import torch
 import torchviz
-from torch.nn.utils.rnn import pad_sequence
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
@@ -73,61 +72,43 @@ def train_loop(net,
                save_directory,
                config,
                epochs=150,
-               batchsize=12,
-               batches_per_update=6):
+               samples_per_update=64):
     start_time = time.time()
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)
     val_loss_highscore = 100.0
-    batch_counter = 0
+    sample_counter = 0
     net = net.to(device)
     net.train()
     optimizer = torch.optim.Adam(net.parameters())
     for epoch in range(epochs):
-        optimizer.zero_grad()  # get rid of remaining gradients from previous epoch
-        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
-        train_losses = list()
         # train one epoch
-        texts = list()
-        text_lens = list()
-        speeches = list()
-        speech_lens = list()
-        for index in index_list:
-            # accumulate batch
+        optimizer.zero_grad()
+        # ^ get rid of remaining gradients from
+        # previous epoch if samples per update
+        # and element in dataset don't line up
+        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
+        train_losses_this_epoch = list()
+        for count, index in enumerate(index_list):
+            # accumulate averaged gradient
             train_datapoint = train_dataset[index]
-            texts.append(train_datapoint[0])
-            text_lens.append(train_datapoint[1])
-            speeches.append(train_datapoint[2])
-            speech_lens.append(train_datapoint[3])
-            if (index + 1) % batchsize == 0:
-                batch_counter += 1
-                # 0-pad elements in batch
-                text_batch_padded = pad_sequence(texts, batch_first=True).to(device)
-                speech_batch_padded = pad_sequence(speeches, batch_first=True).to(device)
-                # push batch through network
-                train_loss = net(text_batch_padded,
-                                 torch.cat(text_lens, 0).to(device),
-                                 speech_batch_padded,
-                                 torch.cat(speech_lens, 0).to(device)
-                                 )[0]
-                train_losses.append(float(train_loss))
-                train_loss = train_loss / batches_per_update
-                train_loss.backward()
-                # reset for next batch
-                texts = list()
-                text_lens = list()
-                speeches = list()
-                speech_lens = list()
-                del text_batch_padded
-                del speech_batch_padded
-                del train_loss
-                torch.cuda.empty_cache()
-                if batch_counter % batches_per_update == 0:
-                    # do the step
-                    print("Sample: {}".format(batch_counter * batchsize))
-                    optimizer.step()
-                    optimizer.zero_grad()
+            train_loss = net(train_datapoint[0].to(device),
+                             train_datapoint[1].to(device),
+                             train_datapoint[2].to(device),
+                             train_datapoint[3].to(device)
+                             )[0]
+            train_losses_this_epoch.append(float(train_loss))
+            sample_counter += 1
+            train_loss = train_loss / samples_per_update
+            train_loss.backward()
+            del train_loss
+            torch.cuda.empty_cache()
+            if count % samples_per_update == 0 and count != 0:
+                # update weights
+                print("Sample: {}".format(sample_counter))
+                optimizer.step()
+                optimizer.zero_grad()
         # evaluate on valid after every epoch
         with torch.no_grad():
             net.eval()
@@ -144,16 +125,16 @@ def train_loop(net,
                 val_loss_highscore = val_loss
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict()},
-                           os.path.join(save_directory, "checkpoint_{}_{}.pt".format(round(val_loss, 4),
-                                                                                     batch_counter * batchsize)))
+                           os.path.join(save_directory,
+                                        "checkpoint_{}_{}.pt".format(round(val_loss, 4), sample_counter)))
             print("Epoch:        {}".format(epoch + 1))
-            print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
+            print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            loss_plot[0].append(sum(train_losses) / len(train_losses))
+            loss_plot[0].append(sum(train_losses_this_epoch) / len(train_losses_this_epoch))
             loss_plot[1].append(val_loss)
-            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
-                json.dump(loss_plot, fp)
+            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
+                json.dump(loss_plot, plotting_data_file)
             net.train()
 
 
@@ -181,8 +162,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cuda:2")
-    distributed = False
+    device = torch.device("cuda")
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
     print("Building datasets")
@@ -192,21 +172,10 @@ if __name__ == '__main__':
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
     print("Training model")
-    if not distributed:
-        train_loop(net=model,
-                   train_dataset=css10_train,
-                   eval_dataset=css10_valid,
-                   device=device,
-                   config=model.get_conf(),
-                   save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=1,
-                   batches_per_update=64)
-    else:
-        train_loop(net=torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3]),
-                   train_dataset=css10_train,
-                   eval_dataset=css10_valid,
-                   device=device,
-                   config=model.get_conf(),
-                   save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=16,
-                   batches_per_update=4)
+    train_loop(net=model,
+               train_dataset=css10_train,
+               eval_dataset=css10_valid,
+               device=device,
+               config=model.get_conf(),
+               save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
+               samples_per_update=64)

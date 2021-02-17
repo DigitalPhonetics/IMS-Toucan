@@ -18,7 +18,6 @@ from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
 from TransformerTTS.TransformerLoss import TransformerLoss
-from utils import force_gatherable
 from utils import make_pad_mask, make_non_pad_mask, initialize
 from utils import subsequent_mask
 
@@ -337,9 +336,6 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Weight value.
 
         """
-        text = text[:, : text_lengths.max()]  # for data-parallel
-        speech = speech[:, : speech_lengths.max()]  # for data-parallel
-        batch_size = text.size(0)
 
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
@@ -416,8 +412,7 @@ class Transformer(torch.nn.Module, ABC):
             stats.update(encoder_alpha=self.encoder.embed[-1].alpha.data.item(),
                          decoder_alpha=self.decoder.embed[-1].alpha.data.item())
 
-        loss, stats, weight = force_gatherable((loss, stats, batch_size), loss.device)
-        return loss, stats, weight
+        return loss, stats
 
     def _forward(self,
                  xs: torch.Tensor,
