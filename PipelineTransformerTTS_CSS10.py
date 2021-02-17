@@ -66,13 +66,21 @@ class CSS10SingleSpeakerFeaturizer():
         return features
 
 
-def train_loop(net, train_dataset, eval_dataset, device, save_directory, config, epochs=150, batchsize=64):
+def train_loop(net, train_dataset,
+               eval_dataset,
+               device,
+               save_directory,
+               config,
+               epochs=150,
+               batchsize=12,
+               batches_per_update=6):
     start_time = time.time()
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)
     val_loss_highscore = 100.0
     batch_counter = 0
+    loss_accumulator = list()
     net = net.to(device)
     net.train()
     optimizer = torch.optim.Adam(net.parameters())
@@ -92,15 +100,16 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, config,
             speeches.append(train_datapoint[2])
             speech_lens.append(train_datapoint[3])
             if (index + 1) % batchsize == 0:
+                batch_counter += 1
                 # 0-pad elements in batch
                 text_batch_padded = pad_sequence(texts, batch_first=True).to(device)
                 speech_batch_padded = pad_sequence(speeches, batch_first=True).to(device)
                 # push batch through network
-                train_loss = net(text_batch_padded,
-                                 torch.cat(text_lens, 0).to(device),
-                                 speech_batch_padded,
-                                 torch.cat(speech_lens, 0).to(device)
-                                 )[0]
+                loss_accumulator.append(net(text_batch_padded,
+                                            torch.cat(text_lens, 0).to(device),
+                                            speech_batch_padded,
+                                            torch.cat(speech_lens, 0).to(device)
+                                            )[0])
                 # reset for next batch
                 optimizer.zero_grad()
                 texts = list()
@@ -110,14 +119,16 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory, config,
                 del text_batch_padded
                 del speech_batch_padded
                 torch.cuda.empty_cache()
-                batch_counter += 1
-                # do the step
-                print("Step:         {}".format(batch_counter * batchsize))
-                train_loss.backward()
-                train_losses.append(float(train_loss))
-                optimizer.step()
-
-        # evaluate after epoch
+                if batch_counter % batches_per_update == 0:
+                    # do the step
+                    print("Step:         {}".format(batch_counter * batchsize))
+                    for tr_loss in loss_accumulator:
+                        tr_loss_average = tr_loss / len(loss_accumulator)
+                        tr_loss_average.backward()
+                        train_losses.append(float(tr_loss))
+                    optimizer.step()
+                    loss_accumulator = list()  # reset loss accumulator
+        # evaluate on valid after every epoch
         with torch.no_grad():
             net.eval()
             val_losses = list()
@@ -188,7 +199,8 @@ if __name__ == '__main__':
                    device=device,
                    config=model.get_conf(),
                    save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=2)
+                   batchsize=4,
+                   batches_per_update=16)
     else:
         train_loop(net=torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3]),
                    train_dataset=css10_train,
@@ -196,4 +208,5 @@ if __name__ == '__main__':
                    device=device,
                    config=model.get_conf(),
                    save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=16)
+                   batchsize=16,
+                   batches_per_update=4)
