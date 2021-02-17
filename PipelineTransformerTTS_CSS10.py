@@ -93,9 +93,9 @@ def train_loop(net,
         for count, index in enumerate(index_list):
             # accumulate averaged gradient
             train_datapoint = train_dataset[index]
-            train_loss = net(train_datapoint[0].to(device),
+            train_loss = net(train_datapoint[0].unsqueeze(0).to(device),
                              train_datapoint[1].to(device),
-                             train_datapoint[2].to(device),
+                             train_datapoint[2].unsqueeze(0).to(device),
                              train_datapoint[3].to(device)
                              )[0]
             train_losses_this_epoch.append(float(train_loss))
