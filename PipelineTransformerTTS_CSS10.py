@@ -66,7 +66,8 @@ class CSS10SingleSpeakerFeaturizer():
         return features
 
 
-def train_loop(net, train_dataset,
+def train_loop(net,
+               train_dataset,
                eval_dataset,
                device,
                save_directory,
@@ -149,8 +150,8 @@ def train_loop(net, train_dataset,
             print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
             print("Valid Loss:   {}".format(val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            loss_plot[0].append(float(sum(train_losses) / len(train_losses)))
-            loss_plot[1].append(float(val_loss))
+            loss_plot[0].append(sum(train_losses) / len(train_losses))
+            loss_plot[1].append(val_loss)
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
                 json.dump(loss_plot, fp)
             net.train()
@@ -180,7 +181,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cuda:5")
+    device = torch.device("cuda:2")
     distributed = False
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)

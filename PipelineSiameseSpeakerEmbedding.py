@@ -121,7 +121,7 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    do_stages = [1, 2, 3, 4]
+    do_stages = [1, 3, 4]
 
     if 1 in do_stages:
         print("Stage 1: Preparation")
