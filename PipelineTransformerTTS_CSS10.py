@@ -183,7 +183,7 @@ if __name__ == '__main__':
                    device=device,
                    config=model.get_conf(),
                    save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=5)
+                   batchsize=2)
     else:
         train_loop(net=torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3]),
                    train_dataset=css10_train,
@@ -191,4 +191,4 @@ if __name__ == '__main__':
                    device=device,
                    config=model.get_conf(),
                    save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-                   batchsize=42)
+                   batchsize=16)

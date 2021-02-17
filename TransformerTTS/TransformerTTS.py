@@ -18,6 +18,7 @@ from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
 from TransformerTTS.TransformerLoss import TransformerLoss
+from utils import force_gatherable
 from utils import make_pad_mask, make_non_pad_mask, initialize
 from utils import subsequent_mask
 
@@ -336,31 +337,29 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Weight value.
 
         """
-        xs = text
-        ilens = text_lengths
-
-        ys = speech
-        olens = speech_lengths
+        text = text[:, : text_lengths.max()]  # for data-parallel
+        speech = speech[:, : speech_lengths.max()]  # for data-parallel
+        batch_size = text.size(0)
 
         # make labels for stop prediction
-        labels = make_pad_mask(olens - 1).to(ys.device, ys.dtype)
+        labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate transformer outputs
-        after_outs, before_outs, logits = self._forward(xs, ilens, ys, olens, spembs)
+        after_outs, before_outs, logits = self._forward(text, text_lengths, speech, speech_lengths, spembs)
 
         # modify mod part of groundtruth
-        olens_in = olens
+        olens_in = speech_lengths
         if self.reduction_factor > 1:
-            olens_in = olens.new([olen // self.reduction_factor for olen in olens])
-            olens = olens.new([olen - olen % self.reduction_factor for olen in olens])
-            max_olen = max(olens)
-            ys = ys[:, :max_olen]
+            olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
+            speech_lengths = speech_lengths.new([olen - olen % self.reduction_factor for olen in speech_lengths])
+            max_olen = max(speech_lengths)
+            speech = speech[:, :max_olen]
             labels = labels[:, :max_olen]
             labels[:, -1] = 1.0  # make sure at least one frame has 1
 
         # calculate loss values
-        l1_loss, l2_loss, bce_loss = self.criterion(after_outs, before_outs, logits, ys, labels, olens)
+        l1_loss, l2_loss, bce_loss = self.criterion(after_outs, before_outs, logits, speech, labels, speech_lengths)
         if self.loss_type == "L1":
             loss = l1_loss + bce_loss
         elif self.loss_type == "L2":
@@ -384,7 +383,7 @@ class Transformer(torch.nn.Module, ABC):
                     if idx + 1 == self.num_layers_applied_guided_attn:
                         break
                 att_ws = torch.cat(att_ws, dim=1)  # (B, H*L, T_in, T_in)
-                enc_attn_loss = self.attn_criterion(att_ws, ilens, ilens)
+                enc_attn_loss = self.attn_criterion(att_ws, text_lengths, text_lengths)
                 loss = loss + enc_attn_loss
                 stats.update(enc_attn_loss=enc_attn_loss.item())
             # calculate for decoder
@@ -406,7 +405,7 @@ class Transformer(torch.nn.Module, ABC):
                     if idx + 1 == self.num_layers_applied_guided_attn:
                         break
                 att_ws = torch.cat(att_ws, dim=1)  # (B, H*L, T_out, T_in)
-                enc_dec_attn_loss = self.attn_criterion(att_ws, ilens, olens_in)
+                enc_dec_attn_loss = self.attn_criterion(att_ws, text_lengths, olens_in)
                 loss = loss + enc_dec_attn_loss
                 stats.update(enc_dec_attn_loss=enc_dec_attn_loss.item())
 
@@ -416,7 +415,9 @@ class Transformer(torch.nn.Module, ABC):
         if self.use_scaled_pos_enc:
             stats.update(encoder_alpha=self.encoder.embed[-1].alpha.data.item(),
                          decoder_alpha=self.decoder.embed[-1].alpha.data.item())
-        return loss, stats
+
+        loss, stats, weight = force_gatherable((loss, stats, batch_size), loss.device)
+        return loss, stats, weight
 
     def _forward(self,
                  xs: torch.Tensor,
