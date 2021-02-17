@@ -2,6 +2,7 @@
 Train a speaker embedding function on the vox celeb 2 corpus
 """
 
+import gc
 import json
 import os
 import random
@@ -16,7 +17,7 @@ from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 
 
-def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=10):
+def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=5):
     # make a dict with key being speaker and values
     # being lists of all their utterances as cleaned
     # waves. Dump them as jsons.
@@ -71,6 +72,9 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
             train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
             train_losses.append(train_loss / batchsize)  # for accumulative gradient
             train_losses[-1].backward()
+            train_losses[-1] = float(train_losses[-1])
+            del train_datapoint
+            gc.collect()
             batch_counter += 1
             if batch_counter % batchsize == 0:
                 print("Step:         {}".format(batch_counter))
@@ -82,14 +86,15 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
             val_losses = list()
             for validation_datapoint_index in range(len(eval_dataset)):
                 eval_datapoint = eval_dataset[validation_datapoint_index]
-                val_losses.append(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2]))
-            val_loss = sum(val_losses) / len(val_losses)
+                val_losses.append(
+                    float(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2]) / len(eval_dataset)))
+            val_loss = sum(val_losses)
             if val_loss_highscore > val_loss:
                 val_loss_highscore = val_loss
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict()},
-                           os.path.join(save_directory, "checkpoint_{}.pt".format(round(float(val_loss), 4))))
-            print("Epoch:        {}".format(epoch))
+                           os.path.join(save_directory, "checkpoint_{}.pt".format(round(val_loss, 4))))
+            print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
             print("Valid Loss:   {}".format(val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
@@ -116,7 +121,7 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    do_stages = [1, 3, 4]
+    do_stages = [1, 2, 3, 4]
 
     if 1 in do_stages:
         print("Stage 1: Preparation")
