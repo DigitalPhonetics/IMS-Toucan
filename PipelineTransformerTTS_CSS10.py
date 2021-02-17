@@ -178,4 +178,5 @@ if __name__ == '__main__':
                device=device,
                config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
+               epochs=600,
                samples_per_update=64)
