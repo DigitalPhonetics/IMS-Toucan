@@ -2,6 +2,7 @@
 Train an autoregressive Transformer TTS model on the german single speaker dataset by Hokuspokus
 """
 
+import gc
 import json
 import os
 import random
@@ -103,6 +104,7 @@ def train_loop(net,
             train_loss = train_loss / samples_per_update
             train_loss.backward()
             del train_loss
+            gc.collect()
             torch.cuda.empty_cache()
             if count % samples_per_update == 0 and count != 0:
                 # update weights
@@ -162,7 +164,7 @@ if __name__ == '__main__':
     # fe = CSS10SingleSpeakerFeaturizer()
     # fe.featurize_corpus()
     print("Loading data")
-    device = torch.device("cuda")
+    device = torch.device("cuda:2")
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
     print("Building datasets")

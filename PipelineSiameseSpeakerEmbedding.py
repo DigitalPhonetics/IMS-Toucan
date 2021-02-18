@@ -70,36 +70,38 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
         for index in index_list:
             train_datapoint = train_dataset[index]
             train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
-            train_losses.append(train_loss / batchsize)  # for accumulative gradient
-            train_losses[-1].backward()
-            train_losses[-1] = float(train_losses[-1])
+            train_losses.append(float(train_loss))
+            (train_loss / batchsize).backward()  # for accumulative gradient
             del train_datapoint
+            del train_loss
             gc.collect()
+            torch.cuda.empty_cache()
             batch_counter += 1
             if batch_counter % batchsize == 0:
-                print("Step:         {}".format(batch_counter))
+                print("Sample: {}".format(batch_counter))
                 optimizer.step()
                 optimizer.zero_grad()
         # evaluate after epoch
         with torch.no_grad():
             net.eval()
-            val_losses = list()
+            average_val_loss = 0
+            average_train_loss = sum(train_losses) / len(train_losses)
             for validation_datapoint_index in range(len(eval_dataset)):
                 eval_datapoint = eval_dataset[validation_datapoint_index]
-                val_losses.append(
-                    float(net(eval_datapoint[0], eval_datapoint[1], eval_datapoint[2]) / len(eval_dataset)))
-            val_loss = sum(val_losses)
-            if val_loss_highscore > val_loss:
-                val_loss_highscore = val_loss
+                average_val_loss += float(net(eval_datapoint[0],
+                                              eval_datapoint[1],
+                                              eval_datapoint[2]) / len(eval_dataset))
+            if val_loss_highscore > average_val_loss:
+                val_loss_highscore = average_val_loss
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict()},
-                           os.path.join(save_directory, "checkpoint_{}.pt".format(round(val_loss, 4))))
+                           os.path.join(save_directory, "checkpoint_{}.pt".format(round(average_val_loss, 4))))
             print("Epoch:        {}".format(epoch + 1))
-            print("Train Loss:   {}".format(sum(train_losses) / len(train_losses)))
-            print("Valid Loss:   {}".format(val_loss))
+            print("Train Loss:   {}".format(average_train_loss))
+            print("Valid Loss:   {}".format(average_val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            loss_plot[0].append(float(sum(train_losses) / len(train_losses)))
-            loss_plot[1].append(float(val_loss))
+            loss_plot[0].append(average_train_loss)
+            loss_plot[1].append(average_val_loss)
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as fp:
                 json.dump(loss_plot, fp)
             net.train()
