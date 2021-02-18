@@ -2,7 +2,6 @@
 Train a speaker embedding function on the vox celeb 2 corpus
 """
 
-import gc
 import json
 import os
 import random
@@ -72,9 +71,6 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
             train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
             train_losses.append(float(train_loss))
             (train_loss / batchsize).backward()  # for accumulative gradient
-            del train_datapoint
-            del train_loss
-            gc.collect()
             torch.cuda.empty_cache()
             batch_counter += 1
             if batch_counter % batchsize == 0:

@@ -2,7 +2,6 @@
 Train an autoregressive Transformer TTS model on the german single speaker dataset by Hokuspokus
 """
 
-import gc
 import json
 import os
 import random
@@ -100,12 +99,9 @@ def train_loop(net,
                              train_datapoint[3].to(device)
                              )[0]
             train_losses_this_epoch.append(float(train_loss))
-            sample_counter += 1
-            train_loss = train_loss / samples_per_update
-            train_loss.backward()
-            del train_loss
-            gc.collect()
+            (train_loss / samples_per_update).backward()
             torch.cuda.empty_cache()
+            sample_counter += 1
             if count % samples_per_update == 0 and count != 0:
                 # update weights
                 print("Sample: {}".format(sample_counter))
