@@ -9,11 +9,12 @@ import time
 
 import torch
 import torchviz
+from torch.utils.data.dataloader import DataLoader
 
 from MelGAN.MelGANDataset import MelGANDataset
-from MelGAN.MelGANDiscriminator import MelGANDiscriminator
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
+from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from TransformerTTS.TransformerTTS import Transformer
 
 torch.manual_seed(17)
@@ -31,59 +32,113 @@ def get_file_list():
     return file_list
 
 
-def train_loop(net,
-               train_dataset,
-               eval_dataset,
-               device,
-               save_directory,
-               config,
-               epochs=150,
-               samples_per_update=64):
+def train_loop(batchsize=16,
+               epochs=10,
+               generator=None,
+               discriminator=None,
+               train_dataset=None,
+               valid_dataset=None,
+               device=None):
     start_time = time.time()
-    loss_plot = [[], []]
-    with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
-        conf.write(config)
+    train_losses = dict()
+    train_losses["adversarial"] = list()
+    train_losses["multi_res_spectral_convergence"] = list()
+    train_losses["multi_res_log_stft_mag"] = list()
+    train_losses["generator_total"] = list()
+    train_losses["discriminator_mse"] = list()
+
+    valid_losses = dict()
+    valid_losses["adversarial"] = list()
+    valid_losses["multi_res_spectral_convergence"] = list()
+    valid_losses["multi_res_log_stft_mag"] = list()
+    valid_losses["generator_total"] = list()
+    valid_losses["discriminator_mse"] = list()
+
     val_loss_highscore = 100.0
-    sample_counter = 0
-    net = net.to(device)
-    net.train()
-    optimizer = torch.optim.Adam(net.parameters())
+    batch_counter = 0
+    criterion = MultiResolutionSTFTLoss().to(device)
+    discriminator_criterion = torch.nn.MSELoss()
+    g = generator.to(device)
+    d = discriminator.to(device)
+    g.train()
+    d.train()
+    optimizer_g = torch.optim.Adam(g.parameters())
+    optimizer_d = torch.optim.Adam(d.parameters())
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batchsize, shuffle=True, num_workers=4)
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=batchsize, shuffle=False, num_workers=4)
     for epoch in range(epochs):
-        # train one epoch
-        optimizer.zero_grad()
-        # ^ get rid of remaining gradients from
-        # previous epoch if samples per update
-        # and element in dataset don't line up
-        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
-        train_losses_this_epoch = list()
-        for count, index in enumerate(index_list):
-            # accumulate averaged gradient
-            train_datapoint = train_dataset[index]
-            train_loss = net(train_datapoint[0].unsqueeze(0).to(device),
-                             train_datapoint[1].to(device),
-                             train_datapoint[2].unsqueeze(0).to(device),
-                             train_datapoint[3].to(device)
-                             )[0]
-            train_losses_this_epoch.append(float(train_loss))
-            (train_loss / samples_per_update).backward()
+        optimizer_g.zero_grad()
+        optimizer_d.zero_grad()
+        for datapoint in train_loader:
+            batch_counter += 1
+            # TODO check if this all works on a per batch basis or if it needs to be split up. Also check if collate needs to pad
+            ############################
+            #         Generator        #
+            ############################
+            gold_wave = datapoint[0]
+            melspec = datapoint[1]
+            pred_wave = g(melspec)
+            spectral_loss, magnitude_loss = criterion(pred_wave, gold_wave)
+            train_losses["multi_res_spectral_convergence"].append(float(spectral_loss))
+            train_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
+            if batch_counter > 200000:  # generator needs warmup
+                adversarial_loss = 0.0
+                discriminator_outputs = d(pred_wave)
+                for output in discriminator_outputs:
+                    adversarial_loss += discriminator_criterion(output, 1.0) / len(discriminator_outputs)
+                train_losses["adversarial"].append(adversarial_loss)
+                generator_total_loss = spectral_loss + magnitude_loss + adversarial_loss
+            else:
+                train_losses["adversarial"].append(0.0)
+                generator_total_loss = spectral_loss + magnitude_loss
+            train_losses["generator_total"].append(float(generator_total_loss))
+            # generator step time
+            optimizer_g.zero_grad()
+            generator_total_loss.backward()
+            optimizer_g.step()
+            optimizer_g.zero_grad()
+
+            ############################
+            #       Discriminator      #
+            ############################
+            if batch_counter > 200000:  # generator needs warmup
+                new_pred = g(melspec).detach()
+                discriminator_mse_loss = 0.0
+                discriminator_outputs = d(new_pred)
+                for output in discriminator_outputs:
+                    # fake loss
+                    discriminator_mse_loss += discriminator_criterion(output, 0.0) / len(discriminator_outputs)
+                discriminator_outputs = d(gold_wave)
+                for output in discriminator_outputs:
+                    # real loss
+                    discriminator_mse_loss += discriminator_criterion(output, 1.0) / len(discriminator_outputs)
+                train_losses["discriminator_mse"].append(float(discriminator_mse_loss))
+                # discriminator step time
+                optimizer_d.zero_grad()
+                discriminator_mse_loss.backward()
+                optimizer_d.step()
+                optimizer_d.zero_grad()
+            else:
+                train_losses["discriminator_mse"].append(0.0)
+
             torch.cuda.empty_cache()
-            sample_counter += 1
-            if count % samples_per_update == 0 and count != 0:
-                # update weights
-                print("Sample: {}".format(sample_counter))
-                optimizer.step()
-                optimizer.zero_grad()
-        # evaluate on valid after every epoch
+
+        ############################
+        #         Evaluate         #
+        ############################
+
         with torch.no_grad():
-            net.eval()
-            val_losses = list()
-            for validation_datapoint_index in range(len(eval_dataset)):
-                eval_datapoint = eval_dataset[validation_datapoint_index]
-                val_losses.append(net(eval_datapoint[0].unsqueeze(0).to(device),
-                                      eval_datapoint[1].to(device),
-                                      eval_datapoint[2].unsqueeze(0).to(device),
-                                      eval_datapoint[3].to(device)
-                                      )[0])
+            g.eval()
+            d.eval()
+            for datapoint in valid_loader:
+                val_losses = list()
+                for validation_datapoint_index in range(len(eval_dataset)):
+                    eval_datapoint = eval_dataset[validation_datapoint_index]
+                    val_losses.append(net(eval_datapoint[0].unsqueeze(0).to(device),
+                                          eval_datapoint[1].to(device),
+                                          eval_datapoint[2].unsqueeze(0).to(device),
+                                          eval_datapoint[3].to(device)
+                                          )[0])
             val_loss = float(sum(val_losses) / len(val_losses))
             if val_loss_highscore > val_loss:
                 val_loss_highscore = val_loss
@@ -99,7 +154,8 @@ def train_loop(net,
             loss_plot[1].append(val_loss)
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
                 json.dump(loss_plot, plotting_data_file)
-            net.train()
+            g.train()
+            d.train()
 
 
 def count_parameters(model):
@@ -128,9 +184,14 @@ if __name__ == '__main__':
     train_dataset = MelGANDataset(list_of_paths=fl, device=device, type='train')
     valid_dataset = MelGANDataset(list_of_paths=fl, device=device, type='valid')
     generator = MelGANGenerator()
-    discriminator = MelGANDiscriminator()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
     if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):
         os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop()
+    train_loop(batchsize=16,
+               epochs=10,  # for testing
+               generator=generator,
+               discriminator=multi_scale_discriminator,
+               train_dataset=train_dataset,
+               valid_dataset=valid_dataset,
+               device=device)

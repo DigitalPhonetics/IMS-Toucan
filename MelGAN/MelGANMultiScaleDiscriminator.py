@@ -8,7 +8,7 @@ MelGAN Modules.
 """
 
 import torch
-
+from MelGAN.MelGANDiscriminator import MelGANDiscriminator
 
 class MelGANMultiScaleDiscriminator(torch.nn.Module):
     """
@@ -35,7 +35,8 @@ class MelGANMultiScaleDiscriminator(torch.nn.Module):
                  pad="ReflectionPad1d",
                  pad_params={},
                  use_weight_norm=True):
-        """Initilize MelGAN multi-scale discriminator module.
+        """
+        Initilize MelGAN multi-scale discriminator module.
         Args:
             in_channels (int): Number of input channels.
             out_channels (int): Number of output channels.
