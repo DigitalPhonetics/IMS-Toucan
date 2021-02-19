@@ -10,11 +10,25 @@ import time
 import torch
 import torchviz
 
+from MelGAN.MelGANDataset import MelGANDataset
+from MelGAN.MelGANDiscriminator import MelGANDiscriminator
+from MelGAN.MelGANGenerator import MelGANGenerator
+from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 
 torch.manual_seed(17)
 random.seed(17)
+
+
+def get_file_list():
+    file_list = list()
+    with open("Corpora/CSS10/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            file_list.append(line.split("|")[0])
+    return file_list
 
 
 def train_loop(net,
@@ -108,25 +122,15 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    print("Extracting features")
-    # fe = CSS10SingleSpeakerFeaturizer()
-    # fe.featurize_corpus()
-    print("Loading data")
-    device = torch.device("cuda:2")
-    with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
-        feature_list = json.load(fp)
-    print("Building datasets")
-    css10_train = TransformerTTSDataset(feature_list, type="train")
-    css10_valid = TransformerTTSDataset(feature_list, type="valid")
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
-    if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
-        os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
+    print("Preparing")
+    fl = get_file_list()
+    device = torch.device("cpu")
+    train_dataset = MelGANDataset(list_of_paths=fl, device=device, type='train')
+    valid_dataset = MelGANDataset(list_of_paths=fl, device=device, type='valid')
+    generator = MelGANGenerator()
+    discriminator = MelGANDiscriminator()
+    multi_scale_discriminator = MelGANMultiScaleDiscriminator()
+    if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):
+        os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(net=model,
-               train_dataset=css10_train,
-               eval_dataset=css10_valid,
-               device=device,
-               config=model.get_conf(),
-               save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-               epochs=600,
-               samples_per_update=64)
+    train_loop()
