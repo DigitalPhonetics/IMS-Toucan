@@ -82,6 +82,7 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         :param sample: spectrogram to be embedded (80 buckets)
         :return: embedding for speaker
         """
+        # encode sample
         encoded_fine_1 = self.encoder_fine(sample)
         encoded_medium_1 = self.encoder_medium(encoded_fine_1)
         encoded_coarse_1 = self.encoder_coarse(encoded_medium_1)
