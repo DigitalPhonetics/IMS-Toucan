@@ -158,11 +158,9 @@ class TextFrontend:
         """
         applies the entire pipeline to a text
         """
-        print("parsing")
         # tokenize
         utt = self.nlp(text)
 
-        print("cleaning")
         # clean unicode errors etc
         cleaned_tokens = []
         for index, token in enumerate(utt):
@@ -170,7 +168,6 @@ class TextFrontend:
         if view:
             print("Cleaned Tokens: \n{}\n".format(cleaned_tokens))
 
-        print("phonemizing")
         # phonemize
         phonemized_tokens = []
         for cleaned_token in cleaned_tokens:
@@ -191,7 +188,6 @@ class TextFrontend:
         tags_vector = []
         position_vector = []
 
-        print("vectorizing")
         # vectorize and get POS
         sent_type_dim = 0
         for index, phonemized_token in enumerate(phonemized_tokens):
@@ -221,7 +217,6 @@ class TextFrontend:
                     if self.use_shallow_pos:
                         tags_vector.append("SPACE__")
 
-        print("turning into tensors")
         # generate tensors
         if not self.default_vector == 0:
             for line in numpy.transpose(numpy.array(phones_vector)):
