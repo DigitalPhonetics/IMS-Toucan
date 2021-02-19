@@ -57,7 +57,7 @@ class MelGANGenerator(torch.nn.Module):
         # check if hyperparameters are valid
         assert channels >= np.prod(upsample_scales)
         assert channels % (2 ** len(upsample_scales)) == 0
-        assert (kernel_size - 1) % 2 == 0, "Not support even number kernel size."
+        assert (kernel_size - 1) % 2 == 0, "even number kernel size for kernel size does not work."
 
         # add initial layer
         layers = []
