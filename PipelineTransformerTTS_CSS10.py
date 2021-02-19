@@ -39,11 +39,10 @@ class CSS10SingleSpeakerFeaturizer():
             transcriptions = f.read()
         trans_lines = transcriptions.split("\n")
         for line in trans_lines:
-            print(line)
             if line.strip() != "":
                 self.file_to_trans[line.split("|")[0]] = self.tf.string_to_tensor(line.split("|")[2]).numpy().tolist()
         for file in self.file_to_trans.keys():
-            print(file)
+            print("Processing {}".format(file))
             wave, sr = sf.read(os.path.join("Corpora/CSS10/", file))
             if self.ap is None:
                 self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80)
