@@ -22,7 +22,7 @@ random.seed(17)
 
 class CSS10SingleSpeakerFeaturizer():
     def __init__(self):
-        self.tf = TextFrontend(language="en",
+        self.tf = TextFrontend(language="de",
                                use_panphon_vectors=False,
                                use_shallow_pos=False,
                                use_sentence_type=False,
@@ -157,8 +157,8 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Extracting features")
-    # fe = CSS10SingleSpeakerFeaturizer()
-    # fe.featurize_corpus()
+    fe = CSS10SingleSpeakerFeaturizer()
+    fe.featurize_corpus()
     print("Loading data")
     device = torch.device("cuda:2")
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
