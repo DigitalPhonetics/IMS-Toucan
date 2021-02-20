@@ -205,8 +205,8 @@ if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
     device = torch.device("cpu")
-    train_dataset = MelGANDataset(list_of_paths=fl, type='train')
-    valid_dataset = MelGANDataset(list_of_paths=fl, type='valid')
+    train_dataset = MelGANDataset(list_of_paths=fl[:-100])
+    valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
     if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):

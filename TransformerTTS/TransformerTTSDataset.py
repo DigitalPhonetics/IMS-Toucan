@@ -4,13 +4,8 @@ from torch.utils.data import Dataset
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, feature_list, device=torch.device("cpu"), spemb=False, type="train"):
-        if type == "train":
-            self.feature_list = feature_list[:-100]
-        elif type == "valid":
-            self.feature_list = feature_list[-100:]
-        else:
-            print("unknown set type ('train' or 'valid' are allowed)")
+    def __init__(self, feature_list, device=torch.device("cpu"), spemb=False):
+        self.feature_list = feature_list
         self.spemb = spemb
         self.device = device
 
