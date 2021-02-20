@@ -7,7 +7,6 @@ import os
 import random
 import time
 
-import numpy as np
 import torch
 from torch.utils.data.dataloader import DataLoader
 
@@ -18,102 +17,6 @@ from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 
 torch.manual_seed(17)
 random.seed(17)
-
-
-class Collater(object):
-    """
-    Customized collater for Pytorch DataLoader in training.
-    """
-
-    def __init__(self,
-                 batch_max_steps=20480,
-                 hop_size=256,
-                 aux_context_window=2,
-                 use_noise_input=False):
-        """
-        Args:
-            batch_max_steps (int): The maximum length of input signal in batch.
-            hop_size (int): Hop size of auxiliary features.
-            aux_context_window (int): Context window size for auxiliary feature conv.
-            use_noise_input (bool): Whether to use noise input.
-        """
-        if batch_max_steps % hop_size != 0:
-            batch_max_steps += -(batch_max_steps % hop_size)
-        assert batch_max_steps % hop_size == 0
-        self.batch_max_steps = batch_max_steps
-        self.batch_max_frames = batch_max_steps // hop_size
-        self.hop_size = hop_size
-        self.aux_context_window = aux_context_window
-        self.use_noise_input = use_noise_input
-
-        # set useful values in random cutting
-        self.start_offset = aux_context_window
-        self.end_offset = -(self.batch_max_frames + aux_context_window)
-        self.mel_threshold = self.batch_max_frames + 2 * aux_context_window
-
-    def __call__(self, batch):
-        """
-        Convert into batch tensors.
-        Args:
-            batch (list): list of tuple of the pair of audio and features.
-        Returns:
-            Tensor: Gaussian noise batch (B, 1, T).
-            Tensor: Auxiliary feature batch (B, C, T'), where
-                T = (T' - 2 * aux_context_window) * hop_size.
-            Tensor: Target signal batch (B, 1, T).
-        """
-        # check length
-        batch = [self._adjust_length(*b) for b in batch if len(b[1]) > self.mel_threshold]
-        xs, cs = [b[0] for b in batch], [b[1] for b in batch]
-        print(xs)
-        print(cs)
-        # make batch with random cut
-        c_lengths = [len(c) for c in cs]
-        start_frames = np.array([np.random.randint(
-            self.start_offset, cl + self.end_offset) for cl in c_lengths])
-        x_starts = start_frames * self.hop_size
-        x_ends = x_starts + self.batch_max_steps
-        c_starts = start_frames - self.aux_context_window
-        c_ends = start_frames + self.batch_max_frames + self.aux_context_window
-        y_batch = [x[start: end] for x, start, end in zip(xs, x_starts, x_ends)]
-        c_batch = [c[start: end] for c, start, end in zip(cs, c_starts, c_ends)]
-
-        print(torch.tensor(c_batch, dtype=torch.float))
-
-        # convert each batch to tensor, assume that each item in batch has the same length
-        y_batch = torch.tensor(y_batch, dtype=torch.float).unsqueeze(1)  # (B, 1, T)
-        c_batch = torch.tensor(c_batch, dtype=torch.float).transpose(2, 1)  # (B, C, T')
-
-        # make input noise signal batch tensor
-        if self.use_noise_input:
-            z_batch = torch.randn(y_batch.size())  # (B, 1, T)
-            return (z_batch, c_batch), y_batch
-        else:
-            return (c_batch,), y_batch
-
-    def _adjust_length(self, x, c):
-        """
-        Adjust the audio and feature lengths.
-        Note:
-            Basically we assume that the length of x and c are adjusted
-            through preprocessing stage, but if we use other library processed
-            features, this process will be needed.
-        """
-        if len(x) < len(c) * self.hop_size:
-            x = np.pad(x, (0, len(c) * self.hop_size - len(x)), mode="edge")
-        # check the length is valid
-        assert len(x) == len(c) * self.hop_size
-        return x, c
-
-
-def collate_pad(batch):
-    audio_list = list()
-    melspec_list = list()
-    for el in batch:
-        audio_list.append(el[0])
-        melspec_list.append(el[1].transpose(0, 1))
-    return torch.nn.utils.rnn.pad_sequence(audio_list, batch_first=True, padding_value=0.0), \
-           torch.nn.utils.rnn.pad_sequence(melspec_list, batch_first=True, padding_value=0.0).transpose(1, 2)
 
 
 def get_file_list():
@@ -161,23 +64,19 @@ def train_loop(batchsize=16,
     d.train()
     optimizer_g = torch.optim.Adam(g.parameters())
     optimizer_d = torch.optim.Adam(d.parameters())
-    collater = Collater()
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
-                              num_workers=4,
-                              collate_fn=collate_pad)
+                              num_workers=4)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=batchsize,
                               shuffle=False,
-                              num_workers=4,
-                              collate_fn=collate_pad)
+                              num_workers=4)
     for epoch in range(epochs):
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
         for datapoint in train_loader:
             batch_counter += 1
-            # TODO check if this all works on a per batch basis or if it needs to be split up. Also check if collate needs to pad
             ############################
             #         Generator        #
             ############################
@@ -209,7 +108,7 @@ def train_loop(batchsize=16,
             ############################
             if batch_counter > generator_warmup_steps:  # generator needs warmup
                 new_pred = g(melspec).detach()
-                discriminator_mse_loss = 0.0
+                discriminator_mse_loss = torch.Tensor(0.0)
                 discriminator_outputs = d(new_pred)
                 for output in discriminator_outputs:
                     # fake loss
