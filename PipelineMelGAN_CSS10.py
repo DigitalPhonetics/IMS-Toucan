@@ -65,7 +65,8 @@ class Collater(object):
         # check length
         batch = [self._adjust_length(*b) for b in batch if len(b[1]) > self.mel_threshold]
         xs, cs = [b[0] for b in batch], [b[1] for b in batch]
-
+        print(xs)
+        print(cs)
         # make batch with random cut
         c_lengths = [len(c) for c in cs]
         start_frames = np.array([np.random.randint(
@@ -77,7 +78,9 @@ class Collater(object):
         y_batch = [x[start: end] for x, start, end in zip(xs, x_starts, x_ends)]
         c_batch = [c[start: end] for c, start, end in zip(cs, c_starts, c_ends)]
 
-        # convert each batch to tensor, asuume that each item in batch has the same length
+        print(torch.tensor(c_batch, dtype=torch.float))
+
+        # convert each batch to tensor, assume that each item in batch has the same length
         y_batch = torch.tensor(y_batch, dtype=torch.float).unsqueeze(1)  # (B, 1, T)
         c_batch = torch.tensor(c_batch, dtype=torch.float).transpose(2, 1)  # (B, C, T')
 
@@ -101,6 +104,16 @@ class Collater(object):
         # check the length is valid
         assert len(x) == len(c) * self.hop_size
         return x, c
+
+
+def collate_pad(batch):
+    audio_list = list()
+    melspec_list = list()
+    for el in batch:
+        audio_list.append(el[0])
+        melspec_list.append(el[1].transpose(0, 1))
+    return torch.nn.utils.rnn.pad_sequence(audio_list, batch_first=True, padding_value=0.0), \
+           torch.nn.utils.rnn.pad_sequence(melspec_list, batch_first=True, padding_value=0.0).transpose(1, 2)
 
 
 def get_file_list():
@@ -141,7 +154,7 @@ def train_loop(batchsize=16,
     val_loss_highscore = 100.0
     batch_counter = 0
     criterion = MultiResolutionSTFTLoss().to(device)
-    discriminator_criterion = torch.nn.MSELoss()
+    discriminator_criterion = torch.nn.MSELoss().to(device)
     g = generator.to(device)
     d = discriminator.to(device)
     g.train()
@@ -153,12 +166,12 @@ def train_loop(batchsize=16,
                               batch_size=batchsize,
                               shuffle=True,
                               num_workers=4,
-                              collate_fn=collater)
+                              collate_fn=collate_pad)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=batchsize,
                               shuffle=False,
                               num_workers=4,
-                              collate_fn=collater)
+                              collate_fn=collate_pad)
     for epoch in range(epochs):
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
@@ -168,9 +181,9 @@ def train_loop(batchsize=16,
             ############################
             #         Generator        #
             ############################
-            gold_wave = datapoint[0]
-            melspec = datapoint[1]
-            pred_wave = g(melspec)
+            gold_wave = datapoint[0].to(device)
+            melspec = datapoint[1].to(device)
+            pred_wave = g(melspec).squeeze(1)
             spectral_loss, magnitude_loss = criterion(pred_wave, gold_wave)
             train_losses["multi_res_spectral_convergence"].append(float(spectral_loss))
             train_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
@@ -225,8 +238,8 @@ def train_loop(batchsize=16,
             g.eval()
             d.eval()
             for datapoint in valid_loader:
-                gold_wave = datapoint[0]
-                melspec = datapoint[1]
+                gold_wave = datapoint[0].to(device)
+                melspec = datapoint[1].to(device)
                 pred_wave = g(melspec)
                 spectral_loss, magnitude_loss = criterion(pred_wave, gold_wave)
                 valid_losses["multi_res_spectral_convergence"].append(float(spectral_loss))
@@ -289,15 +302,15 @@ def show_model(model):
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    device = torch.device("cpu")
-    train_dataset = MelGANDataset(list_of_paths=fl, device=device, type='train')
-    valid_dataset = MelGANDataset(list_of_paths=fl, device=device, type='valid')
+    device = torch.device("cuda")
+    train_dataset = MelGANDataset(list_of_paths=fl, type='train')
+    valid_dataset = MelGANDataset(list_of_paths=fl, type='valid')
     generator = MelGANGenerator()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
     if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):
         os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(batchsize=16,
+    train_loop(batchsize=2,
                epochs=10,  # for testing
                generator=generator,
                discriminator=multi_scale_discriminator,
