@@ -86,6 +86,8 @@ def train_loop(batchsize=16,
             gold_wave = datapoint[0].to(device)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec).squeeze(1)
+            print(len(pred_wave))
+            print(len(gold_wave))
             spectral_loss, magnitude_loss = criterion(pred_wave, gold_wave)
             train_losses["multi_res_spectral_convergence"].append(float(spectral_loss))
             train_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
@@ -208,6 +210,7 @@ if __name__ == '__main__':
     train_dataset = MelGANDataset(list_of_paths=fl[:-100])
     valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()
+    generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
     if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):
         os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
