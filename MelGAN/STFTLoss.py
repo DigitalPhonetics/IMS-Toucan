@@ -7,6 +7,9 @@
 
 import torch
 
+from MelGAN.LogSTFTMagnitudeLoss import LogSTFTMagnitudeLoss
+from MelGAN.SpectralConvergenceLoss import SpectralConvergenceLoss
+
 
 def stft(x, fft_size, hop_size, win_length, window):
     """

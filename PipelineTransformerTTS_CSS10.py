@@ -6,6 +6,7 @@ import json
 import os
 import random
 import time
+import warnings
 
 import soundfile as sf
 import torch
@@ -15,6 +16,8 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+
+warnings.filterwarnings("ignore")
 
 torch.manual_seed(17)
 random.seed(17)
@@ -63,6 +66,8 @@ class CSS10SingleSpeakerFeaturizer():
                 features.append([text_tensor, text_length, speech_tensor, speech_length])
         return features
 
+def build_path_to_transcript_dict():
+    return dict()
 
 def train_loop(net,
                train_dataset,
@@ -163,8 +168,8 @@ if __name__ == '__main__':
     with open("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json", 'r') as fp:
         feature_list = json.load(fp)
     print("Building datasets")
-    css10_train = TransformerTTSDataset(feature_list, type="train")
-    css10_valid = TransformerTTSDataset(feature_list, type="valid")
+    css10_train = TransformerTTSDataset(feature_list[:-100])
+    css10_valid = TransformerTTSDataset(feature_list[-100:])
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")

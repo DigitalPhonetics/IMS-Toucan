@@ -6,6 +6,7 @@ import json
 import os
 import random
 import time
+import warnings
 
 import soundfile as sf
 import torch
@@ -14,6 +15,8 @@ import torchviz
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
+
+warnings.filterwarnings("ignore")
 
 
 def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=5):

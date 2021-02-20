@@ -14,7 +14,14 @@ warnings.filterwarnings("ignore")
 
 
 class AudioPreprocessor:
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=80):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=128, n_fft=512):
+        """
+        The parameters are by default set up to do well
+        on a 16kHz signal. A different frequency may
+        require different hop_length and n_fft (e.g.
+        doubling frequency --> doubling hop_length and
+        doubling n_fft)
+        """
         self.sr = input_sr
         self.new_sr = output_sr
         self.vad = VoiceActivityDetection(sample_rate=input_sr)
@@ -27,9 +34,18 @@ class AudioPreprocessor:
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
-        self.mel_spec_orig_sr = MelSpectrogram(sample_rate=input_sr, n_mels=melspec_buckets, f_min=40.0, f_max=8000.0)
-        self.mel_spec_new_sr = MelSpectrogram(sample_rate=self.final_sr, n_mels=melspec_buckets, f_min=40.0,
-                                              f_max=8000.0)
+        self.mel_spec_orig_sr = MelSpectrogram(sample_rate=input_sr,
+                                               n_mels=melspec_buckets,
+                                               f_min=40.0,
+                                               f_max=8000.0,
+                                               hop_length=hop_length,
+                                               n_fft=n_fft)
+        self.mel_spec_new_sr = MelSpectrogram(sample_rate=self.final_sr,
+                                              n_mels=melspec_buckets,
+                                              f_min=40.0,
+                                              f_max=8000.0,
+                                              hop_length=hop_length,
+                                              n_fft=n_fft)
 
     def apply_mu_law(self, audio):
         """
