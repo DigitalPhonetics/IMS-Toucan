@@ -6,6 +6,7 @@ import json
 import os
 import random
 import time
+import warnings
 
 import torch
 from torch.utils.data.dataloader import DataLoader
@@ -14,6 +15,8 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
+
+warnings.filterwarnings("ignore")
 
 torch.manual_seed(17)
 random.seed(17)
@@ -201,7 +204,7 @@ def show_model(model):
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    device = torch.device("cuda")
+    device = torch.device("cpu")
     train_dataset = MelGANDataset(list_of_paths=fl, type='train')
     valid_dataset = MelGANDataset(list_of_paths=fl, type='valid')
     generator = MelGANGenerator()
@@ -209,11 +212,11 @@ if __name__ == '__main__':
     if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):
         os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(batchsize=2,
+    train_loop(batchsize=16,
                epochs=10,  # for testing
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
                device=device,
-               generator_warmup_steps=10)  # for testing
+               generator_warmup_steps=100)  # for testing

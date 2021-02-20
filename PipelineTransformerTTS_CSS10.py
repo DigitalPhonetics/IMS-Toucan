@@ -6,6 +6,7 @@ import json
 import os
 import random
 import time
+import warnings
 
 import soundfile as sf
 import torch
@@ -15,6 +16,8 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+
+warnings.filterwarnings("ignore")
 
 torch.manual_seed(17)
 random.seed(17)

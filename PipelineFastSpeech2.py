@@ -1,7 +1,11 @@
+import warnings
+
 import torch
 import torchviz
 
 from FastSpeech.FastSpeech2 import FastSpeech2
+
+warnings.filterwarnings("ignore")
 
 
 def featurize_corpus(path_to_corpus):
