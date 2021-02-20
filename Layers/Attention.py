@@ -141,7 +141,7 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         torch.nn.init.xavier_uniform_(self.pos_bias_v)
 
     def rel_shift(self, x, zero_triu=False):
-        """Compute relative positinal encoding.
+        """Compute relative positional encoding.
 
         Args:
             x (torch.Tensor): Input tensor (batch, time, size).

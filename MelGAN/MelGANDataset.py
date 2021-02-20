@@ -13,7 +13,7 @@ class MelGANDataset(Dataset):
         self.list_of_paths = list_of_paths
         self.ap = None
         self.samples_per_segment = samples_per_segment
-        # has to be divisibleby hop size. Selected for a 16kHz signal, as they did in the paper.
+        # has to be divisible by hop size. Selected for a 16kHz signal, as they did in the paper.
 
     def __getitem__(self, index):
         """
@@ -37,7 +37,7 @@ class MelGANDataset(Dataset):
             audio_start = random.randint(0, max_audio_start)
             segment = normalized_wave[audio_start: audio_start + self.samples_per_segment]
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False)
-        return normalized_wave, melspec
+        return segment, melspec
 
     def __len__(self):
         return len(self.list_of_paths)
