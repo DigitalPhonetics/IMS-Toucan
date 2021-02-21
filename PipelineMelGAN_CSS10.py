@@ -99,7 +99,7 @@ def train_loop(batchsize=16,
             gold_wave = datapoint[0].to(device)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
-            spectral_loss, magnitude_loss = criterion(pred_wave, gold_wave)
+            spectral_loss, magnitude_loss = criterion(pred_wave.squeeze(1), gold_wave)
             train_losses["multi_res_spectral_convergence"].append(float(spectral_loss))
             train_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
             if batch_counter > generator_warmup_steps:  # generator needs warmup
