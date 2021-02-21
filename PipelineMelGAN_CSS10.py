@@ -127,12 +127,12 @@ def train_loop(batchsize=16,
 
             if batch_counter > generator_warmup_steps:  # generator needs warmup
                 new_pred = g(melspec).detach()
-                fake_loss = torch.Tensor(0.0)
+                fake_loss = 0.0
                 d_outs = d(new_pred)
                 for i in range(len(d_outs)):
                     fake_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_zeros(d_outs[i][-1].size()))
                 fake_loss /= len(d_outs)
-                real_loss = torch.Tensor(0.0)
+                real_loss = 0.0
                 d_outs = d(gold_wave)
                 for i in range(len(d_outs)):
                     real_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_ones(d_outs[i][-1].size()))
@@ -176,13 +176,13 @@ def train_loop(batchsize=16,
                     generator_total_loss = spectral_loss + magnitude_loss
                 valid_losses["generator_total"].append(float(generator_total_loss))
                 if batch_counter > generator_warmup_steps:  # generator needs warmup
-                    fake_loss = torch.Tensor(0.0)
+                    fake_loss = 0.0
                     d_outs = d(pred_wave)
                     for i in range(len(d_outs)):
                         fake_loss += discriminator_criterion(d_outs[i][-1],
                                                              d_outs[i][-1].new_zeros(d_outs[i][-1].size()))
                     fake_loss /= len(d_outs)
-                    real_loss = torch.Tensor(0.0)
+                    real_loss = 0.0
                     d_outs = d(gold_wave)
                     for i in range(len(d_outs)):
                         real_loss += discriminator_criterion(d_outs[i][-1],
