@@ -95,9 +95,10 @@ def train_loop(batchsize=16,
             ############################
             #         Generator        #
             ############################
+
             gold_wave = datapoint[0].to(device)
             melspec = datapoint[1].to(device)
-            pred_wave = g(melspec).squeeze(1)
+            pred_wave = g(melspec)
             spectral_loss, magnitude_loss = criterion(pred_wave, gold_wave)
             train_losses["multi_res_spectral_convergence"].append(float(spectral_loss))
             train_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
@@ -121,6 +122,7 @@ def train_loop(batchsize=16,
             ############################
             #       Discriminator      #
             ############################
+
             if batch_counter > generator_warmup_steps:  # generator needs warmup
                 new_pred = g(melspec).detach()
                 discriminator_mse_loss = torch.Tensor(0.0)
@@ -224,10 +226,10 @@ if __name__ == '__main__':
         os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
     print("Training model")
     train_loop(batchsize=16,
-               epochs=10,  # for testing
+               epochs=60000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
                device=device,
-               generator_warmup_steps=100)  # for testing
+               generator_warmup_steps=10)
