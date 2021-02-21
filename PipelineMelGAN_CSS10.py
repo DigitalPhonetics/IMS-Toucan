@@ -106,7 +106,7 @@ def train_loop(batchsize=16,
                 adversarial_loss = 0.0
                 discriminator_outputs = d(pred_wave)
                 for output in discriminator_outputs:
-                    adversarial_loss += discriminator_criterion(output, 1.0) / len(discriminator_outputs)
+                    adversarial_loss += discriminator_criterion(output, torch.Tensor(1.0)) / len(discriminator_outputs)
                 train_losses["adversarial"].append(float(adversarial_loss))
                 generator_total_loss = spectral_loss + magnitude_loss + adversarial_loss
             else:
@@ -129,11 +129,13 @@ def train_loop(batchsize=16,
                 discriminator_outputs = d(new_pred)
                 for output in discriminator_outputs:
                     # fake loss
-                    discriminator_mse_loss += discriminator_criterion(output, 0.0) / len(discriminator_outputs)
+                    discriminator_mse_loss += discriminator_criterion(output, torch.Tensor(0.0)) / len(
+                        discriminator_outputs)
                 discriminator_outputs = d(gold_wave)
                 for output in discriminator_outputs:
                     # real loss
-                    discriminator_mse_loss += discriminator_criterion(output, 1.0) / len(discriminator_outputs)
+                    discriminator_mse_loss += discriminator_criterion(output, torch.Tensor(1.0)) / len(
+                        discriminator_outputs)
                 train_losses["discriminator_mse"].append(float(discriminator_mse_loss))
                 # discriminator step time
                 optimizer_d.zero_grad()
