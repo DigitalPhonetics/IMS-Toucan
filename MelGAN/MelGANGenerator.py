@@ -24,7 +24,7 @@ class MelGANGenerator(torch.nn.Module):
                  kernel_size=7,
                  channels=512,
                  bias=True,
-                 upsample_scales=[8, 4, 2],
+                 upsample_scales=[8, 4, 2, 2],
                  stack_kernel_size=3,
                  stacks=3,
                  nonlinear_activation="LeakyReLU",

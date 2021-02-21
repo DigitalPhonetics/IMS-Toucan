@@ -42,7 +42,9 @@ def train_loop(batchsize=16,
                device=None,
                model_save_dir=None,
                generator_warmup_steps=200000):
-    start_time = time.time()
+    torch.backends.cudnn.benchmark = True
+    # we have fixed input sizes, so we can enable benchmark mode
+
     train_losses = dict()
     train_losses["adversarial"] = list()
     train_losses["multi_res_spectral_convergence"] = list()
@@ -59,24 +61,32 @@ def train_loop(batchsize=16,
 
     val_loss_highscore = 100.0
     batch_counter = 0
+
     criterion = MultiResolutionSTFTLoss().to(device)
     discriminator_criterion = torch.nn.MSELoss().to(device)
+
     g = generator.to(device)
     d = discriminator.to(device)
     g.train()
     d.train()
     optimizer_g = torch.optim.Adam(g.parameters())
     optimizer_d = torch.optim.Adam(d.parameters())
+
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
                               num_workers=4,
-                              pin_memory=True)
+                              pin_memory=True,
+                              drop_last=True)
     valid_loader = DataLoader(dataset=valid_dataset,
-                              batch_size=batchsize,
+                              batch_size=1,
                               shuffle=False,
                               num_workers=4,
-                              pin_memory=True)
+                              pin_memory=True,
+                              drop_last=False)
+
+    start_time = time.time()
+
     for epoch in range(epochs):
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
