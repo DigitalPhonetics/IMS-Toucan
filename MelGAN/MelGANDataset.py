@@ -27,6 +27,7 @@ class MelGANDataset(Dataset):
         wave, sr = sf.read(file_path)
         if self.ap is None:
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+            # hop length must be same as the product of the upscale factors
         normalized_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
         if len(normalized_wave) <= self.samples_per_segment:
             # pad to size
@@ -37,6 +38,8 @@ class MelGANDataset(Dataset):
             audio_start = random.randint(0, max_audio_start)
             segment = normalized_wave[audio_start: audio_start + self.samples_per_segment]
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False)
+        print(len(melspec))
+        print(len(melspec) * 8 * 4 * 4 * 2)
         return segment, melspec
 
     def __len__(self):
