@@ -105,8 +105,8 @@ def train_loop(batchsize=16,
             if batch_counter > generator_warmup_steps:  # generator needs warmup
                 adversarial_loss = torch.Tensor([0.0])
                 discriminator_outputs = d(pred_wave)
-                print(discriminator_outputs.shape)
-                print(discriminator_outputs.squeeze(0).squeeze(0).shape)
+                print(len(discriminator_outputs))
+                print(discriminator_outputs[0].squeeze(0).shape)
                 for out in discriminator_outputs:
                     adversarial_loss += discriminator_criterion(out, torch.Tensor([1.0])) / len(discriminator_outputs)
                 train_losses["adversarial"].append(float(adversarial_loss))
