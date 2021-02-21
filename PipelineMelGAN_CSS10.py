@@ -104,11 +104,11 @@ def train_loop(batchsize=16,
             train_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
             if batch_counter > generator_warmup_steps:  # generator needs warmup
                 adversarial_loss = torch.Tensor([0.0])
-                discriminator_outputs = d(pred_wave)
-                print(len(discriminator_outputs))
-                print(discriminator_outputs[0].squeeze(0).shape)
-                for out in discriminator_outputs:
-                    adversarial_loss += discriminator_criterion(out, torch.Tensor([1.0])) / len(discriminator_outputs)
+                discriminators_outputs = d(pred_wave)
+                for discriminator_outputs in discriminators_outputs:
+                    for discriminator_output in discriminator_outputs:
+                        print(discriminator_output)
+                        # adversarial_loss += discriminator_criterion(discriminator_outputs, torch.Tensor([1.0])) / len(discriminators_outputs)
                 train_losses["adversarial"].append(float(adversarial_loss))
                 generator_total_loss = spectral_loss + magnitude_loss + adversarial_loss
             else:
@@ -128,16 +128,16 @@ def train_loop(batchsize=16,
             if batch_counter > generator_warmup_steps:  # generator needs warmup
                 new_pred = g(melspec).detach()
                 discriminator_mse_loss = torch.Tensor([0.0])
-                discriminator_outputs = d(new_pred)
-                for out in discriminator_outputs:
+                discriminators_outputs = d(new_pred)
+                for discriminator_outputs in discriminators_outputs:
                     # fake loss
-                    discriminator_mse_loss += discriminator_criterion(out, torch.Tensor([0.0])) / len(
-                        discriminator_outputs)
-                discriminator_outputs = d(gold_wave)
-                for out in discriminator_outputs:
+                    discriminator_mse_loss += discriminator_criterion(discriminator_outputs, torch.Tensor([0.0])) / len(
+                        discriminators_outputs)
+                discriminators_outputs = d(gold_wave)
+                for discriminator_outputs in discriminators_outputs:
                     # real loss
-                    discriminator_mse_loss += discriminator_criterion(out, torch.Tensor([1.0])) / len(
-                        discriminator_outputs)
+                    discriminator_mse_loss += discriminator_criterion(discriminator_outputs, torch.Tensor([1.0])) / len(
+                        discriminators_outputs)
                 train_losses["discriminator_mse"].append(float(discriminator_mse_loss))
                 # discriminator step time
                 optimizer_d.zero_grad()
@@ -164,9 +164,10 @@ def train_loop(batchsize=16,
                 valid_losses["multi_res_log_stft_mag"].append(float(magnitude_loss))
                 if batch_counter > generator_warmup_steps:  # generator needs warmup
                     adversarial_loss = 0.0
-                    discriminator_outputs = d(pred_wave)
-                    for out in discriminator_outputs:
-                        adversarial_loss += discriminator_criterion(out, 1.0) / len(discriminator_outputs)
+                    discriminators_outputs = d(pred_wave)
+                    for discriminator_outputs in discriminators_outputs:
+                        adversarial_loss += discriminator_criterion(discriminator_outputs, 1.0) / len(
+                            discriminators_outputs)
                     valid_losses["adversarial"].append(float(adversarial_loss))
                     generator_total_loss = spectral_loss + magnitude_loss + adversarial_loss
                 else:
@@ -176,14 +177,16 @@ def train_loop(batchsize=16,
                 if batch_counter > generator_warmup_steps:  # generator needs warmup
                     new_pred = g(melspec).detach()
                     discriminator_mse_loss = 0.0
-                    discriminator_outputs = d(new_pred)
-                    for out in discriminator_outputs:
+                    discriminators_outputs = d(new_pred)
+                    for discriminator_outputs in discriminators_outputs:
                         # fake loss
-                        discriminator_mse_loss += discriminator_criterion(out, 0.0) / len(discriminator_outputs)
-                    discriminator_outputs = d(gold_wave)
-                    for out in discriminator_outputs:
+                        discriminator_mse_loss += discriminator_criterion(discriminator_outputs, 0.0) / len(
+                            discriminators_outputs)
+                    discriminators_outputs = d(gold_wave)
+                    for discriminator_outputs in discriminators_outputs:
                         # real loss
-                        discriminator_mse_loss += discriminator_criterion(out, 1.0) / len(discriminator_outputs)
+                        discriminator_mse_loss += discriminator_criterion(discriminator_outputs, 1.0) / len(
+                            discriminators_outputs)
                     valid_losses["discriminator_mse"].append(float(discriminator_mse_loss))
             valid_gen_mean_epoch_loss = sum(valid_losses["generator_total"][-len(valid_dataset)]) / len(valid_dataset)
             if val_loss_highscore > valid_gen_mean_epoch_loss and batch_counter > generator_warmup_steps:
