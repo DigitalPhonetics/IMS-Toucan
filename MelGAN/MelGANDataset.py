@@ -9,7 +9,7 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 class MelGANDataset(Dataset):
 
-    def __init__(self, list_of_paths, samples_per_segment=8320):
+    def __init__(self, list_of_paths, samples_per_segment=8192):
         self.list_of_paths = list_of_paths
         self.ap = None
         self.samples_per_segment = samples_per_segment
