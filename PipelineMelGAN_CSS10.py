@@ -70,11 +70,13 @@ def train_loop(batchsize=16,
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
-                              num_workers=4)
+                              num_workers=4,
+                              pin_memory=True)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=batchsize,
                               shuffle=False,
-                              num_workers=4)
+                              num_workers=4,
+                              pin_memory=True)
     for epoch in range(epochs):
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
@@ -130,8 +132,6 @@ def train_loop(batchsize=16,
                 optimizer_d.zero_grad()
             else:
                 train_losses["discriminator_mse"].append(0.0)
-
-            torch.cuda.empty_cache()
             print("Step {}".format(batch_counter))
 
         ############################

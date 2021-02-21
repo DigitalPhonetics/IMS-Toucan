@@ -104,7 +104,6 @@ def train_loop(net,
                              )[0]
             train_losses_this_epoch.append(float(train_loss))
             (train_loss / samples_per_update).backward()
-            torch.cuda.empty_cache()
             sample_counter += 1
             if count % samples_per_update == 0 and count != 0:
                 # update weights
