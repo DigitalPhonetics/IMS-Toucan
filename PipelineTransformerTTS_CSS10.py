@@ -11,6 +11,7 @@ import warnings
 import soundfile as sf
 import torch
 import torchviz
+from adabound import AdaBound
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
@@ -31,13 +32,15 @@ class CSS10SingleSpeakerFeaturizer():
                                use_sentence_type=False,
                                use_positional_information=False,
                                use_word_boundaries=False,
-                               use_chinksandchunks_ipb=True,
+                               use_chinksandchunks_ipb=False,
                                use_explicit_eos=True)
         self.ap = None
         self.file_to_trans = dict()
         self.file_to_spec = dict()
 
     def featurize_corpus(self):
+        if os.path.exists("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json"):
+            os.remove("Corpora/TransformerTTS/SingleSpeaker/CSS10/features.json")
         with open("Corpora/CSS10/transcript.txt", encoding="utf8") as f:
             transcriptions = f.read()
         trans_lines = transcriptions.split("\n")
@@ -66,8 +69,10 @@ class CSS10SingleSpeakerFeaturizer():
                 features.append([text_tensor, text_length, speech_tensor, speech_length])
         return features
 
+
 def build_path_to_transcript_dict():
     return dict()
+
 
 def train_loop(net,
                train_dataset,
@@ -85,7 +90,7 @@ def train_loop(net,
     sample_counter = 0
     net = net.to(device)
     net.train()
-    optimizer = torch.optim.Adam(net.parameters())
+    optimizer = AdaBound(net.parameters())
     for epoch in range(epochs):
         # train one epoch
         optimizer.zero_grad()

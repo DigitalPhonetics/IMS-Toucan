@@ -9,6 +9,7 @@ import time
 import warnings
 
 import torch
+from adabound import AdaBound
 from torch.utils.data.dataloader import DataLoader
 
 from MelGAN.MelGANDataset import MelGANDataset
@@ -69,8 +70,8 @@ def train_loop(batchsize=16,
     d = discriminator.to(device)
     g.train()
     d.train()
-    optimizer_g = torch.optim.Adam(g.parameters())
-    optimizer_d = torch.optim.Adam(d.parameters())
+    optimizer_g = AdaBound(g.parameters())
+    optimizer_d = AdaBound(d.parameters())
 
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
