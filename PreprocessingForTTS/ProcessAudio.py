@@ -69,7 +69,7 @@ class AudioPreprocessor:
         cut silence from the beginning of
         a recording
         """
-        return self.vad(torch.from_numpy(audio))
+        return self.vad(torch.DoubleTensor(audio))
 
     def to_mono(self, x):
         """
@@ -147,18 +147,18 @@ class AudioPreprocessor:
             if normalize:
                 return self.apply_mu_law(self.normalize_audio(audio))
             else:
-                return self.apply_mu_law(torch.tensor(audio))
+                return self.apply_mu_law(torch.DoubleTensor(audio))
         else:
             if normalize:
                 return self.normalize_audio(audio)
             else:
-                return torch.tensor(audio)
+                return torch.DoubleTensor(audio)
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
             return self.mel_spec_new_sr(self.mu_decode(self.mu_encode(self.normalize_audio(audio))))
         else:
-            return self.mel_spec_orig_sr(self.mu_decode(self.mu_encode(torch.tensor(audio))))
+            return self.mel_spec_orig_sr(self.mu_decode(self.mu_encode(torch.Tensor(audio))))
 
 
 if __name__ == '__main__':
@@ -175,5 +175,6 @@ if __name__ == '__main__':
     sf.write("test_audio/test_cleaned.wav", ap.normalize_audio(wave), ap.final_sr)
 
     # look at tensors of a wave representation and a mel spectrogram representation
-    print("\n\nWave as Tensor (8 bit integer values, dtype=int64): \n{}".format(ap.audio_to_wave_tensor(wave)))
+    print("\n\nWave as Tensor (8 bit integer values, dtype=int64): \n{}".format(
+        ap.audio_to_wave_tensor(wave, mulaw=True)))
     print("\n\nMelSpec as Tensor (16 bit float values, dtype=float32): \n{}".format(ap.audio_to_mel_spec_tensor(wave)))
