@@ -14,4 +14,4 @@ phonemizer
 spacy==3.0.1
 clean-text
 unidecode
-adabound
+adabound  # https://arxiv.org/abs/1902.09843
