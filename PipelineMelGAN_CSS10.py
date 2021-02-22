@@ -192,7 +192,7 @@ def train_loop(batchsize=16,
                     real_loss /= len(d_outs)
                     discriminator_mse_loss = fake_loss + real_loss
                     valid_losses["discriminator_mse"].append(float(discriminator_mse_loss))
-            valid_gen_mean_epoch_loss = sum(valid_losses["generator_total"][-len(valid_dataset)]) / len(valid_dataset)
+            valid_gen_mean_epoch_loss = sum(valid_losses["generator_total"][-len(valid_dataset):]) / len(valid_dataset)
             if val_loss_highscore > valid_gen_mean_epoch_loss and batch_counter > generator_warmup_steps:
                 # only then it gets interesting
                 val_loss_highscore = valid_gen_mean_epoch_loss
