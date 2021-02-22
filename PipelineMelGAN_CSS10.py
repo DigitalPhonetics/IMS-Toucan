@@ -243,4 +243,5 @@ if __name__ == '__main__':
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
                device=device,
-               generator_warmup_steps=200000)
+               generator_warmup_steps=200000,
+               model_save_dir="Models/MelGAN/SingleSpeaker/CSS10")
