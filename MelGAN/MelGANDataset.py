@@ -31,7 +31,7 @@ class MelGANDataset(Dataset):
         normalized_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
         if len(normalized_wave) <= self.samples_per_segment:
             # pad to size
-            segment = F.pad(normalized_wave, (0, self.samples_per_segment - len(normalized_wave), "constant"))
+            segment = F.pad(normalized_wave, (0, self.samples_per_segment - len(normalized_wave), "constant")).float()
         else:
             # cut to size, random segment
             max_audio_start = len(normalized_wave) - self.samples_per_segment
