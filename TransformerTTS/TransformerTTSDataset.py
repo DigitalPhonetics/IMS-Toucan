@@ -35,12 +35,14 @@ class TransformerTTSDataset(Dataset):
         if self.ap is None:
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         text = self.tf.string_to_tensor(transcript).long()
-        text_len = torch.LongTensor(text.shape(0))
+        text_len = torch.LongTensor(text.shape[0])
         speech = torch.transpose(self.ap.audio_to_mel_spec_tensor(wave), 0, 1)
-        speech_len = torch.LongTensor(speech.shape(1))
+        speech_len = torch.LongTensor(speech.shape[1])
         if self.spemb:
             print("not implemented yet")
             raise RuntimeError
+        print(text_len)
+        print(speech_len)
         return text, text_len, speech, speech_len
 
     def __len__(self):
