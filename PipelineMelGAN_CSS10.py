@@ -133,6 +133,11 @@ def train_loop(batchsize=16,
                     fake_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_zeros(d_outs[i][-1].size()))
                 fake_loss /= len(d_outs)
                 real_loss = 0.0
+                print("\n\n\n")
+                print(new_pred)
+                print("\n\n\n")
+                print(gold_wave)
+                print("\n\n\n")
                 d_outs = d(gold_wave)
                 for i in range(len(d_outs)):
                     real_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_ones(d_outs[i][-1].size()))
