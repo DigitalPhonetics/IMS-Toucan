@@ -227,7 +227,7 @@ def show_model(model):
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    device = torch.device("cpu")
+    device = torch.device("cuda:0")
     train_dataset = MelGANDataset(list_of_paths=fl[:-100])
     valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()
@@ -236,11 +236,11 @@ if __name__ == '__main__':
     if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10"):
         os.makedirs("Models/MelGAN/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(batchsize=16,
+    train_loop(batchsize=32,
                epochs=60000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
                device=device,
-               generator_warmup_steps=10)
+               generator_warmup_steps=200000)
