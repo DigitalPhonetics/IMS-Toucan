@@ -75,15 +75,17 @@ def train_loop(batchsize=16,
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
-                              num_workers=4,
+                              num_workers=16,
                               pin_memory=True,
-                              drop_last=True)
+                              drop_last=True,
+                              prefetch_factor=10)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=1,
                               shuffle=False,
-                              num_workers=4,
+                              num_workers=16,
                               pin_memory=True,
-                              drop_last=False)
+                              drop_last=False,
+                              prefetch_factor=10)
 
     start_time = time.time()
 
