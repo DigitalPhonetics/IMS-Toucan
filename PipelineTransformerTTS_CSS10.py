@@ -34,7 +34,7 @@ def build_path_to_transcript_dict():
 
 
 def collate_and_pad(batch):
-    # print(batch)
+    print(batch)
     # return torch.stack(batch)
     return None
 
