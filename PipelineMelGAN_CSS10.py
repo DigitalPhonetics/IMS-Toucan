@@ -148,7 +148,7 @@ def train_loop(batchsize=16,
                 optimizer_d.zero_grad()
             else:
                 train_losses["discriminator_mse"].append(0.0)
-            print("Step {}".format(batch_counter))
+            # print("Step {}".format(batch_counter))
 
         ############################
         #         Evaluate         #
@@ -227,7 +227,7 @@ def show_model(model):
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    device = torch.device("cuda:0")
+    device = torch.device("cuda:2")
     train_dataset = MelGANDataset(list_of_paths=fl[:-100])
     valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()
