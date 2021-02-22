@@ -2,6 +2,7 @@
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
 """TTS-Transformer related modules."""
+import os
 from abc import ABC
 from typing import Dict
 from typing import Sequence
@@ -628,3 +629,30 @@ class Transformer(torch.nn.Module, ABC):
 
     def get_conf(self):
         return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
+
+
+def build_transformertts_model():
+    model = Transformer(idim=132, odim=80, spk_embed_dim=None).to("cpu")
+    params = torch.load(os.path.join("Models", "Use", "Transformer_German_Single.pt"), map_location='cpu')["model"]
+    model.load_state_dict(params)
+    return model
+
+
+def visualize_sanity_check(model, sentence="Hallo Welt!"):
+    from PreprocessingForTTS.ProcessText import TextFrontend
+    import librosa.display as lbd
+    import matplotlib.pyplot as plt
+    tf = TextFrontend(language="de",
+                      use_panphon_vectors=False,
+                      use_shallow_pos=False,
+                      use_sentence_type=False,
+                      use_positional_information=False,
+                      use_word_boundaries=False,
+                      use_chinksandchunks_ipb=True,
+                      use_explicit_eos=True)
+    fig, ax = plt.subplots()
+    ax.set(title=sentence)
+    melspec = model.inference(tf.string_to_tensor(sentence).long())
+    lbd.specshow(melspec[0].transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
+                 x_axis='time', hop_length=256)
+    plt.show()
