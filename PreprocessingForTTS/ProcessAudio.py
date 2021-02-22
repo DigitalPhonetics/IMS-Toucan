@@ -69,7 +69,7 @@ class AudioPreprocessor:
         cut silence from the beginning of
         a recording
         """
-        return self.vad(torch.DoubleTensor(audio))
+        return self.vad(torch.Tensor(audio))
 
     def to_mono(self, x):
         """
@@ -147,12 +147,12 @@ class AudioPreprocessor:
             if normalize:
                 return self.apply_mu_law(self.normalize_audio(audio))
             else:
-                return self.apply_mu_law(torch.DoubleTensor(audio))
+                return self.apply_mu_law(torch.Tensor(audio))
         else:
             if normalize:
                 return self.normalize_audio(audio)
             else:
-                return torch.DoubleTensor(audio)
+                return torch.Tensor(audio)
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:

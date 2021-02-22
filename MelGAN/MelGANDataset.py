@@ -38,7 +38,7 @@ class MelGANDataset(Dataset):
             audio_start = random.randint(0, max_audio_start)
             segment = normalized_wave[audio_start: audio_start + self.samples_per_segment]
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
-        return segment, melspec
+        return segment.double(), melspec
 
     def __len__(self):
         return len(self.list_of_paths)
