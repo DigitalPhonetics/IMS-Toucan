@@ -51,14 +51,20 @@ def collate_and_pad(batch):
             torch.stack(speech_lens).squeeze(1))
 
 
-def train_loop(net,
-               train_dataset,
-               eval_dataset,
-               device,
-               save_directory,
-               config,
-               batchsize=32,
-               epochs=150):
+def train_loop(net, train_dataset, eval_dataset, device, save_directory,
+               config, batchsize=10, epochs=150, gradient_accumulation=6):
+    """
+    :param net: Model to train
+    :param train_dataset: Pytorch Dataset Object for train data
+    :param eval_dataset: Pytorch Dataset Object for validation data
+    :param device: Device to put the loaded tensors on
+    :param save_directory: Where to save the checkpoints
+    :param config: Config of the model to be trained
+    :param batchsize: How many elements should be loaded at once
+    :param epochs: how many epochs to train for
+    :param gradient_accumulation: how many batches to average before stepping
+    """
+    grad_accum = list()
     train_loader = DataLoader(batch_size=batchsize, dataset=train_dataset, drop_last=True, num_workers=16,
                               pin_memory=True, shuffle=True, prefetch_factor=4, collate_fn=collate_and_pad)
     valid_loader = DataLoader(batch_size=1, dataset=eval_dataset, drop_last=False, num_workers=2,
@@ -76,18 +82,24 @@ def train_loop(net,
         # train one epoch
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
-            train_loss = net(train_datapoint[0].to(device),
-                             train_datapoint[1].to(device),
-                             train_datapoint[2].to(device),
-                             train_datapoint[3].to(device)
-                             )[0]
-            train_losses_this_epoch.append(float(train_loss))
-            optimizer.zero_grad()
-            train_loss.backward()
-            step_counter += 1
-            # update weights
-            # print("Step: {}".format(step_counter))
-            optimizer.step()
+            grad_accum.append(net(train_datapoint[0].to(device),
+                                  train_datapoint[1].to(device),
+                                  train_datapoint[2].to(device),
+                                  train_datapoint[3].to(device)
+                                  )[0])
+            train_losses_this_epoch.append(float(grad_accum[-1]))
+            if len(grad_accum) % gradient_accumulation == 0:
+                train_loss = 0.0
+                for accum_loss in grad_accum:
+                    train_loss += accum_loss
+                train_loss /= len(grad_accum)
+                grad_accum = list()
+                optimizer.zero_grad()
+                train_loss.backward()
+                step_counter += 1
+                # update weights
+                # print("Step: {}".format(step_counter))
+                optimizer.step()
         # evaluate on valid after every epoch is through
         with torch.no_grad():
             net.eval()
@@ -153,4 +165,5 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                epochs=3000,  # just kill the process at some point
-               batchsize=32)
+               batchsize=10,
+               gradient_accumulation=6)
