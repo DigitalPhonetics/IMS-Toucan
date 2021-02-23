@@ -138,7 +138,7 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
-    device = torch.device("cuda")
+    device = torch.device("cuda:2")
     path_to_transcript_dict = build_path_to_transcript_dict()
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
