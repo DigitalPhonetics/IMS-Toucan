@@ -11,6 +11,7 @@ import warnings
 import torch
 import torchviz
 from adabound import AdaBound
+from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
 from TransformerTTS.TransformerTTS import Transformer
@@ -34,9 +35,20 @@ def build_path_to_transcript_dict():
 
 
 def collate_and_pad(batch):
-    print(batch)
-    # return torch.stack(batch)
-    return None
+    # every entry in batch: [text, text_length, spec, spec_length]
+    texts = list()
+    text_lens = list()
+    speechs = list()
+    speech_lens = list()
+    for datapoint in batch:
+        texts.append(datapoint[0])
+        text_lens.append(datapoint[1])
+        speechs.append(datapoint[2])
+        speech_lens.append(datapoint[3])
+    return (pad_sequence(texts, batch_first=True),
+            torch.stack(text_lens).squeeze(1),
+            pad_sequence(speechs, batch_first=True),
+            torch.stack(speech_lens).squeeze(1))
 
 
 def train_loop(net,
@@ -45,11 +57,11 @@ def train_loop(net,
                device,
                save_directory,
                config,
-               batchsize=64,
+               batchsize=32,
                epochs=150):
     train_loader = DataLoader(batch_size=batchsize, dataset=train_dataset, drop_last=True, num_workers=16,
-                              pin_memory=True, prefetch_factor=4, collate_fn=collate_and_pad)
-    valid_loader = DataLoader(batch_size=1, dataset=eval_dataset, drop_last=False, num_workers=4,
+                              pin_memory=True, shuffle=True, prefetch_factor=4, collate_fn=collate_and_pad)
+    valid_loader = DataLoader(batch_size=1, dataset=eval_dataset, drop_last=False, num_workers=2,
                               pin_memory=True, prefetch_factor=2, collate_fn=collate_and_pad)
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
@@ -64,9 +76,9 @@ def train_loop(net,
         # train one epoch
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
-            train_loss = net(train_datapoint[0].unsqueeze(0).to(device),
+            train_loss = net(train_datapoint[0].to(device),
                              train_datapoint[1].to(device),
-                             train_datapoint[2].unsqueeze(0).to(device),
+                             train_datapoint[2].to(device),
                              train_datapoint[3].to(device)
                              )[0]
             train_losses_this_epoch.append(float(train_loss))
@@ -74,16 +86,16 @@ def train_loop(net,
             train_loss.backward()
             step_counter += 1
             # update weights
-            print("Step: {}".format(step_counter))
+            # print("Step: {}".format(step_counter))
             optimizer.step()
         # evaluate on valid after every epoch is through
         with torch.no_grad():
             net.eval()
             val_losses = list()
             for validation_datapoint in valid_loader:
-                val_losses.append(float(net(validation_datapoint[0].unsqueeze(0).to(device),
+                val_losses.append(float(net(validation_datapoint[0].to(device),
                                             validation_datapoint[1].to(device),
-                                            validation_datapoint[2].unsqueeze(0).to(device),
+                                            validation_datapoint[2].to(device),
                                             validation_datapoint[3].to(device)
                                             )[0]))
             average_val_loss = sum(val_losses) / len(val_losses)
@@ -97,6 +109,7 @@ def train_loop(net,
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            print("Steps:        {}".format(step_counter))
             loss_plot[0].append(sum(train_losses_this_epoch) / len(train_losses_this_epoch))
             loss_plot[1].append(average_val_loss)
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
@@ -125,7 +138,7 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
-    device = torch.device("cuda:2")
+    device = torch.device("cuda")
     path_to_transcript_dict = build_path_to_transcript_dict()
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
@@ -140,4 +153,4 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                epochs=3000,  # just kill the process at some point
-               batchsize=64)
+               batchsize=32)
