@@ -119,6 +119,7 @@ def train_loop(batchsize=16,
                 generator_total_loss = spectral_loss + magnitude_loss
             train_losses["generator_total"].append(float(generator_total_loss))
             # generator step time
+            optimizer_g.zero_grad()
             generator_total_loss.backward()
             optimizer_g.step()
             optimizer_g.zero_grad()
@@ -142,6 +143,7 @@ def train_loop(batchsize=16,
                 discriminator_mse_loss = fake_loss + real_loss
                 train_losses["discriminator_mse"].append(float(discriminator_mse_loss))
                 # discriminator step time
+                optimizer_d.zero_grad()
                 discriminator_mse_loss.backward()
                 optimizer_d.step()
                 optimizer_d.zero_grad()

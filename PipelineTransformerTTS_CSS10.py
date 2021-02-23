@@ -90,7 +90,6 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
-        optimizer.zero_grad()
         grad_accum = list()
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
@@ -106,6 +105,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                     train_loss += accum_loss
                 train_loss /= len(grad_accum)
                 grad_accum = list()
+                optimizer.zero_grad()
                 train_loss.backward()
                 step_counter += 1
                 # update weights
