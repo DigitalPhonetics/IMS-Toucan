@@ -64,11 +64,21 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     :param epochs: how many epochs to train for
     :param gradient_accumulation: how many batches to average before stepping
     """
-    grad_accum = list()
-    train_loader = DataLoader(batch_size=batchsize, dataset=train_dataset, drop_last=True, num_workers=16,
-                              pin_memory=True, shuffle=True, prefetch_factor=4, collate_fn=collate_and_pad)
-    valid_loader = DataLoader(batch_size=1, dataset=eval_dataset, drop_last=False, num_workers=2,
-                              pin_memory=True, prefetch_factor=2, collate_fn=collate_and_pad)
+    train_loader = DataLoader(batch_size=batchsize,
+                              dataset=train_dataset,
+                              drop_last=True,
+                              num_workers=batchsize,
+                              pin_memory=True,
+                              shuffle=True,
+                              prefetch_factor=gradient_accumulation,
+                              collate_fn=collate_and_pad)
+    valid_loader = DataLoader(batch_size=1,
+                              dataset=eval_dataset,
+                              drop_last=False,
+                              num_workers=2,
+                              pin_memory=True,
+                              prefetch_factor=2,
+                              collate_fn=collate_and_pad)
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)
@@ -80,6 +90,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
+        grad_accum = list()
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
             grad_accum.append(net(train_datapoint[0].to(device),
