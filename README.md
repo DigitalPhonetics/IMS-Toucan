@@ -12,7 +12,7 @@ complex systems.
 - Train TransformerTTS ✅
 - Implement Neural Vocoder ✅
 - Prepare Data for Neural Vocoder ✅
-- Train Neural Vocoder
+- Train Neural Vocoder ✅
 - Build Pitch Extractor
 - Build Energy Extractor
 - Build Duration Extractor
@@ -22,10 +22,10 @@ complex systems.
 
 ## Second Iteration TODOS
 
-- Redo dataloading for TransformerTTS
+- Redo dataloading for TransformerTTS ✅
 - Redo dataloading for SpeakerEmbedding
-- Hyperparameter optimization for each model (optimizer settings)
-- Train TransformerTTS that matches Vocoder input better
+- Hyperparameter optimization for each model (optimizer settings) ✅❓
+- Train TransformerTTS that matches Vocoder input better ✅
 - Train SpeakerEmbedding that matches new spectrogram settings
 - Extend TransformerTTS to multi-speaker
 - Extend FastSpeech to multi-speaker
