@@ -172,6 +172,7 @@ class TextFrontend:
         phonemized_tokens = []
         for cleaned_token in cleaned_tokens:
             phonemized_tokens.append(phonemizer.phonemize(cleaned_token,
+                                                          language_switch='remove-flags',
                                                           backend="espeak",
                                                           language=self.g2p_lang,
                                                           preserve_punctuation=True,
