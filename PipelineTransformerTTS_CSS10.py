@@ -176,5 +176,5 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                epochs=3000,  # just kill the process at some point
-               batchsize=10,
-               gradient_accumulation=6)
+               batchsize=5,
+               gradient_accumulation=12)
