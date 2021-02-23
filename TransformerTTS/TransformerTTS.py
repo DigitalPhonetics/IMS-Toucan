@@ -366,9 +366,6 @@ class Transformer(torch.nn.Module, ABC):
         else:
             raise ValueError("unknown --loss-type " + self.loss_type)
 
-        stats = dict(l1_loss=l1_loss.item(),
-                     l2_loss=l2_loss.item(),
-                     bce_loss=bce_loss.item())
 
         # calculate guided attention loss
         if self.use_guided_attn_loss:
@@ -382,7 +379,6 @@ class Transformer(torch.nn.Module, ABC):
                 att_ws = torch.cat(att_ws, dim=1)  # (B, H*L, T_in, T_in)
                 enc_attn_loss = self.attn_criterion(att_ws, text_lengths, text_lengths)
                 loss = loss + enc_attn_loss
-                stats.update(enc_attn_loss=enc_attn_loss.item())
             # calculate for decoder
             if "decoder" in self.modules_applied_guided_attn:
                 att_ws = []
@@ -393,7 +389,6 @@ class Transformer(torch.nn.Module, ABC):
                 att_ws = torch.cat(att_ws, dim=1)  # (B, H*L, T_out, T_out)
                 dec_attn_loss = self.attn_criterion(att_ws, olens_in, olens_in)
                 loss = loss + dec_attn_loss
-                stats.update(dec_attn_loss=dec_attn_loss.item())
             # calculate for encoder-decoder
             if "encoder-decoder" in self.modules_applied_guided_attn:
                 att_ws = []
@@ -404,16 +399,8 @@ class Transformer(torch.nn.Module, ABC):
                 att_ws = torch.cat(att_ws, dim=1)  # (B, H*L, T_out, T_in)
                 enc_dec_attn_loss = self.attn_criterion(att_ws, text_lengths, olens_in)
                 loss = loss + enc_dec_attn_loss
-                stats.update(enc_dec_attn_loss=enc_dec_attn_loss.item())
 
-        stats.update(loss=loss.item())
-
-        # report extra information
-        if self.use_scaled_pos_enc:
-            stats.update(encoder_alpha=self.encoder.embed[-1].alpha.data.item(),
-                         decoder_alpha=self.decoder.embed[-1].alpha.data.item())
-
-        return loss, stats
+        return loss
 
     def _forward(self,
                  xs: torch.Tensor,

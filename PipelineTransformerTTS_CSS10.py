@@ -96,8 +96,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
             grad_accum.append(net(train_datapoint[0].to(device),
                                   train_datapoint[1].to(device),
                                   train_datapoint[2].to(device),
-                                  train_datapoint[3].to(device)
-                                  )[0])
+                                  train_datapoint[3].to(device)))
             train_losses_this_epoch.append(float(grad_accum[-1]))
             if len(grad_accum) % gradient_accumulation == 0:
                 train_loss = 0.0
@@ -121,8 +120,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 val_losses.append(float(net(validation_datapoint[0].to(device),
                                             validation_datapoint[1].to(device),
                                             validation_datapoint[2].to(device),
-                                            validation_datapoint[3].to(device)
-                                            )[0]))
+                                            validation_datapoint[3].to(device))))
             average_val_loss = sum(val_losses) / len(val_losses)
             if val_loss_highscore > average_val_loss:
                 val_loss_highscore = average_val_loss
