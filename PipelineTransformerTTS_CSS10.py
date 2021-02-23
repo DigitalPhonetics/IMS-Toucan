@@ -109,8 +109,9 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 train_loss.backward()
                 step_counter += 1
                 # update weights
-                # print("Step: {}".format(step_counter))
+                print("Step: {}".format(step_counter))
                 optimizer.step()
+                torch.cuda.empty_cache()
         # evaluate on valid after every epoch is through
         with torch.no_grad():
             net.eval()
