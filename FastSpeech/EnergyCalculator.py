@@ -9,7 +9,7 @@ from Layers.STFT import STFT
 from utils import pad_list
 
 
-class EnergyCalculator:
+class EnergyCalculator(torch.nn.Module):
     """
     Energy calculator.
     """

@@ -34,8 +34,8 @@ class FastSpeechDataset(Dataset):
         ap = None
         acoustic_model = build_transformertts_model(model_name=acoustic_model_name)
         dc = DurationCalculator()
-        dio = Dio()  ###################
-        energy_calc = EnergyCalculator()  #######################
+        dio = Dio()
+        energy_calc = EnergyCalculator()
         # build cache
         print("... building dataset cache ...")
         self.cached_text = list()
@@ -52,18 +52,32 @@ class FastSpeechDataset(Dataset):
                 print("processing {}".format(path))
                 if ap is None:
                     ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+                norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
+                melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
+                text = tf.string_to_tensor(transcript).long()
                 if self.spemb:
                     print("not implemented yet")
                     raise NotImplementedError
                 else:
-                    self.cached_durations.append(dc(acoustic_model.inference(text=self.cached_text[-1],
-                                                                             speech=self.cached_speech[-1],
+                    self.cached_durations.append(dc(acoustic_model.inference(text=text,
+                                                                             speech=melspec,
                                                                              use_teacher_forcing=True,
                                                                              spembs=None)[2]))
-                self.cached_text.append(tf.string_to_tensor(transcript).long())
+                self.cached_text.append(text)
                 self.cached_text_lens.append(torch.LongTensor([len(self.cached_text[-1])]))
-                self.cached_speech.append(ap.audio_to_mel_spec_tensor(wave).transpose(0, 1))
+                self.cached_speech.append(melspec)
                 self.cached_speech_lens.append(torch.LongTensor([len(self.cached_speech[-1])]))
+                self.cached_energy.append(energy_calc(input=norm_wave,
+                                                      input_lengths=torch.LongTensor([len(norm_wave)]),
+                                                      feats_lengths=melspec,
+                                                      durations=self.cached_durations[-1],
+                                                      durations_lengths=torch.LongTensor(
+                                                          [len(self.cached_durations[-1])])))
+                self.cached_pitch.append(dio(input=norm_wave,
+                                             input_lengths=torch.LongTensor([len(norm_wave)]),
+                                             feats_lengths=melspec,
+                                             durations=self.cached_durations[-1],
+                                             durations_lengths=torch.LongTensor([len(self.cached_durations[-1])])))
 
     def __getitem__(self, index):
         return self.cached_text[index], \

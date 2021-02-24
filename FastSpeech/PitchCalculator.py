@@ -11,7 +11,7 @@ from scipy.interpolate import interp1d
 from utils import pad_list
 
 
-class Dio:
+class Dio(torch.nn.Module):
     """
     F0 estimation with dio + stonemask algortihm.
     This is f0 extractor based on dio + stonemask algorithm
