@@ -108,7 +108,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 train_loss.backward()
                 step_counter += 1
                 # update weights
-                # print("Step: {}".format(step_counter))
+                print("Step: {}".format(step_counter))
                 optimizer.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
@@ -161,7 +161,7 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
-    device = torch.device("cuda:2")
+    device = torch.device("cuda:6")
     path_to_transcript_dict = build_path_to_transcript_dict()
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
