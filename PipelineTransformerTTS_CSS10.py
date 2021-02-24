@@ -68,7 +68,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               dataset=train_dataset,
                               drop_last=True,
                               num_workers=4,
-                              pin_memory=True,
+                              pin_memory=False,
                               shuffle=True,
                               prefetch_factor=2,
                               collate_fn=collate_and_pad)
@@ -76,7 +76,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               dataset=eval_dataset,
                               drop_last=False,
                               num_workers=2,
-                              pin_memory=True,
+                              pin_memory=False,
                               prefetch_factor=2,
                               collate_fn=collate_and_pad)
     loss_plot = [[], []]
@@ -90,22 +90,20 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
-        grad_accum = list()
+        grad_accum = 0
+        optimizer.zero_grad()
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
-            grad_accum.append(net(train_datapoint[0].to(device),
-                                  train_datapoint[1].to(device),
-                                  train_datapoint[2].to(device),
-                                  train_datapoint[3].to(device)))
-            train_losses_this_epoch.append(float(grad_accum[-1]))
-            if len(grad_accum) % gradient_accumulation == 0:
-                train_loss = 0.0
-                for accum_loss in grad_accum:
-                    train_loss += accum_loss
-                train_loss /= len(grad_accum)
-                grad_accum = list()
-                optimizer.zero_grad()
-                train_loss.backward()
+            train_loss = net(train_datapoint[0].to(device),
+                             train_datapoint[1].to(device),
+                             train_datapoint[2].to(device),
+                             train_datapoint[3].to(device))
+            train_losses_this_epoch.append(float(train_loss))
+            (train_loss / gradient_accumulation).backward()
+            del train_loss
+            grad_accum += 1
+            if grad_accum % gradient_accumulation == 0:
+                grad_accum = 0
                 step_counter += 1
                 # update weights
                 print("Step: {}".format(step_counter))
@@ -161,7 +159,7 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
-    device = torch.device("cuda:6")
+    device = torch.device("cuda:2")
     path_to_transcript_dict = build_path_to_transcript_dict()
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
