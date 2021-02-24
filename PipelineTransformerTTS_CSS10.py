@@ -108,7 +108,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 train_loss.backward()
                 step_counter += 1
                 # update weights
-                print("Step: {}".format(step_counter))
+                # print("Step: {}".format(step_counter))
                 optimizer.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()

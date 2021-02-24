@@ -40,14 +40,10 @@ class TransformerTTSDataset(Dataset):
                 print("processing {}".format(path))
                 if ap is None:
                     ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-                text = tf.string_to_tensor(transcript).long()
-                text_len = torch.LongTensor([len(text)])
-                speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1)
-                speech_len = torch.LongTensor([len(speech)])
-                self.cached_text.append(text)
-                self.cached_text_lens.append(text_len)
-                self.cached_speech.append(speech)
-                self.cached_speech_lens.append(speech_len)
+                self.cached_text.append(tf.string_to_tensor(transcript).long())
+                self.cached_text_lens.append(torch.LongTensor([len(self.cached_text[-1])]))
+                self.cached_speech.append(ap.audio_to_mel_spec_tensor(wave).transpose(0, 1))
+                self.cached_speech_lens.append(torch.LongTensor([len(self.cached_speech[-1])]))
                 if self.spemb:
                     print("not implemented yet")
                     raise NotImplementedError
