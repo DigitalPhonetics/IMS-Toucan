@@ -79,7 +79,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  pitch_embed_dropout: float = 0.5,
                  stop_gradient_from_pitch_predictor: bool = False,
                  # pretrained spk emb
-                 spk_embed_dim: int = 256,
+                 spk_embed_dim: int = None,
                  # training related
                  transformer_enc_dropout_rate: float = 0.1,
                  transformer_enc_positional_dropout_rate: float = 0.1,
@@ -131,7 +131,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  cnn_module_kernel=conformer_enc_kernel_size)
 
         # define additional projection for speaker embedding
-        self.projection = torch.nn.Linear(adim + self.spk_embed_dim, adim)
+        if self.spk_embed_dim is not None:
+            self.projection = torch.nn.Linear(adim + self.spk_embed_dim, adim)
 
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=adim,
