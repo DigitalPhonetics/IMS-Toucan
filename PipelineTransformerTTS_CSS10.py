@@ -109,7 +109,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 grad_accum = 0
                 step_counter += 1
                 # update weights
-                print("Step: {}".format(step_counter))
+                # print("Step: {}".format(step_counter))
                 scaler.step(optimizer)
                 scaler.update()
                 optimizer.zero_grad()
