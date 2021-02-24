@@ -618,9 +618,9 @@ class Transformer(torch.nn.Module, ABC):
         return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
 
 
-def build_transformertts_model():
+def build_transformertts_model(model_name="Transformer_German_Single.pt"):
     model = Transformer(idim=132, odim=80, spk_embed_dim=None).to("cpu")
-    params = torch.load(os.path.join("Models", "Use", "Transformer_German_Single.pt"), map_location='cpu')["model"]
+    params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
 
@@ -639,7 +639,7 @@ def visualize_sanity_check(model, sentence="Hallo Welt!"):
                       use_explicit_eos=True)
     fig, ax = plt.subplots()
     ax.set(title=sentence)
-    melspec = model.inference(tf.string_to_tensor(sentence).long())
-    lbd.specshow(melspec[0].transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
+    melspec = model.inference(tf.string_to_tensor(sentence).long())[0]
+    lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
                  x_axis='time', hop_length=256)
     plt.show()

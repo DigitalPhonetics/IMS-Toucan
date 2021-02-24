@@ -86,7 +86,6 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         conf.write(config)
     val_loss_highscore = 100.0
     step_counter = 0
-    net = net.to(device)
     net.train()
     optimizer = AdaBound(net.parameters())
     start_time = time.time()
@@ -167,7 +166,7 @@ if __name__ == '__main__':
     path_to_transcript_dict = build_path_to_transcript_dict()
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=132, odim=80, spk_embed_dim=None).to(device)
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
     print("Training model")
