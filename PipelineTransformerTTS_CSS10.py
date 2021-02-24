@@ -11,6 +11,7 @@ import warnings
 import torch
 import torchviz
 from adabound import AdaBound
+from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
@@ -64,6 +65,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     :param epochs: how many epochs to train for
     :param gradient_accumulation: how many batches to average before stepping
     """
+    scaler = GradScaler()
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
                               drop_last=True,
@@ -94,12 +96,13 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
-            train_loss = net(train_datapoint[0].to(device),
-                             train_datapoint[1].to(device),
-                             train_datapoint[2].to(device),
-                             train_datapoint[3].to(device))
-            train_losses_this_epoch.append(float(train_loss))
-            (train_loss / gradient_accumulation).backward()
+            with autocast():
+                train_loss = net(train_datapoint[0].to(device),
+                                 train_datapoint[1].to(device),
+                                 train_datapoint[2].to(device),
+                                 train_datapoint[3].to(device))
+                train_losses_this_epoch.append(float(train_loss))
+            scaler.scale((train_loss / gradient_accumulation)).backward()
             del train_loss
             grad_accum += 1
             if grad_accum % gradient_accumulation == 0:
@@ -107,7 +110,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 step_counter += 1
                 # update weights
                 print("Step: {}".format(step_counter))
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
         # evaluate on valid after every epoch is through
@@ -174,5 +178,5 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                epochs=3000,  # just kill the process at some point
-               batchsize=4,
-               gradient_accumulation=16)
+               batchsize=64,
+               gradient_accumulation=1)
