@@ -6,28 +6,28 @@ import numpy as np
 import pyworld
 import torch
 import torch.nn.functional as F
-from espnet.nets.pytorch_backend.nets_utils import pad_list
 from scipy.interpolate import interp1d
 
+from utils import pad_list
 
-class Dio():
+
+class Dio:
     """
     F0 estimation with dio + stonemask algortihm.
-    This is f0 extractor based on dio + stonemask algorithm introduced in https://doi.org/10.1587/transinf.2015EDP7457
+    This is f0 extractor based on dio + stonemask algorithm
+    introduced in https://doi.org/10.1587/transinf.2015EDP7457
     """
 
-    def __init__(
-            self,
-            fs=16000,
-            n_fft: int = 1024,
-            hop_length: int = 256,
-            f0min: int = 40,
-            f0max: int = 400,
-            use_token_averaged_f0: bool = True,
-            use_continuous_f0: bool = True,
-            use_log_f0: bool = True,
-            reduction_factor: int = None,
-    ):
+    def __init__(self,
+                 fs=16000,
+                 n_fft: int = 1024,
+                 hop_length: int = 256,
+                 f0min: int = 40,
+                 f0max: int = 400,
+                 use_token_averaged_f0: bool = True,
+                 use_continuous_f0: bool = True,
+                 use_log_f0: bool = True,
+                 reduction_factor: int = None):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
@@ -56,13 +56,12 @@ class Dio():
                     use_log_f0=self.use_log_f0,
                     reduction_factor=self.reduction_factor)
 
-    def forward(
-            self,
-            input: torch.Tensor,
-            input_lengths: torch.Tensor = None,
-            feats_lengths: torch.Tensor = None,
-            durations: torch.Tensor = None,
-            durations_lengths: torch.Tensor = None):
+    def forward(self,
+                input: torch.Tensor,
+                input_lengths: torch.Tensor = None,
+                feats_lengths: torch.Tensor = None,
+                durations: torch.Tensor = None,
+                durations_lengths: torch.Tensor = None):
         # If not provide, we assume that the inputs have the same length
         if input_lengths is None:
             input_lengths = (input.new_ones(input.shape[0], dtype=torch.long) * input.shape[1])

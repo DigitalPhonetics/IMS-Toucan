@@ -229,7 +229,7 @@ def show_model(model):
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    device = torch.device("cuda:2")
+    device = torch.device("cuda")
     train_dataset = MelGANDataset(list_of_paths=fl[:-100])
     valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()

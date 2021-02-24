@@ -5,11 +5,11 @@
 import torch
 import torch.nn.functional as F
 
-from espnet.nets.pytorch_backend.nets_utils import pad_list
-from espnet2.layers.stft import Stft
+from Layers.STFT import STFT
+from utils import pad_list
 
 
-class EnergyCalculator():
+class EnergyCalculator:
     """
     Energy calculator.
     """
@@ -37,7 +37,7 @@ class EnergyCalculator():
             assert reduction_factor >= 1
         self.reduction_factor = reduction_factor
 
-        self.stft = Stft(n_fft=n_fft,
+        self.stft = STFT(n_fft=n_fft,
                          win_length=win_length,
                          hop_length=hop_length,
                          window=window,

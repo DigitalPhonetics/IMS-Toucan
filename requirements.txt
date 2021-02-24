@@ -16,3 +16,4 @@ clean-text
 unidecode
 adabound  # https://arxiv.org/abs/1902.09843
 pyworld
+torch-complex
