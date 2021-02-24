@@ -16,6 +16,12 @@ class TransformerTTSDataset(Dataset):
             key_list = list(self.path_to_transcript_dict.keys())[:-100]
         else:
             key_list = list(self.path_to_transcript_dict.keys())[-100:]
+        lens = list()
+        for path in key_list:
+            wave, sr = sf.read(os.path.join("Corpora/CSS10/", path))
+            print(len(wave))
+            lens.append(len(wave))
+        print(sorted(lens))
         self.spemb = spemb
         self.device = device
         tf = TextFrontend(language="de",
