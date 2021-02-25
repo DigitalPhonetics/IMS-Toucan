@@ -9,7 +9,7 @@ from FastSpeech.EnergyCalculator import EnergyCalculator
 from FastSpeech.PitchCalculator import Dio
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
-from TransformerTTS.TransformerTTS import build_transformertts_model
+from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
 
 
 class FastSpeechDataset(Dataset):
@@ -32,7 +32,7 @@ class FastSpeechDataset(Dataset):
                           use_chinksandchunks_ipb=False,
                           use_explicit_eos=True)
         ap = None
-        acoustic_model = build_transformertts_model(model_name=acoustic_model_name)
+        acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name)
         dc = DurationCalculator()
         dio = Dio()
         energy_calc = EnergyCalculator()

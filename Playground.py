@@ -1,4 +1,5 @@
-from TransformerTTS.TransformerTTS import build_transformertts_model as build_trans, visualize_sanity_check as vis
+from TransformerTTS.TransformerTTS import show_spectrogram, show_attention_plot
 
 if __name__ == '__main__':
-    vis(model=build_trans(), sentence="Hallo Welt!")
+    show_spectrogram("Das hier ist der Satz meiner Wahl.")
+    show_attention_plot("Das hier ist der Satz meiner Wahl.")

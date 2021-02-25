@@ -161,7 +161,7 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
-    device = torch.device("cuda:2")
+    device = torch.device("cuda")
     path_to_transcript_dict = build_path_to_transcript_dict()
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
@@ -176,5 +176,5 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                epochs=3000,  # just kill the process at some point
-               batchsize=32,
-               gradient_accumulation=2)
+               batchsize=16,
+               gradient_accumulation=4)

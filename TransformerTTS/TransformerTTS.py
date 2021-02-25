@@ -366,7 +366,6 @@ class Transformer(torch.nn.Module, ABC):
         else:
             raise ValueError("unknown --loss-type " + self.loss_type)
 
-
         # calculate guided attention loss
         if self.use_guided_attn_loss:
             # calculate for encoder
@@ -618,14 +617,14 @@ class Transformer(torch.nn.Module, ABC):
         return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
 
 
-def build_transformertts_model(model_name="Transformer_German_Single.pt"):
+def build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt"):
     model = Transformer(idim=132, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
 
 
-def visualize_sanity_check(model, sentence="Hallo Welt!"):
+def show_spectrogram(sentence, model=build_reference_transformer_tts_model()):
     from PreprocessingForTTS.ProcessText import TextFrontend
     import librosa.display as lbd
     import matplotlib.pyplot as plt
@@ -643,3 +642,38 @@ def visualize_sanity_check(model, sentence="Hallo Welt!"):
     lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
                  x_axis='time', hop_length=256)
     plt.show()
+
+
+def select_best_att_head(att_ws):
+    att_ws = torch.cat([att_w for att_w in att_ws], dim=0)
+    diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)
+    diagonal_head_idx = diagonal_scores.argmax()
+    att_ws = att_ws[diagonal_head_idx]
+    return att_ws
+
+
+def plot_attention(att, sentence=None):
+    import matplotlib.pyplot as plt
+    plt.imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto', origin="lower")
+    plt.xlabel("Inputs")
+    plt.ylabel("Outputs")
+    if sentence is not None:
+        plt.title(sentence)
+    plt.show()
+
+
+def get_atts(model, sentence):
+    from PreprocessingForTTS.ProcessText import TextFrontend
+    tf = TextFrontend(language="de",
+                      use_panphon_vectors=False,
+                      use_shallow_pos=False,
+                      use_sentence_type=False,
+                      use_positional_information=False,
+                      use_word_boundaries=False,
+                      use_chinksandchunks_ipb=False,
+                      use_explicit_eos=True)
+    return model.inference(tf.string_to_tensor(sentence).long())[2]
+
+
+def show_attention_plot(sentence, model=build_reference_transformer_tts_model()):
+    plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence)), sentence=sentence)
