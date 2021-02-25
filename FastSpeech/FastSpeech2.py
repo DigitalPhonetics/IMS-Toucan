@@ -216,11 +216,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                 gold_speech: torch.Tensor,
                 speech_lengths: torch.Tensor,
                 gold_durations: torch.Tensor,
-                durations_lengths: torch.Tensor,
                 gold_pitch: torch.Tensor,
-                pitch_lengths: torch.Tensor,
                 gold_energy: torch.Tensor,
-                energy_lengths: torch.Tensor,
                 spembs: torch.Tensor = None):
         """
         Calculate forward propagation.
