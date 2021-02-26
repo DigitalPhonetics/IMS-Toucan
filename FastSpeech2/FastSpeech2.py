@@ -1,9 +1,10 @@
+import os
 from abc import ABC
 
 import torch
 import torch.nn.functional as F
 
-from FastSpeech.FastSpeech2Loss import FastSpeech2Loss
+from FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
@@ -269,14 +270,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                          olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
 
-        stats = dict(l1_loss=l1_loss.item(),
-                     duration_loss=duration_loss.item(),
-                     pitch_loss=pitch_loss.item(),
-                     energy_loss=energy_loss.item(),
-                     loss=loss.item()
-                     )
-
-        return loss, stats
+        return loss
 
     def _forward(self,
                  xs: torch.Tensor,
@@ -438,3 +432,35 @@ class FastSpeech2(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
+    def get_conf(self):
+        return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
+
+
+def build_reference_fastspeech2_model(model_name="FastSpeech2_German_Single.pt"):
+    model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to("cpu")
+    params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
+    model.load_state_dict(params)
+    return model
+
+
+def show_spectrogram(sentence, model=None):
+    if model is None:
+        model = build_reference_fastspeech2_model()
+    from PreprocessingForTTS.ProcessText import TextFrontend
+    import librosa.display as lbd
+    import matplotlib.pyplot as plt
+    tf = TextFrontend(language="de",
+                      use_panphon_vectors=False,
+                      use_shallow_pos=False,
+                      use_sentence_type=False,
+                      use_positional_information=False,
+                      use_word_boundaries=False,
+                      use_chinksandchunks_ipb=False,
+                      use_explicit_eos=True)
+    fig, ax = plt.subplots()
+    ax.set(title=sentence)
+    melspec = model.inference(tf.string_to_tensor(sentence).long())
+    lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
+                 x_axis='time', hop_length=256)
+    plt.show()

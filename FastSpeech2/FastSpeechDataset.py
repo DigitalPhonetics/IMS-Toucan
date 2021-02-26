@@ -4,9 +4,9 @@ import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 
-from FastSpeech.DurationCalculator import DurationCalculator
-from FastSpeech.EnergyCalculator import EnergyCalculator
-from FastSpeech.PitchCalculator import Dio
+from FastSpeech2.DurationCalculator import DurationCalculator
+from FastSpeech2.EnergyCalculator import EnergyCalculator
+from FastSpeech2.PitchCalculator import Dio
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
@@ -18,9 +18,9 @@ class FastSpeechDataset(Dataset):
                  train=True):
         self.path_to_transcript_dict = path_to_transcript_dict
         if train:
-            key_list = list(self.path_to_transcript_dict.keys())[:-100]
+            key_list = list(self.path_to_transcript_dict.keys())[:70]
         else:
-            key_list = list(self.path_to_transcript_dict.keys())[-100:]
+            key_list = list(self.path_to_transcript_dict.keys())[-10:]
         self.spemb = spemb
         self.device = device
         tf = TextFrontend(language="de",
@@ -64,8 +64,8 @@ class FastSpeechDataset(Dataset):
                     self.cached_durations.append(dc(acoustic_model.inference(text=text,
                                                                              speech=melspec,
                                                                              use_teacher_forcing=True,
-                                                                             spembs=None)[2]))
-                duration_length = torch.LongTensor([len(self.cached_durations[-1][0])])
+                                                                             spembs=None)[2])[0])
+                duration_length = torch.LongTensor([len(self.cached_durations[-1])])
                 self.cached_text.append(text)
                 self.cached_text_lens.append(torch.LongTensor([len(self.cached_text[-1])]))
                 self.cached_speech.append(melspec)
@@ -73,12 +73,12 @@ class FastSpeechDataset(Dataset):
                 self.cached_energy.append(energy_calc(input=norm_wave.unsqueeze(0),
                                                       input_lengths=norm_wave_length,
                                                       feats_lengths=melspec_length,
-                                                      durations=self.cached_durations[-1][0].unsqueeze(0),
+                                                      durations=self.cached_durations[-1].unsqueeze(0),
                                                       durations_lengths=duration_length)[0].squeeze(0))
                 self.cached_pitch.append(dio(input=norm_wave.unsqueeze(0),
                                              input_lengths=norm_wave_length,
                                              feats_lengths=melspec_length,
-                                             durations=self.cached_durations[-1][0].unsqueeze(0),
+                                             durations=self.cached_durations[-1].unsqueeze(0),
                                              durations_lengths=duration_length)[0].squeeze(0))
 
     def __getitem__(self, index):

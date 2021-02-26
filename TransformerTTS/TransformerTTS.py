@@ -624,7 +624,9 @@ def build_reference_transformer_tts_model(model_name="Transformer_German_Single.
     return model
 
 
-def show_spectrogram(sentence, model=build_reference_transformer_tts_model()):
+def show_spectrogram(sentence, model=None):
+    if model is None:
+        model = build_reference_transformer_tts_model()
     from PreprocessingForTTS.ProcessText import TextFrontend
     import librosa.display as lbd
     import matplotlib.pyplot as plt
@@ -675,5 +677,7 @@ def get_atts(model, sentence):
     return model.inference(tf.string_to_tensor(sentence).long())[2]
 
 
-def show_attention_plot(sentence, model=build_reference_transformer_tts_model()):
+def show_attention_plot(sentence, model=None):
+    if model is None:
+        model = build_reference_transformer_tts_model()
     plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence)), sentence=sentence)

@@ -21,6 +21,7 @@ complex systems.
 | Prepare FastSpeech Dataset             | ✅ |
 | Train FastSpeech                       | |
 | Build easy Inference Interface         | |
+| Build easy Visualization               | ✅ |
 
 ## Second Iteration TODOS
 
@@ -28,9 +29,15 @@ complex systems.
 | ---------------------------------------| :---:|
 | Redo dataloading for TransformerTTS | ✅|
 | Redo dataloading for SpeakerEmbedding ||
-| Hyperparameter optimization for each model (optimizer settings) | ❓|
+| Hyperparameter optimization for each model | ❓|
 | Train TransformerTTS that matches Vocoder input better | ✅|
-| Train SpeakerEmbedding that matches new spectrogram settings| |
+| Train SpeakerEmbedding that matches new filterbank settings| |
 | Extend TransformerTTS to multi-speaker||
 | Extend FastSpeech to multi-speaker||
 | Extend MelGAN to multi-speaker||
+
+## Third Iteration TODOS
+
+| TODO Item                              | Status |
+| ---------------------------------------| :---:|
+| The Great Refactoring                  | |

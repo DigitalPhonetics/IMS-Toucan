@@ -66,13 +66,22 @@ class Conformer(torch.nn.Module):
         """Construct a Conformer object."""
         super(Conformer, self).__init__()
 
-        activation = Swish
+        activation = Swish()
 
         self.conv_subsampling_factor = 1
-        self.embed = torch.nn.Sequential(
-            input_layer,
-            RelPositionalEncoding(attention_dim, positional_dropout_rate),
-        )
+
+        if isinstance(input_layer, torch.nn.Module):
+            self.embed = torch.nn.Sequential(
+                input_layer,
+                RelPositionalEncoding(attention_dim, positional_dropout_rate),
+            )
+        elif input_layer is None:
+            self.embed = torch.nn.Sequential(
+                RelPositionalEncoding(attention_dim, positional_dropout_rate)
+            )
+        else:
+            raise ValueError("unknown input_layer: " + input_layer)
+
         self.normalize_before = normalize_before
 
         # self-attention module definition
@@ -96,19 +105,17 @@ class Conformer(torch.nn.Module):
         convolution_layer = ConvolutionModule
         convolution_layer_args = (attention_dim, cnn_module_kernel, activation)
 
-        self.encoders = repeat(
-            num_blocks,
-            lambda lnum: EncoderLayer(
-                attention_dim,
-                encoder_selfattn_layer(*encoder_selfattn_layer_args),
-                positionwise_layer(*positionwise_layer_args),
-                positionwise_layer(*positionwise_layer_args) if macaron_style else None,
-                convolution_layer(*convolution_layer_args) if use_cnn_module else None,
-                dropout_rate,
-                normalize_before,
-                concat_after,
-            ),
-        )
+        self.encoders = repeat(num_blocks,
+                               lambda lnum: EncoderLayer(attention_dim,
+                                                         encoder_selfattn_layer(*encoder_selfattn_layer_args),
+                                                         positionwise_layer(*positionwise_layer_args),
+                                                         positionwise_layer(
+                                                             *positionwise_layer_args) if macaron_style else None,
+                                                         convolution_layer(
+                                                             *convolution_layer_args) if use_cnn_module else None,
+                                                         dropout_rate,
+                                                         normalize_before,
+                                                         concat_after))
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
 

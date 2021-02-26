@@ -1,5 +1,7 @@
 """
 Train a non-autoregressive FastSpeech 2 model on the german single speaker dataset by Hokuspokus
+
+This requires having a trained TransformerTTS model in the right directory to knowledge distill the durations.
 """
 
 import json
@@ -14,8 +16,8 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
-from FastSpeech.FastSpeech2 import FastSpeech2
-from FastSpeech.FastSpeechDataset import FastSpeechDataset
+from FastSpeech2.FastSpeech2 import FastSpeech2
+from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 
 warnings.filterwarnings("ignore")
 
@@ -183,5 +185,5 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory="Models/FastSpeech2/SingleSpeaker/CSS10",
                epochs=3000,  # just kill the process at some point
-               batchsize=64,
-               gradient_accumulation=1)
+               batchsize=16,
+               gradient_accumulation=4)
