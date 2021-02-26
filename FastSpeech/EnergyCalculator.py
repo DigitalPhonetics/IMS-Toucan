@@ -24,7 +24,7 @@ class EnergyCalculator(torch.nn.Module):
                  normalized: bool = False,
                  onesided: bool = True,
                  use_token_averaged_energy: bool = True,
-                 reduction_factor: int = None):
+                 reduction_factor: int = 1):
         super().__init__()
 
         self.fs = fs
@@ -88,9 +88,8 @@ class EnergyCalculator(torch.nn.Module):
 
         # (Optional): Average by duration to calculate token-wise energy
         if self.use_token_averaged_energy:
-            durations = durations * self.reduction_factor
-            energy = [self._average_by_duration(e[:el].view(-1), d)
-                      for e, el, d in zip(energy, energy_lengths, durations)]
+            energy = [self._average_by_duration(e[:el].view(-1), d) for e, el, d in
+                      zip(energy, energy_lengths, durations)]
             energy_lengths = durations_lengths
 
         # Padding
