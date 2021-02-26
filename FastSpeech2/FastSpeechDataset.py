@@ -18,9 +18,9 @@ class FastSpeechDataset(Dataset):
                  train=True):
         self.path_to_transcript_dict = path_to_transcript_dict
         if train:
-            key_list = list(self.path_to_transcript_dict.keys())[:70]
+            key_list = list(self.path_to_transcript_dict.keys())[:-100]
         else:
-            key_list = list(self.path_to_transcript_dict.keys())[-10:]
+            key_list = list(self.path_to_transcript_dict.keys())[-100:]
         self.spemb = spemb
         self.device = device
         tf = TextFrontend(language="de",

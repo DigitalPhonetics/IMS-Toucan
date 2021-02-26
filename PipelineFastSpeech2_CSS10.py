@@ -63,7 +63,8 @@ def collate_and_pad(batch):
 
 
 def train_loop(net, train_dataset, eval_dataset, device, save_directory,
-               config, batchsize=32, epochs=150, gradient_accumulation=1):
+               config, batchsize=32, epochs=150, gradient_accumulation=1,
+               epochs_per_save=10):
     """
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
@@ -74,6 +75,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     :param batchsize: How many elements should be loaded at once
     :param epochs: how many epochs to train for
     :param gradient_accumulation: how many batches to average before stepping
+    :param epochs_per_save: how many epochs to train in between checkpoints
     """
     scaler = GradScaler()
     train_loader = DataLoader(batch_size=batchsize,
@@ -94,7 +96,6 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)
-    val_loss_highscore = 100.0
     step_counter = 0
     net.train()
     optimizer = AdaBound(net.parameters())
@@ -139,12 +140,10 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                                             validation_datapoint[5].to(device),
                                             validation_datapoint[6].to(device))))
             average_val_loss = sum(val_losses) / len(val_losses)
-            if val_loss_highscore > average_val_loss:
-                val_loss_highscore = average_val_loss
+            if epoch & epochs_per_save == 0:
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict()},
-                           os.path.join(save_directory,
-                                        "checkpoint_{}_{}.pt".format(round(average_val_loss, 4), step_counter)))
+                           os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
