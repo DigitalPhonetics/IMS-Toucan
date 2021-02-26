@@ -20,7 +20,7 @@ complex systems.
 | Build Duration Extractor               | ✅ |
 | Prepare FastSpeech Dataset             | ✅ |
 | Train FastSpeech                       | |
-| Build easy Inference Interface         | |
+| Build easy Inference Interface         | ✅ |
 | Build easy Visualization               | ✅ |
 
 ## Second Iteration TODOS
