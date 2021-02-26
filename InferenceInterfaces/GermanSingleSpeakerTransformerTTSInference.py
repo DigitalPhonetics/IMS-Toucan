@@ -3,6 +3,7 @@ from abc import ABC
 from typing import Sequence
 
 import numpy as np
+import soundfile
 import torch
 import torch.nn.functional as F
 
@@ -16,6 +17,7 @@ from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
 from PreprocessingForTTS.ProcessText import TextFrontend
+from TransformerTTS.TransformerLoss import TransformerLoss
 from utils import make_non_pad_mask
 from utils import subsequent_mask
 
@@ -61,6 +63,10 @@ class Transformer(torch.nn.Module, ABC):
                  eprenet_dropout_rate: float = 0.5,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
+                 use_masking: bool = False,
+                 use_weighted_masking: bool = False,
+                 bce_pos_weight: float = 5.0,
+                 loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
                  num_layers_applied_guided_attn: int = 2,
@@ -149,6 +155,12 @@ class Transformer(torch.nn.Module, ABC):
                                n_filts=postnet_filts,
                                use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
+        if self.use_guided_attn_loss:
+            self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                               alpha=guided_attn_loss_lambda)
+        self.criterion = TransformerLoss(use_masking=use_masking,
+                                         use_weighted_masking=use_weighted_masking,
+                                         bce_pos_weight=bce_pos_weight)
         if self.use_guided_attn_loss:
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma,
                                                                alpha=guided_attn_loss_lambda)
@@ -302,4 +314,24 @@ class GermanSingleSpeakerTransformerTTSInference:
         self.mel2wav = MelGANGenerator()
 
     def __call__(self, text):
-        return self.mel2wav(self.phone2mel(self.text2phone.string_to_tensor(text)))
+        phones = self.text2phone.string_to_tensor(text).long()
+        mel = self.phone2mel(phones).transpose(0, 1).detach()
+        wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0).detach()
+        return wave
+
+    def read_to_file(self, text_list, file_location):
+        """
+        :param text_list: A list of strings to be read
+        :param file_location: The path and name of the file it should be saved to
+        """
+        wav = None
+        silence = torch.zeros([8000], device="cpu")
+        for text in text_list:
+            if text.strip() != "":
+                print("Now synthesizing: {}".format(text))
+                if wav is None:
+                    wav = self(text)
+                else:
+                    wav = torch.cat((wav, silence), 0)
+                    wav = torch.cat((wav, self(text)), 0)
+        soundfile.write(file=file_location, data=wav.cpu(), samplerate=16000)
