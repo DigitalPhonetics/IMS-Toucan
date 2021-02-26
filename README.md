@@ -15,8 +15,8 @@ complex systems.
 | Implement Neural Vocoder               | ✅ |
 | Prepare Data for Neural Vocoder        | ✅ |
 | Train Neural Vocoder                   | ✅ |
-| Build Pitch Extractor                  | |
-| Build Energy Extractor                 | |
+| Build Pitch Extractor                  | ✅ |
+| Build Energy Extractor                 | ✅ |
 | Build Duration Extractor               | ✅ |
 | Prepare FastSpeech Dataset             | ✅ |
 | Train FastSpeech                       | |
