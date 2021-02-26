@@ -656,11 +656,13 @@ def select_best_att_head(att_ws):
 
 def plot_attention(att, sentence=None):
     import matplotlib.pyplot as plt
+    plt.figure(figsize=(8, 4))
     plt.imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto', origin="lower")
     plt.xlabel("Inputs")
     plt.ylabel("Outputs")
     if sentence is not None:
         plt.title(sentence)
+    plt.tight_layout()
     plt.show()
 
 
