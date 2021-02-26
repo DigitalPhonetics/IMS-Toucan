@@ -17,8 +17,8 @@ complex systems.
 | Train Neural Vocoder                   | ✅ |
 | Build Pitch Extractor                  | |
 | Build Energy Extractor                 | |
-| Build Duration Extractor               | |
-| Prepare FastSpeech Dataset             | |
+| Build Duration Extractor               | ✅ |
+| Prepare FastSpeech Dataset             | ✅ |
 | Train FastSpeech                       | |
 | Build easy Inference Interface         | |
 
