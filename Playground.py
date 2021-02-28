@@ -1,5 +1,11 @@
+import torch
+import torchviz
+
+from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeech2 import show_spectrogram as fact_spec
+from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
+from PipelineFastSpeech2_CSS10 import build_path_to_transcript_dict
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
 
 
@@ -17,5 +23,21 @@ def read_texts():
     tts.read_to_file(text_list=["Hallo Welt!", "Das hier sind meine ersten zwei Sätze."], file_location="test.wav")
 
 
+def plot_fastspeech_architecture():
+    device = torch.device("cpu")
+    path_to_transcript_dict = build_path_to_transcript_dict()
+    css10_testing = FastSpeechDataset(path_to_transcript_dict, train="testing",
+                                      acoustic_model_name="Transformer_German_Single.pt")
+    model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to(device)
+    datapoint = css10_testing[0]
+    out = model.inference(text=datapoint[0].to(device),
+                          speech=datapoint[2].to(device),
+                          durations=datapoint[4].to(device),
+                          pitch=datapoint[5].to(device),
+                          energy=datapoint[6].to(device),
+                          use_teacher_forcing=True)
+    torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
+
+
 if __name__ == '__main__':
-    read_texts()
+    plot_fastspeech_architecture()

@@ -17,10 +17,13 @@ class FastSpeechDataset(Dataset):
     def __init__(self, path_to_transcript_dict, acoustic_model_name, device=torch.device("cpu"), spemb=False,
                  train=True):
         self.path_to_transcript_dict = path_to_transcript_dict
-        if train:
-            key_list = list(self.path_to_transcript_dict.keys())[:-100]
+        if type(train) is str:
+            key_list = list(self.path_to_transcript_dict.keys())[:1]
         else:
-            key_list = list(self.path_to_transcript_dict.keys())[-100:]
+            if train:
+                key_list = list(self.path_to_transcript_dict.keys())[:-100]
+            else:
+                key_list = list(self.path_to_transcript_dict.keys())[-100:]
         self.spemb = spemb
         self.device = device
         tf = TextFrontend(language="de",
