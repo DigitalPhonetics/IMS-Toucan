@@ -248,12 +248,12 @@ if __name__ == '__main__':
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
     print("Training model")
-    train_loop(net=model,
-               train_dataset=css10_train,
-               eval_dataset=css10_valid,
-               device=device,
-               config=model.get_conf(),
-               save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
-               epochs=3000,  # just kill the process at some point
-               batchsize=16,
-               gradient_accumulation=4)
+    continue_training(net=model,
+                      train_dataset=css10_train,
+                      eval_dataset=css10_valid,
+                      device=device,
+                      config=model.get_conf(),
+                      save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
+                      epochs=3000,  # just kill the process at some point
+                      batchsize=16,
+                      gradient_accumulation=4)

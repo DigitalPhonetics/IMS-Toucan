@@ -12,7 +12,7 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 class TransformerTTSDataset(Dataset):
 
     def __init__(self, path_to_transcript_dict, device=torch.device("cpu"), spemb=False, train=True,
-                 loading_processes=40):
+                 loading_processes=24):
         ressource_manager = Manager()
         self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
         if train:
