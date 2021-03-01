@@ -39,15 +39,16 @@ def train_loop(net,
         train_losses = list()
         # train one epoch
         for _ in range(steps_per_epoch):
-            train_datapoint = next(train_dataset)
-            train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
-            train_losses.append(float(train_loss))
-            (train_loss / batchsize).backward()  # for accumulative gradient
-            batch_counter += 1
-            if batch_counter % batchsize == 0:
-                print("Sample: {}".format(batch_counter))
-                optimizer.step()
-                optimizer.zero_grad()
+            for _ in range(batchsize):
+                train_datapoint = next(train_dataset)
+                train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
+                train_losses.append(float(train_loss))
+                (train_loss / batchsize).backward()  # for accumulative gradient
+                batch_counter += 1
+                if batch_counter % batchsize == 0:
+                    print("Step: {}".format(int(batch_counter // batchsize)))
+                    optimizer.step()
+                    optimizer.zero_grad()
         # evaluate after epoch
         with torch.no_grad():
             net.eval()
