@@ -170,8 +170,8 @@ if __name__ == '__main__':
     print("Preparing")
     device = torch.device("cuda")
     path_to_transcript_dict = build_path_to_transcript_dict()
-    css10_train = FastSpeechDataset(path_to_transcript_dict, train=True,
-                                    acoustic_model_name="Transformer_German_Single.pt")
+    # css10_train = FastSpeechDataset(path_to_transcript_dict, train=True,
+    #                                 acoustic_model_name="Transformer_German_Single.pt")
     css10_valid = FastSpeechDataset(path_to_transcript_dict, train=False,
                                     acoustic_model_name="Transformer_German_Single.pt")
     model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to(device)
@@ -179,7 +179,7 @@ if __name__ == '__main__':
         os.makedirs("Models/FastSpeech2/SingleSpeaker/CSS10")
     print("Training model")
     train_loop(net=model,
-               train_dataset=css10_train,
+               train_dataset=css10_valid,
                eval_dataset=css10_valid,
                device=device,
                config=model.get_conf(),

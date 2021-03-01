@@ -26,7 +26,7 @@ class SpeakerEmbeddingDataset(IterableDataset):
                         self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
 
         self.speakers = list(self.speaker_to_paths.keys())
-        _, sr = sf.read(self.speaker_to_paths[self.speakers[0]])
+        _, sr = sf.read(self.speaker_to_paths[self.speakers[0]][0])
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
 
         self.purity_toggle = True

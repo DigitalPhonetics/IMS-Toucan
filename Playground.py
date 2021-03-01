@@ -26,18 +26,26 @@ def read_texts():
 def plot_fastspeech_architecture():
     device = torch.device("cpu")
     path_to_transcript_dict = build_path_to_transcript_dict()
-    css10_testing = FastSpeechDataset(path_to_transcript_dict, train="testing",
-                                      acoustic_model_name="Transformer_German_Single.pt")
+    css10_testing = FastSpeechDataset(path_to_transcript_dict,
+                                      train="testing",
+                                      acoustic_model_name="Transformer_German_Single.pt",
+                                      save=False,
+                                      load=False,
+                                      loading_processes=1)
     model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to(device)
     datapoint = css10_testing[0]
-    out = model.inference(text=datapoint[0].to(device),
-                          speech=datapoint[2].to(device),
-                          durations=datapoint[4].to(device),
-                          pitch=datapoint[5].to(device),
-                          energy=datapoint[6].to(device),
+    print(torch.LongTensor(datapoint[0]).to(device).shape, torch.Tensor(datapoint[2]).to(device).shape,
+          torch.Tensor(datapoint[4]).to(device).shape, torch.Tensor(datapoint[5]).to(device).shape,
+          torch.Tensor(datapoint[6]).to(device).shape)
+    out = model.inference(text=torch.LongTensor(datapoint[0]).to(device),
+                          speech=torch.Tensor(datapoint[2]).to(device),
+                          durations=torch.Tensor(datapoint[4]).to(device),
+                          pitch=torch.Tensor(datapoint[5]).to(device),
+                          energy=torch.Tensor(datapoint[6]).to(device),
+                          spembs=None,
                           use_teacher_forcing=True)
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
 
 
 if __name__ == '__main__':
-    read_texts()
+    plot_fastspeech_architecture()

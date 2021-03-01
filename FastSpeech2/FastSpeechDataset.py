@@ -111,12 +111,12 @@ class FastSpeechDataset(Dataset):
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
                                             durations=cached_durations.unsqueeze(0),
-                                            durations_lengths=len(cached_durations))[0].squeeze(0)
+                                            durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
                 cached_pitch = dio(input=norm_wave.unsqueeze(0),
                                    input_lengths=norm_wave_length,
                                    feats_lengths=melspec_length,
                                    durations=cached_durations.unsqueeze(0),
-                                   durations_lengths=len(cached_durations))[0].squeeze(0)
+                                   durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
                 self.datapoints.append(
                     [cached_text,
                      cached_text_lens,
