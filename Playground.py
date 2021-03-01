@@ -40,4 +40,4 @@ def plot_fastspeech_architecture():
 
 
 if __name__ == '__main__':
-    plot_fastspeech_architecture()
+    read_texts()
