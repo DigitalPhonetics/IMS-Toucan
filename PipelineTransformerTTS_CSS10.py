@@ -42,10 +42,10 @@ def collate_and_pad(batch):
     speechs = list()
     speech_lens = list()
     for datapoint in batch:
-        texts.append(datapoint[0])
-        text_lens.append(datapoint[1])
-        speechs.append(datapoint[2])
-        speech_lens.append(datapoint[3])
+        texts.append(torch.LongTensor(datapoint[0]))
+        text_lens.append(torch.LongTensor([datapoint[1]]))
+        speechs.append(torch.Tensor(datapoint[2]))
+        speech_lens.append(torch.LongTensor([datapoint[3]]))
     return (pad_sequence(texts, batch_first=True),
             torch.stack(text_lens).squeeze(1),
             pad_sequence(speechs, batch_first=True),
@@ -65,7 +65,9 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     :param batchsize: How many elements should be loaded at once
     :param epochs: how many epochs to train for
     :param gradient_accumulation: how many batches to average before stepping
+    :param epochs_per_save: how many epochs to train in between checkpoints
     """
+    net = net.to(device)
     scaler = GradScaler()
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
@@ -143,6 +145,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
 def continue_training(net, train_dataset, eval_dataset, device, save_directory,
                       config, batchsize=10, epochs=150, gradient_accumulation=6,
                       epochs_per_save=10, checkpoint_name="checkpoint_61712.pt"):
+    net = net.to(device)
     with open(os.path.join(save_directory, "train_val_loss.json"), 'r') as plotting_data_file:
         loss_plot = json.load(plotting_data_file)
     net.load_state_dict(torch.load("Models/TransformerTTS/SingleSpeaker/CSS10/" + checkpoint_name)["model"])
@@ -240,18 +243,17 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
-    device = torch.device("cuda:2")
     path_to_transcript_dict = build_path_to_transcript_dict()
-    css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True)
-    css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False)
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None).to(device)
+    css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True, load=True)
+    css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False, load=True)
+    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
     print("Training model")
     continue_training(net=model,
                       train_dataset=css10_train,
                       eval_dataset=css10_valid,
-                      device=device,
+                      device=torch.device("cuda:2"),
                       config=model.get_conf(),
                       save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                       epochs=3000,  # just kill the process at some point

@@ -121,41 +121,36 @@ def plot_model():
 
 
 if __name__ == '__main__':
-    do_stages = [1, 3, 4]
 
-    if 1 in do_stages:
-        print("Stage 1: Preparation")
-        device = torch.device("cpu")
-        if not os.path.exists("Corpora"):
-            os.mkdir("Corpora")
-        if not os.path.exists("Corpora/SpeakerEmbedding"):
-            os.mkdir("Corpora/SpeakerEmbedding")
-        if not os.path.exists("Corpora/SpeakerEmbedding/train"):
-            os.mkdir("Corpora/SpeakerEmbedding/train")
-        if not os.path.exists("Corpora/SpeakerEmbedding/valid"):
-            os.mkdir("Corpora/SpeakerEmbedding/valid")
-        if not os.path.exists("Models"):
-            os.mkdir("Models")
-        if not os.path.exists("Models/SpeakerEmbedding"):
-            os.mkdir("Models/SpeakerEmbedding")
-        path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train/"
-        path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid/"
-        path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                                   "datasets/VoxCeleb2/audio-files/train/dev/aac/"
-        path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                                   "datasets/VoxCeleb2/audio-files/test/aac/"
+    print("Stage 1: Preparation")
+    device = torch.device("cpu")
+    if not os.path.exists("Corpora"):
+        os.mkdir("Corpora")
+    if not os.path.exists("Corpora/SpeakerEmbedding"):
+        os.mkdir("Corpora/SpeakerEmbedding")
+    if not os.path.exists("Corpora/SpeakerEmbedding/train"):
+        os.mkdir("Corpora/SpeakerEmbedding/train")
+    if not os.path.exists("Corpora/SpeakerEmbedding/valid"):
+        os.mkdir("Corpora/SpeakerEmbedding/valid")
+    if not os.path.exists("Models"):
+        os.mkdir("Models")
+    if not os.path.exists("Models/SpeakerEmbedding"):
+        os.mkdir("Models/SpeakerEmbedding")
+    path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train/"
+    path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid/"
+    path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                               "datasets/VoxCeleb2/audio-files/train/dev/aac/"
+    path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                               "datasets/VoxCeleb2/audio-files/test/aac/"
 
-    if 2 in do_stages:
-        print("Stage 2: Feature Extraction")
-        build_sub_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
-        build_sub_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
+    print("Stage 2: Feature Extraction")
+    build_sub_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
+    build_sub_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
 
-    if 3 in do_stages:
-        print("Stage 3: Data Loading")
-        train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=50000, device=device)
-        valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
+    print("Stage 3: Data Loading")
+    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=50000, device=device)
+    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
 
-    if 4 in do_stages:
-        print("Stage 4: Model Training")
-        model = SiameseSpeakerEmbedding()
-        train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)
+    print("Stage 4: Model Training")
+    model = SiameseSpeakerEmbedding()
+    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)

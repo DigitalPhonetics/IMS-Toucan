@@ -46,13 +46,13 @@ def collate_and_pad(batch):
     pitch = list()
     energy = list()
     for datapoint in batch:
-        texts.append(datapoint[0])
-        text_lens.append(datapoint[1])
-        speechs.append(datapoint[2])
-        speech_lens.append(datapoint[3])
-        durations.append(datapoint[4])
-        energy.append(datapoint[5])
-        pitch.append(datapoint[6])
+        texts.append(torch.LongTensor(datapoint[0]))
+        text_lens.append(torch.LongTensor([datapoint[1]]))
+        speechs.append(torch.Tensor(datapoint[2]))
+        speech_lens.append(torch.LongTensor([datapoint[3]]))
+        durations.append(torch.Tensor(datapoint[4]))
+        energy.append(torch.Tensor(datapoint[5]))
+        pitch.append(torch.Tensor(datapoint[6]))
     return (pad_sequence(texts, batch_first=True),
             torch.stack(text_lens).squeeze(1),
             pad_sequence(speechs, batch_first=True),
