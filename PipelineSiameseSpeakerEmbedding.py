@@ -4,14 +4,12 @@ Train a speaker embedding function on the vox celeb 2 corpus
 
 import json
 import os
-import random
 import time
 import warnings
 
 import torch
 import torchviz
 from adabound import AdaBound
-from torch.utils.data.dataloader import DataLoader
 
 from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
@@ -19,11 +17,17 @@ from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 warnings.filterwarnings("ignore")
 
 
-def train_loop(net, train_dataset, valid_dataset, save_directory, device, epochs=1000, batchsize=32):
+def train_loop(net,
+               train_dataset,
+               valid_dataset,
+               save_directory,
+               device,
+               epochs=1000,
+               batchsize=32,
+               steps_per_epoch=300,
+               evaluation_samples=200):
     start_time = time.time()
     loss_plot = [[], []]
-    train_loader = DataLoader(train_dataset)
-    valid_loader = DataLoader(valid_dataset)
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(net.get_conf())
     val_loss_highscore = 100.0
@@ -32,11 +36,10 @@ def train_loop(net, train_dataset, valid_dataset, save_directory, device, epochs
     net = net.to(device)
     optimizer = AdaBound(net.parameters())
     for epoch in range(epochs):
-        index_list = random.sample(range(len(train_dataset)), len(train_dataset))
         train_losses = list()
         # train one epoch
-        for index in index_list:
-            train_datapoint = train_dataset[index]
+        for _ in range(steps_per_epoch):
+            train_datapoint = next(train_dataset)
             train_loss = net(train_datapoint[0], train_datapoint[1], train_datapoint[2])
             train_losses.append(float(train_loss))
             (train_loss / batchsize).backward()  # for accumulative gradient
@@ -50,11 +53,11 @@ def train_loop(net, train_dataset, valid_dataset, save_directory, device, epochs
             net.eval()
             average_val_loss = 0
             average_train_loss = sum(train_losses) / len(train_losses)
-            for validation_datapoint_index in range(len(valid_dataset)):
-                eval_datapoint = valid_dataset[validation_datapoint_index]
+            for _ in range(evaluation_samples):
+                eval_datapoint = next(valid_dataset)
                 average_val_loss += float(net(eval_datapoint[0],
                                               eval_datapoint[1],
-                                              eval_datapoint[2]) / len(valid_dataset))
+                                              eval_datapoint[2]) / evaluation_samples)
             if val_loss_highscore > average_val_loss:
                 val_loss_highscore = average_val_loss
                 torch.save({"model": net.state_dict(),
