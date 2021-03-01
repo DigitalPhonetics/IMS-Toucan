@@ -28,13 +28,19 @@ complex systems.
 | TODO Item                              | Status |
 | ---------------------------------------| :---:|
 | Redo dataloading for TransformerTTS | ✅|
-| Redo dataloading for SpeakerEmbedding ||
-| Hyperparameter optimization for each model | ❓|
+| Redo dataloading for SpeakerEmbedding |✅|
+| Hyperparameter optimization for each model | ✅|
 | Train TransformerTTS that matches Vocoder input better | ✅|
 | Train SpeakerEmbedding that matches new filterbank settings| |
 | Extend TransformerTTS to multi-speaker||
 | Extend FastSpeech to multi-speaker||
 | Extend MelGAN to multi-speaker||
+| Prepare MelGAN multi-speaker dataset||
+| Prepare Transformer multi-speaker dataset||
+| Prepare FastSpeech multi-speaker dataset||
+| Train MelGAN on multi-speaker dataset||
+| Train Transformer on multi-speaker dataset||
+| Train FastSpeech on multi-speaker dataset||
 
 ## Third Iteration TODOS
 
