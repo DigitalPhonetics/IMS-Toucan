@@ -76,14 +76,16 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               pin_memory=False,
                               shuffle=True,
                               prefetch_factor=2,
-                              collate_fn=collate_and_pad)
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     valid_loader = DataLoader(batch_size=1,
                               dataset=eval_dataset,
                               drop_last=False,
                               num_workers=2,
                               pin_memory=False,
                               prefetch_factor=2,
-                              collate_fn=collate_and_pad)
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)
@@ -161,14 +163,16 @@ def continue_training(net, train_dataset, eval_dataset, device, save_directory,
                               pin_memory=False,
                               shuffle=True,
                               prefetch_factor=2,
-                              collate_fn=collate_and_pad)
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     valid_loader = DataLoader(batch_size=1,
                               dataset=eval_dataset,
                               drop_last=False,
                               num_workers=2,
                               pin_memory=False,
                               prefetch_factor=2,
-                              collate_fn=collate_and_pad)
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     net.train()
     start_time = time.time()
     for epoch in range(epochs):
@@ -253,7 +257,7 @@ if __name__ == '__main__':
     continue_training(net=model,
                       train_dataset=css10_train,
                       eval_dataset=css10_valid,
-                      device=torch.device("cuda:2"),
+                      device=torch.device("cuda:0"),
                       config=model.get_conf(),
                       save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                       epochs=3000,  # just kill the process at some point

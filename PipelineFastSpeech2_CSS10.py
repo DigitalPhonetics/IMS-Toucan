@@ -77,6 +77,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     :param gradient_accumulation: how many batches to average before stepping
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
+    net = net.to(device)
     scaler = GradScaler()
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,

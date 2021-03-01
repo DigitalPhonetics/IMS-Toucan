@@ -8,63 +8,29 @@ import random
 import time
 import warnings
 
-import soundfile as sf
 import torch
 import torchviz
+from adabound import AdaBound
+from torch.utils.data.dataloader import DataLoader
 
-from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from SpeakerEmbedding.SiameseSpeakerEmbedding import SiameseSpeakerEmbedding
 from SpeakerEmbedding.SpeakerEmbeddingDataset import SpeakerEmbeddingDataset
 
 warnings.filterwarnings("ignore")
 
 
-def build_sub_corpus(path_to_raw_corpus, path_to_dump, amount_of_samples_per_speaker=5):
-    # make a dict with key being speaker and values
-    # being lists of all their utterances as cleaned
-    # waves. Dump them as jsons.
-    ap = None
-    done_with_speaker = False
-    for speaker in os.listdir(path_to_raw_corpus):
-        print("Collecting and normalizing speaker {}".format(speaker))
-        speaker_to_melspecs = dict()
-        for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
-            for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
-                if ".wav" in wav:
-                    try:
-                        wave, sr = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
-                    except RuntimeError:
-                        print("File {} seems to be faulty".format(os.path.join(speaker, sub, wav)))
-                        continue
-                    if ap is None:
-                        ap = AudioPreprocessor(input_sr=sr, melspec_buckets=80, output_sr=16000)
-                    # yeet the file if the audio is too short
-                    if len(wave) < 6000:
-                        continue
-                    clean_wave = ap.audio_to_wave_tensor(wave)
-                    if speaker not in speaker_to_melspecs:
-                        speaker_to_melspecs[speaker] = list()
-                    speaker_to_melspecs[speaker].append(clean_wave.numpy().tolist())
-                    if len(speaker_to_melspecs[speaker]) >= amount_of_samples_per_speaker:
-                        done_with_speaker = True
-                        break
-            if done_with_speaker:
-                done_with_speaker = False
-                break
-        with open(os.path.join(path_to_dump, speaker + ".json"), 'w') as fp:
-            json.dump(speaker_to_melspecs, fp)
-
-
-def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=100, batchsize=32):
+def train_loop(net, train_dataset, valid_dataset, save_directory, device, epochs=1000, batchsize=32):
     start_time = time.time()
     loss_plot = [[], []]
+    train_loader = DataLoader(train_dataset)
+    valid_loader = DataLoader(valid_dataset)
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(net.get_conf())
     val_loss_highscore = 100.0
     batch_counter = 0
     net.train()
     net = net.to(device)
-    optimizer = torch.optim.Adam(net.parameters())
+    optimizer = AdaBound(net.parameters())
     for epoch in range(epochs):
         index_list = random.sample(range(len(train_dataset)), len(train_dataset))
         train_losses = list()
@@ -84,11 +50,11 @@ def train_loop(net, train_dataset, eval_dataset, save_directory, device, epochs=
             net.eval()
             average_val_loss = 0
             average_train_loss = sum(train_losses) / len(train_losses)
-            for validation_datapoint_index in range(len(eval_dataset)):
-                eval_datapoint = eval_dataset[validation_datapoint_index]
+            for validation_datapoint_index in range(len(valid_dataset)):
+                eval_datapoint = valid_dataset[validation_datapoint_index]
                 average_val_loss += float(net(eval_datapoint[0],
                                               eval_datapoint[1],
-                                              eval_datapoint[2]) / len(eval_dataset))
+                                              eval_datapoint[2]) / len(valid_dataset))
             if val_loss_highscore > average_val_loss:
                 val_loss_highscore = average_val_loss
                 torch.save({"model": net.state_dict(),
@@ -122,35 +88,18 @@ def plot_model():
 
 if __name__ == '__main__':
 
-    print("Stage 1: Preparation")
-    device = torch.device("cpu")
-    if not os.path.exists("Corpora"):
-        os.mkdir("Corpora")
-    if not os.path.exists("Corpora/SpeakerEmbedding"):
-        os.mkdir("Corpora/SpeakerEmbedding")
-    if not os.path.exists("Corpora/SpeakerEmbedding/train"):
-        os.mkdir("Corpora/SpeakerEmbedding/train")
-    if not os.path.exists("Corpora/SpeakerEmbedding/valid"):
-        os.mkdir("Corpora/SpeakerEmbedding/valid")
+    print("Preparation")
     if not os.path.exists("Models"):
         os.mkdir("Models")
     if not os.path.exists("Models/SpeakerEmbedding"):
         os.mkdir("Models/SpeakerEmbedding")
-    path_to_feature_dump_train = "Corpora/SpeakerEmbedding/train/"
-    path_to_feature_dump_valid = "Corpora/SpeakerEmbedding/valid/"
-    path_to_raw_corpus_train = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                               "datasets/VoxCeleb2/audio-files/train/dev/aac/"
-    path_to_raw_corpus_valid = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                               "datasets/VoxCeleb2/audio-files/test/aac/"
+    train_data = SpeakerEmbeddingDataset(train=True)
+    valid_data = SpeakerEmbeddingDataset(train=False)
 
-    print("Stage 2: Feature Extraction")
-    build_sub_corpus(path_to_raw_corpus_train, path_to_feature_dump_train)
-    build_sub_corpus(path_to_raw_corpus_valid, path_to_feature_dump_valid)
-
-    print("Stage 3: Data Loading")
-    train_data = SpeakerEmbeddingDataset(path_to_feature_dump_train, size=50000, device=device)
-    valid_data = SpeakerEmbeddingDataset(path_to_feature_dump_valid, size=5000, device=device)
-
-    print("Stage 4: Model Training")
+    print("Training")
     model = SiameseSpeakerEmbedding()
-    train_loop(model, train_data, valid_data, "Models/SpeakerEmbedding", device=device)
+    train_loop(net=model,
+               train_dataset=train_data,
+               valid_dataset=valid_data,
+               save_directory="Models/SpeakerEmbedding",
+               device=torch.device("cpu"))
