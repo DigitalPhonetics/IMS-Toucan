@@ -1,5 +1,5 @@
 import os
-from threading import Thread
+from multiprocessing import Process, Manager
 
 import soundfile as sf
 import torch
@@ -12,8 +12,9 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 class TransformerTTSDataset(Dataset):
 
     def __init__(self, path_to_transcript_dict, device=torch.device("cpu"), spemb=False, train=True,
-                 loading_threads=16):
-        self.path_to_transcript_dict = path_to_transcript_dict
+                 loading_processes=16):
+        ressource_manager = Manager()
+        self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
         if train:
             key_list = list(self.path_to_transcript_dict.keys())[:-100]
         else:
@@ -32,19 +33,20 @@ class TransformerTTSDataset(Dataset):
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         # build cache
         print("... building dataset cache ...")
-        self.datapoints = list()
-        # make threads
+        self.datapoints = ressource_manager.list()
+        # make processes
         key_splits = list()
-        thread_list = list()
-        for i in range(loading_threads):
-            key_splits.append(key_list[i * len(key_list) / loading_threads:i + 1 * len(key_list) / loading_threads])
+        process_list = list()
+        for i in range(loading_processes):
+            key_splits.append(
+                key_list[i * len(key_list) // loading_processes:i + 1 * len(key_list) // loading_processes])
         for key_split in key_splits:
-            thread_list.append(Thread(target=self.cache_builder_thread, args=(key_split,)))
-            thread_list[-1].start()
-        for thread in thread_list:
-            thread.join()
+            process_list.append(Process(target=self.cache_builder_process, args=(key_split,)))
+            process_list[-1].start()
+        for process in process_list:
+            process.join()
 
-    def cache_builder_thread(self, path_list):
+    def cache_builder_process(self, path_list):
         for path in path_list:
             transcript = self.path_to_transcript_dict[path]
             wave, _ = sf.read(os.path.join("Corpora/CSS10/", path))
