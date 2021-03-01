@@ -32,7 +32,7 @@ class TransformerTTSDataset(Dataset):
             key_splits.append(
                 key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
         for key_split in key_splits:
-            process_list.append(Process(target=self.cache_builder_process, args=(key_split,)))
+            process_list.append(Process(target=self.cache_builder_process, args=(key_split,), daemon=True))
             process_list[-1].start()
         for process in process_list:
             process.join()
