@@ -257,7 +257,7 @@ if __name__ == '__main__':
     continue_training(net=model,
                       train_dataset=css10_train,
                       eval_dataset=css10_valid,
-                      device=torch.device("cuda:0"),
+                      device=torch.device("cuda:2"),
                       config=model.get_conf(),
                       save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
                       epochs=3000,  # just kill the process at some point

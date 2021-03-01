@@ -32,24 +32,68 @@ class SpeakerEmbeddingDataset(IterableDataset):
         self.purity_toggle = True
 
     def __iter__(self):
+        """
+        provide two samples of the same speaker and two samples from different speakers in an alternating fashion
+        """
         speaker_1 = random.choice(self.speakers)
 
         self.purity_toggle = not self.purity_toggle
         if self.purity_toggle:
             path_1 = random.choice(self.speaker_to_paths[speaker_1])
+            wave_1 = None
+            while wave_1 is None:
+                try:
+                    wave_1, _ = sf.read(path_1)
+                    if len(wave_1) < 10000:
+                        wave_1 = None
+                except RuntimeError:
+                    print("File {} seems to be faulty".format(path_1))
+                    wave_1 = None
+                    path_1 = random.choice(self.speaker_to_paths[speaker_1])
             path_2 = random.choice(self.speaker_to_paths[speaker_1])
+            wave_2 = None
             while path_1 == path_2:
                 path_2 = random.choice(self.speaker_to_paths[speaker_1])
-
+            while wave_2 is None:
+                try:
+                    wave_2, _ = sf.read(path_2)
+                    if len(wave_2) < 10000:
+                        wave_2 = None
+                except RuntimeError:
+                    print("File {} seems to be faulty".format(path_2))
+                    wave_2 = None
+                    path_2 = random.choice(self.speaker_to_paths[speaker_1])
+                    while path_1 == path_2:
+                        path_2 = random.choice(self.speaker_to_paths[speaker_1])
+            label = torch.IntTensor([-1])
         else:
             speaker_2 = random.choice(self.speakers)
             while speaker_2 == speaker_1:
                 speaker_2 = random.choice(self.speakers)
-            pass
+            path_1 = random.choice(self.speaker_to_paths[speaker_1])
+            wave_1 = None
+            while wave_1 is None:
+                try:
+                    wave_1, _ = sf.read(path_1)
+                    if len(wave_1) < 10000:
+                        wave_1 = None
+                except RuntimeError:
+                    print("File {} seems to be faulty".format(path_1))
+                    wave_1 = None
+                    path_1 = random.choice(self.speaker_to_paths[speaker_1])
+            path_2 = random.choice(self.speaker_to_paths[speaker_2])
+            wave_2 = None
+            while wave_2 is None:
+                try:
+                    wave_2, _ = sf.read(path_2)
+                    if len(wave_2) < 10000:
+                        wave_2 = None
+                except RuntimeError:
+                    print("File {} seems to be faulty".format(path_2))
+                    wave_2 = None
+                    path_2 = random.choice(self.speaker_to_paths[speaker_2])
+            label = torch.IntTensor([1])
 
-        samp_1 = self.ap.audio_to_mel_spec_tensor(self.datapoints[item][0],
-                                                  normalize=True).unsqueeze(0).unsqueeze(0)
-        samp_2 = self.ap.audio_to_mel_spec_tensor(self.datapoints[item][1],
-                                                  normalize=True).unsqueeze(0).unsqueeze(0)
-        label = torch.Tensor(self.datapoints[item][2]).to(self.device)
-        return samp_1, samp_2, label
+        data_1 = self.ap.audio_to_mel_spec_tensor(wave_1, normalize=True).unsqueeze(0).unsqueeze(0)
+        data_2 = self.ap.audio_to_mel_spec_tensor(wave_2, normalize=True).unsqueeze(0).unsqueeze(0)
+        return data_1, data_2, label
