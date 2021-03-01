@@ -31,7 +31,7 @@ class SpeakerEmbeddingDataset(IterableDataset):
 
         self.purity_toggle = True
 
-    def __iter__(self):
+    def __next__(self):
         """
         provide two samples of the same speaker and two samples from different speakers in an alternating fashion
         """
