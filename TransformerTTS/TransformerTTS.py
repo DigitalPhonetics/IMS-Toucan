@@ -256,13 +256,11 @@ class Transformer(torch.nn.Module, ABC):
         # define transformer decoder
         if dprenet_layers != 0:
             # decoder prenet
-            decoder_input_layer = torch.nn.Sequential(
-                DecoderPrenet(idim=odim,
-                              n_layers=dprenet_layers,
-                              n_units=dprenet_units,
-                              dropout_rate=dprenet_dropout_rate),
-                torch.nn.Linear(dprenet_units, adim),
-            )
+            decoder_input_layer = torch.nn.Sequential(DecoderPrenet(idim=odim,
+                                                                    n_layers=dprenet_layers,
+                                                                    n_units=dprenet_units,
+                                                                    dropout_rate=dprenet_dropout_rate),
+                                                      torch.nn.Linear(dprenet_units, adim))
         else:
             decoder_input_layer = "linear"
         self.decoder = Decoder(odim=odim,  # odim is needed when no prenet is used
