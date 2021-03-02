@@ -251,15 +251,15 @@ if __name__ == '__main__':
     css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True, load=True)
     css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False, load=True)
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
-    if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10"):
-        os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10")
+    if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10_DE"):
+        os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10_DE")
     print("Training model")
     continue_training(net=model,
                       train_dataset=css10_train,
                       eval_dataset=css10_valid,
-                      device=torch.device("cuda:2"),
+                      device=torch.device("cuda:5"),
                       config=model.get_conf(),
-                      save_directory="Models/TransformerTTS/SingleSpeaker/CSS10",
+                      save_directory="Models/TransformerTTS/SingleSpeaker/CSS10_DE",
                       epochs=3000,  # just kill the process at some point
                       batchsize=16,
                       gradient_accumulation=4)

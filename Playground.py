@@ -46,4 +46,3 @@ def plot_fastspeech_architecture():
 
 if __name__ == '__main__':
     show_att()
-    read_texts()
