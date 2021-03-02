@@ -23,11 +23,14 @@ class SpeakerEmbeddingDataset(IterableDataset):
             for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
                 for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
                     if ".wav" in wav:
-                        x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
+                        try:
+                            x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
+                        except RuntimeError:
+                            continue
                         if len(x) > 20000:
                             # has to be long enough
                             self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
-        # clean to avoid endless loops during inference
+        # clean dict to avoid endless loops during inference
         for speaker in self.speaker_to_paths:
             if len(self.speaker_to_paths[speaker]) < 3:
                 self.speaker_to_paths.pop(speaker, None)
@@ -42,54 +45,25 @@ class SpeakerEmbeddingDataset(IterableDataset):
         provide two samples of the same speaker and two samples from different speakers in an alternating fashion
         """
         speaker_1 = random.choice(self.speakers)
-
         self.purity_toggle = not self.purity_toggle
         if self.purity_toggle:
+            # generate pure pair
             path_1 = random.choice(self.speaker_to_paths[speaker_1])
-            wave_1 = None
-            while wave_1 is None:
-                try:
-                    wave_1, _ = sf.read(path_1)
-                except RuntimeError:
-                    print("File {} seems to be faulty".format(path_1))
-                    wave_1 = None
-                    path_1 = random.choice(self.speaker_to_paths[speaker_1])
+            wave_1, _ = sf.read(path_1)
             path_2 = random.choice(self.speaker_to_paths[speaker_1])
-            wave_2 = None
             while path_1 == path_2:
                 path_2 = random.choice(self.speaker_to_paths[speaker_1])
-            while wave_2 is None:
-                try:
-                    wave_2, _ = sf.read(path_2)
-                except RuntimeError:
-                    print("File {} seems to be faulty".format(path_2))
-                    wave_2 = None
-                    path_2 = random.choice(self.speaker_to_paths[speaker_1])
-                    while path_1 == path_2:
-                        path_2 = random.choice(self.speaker_to_paths[speaker_1])
+            wave_2, _ = sf.read(path_2)
             label = torch.IntTensor([-1])
         else:
+            # generate impure pair
             speaker_2 = random.choice(self.speakers)
             while speaker_2 == speaker_1:
                 speaker_2 = random.choice(self.speakers)
             path_1 = random.choice(self.speaker_to_paths[speaker_1])
-            wave_1 = None
-            while wave_1 is None:
-                try:
-                    wave_1, _ = sf.read(path_1)
-                except RuntimeError:
-                    print("File {} seems to be faulty".format(path_1))
-                    wave_1 = None
-                    path_1 = random.choice(self.speaker_to_paths[speaker_1])
+            wave_1, _ = sf.read(path_1)
             path_2 = random.choice(self.speaker_to_paths[speaker_2])
-            wave_2 = None
-            while wave_2 is None:
-                try:
-                    wave_2, _ = sf.read(path_2)
-                except RuntimeError:
-                    print("File {} seems to be faulty".format(path_2))
-                    wave_2 = None
-                    path_2 = random.choice(self.speaker_to_paths[speaker_2])
+            wave_2, _ = sf.read(path_2)
             label = torch.IntTensor([1])
 
         data_1 = self.ap.audio_to_mel_spec_tensor(wave_1, normalize=True).unsqueeze(0).unsqueeze(0)
