@@ -24,7 +24,7 @@ class SpeakerEmbeddingDataset(IterableDataset):
                 for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
                     if ".wav" in wav:
                         x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
-                        if x > 20000:
+                        if x[0] > 20000:
                             # has to be long enough
                             self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
         # clean to avoid endless loops during inference
