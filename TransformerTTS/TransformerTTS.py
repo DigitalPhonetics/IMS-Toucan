@@ -666,6 +666,25 @@ def plot_attention(att, sentence=None):
     plt.show()
 
 
+def plot_attentions(atts):
+    import matplotlib.pyplot as plt
+    fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
+    atts_1 = atts[::2]
+    atts_2 = atts[1::2]
+    for index, att in enumerate(atts_1):
+        axes[index][0].imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto',
+                              origin="lower")
+        axes[index][0].xaxis.set_visible(False)
+        axes[index][0].yaxis.set_visible(False)
+    for index, att in enumerate(atts_2):
+        axes[index][1].imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto',
+                              origin="lower")
+        axes[index][1].xaxis.set_visible(False)
+        axes[index][1].yaxis.set_visible(False)
+    plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
+    plt.show()
+
+
 def get_atts(model, sentence):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language="de",
@@ -679,7 +698,12 @@ def get_atts(model, sentence):
     return model.inference(tf.string_to_tensor(sentence).long())[2]
 
 
-def show_attention_plot(sentence, model=None):
+def show_attention_plot(sentence, model=None, best_only=False):
     if model is None:
         model = build_reference_transformer_tts_model()
-    plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence)), sentence=sentence)
+
+    if best_only:
+        plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence)), sentence=sentence)
+    else:
+        atts = torch.cat([att_w for att_w in get_atts(model=model, sentence=sentence)], dim=0)
+        plot_attentions(atts)
