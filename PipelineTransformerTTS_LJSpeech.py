@@ -28,7 +28,7 @@ random.seed(17)
 def build_path_to_transcript_dict():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
-        with open(transcript_file, 'r', encoding='utf8') as tf:
+        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
             transcript = tf.read()
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
         path_to_transcript[wav_path] = transcript
