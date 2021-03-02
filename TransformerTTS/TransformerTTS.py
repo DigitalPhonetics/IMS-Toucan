@@ -5,7 +5,6 @@
 import os
 from abc import ABC
 from typing import Dict
-from typing import Sequence
 
 import torch
 import torch.nn.functional as F
@@ -24,7 +23,8 @@ from utils import subsequent_mask
 
 
 class Transformer(torch.nn.Module, ABC):
-    """TTS-Transformer module.
+    """
+    TTS-Transformer module.
 
     This is a module of text-to-speech Transformer described in `Neural Speech Synthesis
     with Transformer Network`_, which convert the sequence of tokens into the sequence
@@ -172,16 +172,16 @@ class Transformer(torch.nn.Module, ABC):
             init_type: str = "xavier_uniform",
             init_enc_alpha: float = 1.0,
             init_dec_alpha: float = 1.0,
-            use_masking: bool = False,
+            use_masking: bool = True,
             use_weighted_masking: bool = False,
             bce_pos_weight: float = 5.0,
             loss_type: str = "L1",
             use_guided_attn_loss: bool = True,
             num_heads_applied_guided_attn: int = 2,
             num_layers_applied_guided_attn: int = 2,
-            modules_applied_guided_attn: Sequence[str] = ("encoder-decoder",),
+            modules_applied_guided_attn=("encoder-decoder",),
             guided_attn_loss_sigma: float = 0.4,
-            guided_attn_loss_lambda: float = 1.0,
+            guided_attn_loss_lambda: float = 2.0,
     ):
         """Initialize Transformer module."""
         super().__init__()
@@ -256,13 +256,11 @@ class Transformer(torch.nn.Module, ABC):
         # define transformer decoder
         if dprenet_layers != 0:
             # decoder prenet
-            decoder_input_layer = torch.nn.Sequential(
-                DecoderPrenet(idim=odim,
-                              n_layers=dprenet_layers,
-                              n_units=dprenet_units,
-                              dropout_rate=dprenet_dropout_rate),
-                torch.nn.Linear(dprenet_units, adim),
-            )
+            decoder_input_layer = torch.nn.Sequential(DecoderPrenet(idim=odim,
+                                                                    n_layers=dprenet_layers,
+                                                                    n_units=dprenet_units,
+                                                                    dropout_rate=dprenet_dropout_rate),
+                                                      torch.nn.Linear(dprenet_units, adim))
         else:
             decoder_input_layer = "linear"
         self.decoder = Decoder(odim=odim,  # odim is needed when no prenet is used
@@ -449,7 +447,8 @@ class Transformer(torch.nn.Module, ABC):
                   minlenratio: float = 0.0,
                   maxlenratio: float = 10.0,
                   use_teacher_forcing: bool = False):
-        """Generate the sequence of features given the sequences of characters.
+        """
+        Generate the sequence of features given the sequences of characters.
 
         Args:
             text (LongTensor): Input sequence of characters (T,).
@@ -464,7 +463,6 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Output sequence of features (L, odim).
             Tensor: Output sequence of stop probabilities (L,).
             Tensor: Encoder-decoder (source) attention weights (#layers, #heads, L, T).
-
         """
         x = text
         y = speech
@@ -558,7 +556,8 @@ class Transformer(torch.nn.Module, ABC):
         return torch.cat([ys.new_zeros((ys.shape[0], 1, ys.shape[2])), ys[:, :-1]], dim=1)
 
     def _source_mask(self, ilens):
-        """Make masks for self-attention.
+        """
+        Make masks for self-attention.
 
         Args:
             ilens (LongTensor): Batch of lengths (B,).
@@ -567,13 +566,13 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Mask tensor for self-attention.
                     dtype=torch.uint8 in PyTorch 1.2-
                     dtype=torch.bool in PyTorch 1.2+ (including 1.2)
-
         """
         x_masks = make_non_pad_mask(ilens).to(ilens.device)
         return x_masks.unsqueeze(-2)
 
     def _target_mask(self, olens: torch.Tensor) -> torch.Tensor:
-        """Make masks for masked self-attention.
+        """
+        Make masks for masked self-attention.
 
         Args:
             olens (LongTensor): Batch of lengths (B,).
@@ -582,14 +581,14 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Mask tensor for masked self-attention.
                 dtype=torch.uint8 in PyTorch 1.2-
                 dtype=torch.bool in PyTorch 1.2+ (including 1.2)
-
         """
         y_masks = make_non_pad_mask(olens).to(olens.device)
         s_masks = subsequent_mask(y_masks.size(-1), device=y_masks.device).unsqueeze(0)
         return y_masks.unsqueeze(-2) & s_masks
 
     def _integrate_with_spk_embed(self, hs: torch.Tensor, spembs: torch.Tensor) -> torch.Tensor:
-        """Integrate speaker embedding with hidden states.
+        """
+        Integrate speaker embedding with hidden states.
 
         Args:
             hs (Tensor): Batch of hidden state sequences (B, Tmax, adim).
@@ -597,7 +596,6 @@ class Transformer(torch.nn.Module, ABC):
 
         Returns:
             Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
-
         """
         if self.spk_embed_integration_type == "add":
             # apply projection and then add to hidden states

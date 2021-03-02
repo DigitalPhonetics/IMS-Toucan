@@ -1,10 +1,11 @@
 """
-Train an autoregressive Transformer TTS model on the German single speaker dataset by Hokuspokus
+Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech
 """
 
 import json
 import os
 import random
+import sys
 import time
 import warnings
 
@@ -26,12 +27,11 @@ random.seed(17)
 
 def build_path_to_transcript_dict():
     path_to_transcript = dict()
-    with open("Corpora/CSS10/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            path_to_transcript[line.split("|")[0]] = line.split("|")[2]
+    for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
+        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
+            transcript = tf.read()
+        wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
+        path_to_transcript[wav_path] = transcript
     return path_to_transcript
 
 
@@ -144,88 +144,6 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
             net.train()
 
 
-def continue_training(net, train_dataset, eval_dataset, device, save_directory,
-                      config, batchsize=10, epochs=150, gradient_accumulation=6,
-                      epochs_per_save=10, checkpoint_name="checkpoint_61712.pt"):
-    net = net.to(device)
-    with open(os.path.join(save_directory, "train_val_loss.json"), 'r') as plotting_data_file:
-        loss_plot = json.load(plotting_data_file)
-    net.load_state_dict(torch.load("Models/TransformerTTS/SingleSpeaker/CSS10/" + checkpoint_name)["model"])
-    optimizer = AdaBound(net.parameters())
-    optimizer.load_state_dict(torch.load("Models/TransformerTTS/SingleSpeaker/CSS10/" + checkpoint_name)["optimizer"])
-    step_counter = 61712
-
-    scaler = GradScaler()
-    train_loader = DataLoader(batch_size=batchsize,
-                              dataset=train_dataset,
-                              drop_last=True,
-                              num_workers=4,
-                              pin_memory=False,
-                              shuffle=True,
-                              prefetch_factor=2,
-                              collate_fn=collate_and_pad,
-                              persistent_workers=True)
-    valid_loader = DataLoader(batch_size=1,
-                              dataset=eval_dataset,
-                              drop_last=False,
-                              num_workers=2,
-                              pin_memory=False,
-                              prefetch_factor=2,
-                              collate_fn=collate_and_pad,
-                              persistent_workers=True)
-    net.train()
-    start_time = time.time()
-    for epoch in range(epochs):
-        # train one epoch
-        grad_accum = 0
-        optimizer.zero_grad()
-        train_losses_this_epoch = list()
-        for train_datapoint in train_loader:
-            with autocast():
-                train_loss = net(train_datapoint[0].to(device),
-                                 train_datapoint[1].to(device),
-                                 train_datapoint[2].to(device),
-                                 train_datapoint[3].to(device))
-                train_losses_this_epoch.append(float(train_loss))
-            scaler.scale((train_loss / gradient_accumulation)).backward()
-            del train_loss
-            grad_accum += 1
-            if grad_accum % gradient_accumulation == 0:
-                grad_accum = 0
-                step_counter += 1
-                # update weights
-                # print("Step: {}".format(step_counter))
-                scaler.step(optimizer)
-                scaler.update()
-                optimizer.zero_grad()
-                torch.cuda.empty_cache()
-        # evaluate on valid after every epoch is through
-        with torch.no_grad():
-            net.eval()
-            val_losses = list()
-            for validation_datapoint in valid_loader:
-                val_losses.append(float(net(validation_datapoint[0].to(device),
-                                            validation_datapoint[1].to(device),
-                                            validation_datapoint[2].to(device),
-                                            validation_datapoint[3].to(device))))
-            average_val_loss = sum(val_losses) / len(val_losses)
-            if epoch % epochs_per_save == 0:
-                torch.save({"model": net.state_dict(),
-                            "optimizer": optimizer.state_dict()},
-                           os.path.join(save_directory,
-                                        "checkpoint_{}.pt".format(step_counter)))
-            print("Epoch:        {}".format(epoch + 1 + 2251))
-            print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-            print("Valid Loss:   {}".format(average_val_loss))
-            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            print("Steps:        {}".format(step_counter))
-            loss_plot[0].append(sum(train_losses_this_epoch) / len(train_losses_this_epoch))
-            loss_plot[1].append(average_val_loss)
-            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
-                json.dump(loss_plot, plotting_data_file)
-            net.train()
-
-
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -247,21 +165,38 @@ def plot_model():
 
 if __name__ == '__main__':
     print("Preparing")
+    cache_dir = os.path.join("Corpora", "LJSpeech")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
     path_to_transcript_dict = build_path_to_transcript_dict()
-    css10_train = TransformerTTSDataset(path_to_transcript_dict, train=True, load=True,
-                                        cache_dir=os.path.join("Corpora", "CSS10"), lang="de")
-    css10_valid = TransformerTTSDataset(path_to_transcript_dict, train=False, load=True,
-                                        cache_dir=os.path.join("Corpora", "CSS10"), lang="de")
+
+    train_set = TransformerTTSDataset(path_to_transcript_dict,
+                                      train=True,
+                                      load=False,
+                                      save=True,
+                                      cache_dir=cache_dir,
+                                      lang="en")
+    valid_set = TransformerTTSDataset(path_to_transcript_dict,
+                                      train=False,
+                                      load=False,
+                                      save=True,
+                                      cache_dir=cache_dir,
+                                      lang="en")
+
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
-    if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10_DE"):
-        os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10_DE")
+
     print("Training model")
+    sys.exit()
     train_loop(net=model,
-               train_dataset=css10_train,
-               eval_dataset=css10_valid,
+               train_dataset=train_set,
+               eval_dataset=valid_set,
                device=torch.device("cuda:5"),
                config=model.get_conf(),
-               save_directory="Models/TransformerTTS/SingleSpeaker/CSS10_DE",
+               save_directory=save_dir,
                epochs=3000,  # just kill the process at some point
                batchsize=64,
                gradient_accumulation=1)

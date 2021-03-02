@@ -93,7 +93,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  init_type: str = "xavier_uniform",
                  init_enc_alpha: float = 1.0,
                  init_dec_alpha: float = 1.0,
-                 use_masking: bool = False,
+                 use_masking: bool = True,
                  use_weighted_masking: bool = False):
         super().__init__()
 

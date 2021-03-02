@@ -18,7 +18,9 @@ class TransformerTTSDataset(Dataset):
                  train=True,
                  loading_processes=2,
                  save=True,
-                 load=False):
+                 load=False,
+                 cache_dir=os.path.join("Corpora", "CSS10"),
+                 lang="en"):
         if not load:
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
@@ -39,7 +41,7 @@ class TransformerTTSDataset(Dataset):
                 key_splits.append(
                     key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(key_split,), daemon=True))
+                process_list.append(Process(target=self.cache_builder_process, args=(key_split, lang), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
@@ -47,22 +49,22 @@ class TransformerTTSDataset(Dataset):
             if save:
                 # save to json so we can rebuild cache quickly
                 if train:
-                    with open(os.path.join("Corpora", "CSS10", "trans_train_cache.json"), 'w') as fp:
+                    with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
                         json.dump(self.datapoints, fp)
                 else:
-                    with open(os.path.join("Corpora", "CSS10", "trans_valid_cache.json"), 'w') as fp:
+                    with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'w') as fp:
                         json.dump(self.datapoints, fp)
         else:
             # just load the datapoints
             if train:
-                with open(os.path.join("Corpora", "CSS10", "trans_train_cache.json"), 'r') as fp:
+                with open(os.path.join(cache_dir, "trans_train_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
             else:
-                with open(os.path.join("Corpora", "CSS10", "trans_valid_cache.json"), 'r') as fp:
+                with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
 
-    def cache_builder_process(self, path_list):
-        tf = TextFrontend(language="de",
+    def cache_builder_process(self, path_list, lang):
+        tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_shallow_pos=False,
                           use_sentence_type=False,
