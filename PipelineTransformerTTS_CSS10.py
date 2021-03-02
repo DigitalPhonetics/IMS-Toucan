@@ -254,12 +254,12 @@ if __name__ == '__main__':
     if not os.path.exists("Models/TransformerTTS/SingleSpeaker/CSS10_DE"):
         os.makedirs("Models/TransformerTTS/SingleSpeaker/CSS10_DE")
     print("Training model")
-    continue_training(net=model,
-                      train_dataset=css10_train,
-                      eval_dataset=css10_valid,
-                      device=torch.device("cuda:5"),
-                      config=model.get_conf(),
-                      save_directory="Models/TransformerTTS/SingleSpeaker/CSS10_DE",
-                      epochs=3000,  # just kill the process at some point
-                      batchsize=16,
-                      gradient_accumulation=4)
+    train_loop(net=model,
+               train_dataset=css10_train,
+               eval_dataset=css10_valid,
+               device=torch.device("cuda:5"),
+               config=model.get_conf(),
+               save_directory="Models/TransformerTTS/SingleSpeaker/CSS10_DE",
+               epochs=3000,  # just kill the process at some point
+               batchsize=64,
+               gradient_accumulation=1)
