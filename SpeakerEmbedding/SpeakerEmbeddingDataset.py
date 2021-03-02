@@ -23,8 +23,14 @@ class SpeakerEmbeddingDataset(IterableDataset):
             for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
                 for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
                     if ".wav" in wav:
-                        self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
-
+                        x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
+                        if x > 20000:
+                            # has to be long enough
+                            self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
+        # clean to avoid endless loops during inference
+        for speaker in self.speaker_to_paths:
+            if len(self.speaker_to_paths[speaker]) < 3:
+                self.speaker_to_paths.pop(speaker, None)
         self.speakers = list(self.speaker_to_paths.keys())
         _, sr = sf.read(self.speaker_to_paths[self.speakers[0]][0])
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
@@ -44,8 +50,6 @@ class SpeakerEmbeddingDataset(IterableDataset):
             while wave_1 is None:
                 try:
                     wave_1, _ = sf.read(path_1)
-                    if len(wave_1) < 10000:
-                        wave_1 = None
                 except RuntimeError:
                     print("File {} seems to be faulty".format(path_1))
                     wave_1 = None
@@ -57,8 +61,6 @@ class SpeakerEmbeddingDataset(IterableDataset):
             while wave_2 is None:
                 try:
                     wave_2, _ = sf.read(path_2)
-                    if len(wave_2) < 10000:
-                        wave_2 = None
                 except RuntimeError:
                     print("File {} seems to be faulty".format(path_2))
                     wave_2 = None
@@ -75,8 +77,6 @@ class SpeakerEmbeddingDataset(IterableDataset):
             while wave_1 is None:
                 try:
                     wave_1, _ = sf.read(path_1)
-                    if len(wave_1) < 10000:
-                        wave_1 = None
                 except RuntimeError:
                     print("File {} seems to be faulty".format(path_1))
                     wave_1 = None
@@ -86,8 +86,6 @@ class SpeakerEmbeddingDataset(IterableDataset):
             while wave_2 is None:
                 try:
                     wave_2, _ = sf.read(path_2)
-                    if len(wave_2) < 10000:
-                        wave_2 = None
                 except RuntimeError:
                     print("File {} seems to be faulty".format(path_2))
                     wave_2 = None
