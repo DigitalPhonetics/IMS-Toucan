@@ -28,10 +28,6 @@ def build_path_to_transcript_dict():
     return path_to_transcript
 
 
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")

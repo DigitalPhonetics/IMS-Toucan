@@ -56,6 +56,10 @@ def plot_fastspeech_architecture():
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
 
 
+def count_parameters(net):
+    return sum(p.numel() for p in net.parameters() if p.requires_grad)
+
+
 if __name__ == '__main__':
     show_att(lang="en")
 

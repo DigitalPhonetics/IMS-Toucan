@@ -30,10 +30,6 @@ def get_file_list():
     return file_list
 
 
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()

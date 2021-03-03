@@ -75,15 +75,6 @@ def train_loop(net,
             net.train()
 
 
-def count_parameters(net):
-    return sum(p.numel() for p in net.parameters() if p.requires_grad)
-
-
-def show_model(net=SiameseSpeakerEmbedding()):
-    print(net)
-    print("\n\nNumber of Parameters: {}".format(count_parameters(net)))
-
-
 def plot_model():
     sse = SiameseSpeakerEmbedding()
     out = sse(torch.rand((1, 1, 80, 2721)), torch.rand((1, 1, 80, 1233)), torch.Tensor([-1]))

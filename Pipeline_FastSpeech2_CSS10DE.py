@@ -31,15 +31,6 @@ def build_path_to_transcript_dict():
     return path_to_transcript
 
 
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
-def show_model(model):
-    print(model)
-    print("\n\nNumber of Parameters: {}".format(count_parameters(model)))
-
-
 if __name__ == '__main__':
     print("Preparing")
     device = torch.device("cuda")
