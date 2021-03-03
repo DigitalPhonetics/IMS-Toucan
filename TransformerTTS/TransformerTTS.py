@@ -622,13 +622,16 @@ def build_reference_transformer_tts_model(model_name="Transformer_German_Single.
     return model
 
 
-def show_spectrogram(sentence, model=None):
+def show_spectrogram(sentence, model=None, lang="en"):
     if model is None:
-        model = build_reference_transformer_tts_model()
+        if lang == "en":
+            model = build_reference_transformer_tts_model(model_name="Transformer_English_Single.pt")
+        elif lang == "de":
+            model = build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt")
     from PreprocessingForTTS.ProcessText import TextFrontend
     import librosa.display as lbd
     import matplotlib.pyplot as plt
-    tf = TextFrontend(language="de",
+    tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
                       use_shallow_pos=False,
                       use_sentence_type=False,
@@ -683,9 +686,9 @@ def plot_attentions(atts):
     plt.show()
 
 
-def get_atts(model, sentence):
+def get_atts(model, sentence, lang):
     from PreprocessingForTTS.ProcessText import TextFrontend
-    tf = TextFrontend(language="de",
+    tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
                       use_shallow_pos=False,
                       use_sentence_type=False,
@@ -696,12 +699,15 @@ def get_atts(model, sentence):
     return model.inference(tf.string_to_tensor(sentence).long())[2]
 
 
-def show_attention_plot(sentence, model=None, best_only=False):
+def show_attention_plot(sentence, model=None, best_only=False, lang="en"):
     if model is None:
-        model = build_reference_transformer_tts_model()
+        if lang == "en":
+            model = build_reference_transformer_tts_model(model_name="Transformer_English_Single.pt")
+        elif lang == "de":
+            model = build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt")
 
     if best_only:
-        plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence)), sentence=sentence)
+        plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence, lang=lang)), sentence=sentence)
     else:
-        atts = torch.cat([att_w for att_w in get_atts(model=model, sentence=sentence)], dim=0)
+        atts = torch.cat([att_w for att_w in get_atts(model=model, sentence=sentence, lang=lang)], dim=0)
         plot_attentions(atts)
