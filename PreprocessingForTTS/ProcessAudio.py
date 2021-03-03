@@ -34,7 +34,7 @@ class AudioPreprocessor:
         self.mu_decode = MuLawDecoding()
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
-        if output_sr is not None:
+        if output_sr is not None and output_sr != input_sr:
             self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)
             self.final_sr = output_sr
         else:

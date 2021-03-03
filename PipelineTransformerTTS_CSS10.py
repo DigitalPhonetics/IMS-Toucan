@@ -31,7 +31,7 @@ def build_path_to_transcript_dict():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[line.split("|")[0]] = line.split("|")[2]
+            path_to_transcript["Corpora/CSS10/" + line.split("|")[0]] = line.split("|")[2]
     return path_to_transcript
 
 

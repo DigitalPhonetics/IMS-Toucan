@@ -20,7 +20,9 @@ class TransformerTTSDataset(Dataset):
                  save=True,
                  load=False,
                  cache_dir=os.path.join("Corpora", "CSS10"),
-                 lang="en"):
+                 lang="en",
+                 min_len=50000,
+                 max_len=230000):
         if not load:
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
@@ -41,7 +43,8 @@ class TransformerTTSDataset(Dataset):
                 key_splits.append(
                     key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(key_split, lang), daemon=True))
+                process_list.append(
+                    Process(target=self.cache_builder_process, args=(key_split, lang, min_len, max_len), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
@@ -63,7 +66,7 @@ class TransformerTTSDataset(Dataset):
                 with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
 
-    def cache_builder_process(self, path_list, lang):
+    def cache_builder_process(self, path_list, lang, min_len, max_len):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_shallow_pos=False,
@@ -72,12 +75,12 @@ class TransformerTTSDataset(Dataset):
                           use_word_boundaries=False,
                           use_chinksandchunks_ipb=False,
                           use_explicit_eos=True)
-        _, sr = sf.read(os.path.join("Corpora/CSS10/", path_list[0]))
+        _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         for path in path_list:
             transcript = self.path_to_transcript_dict[path]
-            wave, _ = sf.read(os.path.join("Corpora/CSS10/", path))
-            if 50000 < len(wave) < 230000:
+            wave, _ = sf.read(path)
+            if min_len < len(wave) < max_len:
                 print("processing {}".format(path))
                 cached_text = tf.string_to_tensor(transcript).numpy().tolist()
                 cached_text_lens = len(cached_text)

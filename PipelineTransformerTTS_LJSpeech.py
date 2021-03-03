@@ -8,6 +8,7 @@ import random
 import time
 import warnings
 
+import soundfile as sf
 import torch
 import torchviz
 from adabound import AdaBound
@@ -31,6 +32,13 @@ def build_path_to_transcript_dict():
             transcript = tf.read()
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
         path_to_transcript[wav_path] = transcript
+    lens = list()
+    sr = 0
+    for path in path_to_transcript:
+        wave, sr = sf.read(path)
+        lens.append(len(wave))
+    print(sr)
+    print(lens.sort())
     return path_to_transcript
 
 
