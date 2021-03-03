@@ -5,6 +5,7 @@ Train an autoregressive Transformer TTS model on the English single speaker data
 import json
 import os
 import random
+import sys
 import time
 import warnings
 
@@ -38,6 +39,7 @@ def build_path_to_transcript_dict():
         wave, _ = sf.read(path)
         lens.append(len(wave))
     print(sorted(lens))
+    sys.exit()
     return path_to_transcript
 
 
