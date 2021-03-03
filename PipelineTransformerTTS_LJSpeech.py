@@ -33,12 +33,11 @@ def build_path_to_transcript_dict():
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
         path_to_transcript[wav_path] = transcript
     lens = list()
-    sr = 0
     for path in path_to_transcript:
-        wave, sr = sf.read(path)
+        print(path)
+        wave, _ = sf.read(path)
         lens.append(len(wave))
-    print(sr)
-    print(lens.sort())
+    print(sorted(lens))
     return path_to_transcript
 
 
@@ -183,16 +182,20 @@ if __name__ == '__main__':
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
-                                      load=True,
-                                      save=False,
+                                      load=False,
+                                      save=True,
                                       cache_dir=cache_dir,
-                                      lang="en")
+                                      lang="en",
+                                      min_len=50000,
+                                      max_len=230000)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
-                                      load=True,
-                                      save=False,
+                                      load=False,
+                                      save=True,
                                       cache_dir=cache_dir,
-                                      lang="en")
+                                      lang="en",
+                                      min_len=50000,
+                                      max_len=230000)
 
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
 
