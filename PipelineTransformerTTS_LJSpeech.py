@@ -5,7 +5,6 @@ Train an autoregressive Transformer TTS model on the English single speaker data
 import json
 import os
 import random
-import sys
 import time
 import warnings
 
@@ -176,16 +175,16 @@ if __name__ == '__main__':
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
-                                      load=False,
-                                      save=True,
+                                      load=True,
+                                      save=False,
                                       cache_dir=cache_dir,
                                       lang="en",
-                                      min_len=50000,
-                                      max_len=230000)
+                                      min_len=0,
+                                      max_len=170000)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
-                                      load=False,
-                                      save=True,
+                                      load=True,
+                                      save=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
@@ -194,7 +193,6 @@ if __name__ == '__main__':
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
 
     print("Training model")
-    sys.exit()
     train_loop(net=model,
                train_dataset=train_set,
                eval_dataset=valid_set,

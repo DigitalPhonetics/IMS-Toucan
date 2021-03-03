@@ -27,7 +27,7 @@ class SpeakerEmbeddingDataset(IterableDataset):
                             x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
                         except RuntimeError:
                             continue
-                        if len(x) > 20000:
+                        if len(x) > 50000:
                             # has to be long enough
                             self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
         # clean dict to avoid endless loops during inference
