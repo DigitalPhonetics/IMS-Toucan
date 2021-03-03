@@ -15,7 +15,7 @@ class ConvolutionModule(nn.Module):
 
     Args:
         channels (int): The number of channels of conv layers.
-        kernel_size (int): Kernerl size of conv layers.
+        kernel_size (int): Kernel size of conv layers.
 
     """
 

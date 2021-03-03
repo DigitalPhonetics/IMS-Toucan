@@ -178,10 +178,10 @@ class Transformer(torch.nn.Module, ABC):
             loss_type: str = "L1",
             use_guided_attn_loss: bool = True,
             num_heads_applied_guided_attn: int = 2,
-            num_layers_applied_guided_attn: int = 2,
+            num_layers_applied_guided_attn: int = -1,
             modules_applied_guided_attn=("encoder-decoder",),
             guided_attn_loss_sigma: float = 0.4,
-            guided_attn_loss_lambda: float = 2.0,
+            guided_attn_loss_lambda: float = 4.0,
     ):
         """Initialize Transformer module."""
         super().__init__()

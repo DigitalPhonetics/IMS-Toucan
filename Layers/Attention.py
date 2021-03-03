@@ -1,8 +1,8 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright 2019 Shigeki Karita
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Written by Shigeki Karita, 2019
+# Published under Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Adapted by Florian Lux, 2021
 
 """Multi-Head Attention layer definition."""
 
@@ -16,17 +16,19 @@ from utils import make_non_pad_mask
 
 
 class MultiHeadedAttention(nn.Module):
-    """Multi-Head Attention layer.
+    """
+    Multi-Head Attention layer.
 
     Args:
         n_head (int): The number of heads.
         n_feat (int): The number of features.
         dropout_rate (float): Dropout rate.
-
     """
 
     def __init__(self, n_head, n_feat, dropout_rate):
-        """Construct an MultiHeadedAttention object."""
+        """
+        Construct an MultiHeadedAttention object.
+        """
         super(MultiHeadedAttention, self).__init__()
         assert n_feat % n_head == 0
         # We assume d_v always equals d_k
@@ -40,7 +42,8 @@ class MultiHeadedAttention(nn.Module):
         self.dropout = nn.Dropout(p=dropout_rate)
 
     def forward_qkv(self, query, key, value):
-        """Transform query, key and value.
+        """
+        Transform query, key and value.
 
         Args:
             query (torch.Tensor): Query tensor (#batch, time1, size).
@@ -51,7 +54,6 @@ class MultiHeadedAttention(nn.Module):
             torch.Tensor: Transformed query tensor (#batch, n_head, time1, d_k).
             torch.Tensor: Transformed key tensor (#batch, n_head, time2, d_k).
             torch.Tensor: Transformed value tensor (#batch, n_head, time2, d_k).
-
         """
         n_batch = query.size(0)
         q = self.linear_q(query).view(n_batch, -1, self.h, self.d_k)
@@ -64,7 +66,8 @@ class MultiHeadedAttention(nn.Module):
         return q, k, v
 
     def forward_attention(self, value, scores, mask):
-        """Compute attention context vector.
+        """
+        Compute attention context vector.
 
         Args:
             value (torch.Tensor): Transformed value (#batch, n_head, time2, d_k).
@@ -74,31 +77,25 @@ class MultiHeadedAttention(nn.Module):
         Returns:
             torch.Tensor: Transformed value (#batch, time1, d_model)
                 weighted by the attention score (#batch, time1, time2).
-
         """
         n_batch = value.size(0)
         if mask is not None:
             mask = mask.unsqueeze(1).eq(0)  # (batch, 1, *, time2)
-            min_value = float(
-                numpy.finfo(torch.tensor(0, dtype=scores.dtype).numpy().dtype).min
-            )
+            min_value = float(numpy.finfo(torch.tensor(0, dtype=scores.dtype).numpy().dtype).min)
             scores = scores.masked_fill(mask, min_value)
-            self.attn = torch.softmax(scores, dim=-1).masked_fill(
-                mask, 0.0
-            )  # (batch, head, time1, time2)
+            self.attn = torch.softmax(scores, dim=-1).masked_fill(mask, 0.0)  # (batch, head, time1, time2)
         else:
             self.attn = torch.softmax(scores, dim=-1)  # (batch, head, time1, time2)
 
         p_attn = self.dropout(self.attn)
         x = torch.matmul(p_attn, value)  # (batch, head, time1, d_k)
-        x = (
-            x.transpose(1, 2).contiguous().view(n_batch, -1, self.h * self.d_k)
-        )  # (batch, time1, d_model)
+        x = (x.transpose(1, 2).contiguous().view(n_batch, -1, self.h * self.d_k))  # (batch, time1, d_model)
 
         return self.linear_out(x)  # (batch, time1, d_model)
 
     def forward(self, query, key, value, mask):
-        """Compute scaled dot product attention.
+        """
+        Compute scaled dot product attention.
 
         Args:
             query (torch.Tensor): Query tensor (#batch, time1, size).
@@ -109,7 +106,6 @@ class MultiHeadedAttention(nn.Module):
 
         Returns:
             torch.Tensor: Output tensor (#batch, time1, d_model).
-
         """
         q, k, v = self.forward_qkv(query, key, value)
         scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.d_k)
@@ -117,7 +113,8 @@ class MultiHeadedAttention(nn.Module):
 
 
 class RelPositionMultiHeadedAttention(MultiHeadedAttention):
-    """Multi-Head Attention layer with relative position encoding.
+    """
+    Multi-Head Attention layer with relative position encoding.
 
     Paper: https://arxiv.org/abs/1901.02860
 
@@ -125,11 +122,12 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         n_head (int): The number of heads.
         n_feat (int): The number of features.
         dropout_rate (float): Dropout rate.
-
     """
 
     def __init__(self, n_head, n_feat, dropout_rate):
-        """Construct an RelPositionMultiHeadedAttention object."""
+        """
+        Construct an RelPositionMultiHeadedAttention object.
+        """
         super().__init__(n_head, n_feat, dropout_rate)
         # linear transformation for positional ecoding
         self.linear_pos = nn.Linear(n_feat, n_feat, bias=False)
@@ -141,7 +139,8 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         torch.nn.init.xavier_uniform_(self.pos_bias_v)
 
     def rel_shift(self, x, zero_triu=False):
-        """Compute relative positional encoding.
+        """
+        Compute relative positional encoding.
 
         Args:
             x (torch.Tensor): Input tensor (batch, time, size).
@@ -149,7 +148,6 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
 
         Returns:
             torch.Tensor: Output tensor.
-
         """
         zero_pad = torch.zeros((*x.size()[:3], 1), device=x.device, dtype=x.dtype)
         x_padded = torch.cat([zero_pad, x], dim=-1)
@@ -164,7 +162,8 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         return x
 
     def forward(self, query, key, value, pos_emb, mask):
-        """Compute 'Scaled Dot Product Attention' with rel. positional encoding.
+        """
+        Compute 'Scaled Dot Product Attention' with rel. positional encoding.
 
         Args:
             query (torch.Tensor): Query tensor (#batch, time1, size).
@@ -176,7 +175,6 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
 
         Returns:
             torch.Tensor: Output tensor (#batch, time1, d_model).
-
         """
         q, k, v = self.forward_qkv(query, key, value)
         q = q.transpose(1, 2)  # (batch, time1, head, d_k)
@@ -201,15 +199,14 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         matrix_bd = torch.matmul(q_with_bias_v, p.transpose(-2, -1))
         matrix_bd = self.rel_shift(matrix_bd)
 
-        scores = (matrix_ac + matrix_bd) / math.sqrt(
-            self.d_k
-        )  # (batch, head, time1, time2)
+        scores = (matrix_ac + matrix_bd) / math.sqrt(self.d_k)  # (batch, head, time1, time2)
 
         return self.forward_attention(v, scores, mask)
 
 
 class GuidedAttentionLoss(torch.nn.Module):
-    """Guided attention loss function module.
+    """
+    Guided attention loss function module.
 
     This module calculates the guided attention loss described
     in `Efficiently Trainable Text-to-Speech System Based
@@ -219,18 +216,17 @@ class GuidedAttentionLoss(torch.nn.Module):
     .. _`Efficiently Trainable Text-to-Speech System
         Based on Deep Convolutional Networks with Guided Attention`:
         https://arxiv.org/abs/1710.08969
-
     """
 
     def __init__(self, sigma=0.4, alpha=1.0, reset_always=True):
-        """Initialize guided attention loss module.
+        """
+        Initialize guided attention loss module.
 
         Args:
             sigma (float, optional): Standard deviation to control
                 how close attention to a diagonal.
             alpha (float, optional): Scaling coefficient (lambda).
             reset_always (bool, optional): Whether to always reset masks.
-
         """
         super(GuidedAttentionLoss, self).__init__()
         self.sigma = sigma
@@ -244,7 +240,8 @@ class GuidedAttentionLoss(torch.nn.Module):
         self.masks = None
 
     def forward(self, att_ws, ilens, olens):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             att_ws (Tensor): Batch of attention weights (B, T_max_out, T_max_in).
@@ -253,12 +250,9 @@ class GuidedAttentionLoss(torch.nn.Module):
 
         Returns:
             Tensor: Guided attention loss value.
-
         """
         if self.guided_attn_masks is None:
-            self.guided_attn_masks = self._make_guided_attention_masks(ilens, olens).to(
-                att_ws.device
-            )
+            self.guided_attn_masks = self._make_guided_attention_masks(ilens, olens).to(att_ws.device)
         if self.masks is None:
             self.masks = self._make_masks(ilens, olens).to(att_ws.device)
         losses = self.guided_attn_masks * att_ws
@@ -273,15 +267,13 @@ class GuidedAttentionLoss(torch.nn.Module):
         max_olen = max(olens)
         guided_attn_masks = torch.zeros((n_batches, max_olen, max_ilen))
         for idx, (ilen, olen) in enumerate(zip(ilens, olens)):
-            guided_attn_masks[idx, :olen, :ilen] = self._make_guided_attention_mask(
-                ilen, olen, self.sigma
-            )
+            guided_attn_masks[idx, :olen, :ilen] = self._make_guided_attention_mask(ilen, olen, self.sigma)
         return guided_attn_masks
 
     @staticmethod
     def _make_guided_attention_mask(ilen, olen, sigma):
-        """Make guided attention mask.
-
+        """
+        Make guided attention mask.
         """
         grid_x, grid_y = torch.meshgrid(torch.arange(olen), torch.arange(ilen))
         grid_x, grid_y = grid_x.float().to(olen.device), grid_y.float().to(ilen.device)
@@ -291,7 +283,8 @@ class GuidedAttentionLoss(torch.nn.Module):
 
     @staticmethod
     def _make_masks(ilens, olens):
-        """Make masks indicating non-padded part.
+        """
+        Make masks indicating non-padded part.
 
         Args:
             ilens (LongTensor or List): Batch of lengths (B,).
@@ -301,8 +294,6 @@ class GuidedAttentionLoss(torch.nn.Module):
             Tensor: Mask tensor indicating non-padded part.
                     dtype=torch.uint8 in PyTorch 1.2-
                     dtype=torch.bool in PyTorch 1.2+ (including 1.2)
-
-
         """
         in_masks = make_non_pad_mask(ilens)  # (B, T_in)
         out_masks = make_non_pad_mask(olens)  # (B, T_out)
@@ -310,18 +301,19 @@ class GuidedAttentionLoss(torch.nn.Module):
 
 
 class GuidedMultiHeadAttentionLoss(GuidedAttentionLoss):
-    """Guided attention loss function module for multi head attention.
+    """
+    Guided attention loss function module for multi head attention.
 
     Args:
         sigma (float, optional): Standard deviation to control
         how close attention to a diagonal.
         alpha (float, optional): Scaling coefficient (lambda).
         reset_always (bool, optional): Whether to always reset masks.
-
     """
 
     def forward(self, att_ws, ilens, olens):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             att_ws (Tensor):
@@ -331,14 +323,9 @@ class GuidedMultiHeadAttentionLoss(GuidedAttentionLoss):
 
         Returns:
             Tensor: Guided attention loss value.
-
         """
         if self.guided_attn_masks is None:
-            self.guided_attn_masks = (
-                self._make_guided_attention_masks(ilens, olens)
-                    .to(att_ws.device)
-                    .unsqueeze(1)
-            )
+            self.guided_attn_masks = (self._make_guided_attention_masks(ilens, olens).to(att_ws.device).unsqueeze(1))
         if self.masks is None:
             self.masks = self._make_masks(ilens, olens).to(att_ws.device).unsqueeze(1)
         losses = self.guided_attn_masks * att_ws

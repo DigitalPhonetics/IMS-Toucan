@@ -3,7 +3,6 @@ import os
 from multiprocessing import Process, Manager
 
 import soundfile as sf
-import torch
 from torch.utils.data import Dataset
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
@@ -13,7 +12,6 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 class TransformerTTSDataset(Dataset):
 
     def __init__(self, path_to_transcript_dict,
-                 device=torch.device("cpu"),
                  spemb=False,
                  train=True,
                  loading_processes=4,
@@ -31,7 +29,6 @@ class TransformerTTSDataset(Dataset):
             else:
                 key_list = list(self.path_to_transcript_dict.keys())[-100:]
             self.spemb = spemb
-            self.device = device
 
             # build cache
             print("... building dataset cache ...")

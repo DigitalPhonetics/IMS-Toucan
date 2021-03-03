@@ -12,7 +12,7 @@ from SpeakerEmbedding.ContrastiveLoss import ContrastiveLoss
 class SiameseSpeakerEmbedding(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=10, kernel_size=(10, 10))
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=10, kernel_size=(15, 15))
         self.act1 = torch.nn.LeakyReLU()
         self.drop1 = torch.nn.Dropout2d(0.2)
         self.pool1 = torch.nn.MaxPool2d(2)
@@ -20,7 +20,7 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         self.act2 = torch.nn.LeakyReLU()
         self.drop2 = torch.nn.Dropout2d(0.2)
         self.pool2 = torch.nn.MaxPool2d(2)
-        self.conv3 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(10, 10))
+        self.conv3 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(5, 5))
         self.act3 = torch.nn.LeakyReLU()
         self.drop3 = torch.nn.Dropout2d(0.2)
 
@@ -86,7 +86,7 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
 
     def inference(self, sample):
         """
-        :param sample: spectrogram to be embedded (80 buckets)
+        :param sample: mel bank to be embedded (80 buckets)
         :return: embedding for speaker
         """
         # encode sample
@@ -111,4 +111,5 @@ def build_spk_emb_model():
     model = SiameseSpeakerEmbedding()
     params = torch.load(os.path.join("Models", "Use", "SpeakerEmbedding.pt"))["model"]
     model.load_state_dict(params)
+    model.eval()
     return model
