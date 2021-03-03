@@ -1,3 +1,4 @@
+import json
 import os
 import random
 
@@ -9,33 +10,54 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 
 class SpeakerEmbeddingDataset(IterableDataset):
-    def __init__(self, train=True):
-        if train:
-            path_to_raw_corpus = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                                 "datasets/VoxCeleb2/audio-files/train/dev/aac/"
-        else:
-            path_to_raw_corpus = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
-                                 "datasets/VoxCeleb2/audio-files/test/aac/"
 
-        self.speaker_to_paths = dict()
-        for speaker in os.listdir(path_to_raw_corpus):
-            self.speaker_to_paths[speaker] = list()
-            for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
-                for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
-                    if ".wav" in wav:
-                        try:
-                            x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
-                        except RuntimeError:
-                            continue
-                        if len(x) > 100000:
-                            # has to be long enough
-                            self.speaker_to_paths[speaker].append(os.path.join(path_to_raw_corpus, speaker, sub, wav))
-        # clean dict to avoid endless loops during inference
-        for speaker in self.speaker_to_paths:
-            if len(self.speaker_to_paths[speaker]) < 3:
-                self.speaker_to_paths.pop(speaker, None)
+    def __init__(self, train=True, load=False):
+        cache_dir = "Corpora/SpeakerEmbedding/"
+        if not os.path.exists(cache_dir):
+            os.makedirs("Corpora/SpeakerEmbedding/")
+        if not load:
+            if train:
+                path_to_raw_corpus = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                                     "datasets/VoxCeleb2/audio-files/train/dev/aac/"
+            else:
+                path_to_raw_corpus = "/mount/arbeitsdaten46/projekte/dialog-1/tillipl/" \
+                                     "datasets/VoxCeleb2/audio-files/test/aac/"
+
+            self.speaker_to_paths = dict()
+            for speaker in os.listdir(path_to_raw_corpus):
+                self.speaker_to_paths[speaker] = list()
+                for sub in os.listdir(os.path.join(path_to_raw_corpus, speaker)):
+                    for wav in os.listdir(os.path.join(path_to_raw_corpus, speaker, sub)):
+                        if ".wav" in wav:
+                            try:
+                                x, _ = sf.read(os.path.join(path_to_raw_corpus, speaker, sub, wav))
+                            except RuntimeError:
+                                continue
+                            if len(x) > 100000:
+                                # has to be long enough
+                                self.speaker_to_paths[speaker].append(
+                                    os.path.join(path_to_raw_corpus, speaker, sub, wav))
+            # clean dict to avoid endless loops during inference
+            cleaned_speakers = self.speaker_to_paths.copy()
+            for speaker in self.speaker_to_paths:
+                if len(self.speaker_to_paths[speaker]) < 3:
+                    cleaned_speakers.pop(speaker, None)
+            self.speaker_to_paths = cleaned_speakers.copy()
+            print("{} speakers to learn from".format(len(self.speakers)))
+            if train:
+                with open(cache_dir + "train.json", 'w') as fp:
+                    json.dump(self.speaker_to_paths, fp)
+            else:
+                with open(cache_dir + "valid.json", 'w') as fp:
+                    json.dump(self.speaker_to_paths, fp)
+        else:
+            if train:
+                with open(cache_dir + "train.json", 'r') as fp:
+                    self.speaker_to_paths = json.load(fp)
+            else:
+                with open(cache_dir + "valid.json", 'r') as fp:
+                    self.speaker_to_paths = json.load(fp)
         self.speakers = list(self.speaker_to_paths.keys())
-        print("{} speakers to learn from".format(len(self.speakers)))
         _, sr = sf.read(self.speaker_to_paths[self.speakers[0]][0])
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
 
