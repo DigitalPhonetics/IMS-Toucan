@@ -16,7 +16,7 @@ class TransformerTTSDataset(Dataset):
                  device=torch.device("cpu"),
                  spemb=False,
                  train=True,
-                 loading_processes=2,
+                 loading_processes=4,
                  save=True,
                  load=False,
                  cache_dir=os.path.join("Corpora", "CSS10"),

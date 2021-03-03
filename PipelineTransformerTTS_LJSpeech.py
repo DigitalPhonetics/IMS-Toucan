@@ -9,7 +9,6 @@ import sys
 import time
 import warnings
 
-import soundfile as sf
 import torch
 import torchviz
 from adabound import AdaBound
@@ -33,13 +32,6 @@ def build_path_to_transcript_dict():
             transcript = tf.read()
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
         path_to_transcript[wav_path] = transcript
-    lens = list()
-    for path in path_to_transcript:
-        print(path)
-        wave, _ = sf.read(path)
-        lens.append(len(wave))
-    print(sorted(lens))
-    sys.exit()
     return path_to_transcript
 
 
@@ -196,12 +188,13 @@ if __name__ == '__main__':
                                       save=True,
                                       cache_dir=cache_dir,
                                       lang="en",
-                                      min_len=50000,
-                                      max_len=230000)
+                                      min_len=0,
+                                      max_len=170000)
 
     model = Transformer(idim=132, odim=80, spk_embed_dim=None)
 
     print("Training model")
+    sys.exit()
     train_loop(net=model,
                train_dataset=train_set,
                eval_dataset=valid_set,
