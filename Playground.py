@@ -5,7 +5,7 @@ from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeech2 import show_spectrogram as fact_spec
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
-from PipelineFastSpeech2_CSS10 import build_path_to_transcript_dict
+from Pipeline_FastSpeech2_CSS10DE import build_path_to_transcript_dict
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
 
 
@@ -45,4 +45,9 @@ def plot_fastspeech_architecture():
 
 
 if __name__ == '__main__':
-    show_att()
+    read_texts()
+
+# TODO
+# Fix fastspeech dataset
+# fix fastspeech recipe css10de
+# make fastspeech ljspeech recipe

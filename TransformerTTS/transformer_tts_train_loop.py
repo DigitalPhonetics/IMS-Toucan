@@ -1,37 +1,12 @@
-"""
-Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech
-"""
-
 import json
 import os
-import random
 import time
-import warnings
 
 import torch
-import torchviz
 from adabound import AdaBound
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
-
-from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-
-warnings.filterwarnings("ignore")
-
-torch.manual_seed(17)
-random.seed(17)
-
-
-def build_path_to_transcript_dict():
-    path_to_transcript = dict()
-    for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
-        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
-            transcript = tf.read()
-        wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
-        path_to_transcript[wav_path] = transcript
-    return path_to_transcript
 
 
 def collate_and_pad(batch):
@@ -141,64 +116,3 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
                 json.dump(loss_plot, plotting_data_file)
             net.train()
-
-
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
-def show_model(model):
-    print(model)
-    print("\n\nNumber of Parameters: {}".format(count_parameters(model)))
-
-
-def plot_model():
-    trans = Transformer(idim=132, odim=80, spk_embed_dim=128)
-    out = trans(text=torch.randint(high=120, size=(1, 23)),
-                text_lengths=torch.tensor([23]),
-                speech=torch.rand((1, 1234, 80)),
-                speech_lengths=torch.tensor([1234]),
-                spembs=torch.rand(128).unsqueeze(0))
-    torchviz.make_dot(out[0].mean(), dict(trans.named_parameters())).render("transformertts_graph", format="png")
-
-
-if __name__ == '__main__':
-    print("Preparing")
-    cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    path_to_transcript_dict = build_path_to_transcript_dict()
-
-    train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=True,
-                                      load=True,
-                                      save=False,
-                                      cache_dir=cache_dir,
-                                      lang="en",
-                                      min_len=0,
-                                      max_len=170000)
-    valid_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
-                                      load=True,
-                                      save=False,
-                                      cache_dir=cache_dir,
-                                      lang="en",
-                                      min_len=0,
-                                      max_len=170000)
-
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
-
-    print("Training model")
-    train_loop(net=model,
-               train_dataset=train_set,
-               eval_dataset=valid_set,
-               device=torch.device("cuda:1"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=3000,  # just kill the process at some point
-               batchsize=64,
-               gradient_accumulation=1)
