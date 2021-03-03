@@ -35,6 +35,7 @@ class SpeakerEmbeddingDataset(IterableDataset):
             if len(self.speaker_to_paths[speaker]) < 3:
                 self.speaker_to_paths.pop(speaker, None)
         self.speakers = list(self.speaker_to_paths.keys())
+        print("{} speakers to learn from".format(len(self.speakers)))
         _, sr = sf.read(self.speaker_to_paths[self.speakers[0]][0])
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
 
