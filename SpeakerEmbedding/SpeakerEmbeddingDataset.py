@@ -43,7 +43,6 @@ class SpeakerEmbeddingDataset(IterableDataset):
                 if len(self.speaker_to_paths[speaker]) < 3:
                     cleaned_speakers.pop(speaker, None)
             self.speaker_to_paths = cleaned_speakers.copy()
-            print("{} speakers to learn from".format(len(self.speakers)))
             if train:
                 with open(cache_dir + "train.json", 'w') as fp:
                     json.dump(self.speaker_to_paths, fp)
@@ -58,6 +57,7 @@ class SpeakerEmbeddingDataset(IterableDataset):
                 with open(cache_dir + "valid.json", 'r') as fp:
                     self.speaker_to_paths = json.load(fp)
         self.speakers = list(self.speaker_to_paths.keys())
+        print("{} speakers to learn from".format(len(self.speakers)))
         _, sr = sf.read(self.speaker_to_paths[self.speakers[0]][0])
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
 
