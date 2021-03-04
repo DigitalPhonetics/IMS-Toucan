@@ -52,8 +52,8 @@ complex systems.
 
 Pipelines are available for at least one synthesis system for the following datasets:
 
-| Dataset | Language | Single or Multi | Status |
-| --------|-----------|--------------------| :---:|
-| Hokuspokus| German | Single Speaker    | ✅ |
-| LJSpeech | English | Single Speaker    | ✅ |
-| LibriTTS | English | Multi Speaker     |  in construction |
+| Dataset | Language | Single or Multi | MelGAN | TransformerTTS|FastSpeech2| 
+| --------|-----------|--------------------| :---:|:---:|:---:|
+| Hokuspokus| German | Single Speaker    | ✅ |✅ |✅ |
+| LJSpeech | English | Single Speaker    | ✅ |✅ |✅ |
+| LibriTTS | English | Multi Speaker     |  in construction |in construction |in construction |
