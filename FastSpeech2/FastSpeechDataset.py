@@ -19,13 +19,15 @@ class FastSpeechDataset(Dataset):
     def __init__(self,
                  path_to_transcript_dict,
                  acoustic_model_name,
-                 device=torch.device("cpu"),
                  spemb=False,
                  train=True,
-                 loading_processes=2,
-                 save=True,
-                 load=False):
-        if not load:
+                 loading_processes=4,
+                 cache_dir=os.path.join("Corpora", "CSS10_DE"),
+                 lang="de",
+                 min_len=50000,
+                 max_len=230000):
+        if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
+                (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
             if type(train) is str:
@@ -36,7 +38,6 @@ class FastSpeechDataset(Dataset):
                 else:
                     key_list = list(self.path_to_transcript_dict.keys())[-100:]
             self.spemb = spemb
-            self.device = device
             # build cache
             print("... building dataset cache ...")
             self.datapoints = ressource_manager.list()
@@ -48,31 +49,31 @@ class FastSpeechDataset(Dataset):
                     key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process, args=(key_split, acoustic_model_name, spemb),
+                    Process(target=self.cache_builder_process,
+                            args=(key_split, acoustic_model_name, spemb, lang, min_len, max_len),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
-            if save:
-                # save to json so we can rebuild cache quickly
-                if train:
-                    with open(os.path.join("Corpora", "CSS10", "fast_train_cache.json"), 'w') as fp:
-                        json.dump(self.datapoints, fp)
-                else:
-                    with open(os.path.join("Corpora", "CSS10", "fast_valid_cache.json"), 'w') as fp:
-                        json.dump(self.datapoints, fp)
+            # save to json so we can rebuild cache quickly
+            if train:
+                with open(os.path.join(cache_dir, "fast_train_cache.json"), 'w') as fp:
+                    json.dump(self.datapoints, fp)
+            else:
+                with open(os.path.join(cache_dir, "fast_valid_cache.json"), 'w') as fp:
+                    json.dump(self.datapoints, fp)
         else:
             # just load the datapoints
             if train:
-                with open(os.path.join("Corpora", "CSS10", "fast_train_cache.json"), 'r') as fp:
+                with open(os.path.join(cache_dir, "fast_train_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
             else:
-                with open(os.path.join("Corpora", "CSS10", "fast_valid_cache.json"), 'r') as fp:
+                with open(os.path.join(cache_dir, "fast_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
 
-    def cache_builder_process(self, path_list, acoustic_model_name, spemb):
-        tf = TextFrontend(language="de",
+    def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len):
+        tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_shallow_pos=False,
                           use_sentence_type=False,
@@ -80,7 +81,7 @@ class FastSpeechDataset(Dataset):
                           use_word_boundaries=False,
                           use_chinksandchunks_ipb=False,
                           use_explicit_eos=True)
-        _, sr = sf.read(os.path.join("Corpora/CSS10/", path_list[0]))
+        _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name)
         dc = DurationCalculator()
@@ -88,8 +89,8 @@ class FastSpeechDataset(Dataset):
         energy_calc = EnergyCalculator()
         for path in path_list:
             transcript = self.path_to_transcript_dict[path]
-            wave, _ = sf.read(os.path.join("Corpora/CSS10/", path))
-            if 50000 < len(wave) < 230000:
+            wave, _ = sf.read(path)
+            if min_len < len(wave) < max_len:
                 print("processing {}".format(path))
                 norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
                 norm_wave_length = torch.LongTensor([len(norm_wave)])

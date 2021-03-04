@@ -41,16 +41,12 @@ if __name__ == '__main__':
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
-                                      load=True,
-                                      save=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
                                       max_len=170000)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
-                                      load=True,
-                                      save=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,

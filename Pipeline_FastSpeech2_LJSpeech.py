@@ -22,19 +22,18 @@ random.seed(17)
 
 def build_path_to_transcript_dict():
     path_to_transcript = dict()
-    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            path_to_transcript["Corpora/CSS10/" + line.split("|")[0]] = line.split("|")[2]
+    for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
+        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
+            transcript = tf.read()
+        wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
+        path_to_transcript[wav_path] = transcript
     return path_to_transcript
 
 
 if __name__ == '__main__':
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "CSS10_DE")
-    save_dir = os.path.join("Models", "FastSpeech2", "SingleSpeaker", "CSS10_DE")
+    cache_dir = os.path.join("Corpora", "LJSpeech")
+    save_dir = os.path.join("Models", "FastSpeech2", "SingleSpeaker", "LJSpeech")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -44,18 +43,18 @@ if __name__ == '__main__':
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
-                                  acoustic_model_name="Transformer_German_Single.pt",
+                                  acoustic_model_name="Transformer_English_Single.pt",
                                   cache_dir=cache_dir,
-                                  lang="de",
-                                  min_len=50000,
-                                  max_len=230000)
+                                  lang="en",
+                                  min_len=0,
+                                  max_len=170000)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
-                                  acoustic_model_name="Transformer_German_Single.pt",
+                                  acoustic_model_name="Transformer_English_Single.pt",
                                   cache_dir=cache_dir,
-                                  lang="de",
-                                  min_len=50000,
-                                  max_len=230000)
+                                  lang="en",
+                                  min_len=0,
+                                  max_len=170000)
 
     model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None)
 

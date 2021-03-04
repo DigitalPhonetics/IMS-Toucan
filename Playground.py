@@ -63,8 +63,3 @@ def count_parameters(net):
 if __name__ == '__main__':
     show_att(lang="en")
     show_att(lang="de")
-
-# TODO
-# Fix fastspeech dataset
-# fix fastspeech recipe css10de
-# make fastspeech ljspeech recipe

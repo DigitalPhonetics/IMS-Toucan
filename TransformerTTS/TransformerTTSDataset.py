@@ -15,13 +15,12 @@ class TransformerTTSDataset(Dataset):
                  spemb=False,
                  train=True,
                  loading_processes=4,
-                 save=True,
-                 load=False,
-                 cache_dir=os.path.join("Corpora", "CSS10"),
-                 lang="en",
+                 cache_dir=os.path.join("Corpora", "CSS10_DE"),
+                 lang="de",
                  min_len=50000,
                  max_len=230000):
-        if not load:
+        if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
+                (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
             if train:
@@ -41,19 +40,19 @@ class TransformerTTSDataset(Dataset):
                     key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process, args=(key_split, lang, min_len, max_len), daemon=True))
+                    Process(target=self.cache_builder_process, args=(key_split, spemb, lang, min_len, max_len),
+                            daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
-            if save:
-                # save to json so we can rebuild cache quickly
-                if train:
-                    with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
-                        json.dump(self.datapoints, fp)
-                else:
-                    with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'w') as fp:
-                        json.dump(self.datapoints, fp)
+            # save to json so we can rebuild cache quickly
+            if train:
+                with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
+                    json.dump(self.datapoints, fp)
+            else:
+                with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'w') as fp:
+                    json.dump(self.datapoints, fp)
         else:
             # just load the datapoints
             if train:
@@ -63,7 +62,7 @@ class TransformerTTSDataset(Dataset):
                 with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
 
-    def cache_builder_process(self, path_list, lang, min_len, max_len):
+    def cache_builder_process(self, path_list, spemb, lang, min_len, max_len):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_shallow_pos=False,
@@ -84,7 +83,7 @@ class TransformerTTSDataset(Dataset):
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
                 self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
-                if self.spemb:
+                if spemb:
                     print("not implemented yet")
                     raise NotImplementedError
 

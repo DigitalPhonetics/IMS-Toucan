@@ -21,12 +21,12 @@ random.seed(17)
 
 def get_file_list():
     file_list = list()
-    with open("Corpora/CSS10/transcript.txt", encoding="utf8") as f:
+    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
         transcriptions = f.read()
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            file_list.append("Corpora/CSS10/" + line.split("|")[0])
+            file_list.append("Corpora/CSS10_DE/" + line.split("|")[0])
     return file_list
 
 
