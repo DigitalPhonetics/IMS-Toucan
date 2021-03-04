@@ -53,7 +53,7 @@ if __name__ == '__main__':
                                         min_len=50000,
                                         max_len=230000)
 
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=132, odim=80, spk_embed_dim=None, reduction_factor=5)
 
     print("Training model")
     train_loop(net=model,
