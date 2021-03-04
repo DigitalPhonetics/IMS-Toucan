@@ -28,8 +28,8 @@ if __name__ == '__main__':
         os.mkdir("Models")
     if not os.path.exists("Models/SpeakerEmbedding"):
         os.mkdir("Models/SpeakerEmbedding")
-    train_data = SpeakerEmbeddingDataset(train=True)
-    valid_data = SpeakerEmbeddingDataset(train=False)
+    train_data = SpeakerEmbeddingDataset(train=True, load=True)
+    valid_data = SpeakerEmbeddingDataset(train=False, load=True)
 
     print("Training")
     model = SiameseSpeakerEmbedding()
