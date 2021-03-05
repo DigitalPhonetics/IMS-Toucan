@@ -22,7 +22,8 @@ random.seed(17)
 def get_file_list():
     file_list = list()
     for wav_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/wav"):
-        file_list.append("/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + wav_file)
+        if ".wav" in wav_file:
+            file_list.append("/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + wav_file)
     return file_list
 
 

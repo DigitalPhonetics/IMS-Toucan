@@ -56,6 +56,14 @@ def plot_fastspeech_architecture():
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
 
 
+def plot_melgan_training():
+    pass
+
+
+def plot_syn_training():
+    pass
+
+
 def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
 

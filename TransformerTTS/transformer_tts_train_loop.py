@@ -10,25 +10,44 @@ from torch.utils.data.dataloader import DataLoader
 
 
 def collate_and_pad(batch):
-    # every entry in batch: [text, text_length, spec, spec_length]
-    texts = list()
-    text_lens = list()
-    speechs = list()
-    speech_lens = list()
-    for datapoint in batch:
-        texts.append(torch.LongTensor(datapoint[0]))
-        text_lens.append(torch.LongTensor([datapoint[1]]))
-        speechs.append(torch.Tensor(datapoint[2]))
-        speech_lens.append(torch.LongTensor([datapoint[3]]))
-    return (pad_sequence(texts, batch_first=True),
-            torch.stack(text_lens).squeeze(1),
-            pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1))
+    if len(batch[0]) == 4:
+        # every entry in batch: [text, text_length, spec, spec_length]
+        texts = list()
+        text_lens = list()
+        speechs = list()
+        speech_lens = list()
+        for datapoint in batch:
+            texts.append(torch.LongTensor(datapoint[0]))
+            text_lens.append(torch.LongTensor([datapoint[1]]))
+            speechs.append(torch.Tensor(datapoint[2]))
+            speech_lens.append(torch.LongTensor([datapoint[3]]))
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lens).squeeze(1),
+                pad_sequence(speechs, batch_first=True),
+                torch.stack(speech_lens).squeeze(1))
+    elif len(batch[0]) == 5:
+        # every entry in batch: [text, text_length, spec, spec_length, spemb]
+        texts = list()
+        text_lens = list()
+        speechs = list()
+        speech_lens = list()
+        spembs = list()
+        for datapoint in batch:
+            texts.append(torch.LongTensor(datapoint[0]))
+            text_lens.append(torch.LongTensor([datapoint[1]]))
+            speechs.append(torch.Tensor(datapoint[2]))
+            speech_lens.append(torch.LongTensor([datapoint[3]]))
+            spembs.append(torch.Tensor(datapoint[4]))
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lens).squeeze(1),
+                pad_sequence(speechs, batch_first=True),
+                torch.stack(speech_lens).squeeze(1),
+                torch.stack(spembs))  # spembs may need squeezing
 
 
 def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                config, batchsize=10, epochs=150, gradient_accumulation=6,
-               epochs_per_save=10):
+               epochs_per_save=10, spemb=False):
     """
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
@@ -74,10 +93,17 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         train_losses_this_epoch = list()
         for train_datapoint in train_loader:
             with autocast():
-                train_loss = net(train_datapoint[0].to(device),
-                                 train_datapoint[1].to(device),
-                                 train_datapoint[2].to(device),
-                                 train_datapoint[3].to(device))
+                if not spemb:
+                    train_loss = net(train_datapoint[0].to(device),
+                                     train_datapoint[1].to(device),
+                                     train_datapoint[2].to(device),
+                                     train_datapoint[3].to(device))
+                else:
+                    train_loss = net(train_datapoint[0].to(device),
+                                     train_datapoint[1].to(device),
+                                     train_datapoint[2].to(device),
+                                     train_datapoint[3].to(device),
+                                     train_datapoint[4].to(device))
                 train_losses_this_epoch.append(float(train_loss))
             scaler.scale((train_loss / gradient_accumulation)).backward()
             del train_loss
@@ -96,14 +122,22 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
             net.eval()
             val_losses = list()
             for validation_datapoint in valid_loader:
-                val_losses.append(float(net(validation_datapoint[0].to(device),
-                                            validation_datapoint[1].to(device),
-                                            validation_datapoint[2].to(device),
-                                            validation_datapoint[3].to(device))))
+                if not spemb:
+                    val_losses.append(float(net(validation_datapoint[0].to(device),
+                                                validation_datapoint[1].to(device),
+                                                validation_datapoint[2].to(device),
+                                                validation_datapoint[3].to(device))))
+                else:
+                    val_losses.append(float(net(validation_datapoint[0].to(device),
+                                                validation_datapoint[1].to(device),
+                                                validation_datapoint[2].to(device),
+                                                validation_datapoint[3].to(device),
+                                                validation_datapoint[4].to(device))))
             average_val_loss = sum(val_losses) / len(val_losses)
             if epoch % epochs_per_save == 0:
                 torch.save({"model": net.state_dict(),
-                            "optimizer": optimizer.state_dict()},
+                            "optimizer": optimizer.state_dict(),
+                            "scaler": scaler.state_dict()},
                            os.path.join(save_directory,
                                         "checkpoint_{}.pt".format(step_counter)))
             print("Epoch:        {}".format(epoch + 1))
