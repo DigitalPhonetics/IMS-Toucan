@@ -32,7 +32,7 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         self.channel_reducer_2 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
         self.channel_reducer_3 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
 
-        self.expander = torch.nn.Sequential(torch.nn.Linear(53, 128), torch.nn.Tanh())
+        self.expander = torch.nn.Sequential(torch.nn.Linear(98, 128), torch.nn.Tanh())
 
         self.similarity = torch.nn.CosineSimilarity()
         self.criterion = ContrastiveLoss()
