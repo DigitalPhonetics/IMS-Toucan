@@ -14,28 +14,27 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         super().__init__()
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=10, kernel_size=(15, 15))
         self.act1 = torch.nn.LeakyReLU()
-        self.drop1 = torch.nn.Dropout2d(0.2)
+        self.drop1 = torch.nn.Dropout2d(0.1)
         self.pool1 = torch.nn.MaxPool2d(2)
         self.conv2 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(10, 10))
         self.act2 = torch.nn.LeakyReLU()
-        self.drop2 = torch.nn.Dropout2d(0.2)
+        self.drop2 = torch.nn.Dropout2d(0.1)
         self.pool2 = torch.nn.MaxPool2d(2)
         self.conv3 = torch.nn.Conv2d(in_channels=10, out_channels=10, kernel_size=(5, 5))
         self.act3 = torch.nn.LeakyReLU()
-        self.drop3 = torch.nn.Dropout2d(0.2)
+        self.drop3 = torch.nn.Dropout2d(0.1)
 
-        self.encoder_fine = torch.nn.Sequential(self.conv1, self.act1, self.drop1, self.pool1)
-        self.encoder_medium = torch.nn.Sequential(self.conv2, self.act2, self.drop2, self.pool2)
-        self.encoder_coarse = torch.nn.Sequential(self.conv3, self.act3, self.drop3)
+        self.encoder_fine = torch.nn.Sequential(self.conv1, self.act1, self.drop1)
+        self.encoder_medium = torch.nn.Sequential(self.pool1, self.conv2, self.act2, self.drop2)
+        self.encoder_coarse = torch.nn.Sequential(self.pool2, self.conv3, self.act3, self.drop3)
 
         self.channel_reducer_1 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
         self.channel_reducer_2 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
         self.channel_reducer_3 = torch.nn.Conv2d(in_channels=10, out_channels=1, kernel_size=1)
 
-        self.expander = torch.nn.Sequential(torch.nn.Linear(53, 128), torch.nn.Sigmoid())
+        self.expander = torch.nn.Sequential(torch.nn.Linear(53, 128), torch.nn.Tanh())
 
-        self.cos_comparator = torch.nn.CosineSimilarity()
-        self.euclid_comparator = torch.nn.PairwiseDistance(p=2)
+        self.similarity = torch.nn.CosineSimilarity()
         self.criterion = ContrastiveLoss()
 
     def forward(self, sample1, sample2, label):
@@ -69,18 +68,15 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
         info1 = torch.cat([ef1_vec, em1_vec, ec1_vec], 2)
         info2 = torch.cat([ef2_vec, em2_vec, ec2_vec], 2)
 
-        vector1 = self.expander(info1)
-        vector2 = self.expander(info2)
+        embedding1 = self.expander(info1)
+        embedding2 = self.expander(info2)
 
-        # get distances
-        cos_sim = self.cos_comparator(vector1, vector2)
+        # get distance
+        cos_sim = self.similarity(embedding1, embedding2)
         cos_dist = torch.neg(cos_sim)
-        euclid_dist = self.euclid_comparator(vector1, vector2)
 
-        # get losses
-        cos_loss = self.criterion(cos_dist, label)
-        euclid_loss = self.criterion(euclid_dist, label)
-        loss = cos_loss + euclid_loss
+        # get loss
+        loss = self.criterion(cos_dist, label)
 
         return loss
 
@@ -101,7 +97,8 @@ class SiameseSpeakerEmbedding(torch.nn.Module):
 
         # expand dimensions
         info1 = torch.cat([ef1_vec, em1_vec, ec1_vec], 2)
-        return self.expander(info1)
+        embedding = self.expander(info1)
+        return embedding
 
     def get_conf(self):
         return "SiameseSpeakerEmbedding"

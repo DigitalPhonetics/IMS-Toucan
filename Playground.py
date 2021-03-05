@@ -62,4 +62,5 @@ def count_parameters(net):
 
 if __name__ == '__main__':
     show_att(lang="en")
+    show_specs(lang="en")
     show_att(lang="de")
