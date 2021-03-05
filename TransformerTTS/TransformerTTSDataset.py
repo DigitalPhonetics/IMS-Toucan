@@ -19,6 +19,7 @@ class TransformerTTSDataset(Dataset):
                  lang="de",
                  min_len=50000,
                  max_len=230000):
+        self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
@@ -27,7 +28,6 @@ class TransformerTTSDataset(Dataset):
                 key_list = list(self.path_to_transcript_dict.keys())[:-100]
             else:
                 key_list = list(self.path_to_transcript_dict.keys())[-100:]
-            self.spemb = spemb
 
             # build cache
             print("... building dataset cache ...")
