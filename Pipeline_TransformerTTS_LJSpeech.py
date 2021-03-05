@@ -31,7 +31,7 @@ def build_path_to_transcript_dict():
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech", "red5")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                eval_dataset=valid_set,
-               device=torch.device("cuda:1"),
+               device=torch.device("cuda:8"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=3000,  # just kill the process at some point

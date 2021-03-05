@@ -50,7 +50,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,
                  decoder_concat_after: bool = False,
-                 reduction_factor: int = 1,
+                 reduction_factor: int = 5,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "add",
                  transformer_enc_dropout_rate: float = 0.1,
