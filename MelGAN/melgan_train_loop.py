@@ -194,7 +194,7 @@ def train_loop(batchsize=16,
                             "generator_optimizer": optimizer_g.state_dict(),
                             "discriminator_optimizer": optimizer_d.state_dict()},
                            os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
-            print("Epoch:                  {}".format(epoch + 986 + 1))
+            print("Epoch:                  {}".format(epoch + 1))
             print("Valid Generator Loss:   {}".format(valid_gen_mean_epoch_loss))
             print("Time elapsed:           {} Minutes".format(round((time.time() - start_time) / 60), 2))
             print("Steps:                  {}".format(step_counter))
