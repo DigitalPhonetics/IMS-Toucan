@@ -56,12 +56,90 @@ def plot_fastspeech_architecture():
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
 
 
-def plot_melgan_training():
-    pass
+def plot_melgan_training(path_to_train_loss_json="Models/Use/train_loss.json",
+                         path_to_valid_loss_json="Models/Use/valid_loss.json"):
+    import matplotlib.pyplot as plt
+    import json
+    with open(path_to_train_loss_json, 'r') as plotting_data_file:
+        train_loss_dict = json.load(plotting_data_file)
+    with open(path_to_valid_loss_json, 'r') as plotting_data_file:
+        valid_loss_dict = json.load(plotting_data_file)
+    plt.plot(list(range(1, len(train_loss_dict["multi_res_spectral_convergence"]) + 1)),
+             train_loss_dict["multi_res_spectral_convergence"],
+             'b',
+             label="Spectral Distribution Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["multi_res_log_stft_mag"]) + 1)),
+             train_loss_dict["multi_res_log_stft_mag"],
+             'g',
+             label="Spectral Magnitude Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["adversarial"]) + 1)),
+             train_loss_dict["adversarial"],
+             'r',
+             label="Adversarial Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["generator_total"]) + 1)),
+             train_loss_dict["generator_total"],
+             'm',
+             label="Total Generator Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["discriminator_mse"]) + 1)),
+             train_loss_dict["discriminator_mse"],
+             'c',
+             label="Discriminator Loss",
+             alpha=0.5)
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.title("Train Losses")
+    plt.show()
+    plt.clf()
+    plt.plot(list(range(1, len(valid_loss_dict["multi_res_spectral_convergence"]) + 1)),
+             valid_loss_dict["multi_res_spectral_convergence"],
+             'b',
+             label="Spectral Distribution Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(valid_loss_dict["multi_res_log_stft_mag"]) + 1)),
+             valid_loss_dict["multi_res_log_stft_mag"],
+             'g',
+             label="Spectral Magnitude Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(valid_loss_dict["adversarial"]) + 1)),
+             valid_loss_dict["adversarial"],
+             'r',
+             label="Adversarial Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(valid_loss_dict["generator_total"]) + 1)),
+             valid_loss_dict["generator_total"],
+             'm',
+             label="Total Generator Loss",
+             alpha=0.5)
+    plt.plot(list(range(1, len(valid_loss_dict["discriminator_mse"]) + 1)),
+             valid_loss_dict["discriminator_mse"],
+             'c',
+             label="Discriminator Loss",
+             alpha=0.5)
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.title("Valid Losses")
+    plt.show()
 
 
-def plot_syn_training():
-    pass
+def plot_syn_training(path_to_train_val_loss_json="Models/Use/train_val_loss.json"):
+    import matplotlib.pyplot as plt
+    import json
+    with open(path_to_train_val_loss_json, 'r') as plotting_data_file:
+        train_val_loss = json.load(plotting_data_file)
+    train_loss = train_val_loss[0]
+    val_loss = train_val_loss[1]
+    plt.plot(list(range(1, len(train_loss) + 1)), train_loss, 'b', label="Train Loss")
+    plt.plot(list(range(1, len(val_loss) + 1)), val_loss, 'g', label="Valid Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.show()
 
 
 def count_parameters(net):
@@ -69,6 +147,8 @@ def count_parameters(net):
 
 
 if __name__ == '__main__':
+    plot_syn_training()
+    plot_melgan_training()
     show_att(lang="en")
-    show_att(lang="de")
-    read_texts(lang="en")
+    # show_att(lang="de")
+    # read_texts(lang="en")
