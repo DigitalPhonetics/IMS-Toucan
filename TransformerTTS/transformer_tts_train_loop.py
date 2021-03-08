@@ -27,7 +27,7 @@ def plot_attentions(atts, dir, step):
     plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
     if not os.path.exists(os.path.join(dir, "atts")):
         os.makedirs(os.path.join(dir, "atts"))
-    plt.savefig(os.path.join(os.path.join(dir, "atts"), step + ".png"))
+    plt.savefig(os.path.join(os.path.join(dir, "atts"), str(step) + ".png"))
     plt.clf()
     plt.close()
 
