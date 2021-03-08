@@ -455,6 +455,7 @@ class Transformer(torch.nn.Module, ABC):
         x = text
         y = speech
         spemb = spembs
+        self.eval()
 
         # inference with teacher forcing
         if use_teacher_forcing:
@@ -501,9 +502,7 @@ class Transformer(torch.nn.Module, ABC):
 
             # calculate output and stop prob at idx-th step
             y_masks = subsequent_mask(idx).unsqueeze(0).to(x.device)
-            z, z_cache = self.decoder.forward_one_step(
-                ys, y_masks, hs, cache=z_cache
-            )  # (B, adim)
+            z, z_cache = self.decoder.forward_one_step(ys, y_masks, hs, cache=z_cache)  # (B, adim)
             outs += [self.feat_out(z).view(self.reduction_factor, self.odim)]  # [(r, odim), ...]
             probs += [torch.sigmoid(self.prob_out(z))[0]]  # [(r), ...]
 
@@ -536,7 +535,7 @@ class Transformer(torch.nn.Module, ABC):
 
         # concatenate attention weights -> (#layers, #heads, L, T)
         att_ws = torch.stack(att_ws, dim=0)
-
+        self.train()
         return outs, probs, att_ws
 
     @staticmethod

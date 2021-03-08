@@ -32,7 +32,7 @@ def plot_attentions(atts, dir, step):
     plt.close()
 
 
-def get_atts(model, lang):
+def get_atts(model, lang, device):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
@@ -47,7 +47,7 @@ def get_atts(model, lang):
         sentence = "This is a brand new sentence."
     elif lang == "de":
         sentence = "Dies ist ein neuer Satz."
-    atts = model.inference(tf.string_to_tensor(sentence).long())[2]
+    atts = model.inference(tf.string_to_tensor(sentence).long().to(device))[2]
     del tf
     return atts
 
@@ -185,7 +185,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                             "scaler": scaler.state_dict()},
                            os.path.join(save_directory,
                                         "checkpoint_{}.pt".format(step_counter)))
-                plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang)], dim=0),
+                plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang, device=device)], dim=0),
                                 dir=save_directory, step=step_counter)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))

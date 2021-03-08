@@ -147,8 +147,13 @@ def count_parameters(net):
 
 
 if __name__ == '__main__':
-    plot_melgan_training()
+    # plot_melgan_training()
     show_att(lang="en")
     show_att(lang="de")
-    read_texts(lang="de")
-    read_texts(lang="en")
+    # read_texts(lang="de")
+    # read_texts(lang="en")
+
+    from TransformerTTS.TransformerTTS import Transformer
+
+    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
+    print(count_parameters(model))
