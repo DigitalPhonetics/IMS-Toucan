@@ -44,7 +44,7 @@ def get_atts(model, lang, device):
         sentence = "This is a brand new sentence."
     elif lang == "de":
         sentence = "Dies ist ein brandneuer Satz."
-    atts = model.inference(tf.string_to_tensor(sentence).long().to(device))[2].to("cpu")
+    atts = model.inference(tf.string_to_tensor(sentence).long().squeeze(0).to(device))[2].to("cpu")
     del tf
     return atts
 
