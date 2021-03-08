@@ -605,7 +605,7 @@ class Transformer(torch.nn.Module, ABC):
 
 
 def build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt"):
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None).to("cpu")
+    model = Transformer(idim=131, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model

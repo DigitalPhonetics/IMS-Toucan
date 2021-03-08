@@ -52,14 +52,14 @@ if __name__ == '__main__':
                                       min_len=0,
                                       max_len=170000)
 
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None, reduction_factor=5)
+    model = Transformer(idim=131, odim=80, spk_embed_dim=None, reduction_factor=5)
 
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                eval_dataset=valid_set,
-               # device=torch.device("cuda:8"),
                device=torch.device("cpu"),
+               # device=torch.device("cuda:8"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point

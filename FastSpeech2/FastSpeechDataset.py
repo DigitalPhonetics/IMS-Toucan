@@ -71,6 +71,7 @@ class FastSpeechDataset(Dataset):
             else:
                 with open(os.path.join(cache_dir, "fast_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
+        print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len):
         tf = TextFrontend(language=lang,

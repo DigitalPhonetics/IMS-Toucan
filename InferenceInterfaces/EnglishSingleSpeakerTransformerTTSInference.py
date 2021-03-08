@@ -307,7 +307,7 @@ class EnglishSingleSpeakerTransformerTTSInference:
                                        use_sentence_type=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=True)
-        self.phone2mel = Transformer(idim=132, odim=80, spk_embed_dim=None)
+        self.phone2mel = Transformer(idim=131, odim=80, spk_embed_dim=None)
         self.mel2wav = MelGANGenerator()
 
     def __call__(self, text):

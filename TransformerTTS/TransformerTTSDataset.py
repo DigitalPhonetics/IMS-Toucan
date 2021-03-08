@@ -61,6 +61,7 @@ class TransformerTTSDataset(Dataset):
             else:
                 with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
+        print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, spemb, lang, min_len, max_len):
         tf = TextFrontend(language=lang,

@@ -57,7 +57,7 @@ if __name__ == '__main__':
                                   min_len=50000,
                                   max_len=230000)
 
-    model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=131, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,
