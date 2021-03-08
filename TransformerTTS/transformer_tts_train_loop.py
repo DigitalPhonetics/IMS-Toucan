@@ -2,11 +2,54 @@ import json
 import os
 import time
 
+import matplotlib.pyplot as plt
 import torch
 from adabound import AdaBound
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
+
+
+def plot_attentions(atts, dir, step):
+    fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
+    atts_1 = atts[::2]
+    atts_2 = atts[1::2]
+    for index, att in enumerate(atts_1):
+        axes[index][0].imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto',
+                              origin="lower")
+        axes[index][0].xaxis.set_visible(False)
+        axes[index][0].yaxis.set_visible(False)
+    for index, att in enumerate(atts_2):
+        axes[index][1].imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto',
+                              origin="lower")
+        axes[index][1].xaxis.set_visible(False)
+        axes[index][1].yaxis.set_visible(False)
+    plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
+    if not os.path.exists(os.path.join(dir, "atts")):
+        os.makedirs(os.path.join(dir, "atts"))
+    plt.savefig(os.path.join(os.path.join(dir, "atts"), step + ".png"))
+    plt.clf()
+    plt.close()
+
+
+def get_atts(model, lang):
+    from PreprocessingForTTS.ProcessText import TextFrontend
+    tf = TextFrontend(language=lang,
+                      use_panphon_vectors=False,
+                      use_shallow_pos=False,
+                      use_sentence_type=False,
+                      use_positional_information=False,
+                      use_word_boundaries=False,
+                      use_chinksandchunks_ipb=False,
+                      use_explicit_eos=True)
+    sentence = "Hello"
+    if lang == "en":
+        sentence = "This is a brand new sentence."
+    elif lang == "de":
+        sentence = "Dies ist ein neuer Satz."
+    atts = model.inference(tf.string_to_tensor(sentence).long())[2]
+    del tf
+    return atts
 
 
 def collate_and_pad(batch):
@@ -47,8 +90,10 @@ def collate_and_pad(batch):
 
 def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                config, batchsize=10, epochs=150, gradient_accumulation=6,
-               epochs_per_save=10, spemb=False):
+               epochs_per_save=40, spemb=False, lang="en"):
     """
+    :param lang: language for the sentence for attention plotting
+    :param spemb: whether the dataset provides speaker embeddings
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
     :param eval_dataset: Pytorch Dataset Object for validation data
@@ -140,6 +185,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                             "scaler": scaler.state_dict()},
                            os.path.join(save_directory,
                                         "checkpoint_{}.pt".format(step_counter)))
+                plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang)], dim=0),
+                                dir=save_directory, step=step_counter)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))

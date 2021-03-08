@@ -14,8 +14,8 @@ from TransformerTTS.transformer_tts_train_loop import train_loop
 
 warnings.filterwarnings("ignore")
 
-torch.manual_seed(17)
-random.seed(17)
+torch.manual_seed(13)
+random.seed(13)
 
 
 def build_path_to_transcript_dict():
@@ -61,6 +61,6 @@ if __name__ == '__main__':
                device=torch.device("cuda:8"),
                config=model.get_conf(),
                save_directory=save_dir,
-               epochs=3000,  # just kill the process at some point
-               batchsize=64,
+               epochs=30000,  # just kill the process at some point
+               batchsize=84,
                gradient_accumulation=1)

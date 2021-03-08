@@ -73,16 +73,6 @@ class Transformer(torch.nn.Module, ABC):
         reduction_factor (int, optional): Reduction factor.
         spk_embed_dim (int, optional): Number of speaker embedding dimenstions.
         spk_embed_integration_type (str, optional): How to integrate speaker embedding.
-        use_gst (str, optional): Whether to use global style token.
-        gst_tokens (int, optional): The number of GST embeddings.
-        gst_heads (int, optional): The number of heads in GST multihead attention.
-        gst_conv_layers (int, optional): The number of conv layers in GST.
-        gst_conv_chans_list: (Sequence[int], optional):
-            List of the number of channels of conv layers in GST.
-        gst_conv_kernel_size (int, optional): Kernal size of conv layers in GST.
-        gst_conv_stride (int, optional): Stride size of conv layers in GST.
-        gst_gru_layers (int, optional): The number of GRU layers in GST.
-        gst_gru_units (int, optional): The number of GRU units in GST.
         transformer_lr (float, optional): Initial value of learning rate.
         transformer_warmup_steps (int, optional): Optimizer warmup steps.
         transformer_enc_dropout_rate (float, optional):
@@ -131,7 +121,7 @@ class Transformer(torch.nn.Module, ABC):
                  # network structure related
                  idim: int,
                  odim: int,
-                 embed_dim: int = 512,
+                 embed_dim: int = 256,
                  eprenet_conv_layers: int = 3,
                  eprenet_conv_chans: int = 256,
                  eprenet_conv_filts: int = 5,
@@ -139,7 +129,7 @@ class Transformer(torch.nn.Module, ABC):
                  dprenet_units: int = 256,
                  elayers: int = 6,
                  eunits: int = 1024,
-                 adim: int = 512,
+                 adim: int = 256,
                  aheads: int = 4,
                  dlayers: int = 6,
                  dunits: int = 1024,
@@ -154,7 +144,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,
                  decoder_concat_after: bool = False,
-                 reduction_factor: int = 3,
+                 reduction_factor: int = 5,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "add",
                  # training related

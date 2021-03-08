@@ -147,8 +147,8 @@ def count_parameters(net):
 
 
 if __name__ == '__main__':
-    plot_syn_training()
     plot_melgan_training()
     show_att(lang="en")
     show_att(lang="de")
-    # read_texts(lang="en")
+    read_texts(lang="de")
+    read_texts(lang="en")

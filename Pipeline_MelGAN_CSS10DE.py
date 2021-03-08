@@ -15,8 +15,8 @@ from MelGAN.melgan_train_loop import train_loop
 
 warnings.filterwarnings("ignore")
 
-torch.manual_seed(17)
-random.seed(17)
+torch.manual_seed(13)
+random.seed(13)
 
 
 def get_file_list():
