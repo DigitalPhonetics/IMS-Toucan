@@ -41,8 +41,6 @@ def plot_fastspeech_architecture():
     css10_testing = FastSpeechDataset(path_to_transcript_dict,
                                       train="testing",
                                       acoustic_model_name="Transformer_German_Single.pt",
-                                      save=False,
-                                      load=False,
                                       loading_processes=1)
     model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to(device)
     datapoint = css10_testing[0]
@@ -147,13 +145,7 @@ def count_parameters(net):
 
 
 if __name__ == '__main__':
-    # plot_melgan_training()
     show_att(lang="en")
     show_att(lang="de")
     # read_texts(lang="de")
     # read_texts(lang="en")
-
-    from TransformerTTS.TransformerTTS import Transformer
-
-    model = Transformer(idim=132, odim=80, spk_embed_dim=None)
-    print(count_parameters(model))

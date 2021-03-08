@@ -622,11 +622,8 @@ def show_spectrogram(sentence, model=None, lang="en"):
     import matplotlib.pyplot as plt
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_shallow_pos=False,
                       use_sentence_type=False,
-                      use_positional_information=False,
                       use_word_boundaries=False,
-                      use_chinksandchunks_ipb=False,
                       use_explicit_eos=True)
     fig, ax = plt.subplots()
     ax.set(title=sentence)
@@ -679,11 +676,8 @@ def get_atts(model, sentence, lang):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_shallow_pos=False,
                       use_sentence_type=False,
-                      use_positional_information=False,
                       use_word_boundaries=False,
-                      use_chinksandchunks_ipb=False,
                       use_explicit_eos=True)
     return model.inference(tf.string_to_tensor(sentence).long())[2]
 

@@ -304,11 +304,8 @@ class EnglishSingleSpeakerTransformerTTSInference:
     def __init__(self):
         self.text2phone = TextFrontend(language="en",
                                        use_panphon_vectors=False,
-                                       use_shallow_pos=False,
                                        use_sentence_type=False,
-                                       use_positional_information=False,
                                        use_word_boundaries=False,
-                                       use_chinksandchunks_ipb=False,
                                        use_explicit_eos=True)
         self.phone2mel = Transformer(idim=132, odim=80, spk_embed_dim=None)
         self.mel2wav = MelGANGenerator()

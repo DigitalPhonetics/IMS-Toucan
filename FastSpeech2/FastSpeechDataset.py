@@ -75,11 +75,8 @@ class FastSpeechDataset(Dataset):
     def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
-                          use_shallow_pos=False,
                           use_sentence_type=False,
-                          use_positional_information=False,
                           use_word_boundaries=False,
-                          use_chinksandchunks_ipb=False,
                           use_explicit_eos=True)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
