@@ -6,56 +6,6 @@ import phonemizer
 import torch
 from cleantext import clean
 
-"""
-Explanation of the Tensor dimensions:
-
-The First Block comes from a modified PanPhon phoneme 
-vector lookup table and can optionally be used instead 
-of a bland phoneme ID. It contains articulatory features 
-of the phonemes. https://www.aclweb.org/anthology/C16-1328/
-
-syl -- ternery, phonetic property of phoneme
-son -- ternery, phonetic property of phoneme
-cons -- ternery, phonetic property of phoneme
-cont -- ternery, phonetic property of phoneme
-delrel -- ternery, phonetic property of phoneme
-lat -- ternery, phonetic property of phoneme
-nas -- ternery, phonetic property of phoneme
-strid -- ternery, phonetic property of phoneme
-voi -- ternery, phonetic property of phoneme
-sg -- ternery, phonetic property of phoneme
-cg -- ternery, phonetic property of phoneme
-ant -- ternery, phonetic property of phoneme
-cor -- ternery, phonetic property of phoneme
-distr -- ternery, phonetic property of phoneme
-lab -- ternery, phonetic property of phoneme
-hi -- ternery, phonetic property of phoneme
-lo -- ternery, phonetic property of phoneme
-back -- ternery, phonetic property of phoneme
-round -- ternery, phonetic property of phoneme
-velaric -- ternery, phonetic property of phoneme
-tense -- ternery, phonetic property of phoneme
-long -- ternery, phonetic property of phoneme
-hitone -- ternery, phonetic property of phoneme
-hireg -- ternery, phonetic property of phoneme
-
-prosody and pauses -- integer, 1 = primary stress, 
-                               2 = secondary stress,
-                               3 = lengthening,
-                               4 = half-lenghtening,
-                               5 = shortening,
-                               6 = syllable boundary,
-                               7 = tact boundary,
-                               8 = upper intonation grouping
-                               9 = one of , ; : - identity
-                               10 = intonation phrase boundary identity according to chinks and chunks
-                             
-sentence type -- integer, 1 = neutral,
-                          2 = question,
-                          3 = exclamation
-
-"""
-
 
 class TextFrontend:
     def __init__(self,
@@ -63,8 +13,7 @@ class TextFrontend:
                  use_panphon_vectors=True,
                  use_sentence_type=True,
                  use_word_boundaries=False,
-                 use_explicit_eos=True
-                 ):
+                 use_explicit_eos=True):
         """
         Mostly preparing ID lookups
         """
@@ -74,13 +23,14 @@ class TextFrontend:
         self.use_explicit_eos = use_explicit_eos
 
         # list taken and modified from https://github.com/dmort27/panphon
+        # see publication: https://www.aclweb.org/anthology/C16-1328/
         self.ipa_to_vector = defaultdict()
         if use_panphon_vectors:
-            self.default_vector = [131, 131, 131, 131, 131, 131, 131, 131, 131, 131,
-                                   131, 131, 131, 131, 131, 131, 131, 131, 131, 131,
-                                   131, 131, 131, 131, 131]
+            self.default_vector = [130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
+                                   130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
+                                   130, 130, 130, 130, 130]
         else:
-            self.default_vector = 131
+            self.default_vector = 130
         with open("PreprocessingForTTS/ipa_vector_lookup.csv", encoding='utf8') as f:
             features = f.read()
         features_list = features.split("\n")
@@ -90,6 +40,10 @@ class TextFrontend:
                 self.ipa_to_vector[line_list[0]] = [float(x) for x in line_list[1:]]
             else:
                 self.ipa_to_vector[line_list[0]] = index
+                # note: Index 0 is unused, so it can be used for padding as is convention.
+                #       Index 1 is EOS, if you want to use explicit EOS.
+                #       Index 130 is used for unknown characters
+                #       Index 10 is used for pauses (heuristically)
 
         if language == "en":
             self.clean_lang = "en"
@@ -121,8 +75,8 @@ class TextFrontend:
         if view:
             print("Phonemes: \n{}\n".format(phones))
 
-        tensors = []
-        phones_vector = []
+        tensors = list()
+        phones_vector = list()
 
         # turn into numeric vectors
         for char in phones:
