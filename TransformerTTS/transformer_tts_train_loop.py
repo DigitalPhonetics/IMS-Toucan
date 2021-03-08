@@ -90,7 +90,7 @@ def collate_and_pad(batch):
 
 def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                config, batchsize=10, epochs=150, gradient_accumulation=6,
-               epochs_per_save=40, spemb=False, lang="en"):
+               epochs_per_save=60, spemb=False, lang="en"):
     """
     :param lang: language for the sentence for attention plotting
     :param spemb: whether the dataset provides speaker embeddings
@@ -111,9 +111,9 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               dataset=train_dataset,
                               drop_last=True,
                               num_workers=16,
-                              pin_memory=False,
+                              pin_memory=True,
                               shuffle=True,
-                              prefetch_factor=4,
+                              prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     valid_loader = DataLoader(batch_size=1,
