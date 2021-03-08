@@ -116,12 +116,12 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               prefetch_factor=16,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-    valid_loader = DataLoader(batch_size=1,
+    valid_loader = DataLoader(batch_size=50,  # this works perfectly as long as our eval set size is divisible by 50
                               dataset=eval_dataset,
                               drop_last=False,
-                              num_workers=2,
+                              num_workers=10,
                               pin_memory=False,
-                              prefetch_factor=4,
+                              prefetch_factor=5,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     loss_plot = [[], []]
