@@ -36,17 +36,14 @@ def get_atts(model, lang, device):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_shallow_pos=False,
                       use_sentence_type=False,
-                      use_positional_information=False,
                       use_word_boundaries=False,
-                      use_chinksandchunks_ipb=False,
                       use_explicit_eos=True)
     sentence = "Hello"
     if lang == "en":
         sentence = "This is a brand new sentence."
     elif lang == "de":
-        sentence = "Dies ist ein neuer Satz."
+        sentence = "Dies ist ein brandneuer Satz."
     atts = model.inference(tf.string_to_tensor(sentence).long().to(device))[2].to("cpu")
     del tf
     return atts
@@ -60,10 +57,11 @@ def collate_and_pad(batch):
         speechs = list()
         speech_lens = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]))
+            texts.append(torch.LongTensor(datapoint[0]).unsqueeze(0))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
+            print(texts[-1].shape, text_lens[-1].shape, speechs[-1].shape, speech_lens[-1].shape)
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
@@ -76,7 +74,7 @@ def collate_and_pad(batch):
         speech_lens = list()
         spembs = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]))
+            texts.append(torch.LongTensor(datapoint[0]).unsqueeze(0))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
