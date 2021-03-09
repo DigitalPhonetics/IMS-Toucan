@@ -78,6 +78,8 @@ def collate_and_pad(batch):
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
             spembs.append(torch.Tensor(datapoint[4]))
+        print(torch.stack(spembs))
+        print(torch.stack(spembs).shape)
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
