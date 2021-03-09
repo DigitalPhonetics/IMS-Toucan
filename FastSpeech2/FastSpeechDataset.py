@@ -34,10 +34,11 @@ class FastSpeechDataset(Dataset):
             if type(train) is str:
                 key_list = list(self.path_to_transcript_dict.keys())[:1]
             else:
+                all_keys_ordered = list(self.path_to_transcript_dict.keys())
                 if train:
-                    key_list = list(self.path_to_transcript_dict.keys())[:-100]
+                    key_list = all_keys_ordered[:-100]
                 else:
-                    key_list = list(self.path_to_transcript_dict.keys())[-100:]
+                    key_list = all_keys_ordered[-100:]
             self.spemb = spemb
             # build cache
             print("... building dataset cache ...")
@@ -143,7 +144,7 @@ class FastSpeechDataset(Dataset):
                          cached_durations.numpy().tolist(),
                          cached_energy.numpy().tolist(),
                          cached_pitch.numpy().tolist(),
-                         cached_spemb])
+                         cached_spemb.numpy().tolist()])
 
     def __getitem__(self, index):
         if not self.spemb:

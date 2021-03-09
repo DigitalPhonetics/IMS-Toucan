@@ -26,10 +26,11 @@ class TransformerTTSDataset(Dataset):
                 (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
+            all_keys_ordered = list(self.path_to_transcript_dict.keys())
             if train:
-                key_list = list(self.path_to_transcript_dict.keys())[:-100]
+                key_list = all_keys_ordered[:-100]
             else:
-                key_list = list(self.path_to_transcript_dict.keys())[-100:]
+                key_list = all_keys_ordered[-100:]
 
             # build cache
             print("... building dataset cache ...")
@@ -90,7 +91,7 @@ class TransformerTTSDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
-                    self.datapoints[-1].append(emb_tensor)
+                    self.datapoints[-1].append(emb_tensor.numpy().tolist())
 
     def __getitem__(self, index):
         if not self.spemb:
