@@ -144,7 +144,21 @@ def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
+def show_all_models_params():
+    from TransformerTTS.TransformerTTS import Transformer
+    from FastSpeech2.FastSpeech2 import FastSpeech2
+    model = Transformer(idim=131, odim=80)
+    print("Number of Parameters in Transformer without Speaker Embeddings: {}".format(count_parameters(model)))
+    model = Transformer(idim=131, odim=80, spk_embed_dim=256)
+    print("Number of Parameters in Transformer with Speaker Embeddings: {}".format(count_parameters(model)))
+    model = FastSpeech2(idim=131, odim=80)
+    print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
+    model = FastSpeech2(idim=131, odim=80, spk_embed_dim=256)
+    print("Number of Parameters in FastSpeech2 with Speaker Embeddings: {}".format(count_parameters(model)))
+
+
 if __name__ == '__main__':
+    show_all_models_params()
     plot_melgan_training()
     show_att(lang="en")
     show_att(lang="de")

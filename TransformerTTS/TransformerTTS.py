@@ -121,16 +121,16 @@ class Transformer(torch.nn.Module, ABC):
                  # network structure related
                  idim: int,
                  odim: int,
-                 embed_dim: int = 256,
-                 eprenet_conv_layers: int = 3,
-                 eprenet_conv_chans: int = 256,
-                 eprenet_conv_filts: int = 5,
+                 embed_dim: int = 0,
+                 eprenet_conv_layers: int = 0,
+                 eprenet_conv_chans: int = 0,
+                 eprenet_conv_filts: int = 0,
                  dprenet_layers: int = 2,
                  dprenet_units: int = 256,
                  elayers: int = 6,
                  eunits: int = 1024,
-                 adim: int = 256,
-                 aheads: int = 4,
+                 adim: int = 512,
+                 aheads: int = 8,
                  dlayers: int = 6,
                  dunits: int = 1024,
                  postnet_layers: int = 5,
@@ -144,9 +144,9 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,
                  decoder_concat_after: bool = False,
-                 reduction_factor: int = 5,
+                 reduction_factor: int = 1,
                  spk_embed_dim: int = None,
-                 spk_embed_integration_type: str = "add",
+                 spk_embed_integration_type: str = "concat",
                  # training related
                  transformer_enc_dropout_rate: float = 0.1,
                  transformer_enc_positional_dropout_rate: float = 0.1,
@@ -155,7 +155,7 @@ class Transformer(torch.nn.Module, ABC):
                  transformer_dec_positional_dropout_rate: float = 0.1,
                  transformer_dec_attn_dropout_rate: float = 0.1,
                  transformer_enc_dec_attn_dropout_rate: float = 0.1,
-                 eprenet_dropout_rate: float = 0.5,
+                 eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
                  init_type: str = "xavier_uniform",
@@ -167,10 +167,10 @@ class Transformer(torch.nn.Module, ABC):
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
-                 num_layers_applied_guided_attn: int = -1,
+                 num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma: float = 0.4,
-                 guided_attn_loss_lambda: float = 3.0):
+                 guided_attn_loss_lambda: float = 10.0):
         """Initialize Transformer module."""
         super().__init__()
 
