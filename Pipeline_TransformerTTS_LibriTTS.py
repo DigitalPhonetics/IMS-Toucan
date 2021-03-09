@@ -57,7 +57,7 @@ if __name__ == '__main__':
     path_to_transcript_dict = build_path_to_transcript_dict()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
+                                      train=True,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
