@@ -90,6 +90,7 @@ class TransformerTTSDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
+                    print(emb_tensor)
                     cached_spemb = emb_tensor.detach().numpy().tolist()
                     self.datapoints.append(
                         [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_spemb])
