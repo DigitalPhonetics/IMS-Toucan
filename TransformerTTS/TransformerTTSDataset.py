@@ -86,12 +86,15 @@ class TransformerTTSDataset(Dataset):
                 cached_text_lens = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
-                self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
                 if spemb:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
-                    self.datapoints[-1].append(emb_tensor.detach().numpy().tolist())
+                    cached_spemb = emb_tensor.detach().numpy().tolist()
+                    self.datapoints.append(
+                        [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_spemb])
+                else:
+                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
 
     def __getitem__(self, index):
         if not self.spemb:
