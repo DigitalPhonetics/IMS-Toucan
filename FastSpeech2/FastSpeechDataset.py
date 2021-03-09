@@ -144,7 +144,7 @@ class FastSpeechDataset(Dataset):
                          cached_durations.numpy().tolist(),
                          cached_energy.numpy().tolist(),
                          cached_pitch.numpy().tolist(),
-                         cached_spemb.numpy().tolist()])
+                         cached_spemb.detach().numpy().tolist()])
 
     def __getitem__(self, index):
         if not self.spemb:

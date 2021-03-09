@@ -91,7 +91,7 @@ class TransformerTTSDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
-                    self.datapoints[-1].append(emb_tensor.numpy().tolist())
+                    self.datapoints[-1].append(emb_tensor.detach().numpy().tolist())
 
     def __getitem__(self, index):
         if not self.spemb:
