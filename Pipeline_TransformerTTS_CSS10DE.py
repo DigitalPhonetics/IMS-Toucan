@@ -44,14 +44,14 @@ if __name__ == '__main__':
                                       train=True,
                                       cache_dir=cache_dir,
                                       lang="de",
-                                      min_len=50000,
-                                      max_len=230000)
+                                      min_len=0,
+                                      max_len=1000000)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="de",
-                                      min_len=50000,
-                                      max_len=230000)
+                                      min_len=0,
+                                      max_len=1000000)
 
     model = Transformer(idim=131, odim=80, spk_embed_dim=None)
 
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:3"),
+               device=torch.device("cuda:7"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
