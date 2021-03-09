@@ -19,19 +19,36 @@ random.seed(13)
 
 
 def build_path_to_transcript_dict():
+    path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
+    path_valid = "/mount/resources/speech/corpora/LibriTTS/dev-clean"
+
     path_to_transcript = dict()
-    for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
-        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
-            transcript = tf.read()
-        wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
-        path_to_transcript[wav_path] = transcript
+    # we split training and validation differently, so we merge both folders into a single dict
+    for speaker in os.listdir(path_train):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    with open(os.path.join(path_train, speaker, chapter, file), 'r',
+                              encoding='utf8') as tf:
+                        transcript = tf.read()
+                    wav_file = file.split(".")[0] + ".wav"
+                    path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    for speaker in os.listdir(path_valid):
+        for chapter in os.listdir(os.path.join(path_valid, speaker)):
+            for file in os.listdir(os.path.join(path_valid, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    with open(os.path.join(path_valid, speaker, chapter, file), 'r',
+                              encoding='utf8') as tf:
+                        transcript = tf.read()
+                    wav_file = file.split(".")[0] + ".wav"
+                    path_to_transcript[os.path.join(path_valid, speaker, chapter, wav_file)] = transcript
     return path_to_transcript
 
 
 if __name__ == '__main__':
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech", "espnet_settings")
+    cache_dir = os.path.join("Corpora", "LibriTTS")
+    save_dir = os.path.join("Models", "TransformerTTS", "MultiSpeaker", "LibriTTS")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -44,13 +61,13 @@ if __name__ == '__main__':
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
-                                      max_len=170000)
+                                      max_len=1000000)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
-                                      max_len=170000)
+                                      max_len=1000000)
 
     model = Transformer(idim=131, odim=80, spk_embed_dim=None)
 
