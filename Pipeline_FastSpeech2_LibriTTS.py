@@ -50,7 +50,7 @@ def build_path_to_transcript_dict():
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LibriTTS")
-    save_dir = os.path.join("Models", "FastSpeech2", "SingleSpeaker", "LibriTTS")
+    save_dir = os.path.join("Models", "FastSpeech2", "MultiSpeaker", "LibriTTS")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
