@@ -112,6 +112,10 @@ class FastSpeechDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_spemb = dvector.embed_utterance(mel_tensor)
+                    cached_durations = dc(acoustic_model.inference(text=text,
+                                                                   speech=melspec,
+                                                                   use_teacher_forcing=True,
+                                                                   spembs=cached_spemb)[2])[0]
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
