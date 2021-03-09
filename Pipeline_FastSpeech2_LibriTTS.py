@@ -64,14 +64,16 @@ if __name__ == '__main__':
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len=0,
-                                  max_len=1000000)
+                                  max_len=1000000,
+                                  spemb=True)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="Transformer_English_Multi.pt",
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len=0,
-                                  max_len=1000000)
+                                  max_len=1000000,
+                                  spemb=True)
 
     model = FastSpeech2(idim=131, odim=80, spk_embed_dim=256)
 
