@@ -32,7 +32,7 @@ def plot_attentions(atts, dir, step):
     plt.close()
 
 
-def get_atts(model, lang, device):
+def get_atts(model, lang, device, spemb):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
@@ -44,7 +44,8 @@ def get_atts(model, lang, device):
         sentence = "This is a brand new sentence."
     elif lang == "de":
         sentence = "Dies ist ein brandneuer Satz."
-    atts = model.inference(tf.string_to_tensor(sentence).long().squeeze(0).to(device))[2].to("cpu")
+    text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    atts = model.inference(text=text, spembs=spemb)[2].to("cpu")
     del tf
     return atts
 
@@ -78,8 +79,6 @@ def collate_and_pad(batch):
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
             spembs.append(torch.Tensor(datapoint[4]))
-        print(torch.stack(spembs))
-        print(torch.stack(spembs).shape)
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
@@ -87,7 +86,7 @@ def collate_and_pad(batch):
                 torch.stack(spembs))  # spembs may need squeezing
 
 
-def train_loop(net, train_dataset, eval_dataset, device, save_directory,
+def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                config, batchsize=10, epochs=150, gradient_accumulation=6,
                epochs_per_save=60, spemb=False, lang="en"):
     """
@@ -95,7 +94,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     :param spemb: whether the dataset provides speaker embeddings
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
-    :param eval_dataset: Pytorch Dataset Object for validation data
+    :param valid_dataset: Pytorch Dataset Object for validation data
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
     :param config: Config of the model to be trained
@@ -116,7 +115,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     valid_loader = DataLoader(batch_size=50,  # this works perfectly as long as our eval set size is divisible by 50
-                              dataset=eval_dataset,
+                              dataset=valid_dataset,
                               drop_last=False,
                               num_workers=10,
                               pin_memory=False,
@@ -124,6 +123,10 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     loss_plot = [[], []]
+    if spemb:
+        reference_spemb_for_att_plot = valid_dataset[0][4]
+    else:
+        reference_spemb_for_att_plot = None
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)
     step_counter = 0
@@ -184,7 +187,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                             "scaler": scaler.state_dict()},
                            os.path.join(save_directory,
                                         "checkpoint_{}.pt".format(step_counter)))
-                plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang, device=device)], dim=0),
+                plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang, device=device,
+                                                                       spemb=reference_spemb_for_att_plot)], dim=0),
                                 dir=save_directory, step=step_counter)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))

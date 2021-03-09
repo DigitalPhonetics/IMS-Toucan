@@ -57,7 +57,7 @@ if __name__ == '__main__':
     path_to_transcript_dict = build_path_to_transcript_dict()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
+                                      train=True,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
-               eval_dataset=valid_set,
+               valid_dataset=valid_set,
                device=torch.device("cpu"),
                config=model.get_conf(),
                save_directory=save_dir,

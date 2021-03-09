@@ -57,7 +57,7 @@ if __name__ == '__main__':
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
-               eval_dataset=valid_set,
+               valid_dataset=valid_set,
                device=torch.device("cuda:1"),
                config=model.get_conf(),
                save_directory=save_dir,
