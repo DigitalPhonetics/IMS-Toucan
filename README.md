@@ -35,9 +35,9 @@ complex systems.
 | Extend TransformerTTS to multi-speaker| ✅|
 | Extend FastSpeech to multi-speaker| ✅|
 | Extend MelGAN to multi-speaker| ✅|
-| Prepare MelGAN multi-speaker dataset||
-| Prepare Transformer multi-speaker dataset||
-| Prepare FastSpeech multi-speaker dataset||
+| Prepare MelGAN multi-speaker dataset|✅|
+| Prepare Transformer multi-speaker dataset|✅|
+| Prepare FastSpeech multi-speaker dataset|✅|
 | Train MelGAN on multi-speaker dataset||
 | Train Transformer on multi-speaker dataset||
 | Train FastSpeech on multi-speaker dataset||
@@ -56,4 +56,4 @@ Pipelines are available for at least one synthesis system for the following data
 | --------|-----------|--------------------| :---:|:---:|:---:|
 | Hokuspokus| German | Single Speaker    | ✅ |✅ |✅ |
 | LJSpeech | English | Single Speaker    | ✅ |✅ |✅ |
-| LibriTTS | English | Multi Speaker     |  in construction |in construction |in construction |
+| LibriTTS | English | Multi Speaker     |  ✅ |✅ |✅ |
