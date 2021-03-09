@@ -31,10 +31,10 @@ complex systems.
 | Redo dataloading for SpeakerEmbedding |✅|
 | Hyperparameter optimization for each model | ✅|
 | Train TransformerTTS that matches Vocoder input better | ✅|
-| Train SpeakerEmbedding that matches new filterbank settings| |
-| Extend TransformerTTS to multi-speaker||
-| Extend FastSpeech to multi-speaker||
-| Extend MelGAN to multi-speaker||
+| Train SpeakerEmbedding that matches new filterbank settings| ✅ |
+| Extend TransformerTTS to multi-speaker| ✅|
+| Extend FastSpeech to multi-speaker| ✅|
+| Extend MelGAN to multi-speaker| ✅|
 | Prepare MelGAN multi-speaker dataset||
 | Prepare Transformer multi-speaker dataset||
 | Prepare FastSpeech multi-speaker dataset||

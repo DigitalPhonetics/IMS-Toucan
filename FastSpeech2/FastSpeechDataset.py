@@ -4,6 +4,7 @@ from multiprocessing import Process, Manager
 
 import soundfile as sf
 import torch
+import torchaudio
 from torch.utils.data import Dataset
 
 from FastSpeech2.DurationCalculator import DurationCalculator
@@ -80,6 +81,9 @@ class FastSpeechDataset(Dataset):
                           use_word_boundaries=False,
                           use_explicit_eos=True)
         _, sr = sf.read(path_list[0])
+        if spemb:
+            wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name)
         dc = DurationCalculator()
@@ -105,7 +109,9 @@ class FastSpeechDataset(Dataset):
                                                                    use_teacher_forcing=True,
                                                                    spembs=None)[2])[0]
                 else:
-                    raise NotImplementedError
+                    wav_tensor, sample_rate = torchaudio.load(path)
+                    mel_tensor = wav2mel(wav_tensor, sample_rate)
+                    cached_spemb = dvector.embed_utterance(mel_tensor)
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
@@ -125,8 +131,15 @@ class FastSpeechDataset(Dataset):
                      cached_energy.numpy().tolist(),
                      cached_pitch.numpy().tolist()])
                 if self.spemb:
-                    print("not implemented yet")
-                    raise NotImplementedError
+                    self.datapoints.append(
+                        [cached_text,
+                         cached_text_lens,
+                         cached_speech,
+                         cached_speech_lens,
+                         cached_durations.numpy().tolist(),
+                         cached_energy.numpy().tolist(),
+                         cached_pitch.numpy().tolist(),
+                         cached_spemb])
 
     def __getitem__(self, index):
         if not self.spemb:

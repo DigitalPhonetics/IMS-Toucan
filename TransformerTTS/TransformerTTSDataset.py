@@ -3,6 +3,8 @@ import os
 from multiprocessing import Process, Manager
 
 import soundfile as sf
+import torch
+import torchaudio
 from torch.utils.data import Dataset
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
@@ -70,6 +72,9 @@ class TransformerTTSDataset(Dataset):
                           use_word_boundaries=False,
                           use_explicit_eos=True)
         _, sr = sf.read(path_list[0])
+        if spemb:
+            wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         for path in path_list:
             transcript = self.path_to_transcript_dict[path]
@@ -82,8 +87,10 @@ class TransformerTTSDataset(Dataset):
                 cached_speech_lens = len(cached_speech)
                 self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
                 if spemb:
-                    print("not implemented yet")
-                    raise NotImplementedError
+                    wav_tensor, sample_rate = torchaudio.load(path)
+                    mel_tensor = wav2mel(wav_tensor, sample_rate)
+                    emb_tensor = dvector.embed_utterance(mel_tensor)
+                    self.datapoints[-1].append(emb_tensor)
 
     def __getitem__(self, index):
         if not self.spemb:
