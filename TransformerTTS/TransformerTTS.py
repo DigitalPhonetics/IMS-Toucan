@@ -627,7 +627,7 @@ def show_spectrogram(sentence, model=None, lang="en"):
                       use_explicit_eos=True)
     fig, ax = plt.subplots()
     ax.set(title=sentence)
-    melspec = model.inference(tf.string_to_tensor(sentence).long())[0]
+    melspec = model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[0]
     lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
                  x_axis='time', hop_length=256)
     plt.show()
@@ -679,7 +679,7 @@ def get_atts(model, sentence, lang):
                       use_sentence_type=False,
                       use_word_boundaries=False,
                       use_explicit_eos=True)
-    return model.inference(tf.string_to_tensor(sentence).long())[2]
+    return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
 
 
 def show_attention_plot(sentence, model=None, best_only=False, lang="en"):

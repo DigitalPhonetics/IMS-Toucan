@@ -311,7 +311,7 @@ class GermanSingleSpeakerTransformerTTSInference:
         self.mel2wav = MelGANGenerator()
 
     def __call__(self, text):
-        phones = self.text2phone.string_to_tensor(text).long()
+        phones = self.text2phone.string_to_tensor(text).squeeze(0).long()
         mel = self.phone2mel(phones).transpose(0, 1).detach()
         wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0).detach()
         return wave

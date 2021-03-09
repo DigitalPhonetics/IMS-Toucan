@@ -44,7 +44,7 @@ def plot_fastspeech_architecture():
                                       loading_processes=1)
     model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to(device)
     datapoint = css10_testing[0]
-    out = model.inference(text=torch.LongTensor(datapoint[0]).to(device),
+    out = model.inference(text=torch.LongTensor(datapoint[0]).squeeze(0).to(device),
                           speech=torch.Tensor(datapoint[2]).to(device),
                           durations=torch.LongTensor(datapoint[4]).to(device),
                           pitch=torch.Tensor(datapoint[5]).to(device),

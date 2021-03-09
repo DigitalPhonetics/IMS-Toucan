@@ -438,7 +438,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
 
 def build_reference_fastspeech2_model(model_name):
-    model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to("cpu")
+    model = FastSpeech2(idim=131, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
@@ -455,15 +455,12 @@ def show_spectrogram(sentence, model=None, lang="en"):
     import matplotlib.pyplot as plt
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_shallow_pos=False,
                       use_sentence_type=False,
-                      use_positional_information=False,
                       use_word_boundaries=False,
-                      use_chinksandchunks_ipb=False,
                       use_explicit_eos=True)
     fig, ax = plt.subplots()
     ax.set(title=sentence)
-    melspec = model.inference(tf.string_to_tensor(sentence).long())
+    melspec = model.inference(tf.string_to_tensor(sentence).squeeze(0).long())
     lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
                  x_axis='time', hop_length=256)
     plt.show()
