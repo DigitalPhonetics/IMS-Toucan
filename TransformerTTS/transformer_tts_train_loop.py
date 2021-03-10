@@ -109,9 +109,9 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                               dataset=train_dataset,
                               drop_last=True,
                               num_workers=16,
-                              pin_memory=False,
+                              pin_memory=True,
                               shuffle=True,
-                              prefetch_factor=16,
+                              prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     valid_loader = DataLoader(batch_size=50,  # this works perfectly as long as our eval set size is divisible by 50

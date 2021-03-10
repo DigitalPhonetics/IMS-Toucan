@@ -31,7 +31,7 @@ def build_path_to_transcript_dict():
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech", "espnet_settings")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -44,13 +44,13 @@ if __name__ == '__main__':
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
-                                      max_len=170000)
+                                      max_len=1000000)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
-                                      max_len=170000)
+                                      max_len=1000000)
 
     model = Transformer(idim=131, odim=80, spk_embed_dim=None)
 
