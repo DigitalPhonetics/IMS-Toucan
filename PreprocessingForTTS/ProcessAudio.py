@@ -156,9 +156,9 @@ class AudioPreprocessor:
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
-            return self.mel_spec_new_sr(self.mu_decode(self.mu_encode(self.normalize_audio(audio))))
+            return self.mel_spec_new_sr(self.normalize_audio(audio))
         else:
-            return self.mel_spec_orig_sr(self.mu_decode(self.mu_encode(torch.Tensor(audio))))
+            return self.mel_spec_orig_sr(torch.Tensor(audio))
 
 
 if __name__ == '__main__':
