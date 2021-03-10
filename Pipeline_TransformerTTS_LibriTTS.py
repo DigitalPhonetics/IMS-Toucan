@@ -6,7 +6,6 @@ import os
 import random
 import warnings
 
-import soundfile as sf
 import torch
 
 from TransformerTTS.TransformerTTS import Transformer
@@ -43,12 +42,6 @@ def build_path_to_transcript_dict():
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_valid, speaker, chapter, wav_file)] = transcript
-    print("collecting lengths")
-    lens = list()
-    for path in path_to_transcript:
-        wave, _ = sf.read(path)
-        lens.append(len(wave))
-    print(sorted(lens))
     return path_to_transcript
 
 
@@ -67,15 +60,15 @@ if __name__ == '__main__':
                                       train=True,
                                       cache_dir=cache_dir,
                                       lang="en",
-                                      min_len=0,
-                                      max_len=1000000,
+                                      min_len=10000,
+                                      max_len=700000,
                                       spemb=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
-                                      min_len=0,
-                                      max_len=1000000,
+                                      min_len=10000,
+                                      max_len=700000,
                                       spemb=True)
 
     model = Transformer(idim=131, odim=80, spk_embed_dim=256)
