@@ -38,12 +38,13 @@ class MelGANDataset(Dataset):
     def __getitem__(self, index):
         """
         load the audio from the path and clean it.
-        All audio segments have to be cut or padded to the same length,
+        All audio segments have to be cut to the same length,
         according to the NeurIPS reference implementation.
+
+
 
         return a pair of cleaned audio and corresponding spectrogram
         """
-        # cut to size, random segment
         max_audio_start = len(self.list_of_norm_waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
         segment = self.list_of_norm_waves[index][audio_start: audio_start + self.samples_per_segment]
