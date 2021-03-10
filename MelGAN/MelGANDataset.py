@@ -15,26 +15,25 @@ class MelGANDataset(Dataset):
         if os.path.exists(cache_dir):
             # load cache
             with open(cache_dir, 'r') as fp:
-                self.list_of_paths = json.load(fp)
-            _, sr = sf.read(self.list_of_paths[0])
-            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+                self.list_of_norm_waves = json.load(fp)
+            self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
             # hop length must be same as the product of the upscale factors
-            print("{} eligible audios found".format(len(self.list_of_paths)))
+            print("{} eligible audios found".format(len(self.list_of_norm_waves)))
         else:
             # create cache
             file_path = list_of_paths[0]
-            self.list_of_paths = list()
+            self.list_of_norm_waves = list()
             _, sr = sf.read(file_path)
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
             # hop length must be same as the product of the upscale factors
             for path in list_of_paths:
-                wave, sr = sf.read(file_path)
+                wave, sr = sf.read(path)
                 norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
                 if len(norm_wave) > samples_per_segment:
-                    self.list_of_paths.append(path)
-            print("{} eligible audios found".format(len(self.list_of_paths)))
+                    self.list_of_norm_waves.append(norm_wave)
+            print("{} eligible audios found".format(len(self.list_of_norm_waves)))
             with open(cache_dir, 'w') as fp:
-                json.dump(self.list_of_paths, fp)
+                json.dump(self.list_of_norm_waves, fp)
 
     def __getitem__(self, index):
         """
@@ -44,15 +43,12 @@ class MelGANDataset(Dataset):
 
         return a pair of cleaned audio and corresponding spectrogram
         """
-        file_path = self.list_of_paths[index]
-        wave, sr = sf.read(file_path)
-        normalized_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
         # cut to size, random segment
-        max_audio_start = len(normalized_wave) - self.samples_per_segment
+        max_audio_start = len(self.list_of_norm_waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
-        segment = normalized_wave[audio_start: audio_start + self.samples_per_segment]
+        segment = self.list_of_norm_waves[index][audio_start: audio_start + self.samples_per_segment]
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):
-        return len(self.list_of_paths)
+        return len(self.list_of_norm_waves)
