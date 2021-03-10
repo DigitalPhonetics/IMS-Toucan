@@ -9,10 +9,20 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 class MelGANDataset(Dataset):
 
-    def __init__(self, list_of_paths, samples_per_segment=4096):
-        self.list_of_paths = list_of_paths
-        self.ap = None
+    def __init__(self, list_of_paths, samples_per_segment=8192):
+        file_path = list_of_paths[0]
+        self.list_of_paths = list()
+        _, sr = sf.read(file_path)
+        if self.ap is None:
+            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+            # hop length must be same as the product of the upscale factors
+
+        for path in list_of_paths:
+            wav, sr = sf.read(file_path)
+            if len(wav) / sr > (samples_per_segment / 16000) / 2:
+                self.list_of_paths.append(path)
         self.samples_per_segment = samples_per_segment
+        print("{} eligible audios found".format(len(self.list_of_paths)))
         # has to be divisible by hop size. Selected for a 16kHz signal, as they did in the paper.
 
     def __getitem__(self, index):
@@ -25,9 +35,6 @@ class MelGANDataset(Dataset):
         """
         file_path = self.list_of_paths[index]
         wave, sr = sf.read(file_path)
-        if self.ap is None:
-            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-            # hop length must be same as the product of the upscale factors
         normalized_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
         if len(normalized_wave) <= self.samples_per_segment:
             # pad to size

@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 
 
-def train_loop(batchsize=16,
+def train_loop(batchsize=64,
                epochs=10,
                generator=None,
                discriminator=None,
@@ -18,7 +18,7 @@ def train_loop(batchsize=16,
                device=None,
                model_save_dir=None,
                generator_warmup_steps=200000,
-               epochs_per_save=5):
+               epochs_per_save=10):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -51,17 +51,17 @@ def train_loop(batchsize=16,
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
-                              num_workers=16,
+                              num_workers=32,
                               pin_memory=True,
                               drop_last=True,
-                              prefetch_factor=10)
+                              prefetch_factor=4)
     valid_loader = DataLoader(dataset=valid_dataset,
-                              batch_size=1,
+                              batch_size=50,
                               shuffle=False,
-                              num_workers=16,
+                              num_workers=10,
                               pin_memory=True,
                               drop_last=False,
-                              prefetch_factor=10)
+                              prefetch_factor=5)
 
     start_time = time.time()
 

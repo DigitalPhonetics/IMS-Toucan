@@ -33,21 +33,21 @@ def get_file_list():
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    device = torch.device("cuda")
+    model_save_dir = "Models/MelGAN/SingleSpeaker/CSS10DE"
     train_dataset = MelGANDataset(list_of_paths=fl[:-100])
     valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()
     generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
-    if not os.path.exists("Models/MelGAN/SingleSpeaker/CSS10DE"):
-        os.makedirs("Models/MelGAN/SingleSpeaker/CSS10DE")
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
     print("Training model")
-    train_loop(batchsize=32,
-               epochs=60000,  # just kill the process at some point
+    train_loop(batchsize=64,
+               epochs=600000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
-               device=device,
+               device=torch.device("cuda:2"),
                generator_warmup_steps=200000,
-               model_save_dir="Models/MelGAN/SingleSpeaker/CSS10DE")
+               model_save_dir=model_save_dir)

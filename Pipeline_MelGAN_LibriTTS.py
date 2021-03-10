@@ -54,7 +54,6 @@ if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
     model_save_dir = "Models/MelGAN/MultiSpeaker/LibriTTS"
-    device = torch.device("cuda:2")
     train_dataset = MelGANDataset(list_of_paths=fl[:-100])
     valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
     generator = MelGANGenerator()
@@ -63,12 +62,12 @@ if __name__ == '__main__':
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     print("Training model")
-    train_loop(batchsize=32,
+    train_loop(batchsize=64,
                epochs=600000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
-               device=device,
-               generator_warmup_steps=400000,
+               device=torch.device("cuda:2"),
+               generator_warmup_steps=100,
                model_save_dir=model_save_dir)
