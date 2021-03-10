@@ -1,7 +1,6 @@
 import random
 
 import soundfile as sf
-import torch.nn.functional as F
 from torch.utils.data import Dataset
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
@@ -17,8 +16,9 @@ class MelGANDataset(Dataset):
         # hop length must be same as the product of the upscale factors
 
         for path in list_of_paths:
-            wav, sr = sf.read(file_path)
-            if len(wav) / sr > (samples_per_segment / 16000):
+            wave, sr = sf.read(file_path)
+            norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
+            if len(norm_wave) >= samples_per_segment + 1:
                 self.list_of_paths.append(path)
         self.samples_per_segment = samples_per_segment
         print("{} eligible audios found".format(len(self.list_of_paths)))
@@ -35,14 +35,10 @@ class MelGANDataset(Dataset):
         file_path = self.list_of_paths[index]
         wave, sr = sf.read(file_path)
         normalized_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
-        if len(normalized_wave) <= self.samples_per_segment:
-            # pad to size
-            segment = F.pad(normalized_wave, (0, self.samples_per_segment - len(normalized_wave), "constant")).float()
-        else:
-            # cut to size, random segment
-            max_audio_start = len(normalized_wave) - self.samples_per_segment
-            audio_start = random.randint(0, max_audio_start)
-            segment = normalized_wave[audio_start: audio_start + self.samples_per_segment]
+        # cut to size, random segment
+        max_audio_start = len(normalized_wave) - self.samples_per_segment
+        audio_start = random.randint(0, max_audio_start)
+        segment = normalized_wave[audio_start: audio_start + self.samples_per_segment]
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
