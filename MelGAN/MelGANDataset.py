@@ -13,9 +13,8 @@ class MelGANDataset(Dataset):
         file_path = list_of_paths[0]
         self.list_of_paths = list()
         _, sr = sf.read(file_path)
-        if self.ap is None:
-            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-            # hop length must be same as the product of the upscale factors
+        self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+        # hop length must be same as the product of the upscale factors
 
         for path in list_of_paths:
             wav, sr = sf.read(file_path)
