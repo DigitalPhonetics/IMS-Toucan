@@ -18,7 +18,7 @@ class MelGANDataset(Dataset):
 
         for path in list_of_paths:
             wav, sr = sf.read(file_path)
-            if len(wav) / sr > (samples_per_segment / 16000) / 2:
+            if len(wav) / sr > (samples_per_segment / 16000):
                 self.list_of_paths.append(path)
         self.samples_per_segment = samples_per_segment
         print("{} eligible audios found".format(len(self.list_of_paths)))
