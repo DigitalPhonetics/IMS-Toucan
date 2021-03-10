@@ -18,7 +18,7 @@ class MelGANDataset(Dataset):
         for path in list_of_paths:
             wave, sr = sf.read(file_path)
             norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
-            if len(norm_wave) >= samples_per_segment + 1:
+            if len(norm_wave) > samples_per_segment:
                 self.list_of_paths.append(path)
         self.samples_per_segment = samples_per_segment
         print("{} eligible audios found".format(len(self.list_of_paths)))
