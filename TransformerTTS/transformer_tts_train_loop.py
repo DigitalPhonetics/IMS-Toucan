@@ -124,7 +124,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                               persistent_workers=True)
     loss_plot = [[], []]
     if spemb:
-        reference_spemb_for_att_plot = valid_dataset[0][4]
+        reference_spemb_for_att_plot = torch.Tensor(valid_dataset[0][4])
     else:
         reference_spemb_for_att_plot = None
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
