@@ -30,14 +30,18 @@ def get_file_list():
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    model_save_dir = "Models/MelGAN/SingleSpeaker/LJSpeech"
-    train_dataset = MelGANDataset(list_of_paths=fl[:-100])
-    valid_dataset = MelGANDataset(list_of_paths=fl[-100:])
+    model_save_dir = "Models/MelGAN/MultiSpeaker/LJSpeech"
+    if not os.path.exists(model_save_dir):
+        os.makedirs(model_save_dir)
+    cache_dir = "Corpora/LJSpeech"
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+    train_dataset = MelGANDataset(list_of_paths=fl[:-100], cache_dir=os.path.join(cache_dir, "melgan_train_cache.json"))
+    valid_dataset = MelGANDataset(list_of_paths=fl[-100:], cache_dir=os.path.join(cache_dir, "melgan_valid_cache.json"))
     generator = MelGANGenerator()
     generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
-    if not os.path.exists(model_save_dir):
-        os.makedirs(model_save_dir)
+
     print("Training model")
     train_loop(batchsize=64,
                epochs=600000,  # just kill the process at some point

@@ -1,3 +1,5 @@
+import json
+import os
 import random
 
 import soundfile as sf
@@ -8,21 +10,31 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 class MelGANDataset(Dataset):
 
-    def __init__(self, list_of_paths, samples_per_segment=8192):
-        file_path = list_of_paths[0]
-        self.list_of_paths = list()
-        _, sr = sf.read(file_path)
-        self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        # hop length must be same as the product of the upscale factors
-
-        for path in list_of_paths:
-            wave, sr = sf.read(file_path)
-            norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
-            if len(norm_wave) > samples_per_segment:
-                self.list_of_paths.append(path)
+    def __init__(self, list_of_paths, samples_per_segment=8192, cache_dir=None):
         self.samples_per_segment = samples_per_segment
-        print("{} eligible audios found".format(len(self.list_of_paths)))
-        # has to be divisible by hop size. Selected for a 16kHz signal, as they did in the paper.
+        if os.path.exists(cache_dir):
+            # load cache
+            with open(cache_dir, 'r') as fp:
+                self.list_of_paths = json.load(fp)
+            _, sr = sf.read(self.list_of_paths[0])
+            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+            # hop length must be same as the product of the upscale factors
+            print("{} eligible audios found".format(len(self.list_of_paths)))
+        else:
+            # create cache
+            file_path = list_of_paths[0]
+            self.list_of_paths = list()
+            _, sr = sf.read(file_path)
+            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+            # hop length must be same as the product of the upscale factors
+            for path in list_of_paths:
+                wave, sr = sf.read(file_path)
+                norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
+                if len(norm_wave) > samples_per_segment:
+                    self.list_of_paths.append(path)
+            print("{} eligible audios found".format(len(self.list_of_paths)))
+            with open(cache_dir, 'w') as fp:
+                json.dump(self.list_of_paths, fp)
 
     def __getitem__(self, index):
         """
