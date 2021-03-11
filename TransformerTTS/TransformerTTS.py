@@ -158,7 +158,7 @@ class Transformer(torch.nn.Module, ABC):
                  eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
-                 init_type: str = "xavier_uniform",
+                 init_type: str = "kaiming_uniform",
                  init_enc_alpha: float = 1.0,
                  init_dec_alpha: float = 1.0,
                  use_masking: bool = True,
