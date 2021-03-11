@@ -158,6 +158,8 @@ class AudioPreprocessor:
         if normalize:
             return self.mel_spec_new_sr(self.normalize_audio(audio))
         else:
+            if isinstance(audio, torch.Tensor):
+                return self.mel_spec_orig_sr(audio)
             return self.mel_spec_orig_sr(torch.Tensor(audio))
 
 

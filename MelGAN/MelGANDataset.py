@@ -3,6 +3,7 @@ import os
 import random
 
 import soundfile as sf
+import torch
 from torch.utils.data import Dataset
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
@@ -47,7 +48,7 @@ class MelGANDataset(Dataset):
         """
         max_audio_start = len(self.list_of_norm_waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
-        segment = self.list_of_norm_waves[index][audio_start: audio_start + self.samples_per_segment]
+        segment = torch.Tensor(self.list_of_norm_waves[index][audio_start: audio_start + self.samples_per_segment])
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
