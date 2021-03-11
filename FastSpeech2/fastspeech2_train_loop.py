@@ -3,6 +3,7 @@ import os
 import time
 
 import torch
+import torch.multiprocessing
 from adabound import AdaBound
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -80,21 +81,26 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     """
     net = net.to(device)
     scaler = GradScaler()
+
+    torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
                               drop_last=True,
                               num_workers=16,
                               pin_memory=False,
                               shuffle=True,
-                              prefetch_factor=4,
-                              collate_fn=collate_and_pad)
-    valid_loader = DataLoader(batch_size=1,
+                              prefetch_factor=8,
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
+    valid_loader = DataLoader(batch_size=50,
                               dataset=eval_dataset,
                               drop_last=False,
-                              num_workers=2,
+                              num_workers=10,
                               pin_memory=False,
-                              prefetch_factor=4,
-                              collate_fn=collate_and_pad)
+                              prefetch_factor=5,
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
+
     loss_plot = [[], []]
     with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
         conf.write(config)

@@ -4,6 +4,7 @@ import time
 
 import matplotlib.pyplot as plt
 import torch
+import torch.multiprocessing
 from adabound import AdaBound
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -105,6 +106,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     """
     net = net.to(device)
     scaler = GradScaler()
+
+    torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
                               drop_last=True,
@@ -122,6 +125,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                               prefetch_factor=5,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
+
     loss_plot = [[], []]
     if spemb:
         reference_spemb_for_att_plot = torch.Tensor(valid_dataset[0][4])

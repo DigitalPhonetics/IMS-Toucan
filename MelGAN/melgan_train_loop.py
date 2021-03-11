@@ -3,6 +3,7 @@ import os
 import time
 
 import torch
+import torch.multiprocessing
 from adabound import AdaBound
 from torch.utils.data.dataloader import DataLoader
 
@@ -48,6 +49,7 @@ def train_loop(batchsize=64,
     optimizer_g = AdaBound(g.parameters())
     optimizer_d = AdaBound(d.parameters())
 
+    torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
