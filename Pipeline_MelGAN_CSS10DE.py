@@ -33,7 +33,7 @@ def get_file_list():
 if __name__ == '__main__':
     print("Preparing")
     fl = get_file_list()
-    model_save_dir = "Models/MelGAN/MultiSpeaker/CSS10_DE"
+    model_save_dir = "Models/MelGAN/SingleSpeaker/CSS10_DE"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
     cache_dir = "Corpora/CSS10_DE"
