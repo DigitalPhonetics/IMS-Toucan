@@ -56,7 +56,7 @@ class MelGANDataset(Dataset):
         for index, path in enumerate(path_split):
             print("Processing {} out of {}".format(index, len(path_split)))
             wave, sr = sf.read(path)
-            if len(wave) > 5000:
+            if len(wave) > 10000:
                 # catch files that are too short to apply meaningful signal processing
                 norm_wave = ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
                 if len(norm_wave) > samples_per_segment:

@@ -59,8 +59,8 @@ if __name__ == '__main__':
     cache_dir = "Corpora/LibriTTS"
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
-    train_dataset = MelGANDataset(list_of_paths=fl[:-100], cache_dir=os.path.join(cache_dir, "melgan_train_cache.json"))
-    valid_dataset = MelGANDataset(list_of_paths=fl[-100:], cache_dir=os.path.join(cache_dir, "melgan_valid_cache.json"))
+    train_dataset = MelGANDataset(list_of_paths=fl[:-300], cache_dir=os.path.join(cache_dir, "melgan_train_cache.json"))
+    valid_dataset = MelGANDataset(list_of_paths=fl[-300:], cache_dir=os.path.join(cache_dir, "melgan_valid_cache.json"))
     generator = MelGANGenerator()
     generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
@@ -72,6 +72,6 @@ if __name__ == '__main__':
                discriminator=multi_scale_discriminator,
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
-               device=torch.device("cuda:2"),
-               generator_warmup_steps=400000,
+               device=torch.device("cuda:1"),
+               generator_warmup_steps=200000,
                model_save_dir=model_save_dir)
