@@ -1,6 +1,7 @@
 import json
 import os
 import random
+from multiprocessing import Process, Manager
 
 import soundfile as sf
 import torch
@@ -11,7 +12,7 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 class MelGANDataset(Dataset):
 
-    def __init__(self, list_of_paths, samples_per_segment=8192, cache_dir=None):
+    def __init__(self, list_of_paths, samples_per_segment=8192, cache_dir=None, loading_processes=4):
         self.samples_per_segment = samples_per_segment
         if os.path.exists(cache_dir):
             # load cache
@@ -27,16 +28,38 @@ class MelGANDataset(Dataset):
             _, sr = sf.read(file_path)
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
             # hop length must be same as the product of the upscale factors
-            for path in list_of_paths:
-                wave, sr = sf.read(path)
-                if len(wave) > 5000:
-                    # catch files that are too short to apply meaningful signal processing
-                    norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
-                    if len(norm_wave) > samples_per_segment:
-                        self.list_of_norm_waves.append(norm_wave.detach().numpy().tolist())
+
+            ressource_manager = Manager()
+            self.list_of_norm_waves = ressource_manager.list()
+            # make processes
+            path_splits = list()
+            process_list = list()
+            for i in range(loading_processes):
+                path_splits.append(
+                    list_of_paths[
+                    i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
+            for path_split in path_splits:
+                process_list.append(
+                    Process(target=self.cache_builder_process, args=(path_split, samples_per_segment),
+                            daemon=True))
+                process_list[-1].start()
+            for process in process_list:
+                process.join()
+            self.list_of_norm_waves = list(self.list_of_norm_waves)
             print("{} eligible audios found".format(len(self.list_of_norm_waves)))
             with open(cache_dir, 'w') as fp:
                 json.dump(self.list_of_norm_waves, fp)
+
+    def cache_builder_process(self, path_split, samples_per_segment):
+        _, sr = sf.read(path_split[0])
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+        for path in path_split:
+            wave, sr = sf.read(path)
+            if len(wave) > 5000:
+                # catch files that are too short to apply meaningful signal processing
+                norm_wave = ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
+                if len(norm_wave) > samples_per_segment:
+                    self.list_of_norm_waves.append(norm_wave.detach().numpy().tolist())
 
     def __getitem__(self, index):
         """

@@ -19,7 +19,7 @@ def train_loop(batchsize=64,
                device=None,
                model_save_dir=None,
                generator_warmup_steps=200000,
-               epochs_per_save=10):
+               epochs_per_save=5):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
