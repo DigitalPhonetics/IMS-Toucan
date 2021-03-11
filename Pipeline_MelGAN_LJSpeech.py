@@ -1,5 +1,5 @@
 """
-Train non-autoregressive spectrogram inversion model on the german single speaker dataset by Hokuspokus
+Train non-autoregressive spectrogram inversion model on the English single speaker dataset LJSpeech
 """
 
 import os
