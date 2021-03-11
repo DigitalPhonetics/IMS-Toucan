@@ -111,18 +111,18 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=16,
+                              num_workers=8,
                               pin_memory=False,
                               shuffle=True,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-    valid_loader = DataLoader(batch_size=50,  # this works perfectly as long as our eval set size is divisible by 50
+    valid_loader = DataLoader(batch_size=10,
                               dataset=valid_dataset,
                               drop_last=False,
-                              num_workers=10,
+                              num_workers=5,
                               pin_memory=False,
-                              prefetch_factor=5,
+                              prefetch_factor=2,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
