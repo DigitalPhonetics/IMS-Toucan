@@ -53,7 +53,8 @@ class MelGANDataset(Dataset):
     def cache_builder_process(self, path_split, samples_per_segment):
         _, sr = sf.read(path_split[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        for path in path_split:
+        for index, path in enumerate(path_split):
+            print("Processing {} out of {}".format(index, len(path_split)))
             wave, sr = sf.read(path)
             if len(wave) > 5000:
                 # catch files that are too short to apply meaningful signal processing
