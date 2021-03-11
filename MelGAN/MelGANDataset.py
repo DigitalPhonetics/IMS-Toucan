@@ -28,9 +28,11 @@ class MelGANDataset(Dataset):
             # hop length must be same as the product of the upscale factors
             for path in list_of_paths:
                 wave, sr = sf.read(path)
-                norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
-                if len(norm_wave) > samples_per_segment:
-                    self.list_of_norm_waves.append(norm_wave.detach().numpy().tolist())
+                if len(wave) > 5000:
+                    # catch files that are too short to apply meaningful signal processing
+                    norm_wave = self.ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
+                    if len(norm_wave) > samples_per_segment:
+                        self.list_of_norm_waves.append(norm_wave.detach().numpy().tolist())
             print("{} eligible audios found".format(len(self.list_of_norm_waves)))
             with open(cache_dir, 'w') as fp:
                 json.dump(self.list_of_norm_waves, fp)
@@ -40,8 +42,6 @@ class MelGANDataset(Dataset):
         load the audio from the path and clean it.
         All audio segments have to be cut to the same length,
         according to the NeurIPS reference implementation.
-
-
 
         return a pair of cleaned audio and corresponding spectrogram
         """
