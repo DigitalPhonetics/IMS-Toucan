@@ -6,8 +6,8 @@ from FastSpeech2.FastSpeech2 import show_spectrogram as fast_spec
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import EnglishSingleSpeakerTransformerTTSInference
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
-from Pipeline_FastSpeech2_CSS10DE import build_path_to_transcript_dict
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 
 def show_att(lang="en"):
@@ -37,7 +37,7 @@ def read_texts(lang="en"):
 
 def plot_fastspeech_architecture():
     device = torch.device("cpu")
-    path_to_transcript_dict = build_path_to_transcript_dict()
+    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
     css10_testing = FastSpeechDataset(path_to_transcript_dict,
                                       train="testing",
                                       acoustic_model_name="Transformer_German_Single.pt",
