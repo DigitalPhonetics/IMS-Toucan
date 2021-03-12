@@ -23,7 +23,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir_libritts = os.path.join("Corpora", "LibriTTS")
-    cache_dir_ljspeech = os.path.join("Corpora", "LJSpeech")
+    cache_dir_ljspeech = os.path.join("Corpora", "LJSpeech", "with_spembs")
     if not os.path.exists(cache_dir_libritts):
         os.makedirs(cache_dir_libritts)
     if not os.path.exists(cache_dir_ljspeech):
