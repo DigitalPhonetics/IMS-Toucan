@@ -10,9 +10,11 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
+from PreprocessingForTTS.ProcessText import TextFrontend
 
-def plot_attentions(atts, att_dir, step):
-    # fist plot all attention heads in one plot
+
+def plot_attentions_all_heads(atts, att_dir, step):
+    # plot all attention heads in one plot
     fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
@@ -39,10 +41,10 @@ def plot_attentions(atts, att_dir, step):
     plt.clf()
     plt.close()
 
-    # then plot most diagonal attention head individually
+
+def plot_attentions_best_head(atts, att_dir, step):
+    # plot most diagonal attention head individually
     most_diagonal_att = select_best_att_head(atts)
-    print(most_diagonal_att.shape)
-    print(most_diagonal_att.detach().numpy())
     plt.figure(figsize=(8, 4))
     plt.imshow(most_diagonal_att.detach().numpy(),
                cmap='BuPu_r',
@@ -60,7 +62,6 @@ def plot_attentions(atts, att_dir, step):
 
 
 def get_atts(model, lang, device, spemb):
-    from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
                       use_sentence_type=False,
@@ -223,11 +224,17 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict(),
                             "scaler": scaler.state_dict()},
-                           os.path.join(save_directory,
-                                        "checkpoint_{}.pt".format(step_counter)))
-                plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang, device=device,
-                                                                       spemb=reference_spemb_for_att_plot)], dim=0),
-                                att_dir=save_directory, step=step_counter)
+                           os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                all_atts = get_atts(model=net,
+                                    lang=lang,
+                                    device=device,
+                                    spemb=reference_spemb_for_att_plot)
+                plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0),
+                                          att_dir=save_directory,
+                                          step=step_counter)
+                plot_attentions_all_heads(all_atts,
+                                          att_dir=save_directory,
+                                          step=step_counter)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
