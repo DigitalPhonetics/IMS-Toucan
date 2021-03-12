@@ -38,8 +38,8 @@ complex systems.
 | Prepare MelGAN multi-speaker dataset|✅|
 | Prepare Transformer multi-speaker dataset|✅|
 | Prepare FastSpeech multi-speaker dataset|✅|
-| Train MelGAN on multi-speaker dataset||
-| Train Transformer on multi-speaker dataset||
+| Train MelGAN on multi-speaker dataset|🏗️|
+| Train Transformer on multi-speaker dataset|🏗️|
 | Train FastSpeech on multi-speaker dataset||
 
 ## Third Iteration TODOS
