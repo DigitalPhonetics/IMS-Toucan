@@ -11,22 +11,12 @@ import torch
 from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(13)
 random.seed(13)
-
-
-def build_path_to_transcript_dict():
-    path_to_transcript = dict()
-    for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
-        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
-            transcript = tf.read()
-        wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
-        path_to_transcript[wav_path] = transcript
-    return path_to_transcript
-
 
 if __name__ == '__main__':
     print("Preparing")
@@ -37,7 +27,7 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
+    path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,

@@ -10,7 +10,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
-from utils import make_pad_mask, make_non_pad_mask, initialize
+from Utility.utils import make_pad_mask, make_non_pad_mask, initialize
 
 
 class FastSpeech2(torch.nn.Module, ABC):

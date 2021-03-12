@@ -1,7 +1,7 @@
 import torch
 
 from Layers.DurationPredictor import DurationPredictorLoss
-from utils import make_non_pad_mask
+from Utility.utils import make_non_pad_mask
 
 
 class FastSpeech2Loss(torch.nn.Module):

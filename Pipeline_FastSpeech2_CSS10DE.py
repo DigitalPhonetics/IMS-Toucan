@@ -13,23 +13,12 @@ import torch
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(17)
 random.seed(17)
-
-
-def build_path_to_transcript_dict():
-    path_to_transcript = dict()
-    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            path_to_transcript["Corpora/CSS10/" + line.split("|")[0]] = line.split("|")[2]
-    return path_to_transcript
-
 
 if __name__ == '__main__':
     print("Preparing")
@@ -40,7 +29,7 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
+    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,

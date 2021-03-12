@@ -13,21 +13,10 @@ from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop
 
 warnings.filterwarnings("ignore")
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 torch.manual_seed(13)
 random.seed(13)
-
-
-def build_path_to_transcript_dict():
-    path_to_transcript = dict()
-    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            path_to_transcript["Corpora/CSS10_DE/" + line.split("|")[0]] = line.split("|")[2]
-    return path_to_transcript
-
 
 if __name__ == '__main__':
     print("Preparing")
@@ -38,7 +27,7 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
+    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,

@@ -20,7 +20,7 @@ from Layers.MultiSequential import repeat
 from Layers.PositionalEncoding import PositionalEncoding
 from Layers.PositionwiseFeedForward import PositionwiseFeedForward
 from Layers.TransformerTTSDecoderLayer import DecoderLayer
-from utils import subsequent_mask, BatchScorerInterface
+from Utility.utils import subsequent_mask, BatchScorerInterface
 
 
 class Decoder(BatchScorerInterface, torch.nn.Module):

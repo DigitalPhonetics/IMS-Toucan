@@ -1,6 +1,6 @@
 import torch
 
-from utils import make_non_pad_mask
+from Utility.utils import make_non_pad_mask
 
 
 class TransformerLoss(torch.nn.Module):

@@ -18,8 +18,8 @@ from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
 from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerLoss import TransformerLoss
-from utils import make_non_pad_mask
-from utils import subsequent_mask
+from Utility.utils import make_non_pad_mask
+from Utility.utils import subsequent_mask
 
 
 class Transformer(torch.nn.Module, ABC):

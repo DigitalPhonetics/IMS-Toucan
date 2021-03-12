@@ -3,7 +3,8 @@ Train non-autoregressive spectrogram inversion model on a combination of multipl
 
 In theory, spectrogram inversion should be language and
 speaker independent, so throwing together all datasets
-that have caches should work.
+should work.
+
 """
 
 import os
@@ -17,6 +18,7 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
+from Utility.file_lists import get_file_list_css10de, get_file_list_libritts, get_file_list_ljspeech
 
 warnings.filterwarnings("ignore")
 
@@ -35,17 +37,17 @@ if __name__ == '__main__':
     cache_dir_css10de = "Corpora/CSS10_DE"
     assert os.path.exists(cache_dir_css10de)
 
-    train_dataset_libri = MelGANDataset(list_of_paths=[],
+    train_dataset_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-300],
                                         cache_dir=os.path.join(cache_dir_libri, "melgan_train_cache.json"))
-    valid_dataset_libri = MelGANDataset(list_of_paths=[],
+    valid_dataset_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-300:],
                                         cache_dir=os.path.join(cache_dir_libri, "melgan_valid_cache.json"))
-    train_dataset_lj = MelGANDataset(list_of_paths=[],
+    train_dataset_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100],
                                      cache_dir=os.path.join(cache_dir_lj, "melgan_train_cache.json"))
-    valid_dataset_lj = MelGANDataset(list_of_paths=[],
+    valid_dataset_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:],
                                      cache_dir=os.path.join(cache_dir_lj, "melgan_valid_cache.json"))
-    train_dataset_css10de = MelGANDataset(list_of_paths=[],
+    train_dataset_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100],
                                           cache_dir=os.path.join(cache_dir_css10de, "melgan_train_cache.json"))
-    valid_dataset_css10de = MelGANDataset(list_of_paths=[],
+    valid_dataset_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:],
                                           cache_dir=os.path.join(cache_dir_css10de, "melgan_valid_cache.json"))
 
     train_dataset = ConcatDataset([train_dataset_libri, train_dataset_lj, train_dataset_css10de])

@@ -12,24 +12,16 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
+from Utility.file_lists import get_file_list_ljspeech
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(13)
 random.seed(13)
 
-
-def get_file_list():
-    file_list = list()
-    for wav_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/wav"):
-        if ".wav" in wav_file:
-            file_list.append("/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + wav_file)
-    return file_list
-
-
 if __name__ == '__main__':
     print("Preparing")
-    fl = get_file_list()
+    fl = get_file_list_ljspeech()
     model_save_dir = "Models/MelGAN/SingleSpeaker/LJSpeech"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)

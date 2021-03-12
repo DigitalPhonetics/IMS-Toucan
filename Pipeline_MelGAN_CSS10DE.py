@@ -12,27 +12,16 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
+from Utility.file_lists import get_file_list_css10de
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(13)
 random.seed(13)
 
-
-def get_file_list():
-    file_list = list()
-    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            file_list.append("Corpora/CSS10_DE/" + line.split("|")[0])
-    return file_list
-
-
 if __name__ == '__main__':
     print("Preparing")
-    fl = get_file_list()
+    fl = get_file_list_css10de()
     model_save_dir = "Models/MelGAN/SingleSpeaker/CSS10_DE"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)

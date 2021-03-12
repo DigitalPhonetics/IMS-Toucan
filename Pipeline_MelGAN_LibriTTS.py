@@ -12,47 +12,16 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
+from Utility.file_lists import get_file_list_libritts
 
 warnings.filterwarnings("ignore")
 
 torch.manual_seed(13)
 random.seed(13)
 
-
-def build_path_to_transcript_dict():
-    path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
-    path_valid = "/mount/resources/speech/corpora/LibriTTS/dev-clean"
-
-    path_to_transcript = dict()
-    # we split training and validation differently, so we merge both folders into a single dict
-    for speaker in os.listdir(path_train):
-        for chapter in os.listdir(os.path.join(path_train, speaker)):
-            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
-                if file.endswith("normalized.txt"):
-                    with open(os.path.join(path_train, speaker, chapter, file), 'r',
-                              encoding='utf8') as tf:
-                        transcript = tf.read()
-                    wav_file = file.split(".")[0] + ".wav"
-                    path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
-    for speaker in os.listdir(path_valid):
-        for chapter in os.listdir(os.path.join(path_valid, speaker)):
-            for file in os.listdir(os.path.join(path_valid, speaker, chapter)):
-                if file.endswith("normalized.txt"):
-                    with open(os.path.join(path_valid, speaker, chapter, file), 'r',
-                              encoding='utf8') as tf:
-                        transcript = tf.read()
-                    wav_file = file.split(".")[0] + ".wav"
-                    path_to_transcript[os.path.join(path_valid, speaker, chapter, wav_file)] = transcript
-    return path_to_transcript
-
-
-def get_file_list():
-    return list(build_path_to_transcript_dict().keys())
-
-
 if __name__ == '__main__':
     print("Preparing")
-    fl = get_file_list()
+    fl = get_file_list_libritts()
     model_save_dir = "Models/MelGAN/MultiSpeaker/LibriTTS"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)

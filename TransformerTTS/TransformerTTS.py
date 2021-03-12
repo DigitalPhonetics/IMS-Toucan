@@ -18,8 +18,8 @@ from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
 from TransformerTTS.TransformerLoss import TransformerLoss
-from utils import make_pad_mask, make_non_pad_mask, initialize
-from utils import subsequent_mask
+from Utility.utils import make_pad_mask, make_non_pad_mask, initialize
+from Utility.utils import subsequent_mask
 
 
 class Transformer(torch.nn.Module, ABC):
