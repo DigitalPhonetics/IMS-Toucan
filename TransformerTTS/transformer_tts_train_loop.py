@@ -11,7 +11,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
 
-def plot_attentions(atts, dir, step):
+def plot_attentions(atts, att_dir, step):
     # fist plot all attention heads in one plot
     fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
     atts_1 = atts[::2]
@@ -33,14 +33,16 @@ def plot_attentions(atts, dir, step):
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)
     plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
-    if not os.path.exists(os.path.join(dir, "atts")):
-        os.makedirs(os.path.join(dir, "atts"))
-    plt.savefig(os.path.join(os.path.join(dir, "atts"), str(step) + ".png"))
+    if not os.path.exists(os.path.join(att_dir, "atts")):
+        os.makedirs(os.path.join(att_dir, "atts"))
+    plt.savefig(os.path.join(os.path.join(att_dir, "atts"), str(step) + ".png"))
     plt.clf()
     plt.close()
 
     # then plot most diagonal attention head individually
     most_diagonal_att = select_best_att_head(atts)
+    print(most_diagonal_att.shape)
+    print(most_diagonal_att.detach().numpy())
     plt.figure(figsize=(8, 4))
     plt.imshow(most_diagonal_att.detach().numpy(),
                cmap='BuPu_r',
@@ -50,9 +52,9 @@ def plot_attentions(atts, dir, step):
     plt.xlabel("Inputs")
     plt.ylabel("Outputs")
     plt.tight_layout()
-    if not os.path.exists(os.path.join(dir, "atts_diag")):
-        os.makedirs(os.path.join(dir, "atts_diag"))
-    plt.savefig(os.path.join(os.path.join(dir, "atts_diag"), str(step) + ".png"))
+    if not os.path.exists(os.path.join(att_dir, "atts_diag")):
+        os.makedirs(os.path.join(att_dir, "atts_diag"))
+    plt.savefig(os.path.join(os.path.join(att_dir, "atts_diag"), str(step) + ".png"))
     plt.clf()
     plt.close()
 
@@ -225,7 +227,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                                         "checkpoint_{}.pt".format(step_counter)))
                 plot_attentions(torch.cat([att_w for att_w in get_atts(model=net, lang=lang, device=device,
                                                                        spemb=reference_spemb_for_att_plot)], dim=0),
-                                dir=save_directory, step=step_counter)
+                                att_dir=save_directory, step=step_counter)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
