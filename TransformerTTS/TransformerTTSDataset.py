@@ -77,11 +77,11 @@ class TransformerTTSDataset(Dataset):
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        for path in path_list:
+        for index, path in enumerate(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, _ = sf.read(path)
             if min_len < len(wave) < max_len:
-                print("processing {}".format(path))
+                print("Processing {} out of {}.".format(index, len(path_list)))
                 cached_text = tf.string_to_tensor(transcript).numpy().tolist()
                 cached_text_lens = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()

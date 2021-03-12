@@ -18,7 +18,7 @@ torch.manual_seed(13)
 random.seed(13)
 
 
-def build_path_to_transcript_dict():
+def build_path_to_transcript_dict_libritts():
     path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
     path_valid = "/mount/resources/speech/corpora/LibriTTS/dev-clean"
 
@@ -45,6 +45,16 @@ def build_path_to_transcript_dict():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_ljspeech():
+    path_to_transcript = dict()
+    for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):
+        with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
+            transcript = tf.read()
+        wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.split(".")[0] + ".wav"
+        path_to_transcript[wav_path] = transcript
+    return path_to_transcript
+
+
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LibriTTS")
@@ -54,8 +64,9 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
-
+    path_to_transcript_dict = build_path_to_transcript_dict_libritts()
+    path_to_transcript_dict.update(build_path_to_transcript_dict_ljspeech())
+    
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
                                       cache_dir=cache_dir,
