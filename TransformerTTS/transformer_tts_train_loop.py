@@ -12,16 +12,23 @@ from torch.utils.data.dataloader import DataLoader
 
 
 def plot_attentions(atts, dir, step):
+    # fist plot all attention heads in one plot
     fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto',
+        axes[index][0].imshow(att.detach().numpy(),
+                              cmap='BuPu_r',
+                              interpolation='nearest',
+                              aspect='auto',
                               origin="lower")
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.detach().numpy(), cmap='BuPu_r', interpolation='nearest', aspect='auto',
+        axes[index][1].imshow(att.detach().numpy(),
+                              cmap='BuPu_r',
+                              interpolation='nearest',
+                              aspect='auto',
                               origin="lower")
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)
@@ -29,6 +36,23 @@ def plot_attentions(atts, dir, step):
     if not os.path.exists(os.path.join(dir, "atts")):
         os.makedirs(os.path.join(dir, "atts"))
     plt.savefig(os.path.join(os.path.join(dir, "atts"), str(step) + ".png"))
+    plt.clf()
+    plt.close()
+
+    # then plot most diagonal attention head individually
+    most_diagonal_att = select_best_att_head(atts)
+    plt.figure(figsize=(8, 4))
+    plt.imshow(most_diagonal_att.detach().numpy(),
+               cmap='BuPu_r',
+               interpolation='nearest',
+               aspect='auto',
+               origin="lower")
+    plt.xlabel("Inputs")
+    plt.ylabel("Outputs")
+    plt.tight_layout()
+    if not os.path.exists(os.path.join(dir, "atts_diag")):
+        os.makedirs(os.path.join(dir, "atts_diag"))
+    plt.savefig(os.path.join(os.path.join(dir, "atts_diag"), str(step) + ".png"))
     plt.clf()
     plt.close()
 
@@ -49,6 +73,14 @@ def get_atts(model, lang, device, spemb):
     atts = model.inference(text=text, spembs=spemb)[2].to("cpu")
     del tf
     return atts
+
+
+def select_best_att_head(att_ws):
+    att_ws = torch.cat([att_w for att_w in att_ws], dim=0)
+    diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)
+    diagonal_head_idx = diagonal_scores.argmax()
+    att_ws = att_ws[diagonal_head_idx]
+    return att_ws
 
 
 def collate_and_pad(batch):
