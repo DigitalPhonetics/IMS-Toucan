@@ -33,14 +33,14 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    train_set_libritts = TransformerTTSDataset(build_path_to_transcript_dict_libritts()[:-300],
+    train_set_libritts = TransformerTTSDataset(build_path_to_transcript_dict_libritts(),
                                                train=True,
                                                cache_dir=cache_dir_libritts,
                                                lang="en",
                                                min_len=10000,
                                                max_len=400000,
                                                spemb=True)
-    valid_set_libritts = TransformerTTSDataset(build_path_to_transcript_dict_libritts()[-300:],
+    valid_set_libritts = TransformerTTSDataset(build_path_to_transcript_dict_libritts(),
                                                train=False,
                                                cache_dir=cache_dir_libritts,
                                                lang="en",
@@ -48,14 +48,14 @@ if __name__ == '__main__':
                                                max_len=400000,
                                                spemb=True)
 
-    train_set_ljspeech = TransformerTTSDataset(build_path_to_transcript_dict_ljspeech()[:-100],
+    train_set_ljspeech = TransformerTTSDataset(build_path_to_transcript_dict_ljspeech(),
                                                train=True,
                                                cache_dir=cache_dir_ljspeech,
                                                lang="en",
                                                min_len=10000,
                                                max_len=400000,
                                                spemb=True)
-    valid_set_ljspeech = TransformerTTSDataset(build_path_to_transcript_dict_ljspeech()[-100:],
+    valid_set_ljspeech = TransformerTTSDataset(build_path_to_transcript_dict_ljspeech(),
                                                train=False,
                                                cache_dir=cache_dir_ljspeech,
                                                lang="en",
