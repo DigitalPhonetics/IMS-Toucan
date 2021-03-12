@@ -12,7 +12,11 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 class MelGANDataset(Dataset):
 
-    def __init__(self, list_of_paths, samples_per_segment=8192, cache_dir=None, loading_processes=6):
+    def __init__(self,
+                 list_of_paths,
+                 samples_per_segment=8192,
+                 cache_dir=None,
+                 loading_processes=8):
         self.samples_per_segment = samples_per_segment
         if os.path.exists(cache_dir):
             # load cache
