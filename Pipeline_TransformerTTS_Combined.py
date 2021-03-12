@@ -7,6 +7,7 @@ import random
 import warnings
 
 import torch
+from torch.utils.data import ConcatDataset
 
 from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
@@ -21,30 +22,49 @@ random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Combined")
+    cache_dir_libritts = os.path.join("Corpora", "LibriTTS")
+    cache_dir_ljspeech = os.path.join("Corpora", "LJSpeech")
+    if not os.path.exists(cache_dir_libritts):
+        os.makedirs(cache_dir_libritts)
+    if not os.path.exists(cache_dir_ljspeech):
+        os.makedirs(cache_dir_ljspeech)
+
     save_dir = os.path.join("Models", "TransformerTTS", "MultiSpeaker", "Combined")
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_libritts()
-    path_to_transcript_dict.update(build_path_to_transcript_dict_ljspeech())
+    train_set_libritts = TransformerTTSDataset(build_path_to_transcript_dict_libritts()[:-300],
+                                               train=True,
+                                               cache_dir=cache_dir_libritts,
+                                               lang="en",
+                                               min_len=10000,
+                                               max_len=400000,
+                                               spemb=True)
+    valid_set_libritts = TransformerTTSDataset(build_path_to_transcript_dict_libritts()[-300:],
+                                               train=False,
+                                               cache_dir=cache_dir_libritts,
+                                               lang="en",
+                                               min_len=10000,
+                                               max_len=400000,
+                                               spemb=True)
 
-    train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=True,
-                                      cache_dir=cache_dir,
-                                      lang="en",
-                                      min_len=10000,
-                                      max_len=400000,
-                                      spemb=True)
-    valid_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
-                                      cache_dir=cache_dir,
-                                      lang="en",
-                                      min_len=10000,
-                                      max_len=400000,
-                                      spemb=True)
+    train_set_ljspeech = TransformerTTSDataset(build_path_to_transcript_dict_ljspeech()[:-100],
+                                               train=True,
+                                               cache_dir=cache_dir_ljspeech,
+                                               lang="en",
+                                               min_len=10000,
+                                               max_len=400000,
+                                               spemb=True)
+    valid_set_ljspeech = TransformerTTSDataset(build_path_to_transcript_dict_ljspeech()[-100:],
+                                               train=False,
+                                               cache_dir=cache_dir_ljspeech,
+                                               lang="en",
+                                               min_len=10000,
+                                               max_len=400000,
+                                               spemb=True)
+
+    train_set = ConcatDataset([train_set_libritts, train_set_ljspeech])
+    valid_set = ConcatDataset([valid_set_libritts, valid_set_ljspeech])
 
     model = Transformer(idim=131, odim=80, spk_embed_dim=256, reduction_factor=5)
 
@@ -58,4 +78,5 @@ if __name__ == '__main__':
                epochs=300000,  # just kill the process at some point
                batchsize=16,
                gradient_accumulation=4,
-               spemb=True)
+               spemb=True,
+               epochs_per_save=20)
