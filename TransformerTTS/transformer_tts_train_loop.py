@@ -232,7 +232,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0),
                                           att_dir=save_directory,
                                           step=step_counter)
-                plot_attentions_all_heads(all_atts,
+                plot_attentions_best_head(all_atts,
                                           att_dir=save_directory,
                                           step=step_counter)
             print("Epoch:        {}".format(epoch + 1))
