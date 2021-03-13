@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy
 import numpy as np
 import pyloudnorm as pyln
-import soundfile as sf
 import torch
 from torchaudio.transforms import MuLawEncoding, MuLawDecoding, Resample
 from torchaudio.transforms import Vad as VoiceActivityDetection
@@ -62,14 +61,18 @@ class AudioPreprocessor:
         """
         return self.mu_encode(audio)
 
-    def cut_silence_from_beginning(self, audio):
+    def cut_silence_from_beginning_and_end(self, audio):
         """
         applies cepstral voice activity
         detection and noise reduction to
-        cut silence from the beginning of
-        a recording
+        cut silence from the beginning
+        and end of a recording
         """
-        return self.vad(torch.Tensor(audio))
+        no_silence_front = self.vad(torch.Tensor(audio))
+        reversed_audio = torch.flip(no_silence_front, (0,))
+        no_silence_back = self.vad(torch.Tensor(reversed_audio))
+        unreversed_audio = torch.flip(no_silence_back, (0,))
+        return unreversed_audio
 
     def to_mono(self, x):
         """
@@ -117,7 +120,7 @@ class AudioPreprocessor:
         """
         audio = self.to_mono(audio)
         audio = self.normalize_loudness(audio)
-        audio = self.cut_silence_from_beginning(audio)
+        audio = self.cut_silence_from_beginning_and_end(audio)
         audio = self.resample(audio)
         return audio
 
@@ -161,22 +164,3 @@ class AudioPreprocessor:
             if isinstance(audio, torch.Tensor):
                 return self.mel_spec_orig_sr(audio)
             return self.mel_spec_orig_sr(torch.Tensor(audio))
-
-
-if __name__ == '__main__':
-    # load audio into numpy array
-    wave, fs = sf.read("test_audio/test.wav")
-
-    # create audio preprocessor object
-    ap = AudioPreprocessor(input_sr=fs, output_sr=16000)
-
-    # visualize a before and after of the cleaning
-    ap.visualize_cleaning(wave)
-
-    # write a cleaned version of the audio to listen to
-    sf.write("test_audio/test_cleaned.wav", ap.normalize_audio(wave), ap.final_sr)
-
-    # look at tensors of a wave representation and a mel spectrogram representation
-    print("\n\nWave as Tensor (8 bit integer values, dtype=int64): \n{}".format(
-        ap.audio_to_wave_tensor(wave, mulaw=True)))
-    print("\n\nMelSpec as Tensor (16 bit float values, dtype=float32): \n{}".format(ap.audio_to_mel_spec_tensor(wave)))

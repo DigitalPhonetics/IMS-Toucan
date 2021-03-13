@@ -98,28 +98,3 @@ class TextFrontend:
 
         # combine tensors and return
         return torch.stack(tensors, 0)
-
-
-if __name__ == '__main__':
-    # test an English utterance
-    tfr_en = TextFrontend(language="en",
-                          use_panphon_vectors=False,
-                          use_sentence_type=False,
-                          use_word_boundaries=False,
-                          use_explicit_eos=False)
-    print(tfr_en.string_to_tensor("Hello!"))
-
-    # test a German utterance
-    tfr_de = TextFrontend(language="de",
-                          use_panphon_vectors=True,
-                          use_sentence_type=True,
-                          use_word_boundaries=True,
-                          use_explicit_eos=True)
-    print(tfr_de.string_to_tensor("Hallo!"))
-
-    tfr_autoreg = TextFrontend(language="en",
-                               use_panphon_vectors=False,
-                               use_sentence_type=False,
-                               use_word_boundaries=False,
-                               use_explicit_eos=True)
-    print(tfr_autoreg.string_to_tensor("Hello there!"))
