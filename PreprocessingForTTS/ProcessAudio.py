@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 
 
 class AudioPreprocessor:
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False):
         """
         The parameters are by default set up to do well
         on a 16kHz signal. A different frequency may
@@ -23,6 +23,7 @@ class AudioPreprocessor:
         doubling frequency --> doubling hop_length and
         doubling n_fft)
         """
+        self.cut_silence = cut_silence
         self.sr = input_sr
         self.new_sr = output_sr
         self.hop_length = hop_length
@@ -120,7 +121,8 @@ class AudioPreprocessor:
         """
         audio = self.to_mono(audio)
         audio = self.normalize_loudness(audio)
-        audio = self.cut_silence_from_beginning_and_end(audio)
+        if self.cut_silence:
+            audio = self.cut_silence_from_beginning_and_end(audio)
         audio = self.resample(audio)
         return audio
 

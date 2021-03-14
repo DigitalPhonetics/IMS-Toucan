@@ -1,3 +1,11 @@
+"""
+A place for demos, visualizations and sanity checks
+"""
+
+import os
+
+import sounddevice
+import soundfile as sf
 import torch
 import torchviz
 
@@ -6,6 +14,7 @@ from FastSpeech2.FastSpeech2 import show_spectrogram as fast_spec
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import EnglishSingleSpeakerTransformerTTSInference
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
+from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
@@ -142,6 +151,21 @@ def plot_syn_training(path_to_train_val_loss_json="Models/Use/train_val_loss.jso
 
 def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
+
+
+def sanity_check_audio_preprocessing(path_to_wav_folder):
+    path_list = os.listdir(path_to_wav_folder)
+    _, sr = sf.read(path_to_wav_folder + path_list[0])
+    ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+    for path in path_list:
+        wave, sr = sf.read(path_to_wav_folder + path)
+        clean_wave = ap.normalize_audio(wave)
+        print("unclean")
+        sounddevice.play(wave, sr)
+        sounddevice.wait()
+        print("clean")
+        sounddevice.play(clean_wave, 16000)
+        sounddevice.wait()
 
 
 def show_all_models_params():

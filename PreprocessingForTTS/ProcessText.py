@@ -71,7 +71,8 @@ class TextFrontend:
                                       language=self.g2p_lang,
                                       preserve_punctuation=True,
                                       strip=True,
-                                      with_stress=True).replace(",", "-").replace(";", "-").replace(":", "-")
+                                      with_stress=False).replace(";", ",").replace(":", ",").replace('"', ",").replace(
+            "--", ",").replace("\n", " ").replace("\t", " ").replace("  ", " ")
         if view:
             print("Phonemes: \n{}\n".format(phones))
 
