@@ -77,7 +77,7 @@ class Transformer(torch.nn.Module, ABC):
                  postnet_dropout_rate: float = 0.5,
                  init_type: str = "kaiming_uniform",
                  init_enc_alpha: float = 1.0,
-                 use_masking: bool = True,
+                 use_masking: bool = False,  # either this or weighted masking
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
                  bce_pos_weight: float = 5.0,
                  loss_type: str = "L1",
