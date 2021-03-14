@@ -123,6 +123,8 @@ class AudioPreprocessor:
         audio = self.normalize_loudness(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_beginning_and_end(audio)
+        else:
+            audio = torch.Tensor(audio)
         audio = self.resample(audio)
         return audio
 
@@ -150,18 +152,18 @@ class AudioPreprocessor:
     def audio_to_wave_tensor(self, audio, normalize=True, mulaw=False):
         if mulaw:
             if normalize:
-                return self.apply_mu_law(torch.Tensor(self.normalize_audio(audio)))
+                return self.apply_mu_law(self.normalize_audio(audio))
             else:
                 return self.apply_mu_law(torch.Tensor(audio))
         else:
             if normalize:
-                return torch.Tensor(self.normalize_audio(audio))
+                return self.normalize_audio(audio)
             else:
                 return torch.Tensor(audio)
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
-            return self.mel_spec_new_sr(torch.Tensor(self.normalize_audio(audio)))
+            return self.mel_spec_new_sr(self.normalize_audio(audio))
         else:
             if isinstance(audio, torch.Tensor):
                 return self.mel_spec_orig_sr(audio)
