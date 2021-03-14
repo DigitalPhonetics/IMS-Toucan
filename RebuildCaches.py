@@ -1,7 +1,7 @@
 """
 If feature extraction is updated, just call this to update all the caches to the new features
 
-currently only the TransformerTTS caches are included.
+currently only the TransformerTTS and MelGAN caches are included.
 """
 
 import os
@@ -10,7 +10,9 @@ import warnings
 
 import torch
 
+from MelGAN.MelGANDataset import MelGANDataset
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+from Utility.file_lists import get_file_list_libritts, get_file_list_ljspeech, get_file_list_css10de
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech, \
     build_path_to_transcript_dict_css10de, build_path_to_transcript_dict_libritts
 
@@ -93,3 +95,38 @@ if __name__ == '__main__':
                           lang="de",
                           min_len=0,
                           max_len=1000000)
+
+    # delete any caches from melgan
+    train_cache = "melgan_train_cache.json"
+    valid_cache = "melgan_valid_cache.json"
+    if os.path.exists(os.path.join(cache_dir_lj, train_cache)):
+        os.remove(os.path.join(cache_dir_lj, train_cache))
+    if os.path.exists(os.path.join(cache_dir_lj, valid_cache)):
+        os.remove(os.path.join(cache_dir_lj, valid_cache))
+    if os.path.exists(os.path.join(cache_dir_libri, train_cache)):
+        os.remove(os.path.join(cache_dir_libri, train_cache))
+    if os.path.exists(os.path.join(cache_dir_libri, valid_cache)):
+        os.remove(os.path.join(cache_dir_libri, valid_cache))
+    if os.path.exists(os.path.join(cache_dir_css10de, train_cache)):
+        os.remove(os.path.join(cache_dir_css10de, train_cache))
+    if os.path.exists(os.path.join(cache_dir_css10de, valid_cache)):
+        os.remove(os.path.join(cache_dir_css10de, valid_cache))
+
+    # prepare file lists of melgan
+    file_list_libri = get_file_list_libritts()
+    file_list_lj = get_file_list_ljspeech()
+    file_list_css10de = get_file_list_css10de()
+
+    # rebuild caches of melgan
+    MelGANDataset(list_of_paths=file_list_libri[:-300],
+                  cache_path=os.path.join(cache_dir_libri, train_cache))
+    MelGANDataset(list_of_paths=file_list_libri[-300:],
+                  cache_path=os.path.join(cache_dir_libri, valid_cache))
+    MelGANDataset(list_of_paths=file_list_lj[:-100],
+                  cache_path=os.path.join(cache_dir_lj, train_cache))
+    MelGANDataset(list_of_paths=file_list_lj[-100:],
+                  cache_path=os.path.join(cache_dir_lj, valid_cache))
+    MelGANDataset(list_of_paths=file_list_css10de[:-100],
+                  cache_path=os.path.join(cache_dir_css10de, train_cache))
+    MelGANDataset(list_of_paths=file_list_css10de[-100:],
+                  cache_path=os.path.join(cache_dir_css10de, valid_cache))

@@ -38,17 +38,17 @@ if __name__ == '__main__':
     assert os.path.exists(cache_dir_css10de)
 
     train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-300],
-                                    cache_dir=os.path.join(cache_dir_libri, "melgan_train_cache.json"))
+                                    cache_path=os.path.join(cache_dir_libri, "melgan_train_cache.json"))
     valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-300:],
-                                    cache_dir=os.path.join(cache_dir_libri, "melgan_valid_cache.json"))
+                                    cache_path=os.path.join(cache_dir_libri, "melgan_valid_cache.json"))
     train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100],
-                                 cache_dir=os.path.join(cache_dir_lj, "melgan_train_cache.json"))
+                                 cache_path=os.path.join(cache_dir_lj, "melgan_train_cache.json"))
     valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:],
-                                 cache_dir=os.path.join(cache_dir_lj, "melgan_valid_cache.json"))
+                                 cache_path=os.path.join(cache_dir_lj, "melgan_valid_cache.json"))
     train_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100],
-                                      cache_dir=os.path.join(cache_dir_css10de, "melgan_train_cache.json"))
+                                      cache_path=os.path.join(cache_dir_css10de, "melgan_train_cache.json"))
     valid_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:],
-                                      cache_dir=os.path.join(cache_dir_css10de, "melgan_valid_cache.json"))
+                                      cache_path=os.path.join(cache_dir_css10de, "melgan_valid_cache.json"))
 
     train_set = ConcatDataset([train_set_libri, train_set_lj, train_set_css10de])
     valid_set = ConcatDataset([valid_set_libri, valid_set_lj, valid_set_css10de])

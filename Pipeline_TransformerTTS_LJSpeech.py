@@ -21,7 +21,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech", "speed_optimized")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -42,7 +42,7 @@ if __name__ == '__main__':
                                       min_len=0,
                                       max_len=1000000)
 
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None, reduction_factor=5, aheads=4, adim=256)
+    model = Transformer(idim=131, odim=80, spk_embed_dim=None, reduction_factor=5)
 
     print("Training model")
     train_loop(net=model,

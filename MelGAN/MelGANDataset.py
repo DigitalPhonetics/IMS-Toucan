@@ -15,12 +15,12 @@ class MelGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  samples_per_segment=8192,
-                 cache_dir=None,
-                 loading_processes=8):
+                 cache_path=None,
+                 loading_processes=4):
         self.samples_per_segment = samples_per_segment
-        if os.path.exists(cache_dir):
+        if os.path.exists(cache_path):
             # load cache
-            with open(cache_dir, 'r') as fp:
+            with open(cache_path, 'r') as fp:
                 self.list_of_norm_waves = json.load(fp)
             self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
             # hop length must be same as the product of the upscale factors
@@ -51,7 +51,7 @@ class MelGANDataset(Dataset):
                 process.join()
             self.list_of_norm_waves = list(self.list_of_norm_waves)
             print("{} eligible audios found".format(len(self.list_of_norm_waves)))
-            with open(cache_dir, 'w') as fp:
+            with open(cache_path, 'w') as fp:
                 json.dump(self.list_of_norm_waves, fp)
 
     def cache_builder_process(self, path_split, samples_per_segment):
