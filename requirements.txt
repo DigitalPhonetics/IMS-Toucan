@@ -9,9 +9,10 @@ torchaudio==0.7.2
 torchvision==0.8.2
 torchviz==0.0.1
 numpy~=1.19.2
-phonemizer
+phonemizer~=2.2.2
 clean-text
 unidecode
-adabound  # https://arxiv.org/abs/1902.09843
-pyworld
+adabound~=0.0.5
+pyworld~=0.2.12
 torch-complex
+sounddevice~=0.4.1
