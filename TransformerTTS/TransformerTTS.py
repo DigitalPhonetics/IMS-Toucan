@@ -32,89 +32,6 @@ class Transformer(torch.nn.Module, ABC):
 
     .. _`Neural Speech Synthesis with Transformer Network`:
         https://arxiv.org/pdf/1809.08895.pdf
-
-    Args:
-        idim (int): Dimension of the inputs.
-        odim (int): Dimension of the outputs.
-        embed_dim (int, optional): Dimension of character embedding.
-        eprenet_conv_layers (int, optional):
-            Number of encoder prenet convolution layers.
-        eprenet_conv_chans (int, optional):
-            Number of encoder prenet convolution channels.
-        eprenet_conv_filts (int, optional):
-            Filter size of encoder prenet convolution.
-        dprenet_layers (int, optional): Number of decoder prenet layers.
-        dprenet_units (int, optional): Number of decoder prenet hidden units.
-        elayers (int, optional): Number of encoder layers.
-        eunits (int, optional): Number of encoder hidden units.
-        adim (int, optional): Number of attention transformation dimensions.
-        aheads (int, optional): Number of heads for multi head attention.
-        dlayers (int, optional): Number of decoder layers.
-        dunits (int, optional): Number of decoder hidden units.
-        postnet_layers (int, optional): Number of postnet layers.
-        postnet_chans (int, optional): Number of postnet channels.
-        postnet_filts (int, optional): Filter size of postnet.
-        use_scaled_pos_enc (bool, optional):
-            Whether to use trainable scaled positional encoding.
-        use_batch_norm (bool, optional):
-            Whether to use batch normalization in encoder prenet.
-        encoder_normalize_before (bool, optional):
-            Whether to perform layer normalization before encoder block.
-        decoder_normalize_before (bool, optional):
-            Whether to perform layer normalization before decoder block.
-        encoder_concat_after (bool, optional): Whether to concatenate attention
-            layer's input and output in encoder.
-        decoder_concat_after (bool, optional): Whether to concatenate attention
-            layer's input and output in decoder.
-        positionwise_layer_type (str, optional):
-            Position-wise operation type.
-        positionwise_conv_kernel_size (int, optional):
-            Kernel size in position wise conv 1d.
-        reduction_factor (int, optional): Reduction factor.
-        spk_embed_dim (int, optional): Number of speaker embedding dimenstions.
-        spk_embed_integration_type (str, optional): How to integrate speaker embedding.
-        transformer_lr (float, optional): Initial value of learning rate.
-        transformer_warmup_steps (int, optional): Optimizer warmup steps.
-        transformer_enc_dropout_rate (float, optional):
-            Dropout rate in encoder except attention and positional encoding.
-        transformer_enc_positional_dropout_rate (float, optional):
-            Dropout rate after encoder positional encoding.
-        transformer_enc_attn_dropout_rate (float, optional):
-            Dropout rate in encoder self-attention module.
-        transformer_dec_dropout_rate (float, optional):
-            Dropout rate in decoder except attention & positional encoding.
-        transformer_dec_positional_dropout_rate (float, optional):
-            Dropout rate after decoder positional encoding.
-        transformer_dec_attn_dropout_rate (float, optional):
-            Dropout rate in deocoder self-attention module.
-        transformer_enc_dec_attn_dropout_rate (float, optional):
-            Dropout rate in encoder-deocoder attention module.
-        init_type (str, optional):
-            How to initialize transformer parameters.
-        init_enc_alpha (float, optional):
-            Initial value of alpha in scaled pos encoding of the encoder.
-        init_dec_alpha (float, optional):
-            Initial value of alpha in scaled pos encoding of the decoder.
-        eprenet_dropout_rate (float, optional): Dropout rate in encoder prenet.
-        dprenet_dropout_rate (float, optional): Dropout rate in decoder prenet.
-        postnet_dropout_rate (float, optional): Dropout rate in postnet.
-        use_masking (bool, optional):
-            Whether to apply masking for padded part in loss calculation.
-        use_weighted_masking (bool, optional):
-            Whether to apply weighted masking in loss calculation.
-        bce_pos_weight (float, optional): Positive sample weight in bce calculation
-            (only for use_masking=true).
-        loss_type (str, optional): How to calculate loss.
-        use_guided_attn_loss (bool, optional): Whether to use guided attention loss.
-        num_heads_applied_guided_attn (int, optional):
-            Number of heads in each layer to apply guided attention loss.
-        num_layers_applied_guided_attn (int, optional):
-            Number of layers to apply guided attention loss.
-        modules_applied_guided_attn (Sequence[str], optional):
-            List of module names to apply guided attention loss.
-        guided_attn_loss_sigma (float, optional) Sigma in guided attention loss.
-        guided_attn_loss_lambda (float, optional): Lambda in guided attention loss.
-
     """
 
     def __init__(self,
@@ -160,7 +77,6 @@ class Transformer(torch.nn.Module, ABC):
                  postnet_dropout_rate: float = 0.5,
                  init_type: str = "kaiming_uniform",
                  init_enc_alpha: float = 1.0,
-                 init_dec_alpha: float = 1.0,
                  use_masking: bool = True,
                  use_weighted_masking: bool = False,
                  bce_pos_weight: float = 5.0,
@@ -178,6 +94,8 @@ class Transformer(torch.nn.Module, ABC):
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
+        self.aheads = aheads
+        self.adim = adim
         self.spk_embed_dim = spk_embed_dim
         self.reduction_factor = reduction_factor
         self.use_guided_attn_loss = use_guided_attn_loss
@@ -599,9 +517,17 @@ class Transformer(torch.nn.Module, ABC):
         return hs
 
     def get_conf(self):
-        return "idim:{}\nodim:{}\nspk_embed_dim:{}\nreduction_factor:{}".format(self.idim, self.odim,
-                                                                                self.spk_embed_dim,
-                                                                                self.reduction_factor)
+        return "idim:{}\n" \
+               "odim:{}\n" \
+               "spk_embed_dim:{}\n" \
+               "reduction_factor:{}\n" \
+               "aheads:{}\n" \
+               "adim:{}".format(self.idim,
+                                self.odim,
+                                self.spk_embed_dim,
+                                self.reduction_factor,
+                                self.aheads,
+                                self.adim)
 
 
 def build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt"):
