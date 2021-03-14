@@ -61,7 +61,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,
                  decoder_concat_after: bool = False,
-                 reduction_factor: int = 1,
+                 reduction_factor: int = 5,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
@@ -78,7 +78,7 @@ class Transformer(torch.nn.Module, ABC):
                  init_type: str = "kaiming_uniform",
                  init_enc_alpha: float = 1.0,
                  use_masking: bool = True,
-                 use_weighted_masking: bool = False,
+                 use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
                  bce_pos_weight: float = 5.0,
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
