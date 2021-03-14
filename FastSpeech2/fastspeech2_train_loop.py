@@ -141,6 +141,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 step_counter += 1
                 # update weights
                 # print("Step: {}".format(step_counter))
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
                 optimizer.zero_grad()

@@ -115,6 +115,7 @@ def train_loop(batchsize=64,
             # generator step time
             optimizer_g.zero_grad()
             generator_total_loss.backward()
+            torch.nn.utils.clip_grad_norm_(g.parameters(), 1.0)
             optimizer_g.step()
             optimizer_g.zero_grad()
 
@@ -139,6 +140,7 @@ def train_loop(batchsize=64,
                 # discriminator step time
                 optimizer_d.zero_grad()
                 discriminator_mse_loss.backward()
+                torch.nn.utils.clip_grad_norm_(d.parameters(), 1.0)
                 optimizer_d.step()
                 optimizer_d.zero_grad()
             else:

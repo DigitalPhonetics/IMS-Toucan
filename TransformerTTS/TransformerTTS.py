@@ -59,8 +59,8 @@ class Transformer(torch.nn.Module, ABC):
                  use_batch_norm: bool = True,
                  encoder_normalize_before: bool = True,
                  decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,
-                 decoder_concat_after: bool = False,
+                 encoder_concat_after: bool = True,  # according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after: bool = True,  # according to https://github.com/soobinseo/Transformer-TTS
                  reduction_factor: int = 5,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
