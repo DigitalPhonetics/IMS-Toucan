@@ -9,6 +9,8 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
+from Utility.WarmupScheduler import WarmupScheduler
+
 
 def collate_and_pad(batch):
     if len(batch) == 7:
@@ -107,6 +109,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     step_counter = 0
     net.train()
     optimizer = AdaBound(net.parameters())
+    scheduler = WarmupScheduler(optimizer, warmup_steps=4000)
+
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
@@ -144,6 +148,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
+                scheduler.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
         # evaluate on valid after every epoch is through
@@ -172,7 +177,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
             if epoch & epochs_per_save == 0:
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict(),
-                            "scaler": scaler.state_dict()},
+                            "scaler": scaler.state_dict(),
+                            "scheduler": scheduler.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
