@@ -108,7 +108,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = Adam(net.parameters(), lr=1.0)
+    optimizer = Adam(net.parameters(), lr=0.001)
     scheduler = WarmupScheduler(optimizer, warmup_steps=4000)
 
     start_time = time.time()
