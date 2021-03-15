@@ -44,5 +44,5 @@ if __name__ == '__main__':
                train_dataset=train_dataset,
                valid_dataset=valid_dataset,
                device=torch.device("cuda:1"),
-               generator_warmup_steps=200000,
+               generator_warmup_steps=100000,
                model_save_dir=model_save_dir)

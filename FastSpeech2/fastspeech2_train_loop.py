@@ -4,9 +4,9 @@ import time
 
 import torch
 import torch.multiprocessing
-from adabound import AdaBound
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
+from torch.optim.adam import Adam
 from torch.utils.data.dataloader import DataLoader
 
 from Utility.WarmupScheduler import WarmupScheduler
@@ -108,7 +108,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = AdaBound(net.parameters())
+    optimizer = Adam(net.parameters(), lr=1.0)
     scheduler = WarmupScheduler(optimizer, warmup_steps=4000)
 
     start_time = time.time()

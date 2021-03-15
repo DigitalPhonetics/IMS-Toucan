@@ -4,13 +4,14 @@ import time
 
 import torch
 import torch.multiprocessing
-from adabound import AdaBound
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
 
 from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
+from Utility.RAdam import RAdam
 
 
-def train_loop(batchsize=64,
+def train_loop(batchsize=16,
                epochs=10,
                generator=None,
                discriminator=None,
@@ -18,7 +19,7 @@ def train_loop(batchsize=64,
                valid_dataset=None,
                device=None,
                model_save_dir=None,
-               generator_warmup_steps=200000,
+               generator_warmup_steps=100000,
                epochs_per_save=5):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
@@ -46,8 +47,10 @@ def train_loop(batchsize=64,
     d = discriminator.to(device)
     g.train()
     d.train()
-    optimizer_g = AdaBound(g.parameters())
-    optimizer_d = AdaBound(d.parameters())
+    optimizer_g = RAdam(g.parameters(), lr=0.0001, eps=1.0e-6, weight_decay=0.0)
+    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[200000, 400000, 600000, 800000, 1000000])
+    optimizer_d = RAdam(d.parameters(), lr=0.00005, eps=1.0e-6, weight_decay=0.0)
+    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000, 1000000])
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(dataset=train_dataset,
@@ -56,7 +59,7 @@ def train_loop(batchsize=64,
                               num_workers=8,
                               pin_memory=False,
                               drop_last=True,
-                              prefetch_factor=8,
+                              prefetch_factor=4,
                               persistent_workers=True)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=10,
@@ -64,7 +67,7 @@ def train_loop(batchsize=64,
                               num_workers=5,
                               pin_memory=False,
                               drop_last=False,
-                              prefetch_factor=2,
+                              prefetch_factor=4,
                               persistent_workers=True)
 
     start_time = time.time()
@@ -107,16 +110,17 @@ def train_loop(batchsize=64,
                                                                 d_outs[i][-1].new_ones(d_outs[i][-1].size()))
                 adversarial_loss /= (len(d_outs))
                 train_losses_this_epoch["adversarial"].append(float(adversarial_loss))
-                generator_total_loss = spectral_loss + magnitude_loss + adversarial_loss
+                generator_total_loss = (spectral_loss + magnitude_loss) * 25 + adversarial_loss * 4
             else:
                 train_losses_this_epoch["adversarial"].append(0.0)
-                generator_total_loss = spectral_loss + magnitude_loss
+                generator_total_loss = (spectral_loss + magnitude_loss) * 25
             train_losses_this_epoch["generator_total"].append(float(generator_total_loss))
             # generator step time
             optimizer_g.zero_grad()
             generator_total_loss.backward()
-            torch.nn.utils.clip_grad_norm_(g.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
+            scheduler_g.step()
             optimizer_g.zero_grad()
 
             ############################
@@ -142,6 +146,7 @@ def train_loop(batchsize=64,
                 discriminator_mse_loss.backward()
                 torch.nn.utils.clip_grad_norm_(d.parameters(), 1.0)
                 optimizer_d.step()
+                scheduler_d.step()
                 optimizer_d.zero_grad()
             else:
                 train_losses_this_epoch["discriminator_mse"].append(0.0)
@@ -198,7 +203,9 @@ def train_loop(batchsize=64,
                 torch.save({"generator": g.state_dict(),
                             "discriminator": d.state_dict(),
                             "generator_optimizer": optimizer_g.state_dict(),
-                            "discriminator_optimizer": optimizer_d.state_dict()},
+                            "discriminator_optimizer": optimizer_d.state_dict(),
+                            "generator_scheduler": scheduler_g.state_dict(),
+                            "discriminator_scheduler": scheduler_d.state_dict()},
                            os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             print("Epoch:                  {}".format(epoch + 1))
             print("Valid Generator Loss:   {}".format(valid_gen_mean_epoch_loss))
