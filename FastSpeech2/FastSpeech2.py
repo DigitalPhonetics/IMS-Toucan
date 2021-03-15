@@ -93,8 +93,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  init_type: str = "kaiming_uniform",
                  init_enc_alpha: float = 1.0,
                  init_dec_alpha: float = 1.0,
-                 use_masking: bool = True,
-                 use_weighted_masking: bool = False):
+                 use_masking: bool = False,
+                 use_weighted_masking: bool = True):
         super().__init__()
 
         # store hyperparameters
