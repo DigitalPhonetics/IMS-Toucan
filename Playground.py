@@ -175,7 +175,7 @@ def show_all_models_params():
     print("Number of Parameters in Transformer without Speaker Embeddings: {}".format(count_parameters(model)))
     model = Transformer(idim=131, odim=80, spk_embed_dim=256)
     print("Number of Parameters in Transformer with Speaker Embeddings: {}".format(count_parameters(model)))
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None, reduction_factor=5, aheads=4, adim=256)
+    model = Transformer(idim=131, odim=80, spk_embed_dim=None, aheads=4, adim=256)
     print("Number of Parameters in Transformer with speedy config: {}".format(count_parameters(model)))
     model = FastSpeech2(idim=131, odim=80)
     print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
