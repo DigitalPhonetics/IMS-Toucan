@@ -37,7 +37,7 @@ if __name__ == '__main__':
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
 
     print("Training model")
-    train_loop(batchsize=64,
+    train_loop(batchsize=16,
                epochs=600000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
@@ -45,4 +45,5 @@ if __name__ == '__main__':
                valid_dataset=valid_dataset,
                device=torch.device("cuda:2"),
                generator_warmup_steps=100000,
-               model_save_dir=model_save_dir)
+               model_save_dir=model_save_dir,
+               epochs_per_save=60)

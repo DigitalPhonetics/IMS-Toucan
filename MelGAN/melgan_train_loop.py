@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 import time
@@ -20,7 +21,7 @@ def train_loop(batchsize=16,
                device=None,
                model_save_dir=None,
                generator_warmup_steps=100000,
-               epochs_per_save=5):
+               epochs_per_save=10):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -58,20 +59,22 @@ def train_loop(batchsize=16,
                               num_workers=8,
                               pin_memory=False,
                               drop_last=True,
-                              prefetch_factor=4,
-                              persistent_workers=True)
+                              prefetch_factor=2,
+                              persistent_workers=False)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=10,
                               shuffle=False,
                               num_workers=5,
                               pin_memory=False,
                               drop_last=False,
-                              prefetch_factor=4,
-                              persistent_workers=True)
+                              prefetch_factor=2,
+                              persistent_workers=False)
 
     start_time = time.time()
 
     for epoch in range(epochs):
+
+        gc.collect()
 
         train_losses_this_epoch = dict()
         train_losses_this_epoch["adversarial"] = list()

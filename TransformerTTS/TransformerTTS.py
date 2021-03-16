@@ -408,7 +408,7 @@ class Transformer(torch.nn.Module, ABC):
         minlen = int(hs.size(1) * minlenratio / self.reduction_factor)
 
         # initialize
-        idx = 0
+        index = 0
         ys = hs.new_zeros(1, 1, self.odim)
         outs, probs = [], []
 
@@ -416,32 +416,32 @@ class Transformer(torch.nn.Module, ABC):
         z_cache = self.decoder.init_state(x)
         while True:
             # update index
-            idx += 1
+            index += 1
 
-            # calculate output and stop prob at idx-th step
-            y_masks = subsequent_mask(idx).unsqueeze(0).to(x.device)
+            # calculate output and stop prob at index-th step
+            y_masks = subsequent_mask(index).unsqueeze(0).to(x.device)
             z, z_cache = self.decoder.forward_one_step(ys, y_masks, hs, cache=z_cache)  # (B, adim)
             outs += [self.feat_out(z).view(self.reduction_factor, self.odim)]  # [(r, odim), ...]
             probs += [torch.sigmoid(self.prob_out(z))[0]]  # [(r), ...]
 
             # update next inputs
-            ys = torch.cat((ys, outs[-1][-1].view(1, 1, self.odim)), dim=1)  # (1, idx + 1, odim)
+            ys = torch.cat((ys, outs[-1][-1].view(1, 1, self.odim)), dim=1)  # (1, index + 1, odim)
 
             # get attention weights
             att_ws_ = []
             for name, m in self.named_modules():
                 if isinstance(m, MultiHeadedAttention) and "src" in name:
                     att_ws_ += [m.attn[0, :, -1].unsqueeze(1)]  # [(#heads, 1, T),...]
-            if idx == 1:
+            if index == 1:
                 att_ws = att_ws_
             else:
                 # [(#heads, l, T), ...]
                 att_ws = [torch.cat([att_w, att_w_], dim=1) for att_w, att_w_ in zip(att_ws, att_ws_)]
 
             # check whether to finish generation
-            if int(sum(probs[-1] >= threshold)) > 0 or idx >= maxlen:
+            if int(sum(probs[-1] >= threshold)) > 0 or index >= maxlen:
                 # check mininum length
-                if idx < minlen:
+                if index < minlen:
                     continue
                 outs = (torch.cat(outs, dim=0).unsqueeze(0).transpose(1, 2))
                 # (L, odim) -> (1, L, odim) -> (1, odim, L)
