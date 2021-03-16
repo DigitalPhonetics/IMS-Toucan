@@ -454,6 +454,10 @@ class Transformer(torch.nn.Module, ABC):
         # concatenate attention weights -> (#layers, #heads, L, T)
         att_ws = torch.stack(att_ws, dim=0)
         self.train()
+
+        # TODO crop attentions
+        # att_w[:olen/self.reduction_factor, :ilen]
+
         return outs, probs, att_ws
 
     @staticmethod

@@ -14,7 +14,7 @@ class DurationCalculator(torch.nn.Module):
 
     def __init__(self):
         """
-        Initilize duration calculator.
+        Initialize duration calculator.
         """
         super().__init__()
 
@@ -23,7 +23,7 @@ class DurationCalculator(torch.nn.Module):
         """
         Convert attention weight to durations.
         Args:
-            att_ws (Tesnor): Attention weight tensor (L, T) or (#layers, #heads, L, T).
+            att_ws (Tensor): Attention weight tensor (L, T) or (#layers, #heads, L, T).
         Returns:
             LongTensor: Duration of each input (T,).
             Tensor: Focus rate value.

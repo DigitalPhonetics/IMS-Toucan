@@ -87,7 +87,7 @@ def plot_melgan_training(path_to_train_loss_json="Models/Use/train_loss.json",
              label="Adversarial Loss",
              alpha=0.5)
     plt.plot(list(range(1, len(train_loss_dict["generator_total"]) + 1)),
-             train_loss_dict["generator_total"],
+             [ls / 20 for ls in train_loss_dict["generator_total"]],  # to balance the lambdas of stft and adv
              'm',
              label="Total Generator Loss",
              alpha=0.5)
@@ -184,8 +184,8 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    show_all_models_params()
-    # plot_melgan_training()
+    # show_all_models_params()
+    plot_melgan_training()
     # show_att(lang="en")
     # show_att(lang="de")
     # read_texts(lang="de")
