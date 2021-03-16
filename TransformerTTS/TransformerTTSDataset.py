@@ -71,7 +71,7 @@ class TransformerTTSDataset(Dataset):
                           use_panphon_vectors=False,
                           use_sentence_type=False,
                           use_word_boundaries=False,
-                          use_explicit_eos=True)
+                          use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
         if spemb:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")

@@ -22,7 +22,7 @@ class FastSpeechDataset(Dataset):
                  acoustic_model_name,
                  spemb=False,
                  train=True,
-                 loading_processes=8,
+                 loading_processes=4,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len=50000,
@@ -80,7 +80,7 @@ class FastSpeechDataset(Dataset):
                           use_panphon_vectors=False,
                           use_sentence_type=False,
                           use_word_boundaries=False,
-                          use_explicit_eos=True)
+                          use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
         if spemb:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
