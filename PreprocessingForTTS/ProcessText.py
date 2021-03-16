@@ -13,7 +13,7 @@ class TextFrontend:
                  use_panphon_vectors=True,
                  use_sentence_type=True,
                  use_word_boundaries=False,
-                 use_explicit_eos=True):
+                 use_explicit_eos=False):
         """
         Mostly preparing ID lookups
         """
@@ -72,7 +72,7 @@ class TextFrontend:
                                       preserve_punctuation=True,
                                       strip=True,
                                       with_stress=False).replace(";", ",").replace(":", ",").replace('"', ",").replace(
-            "--", ",").replace("\n", " ").replace("\t", " ").replace("  ", " ")
+            "--", ",").replace("\n", " ").replace("\t", " ").replace("  ", " ").replace("!", ".").replace("?", ".")
         if view:
             print("Phonemes: \n{}\n".format(phones))
 

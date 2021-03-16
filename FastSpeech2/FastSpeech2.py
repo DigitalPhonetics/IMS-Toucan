@@ -457,7 +457,7 @@ def show_spectrogram(sentence, model=None, lang="en"):
                       use_panphon_vectors=False,
                       use_sentence_type=False,
                       use_word_boundaries=False,
-                      use_explicit_eos=True)
+                      use_explicit_eos=False)
     fig, ax = plt.subplots()
     ax.set(title=sentence)
     melspec = model.inference(tf.string_to_tensor(sentence).squeeze(0).long())

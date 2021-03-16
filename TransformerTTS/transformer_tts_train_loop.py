@@ -21,7 +21,6 @@ def plot_attentions_all_heads(atts, att_dir, step):
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
         axes[index][0].imshow(att.detach().numpy(),
-                              cmap='BuPu_r',
                               interpolation='nearest',
                               aspect='auto',
                               origin="lower")
@@ -29,7 +28,6 @@ def plot_attentions_all_heads(atts, att_dir, step):
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
         axes[index][1].imshow(att.detach().numpy(),
-                              cmap='BuPu_r',
                               interpolation='nearest',
                               aspect='auto',
                               origin="lower")
@@ -48,7 +46,6 @@ def plot_attentions_best_head(atts, att_dir, step):
     most_diagonal_att = select_best_att_head(atts)
     plt.figure(figsize=(8, 4))
     plt.imshow(most_diagonal_att.detach().numpy(),
-               cmap='BuPu_r',
                interpolation='nearest',
                aspect='auto',
                origin="lower")
@@ -67,12 +64,12 @@ def get_atts(model, lang, device, spemb):
                       use_panphon_vectors=False,
                       use_sentence_type=False,
                       use_word_boundaries=False,
-                      use_explicit_eos=True)
+                      use_explicit_eos=False)
     sentence = "Hello"
     if lang == "en":
-        sentence = "This is a brand new sentence."
+        sentence = "This is a brand new sentence, and it is also a quite long one, since long ones show attention better."
     elif lang == "de":
-        sentence = "Dies ist ein brandneuer Satz."
+        sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu ziemlich lang, denn lange Sätze zeigen Aufmerksamkeit besser."
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     atts = model.inference(text=text, spembs=spemb)[2].to("cpu")
     del tf

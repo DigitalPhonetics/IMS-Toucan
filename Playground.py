@@ -19,11 +19,11 @@ from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_a
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 
-def show_att(lang="en"):
+def show_att(lang="en", best_only=False):
     if lang == "en":
-        show_attention_plot("Hello world, I am speaking!", lang=lang)
+        show_attention_plot("This is a short sentence.", lang=lang, best_only=best_only)
     elif lang == "de":
-        show_attention_plot("Hallo Welt, ich spreche!", lang=lang)
+        show_attention_plot("Hallo Welt, ich spreche!", lang=lang, best_only=best_only)
 
 
 def show_specs(lang="en"):
@@ -185,8 +185,9 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     # show_all_models_params()
-    plot_melgan_training()
-    # show_att(lang="en")
+    # plot_melgan_training()
+    # show_att(lang="en", best_only=True)
     # show_att(lang="de")
     # read_texts(lang="de")
-    # read_texts(lang="en")
+    read_texts(lang="en")
+    show_specs(lang="en")

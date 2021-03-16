@@ -1,6 +1,5 @@
 import os
 from abc import ABC
-from typing import Sequence
 
 import numpy as np
 import soundfile
@@ -25,18 +24,19 @@ from Utility.utils import subsequent_mask
 class Transformer(torch.nn.Module, ABC):
 
     def __init__(self,
+                 # network structure related
                  idim: int,
                  odim: int,
-                 embed_dim: int = 512,
-                 eprenet_conv_layers: int = 3,
-                 eprenet_conv_chans: int = 256,
-                 eprenet_conv_filts: int = 5,
+                 embed_dim: int = 0,
+                 eprenet_conv_layers: int = 0,
+                 eprenet_conv_chans: int = 0,
+                 eprenet_conv_filts: int = 0,
                  dprenet_layers: int = 2,
                  dprenet_units: int = 256,
                  elayers: int = 6,
                  eunits: int = 1024,
                  adim: int = 512,
-                 aheads: int = 4,
+                 aheads: int = 8,
                  dlayers: int = 6,
                  dunits: int = 1024,
                  postnet_layers: int = 5,
@@ -48,11 +48,12 @@ class Transformer(torch.nn.Module, ABC):
                  use_batch_norm: bool = True,
                  encoder_normalize_before: bool = True,
                  decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,
-                 decoder_concat_after: bool = False,
-                 reduction_factor: int = 5,
+                 encoder_concat_after: bool = True,  # according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after: bool = True,  # according to https://github.com/soobinseo/Transformer-TTS
+                 reduction_factor: int = 2,
                  spk_embed_dim: int = None,
-                 spk_embed_integration_type: str = "add",
+                 spk_embed_integration_type: str = "concat",
+                 # training related
                  transformer_enc_dropout_rate: float = 0.1,
                  transformer_enc_positional_dropout_rate: float = 0.1,
                  transformer_enc_attn_dropout_rate: float = 0.1,
@@ -60,19 +61,21 @@ class Transformer(torch.nn.Module, ABC):
                  transformer_dec_positional_dropout_rate: float = 0.1,
                  transformer_dec_attn_dropout_rate: float = 0.1,
                  transformer_enc_dec_attn_dropout_rate: float = 0.1,
-                 eprenet_dropout_rate: float = 0.5,
+                 eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
-                 use_masking: bool = False,
-                 use_weighted_masking: bool = False,
+                 init_type: str = "kaiming_uniform",
+                 init_enc_alpha: float = 1.0,
+                 use_masking: bool = False,  # either this or weighted masking
+                 use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
                  bce_pos_weight: float = 5.0,
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
                  num_layers_applied_guided_attn: int = 2,
-                 modules_applied_guided_attn: Sequence[str] = ("encoder-decoder",),
+                 modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma: float = 0.4,
-                 guided_attn_loss_lambda: float = 1.0):
+                 guided_attn_loss_lambda: float = 10.0):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -233,7 +236,7 @@ class MelGANGenerator(torch.nn.Module):
                  kernel_size=7,
                  channels=512,
                  bias=True,
-                 upsample_scales=[8, 4, 4, 2],
+                 upsample_scales=[8, 8, 2, 2],
                  stack_kernel_size=3,
                  stacks=3,
                  nonlinear_activation="LeakyReLU",
@@ -306,7 +309,7 @@ class EnglishSingleSpeakerTransformerTTSInference:
                                        use_panphon_vectors=False,
                                        use_sentence_type=False,
                                        use_word_boundaries=False,
-                                       use_explicit_eos=True)
+                                       use_explicit_eos=False)
         self.phone2mel = Transformer(idim=131, odim=80, spk_embed_dim=None)
         self.mel2wav = MelGANGenerator()
 
