@@ -14,6 +14,7 @@ from FastSpeech2.FastSpeech2 import show_spectrogram as fast_spec
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import EnglishSingleSpeakerTransformerTTSInference
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
+from MelGAN.MelGANGenerator import MelGANGenerator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
@@ -180,6 +181,25 @@ def sanity_check_audio_preprocessing(path_to_wav_folder):
         sounddevice.wait()
 
 
+def test_spectrogram_inversion(path_to_wav="Corpora/CSS10_DE/meisterfloh_0001.wav"):
+    wave, sr = sf.read(path_to_wav)
+    ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
+    clean_wave = ap.normalize_audio(wave)
+    spec = ap.audio_to_mel_spec_tensor(clean_wave, normalize=False)
+    spectrogram_inverter = MelGANGenerator()
+    spectrogram_inverter.load_state_dict(
+        torch.load(os.path.join("Models", "Use", "MelGAN_English_Single.pt"), map_location='cpu')["generator"])
+    inverse_spec = spectrogram_inverter.inference(spec.unsqueeze(0)).squeeze(0).squeeze(0)
+    import matplotlib.pyplot as plt
+    plt.plot(clean_wave.detach().numpy())
+    plt.show()
+    plt.clf()
+    plt.plot(inverse_spec.detach().numpy())
+    plt.show()
+    sf.write("audio_orig.wav", data=clean_wave.detach().numpy(), samplerate=16000)
+    sf.write("audio_inverted.wav", data=inverse_spec.detach().numpy(), samplerate=16000)
+
+
 def show_all_models_params():
     from TransformerTTS.TransformerTTS import Transformer
     from FastSpeech2.FastSpeech2 import FastSpeech2
@@ -195,6 +215,7 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     # plot_melgan_training()
-    show_att(lang="en", best_only=True)
-    read_texts(lang="en")
-    show_specs(lang="en")
+    test_spectrogram_inversion()
+    # show_att(lang="en", best_only=True)
+    # read_texts(lang="en")
+    # show_specs(lang="en")

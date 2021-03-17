@@ -21,7 +21,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_1")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_2")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:1"),
+               device=torch.device("cuda:2"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
