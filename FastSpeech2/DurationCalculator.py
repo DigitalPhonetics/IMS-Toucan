@@ -48,9 +48,9 @@ class DurationCalculator(torch.nn.Module):
         if self.testing:
             import matplotlib.pyplot as plt
             plt.figure(figsize=(8, 4))
-            plt.imshow(att_ws.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-            plt.xlabel("Inputs")
-            plt.ylabel("Outputs")
+            plt.imshow(att_ws.detach().transpose(0, 1).numpy(), interpolation='nearest', aspect='auto', origin="lower")
+            plt.xlabel("Outputs")
+            plt.ylabel("Inputs")
             plt.tight_layout()
             plt.savefig("duration_att_with_teacher_forcing.png")
             plt.close()

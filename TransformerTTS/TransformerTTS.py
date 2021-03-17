@@ -59,8 +59,8 @@ class Transformer(torch.nn.Module, ABC):
                  use_batch_norm: bool = True,
                  encoder_normalize_before: bool = True,
                  decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,  # according to https://github.com/soobinseo/Transformer-TTS
-                 decoder_concat_after: bool = False,  # according to https://github.com/soobinseo/Transformer-TTS
+                 encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
                  reduction_factor: int = 5,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
@@ -391,7 +391,7 @@ class Transformer(torch.nn.Module, ABC):
             for i in range(len(self.decoder.decoders)):
                 att_ws += [self.decoder.decoders[i].src_attn.attn]
             att_ws = torch.stack(att_ws, dim=1)  # (B, L, H, T_out, T_in)
-
+            self.train()
             return outs[0], None, att_ws[0]
 
         # forward encoder
@@ -571,9 +571,9 @@ def select_best_att_head(att_ws):
 def plot_attention(att, sentence=None):
     import matplotlib.pyplot as plt
     plt.figure(figsize=(8, 4))
-    plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    plt.xlabel("Inputs")
-    plt.ylabel("Outputs")
+    plt.imshow(att.transpose(0, 1).detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    plt.xlabel("Outputs")
+    plt.ylabel("Inputs")
     if sentence is not None:
         plt.title(sentence)
     plt.tight_layout()
@@ -586,12 +586,12 @@ def plot_attentions(atts):
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
+        axes[index][0].imshow(att.transpose(0, 1).detach().numpy(), interpolation='nearest', aspect='auto',
                               origin="lower")
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
+        axes[index][1].imshow(att.transpose(0, 1).detach().numpy(), interpolation='nearest', aspect='auto',
                               origin="lower")
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)

@@ -20,14 +20,14 @@ def plot_attentions_all_heads(atts, att_dir, step):
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.detach().numpy(),
+        axes[index][0].imshow(att.transpose(0, 1).detach().numpy(),
                               interpolation='nearest',
                               aspect='auto',
                               origin="lower")
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.detach().numpy(),
+        axes[index][1].imshow(att.transpose(0, 1).detach().numpy(),
                               interpolation='nearest',
                               aspect='auto',
                               origin="lower")
@@ -45,12 +45,12 @@ def plot_attentions_best_head(atts, att_dir, step):
     # plot most diagonal attention head individually
     most_diagonal_att = select_best_att_head(atts)
     plt.figure(figsize=(8, 4))
-    plt.imshow(most_diagonal_att.detach().numpy(),
+    plt.imshow(most_diagonal_att.transpose(0, 1).detach().numpy(),
                interpolation='nearest',
                aspect='auto',
                origin="lower")
-    plt.xlabel("Inputs")
-    plt.ylabel("Outputs")
+    plt.xlabel("Outputs")
+    plt.ylabel("Inputs")
     plt.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "atts_diag")):
         os.makedirs(os.path.join(att_dir, "atts_diag"))
@@ -67,11 +67,16 @@ def get_atts(model, lang, device, spemb):
                       use_explicit_eos=False)
     sentence = "Hello"
     if lang == "en":
-        sentence = "This is a brand new sentence, and it is also a quite long one, since long ones show attention better."
+        sentence = "Many animals of even complex structure which " \
+                   "live parasitically within others are wholly " \
+                   "devoid of an alimentary cavity."
     elif lang == "de":
-        sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu ziemlich lang, denn lange Sätze zeigen Aufmerksamkeit besser."
+        sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu " \
+                   "ziemlich lang, denn lange Sätze zeigen Aufmerksamkeit besser."
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    model.eval()
     atts = model.inference(text=text, spembs=spemb)[2].to("cpu")
+    model.train()
     del tf
     return atts
 
@@ -167,7 +172,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = Adam(net.parameters(), lr=0.1)
+    optimizer = Adam(net.parameters(), lr=0.01)
     scheduler = WarmupScheduler(optimizer, warmup_steps=8000)
 
     start_time = time.time()
@@ -204,7 +209,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 scheduler.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
-        # evaluate on valid after every epoch is through
+        # evaluate on valid after every epoch
         with torch.no_grad():
             net.eval()
             val_losses = list()
