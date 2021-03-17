@@ -21,7 +21,9 @@ from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10
 
 def show_att(lang="en", best_only=False):
     if lang == "en":
-        show_attention_plot("This is a short sentence.", lang=lang, best_only=best_only)
+        show_attention_plot(
+            "This sentence is quite long, and that is by design, since long sentences show attention better.",
+            lang=lang, best_only=best_only)
     elif lang == "de":
         show_attention_plot("Hallo Welt, ich spreche!", lang=lang, best_only=best_only)
 
@@ -31,7 +33,11 @@ def show_specs(lang="en"):
         trans_spec("Hallo Welt, ich spreche!", lang=lang)
         fast_spec("Hallo Welt, ich spreche!", lang=lang)
     elif lang == "en":
-        trans_spec("Hello world, I am speaking!", lang=lang)
+        trans_spec(
+            "Many animals of even complex structure which "
+            "live parasitically within others are wholly "
+            "devoid of an alimentary cavity.",
+            lang=lang)
         fast_spec("Hello world, I am speaking!", lang=lang)
 
 
@@ -41,7 +47,11 @@ def read_texts(lang="en"):
         tts.read_to_file(text_list=["Hallo Welt!", "Ich spreche."], file_location="test_de.wav")
     elif lang == "en":
         tts = EnglishSingleSpeakerTransformerTTSInference()
-        tts.read_to_file(text_list=["Hello world!", "I am speaking."], file_location="test_en.wav")
+        tts.read_to_file(text_list=[
+            "Many animals of even complex structure which "
+            "live parasitically within others are wholly "
+            "devoid of an alimentary cavity."],
+            file_location="test_en.wav")
 
 
 def plot_fastspeech_architecture():
@@ -182,10 +192,7 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    # show_all_models_params()
     # plot_melgan_training()
-    show_att(lang="en", best_only=False)
-    # show_att(lang="de")
-    # read_texts(lang="de")
-    # read_texts(lang="en")
+    # show_att(lang="en", best_only=True)
+    read_texts(lang="en")
     show_specs(lang="en")
