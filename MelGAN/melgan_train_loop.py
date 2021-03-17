@@ -59,7 +59,7 @@ def train_loop(batchsize=16,
                               num_workers=16,
                               pin_memory=False,
                               drop_last=True,
-                              prefetch_factor=16,
+                              prefetch_factor=4,
                               persistent_workers=False)
     valid_loader = DataLoader(dataset=valid_dataset,
                               batch_size=10,
