@@ -181,7 +181,7 @@ def sanity_check_audio_preprocessing(path_to_wav_folder):
         sounddevice.wait()
 
 
-def test_spectrogram_inversion(path_to_wav="Corpora/CSS10_DE/meisterfloh_0001.wav"):
+def test_spectrogram_inversion(path_to_wav="Corpora/test.wav"):
     wave, sr = sf.read(path_to_wav)
     ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
     clean_wave = ap.normalize_audio(wave)
@@ -189,15 +189,32 @@ def test_spectrogram_inversion(path_to_wav="Corpora/CSS10_DE/meisterfloh_0001.wa
     spectrogram_inverter = MelGANGenerator()
     spectrogram_inverter.load_state_dict(
         torch.load(os.path.join("Models", "Use", "MelGAN_English_Single.pt"), map_location='cpu')["generator"])
-    inverse_spec = spectrogram_inverter.inference(spec.unsqueeze(0)).squeeze(0).squeeze(0)
+    reconstructed_wave = spectrogram_inverter.inference(spec.unsqueeze(0)).squeeze(0).squeeze(0)
     import matplotlib.pyplot as plt
-    plt.plot(clean_wave.detach().numpy())
-    plt.show()
-    plt.clf()
-    plt.plot(inverse_spec.detach().numpy())
+    import librosa.display as lbd
+    fig, axes = plt.subplots(nrows=2, ncols=2)
+    axes[0][0].plot(clean_wave.detach().numpy())
+    axes[1][0].plot(reconstructed_wave.detach().numpy())
+    lbd.specshow(spec.detach().numpy(),
+                 ax=axes[0][1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
+    lbd.specshow(ap.audio_to_mel_spec_tensor(reconstructed_wave.detach().numpy(), normalize=False).detach().numpy(),
+                 ax=axes[1][1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
+    axes[0][0].xaxis.set_visible(False)
+    axes[0][0].yaxis.set_visible(False)
+    axes[0][1].xaxis.set_visible(False)
+    axes[0][1].yaxis.set_visible(False)
+    axes[1][0].xaxis.set_visible(False)
+    axes[1][0].yaxis.set_visible(False)
+    axes[1][1].xaxis.set_visible(False)
+    axes[1][1].yaxis.set_visible(False)
+    axes[0][0].set_title("Original Wave")
+    axes[1][0].set_title("Reconstructed Wave")
+    axes[0][1].set_title("Original Spectrogram")
+    axes[1][1].set_title("Reconstructed Spectrogram")
+    plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.9, wspace=0, hspace=0.2)
     plt.show()
     sf.write("audio_orig.wav", data=clean_wave.detach().numpy(), samplerate=16000)
-    sf.write("audio_inverted.wav", data=inverse_spec.detach().numpy(), samplerate=16000)
+    sf.write("audio_reconstructed.wav", data=reconstructed_wave.detach().numpy(), samplerate=16000)
 
 
 def show_all_models_params():
@@ -215,7 +232,7 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     # plot_melgan_training()
-    test_spectrogram_inversion()
-    # show_att(lang="en", best_only=True)
-    # read_texts(lang="en")
-    # show_specs(lang="en")
+    # test_spectrogram_inversion()
+    show_att(lang="en", best_only=True)
+    read_texts(lang="en")
+    show_specs(lang="en")

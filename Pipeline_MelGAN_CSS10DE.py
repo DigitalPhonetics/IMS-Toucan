@@ -37,7 +37,7 @@ if __name__ == '__main__':
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
 
     print("Training model")
-    train_loop(batchsize=16,
+    train_loop(batchsize=256,
                epochs=600000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
