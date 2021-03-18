@@ -79,7 +79,7 @@ class Transformer(torch.nn.Module, ABC):
                  init_enc_alpha: float = 1.0,
                  use_masking: bool = False,  # either this or weighted masking
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 5.0,
+                 bce_pos_weight: float = 8.0,
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
@@ -599,17 +599,29 @@ def plot_attentions(atts):
     plt.show()
 
 
-def get_atts(model, sentence, lang):
+def get_atts(model, sentence, lang, teacher_forcing):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
                       use_sentence_type=False,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
-    return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
+    if teacher_forcing:
+        from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
+        import soundfile as sf
+        wave, sr = sf.read("Corpora/wavs/LJ001-0001.wav")
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
+        spec = ap.audio_to_mel_spec_tensor(wave)
+        sentence = "printing, in the only sense with which we are at present " \
+                   "concerned, differs from most if not from all the arts and " \
+                   "crafts represented in the exhibition"
+        text_tensor = tf.string_to_tensor(sentence).squeeze(0).long()
+        return model.inference(text=text_tensor, speech=spec, use_teacher_forcing=True)[2]
+    else:
+        return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
 
 
-def show_attention_plot(sentence, model=None, best_only=False, lang="en"):
+def show_attention_plot(sentence, model=None, best_only=False, lang="en", teacher_forcing=False):
     if model is None:
         if lang == "en":
             model = build_reference_transformer_tts_model(model_name="Transformer_English_Single.pt")
@@ -617,7 +629,11 @@ def show_attention_plot(sentence, model=None, best_only=False, lang="en"):
             model = build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt")
 
     if best_only:
-        plot_attention(select_best_att_head(get_atts(model=model, sentence=sentence, lang=lang)), sentence=sentence)
+        plot_attention(
+            select_best_att_head(get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing)),
+            sentence=sentence)
     else:
-        atts = torch.cat([att_w for att_w in get_atts(model=model, sentence=sentence, lang=lang)], dim=0)
+        atts = torch.cat(
+            [att_w for att_w in get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing)],
+            dim=0)
         plot_attentions(atts)

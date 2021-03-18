@@ -20,15 +20,15 @@ from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_a
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 
-def show_att(lang="en", best_only=False):
+def show_att(lang="en", best_only=False, teacher_forcing=False):
     if lang == "en":
         show_attention_plot(
             "Many animals of even complex structure which "
             "live parasitically within others are wholly "
             "devoid of an alimentary cavity.",
-            lang=lang, best_only=best_only)
+            lang=lang, best_only=best_only, teacher_forcing=teacher_forcing)
     elif lang == "de":
-        show_attention_plot("Hallo Welt, ich spreche!", lang=lang, best_only=best_only)
+        show_attention_plot("Hallo Welt, ich spreche!", lang=lang, best_only=best_only, teacher_forcing=teacher_forcing)
 
 
 def show_specs(lang="en"):
@@ -233,6 +233,6 @@ def show_all_models_params():
 if __name__ == '__main__':
     # plot_melgan_training()
     # test_spectrogram_inversion()
-    show_att(lang="en", best_only=True)
+    show_att(lang="en", best_only=True, teacher_forcing=True)
     read_texts(lang="en")
     show_specs(lang="en")

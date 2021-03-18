@@ -17,7 +17,6 @@ class DurationCalculator(torch.nn.Module):
         Initialize duration calculator.
         """
         super().__init__()
-        self.testing = True
 
     @torch.no_grad()
     def forward(self, att_ws: torch.Tensor):
@@ -45,17 +44,6 @@ class DurationCalculator(torch.nn.Module):
         diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)  # (#heads * #layers,)
         diagonal_head_idx = diagonal_scores.argmax()
         att_ws = att_ws[diagonal_head_idx]  # (L, T)
-        if self.testing:
-            import matplotlib.pyplot as plt
-            plt.figure(figsize=(8, 4))
-            plt.imshow(att_ws.detach().transpose(0, 1).numpy(), interpolation='nearest', aspect='auto', origin="lower")
-            plt.xlabel("Outputs")
-            plt.ylabel("Inputs")
-            plt.tight_layout()
-            plt.savefig("duration_att_with_teacher_forcing.png")
-            plt.close()
-            import sys
-            sys.exit()
         # calculate duration from 2d attention weight
         durations = torch.stack([att_ws.argmax(-1).eq(i).sum() for i in range(att_ws.shape[1])])
         return durations.view(-1)

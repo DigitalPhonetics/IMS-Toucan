@@ -13,7 +13,7 @@ from torch.utils.data.dataloader import DataLoader
 from PreprocessingForTTS.ProcessText import TextFrontend
 
 
-def adjust_learning_rate(optimizer, step_num, warmup_step=4000):
+def adjust_learning_rate(optimizer, step_num, warmup_step=16000):
     """
     noam style warmup scheduler, taken from https://github.com/soobinseo/Transformer-TTS
     """
