@@ -7,11 +7,11 @@ import torch
 import torch.multiprocessing
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
-from torch.optim.adam import Adam
+from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
 
 from PreprocessingForTTS.ProcessText import TextFrontend
-from Utility.WarmupScheduler import adjust_learning_rate
+from Utility.RAdam import RAdam
 
 
 def plot_attentions_all_heads(atts, att_dir, step):
@@ -144,7 +144,6 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     """
     net = net.to(device)
     scaler = GradScaler()
-    torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
                               drop_last=True,
@@ -172,7 +171,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = Adam(net.parameters(), lr=1.0)
+    optimizer = RAdam(net.parameters(), lr=0.0001, eps=1.0e-6, weight_decay=0.0)
+    scheduler = MultiStepLR(optimizer, gamma=0.5, milestones=[200000, 300000, 400000, 500000, 600000])
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
@@ -204,8 +204,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
-                if step_counter < 400000:
-                    adjust_learning_rate(optimizer, step_counter)
+                scheduler.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
         # evaluate on valid after every epoch
@@ -229,7 +228,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict(),
                             "scaler": scaler.state_dict(),
-                            "step_counter": step_counter},
+                            "step_counter": step_counter,
+                            "scheduler": scheduler.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 all_atts = get_atts(model=net,
                                     lang=lang,

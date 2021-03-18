@@ -19,15 +19,15 @@ warnings.filterwarnings("ignore")
 torch.manual_seed(13)
 random.seed(13)
 
-if __name__ == '__main__':
+def rebuild_caches():
     # make sure cache directories exist
-    cache_dir_lj = os.path.join("Corpora", "LJSpeech")
+    cache_dir_lj = os.path.join("../Corpora", "LJSpeech")
     if not os.path.exists(cache_dir_lj):
         os.makedirs(cache_dir_lj)
-    cache_dir_libri = os.path.join("Corpora", "LibriTTS")
+    cache_dir_libri = os.path.join("../Corpora", "LibriTTS")
     if not os.path.exists(cache_dir_libri):
         os.makedirs(cache_dir_libri)
-    cache_dir_css10de = os.path.join("Corpora", "CSS10_DE")
+    cache_dir_css10de = os.path.join("../Corpora", "CSS10_DE")
     if not os.path.exists(cache_dir_css10de):
         os.makedirs(cache_dir_css10de)
 

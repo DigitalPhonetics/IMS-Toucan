@@ -304,20 +304,25 @@ class MelGANGenerator(torch.nn.Module):
         return self.melgan(melspec)
 
 
-class EnglishSingleSpeakerTransformerTTSInference:
-    def __init__(self):
+class EnglishSingleSpeakerTransformerTTSInference(torch.nn.Module):
+    def __init__(self, device="cpu"):
+        super().__init__()
+        self.device = device
         self.text2phone = TextFrontend(language="en",
                                        use_panphon_vectors=False,
                                        use_sentence_type=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = Transformer(idim=131, odim=80, spk_embed_dim=None)
-        self.mel2wav = MelGANGenerator()
+        self.phone2mel = Transformer(idim=131, odim=80, spk_embed_dim=None).to(torch.device(device))
+        self.mel2wav = MelGANGenerator().to(torch.device(device))
+        self.phone2mel.eval()
+        self.mel2wav.eval()
+        self.to(torch.device(device))
 
-    def __call__(self, text):
-        phones = self.text2phone.string_to_tensor(text).squeeze(0).long()
+    def forward(self, text):
+        phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
         mel = self.phone2mel(phones).transpose(0, 1).detach()
-        wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0).detach()
+        wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0).detach().cpu().numpy()
         return wave
 
     def read_to_file(self, text_list, file_location):
@@ -326,7 +331,7 @@ class EnglishSingleSpeakerTransformerTTSInference:
         :param file_location: The path and name of the file it should be saved to
         """
         wav = None
-        silence = torch.zeros([8000], device="cpu")
+        silence = torch.zeros([8000]).to(torch.device(self.device))
         for text in text_list:
             if text.strip() != "":
                 print("Now synthesizing: {}".format(text))
@@ -335,7 +340,7 @@ class EnglishSingleSpeakerTransformerTTSInference:
                 else:
                     wav = torch.cat((wav, silence), 0)
                     wav = torch.cat((wav, self(text)), 0)
-        soundfile.write(file=file_location, data=wav.cpu(), samplerate=16000)
+        soundfile.write(file=file_location, data=wav, samplerate=16000)
 
     def read_aloud(self, text):
         wav = self(text)

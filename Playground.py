@@ -188,7 +188,7 @@ def test_spectrogram_inversion(path_to_wav="Corpora/test.wav"):
     spec = ap.audio_to_mel_spec_tensor(clean_wave, normalize=False)
     spectrogram_inverter = MelGANGenerator()
     spectrogram_inverter.load_state_dict(
-        torch.load(os.path.join("Models", "Use", "MelGAN_English_Single.pt"), map_location='cpu')["generator"])
+        torch.load(os.path.join("Models", "Use", "MelGAN.pt"), map_location='cpu')["generator"])
     reconstructed_wave = spectrogram_inverter.inference(spec.unsqueeze(0)).squeeze(0).squeeze(0)
     import matplotlib.pyplot as plt
     import librosa.display as lbd
@@ -232,7 +232,7 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     # plot_melgan_training()
-    # test_spectrogram_inversion()
-    show_att(lang="en", best_only=True, teacher_forcing=True)
+    test_spectrogram_inversion()
+    # show_att(lang="en", best_only=True, teacher_forcing=True)
     # read_texts(lang="en")
     # show_specs(lang="en")
