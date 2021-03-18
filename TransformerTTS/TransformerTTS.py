@@ -609,12 +609,12 @@ def get_atts(model, sentence, lang, teacher_forcing):
     if teacher_forcing:
         from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
         import soundfile as sf
-        wave, sr = sf.read("Corpora/wavs/LJ001-0001.wav")
+        wave, sr = sf.read("Corpora/att_align_test.wav")
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
-        spec = ap.audio_to_mel_spec_tensor(wave)
-        sentence = "printing, in the only sense with which we are at present " \
-                   "concerned, differs from most if not from all the arts and " \
-                   "crafts represented in the exhibition"
+        spec = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1)
+        sentence = "Many animals of even complex structure which " \
+                   "live parasitically within others are wholly " \
+                   "devoid of an alimentary cavity."
         text_tensor = tf.string_to_tensor(sentence).squeeze(0).long()
         return model.inference(text=text_tensor, speech=spec, use_teacher_forcing=True)[2]
     else:

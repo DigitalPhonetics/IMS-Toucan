@@ -172,8 +172,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = Adam(net.parameters(), lr=0.001)
-
+    optimizer = Adam(net.parameters(), lr=1.0)
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
