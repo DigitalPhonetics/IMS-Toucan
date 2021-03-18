@@ -1,12 +1,12 @@
 """
 Train non-autoregressive spectrogram inversion model on a combination of multiple large datasets
 
-In theory, spectrogram inversion should be language and
-speaker independent, so throwing together all datasets
-should work.
+Spectrogram inversion is language and speaker independent,
+so throwing together all datasets gives the best results.
 
 """
 
+import gc
 import os
 import random
 import warnings
@@ -30,28 +30,25 @@ if __name__ == '__main__':
     model_save_dir = "Models/MelGAN/MultiSpeaker/Combined"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
-    cache_dir_libri = "Corpora/LibriTTS"
-    assert os.path.exists(cache_dir_libri)
-    cache_dir_lj = "Corpora/LJSpeech"
-    assert os.path.exists(cache_dir_lj)
-    cache_dir_css10de = "Corpora/CSS10_DE"
-    assert os.path.exists(cache_dir_css10de)
 
-    train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-300],
-                                    cache_path=os.path.join(cache_dir_libri, "melgan_train_cache.json"))
-    valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-300:],
-                                    cache_path=os.path.join(cache_dir_libri, "melgan_valid_cache.json"))
-    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100],
-                                 cache_path=os.path.join(cache_dir_lj, "melgan_train_cache.json"))
-    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:],
-                                 cache_path=os.path.join(cache_dir_lj, "melgan_valid_cache.json"))
-    train_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100],
-                                      cache_path=os.path.join(cache_dir_css10de, "melgan_train_cache.json"))
-    valid_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:],
-                                      cache_path=os.path.join(cache_dir_css10de, "melgan_valid_cache.json"))
+    train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-300])
+    valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-300:])
+    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100])
+    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:])
+    train_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100])
+    valid_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:])
 
     train_set = ConcatDataset([train_set_libri, train_set_lj, train_set_css10de])
     valid_set = ConcatDataset([valid_set_libri, valid_set_lj, valid_set_css10de])
+
+    del train_set_libri
+    del train_set_lj
+    del train_set_css10de
+    del valid_set_libri
+    del valid_set_lj
+    del valid_set_css10de
+
+    gc.collect()
 
     generator = MelGANGenerator()
     generator.reset_parameters()
