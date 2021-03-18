@@ -171,8 +171,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = RAdam(net.parameters(), lr=0.0001, eps=1.0e-6, weight_decay=0.0)
-    scheduler = MultiStepLR(optimizer, gamma=0.5, milestones=[200000, 300000, 400000, 500000, 600000])
+    optimizer = RAdam(net.parameters(), lr=0.01, eps=1.0e-6, weight_decay=0.0)
+    scheduler = MultiStepLR(optimizer, gamma=0.5, milestones=[100000, 200000, 300000, 400000, 500000, 600000])
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
