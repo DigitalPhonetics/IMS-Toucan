@@ -1,3 +1,4 @@
+import re
 import sys
 from collections import defaultdict
 
@@ -64,6 +65,9 @@ class TextFrontend:
         # clean unicode errors etc
         utt = clean(text, fix_unicode=True, to_ascii=True, lower=False, lang=self.clean_lang)
 
+        if self.clean_lang == "en":
+            utt = english_text_expansion(utt)
+
         # phonemize
         phones = phonemizer.phonemize(utt,
                                       language_switch='remove-flags',
@@ -71,8 +75,8 @@ class TextFrontend:
                                       language=self.g2p_lang,
                                       preserve_punctuation=True,
                                       strip=True,
-                                      with_stress=False).replace(";", ",").replace(":", ",").replace('"', ",").replace(
-            "--", ",").replace("\n", " ").replace("\t", " ").replace("  ", " ").replace("!", ".").replace("?", ".")
+                                      with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
+            "--", ",").replace("\n", " ").replace("\t", " ").replace("!", ".").replace("?", ".")
         if view:
             print("Phonemes: \n{}\n".format(phones))
 
@@ -99,3 +103,33 @@ class TextFrontend:
 
         # combine tensors and return
         return torch.stack(tensors, 0)
+
+
+def english_text_expansion(text):
+    """
+    Apply as small part of the tacotron style text cleaning pipeline, suitable for e.g. LJSpeech.
+    See https://github.com/keithito/tacotron/
+    Careful: Only apply to english datasets. Different languages need different cleaners.
+    """
+    _abbreviations = [(re.compile('\\b%s\\.' % x[0], re.IGNORECASE), x[1]) for x in [
+        ('Mrs.', 'misess'),
+        ('Mr.', 'mister'),
+        ('Dr.', 'doctor'),
+        ('St.', 'saint'),
+        ('Co.', 'company'),
+        ('Jr.', 'junior'),
+        ('Maj.', 'major'),
+        ('Gen.', 'general'),
+        ('Drs.', 'doctors'),
+        ('Rev.', 'reverend'),
+        ('Lt.', 'lieutenant'),
+        ('Hon.', 'honorable'),
+        ('Sgt.', 'sergeant'),
+        ('Capt.', 'captain'),
+        ('Esq.', 'esquire'),
+        ('Ltd.', 'limited'),
+        ('Col.', 'colonel'),
+        ('Ft.', 'fort')]]
+    for regex, replacement in _abbreviations:
+        text = re.sub(regex, replacement, text)
+    return text

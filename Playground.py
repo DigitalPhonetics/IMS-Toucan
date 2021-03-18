@@ -232,7 +232,10 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     # plot_melgan_training()
-    test_spectrogram_inversion()
+    # test_spectrogram_inversion()
     # show_att(lang="en", best_only=True, teacher_forcing=True)
     # read_texts(lang="en")
     # show_specs(lang="en")
+    from Utility.RebuildCaches import rebuild_caches
+
+    rebuild_caches()
