@@ -11,15 +11,7 @@ from torch.optim.adam import Adam
 from torch.utils.data.dataloader import DataLoader
 
 from PreprocessingForTTS.ProcessText import TextFrontend
-
-
-def adjust_learning_rate(optimizer, step_num, warmup_step=16000):
-    """
-    noam style warmup scheduler, taken from https://github.com/soobinseo/Transformer-TTS
-    """
-    lr = 0.001 * warmup_step ** 0.5 * min(step_num * warmup_step ** -1.5, step_num ** -0.5)
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+from Utility.WarmupScheduler import adjust_learning_rate
 
 
 def plot_attentions_all_heads(atts, att_dir, step):
@@ -237,7 +229,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
             if epoch % epochs_per_save == 0:
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict(),
-                            "scaler": scaler.state_dict()},
+                            "scaler": scaler.state_dict(),
+                            "step_counter": step_counter},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 all_atts = get_atts(model=net,
                                     lang=lang,

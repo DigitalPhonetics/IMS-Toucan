@@ -2,6 +2,7 @@ import os
 from abc import ABC
 
 import numpy as np
+import sounddevice
 import soundfile
 import torch
 import torch.nn.functional as F
@@ -335,3 +336,7 @@ class EnglishSingleSpeakerTransformerTTSInference:
                     wav = torch.cat((wav, silence), 0)
                     wav = torch.cat((wav, self(text)), 0)
         soundfile.write(file=file_location, data=wav.cpu(), samplerate=16000)
+
+    def read_aloud(self, text):
+        wav = self(text)
+        sounddevice.play(wav, samplerate=16000)

@@ -9,7 +9,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.optim.adam import Adam
 from torch.utils.data.dataloader import DataLoader
 
-from Utility.WarmupScheduler import WarmupScheduler
+from Utility.WarmupScheduler import adjust_learning_rate
 
 
 def collate_and_pad(batch):
@@ -109,7 +109,6 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     step_counter = 0
     net.train()
     optimizer = Adam(net.parameters(), lr=0.001)
-    scheduler = WarmupScheduler(optimizer, warmup_steps=4000)
 
     start_time = time.time()
     for epoch in range(epochs):
@@ -148,7 +147,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
-                scheduler.step()
+                if step_counter < 400000:
+                    adjust_learning_rate(optimizer, step_counter)
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
         # evaluate on valid after every epoch is through
@@ -178,7 +178,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict(),
                             "scaler": scaler.state_dict(),
-                            "scheduler": scheduler.state_dict()},
+                            "step_counter": step_counter},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
