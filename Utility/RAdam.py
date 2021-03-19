@@ -16,7 +16,7 @@ class RAdam(Optimizer):
     """Rectified Adam optimizer."""
 
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0):
-        """Initilize RAdam optimizer."""
+        """Initialize RAdam optimizer."""
         defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
         self.buffer = [[None, None, None] for ind in range(10)]
         super(RAdam, self).__init__(params, defaults)

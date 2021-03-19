@@ -11,13 +11,11 @@ import torchviz
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeech2 import show_spectrogram as fast_spec
-from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import EnglishSingleSpeakerTransformerTTSInference
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
 from MelGAN.MelGANGenerator import MelGANGenerator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 
 def show_att(lang="en", best_only=False, teacher_forcing=False):
@@ -58,19 +56,17 @@ def read_texts(lang="en"):
 
 
 def plot_fastspeech_architecture():
-    device = torch.device("cpu")
-    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
-    css10_testing = FastSpeechDataset(path_to_transcript_dict,
-                                      train="testing",
-                                      acoustic_model_name="Transformer_German_Single.pt",
-                                      loading_processes=1)
-    model = FastSpeech2(idim=132, odim=80, spk_embed_dim=None).to(device)
-    datapoint = css10_testing[0]
-    out = model.inference(text=torch.LongTensor(datapoint[0]).squeeze(0).to(device),
-                          speech=torch.Tensor(datapoint[2]).to(device),
-                          durations=torch.LongTensor(datapoint[4]).to(device),
-                          pitch=torch.Tensor(datapoint[5]).to(device),
-                          energy=torch.Tensor(datapoint[6]).to(device),
+    text = torch.LongTensor([1, 2, 3, 4])
+    speech = torch.zeros(80, 50)
+    durations = torch.LongTensor([1, 2, 3, 4])
+    pitch = torch.Tensor([1.0]).unsqueeze(0)
+    energy = torch.Tensor([1.0]).unsqueeze(0)
+    model = FastSpeech2(idim=131, odim=80, spk_embed_dim=None)
+    out = model.inference(text=text,
+                          speech=speech,
+                          durations=durations,
+                          pitch=pitch,
+                          energy=energy,
                           spembs=None,
                           use_teacher_forcing=True)
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
@@ -231,8 +227,9 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
+    plot_fastspeech_architecture()
     # plot_melgan_training()
     # test_spectrogram_inversion()
     show_att(lang="en", best_only=True, teacher_forcing=True)
-    # read_texts(lang="en")
-    # show_specs(lang="en")
+    read_texts(lang="en")
+    show_specs(lang="en")
