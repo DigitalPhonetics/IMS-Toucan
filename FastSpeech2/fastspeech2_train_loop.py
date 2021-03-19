@@ -6,10 +6,10 @@ import torch
 import torch.multiprocessing
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
-from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
 
 from Utility.RAdam import RAdam
+from Utility.WarmupScheduler import WarmupScheduler
 
 
 def collate_and_pad(batch):
@@ -108,8 +108,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = RAdam(net.parameters(), lr=0.0001, eps=1.0e-6, weight_decay=0.0)
-    scheduler = MultiStepLR(optimizer, gamma=0.5, milestones=[200000, 300000, 400000, 500000, 600000])
+    optimizer = RAdam(net.parameters(), lr=0.1, eps=1.0e-6, weight_decay=0.0)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=8000)
 
     start_time = time.time()
     for epoch in range(epochs):

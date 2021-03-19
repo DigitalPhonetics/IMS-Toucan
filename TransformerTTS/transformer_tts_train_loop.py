@@ -11,6 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 
 from PreprocessingForTTS.ProcessText import TextFrontend
 from Utility.RAdam import RAdam
+from Utility.WarmupScheduler import WarmupScheduler
 
 
 def plot_attentions_all_heads(atts, att_dir, step):
@@ -170,7 +171,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = RAdam(net.parameters(), lr=0.001, eps=1.0e-6, weight_decay=0.0001)
+    optimizer = RAdam(net.parameters(), lr=0.1, eps=1.0e-6, weight_decay=0.0)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=8000)
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
@@ -202,6 +204,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
+                scheduler.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
         # evaluate on valid after every epoch
@@ -225,7 +228,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 torch.save({"model": net.state_dict(),
                             "optimizer": optimizer.state_dict(),
                             "scaler": scaler.state_dict(),
-                            "step_counter": step_counter},
+                            "step_counter": step_counter,
+                            "scheduler": scheduler.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 all_atts = get_atts(model=net,
                                     lang=lang,

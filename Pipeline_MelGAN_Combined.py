@@ -41,13 +41,6 @@ if __name__ == '__main__':
     train_set = ConcatDataset([train_set_libri, train_set_lj, train_set_css10de])
     valid_set = ConcatDataset([valid_set_libri, valid_set_lj, valid_set_css10de])
 
-    del train_set_libri
-    del train_set_lj
-    del train_set_css10de
-    del valid_set_libri
-    del valid_set_lj
-    del valid_set_css10de
-
     gc.collect()
 
     generator = MelGANGenerator()
