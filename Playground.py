@@ -15,6 +15,7 @@ from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import Engl
 from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
 from MelGAN.MelGANGenerator import MelGANGenerator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
+from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
 
 
@@ -70,6 +71,17 @@ def plot_fastspeech_architecture():
                           spembs=None,
                           use_teacher_forcing=True)
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
+
+
+def plot_transformertts_architecture():
+    text = torch.LongTensor([1, 2, 3, 4])
+    speech = torch.zeros(80, 50)
+    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+    out = model.inference(text=text,
+                          speech=speech,
+                          spembs=None,
+                          use_teacher_forcing=False)
+    torchviz.make_dot(out, dict(model.named_parameters())).render("transformertts_graph", format="png")
 
 
 def plot_melgan_training(path_to_train_loss_json="Models/Use/train_loss.json",
@@ -227,7 +239,8 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    plot_fastspeech_architecture()
+    # plot_fastspeech_architecture()
+    # plot_transformertts_architecture()
     # plot_melgan_training()
     # test_spectrogram_inversion()
     show_att(lang="en", best_only=True, teacher_forcing=True)

@@ -8,7 +8,6 @@ from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
-from Utility.RAdam import RAdam
 from Utility.WarmupScheduler import WarmupScheduler
 
 
@@ -108,7 +107,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = RAdam(net.parameters(), lr=0.1, eps=1.0e-6, weight_decay=0.0)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
     scheduler = WarmupScheduler(optimizer, warmup_steps=8000)
 
     start_time = time.time()
