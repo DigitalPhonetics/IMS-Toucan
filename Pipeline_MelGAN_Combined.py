@@ -12,13 +12,12 @@ import random
 import warnings
 
 import torch
-from torch.utils.data import ConcatDataset
 
 from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
-from Utility.file_lists import get_file_list_css10de, get_file_list_libritts, get_file_list_ljspeech
+from Utility.file_lists import get_file_list_libritts
 
 warnings.filterwarnings("ignore")
 
@@ -33,13 +32,13 @@ if __name__ == '__main__':
 
     train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-300])
     valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-300:])
-    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100])
-    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:])
-    train_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100])
-    valid_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:])
+    # train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100])
+    # valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:])
+    # train_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100])
+    # valid_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:])
 
-    train_set = ConcatDataset([train_set_libri, train_set_lj, train_set_css10de])
-    valid_set = ConcatDataset([valid_set_libri, valid_set_lj, valid_set_css10de])
+    # train_set = ConcatDataset([train_set_libri, train_set_lj, train_set_css10de])
+    # valid_set = ConcatDataset([valid_set_libri, valid_set_lj, valid_set_css10de])
 
     gc.collect()
 
@@ -52,8 +51,8 @@ if __name__ == '__main__':
                epochs=6000000,  # just kill the process at some point
                generator=generator,
                discriminator=multi_scale_discriminator,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
+               train_dataset=train_set_libri,
+               valid_dataset=valid_set_libri,
                device=torch.device("cuda:2"),
                generator_warmup_steps=100000,
                model_save_dir=model_save_dir)
