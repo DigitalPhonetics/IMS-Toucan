@@ -21,7 +21,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_2")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_3")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -52,5 +52,13 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=128,
+               batchsize=256,
                gradient_accumulation=1)
+
+# EXPLORATION PLAN
+# High Batchsize (256)
+# Low Batchsize (64)
+# THEN: FIX BEST BATCH SIZE
+# Increase Learning Rate and Warmup Steps (0.1; 25000)
+# Check Learning Rate closely around 0.01 with 8000 Warmup Steps
+# Check different optimizers maybe, but don't waste time
