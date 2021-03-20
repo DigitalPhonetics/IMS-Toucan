@@ -69,8 +69,8 @@ def get_atts(model, lang, device, spemb):
                    "live parasitically within others are wholly " \
                    "devoid of an alimentary cavity."
     elif lang == "de":
-        sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu " \
-                   "ziemlich lang, denn lange Sätze zeigen Aufmerksamkeit besser."
+        sentence = "Es war einmal – welcher Autor darf es jetzt wohl " \
+                   "noch wagen, sein Geschichtlein also zu beginnen."
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     model.eval()
     atts = model.inference(text=text, spembs=spemb)[2].to("cpu")

@@ -27,26 +27,38 @@ def show_att(lang="en", best_only=False, teacher_forcing=False):
             "devoid of an alimentary cavity.",
             lang=lang, best_only=best_only, teacher_forcing=teacher_forcing)
     elif lang == "de":
-        show_attention_plot("Hallo Welt, ich spreche!", lang=lang, best_only=best_only, teacher_forcing=teacher_forcing)
+        show_attention_plot("Es war einmal – welcher Autor "
+                            "darf es jetzt wohl noch wagen, "
+                            "sein Geschichtlein also zu beginnen.", lang=lang, best_only=best_only,
+                            teacher_forcing=teacher_forcing)
 
 
 def show_specs(lang="en"):
     if lang == "de":
-        trans_spec("Hallo Welt, ich spreche!", lang=lang)
-        fast_spec("Hallo Welt, ich spreche!", lang=lang)
+        trans_spec("Es war einmal – welcher Autor darf es "
+                   "jetzt wohl noch wagen, sein Geschichtlein "
+                   "also zu beginnen.", lang=lang)
+        fast_spec("Es war einmal – welcher Autor darf es "
+                  "jetzt wohl noch wagen, sein Geschichtlein "
+                  "also zu beginnen.", lang=lang)
     elif lang == "en":
         trans_spec(
             "Many animals of even complex structure which "
             "live parasitically within others are wholly "
             "devoid of an alimentary cavity.",
             lang=lang)
-        fast_spec("Hello world, I am speaking!", lang=lang)
+        fast_spec("Many animals of even complex structure which "
+                  "live parasitically within others are wholly "
+                  "devoid of an alimentary cavity.", lang=lang)
 
 
 def read_texts(lang="en"):
     if lang == "de":
         tts = GermanSingleSpeakerTransformerTTSInference()
-        tts.read_to_file(text_list=["Hallo Welt!", "Ich spreche."], file_location="test_de.wav")
+        tts.read_to_file(text_list=["Es war einmal – welcher "
+                                    "Autor darf es jetzt wohl "
+                                    "noch wagen, sein Geschichtlein "
+                                    "also zu beginnen."], file_location="test_de.wav")
     elif lang == "en":
         tts = EnglishSingleSpeakerTransformerTTSInference()
         tts.read_to_file(text_list=[
