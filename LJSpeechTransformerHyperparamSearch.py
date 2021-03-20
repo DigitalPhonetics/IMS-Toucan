@@ -270,7 +270,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
                 json.dump(loss_plot, plotting_data_file)
             net.train()
-        if step_counter * batchsize > 2339968:
+        if step_counter > 33000:
             break
 
 
@@ -300,41 +300,6 @@ if __name__ == '__main__':
 
     model = Transformer(idim=131, odim=80, spk_embed_dim=None)
 
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_3")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=300000,  # just kill the process at some point
-               batchsize=256,
-               gradient_accumulation=1,
-               lr=0.01,
-               warmup_steps=8000)
-
-    print("\n\n\n\n")
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
-
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_4")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=300000,  # just kill the process at some point
-               batchsize=64,
-               gradient_accumulation=1,
-               lr=0.01,
-               warmup_steps=8000)
-
     print("\n\n\n\n")
     model = Transformer(idim=131, odim=80, spk_embed_dim=None)
 
@@ -349,7 +314,7 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=128,
+               batchsize=64,
                gradient_accumulation=1,
                lr=0.1,
                warmup_steps=14000)
@@ -368,7 +333,7 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=128,
+               batchsize=64,
                gradient_accumulation=1,
                lr=0.03,
                warmup_steps=9000)
@@ -387,7 +352,7 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=128,
+               batchsize=64,
                gradient_accumulation=1,
                lr=0.006,
                warmup_steps=7000)
@@ -406,7 +371,7 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=128,
+               batchsize=64,
                gradient_accumulation=1,
                lr=0.001,
                warmup_steps=4000)
