@@ -364,6 +364,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             Tensor: Output sequence of features (L, odim).
 
         """
+        self.valid()
         x, y = text, speech
         spemb, d, p, e = spembs, durations, pitch, energy
 
@@ -392,7 +393,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                         spembs=spembs,
                                         is_inference=True,
                                         alpha=alpha)  # (1, L, odim)
-
+        self.train()
         return outs[0]
 
     def _integrate_with_spk_embed(self, hs: torch.Tensor, spembs: torch.Tensor) -> torch.Tensor:

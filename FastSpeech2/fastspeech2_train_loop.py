@@ -2,13 +2,41 @@ import json
 import os
 import time
 
+import librosa.display as lbd
+import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 
+from PreprocessingForTTS.ProcessText import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
+
+
+def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_plot):
+    tf = TextFrontend(language=lang,
+                      use_panphon_vectors=False,
+                      use_sentence_type=False,
+                      use_word_boundaries=False,
+                      use_explicit_eos=False)
+    sentence = "Hello"
+    if lang == "en":
+        sentence = "Many animals of even complex structure which " \
+                   "live parasitically within others are wholly " \
+                   "devoid of an alimentary cavity."
+    elif lang == "de":
+        sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu " \
+                   "ziemlich lang und komplex, dmait man im Spektrogram auch was sieht."
+    text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    spec = net.inference(text=text, spembs=reference_spemb_for_plot).to("cpu").numpy()
+    if not os.path.exists(os.path.join(save_dir, "spec")):
+        os.makedirs(os.path.join(save_dir, "spec"))
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    lbd.specshow(spec, ax=ax[0][0], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
+    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
+    plt.clf()
+    plt.close()
 
 
 def collate_and_pad(batch):
@@ -65,13 +93,15 @@ def collate_and_pad(batch):
                 torch.stack(spembs))  # may need squeezing, cannot test atm
 
 
-def train_loop(net, train_dataset, eval_dataset, device, save_directory,
+def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                config, batchsize=32, epochs=150, gradient_accumulation=1,
-               epochs_per_save=10, spemb=False):
+               epochs_per_save=10, spemb=False, lang="en"):
     """
+    :param lang: language of the synthesis
+    :param spemb: whether to expect speaker embeddings
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
-    :param eval_dataset: Pytorch Dataset Object for validation data
+    :param valid_dataset: Pytorch Dataset Object for validation data
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
     :param config: Config of the model to be trained
@@ -82,7 +112,10 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
     """
     net = net.to(device)
     scaler = GradScaler()
-
+    if spemb:
+        reference_spemb_for_plot = torch.Tensor(valid_dataset[0][7]).to(device)
+    else:
+        reference_spemb_for_plot = None
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
@@ -94,7 +127,7 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     valid_loader = DataLoader(batch_size=10,
-                              dataset=eval_dataset,
+                              dataset=valid_dataset,
                               drop_last=False,
                               num_workers=5,
                               pin_memory=False,
@@ -180,6 +213,8 @@ def train_loop(net, train_dataset, eval_dataset, device, save_directory,
                             "step_counter": step_counter,
                             "scheduler": scheduler.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
+                                   reference_spemb_for_plot=reference_spemb_for_plot)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
