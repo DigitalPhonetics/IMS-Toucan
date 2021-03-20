@@ -271,12 +271,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_3")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
@@ -291,8 +287,6 @@ if __name__ == '__main__':
                                       lang="en",
                                       min_len=0,
                                       max_len=1000000)
-
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
 
     print("\n\n\n\n")
     model = Transformer(idim=131, odim=80, spk_embed_dim=None)

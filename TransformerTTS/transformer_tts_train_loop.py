@@ -170,8 +170,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.01)
-    scheduler = WarmupScheduler(optimizer, warmup_steps=8000)
+    optimizer = torch.optim.Adam(net.parameters(), lr=1.0)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=25000)
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch
