@@ -166,10 +166,10 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     train_loader = DataLoader(batch_size=batchsize,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=16,
+                              num_workers=8,
                               pin_memory=False,
                               shuffle=True,
-                              prefetch_factor=16,
+                              prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     valid_loader = DataLoader(batch_size=50,
@@ -244,12 +244,6 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                                                 validation_datapoint[4].to(device))))
             average_val_loss = sum(val_losses) / len(val_losses)
             if epoch % epochs_per_save == 0:
-                torch.save({"model": net.state_dict(),
-                            "optimizer": optimizer.state_dict(),
-                            "scaler": scaler.state_dict(),
-                            "step_counter": step_counter,
-                            "scheduler": scheduler.state_dict()},
-                           os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 all_atts = get_atts(model=net,
                                     lang=lang,
                                     device=device,
