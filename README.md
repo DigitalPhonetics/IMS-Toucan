@@ -1,8 +1,8 @@
 # Speech Synthesis
 
-This repository contains synthesis systems from ESPNet adapted to be simpler and work with an intuitive python interface
-for training and inference. The goal of this implementation is to allow rapid prototyping and easy tweaks of way too
-complex systems.
+Toolkit to train state-of-the-art Speech Synthesis models. Everything is pure Python and PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
+
+The PyTorch Modules of TransformerTTS and FastSpeech2 are taken from https://github.com/espnet/espnet, the PyTorch Modules of MelGAN are taken from https://github.com/kan-bayashi/ParallelWaveGAN
 
 ## First Iteration TODOS
 
@@ -38,7 +38,7 @@ complex systems.
 | Prepare MelGAN multi-speaker dataset|✅|
 | Prepare Transformer multi-speaker dataset|✅|
 | Prepare FastSpeech multi-speaker dataset|✅|
-| Train MelGAN on multi-speaker dataset|🏗️|
+| Train MelGAN on multi-speaker dataset|✅|
 | Train Transformer on multi-speaker dataset|🏗️|
 | Train FastSpeech on multi-speaker dataset||
 
