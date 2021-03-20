@@ -79,7 +79,6 @@ def plot_attentions_best_head(atts, att_dir, step):
 def get_atts(model, lang, device, spemb):
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_sentence_type=False,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
     sentence = "Hello"

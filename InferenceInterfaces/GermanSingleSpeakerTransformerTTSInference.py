@@ -304,7 +304,6 @@ class GermanSingleSpeakerTransformerTTSInference:
     def __init__(self):
         self.text2phone = TextFrontend(language="de",
                                        use_panphon_vectors=False,
-                                       use_sentence_type=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
         self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None)

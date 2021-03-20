@@ -69,7 +69,6 @@ class TransformerTTSDataset(Dataset):
     def cache_builder_process(self, path_list, spemb, lang, min_len, max_len):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
-                          use_sentence_type=False,
                           use_word_boundaries=False,
                           use_explicit_eos=False)
         _, sr = sf.read(path_list[0])

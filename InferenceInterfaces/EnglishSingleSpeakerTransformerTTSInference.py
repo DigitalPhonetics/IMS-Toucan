@@ -310,7 +310,6 @@ class EnglishSingleSpeakerTransformerTTSInference(torch.nn.Module):
         self.device = device
         self.text2phone = TextFrontend(language="en",
                                        use_panphon_vectors=False,
-                                       use_sentence_type=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
         self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None).to(torch.device(device))

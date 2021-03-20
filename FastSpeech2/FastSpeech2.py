@@ -456,7 +456,6 @@ def show_spectrogram(sentence, model=None, lang="en"):
     import matplotlib.pyplot as plt
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_sentence_type=False,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
     fig, ax = plt.subplots()

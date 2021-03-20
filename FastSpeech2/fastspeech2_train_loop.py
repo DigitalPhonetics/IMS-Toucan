@@ -17,7 +17,6 @@ from Utility.WarmupScheduler import WarmupScheduler
 def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_plot):
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
-                      use_sentence_type=False,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
     sentence = "Hello"
