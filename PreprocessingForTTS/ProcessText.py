@@ -12,14 +12,12 @@ class TextFrontend:
     def __init__(self,
                  language,
                  use_panphon_vectors=True,
-                 use_sentence_type=True,
                  use_word_boundaries=False,
                  use_explicit_eos=False):
         """
         Mostly preparing ID lookups
         """
         self.use_panphon_vectors = use_panphon_vectors
-        self.use_sentence_type = use_sentence_type
         self.use_word_boundaries = use_word_boundaries
         self.use_explicit_eos = use_explicit_eos
 
@@ -27,11 +25,11 @@ class TextFrontend:
         # see publication: https://www.aclweb.org/anthology/C16-1328/
         self.ipa_to_vector = defaultdict()
         if use_panphon_vectors:
-            self.default_vector = [130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
-                                   130, 130, 130, 130, 130, 130, 130, 130, 130, 130,
-                                   130, 130, 130, 130, 130]
+            self.default_vector = [132, 132, 132, 132, 132, 132, 132, 132, 132, 132,
+                                   132, 132, 132, 132, 132, 132, 132, 132, 132, 132,
+                                   132, 132, 132, 132, 132]
         else:
-            self.default_vector = 130
+            self.default_vector = 132
         with open("PreprocessingForTTS/ipa_vector_lookup.csv", encoding='utf8') as f:
             features = f.read()
         features_list = features.split("\n")
@@ -42,8 +40,8 @@ class TextFrontend:
             else:
                 self.ipa_to_vector[line_list[0]] = index
                 # note: Index 0 is unused, so it can be used for padding as is convention.
-                #       Index 1 is EOS, if you want to use explicit EOS.
-                #       Index 130 is used for unknown characters
+                #       Index 1 is reserved for EOS, if you want to use explicit EOS.
+                #       Index 132 is used for unknown characters
                 #       Index 10 is used for pauses (heuristically)
 
         if language == "en":
@@ -76,7 +74,7 @@ class TextFrontend:
                                       preserve_punctuation=True,
                                       strip=True,
                                       with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
-            "--", ",").replace("\n", " ").replace("\t", " ").replace("!", ".").replace("?", ".")
+            "--", ",").replace("\n", " ").replace("\t", " ")
         if view:
             print("Phonemes: \n{}\n".format(phones))
 

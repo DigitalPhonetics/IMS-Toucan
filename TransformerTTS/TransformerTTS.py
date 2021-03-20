@@ -79,7 +79,7 @@ class Transformer(torch.nn.Module, ABC):
                  init_enc_alpha: float = 1.0,
                  use_masking: bool = False,  # either this or weighted masking
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 10.0,
+                 bce_pos_weight: float = 12.0,
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
@@ -532,7 +532,7 @@ class Transformer(torch.nn.Module, ABC):
 
 
 def build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt"):
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None).to("cpu")
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model

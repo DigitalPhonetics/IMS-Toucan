@@ -62,7 +62,7 @@ def plot_fastspeech_architecture():
     durations = torch.LongTensor([1, 2, 3, 4])
     pitch = torch.Tensor([1.0]).unsqueeze(0)
     energy = torch.Tensor([1.0]).unsqueeze(0)
-    model = FastSpeech2(idim=131, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
     out = model.inference(text=text,
                           speech=speech,
                           durations=durations,
@@ -76,7 +76,7 @@ def plot_fastspeech_architecture():
 def plot_transformertts_architecture():
     text = torch.LongTensor([1, 2, 3, 4])
     speech = torch.zeros(80, 50)
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
     out = model.inference(text=text,
                           speech=speech,
                           spembs=None,
@@ -228,13 +228,13 @@ def test_spectrogram_inversion(path_to_wav="Corpora/test.wav"):
 def show_all_models_params():
     from TransformerTTS.TransformerTTS import Transformer
     from FastSpeech2.FastSpeech2 import FastSpeech2
-    model = Transformer(idim=131, odim=80)
+    model = Transformer(idim=133, odim=80)
     print("Number of Parameters in Transformer without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = Transformer(idim=131, odim=80, spk_embed_dim=256)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=256)
     print("Number of Parameters in Transformer with speedy config: {}".format(count_parameters(model)))
-    model = FastSpeech2(idim=131, odim=80)
+    model = FastSpeech2(idim=133, odim=80)
     print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = FastSpeech2(idim=131, odim=80, spk_embed_dim=256)
+    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=256)
     print("Number of Parameters in FastSpeech2 with Speaker Embeddings: {}".format(count_parameters(model)))
 
 

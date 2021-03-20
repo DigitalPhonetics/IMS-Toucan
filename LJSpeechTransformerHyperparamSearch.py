@@ -289,7 +289,7 @@ if __name__ == '__main__':
                                       max_len=1000000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_5")
     if not os.path.exists(save_dir):
@@ -308,7 +308,7 @@ if __name__ == '__main__':
                warmup_steps=14000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_6")
     if not os.path.exists(save_dir):
@@ -327,7 +327,7 @@ if __name__ == '__main__':
                warmup_steps=9000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_7")
     if not os.path.exists(save_dir):
@@ -346,7 +346,7 @@ if __name__ == '__main__':
                warmup_steps=7000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_8")
     if not os.path.exists(save_dir):
@@ -363,30 +363,3 @@ if __name__ == '__main__':
                gradient_accumulation=1,
                lr=0.001,
                warmup_steps=4000)
-
-    print("\n\n\n\n INSANE LEARNING RATE TIME")
-    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
-
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_9")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=300000,  # just kill the process at some point
-               batchsize=64,
-               gradient_accumulation=1,
-               lr=1.0,
-               warmup_steps=25000)
-
-# EXPLORATION PLAN
-# High Batchsize (256)
-# Low Batchsize (64)
-# THEN: FIX BEST BATCH SIZE
-# Increase Learning Rate and Warmup Steps (0.1; 25000)
-# Check Learning Rate closely around 0.01 with 8000 Warmup Steps
-# Check different optimizers maybe, but don't waste time
