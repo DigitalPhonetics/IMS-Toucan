@@ -376,6 +376,25 @@ if __name__ == '__main__':
                lr=0.001,
                warmup_steps=4000)
 
+    print("\n\n\n\n INSANE LEARNING RATE TIME")
+    model = Transformer(idim=131, odim=80, spk_embed_dim=None)
+
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_9")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    train_loop(net=model,
+               train_dataset=train_set,
+               valid_dataset=valid_set,
+               device=torch.device("cuda:2"),
+               config=model.get_conf(),
+               save_directory=save_dir,
+               epochs=300000,  # just kill the process at some point
+               batchsize=64,
+               gradient_accumulation=1,
+               lr=1.0,
+               warmup_steps=25000)
+
 # EXPLORATION PLAN
 # High Batchsize (256)
 # Low Batchsize (64)
