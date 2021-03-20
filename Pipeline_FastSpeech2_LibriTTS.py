@@ -1,5 +1,5 @@
 """
-Train a non-autoregressive FastSpeech 2 model on the german single speaker dataset by Hokuspokus
+Train a non-autoregressive FastSpeech 2 model on the English multi speaker dataset LibriTTS
 
 This requires having a trained TransformerTTS model in the right directory to knowledge distill the durations.
 """

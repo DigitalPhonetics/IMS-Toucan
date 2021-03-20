@@ -1,5 +1,6 @@
 """
-Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech
+Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech together
+with the English multi speaker dataset LibriTTS
 """
 
 import os
