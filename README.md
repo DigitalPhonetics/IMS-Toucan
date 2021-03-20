@@ -6,10 +6,8 @@ The PyTorch Modules of TransformerTTS and FastSpeech2 are taken from https://git
 
 ## Dataset Support
 
-Pipelines are available for at least one synthesis system for the following datasets:
-
-| Dataset | Language | Single or Multi | MelGAN | TransformerTTS|FastSpeech2| 
-| --------|-----------|--------------------| :---:|:---:|:---:|
-| Hokuspokus| German | Single Speaker    | ✅ |✅ |✅ |
-| LJSpeech | English | Single Speaker    | ✅ |✅ |✅ |
-| LibriTTS | English | Multi Speaker     |  ✅ |✅ |✅ |
+| Dataset      | Language  | Single or Multi     | MelGAN | TransformerTTS | FastSpeech2 | 
+| -------------|-----------|---------------------| :-----:|:--------------:|:-----------:|
+| Hokuspokus   | German    | Single Speaker      | ✅     | ✅            | ✅          |
+| LJSpeech     | English   | Single Speaker      | ✅     | ✅            | ✅          |
+| LibriTTS     | English   | Multi Speaker       | ✅     | ✅            | ✅          |
