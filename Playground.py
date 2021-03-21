@@ -259,7 +259,6 @@ if __name__ == '__main__':
     # plot_transformertts_architecture()
     # plot_melgan_training()
     # test_spectrogram_inversion()
-    # show_att(lang="en", best_only=True, teacher_forcing=True)
-    read_texts(lang="en",
-               sentence="I am fairly good at producing unseen sentences now, but I still struggle with knowing when to stop.")
+    show_att(lang="en", best_only=True, teacher_forcing=True)
+    # read_texts(lang="en", sentence="I am fairly good at producing unseen sentences now, but I still struggle with knowing when to stop.")
     # show_specs(lang="en")
