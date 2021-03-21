@@ -125,7 +125,7 @@ def collate_and_pad(batch):
 
 def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                config, batchsize, epochs, gradient_accumulation,
-               epochs_per_save, spemb, lang):
+               epochs_per_save, spemb, lang, lr, warmup_steps):
     """
     :param lang: language for the sentence for attention plotting
     :param spemb: whether the dataset provides speaker embeddings
@@ -169,8 +169,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         conf.write(config)
     step_counter = 0
     net.train()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.1)
-    scheduler = WarmupScheduler(optimizer, warmup_steps=14000)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     start_time = time.time()
     for epoch in range(epochs):
         # train one epoch

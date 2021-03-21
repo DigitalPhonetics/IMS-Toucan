@@ -56,4 +56,6 @@ if __name__ == '__main__':
                gradient_accumulation=1,
                epochs_per_save=50,
                spemb=False,
-               lang="en")
+               lang="en",
+               lr=0.1,
+               warmup_steps=14000)
