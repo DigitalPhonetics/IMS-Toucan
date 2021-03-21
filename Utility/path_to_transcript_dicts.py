@@ -8,7 +8,8 @@ def build_path_to_transcript_dict_css10de():
             with open("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt/" + transcript_file, 'r',
                       encoding='utf8') as tf:
                 transcript = tf.read()
-            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(".txt")
+            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(
+                ".txt") + ".wav"
             path_to_transcript[wav_path] = transcript
     return path_to_transcript
 
