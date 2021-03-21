@@ -104,7 +104,7 @@ class FastSpeechDataset(Dataset):
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
                 if not spemb:
-                    cached_durations = dc(acoustic_model.inference(text=text,
+                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0),
                                                                    speech=melspec,
                                                                    use_teacher_forcing=True,
                                                                    spembs=None)[2])[0]
@@ -112,7 +112,7 @@ class FastSpeechDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_spemb = dvector.embed_utterance(mel_tensor)
-                    cached_durations = dc(acoustic_model.inference(text=text,
+                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0),
                                                                    speech=melspec,
                                                                    use_teacher_forcing=True,
                                                                    spembs=cached_spemb)[2])[0]
