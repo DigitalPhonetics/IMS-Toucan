@@ -124,8 +124,8 @@ def collate_and_pad(batch):
 
 
 def train_loop(net, train_dataset, valid_dataset, device, save_directory,
-               config, batchsize=10, epochs=150, gradient_accumulation=6,
-               epochs_per_save=60, spemb=False, lang="en"):
+               config, batchsize, epochs, gradient_accumulation,
+               epochs_per_save, spemb, lang):
     """
     :param lang: language for the sentence for attention plotting
     :param spemb: whether the dataset provides speaker embeddings

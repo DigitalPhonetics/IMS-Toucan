@@ -73,11 +73,12 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:3"),
+               device=torch.device("cuda:2"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=16,
-               gradient_accumulation=4,
+               batchsize=64,
+               gradient_accumulation=1,
                spemb=True,
-               epochs_per_save=20)
+               epochs_per_save=20,
+               lang="en")

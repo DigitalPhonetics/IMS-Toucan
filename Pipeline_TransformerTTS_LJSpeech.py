@@ -53,4 +53,7 @@ if __name__ == '__main__':
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
                batchsize=64,
-               gradient_accumulation=1)
+               gradient_accumulation=1,
+               epochs_per_save=50,
+               spemb=False,
+               lang="en")
