@@ -5,10 +5,10 @@ def build_path_to_transcript_dict_css10de():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):
         if transcript_file.endswith(".txt"):
-            with open("/mount/resources/speech/corpora//LibriVox.Hokuspokus/txt/" + transcript_file, 'r',
+            with open("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt/" + transcript_file, 'r',
                       encoding='utf8') as tf:
                 transcript = tf.read()
-            wav_path = "/mount/resources/speech/corpora//LibriVox.Hokuspokus/wav/" + transcript_file.split(".")[
+            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.split(".")[
                 0] + ".wav"
             path_to_transcript[wav_path] = transcript
     return path_to_transcript
