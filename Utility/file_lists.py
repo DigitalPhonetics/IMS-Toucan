@@ -3,9 +3,9 @@ import os
 
 def get_file_list_css10de():
     file_list = list()
-    for wav_file in os.listdir("/mount/resources/speech/corpora//LibriVox.Hokuspokus/wav"):
+    for wav_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav"):
         if ".wav" in wav_file:
-            file_list.append("/mount/resources/speech/corpora//LibriVox.Hokuspokus/wav/" + wav_file)
+            file_list.append("/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + wav_file)
     return file_list
 
 
