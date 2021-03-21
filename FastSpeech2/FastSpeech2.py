@@ -50,7 +50,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,
                  decoder_concat_after: bool = False,
-                 reduction_factor: int = 1,
+                 reduction_factor: int = 5,
                  # encoder / decoder
                  conformer_pos_enc_layer_type: str = "rel_pos",
                  conformer_self_attn_layer_type: str = "rel_selfattn",
