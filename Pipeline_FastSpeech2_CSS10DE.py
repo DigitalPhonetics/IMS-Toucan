@@ -17,8 +17,8 @@ from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10
 
 warnings.filterwarnings("ignore")
 
-torch.manual_seed(17)
-random.seed(17)
+torch.manual_seed(13)
+random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
