@@ -1,9 +1,10 @@
 import sys
 
-from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import EnglishSingleSpeakerTransformerTTSInference
+from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeakerTransformerTTSInference
 
 if __name__ == '__main__':
-    tts = EnglishSingleSpeakerTransformerTTSInference()
+    lang = input("Which language do you want? (currently supported 'en' and 'de')")
+    tts = SingleSpeakerTransformerTTSInference(lang="en")
     while True:
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":

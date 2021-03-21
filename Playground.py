@@ -11,8 +11,7 @@ import torchviz
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeech2 import show_spectrogram as fast_spec
-from InferenceInterfaces.EnglishSingleSpeakerTransformerTTSInference import EnglishSingleSpeakerTransformerTTSInference
-from InferenceInterfaces.GermanSingleSpeakerTransformerTTSInference import GermanSingleSpeakerTransformerTTSInference
+from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeakerTransformerTTSInference
 from MelGAN.MelGANGenerator import MelGANGenerator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from TransformerTTS.TransformerTTS import Transformer
@@ -52,20 +51,25 @@ def show_specs(lang="en"):
                   "devoid of an alimentary cavity.", lang=lang)
 
 
-def read_texts(lang="en"):
+def read_texts(lang="en", sentence=None):
+    tts = SingleSpeakerTransformerTTSInference(lang=lang)
     if lang == "de":
-        tts = GermanSingleSpeakerTransformerTTSInference()
-        tts.read_to_file(text_list=["Es war einmal – welcher "
-                                    "Autor darf es jetzt wohl "
-                                    "noch wagen, sein Geschichtlein "
-                                    "also zu beginnen."], file_location="test_de.wav")
+        if sentence is None:
+            tts.read_to_file(text_list=["Es war einmal – welcher "
+                                        "Autor darf es jetzt wohl "
+                                        "noch wagen, sein Geschichtlein "
+                                        "also zu beginnen."], file_location="test_de.wav")
+        else:
+            tts.read_to_file(text_list=[sentence], file_location="test_de.wav")
     elif lang == "en":
-        tts = EnglishSingleSpeakerTransformerTTSInference()
-        tts.read_to_file(text_list=[
-            "Many animals of even complex structure which "
-            "live parasitically within others are wholly "
-            "devoid of an alimentary cavity."],
-            file_location="test_en.wav")
+        if sentence is None:
+            tts.read_to_file(text_list=[
+                "Many animals of even complex structure which "
+                "live parasitically within others are wholly "
+                "devoid of an alimentary cavity."],
+                file_location="test_en.wav")
+        else:
+            tts.read_to_file(text_list=[sentence], file_location="test_en.wav")
 
 
 def plot_fastspeech_architecture():
@@ -255,6 +259,7 @@ if __name__ == '__main__':
     # plot_transformertts_architecture()
     # plot_melgan_training()
     # test_spectrogram_inversion()
-    show_att(lang="en", best_only=True, teacher_forcing=True)
-    read_texts(lang="en")
-    show_specs(lang="en")
+    # show_att(lang="en", best_only=True, teacher_forcing=True)
+    read_texts(lang="en",
+               sentence="I am fairly good at producing unseen sentences now, but I still struggle with knowing when to stop.")
+    # show_specs(lang="en")
