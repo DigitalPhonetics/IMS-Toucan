@@ -22,7 +22,7 @@ class FastSpeechDataset(Dataset):
                  acoustic_model_name,
                  spemb=False,
                  train=True,
-                 loading_processes=4,
+                 loading_processes=1,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len=50000,

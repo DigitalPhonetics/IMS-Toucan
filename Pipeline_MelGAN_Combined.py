@@ -54,6 +54,6 @@ if __name__ == '__main__':
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
+               device=torch.device("cuda:1"),
                generator_warmup_steps=100000,
                model_save_dir=model_save_dir)
