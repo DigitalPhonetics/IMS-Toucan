@@ -76,7 +76,8 @@ class Transformer(torch.nn.Module, ABC):
                  num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma: float = 0.3,
-                 guided_attn_loss_lambda: float = 15.0):
+                 guided_attn_loss_lambda: float = 15.0,
+                 lang="en"):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -168,8 +169,12 @@ class Transformer(torch.nn.Module, ABC):
         if self.use_guided_attn_loss:
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma,
                                                                alpha=guided_attn_loss_lambda)
-        self.load_state_dict(
-            torch.load(os.path.join("Models", "Use", "Transformer_English_Single.pt"), map_location='cpu')["model"])
+        if lang == "en":
+            self.load_state_dict(
+                torch.load(os.path.join("Models", "Use", "Transformer_English_Single.pt"), map_location='cpu')["model"])
+        elif lang == "de":
+            self.load_state_dict(
+                torch.load(os.path.join("Models", "Use", "Transformer_German_Single.pt"), map_location='cpu')["model"])
 
     def forward(self, text: torch.Tensor, spemb=None):
         self.eval()
@@ -312,7 +317,7 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
                                        use_panphon_vectors=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None).to(torch.device(device))
+        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, lang=lang).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
