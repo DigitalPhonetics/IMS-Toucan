@@ -3,7 +3,7 @@ import sys
 from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeakerTransformerTTSInference
 
 if __name__ == '__main__':
-    lang = input("Which language do you want? (currently supported 'en' and 'de')")
+    lang = input("Which language do you want? (currently supported 'en' and 'de')\n")
     tts = SingleSpeakerTransformerTTSInference(lang="en")
     while True:
         text = input("\nWhat should I say? (or 'exit')\n")
