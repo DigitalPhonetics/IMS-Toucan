@@ -3,12 +3,14 @@ import os
 
 def build_path_to_transcript_dict_css10de():
     path_to_transcript = dict()
-    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            path_to_transcript["Corpora/CSS10_DE/" + line.split("|")[0]] = line.split("|")[2]
+    for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):
+        if transcript_file.endswith(".txt"):
+            with open("/mount/resources/speech/corpora//LibriVox.Hokuspokus/txt/" + transcript_file, 'r',
+                      encoding='utf8') as tf:
+                transcript = tf.read()
+            wav_path = "/mount/resources/speech/corpora//LibriVox.Hokuspokus/wav/" + transcript_file.split(".")[
+                0] + ".wav"
+            path_to_transcript[wav_path] = transcript
     return path_to_transcript
 
 

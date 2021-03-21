@@ -3,12 +3,9 @@ import os
 
 def get_file_list_css10de():
     file_list = list()
-    with open("Corpora/CSS10_DE/transcript.txt", encoding="utf8") as f:
-        transcriptions = f.read()
-    trans_lines = transcriptions.split("\n")
-    for line in trans_lines:
-        if line.strip() != "":
-            file_list.append("Corpora/CSS10_DE/" + line.split("|")[0])
+    for wav_file in os.listdir("/mount/resources/speech/corpora//LibriVox.Hokuspokus/wav"):
+        if ".wav" in wav_file:
+            file_list.append("/mount/resources/speech/corpora//LibriVox.Hokuspokus/wav/" + wav_file)
     return file_list
 
 
