@@ -67,7 +67,7 @@ if __name__ == '__main__':
     train_set = ConcatDataset([train_set_libritts, train_set_ljspeech])
     valid_set = ConcatDataset([valid_set_libritts, valid_set_ljspeech])
 
-    model = Transformer(idim=133, odim=80, spk_embed_dim=256, reduction_factor=5)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=256)
 
     print("Training model")
     train_loop(net=model,
