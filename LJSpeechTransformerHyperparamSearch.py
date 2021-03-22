@@ -1,7 +1,10 @@
 """
 Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech
 """
+import os
 
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import random
 import warnings
 
@@ -17,7 +20,6 @@ torch.manual_seed(13)
 random.seed(13)
 
 import json
-import os
 import time
 
 import matplotlib.pyplot as plt
@@ -297,7 +299,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
+               device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
@@ -316,7 +318,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
+               device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
@@ -335,7 +337,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
+               device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
@@ -354,7 +356,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:2"),
+               device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point

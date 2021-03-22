@@ -8,6 +8,9 @@ so throwing together all datasets gives the best results.
 
 import gc
 import os
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import random
 import warnings
 
@@ -54,6 +57,6 @@ if __name__ == '__main__':
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:1"),
+               device=torch.device("cuda"),
                generator_warmup_steps=100000,
                model_save_dir=model_save_dir)

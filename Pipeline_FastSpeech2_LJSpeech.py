@@ -5,6 +5,9 @@ This requires having a trained TransformerTTS model in the right directory to kn
 """
 
 import os
+
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import random
 import warnings
 
@@ -31,7 +34,7 @@ if __name__ == '__main__':
 
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
-    device = torch.device("cuda:2")
+    device = torch.device("cuda")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
