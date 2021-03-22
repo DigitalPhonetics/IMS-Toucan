@@ -22,12 +22,13 @@ class FastSpeechDataset(Dataset):
                  acoustic_model_name,
                  spemb=False,
                  train=True,
-                 loading_processes=4,
+                 loading_processes=1,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len=50000,
                  max_len=230000,
-                 reduction_factor=5):
+                 reduction_factor=5,
+                 device=torch.device("cpu")):
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
@@ -53,7 +54,8 @@ class FastSpeechDataset(Dataset):
             for key_split in key_splits:
                 process_list.append(
                     Process(target=self.cache_builder_process,
-                            args=(key_split, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor),
+                            args=(
+                            key_split, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor, device),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -76,7 +78,15 @@ class FastSpeechDataset(Dataset):
                     self.datapoints = json.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor):
+    def cache_builder_process(self,
+                              path_list,
+                              acoustic_model_name,
+                              spemb,
+                              lang,
+                              min_len,
+                              max_len,
+                              reduction_factor,
+                              device):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_word_boundaries=False,
@@ -86,7 +96,7 @@ class FastSpeechDataset(Dataset):
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name)
+        acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio()
         energy_calc = EnergyCalculator()
@@ -105,18 +115,18 @@ class FastSpeechDataset(Dataset):
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
                 if not spemb:
-                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0),
-                                                                   speech=melspec,
+                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
+                                                                   speech=melspec.to(device),
                                                                    use_teacher_forcing=True,
-                                                                   spembs=None)[2])[0]
+                                                                   spembs=None)[2])[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_spemb = dvector.embed_utterance(mel_tensor)
-                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0),
-                                                                   speech=melspec,
+                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
+                                                                   speech=melspec.to(device),
                                                                    use_teacher_forcing=True,
-                                                                   spembs=cached_spemb)[2])[0]
+                                                                   spembs=cached_spemb.to(device))[2])[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,

@@ -31,20 +31,24 @@ if __name__ == '__main__':
 
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
+    device = torch.device("cuda:2")
+
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
                                   acoustic_model_name="Transformer_English_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len=0,
-                                  max_len=170000)
+                                  max_len=170000,
+                                  device=device)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="Transformer_English_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len=0,
-                                  max_len=170000)
+                                  max_len=170000,
+                                  device=device)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
@@ -52,7 +56,7 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cuda:1"),
+               device=device,
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
