@@ -39,7 +39,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_pl
 
 
 def collate_and_pad(batch):
-    if len(batch) == 7:
+    if len(batch[0]) == 7:
         # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch]
         texts = list()
         text_lens = list()
@@ -63,7 +63,7 @@ def collate_and_pad(batch):
                 pad_sequence(durations, batch_first=True),
                 pad_sequence(pitch, batch_first=True),
                 pad_sequence(energy, batch_first=True))
-    elif len(batch) == 8:
+    elif len(batch[0]) == 8:
         # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, spemb]
         texts = list()
         text_lens = list()

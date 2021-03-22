@@ -45,11 +45,6 @@ if __name__ == '__main__':
                                       min_len=0,
                                       max_len=1000000)
 
-    for index in range(len(valid_set)):
-        print(valid_set[index][0])
-        print(valid_set[index][1])
-        print("\n\n\n\n")
-
     model = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1)
 
     print("Training model")

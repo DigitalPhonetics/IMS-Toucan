@@ -4,7 +4,7 @@ Train an autoregressive Transformer TTS model on the German single speaker datas
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import random
 import warnings
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                                       max_len=1000000,
                                       cut_silences=True)
 
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1)
 
     print("Training model")
     train_loop(net=model,
@@ -56,9 +56,9 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=64,
-               gradient_accumulation=1,
-               epochs_per_save=20,
+               batchsize=16,
+               gradient_accumulation=4,
+               epochs_per_save=10,
                spemb=False,
                lang="de",
                lr=0.01,

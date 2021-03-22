@@ -84,7 +84,7 @@ class TransformerTTSDataset(Dataset):
             wave, _ = sf.read(path)
             if min_len < len(wave) < max_len:
                 print("Processing {} out of {}.".format(index, len(path_list)))
-                cached_text = tf.string_to_tensor(transcript).numpy().tolist()
+                cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
                 cached_text_lens = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
