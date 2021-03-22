@@ -29,7 +29,7 @@ class AudioPreprocessor:
         self.hop_length = hop_length
         self.n_fft = n_fft
         self.mel_buckets = melspec_buckets
-        self.vad = VoiceActivityDetection(sample_rate=input_sr)
+        self.vad = VoiceActivityDetection(sample_rate=input_sr)  # This needs heavy tweaking, depending of the data
         self.mu_encode = MuLawEncoding()
         self.mu_decode = MuLawDecoding()
         self.meter = pyln.Meter(input_sr)

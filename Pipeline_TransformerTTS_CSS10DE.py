@@ -2,9 +2,6 @@
 Train an autoregressive Transformer TTS model on the German single speaker dataset by Hokuspokus
 """
 import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-
 import random
 import warnings
 

@@ -2,9 +2,6 @@
 Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech
 """
 import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-
 import random
 import warnings
 
