@@ -100,11 +100,11 @@ class FastSpeechDataset(Dataset):
         dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
-        for path in path_list:
+        for index, path in enumerate(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, _ = sf.read(path)
             if min_len < len(wave) < max_len:
-                print("processing {}".format(path))
+                print("Processing {} out of {}.".format(index, len(path_list)))
                 norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
                 norm_wave_length = torch.LongTensor([len(norm_wave)])
                 melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
