@@ -54,8 +54,8 @@ if __name__ == '__main__':
                epochs=300000,  # just kill the process at some point
                batchsize=64,
                gradient_accumulation=1,
-               epochs_per_save=50,
+               epochs_per_save=30,
                spemb=False,
                lang="de",
-               lr=0.05,
-               warmup_steps=14000)
+               lr=0.01,
+               warmup_steps=8000)

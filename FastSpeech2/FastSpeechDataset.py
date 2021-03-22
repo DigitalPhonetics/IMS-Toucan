@@ -98,8 +98,8 @@ class FastSpeechDataset(Dataset):
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
-        dio = Dio()
-        energy_calc = EnergyCalculator()
+        dio = Dio(reduction_factor=reduction_factor)
+        energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for path in path_list:
             transcript = self.path_to_transcript_dict[path]
             wave, _ = sf.read(path)
