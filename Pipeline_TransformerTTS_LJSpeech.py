@@ -45,7 +45,7 @@ if __name__ == '__main__':
                                       min_len=0,
                                       max_len=1000000)
 
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1, adim=256, aheads=4)
 
     print("Training model")
     train_loop(net=model,
@@ -55,8 +55,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=32,
-               gradient_accumulation=2,
+               batchsize=64,
+               gradient_accumulation=1,
                epochs_per_save=50,
                spemb=False,
                lang="en",
