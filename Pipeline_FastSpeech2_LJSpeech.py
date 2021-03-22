@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
-    device = torch.device("cuda")
+    device = torch.device("cpu")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
