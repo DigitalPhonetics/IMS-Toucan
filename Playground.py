@@ -264,7 +264,8 @@ if __name__ == '__main__':
     # plot_melgan_training()
     # test_spectrogram_inversion()
     # show_att(lang="en", best_only=True, teacher_forcing=True)
-    # read_texts(lang="en", sentence="I am fairly good at producing unseen sentences now, but I still struggle with knowing when to stop.")
-    read_texts(lang="de", sentence="Ich kann noch nicht besonders sauber sprechen, aber man versteht mich.")
+    read_texts(lang="en",
+               sentence="I am fairly good at producing unseen sentences now, but I still struggle with knowing when to stop.")
+    # read_texts(lang="de", sentence="Hallo Welt, das hier ist ein ungesehener Satz.")
     # show_specs(lang="en")
     # show_specs(lang="de")
