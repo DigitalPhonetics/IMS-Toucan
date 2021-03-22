@@ -29,6 +29,7 @@ class FastSpeechDataset(Dataset):
                  max_len=230000,
                  reduction_factor=5,
                  device=torch.device("cpu")):
+        self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
@@ -41,7 +42,6 @@ class FastSpeechDataset(Dataset):
                     key_list = all_keys_ordered[:-100]
                 else:
                     key_list = all_keys_ordered[-100:]
-            self.spemb = spemb
             # build cache
             print("... building dataset cache ...")
             self.datapoints = ressource_manager.list()
