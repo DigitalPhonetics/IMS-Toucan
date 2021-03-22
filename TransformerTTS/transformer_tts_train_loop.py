@@ -200,10 +200,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                                      train_datapoint[3].to(device),
                                      train_datapoint[4].to(device))
                 train_losses_this_epoch.append(float(train_loss))
-            if gradient_accumulation == 1:
-                scaler.scale(train_loss).backward()
-            else:
-                (train_loss / gradient_accumulation).backward()
+            scaler.scale(train_loss / gradient_accumulation).backward()
             del train_loss
             grad_accum += 1
             if grad_accum % gradient_accumulation == 0:
@@ -212,11 +209,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 # update weights
                 # print("Step: {}".format(step_counter))
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-                if gradient_accumulation == 1:
-                    scaler.step(optimizer)
-                    scaler.update()
-                else:
-                    optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 scheduler.step()
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
