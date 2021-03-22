@@ -100,11 +100,7 @@ class EnergyCalculator(torch.nn.Module):
         return energy.unsqueeze(-1), energy_lengths
 
     def _average_by_duration(self, x: torch.Tensor, d: torch.Tensor):
-        print(x)
-        print(d)
-        print(len(x))
-        print(d.sum())
-        assert 0 <= len(x) - d.sum() < self.reduction_factor
+        assert 0 <= len(x) - d.sum() < len(x) / self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0)
                  for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]

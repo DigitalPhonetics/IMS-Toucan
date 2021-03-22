@@ -18,6 +18,7 @@ class MelGANDataset(Dataset):
         self.list_of_norm_waves = list()
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
         # hop length must be same as the product of the upscale factors
+        # also the resampling happens in the cache-building, so we must already assume 16kHz here.
         ressource_manager = Manager()
         self.list_of_norm_waves = ressource_manager.list()
         # make processes
