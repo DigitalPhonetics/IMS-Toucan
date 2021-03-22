@@ -74,7 +74,7 @@ def collate_and_pad(batch):
         energy = list()
         spembs = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).unsqueeze(0))
+            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
