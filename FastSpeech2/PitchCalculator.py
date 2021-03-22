@@ -27,7 +27,7 @@ class Dio(torch.nn.Module):
                  use_token_averaged_f0: bool = True,
                  use_continuous_f0: bool = True,
                  use_log_f0: bool = True,
-                 reduction_factor: int = 5):
+                 reduction_factor: int = 1):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
@@ -76,7 +76,6 @@ class Dio(torch.nn.Module):
 
         # (Optional): Average by duration to calculate token-wise f0
         if self.use_token_averaged_f0:
-            durations = durations * self.reduction_factor
             pitch = [self._average_by_duration(p, d).view(-1)
                      for p, d in zip(pitch, durations)]
             pitch_lengths = durations_lengths

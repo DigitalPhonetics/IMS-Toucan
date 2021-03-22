@@ -22,11 +22,12 @@ class FastSpeechDataset(Dataset):
                  acoustic_model_name,
                  spemb=False,
                  train=True,
-                 loading_processes=1,
+                 loading_processes=4,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len=50000,
-                 max_len=230000):
+                 max_len=230000,
+                 reduction_factor=5):
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)):
             ressource_manager = Manager()
@@ -52,7 +53,7 @@ class FastSpeechDataset(Dataset):
             for key_split in key_splits:
                 process_list.append(
                     Process(target=self.cache_builder_process,
-                            args=(key_split, acoustic_model_name, spemb, lang, min_len, max_len),
+                            args=(key_split, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -75,7 +76,7 @@ class FastSpeechDataset(Dataset):
                     self.datapoints = json.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len):
+    def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_word_boundaries=False,
@@ -86,7 +87,7 @@ class FastSpeechDataset(Dataset):
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name)
-        dc = DurationCalculator()
+        dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio()
         energy_calc = EnergyCalculator()
         for path in path_list:

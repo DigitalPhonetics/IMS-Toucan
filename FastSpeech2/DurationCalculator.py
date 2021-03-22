@@ -12,10 +12,11 @@ class DurationCalculator(torch.nn.Module):
     Duration calculator module.
     """
 
-    def __init__(self):
+    def __init__(self, reduction_factor):
         """
         Initialize duration calculator.
         """
+        self.reduction_factor = reduction_factor
         super().__init__()
 
     @torch.no_grad()
@@ -46,4 +47,4 @@ class DurationCalculator(torch.nn.Module):
         att_ws = att_ws[diagonal_head_idx]  # (L, T)
         # calculate duration from 2d attention weight
         durations = torch.stack([att_ws.argmax(-1).eq(i).sum() for i in range(att_ws.shape[1])])
-        return durations.view(-1)
+        return durations.view(-1) * self.reduction_factor
