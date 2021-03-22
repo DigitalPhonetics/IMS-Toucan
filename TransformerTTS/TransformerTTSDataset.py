@@ -20,7 +20,8 @@ class TransformerTTSDataset(Dataset):
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len=50000,
-                 max_len=230000):
+                 max_len=230000,
+                 cut_silences=False):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)):
@@ -43,7 +44,8 @@ class TransformerTTSDataset(Dataset):
                     key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process, args=(key_split, spemb, lang, min_len, max_len),
+                    Process(target=self.cache_builder_process,
+                            args=(key_split, spemb, lang, min_len, max_len, cut_silences),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -66,7 +68,7 @@ class TransformerTTSDataset(Dataset):
                     self.datapoints = json.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, spemb, lang, min_len, max_len):
+    def cache_builder_process(self, path_list, spemb, lang, min_len, max_len, cut_silences):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_word_boundaries=False,
@@ -75,7 +77,8 @@ class TransformerTTSDataset(Dataset):
         if spemb:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
+                               cut_silence=cut_silences)
         for index, path in enumerate(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, _ = sf.read(path)

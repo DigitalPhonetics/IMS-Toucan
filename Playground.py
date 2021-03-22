@@ -190,10 +190,13 @@ def count_parameters(net):
     return sum(p.numel() for p in net.parameters() if p.requires_grad)
 
 
-def sanity_check_audio_preprocessing(path_to_wav_folder):
-    path_list = os.listdir(path_to_wav_folder)
+def sanity_check_audio_preprocessing(path_to_wav_folder, cut_silence):
+    if not path_to_wav_folder.endswith("/"):
+        path_to_wav_folder = path_to_wav_folder + "/"
+    path_list = [x for x in os.listdir(path_to_wav_folder) if x.endswith(".wav")]
     _, sr = sf.read(path_to_wav_folder + path_list[0])
-    ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+    ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
+                           cut_silence=cut_silence)
     for path in path_list:
         wave, sr = sf.read(path_to_wav_folder + path)
         clean_wave = ap.normalize_audio(wave)
@@ -255,10 +258,11 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
+    sanity_check_audio_preprocessing("Corpora/CSS10_DE", cut_silence=True)
     # plot_fastspeech_architecture()
     # plot_transformertts_architecture()
     # plot_melgan_training()
     # test_spectrogram_inversion()
-    show_att(lang="en", best_only=True, teacher_forcing=True)
+    # show_att(lang="en", best_only=True, teacher_forcing=True)
     # read_texts(lang="en", sentence="I am fairly good at producing unseen sentences now, but I still struggle with knowing when to stop.")
     # show_specs(lang="en")

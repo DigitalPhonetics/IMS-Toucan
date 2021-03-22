@@ -4,7 +4,7 @@ from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeak
 
 if __name__ == '__main__':
     lang = input("Which language do you want? (currently supported 'en' and 'de')\n")
-    tts = SingleSpeakerTransformerTTSInference(lang="en")
+    tts = SingleSpeakerTransformerTTSInference(lang=lang)
     while True:
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":

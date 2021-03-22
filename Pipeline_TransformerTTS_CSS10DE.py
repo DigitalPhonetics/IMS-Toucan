@@ -1,8 +1,10 @@
 """
 Train an autoregressive Transformer TTS model on the German single speaker dataset by Hokuspokus
 """
-
 import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 import random
 import warnings
 
@@ -34,13 +36,15 @@ if __name__ == '__main__':
                                       cache_dir=cache_dir,
                                       lang="de",
                                       min_len=0,
-                                      max_len=1000000)
+                                      max_len=1000000,
+                                      cut_silences=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="de",
                                       min_len=0,
-                                      max_len=1000000)
+                                      max_len=1000000,
+                                      cut_silences=True)
 
     model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
@@ -54,8 +58,9 @@ if __name__ == '__main__':
                epochs=300000,  # just kill the process at some point
                batchsize=64,
                gradient_accumulation=1,
-               epochs_per_save=30,
+               epochs_per_save=20,
                spemb=False,
                lang="de",
                lr=0.01,
-               warmup_steps=8000)
+               warmup_steps=8000,
+               checkpoint="checkpoint_54511.pt")
