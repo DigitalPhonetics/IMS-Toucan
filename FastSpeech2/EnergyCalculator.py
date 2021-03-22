@@ -88,6 +88,7 @@ class EnergyCalculator(torch.nn.Module):
 
         # (Optional): Average by duration to calculate token-wise energy
         if self.use_token_averaged_energy:
+            durations = durations * self.reduction_factor
             energy = [self._average_by_duration(e[:el].view(-1), d) for e, el, d in
                       zip(energy, energy_lengths, durations)]
             energy_lengths = durations_lengths
@@ -100,10 +101,7 @@ class EnergyCalculator(torch.nn.Module):
         return energy.unsqueeze(-1), energy_lengths
 
     def _average_by_duration(self, x: torch.Tensor, d: torch.Tensor):
-        print((len(x) / self.reduction_factor))
-        print(d.sum())
-        print((len(x) / self.reduction_factor) - d.sum())
-        assert 0 <= (len(x) / self.reduction_factor) - d.sum() < self.reduction_factor
+        assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0)
                  for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]

@@ -135,10 +135,7 @@ class Dio(torch.nn.Module):
         return f0
 
     def _average_by_duration(self, x: torch.Tensor, d: torch.Tensor):
-        print((len(x) / self.reduction_factor))
-        print(d.sum())
-        print((len(x) / self.reduction_factor) - d.sum())
-        assert 0 <= (len(x) / self.reduction_factor) - d.sum() < self.reduction_factor
+        assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0)
                  if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0
