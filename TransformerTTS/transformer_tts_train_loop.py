@@ -173,7 +173,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
 
     if checkpoint is not None:
-        check_dict = torch.load(os.path.join(save_directory, checkpoint))
+        check_dict = torch.load(os.path.join(save_directory, checkpoint), map_location=device)
         optimizer.load_state_dict(check_dict["optimizer"])
         scaler.load_state_dict(check_dict["scaler"])
         step_counter = check_dict["step_counter"]
