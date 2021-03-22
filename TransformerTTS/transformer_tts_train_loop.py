@@ -186,6 +186,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         grad_accum = 0
         optimizer.zero_grad()
         train_losses_this_epoch = list()
+        collect_loss = 0
         for train_datapoint in train_loader:
             with autocast():
                 if not spemb:
@@ -200,10 +201,12 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                                      train_datapoint[3].to(device),
                                      train_datapoint[4].to(device))
                 train_losses_this_epoch.append(float(train_loss))
-            scaler.scale((train_loss / gradient_accumulation)).backward()
+                collect_loss += train_loss / gradient_accumulation
             del train_loss
             grad_accum += 1
             if grad_accum % gradient_accumulation == 0:
+                scaler.scale(collect_loss).backward()
+                collect_loss = 0
                 grad_accum = 0
                 step_counter += 1
                 # update weights

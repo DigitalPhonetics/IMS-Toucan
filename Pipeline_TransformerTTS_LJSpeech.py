@@ -1,8 +1,10 @@
 """
 Train an autoregressive Transformer TTS model on the English single speaker dataset LJSpeech
 """
-
 import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 import random
 import warnings
 
@@ -52,8 +54,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=64,
-               gradient_accumulation=1,
+               batchsize=16,
+               gradient_accumulation=4,
                epochs_per_save=50,
                spemb=False,
                lang="en",
