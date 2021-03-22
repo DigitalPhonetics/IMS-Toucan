@@ -37,7 +37,7 @@ if __name__ == '__main__':
     device = torch.device("cuda")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
-                                  train=True,
+                                  train=False,
                                   acoustic_model_name="Transformer_English_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="en",
@@ -52,6 +52,10 @@ if __name__ == '__main__':
                                   min_len=0,
                                   max_len=170000,
                                   device=device)
+
+    for index in range(len(valid_set)):
+        print(train_set[index])
+        print("\n\n\n")
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 

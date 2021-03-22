@@ -33,7 +33,7 @@ if __name__ == '__main__':
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
+                                      train=True,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
@@ -45,7 +45,7 @@ if __name__ == '__main__':
                                       min_len=0,
                                       max_len=1000000)
 
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1, adim=128, aheads=4)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1)
 
     print("Training model")
     train_loop(net=model,
