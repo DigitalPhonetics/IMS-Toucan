@@ -21,7 +21,9 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
-from Utility.file_lists import get_file_list_css10de, get_file_list_libritts, get_file_list_ljspeech
+from Utility.file_lists import get_file_list_ljspeech, get_file_list_css10ge, get_file_list_css10gr, \
+    get_file_list_css10es, get_file_list_css10fi, get_file_list_css10ru, get_file_list_css10hu, get_file_list_css10du, \
+    get_file_list_css10jp, get_file_list_css10ch, get_file_list_css10fr
 
 warnings.filterwarnings("ignore")
 
@@ -34,15 +36,61 @@ if __name__ == '__main__':
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-300])
-    valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-300:])
     train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100])
     valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:])
-    train_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[:-100])
-    valid_set_css10de = MelGANDataset(list_of_paths=get_file_list_css10de()[-100:])
 
-    train_set = ConcatDataset([train_set_libri, train_set_lj, train_set_css10de])
-    valid_set = ConcatDataset([valid_set_libri, valid_set_lj, valid_set_css10de])
+    train_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[:-100])
+    valid_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[-100:])
+
+    train_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[:-100])
+    valid_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[-100:])
+
+    train_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[:-100])
+    valid_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[-100:])
+
+    train_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[:-100])
+    valid_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[-100:])
+
+    train_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[:-100])
+    valid_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[-100:])
+
+    train_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[:-100])
+    valid_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[-100:])
+
+    train_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[:-100])
+    valid_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[-100:])
+
+    train_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[:-100])
+    valid_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[-100:])
+
+    train_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[:-100])
+    valid_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[-100:])
+
+    train_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[:-100])
+    valid_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[-100:])
+
+    train_set = ConcatDataset([train_set_lj,
+                               train_set_css10ge,
+                               train_set_css10gr,
+                               train_set_css10es,
+                               train_set_css10fi,
+                               train_set_css10ru,
+                               train_set_css10hu,
+                               train_set_css10du,
+                               train_set_css10jp,
+                               train_set_css10ch,
+                               train_set_css10fr])
+    valid_set = ConcatDataset([valid_set_lj,
+                               valid_set_css10ge,
+                               valid_set_css10gr,
+                               valid_set_css10es,
+                               valid_set_css10fi,
+                               valid_set_css10ru,
+                               valid_set_css10hu,
+                               valid_set_css10du,
+                               valid_set_css10jp,
+                               valid_set_css10ch,
+                               valid_set_css10fr])
 
     gc.collect()
 
