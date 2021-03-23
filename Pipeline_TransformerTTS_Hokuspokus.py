@@ -37,14 +37,14 @@ if __name__ == '__main__':
                                       lang="de",
                                       min_len=0,
                                       max_len=1000000,
-                                      rebuild_cache=True)
+                                      rebuild_cache=False)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="de",
                                       min_len=0,
                                       max_len=1000000,
-                                      rebuild_cache=True)
+                                      rebuild_cache=False)
 
     model = Transformer(idim=134, odim=80, spk_embed_dim=None, reduction_factor=1)
 
@@ -56,8 +56,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=12,
-               gradient_accumulation=6,
+               batchsize=8,
+               gradient_accumulation=8,
                epochs_per_save=10,
                spemb=False,
                lang="de",
