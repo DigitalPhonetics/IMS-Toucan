@@ -62,5 +62,4 @@ if __name__ == '__main__':
                spemb=False,
                lang="de",
                lr=0.01,
-               warmup_steps=8000,
-               checkpoint="checkpoint_54511.pt")
+               warmup_steps=8000)
