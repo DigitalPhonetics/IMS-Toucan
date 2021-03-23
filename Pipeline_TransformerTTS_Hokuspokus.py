@@ -56,8 +56,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=8,
-               gradient_accumulation=8,
+               batchsize=12,
+               gradient_accumulation=6,
                epochs_per_save=10,
                spemb=False,
                lang="de",
