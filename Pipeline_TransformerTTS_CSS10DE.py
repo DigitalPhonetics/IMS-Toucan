@@ -23,7 +23,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "CSS10_DE")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "CSS10_DE")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "CSS10_DE_no_red")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -56,8 +56,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=2,
-               gradient_accumulation=32,
+               batchsize=8,
+               gradient_accumulation=8,
                epochs_per_save=10,
                spemb=False,
                lang="de",

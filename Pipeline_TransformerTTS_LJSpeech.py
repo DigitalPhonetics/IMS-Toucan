@@ -24,7 +24,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_no_red")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
+                                      train=True,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
@@ -55,8 +55,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=2,
-               gradient_accumulation=32,
+               batchsize=8,
+               gradient_accumulation=8,
                epochs_per_save=10,
                spemb=False,
                lang="en",
