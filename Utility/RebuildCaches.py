@@ -12,7 +12,7 @@ import torch
 
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech, \
-    build_path_to_transcript_dict_css10de, build_path_to_transcript_dict_libritts
+    build_path_to_transcript_dict_hokuspokus, build_path_to_transcript_dict_libritts
 
 warnings.filterwarnings("ignore")
 
@@ -35,7 +35,7 @@ def rebuild_caches():
     # build all of the dicts that need to be cached
     path_to_transcript_dict_lj = build_path_to_transcript_dict_ljspeech()
     path_to_transcript_dict_libri = build_path_to_transcript_dict_libritts()
-    path_to_transcript_dict_css10de = build_path_to_transcript_dict_css10de()
+    path_to_transcript_dict_css10de = build_path_to_transcript_dict_hokuspokus()
 
     # remove any existing caches
     train_cache = "trans_train_cache.json"

@@ -24,7 +24,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_no_red")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -37,13 +37,15 @@ if __name__ == '__main__':
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
-                                      max_len=1000000)
+                                      max_len=1000000,
+                                      rebuild_cache=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len=0,
-                                      max_len=1000000)
+                                      max_len=1000000,
+                                      rebuild_cache=True)
 
     model = Transformer(idim=134, odim=80, spk_embed_dim=None, reduction_factor=1)
 

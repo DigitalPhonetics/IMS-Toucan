@@ -15,21 +15,21 @@ from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop
 
 warnings.filterwarnings("ignore")
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus
 
 torch.manual_seed(13)
 random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "CSS10_DE")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "CSS10_DE_no_red")
+    cache_dir = os.path.join("Corpora", "Hokuspokus")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "Hokuspokus")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
+    path_to_transcript_dict = build_path_to_transcript_dict_hokuspokus()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
@@ -37,14 +37,14 @@ if __name__ == '__main__':
                                       lang="de",
                                       min_len=0,
                                       max_len=1000000,
-                                      cut_silences=True)
+                                      rebuild_cache=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="de",
                                       min_len=0,
                                       max_len=1000000,
-                                      cut_silences=True)
+                                      rebuild_cache=True)
 
     model = Transformer(idim=134, odim=80, spk_embed_dim=None, reduction_factor=1)
 

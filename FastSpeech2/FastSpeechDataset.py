@@ -28,10 +28,12 @@ class FastSpeechDataset(Dataset):
                  min_len=50000,
                  max_len=230000,
                  reduction_factor=1,
-                 device=torch.device("cpu")):
+                 device=torch.device("cpu"),
+                 rebuild_cache=False):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
-                (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)):
+                (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or \
+                rebuild_cache:
             ressource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
             if type(train) is str:

@@ -16,7 +16,7 @@ import torch
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus
 
 warnings.filterwarnings("ignore")
 
@@ -25,14 +25,14 @@ random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "CSS10_DE")
-    save_dir = os.path.join("Models", "FastSpeech2", "SingleSpeaker", "CSS10_DE")
+    cache_dir = os.path.join("Corpora", "Hokuspokus")
+    save_dir = os.path.join("Models", "FastSpeech2", "SingleSpeaker", "Hokuspokus")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
+    path_to_transcript_dict = build_path_to_transcript_dict_hokuspokus()
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,

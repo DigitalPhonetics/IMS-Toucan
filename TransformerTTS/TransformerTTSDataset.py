@@ -21,10 +21,12 @@ class TransformerTTSDataset(Dataset):
                  lang="de",
                  min_len=50000,
                  max_len=230000,
-                 cut_silences=False):
+                 cut_silences=False,
+                 rebuild_cache=False):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
-                (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)):
+                (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)) or \
+                rebuild_cache:
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
             all_keys_ordered = list(self.path_to_transcript_dict.keys())

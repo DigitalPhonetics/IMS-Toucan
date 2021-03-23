@@ -1,7 +1,7 @@
 import os
 
 
-def build_path_to_transcript_dict_css10de():
+def build_path_to_transcript_dict_hokuspokus():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):
         if transcript_file.endswith(".txt"):

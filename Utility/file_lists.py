@@ -1,7 +1,7 @@
 import os
 
 
-def get_file_list_css10de():
+def get_file_list_hokuspokus():
     file_list = list()
     for wav_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav"):
         if ".wav" in wav_file:
