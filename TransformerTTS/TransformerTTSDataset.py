@@ -19,8 +19,8 @@ class TransformerTTSDataset(Dataset):
                  loading_processes=4,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
-                 min_len=50000,
-                 max_len=230000,
+                 min_len=1,
+                 max_len=20,
                  cut_silences=False,
                  rebuild_cache=False):
         self.spemb = spemb
@@ -83,8 +83,8 @@ class TransformerTTSDataset(Dataset):
                                cut_silence=cut_silences)
         for index, path in enumerate(path_list):
             transcript = self.path_to_transcript_dict[path]
-            wave, _ = sf.read(path)
-            if min_len < len(wave) < max_len:
+            wave, sr = sf.read(path)
+            if min_len < len(wave) / sr < max_len:
                 print("Processing {} out of {}.".format(index, len(path_list)))
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
                 cached_text_lens = len(cached_text)

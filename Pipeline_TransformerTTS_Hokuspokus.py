@@ -10,10 +10,6 @@ import warnings
 
 import torch
 
-from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from TransformerTTS.transformer_tts_train_loop import train_loop
-
 warnings.filterwarnings("ignore")
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus
 
@@ -30,6 +26,17 @@ if __name__ == '__main__':
         os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict_hokuspokus()
+    import soundfile as sf
+
+    lens = list()
+    for path in path_to_transcript_dict:
+        wave, sr = sf.read(path)
+        lens.append(len(wave) / sr)
+    lens.sort()
+    print(lens)
+    import sys
+
+    sys.exit()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
