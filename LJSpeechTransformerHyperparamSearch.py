@@ -290,7 +290,7 @@ if __name__ == '__main__':
                                       max_len=1000000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_5")
     if not os.path.exists(save_dir):
@@ -309,7 +309,7 @@ if __name__ == '__main__':
                warmup_steps=14000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_6")
     if not os.path.exists(save_dir):
@@ -328,7 +328,7 @@ if __name__ == '__main__':
                warmup_steps=9000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_7")
     if not os.path.exists(save_dir):
@@ -347,7 +347,7 @@ if __name__ == '__main__':
                warmup_steps=7000)
 
     print("\n\n\n\n")
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
 
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_8")
     if not os.path.exists(save_dir):

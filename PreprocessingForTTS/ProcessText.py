@@ -13,7 +13,8 @@ class TextFrontend:
                  language,
                  use_panphon_vectors=True,
                  use_word_boundaries=False,
-                 use_explicit_eos=False):
+                 use_explicit_eos=False,
+                 path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv"):
         """
         Mostly preparing ID lookups
         """
@@ -25,12 +26,12 @@ class TextFrontend:
         # see publication: https://www.aclweb.org/anthology/C16-1328/
         self.ipa_to_vector = defaultdict()
         if use_panphon_vectors:
-            self.default_vector = [132, 132, 132, 132, 132, 132, 132, 132, 132, 132,
-                                   132, 132, 132, 132, 132, 132, 132, 132, 132, 132,
-                                   132, 132, 132, 132, 132]
+            self.default_vector = [133, 133, 133, 133, 133, 133, 133, 133, 133, 133,
+                                   133, 133, 133, 133, 133, 133, 133, 133, 133, 133,
+                                   133, 133, 133, 133, 133]
         else:
-            self.default_vector = 132
-        with open("PreprocessingForTTS/ipa_vector_lookup.csv", encoding='utf8') as f:
+            self.default_vector = 133
+        with open(path_to_panphon_table, encoding='utf8') as f:
             features = f.read()
         features_list = features.split("\n")
         for index in range(1, len(features_list)):
@@ -41,7 +42,7 @@ class TextFrontend:
                 self.ipa_to_vector[line_list[0]] = index
                 # note: Index 0 is unused, so it can be used for padding as is convention.
                 #       Index 1 is reserved for EOS, if you want to use explicit EOS.
-                #       Index 132 is used for unknown characters
+                #       Index 133 is used for unknown characters
                 #       Index 10 is used for pauses (heuristically)
 
         if language == "en":
@@ -66,6 +67,11 @@ class TextFrontend:
         if self.clean_lang == "en":
             utt = english_text_expansion(utt)
 
+        # if an aligner has produced silence tokens before, turn
+        # them into silence markers now so that they survive the
+        # phonemizer:
+        utt = utt.replace("_SIL_", "~")
+
         # phonemize
         phones = phonemizer.phonemize(utt,
                                       language_switch='remove-flags',
@@ -73,8 +79,9 @@ class TextFrontend:
                                       language=self.g2p_lang,
                                       preserve_punctuation=True,
                                       strip=True,
+                                      punctuation_marks=';:,.!?¡¿—…"«»“”~',
                                       with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
-            "--", ",").replace("\n", " ").replace("\t", " ")
+            "--", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace("¿", "?")
         if view:
             print("Phonemes: \n{}\n".format(phones))
 
@@ -131,3 +138,21 @@ def english_text_expansion(text):
     for regex, replacement in _abbreviations:
         text = re.sub(regex, replacement, text)
     return text
+
+
+if __name__ == '__main__':
+    # test an English utterance
+    tfr_en = TextFrontend(language="en",
+                          use_panphon_vectors=False,
+                          use_word_boundaries=False,
+                          use_explicit_eos=False,
+                          path_to_panphon_table="ipa_vector_lookup.csv")
+    print(tfr_en.string_to_tensor("Hello world _SIL_ this is a test!", view=True))
+
+    # test a German utterance
+    tfr_de = TextFrontend(language="de",
+                          use_panphon_vectors=False,
+                          use_word_boundaries=False,
+                          use_explicit_eos=False,
+                          path_to_panphon_table="ipa_vector_lookup.csv")
+    print(tfr_de.string_to_tensor("Hallo Welt _SIL_ dies ist ein test!", view=True))

@@ -27,7 +27,7 @@ class FastSpeechDataset(Dataset):
                  lang="de",
                  min_len=50000,
                  max_len=230000,
-                 reduction_factor=5,
+                 reduction_factor=1,
                  device=torch.device("cpu")):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (

@@ -51,7 +51,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
                  decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor: int = 5,
+                 reduction_factor=1,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
@@ -317,7 +317,7 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
                                        use_panphon_vectors=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, lang=lang).to(torch.device(device))
+        self.phone2mel = Transformer(idim=134, odim=80, spk_embed_dim=None, lang=lang).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
