@@ -39,15 +39,15 @@ if __name__ == '__main__':
                                   acoustic_model_name="Transformer_German_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="de",
-                                  min_len=50000,
-                                  max_len=230000)
+                                  min_len_in_seconds=1,
+                                  max_len_in_seconds=17)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="Transformer_German_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="de",
-                                  min_len=50000,
-                                  max_len=230000)
+                                  min_len_in_seconds=1,
+                                  max_len_in_seconds=17)
 
     model = FastSpeech2(idim=134, odim=80, spk_embed_dim=None)
 

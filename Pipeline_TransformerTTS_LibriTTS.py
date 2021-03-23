@@ -36,15 +36,15 @@ if __name__ == '__main__':
                                       train=True,
                                       cache_dir=cache_dir,
                                       lang="en",
-                                      min_len=10000,
-                                      max_len=400000,
+                                      min_len_in_seconds=1,
+                                      max_len_in_seconds=17,
                                       spemb=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
-                                      min_len=10000,
-                                      max_len=400000,
+                                      min_len_in_seconds=1,
+                                      max_len_in_seconds=17,
                                       spemb=True)
 
     model = Transformer(idim=134, odim=80, spk_embed_dim=256)

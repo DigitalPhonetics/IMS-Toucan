@@ -25,8 +25,8 @@ class FastSpeechDataset(Dataset):
                  loading_processes=4,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
-                 min_len=50000,
-                 max_len=230000,
+                 min_len_in_seconds=1,
+                 max_len_in_seconds=20,
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False):
@@ -57,7 +57,9 @@ class FastSpeechDataset(Dataset):
                 process_list.append(
                     Process(target=self.cache_builder_process,
                             args=(
-                            key_split, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor, device),
+                                key_split, acoustic_model_name, spemb, lang, min_len_in_seconds, max_len_in_seconds,
+                                reduction_factor,
+                                device),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -104,8 +106,8 @@ class FastSpeechDataset(Dataset):
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for index, path in enumerate(path_list):
             transcript = self.path_to_transcript_dict[path]
-            wave, _ = sf.read(path)
-            if min_len < len(wave) < max_len:
+            wave, sr = sf.read(path)
+            if min_len <= len(wave) / sr <= max_len:
                 print("Processing {} out of {}.".format(index, len(path_list)))
                 norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
                 norm_wave_length = torch.LongTensor([len(norm_wave)])

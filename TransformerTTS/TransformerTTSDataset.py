@@ -19,8 +19,8 @@ class TransformerTTSDataset(Dataset):
                  loading_processes=4,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
-                 min_len=1,
-                 max_len=20,
+                 min_len_in_seconds=1,
+                 max_len_in_seconds=20,
                  cut_silences=False,
                  rebuild_cache=False):
         self.spemb = spemb
@@ -47,7 +47,7 @@ class TransformerTTSDataset(Dataset):
             for key_split in key_splits:
                 process_list.append(
                     Process(target=self.cache_builder_process,
-                            args=(key_split, spemb, lang, min_len, max_len, cut_silences),
+                            args=(key_split, spemb, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:

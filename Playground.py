@@ -4,6 +4,7 @@ A place for demos, visualizations and sanity checks
 
 import os
 
+import matplotlib.pyplot as plt
 import sounddevice
 import soundfile as sf
 import torch
@@ -242,6 +243,16 @@ def test_spectrogram_inversion(path_to_wav="Corpora/test.wav"):
     plt.show()
     sf.write("audio_orig.wav", data=clean_wave.detach().numpy(), samplerate=16000)
     sf.write("audio_reconstructed.wav", data=reconstructed_wave.detach().numpy(), samplerate=16000)
+
+
+def show_audio_lens_in_dataset(path_list):
+    lens = list()
+    for path in path_list:
+        wave, sr = sf.read(path)
+        lens.append(round(len(wave) / sr))
+    lens.sort()
+    plt.hist(lens)
+    plt.show()
 
 
 def show_all_models_params():
