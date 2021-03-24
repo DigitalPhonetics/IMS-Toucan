@@ -61,7 +61,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
                  decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=1,
+                 reduction_factor=2,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
@@ -86,7 +86,7 @@ class Transformer(torch.nn.Module, ABC):
                  num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma: float = 0.3,
-                 guided_attn_loss_lambda: float = 15.0):
+                 guided_attn_loss_lambda: float = 20.0):
         """Initialize Transformer module."""
         super().__init__()
 

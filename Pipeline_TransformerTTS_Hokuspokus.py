@@ -8,7 +8,7 @@ from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import random
 import warnings
 
@@ -56,10 +56,10 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=300000,  # just kill the process at some point
-               batchsize=8,
-               gradient_accumulation=8,
+               batchsize=12,
+               gradient_accumulation=6,
                epochs_per_save=10,
                spemb=False,
-               lang="de",
-               lr=0.001,
-               warmup_steps=14000)
+               lang="en",
+               lr=0.0005,
+               warmup_steps=8000)

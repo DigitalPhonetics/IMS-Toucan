@@ -55,74 +55,13 @@ if __name__ == '__main__':
                device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
-               epochs=100,
+               epochs=42,
                batchsize=14,
                gradient_accumulation=5,
                epochs_per_save=10,
                spemb=False,
                lang="en",
                lr=0.0005,
-               warmup_steps=8000,
-               checkpoint="checkpoint_2035.pt")
-
-    ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "lr0001")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=100,
-               batchsize=14,
-               gradient_accumulation=5,
-               epochs_per_save=10,
-               spemb=False,
-               lang="en",
-               lr=0.0001,
-               warmup_steps=8000)
-
-    #######################################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "lr005")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=100,
-               batchsize=14,
-               gradient_accumulation=5,
-               epochs_per_save=10,
-               spemb=False,
-               lang="en",
-               lr=0.005,
-               warmup_steps=8000)
-
-    ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "lr01")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=100,
-               batchsize=14,
-               gradient_accumulation=5,
-               epochs_per_save=10,
-               spemb=False,
-               lang="en",
-               lr=0.01,
                warmup_steps=8000)
 
     ############################################################################
@@ -136,31 +75,11 @@ if __name__ == '__main__':
                device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
-               epochs=100,
+               epochs=42,
                batchsize=14,
                gradient_accumulation=5,
                epochs_per_save=10,
                spemb=False,
                lang="en",
-               lr=0.001,
-               warmup_steps=8000)
-
-    ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "red2")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None, reduction_factor=2)
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=100,
-               batchsize=14,
-               gradient_accumulation=5,
-               epochs_per_save=10,
-               spemb=False,
-               lang="en",
-               lr=0.001,
+               lr=0.0005,
                warmup_steps=8000)

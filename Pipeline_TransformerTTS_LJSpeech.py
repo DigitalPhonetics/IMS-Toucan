@@ -4,7 +4,7 @@ Train an autoregressive Transformer TTS model on the English single speaker data
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import random
 import warnings
@@ -62,5 +62,5 @@ if __name__ == '__main__':
                epochs_per_save=10,
                spemb=False,
                lang="en",
-               lr=0.001,
-               warmup_steps=14000)
+               lr=0.0005,
+               warmup_steps=8000)
