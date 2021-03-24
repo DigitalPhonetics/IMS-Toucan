@@ -45,10 +45,16 @@ if __name__ == '__main__':
                                       rebuild_cache=False)
 
     ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "soobienso")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "allconstrained")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None, decoder_concat_after=True, aheads=4)
+    model = Transformer(idim=134,
+                        odim=80,
+                        spk_embed_dim=None,
+                        decoder_concat_after=True,
+                        aheads=4,
+                        num_heads_applied_guided_attn=-1,
+                        num_layers_applied_guided_attn=-1)
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
@@ -56,8 +62,8 @@ if __name__ == '__main__':
                config=model.get_conf(),
                save_directory=save_dir,
                epochs=42,
-               batchsize=14,
-               gradient_accumulation=3,
+               batchsize=32,
+               gradient_accumulation=1,
                epochs_per_save=10,
                spemb=False,
                lang="en",
