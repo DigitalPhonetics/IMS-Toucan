@@ -45,10 +45,10 @@ if __name__ == '__main__':
                                       rebuild_cache=False)
 
     ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "decoder_concat")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "soobienso")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None, decoder_concat_after=True)
+    model = Transformer(idim=134, odim=80, spk_embed_dim=None, decoder_concat_after=True, aheads=4)
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
@@ -57,29 +57,9 @@ if __name__ == '__main__':
                save_directory=save_dir,
                epochs=42,
                batchsize=14,
-               gradient_accumulation=5,
+               gradient_accumulation=3,
                epochs_per_save=10,
                spemb=False,
                lang="en",
                lr=0.001,
-               warmup_steps=12000)
-
-    ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "espnet_setts")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None, init_type="xavier_uniform")
-    train_loop(net=model,
-               train_dataset=train_set,
-               valid_dataset=valid_set,
-               device=torch.device("cuda"),
-               config=model.get_conf(),
-               save_directory=save_dir,
-               epochs=42,
-               batchsize=14,
-               gradient_accumulation=10,
-               epochs_per_save=10,
-               spemb=False,
-               lang="en",
-               lr=1.0,
-               warmup_steps=12000)
+               warmup_steps=4000)
