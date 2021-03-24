@@ -19,14 +19,14 @@ def plot_attentions_all_heads(atts, att_dir, step):
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.transpose(0, 1).detach().numpy(),
+        axes[index][0].imshow(att.detach().numpy(),
                               interpolation='nearest',
                               aspect='auto',
                               origin="lower")
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.transpose(0, 1).detach().numpy(),
+        axes[index][1].imshow(att.detach().numpy(),
                               interpolation='nearest',
                               aspect='auto',
                               origin="lower")
@@ -44,7 +44,7 @@ def plot_attentions_best_head(atts, att_dir, step):
     # plot most diagonal attention head individually
     most_diagonal_att = select_best_att_head(atts)
     plt.figure(figsize=(8, 4))
-    plt.imshow(most_diagonal_att.transpose(0, 1).detach().numpy(),
+    plt.imshow(most_diagonal_att.detach().numpy(),
                interpolation='nearest',
                aspect='auto',
                origin="lower")

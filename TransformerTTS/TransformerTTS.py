@@ -570,7 +570,7 @@ def select_best_att_head(att_ws):
 def plot_attention(att, sentence=None):
     import matplotlib.pyplot as plt
     plt.figure(figsize=(8, 4))
-    plt.imshow(att.transpose(0, 1).detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     plt.xlabel("Outputs")
     plt.ylabel("Inputs")
     if sentence is not None:
@@ -585,12 +585,12 @@ def plot_attentions(atts):
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.transpose(0, 1).detach().numpy(), interpolation='nearest', aspect='auto',
+        axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
                               origin="lower")
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.transpose(0, 1).detach().numpy(), interpolation='nearest', aspect='auto',
+        axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
                               origin="lower")
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)
