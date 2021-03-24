@@ -56,7 +56,7 @@ def train_loop(batchsize=16,
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
-                              num_workers=16,
+                              num_workers=4,
                               pin_memory=False,
                               drop_last=True,
                               prefetch_factor=4,
@@ -100,6 +100,7 @@ def train_loop(batchsize=16,
 
             gold_wave = datapoint[0].to(device)
             melspec = datapoint[1].to(device)
+            del datapoint
             pred_wave = g(melspec)
             spectral_loss, magnitude_loss = criterion(pred_wave.squeeze(1), gold_wave)
             train_losses_this_epoch["multi_res_spectral_convergence"].append(float(spectral_loss))
@@ -164,6 +165,7 @@ def train_loop(batchsize=16,
             for datapoint in valid_loader:
                 gold_wave = datapoint[0].to(device)
                 melspec = datapoint[1].to(device)
+                del datapoint
                 pred_wave = g(melspec)
                 spectral_loss, magnitude_loss = criterion(pred_wave.squeeze(1), gold_wave)
                 valid_losses_this_epoch["multi_res_spectral_convergence"].append(float(spectral_loss))
