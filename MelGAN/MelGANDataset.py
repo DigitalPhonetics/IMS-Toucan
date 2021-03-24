@@ -13,7 +13,7 @@ class MelGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  samples_per_segment=8192,
-                 loading_processes=4):
+                 loading_processes=2):
         self.samples_per_segment = samples_per_segment
         self.list_of_norm_waves = list()
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)

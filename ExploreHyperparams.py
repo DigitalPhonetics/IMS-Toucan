@@ -62,7 +62,8 @@ if __name__ == '__main__':
                spemb=False,
                lang="en",
                lr=0.0005,
-               warmup_steps=8000)
+               warmup_steps=8000,
+               checkpoint="checkpoint_2035.pt")
 
     ############################################################################
     save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "lr0001")
