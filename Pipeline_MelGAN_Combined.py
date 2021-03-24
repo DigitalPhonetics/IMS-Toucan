@@ -36,38 +36,38 @@ if __name__ == '__main__':
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-100])
-    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-100:])
+    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-50])
+    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-50:])
 
-    train_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[:-100])
-    valid_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[-100:])
+    train_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[:-50])
+    valid_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[-50:])
 
-    train_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[:-100])
-    valid_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[-100:])
+    train_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[:-50])
+    valid_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[-50:])
 
-    train_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[:-100])
-    valid_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[-100:])
+    train_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[:-50])
+    valid_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[-50:])
 
-    train_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[:-100])
-    valid_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[-100:])
+    train_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[:-50])
+    valid_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[-50:])
 
-    train_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[:-100])
-    valid_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[-100:])
+    train_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[:-50])
+    valid_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[-50:])
 
-    train_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[:-100])
-    valid_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[-100:])
+    train_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[:-50])
+    valid_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[-50:])
 
-    train_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[:-100])
-    valid_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[-100:])
+    train_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[:-50])
+    valid_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[-50:])
 
-    train_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[:-100])
-    valid_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[-100:])
+    train_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[:-50])
+    valid_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[-50:])
 
-    train_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[:-100])
-    valid_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[-100:])
+    train_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[:-50])
+    valid_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[-50:])
 
-    train_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[:-100])
-    valid_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[-100:])
+    train_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[:-50])
+    valid_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[-50:])
 
     train_set = ConcatDataset([train_set_lj,
                                train_set_css10ge,
