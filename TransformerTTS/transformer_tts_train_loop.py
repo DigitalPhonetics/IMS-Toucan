@@ -48,8 +48,8 @@ def plot_attentions_best_head(atts, att_dir, step):
                interpolation='nearest',
                aspect='auto',
                origin="lower")
-    plt.xlabel("Outputs")
-    plt.ylabel("Inputs")
+    plt.xlabel("Inputs")
+    plt.ylabel("Outputs")
     plt.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "atts_diag")):
         os.makedirs(os.path.join(att_dir, "atts_diag"))
