@@ -4,7 +4,7 @@ Train an autoregressive Transformer TTS model on the English single speaker data
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 import random
 import warnings
@@ -24,8 +24,11 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_sanity")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
 
@@ -35,37 +38,29 @@ if __name__ == '__main__':
                                       lang="en",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=17,
-                                      rebuild_cache=False)
+                                      rebuild_cache=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=17,
-                                      rebuild_cache=False)
+                                      rebuild_cache=True)
 
-    ############################################################################
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "allconstrained")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    model = Transformer(idim=134,
-                        odim=80,
-                        spk_embed_dim=None,
-                        decoder_concat_after=True,
-                        aheads=4,
-                        num_heads_applied_guided_attn=-1,
-                        num_layers_applied_guided_attn=-1)
+    model = Transformer(idim=134, odim=80, spk_embed_dim=None, reduction_factor=5)
+
+    print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
                device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
-               epochs=42,
-               batchsize=32,
+               epochs=300000,  # just kill the process at some point
+               batchsize=64,
                gradient_accumulation=1,
                epochs_per_save=10,
                spemb=False,
                lang="en",
                lr=0.001,
-               warmup_steps=4000)
+               warmup_steps=8000)

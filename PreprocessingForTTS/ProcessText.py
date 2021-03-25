@@ -14,7 +14,8 @@ class TextFrontend:
                  use_panphon_vectors=True,
                  use_word_boundaries=False,
                  use_explicit_eos=False,
-                 path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv"):
+                 path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv",
+                 silent=False):
         """
         Mostly preparing ID lookups
         """
@@ -48,21 +49,28 @@ class TextFrontend:
         if language == "en":
             self.clean_lang = "en"
             self.g2p_lang = "en-us"
+            if not silent:
+                print("Created an English Text-Frontend")
 
         elif language == "de":
             self.clean_lang = "de"
             self.g2p_lang = "de"
+            if not silent:
+                print("Created a German Text-Frontend")
 
         else:
             print("Language not supported yet")
             sys.exit()
 
-    def string_to_tensor(self, text, view=True):
+    def string_to_tensor(self, text, view=False):
         """
-        applies the entire pipeline to a text
+        Fixes unicode errors, expands some abbreviations,
+        turns graphemes into phonemes and then vectorizes
+        the sequence either as IDs to be fed into an embedding
+        layer, or as an articulatory matrix.
         """
         # clean unicode errors etc
-        utt = clean(text, fix_unicode=True, to_ascii=True, lower=False, lang=self.clean_lang)
+        utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
 
         if self.clean_lang == "en":
             utt = english_text_expansion(utt)
