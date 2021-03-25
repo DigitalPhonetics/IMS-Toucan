@@ -37,7 +37,7 @@ class Transformer(torch.nn.Module, ABC):
                  elayers: int = 6,
                  eunits: int = 1024,
                  adim: int = 512,
-                 aheads: int = 8,
+                 aheads: int = 4,
                  dlayers: int = 6,
                  dunits: int = 1024,
                  postnet_layers: int = 5,
@@ -49,8 +49,8 @@ class Transformer(torch.nn.Module, ABC):
                  use_batch_norm: bool = True,
                  encoder_normalize_before: bool = True,
                  decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
                  reduction_factor=2,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
@@ -69,15 +69,15 @@ class Transformer(torch.nn.Module, ABC):
                  init_enc_alpha: float = 1.0,
                  use_masking: bool = False,  # either this or weighted masking
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 25.0,
+                 bce_pos_weight: float = 5.0,
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
                  num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma: float = 0.3,
-                 guided_attn_loss_lambda: float = 15.0,
-                 lang="en"):
+                 guided_attn_loss_lambda: float = 25.0,
+                 lang='en'):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -317,7 +317,7 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
                                        use_panphon_vectors=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, lang=lang, reduction_factor=5).to(
+        self.phone2mel = Transformer(idim=134, odim=80, spk_embed_dim=None, lang=lang).to(
             torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
         self.phone2mel.eval()

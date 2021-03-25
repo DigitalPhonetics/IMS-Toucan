@@ -57,7 +57,7 @@ class TextFrontend:
             print("Language not supported yet")
             sys.exit()
 
-    def string_to_tensor(self, text, view=False):
+    def string_to_tensor(self, text, view=True):
         """
         applies the entire pipeline to a text
         """
