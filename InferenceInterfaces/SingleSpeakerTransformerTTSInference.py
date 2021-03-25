@@ -317,7 +317,7 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
                                        use_panphon_vectors=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = Transformer(idim=134, odim=80, spk_embed_dim=None, lang=lang).to(
+        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, lang=lang).to(
             torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
         self.phone2mel.eval()

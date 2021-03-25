@@ -46,7 +46,7 @@ if __name__ == '__main__':
                                       max_len_in_seconds=17,
                                       rebuild_cache=False)
 
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,

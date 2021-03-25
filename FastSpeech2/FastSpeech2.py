@@ -439,7 +439,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
 
 def build_reference_fastspeech2_model(model_name):
-    model = FastSpeech2(idim=134, odim=80, spk_embed_dim=None).to("cpu")
+    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model

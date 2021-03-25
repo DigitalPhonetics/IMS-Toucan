@@ -14,6 +14,11 @@ class TextFrontend:
                  use_panphon_vectors=True,
                  use_word_boundaries=False,
                  use_explicit_eos=False,
+                 use_prosody=False,  # unfortunately the non segmental
+                 # nature of prosodic markers mixed with the sequential
+                 # phonemes hurts the performance of end-to-end models a
+                 # lot, even though one might think enriching the input
+                 # with such information would help such systems.
                  path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv",
                  silent=False):
         """
@@ -22,16 +27,17 @@ class TextFrontend:
         self.use_panphon_vectors = use_panphon_vectors
         self.use_word_boundaries = use_word_boundaries
         self.use_explicit_eos = use_explicit_eos
+        self.use_prosody = use_prosody
 
         # list taken and modified from https://github.com/dmort27/panphon
         # see publication: https://www.aclweb.org/anthology/C16-1328/
         self.ipa_to_vector = defaultdict()
         if use_panphon_vectors:
-            self.default_vector = [133, 133, 133, 133, 133, 133, 133, 133, 133, 133,
-                                   133, 133, 133, 133, 133, 133, 133, 133, 133, 133,
-                                   133, 133, 133, 133, 133]
+            self.default_vector = [132, 132, 132, 132, 132, 132, 132, 132, 132, 132,
+                                   132, 132, 132, 132, 132, 132, 132, 132, 132, 132,
+                                   132, 132, 132, 132, 132]
         else:
-            self.default_vector = 133
+            self.default_vector = 132
         with open(path_to_panphon_table, encoding='utf8') as f:
             features = f.read()
         features_list = features.split("\n")
@@ -43,18 +49,20 @@ class TextFrontend:
                 self.ipa_to_vector[line_list[0]] = index
                 # note: Index 0 is unused, so it can be used for padding as is convention.
                 #       Index 1 is reserved for EOS, if you want to use explicit EOS.
-                #       Index 133 is used for unknown characters
+                #       Index 132 is used for unknown characters
                 #       Index 10 is used for pauses (heuristically)
 
         if language == "en":
             self.clean_lang = "en"
             self.g2p_lang = "en-us"
+            self.expand_abbrevations = english_text_expansion
             if not silent:
                 print("Created an English Text-Frontend")
 
         elif language == "de":
             self.clean_lang = "de"
             self.g2p_lang = "de"
+            self.expand_abbrevations = lambda x: x
             if not silent:
                 print("Created a German Text-Frontend")
 
@@ -69,11 +77,9 @@ class TextFrontend:
         the sequence either as IDs to be fed into an embedding
         layer, or as an articulatory matrix.
         """
-        # clean unicode errors etc
+        # clean unicode errors, expand abbreviations
         utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
-
-        if self.clean_lang == "en":
-            utt = english_text_expansion(utt)
+        self.expand_abbrevations(utt)
 
         # if an aligner has produced silence tokens before, turn
         # them into silence markers now so that they survive the
@@ -89,7 +95,17 @@ class TextFrontend:
                                       strip=True,
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~',
                                       with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
-            "--", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace("¿", "?")
+            "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace("¿", "?")
+
+        if not self.use_prosody:
+            # retain , as heuristic pause marker, even though all other symbols are removed with this option.
+            # also retain . ? and ! since they can be indicators o the stop token
+            phones = phones.replace("ˈ", "").replace("ˌ", "").replace("ː", "").replace(
+                "ˑ", "").replace("˘", "").replace("|", "").replace("‖", "")
+
+        if not self.use_word_boundaries:
+            phones = phones.replace(" ", "")
+
         if view:
             print("Phonemes: \n{}\n".format(phones))
 
@@ -98,11 +114,7 @@ class TextFrontend:
 
         # turn into numeric vectors
         for char in phones:
-            if self.use_word_boundaries:
-                if char != " ":
-                    phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
-            else:
-                phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
+            phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
 
         if self.use_explicit_eos:
             phones_vector.append(self.ipa_to_vector["end_of_input"])
@@ -155,7 +167,7 @@ if __name__ == '__main__':
                           use_word_boundaries=False,
                           use_explicit_eos=False,
                           path_to_panphon_table="ipa_vector_lookup.csv")
-    print(tfr_en.string_to_tensor("Hello world _SIL_ this is a test!", view=True))
+    print(tfr_en.string_to_tensor("Hello world, this is a test!", view=True))
 
     # test a German utterance
     tfr_de = TextFrontend(language="de",
@@ -163,4 +175,4 @@ if __name__ == '__main__':
                           use_word_boundaries=False,
                           use_explicit_eos=False,
                           path_to_panphon_table="ipa_vector_lookup.csv")
-    print(tfr_de.string_to_tensor("Hallo Welt _SIL_ dies ist ein test!", view=True))
+    print(tfr_de.string_to_tensor("Hallo Welt, dies ist ein test!", view=True))

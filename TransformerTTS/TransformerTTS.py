@@ -61,7 +61,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
                  decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=2,
+                 reduction_factor=1,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
@@ -532,7 +532,7 @@ class Transformer(torch.nn.Module, ABC):
 
 
 def build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt"):
-    model = Transformer(idim=134, odim=80, spk_embed_dim=None).to("cpu")
+    model = Transformer(idim=133, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
