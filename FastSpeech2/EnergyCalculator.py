@@ -24,7 +24,7 @@ class EnergyCalculator(torch.nn.Module):
                  normalized: bool = False,
                  onesided: bool = True,
                  use_token_averaged_energy: bool = True,
-                 reduction_factor=2):
+                 reduction_factor=1):
         super().__init__()
 
         self.fs = fs

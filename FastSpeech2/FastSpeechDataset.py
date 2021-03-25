@@ -27,7 +27,7 @@ class FastSpeechDataset(Dataset):
                  lang="de",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
-                 reduction_factor=2,
+                 reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False):
         self.spemb = spemb
