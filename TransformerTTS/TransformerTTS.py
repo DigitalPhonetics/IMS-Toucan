@@ -65,13 +65,13 @@ class Transformer(torch.nn.Module, ABC):
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
-                 transformer_enc_dropout_rate: float = 0.2,
-                 transformer_enc_positional_dropout_rate: float = 0.2,
-                 transformer_enc_attn_dropout_rate: float = 0.2,
-                 transformer_dec_dropout_rate: float = 0.2,
-                 transformer_dec_positional_dropout_rate: float = 0.2,
-                 transformer_dec_attn_dropout_rate: float = 0.2,
-                 transformer_enc_dec_attn_dropout_rate: float = 0.2,
+                 transformer_enc_dropout_rate: float = 0.1,
+                 transformer_enc_positional_dropout_rate: float = 0.1,
+                 transformer_enc_attn_dropout_rate: float = 0.1,
+                 transformer_dec_dropout_rate: float = 0.1,
+                 transformer_dec_positional_dropout_rate: float = 0.1,
+                 transformer_dec_attn_dropout_rate: float = 0.1,
+                 transformer_enc_dec_attn_dropout_rate: float = 0.1,
                  eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
@@ -82,11 +82,11 @@ class Transformer(torch.nn.Module, ABC):
                  bce_pos_weight: float = 5.0,
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
-                 num_heads_applied_guided_attn: int = -1,
-                 num_layers_applied_guided_attn: int = -1,
+                 num_heads_applied_guided_attn: int = 2,
+                 num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma: float = 0.3,
-                 guided_attn_loss_lambda: float = 20.0):
+                 guided_attn_loss_lambda: float = 25.0):
         """Initialize Transformer module."""
         super().__init__()
 
