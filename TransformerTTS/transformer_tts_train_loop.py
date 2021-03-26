@@ -40,7 +40,7 @@ def plot_attentions_all_heads(atts, att_dir, step):
     plt.close()
 
 
-def plot_attentions_best_head(atts, att_dir, step):
+def plot_attentions_best_head(atts, att_dir, step, phones):
     # plot most diagonal attention head individually
     most_diagonal_att = select_best_att_head(atts)
     plt.figure(figsize=(8, 4))
@@ -50,6 +50,7 @@ def plot_attentions_best_head(atts, att_dir, step):
                origin="lower")
     plt.xlabel("Inputs")
     plt.ylabel("Outputs")
+    plt.xticks(range(len(most_diagonal_att[0])), labels=[phone for phone in phones])
     plt.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "atts_diag")):
         os.makedirs(os.path.join(att_dir, "atts_diag"))
@@ -63,20 +64,18 @@ def get_atts(model, lang, device, spemb):
                       use_panphon_vectors=False,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
-    sentence = "Hello"
+    sentence = ""
     if lang == "en":
-        sentence = "Many animals of even complex structure which " \
-                   "live parasitically within others are wholly " \
-                   "devoid of an alimentary cavity."
+        sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
-        sentence = "Es war einmal – welcher Autor darf es jetzt wohl " \
-                   "noch wagen, sein Geschichtlein also zu beginnen."
+        sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    phones = tf.get_phone_string(sentence)
     model.eval()
     atts = model.inference(text=text, spembs=spemb)[2].to("cpu")
     model.train()
     del tf
-    return atts
+    return atts, phones
 
 
 def select_best_att_head(att_ws):
@@ -266,16 +265,16 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                             "step_counter": step_counter,
                             "scheduler": scheduler.state_dict()},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                all_atts = get_atts(model=net,
-                                    lang=lang,
-                                    device=device,
-                                    spemb=reference_spemb_for_att_plot)
+                all_atts, phones = get_atts(model=net,
+                                            lang=lang,
+                                            device=device,
+                                            spemb=reference_spemb_for_att_plot)
                 plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0),
                                           att_dir=save_directory,
                                           step=step_counter)
                 plot_attentions_best_head(all_atts,
                                           att_dir=save_directory,
-                                          step=step_counter)
+                                          step=step_counter, phones=phones)
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
