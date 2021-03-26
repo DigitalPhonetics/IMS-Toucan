@@ -50,7 +50,7 @@ class TextFrontend:
                 # note: Index 0 is unused, so it can be used for padding as is convention.
                 #       Index 1 is reserved for EOS, if you want to use explicit EOS.
                 #       Index 132 is used for unknown characters
-                #       Index 10 is used for pauses (heuristically)
+                #       Index 12 is used for pauses (heuristically)
 
         if language == "en":
             self.clean_lang = "en"
@@ -95,7 +95,8 @@ class TextFrontend:
                                       strip=True,
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~',
                                       with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
-            "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace("¿", "?")
+            "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace(
+            "¿", "?").replace(",", "~")
 
         if not self.use_prosody:
             # retain , as heuristic pause marker, even though all other symbols are removed with this option.

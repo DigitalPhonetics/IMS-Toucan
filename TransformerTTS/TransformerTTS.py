@@ -77,15 +77,15 @@ class Transformer(torch.nn.Module, ABC):
                  postnet_dropout_rate: float = 0.5,
                  init_type: str = "kaiming_uniform",
                  init_enc_alpha: float = 1.0,
-                 use_masking: bool = False,  # either this or weighted masking
+                 use_masking: bool = False,  # either this or weighted masking, not both
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 5.0,
+                 bce_pos_weight: float = 7.0,  # scaling the loss of the stop token prediction
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
                  num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
-                 guided_attn_loss_sigma: float = 0.3,
+                 guided_attn_loss_sigma: float = 0.4,
                  guided_attn_loss_lambda: float = 25.0):
         """Initialize Transformer module."""
         super().__init__()
@@ -93,7 +93,7 @@ class Transformer(torch.nn.Module, ABC):
         # store hyperparameters
         self.idim = idim
         self.odim = odim
-        self.eos = idim - 1
+        self.eos = 1
         self.aheads = aheads
         self.adim = adim
         self.spk_embed_dim = spk_embed_dim
@@ -241,6 +241,13 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Weight value.
 
         """
+        text = text[:, : text_lengths.max()]  # for data-parallel if I ever end up implementing that
+        speech = speech[:, : speech_lengths.max()]  # for data-parallel if I ever end up implementing that
+
+        # Add eos at the last of sequence
+        xs = F.pad(text, [0, 1], "constant", self.padding_idx)
+        for i, l in enumerate(text_lengths):
+            xs[i, l] = self.eos
 
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
@@ -374,6 +381,9 @@ class Transformer(torch.nn.Module, ABC):
         y = speech
         spemb = spembs
         self.eval()
+
+        # add eos at the last of sequence
+        x = F.pad(x, [0, 1], "constant", self.eos)
 
         # inference with teacher forcing
         if use_teacher_forcing:
