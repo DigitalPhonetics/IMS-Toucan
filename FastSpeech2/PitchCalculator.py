@@ -27,7 +27,7 @@ class Dio(torch.nn.Module):
                  use_token_averaged_f0: bool = True,
                  use_continuous_f0: bool = True,
                  use_log_f0: bool = True,
-                 reduction_factor=1):
+                 reduction_factor=2):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
