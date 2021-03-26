@@ -577,10 +577,12 @@ def select_best_att_head(att_ws):
     return att_ws
 
 
-def plot_attention(att, sentence=None):
+def plot_attention(att, sentence=None, phones=None):
     import matplotlib.pyplot as plt
     plt.figure(figsize=(8, 4))
     plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    if phones is not None:
+        plt.xticks(range(len(att[0])), labels=[phone for phone in phones])
     plt.xlabel("Inputs")
     plt.ylabel("Outputs")
     if sentence is not None:
@@ -608,7 +610,7 @@ def plot_attentions(atts):
     plt.show()
 
 
-def get_atts(model, sentence, lang, teacher_forcing):
+def get_atts(model, sentence, lang, teacher_forcing, get_phones=False):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
@@ -624,8 +626,13 @@ def get_atts(model, sentence, lang, teacher_forcing):
                    "live parasitically within others are wholly " \
                    "devoid of an alimentary cavity."
         text_tensor = tf.string_to_tensor(sentence).squeeze(0).long()
+        phones = tf.get_phone_string(sentence)
+        if get_phones:
+            return model.inference(text=text_tensor, speech=spec, use_teacher_forcing=True)[2], phones
         return model.inference(text=text_tensor, speech=spec, use_teacher_forcing=True)[2]
     else:
+        if get_phones:
+            return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2], tf.get_phone_string(sentence)
         return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
 
 
@@ -637,11 +644,13 @@ def show_attention_plot(sentence, model=None, best_only=False, lang="en", teache
             model = build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt")
 
     if best_only:
-        plot_attention(
-            select_best_att_head(get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing)),
-            sentence=sentence)
+        att, phones = get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing,
+                               get_phones=True)
+        plot_attention(select_best_att_head(att), sentence=sentence, phones=phones)
     else:
+        att, phones = get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing,
+                               get_phones=True)
         atts = torch.cat(
-            [att_w for att_w in get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing)],
+            [att_w for att_w in att],
             dim=0)
         plot_attentions(atts)

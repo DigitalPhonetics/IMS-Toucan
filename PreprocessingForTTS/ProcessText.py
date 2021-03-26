@@ -130,6 +130,27 @@ class TextFrontend:
         # combine tensors and return
         return torch.stack(tensors, 0)
 
+    def get_phone_string(self, text):
+        utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
+        self.expand_abbrevations(utt)
+        utt = utt.replace("_SIL_", "~")
+        phones = phonemizer.phonemize(utt,
+                                      language_switch='remove-flags',
+                                      backend="espeak",
+                                      language=self.g2p_lang,
+                                      preserve_punctuation=True,
+                                      strip=True,
+                                      punctuation_marks=';:,.!?¡¿—…"«»“”~',
+                                      with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
+            "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace(
+            "¿", "?").replace(",", "~")
+        if not self.use_prosody:
+            phones = phones.replace("ˈ", "").replace("ˌ", "").replace("ː", "").replace(
+                "ˑ", "").replace("˘", "").replace("|", "").replace("‖", "")
+        if not self.use_word_boundaries:
+            phones = phones.replace(" ", "")
+        return phones + "#"
+
 
 def english_text_expansion(text):
     """
