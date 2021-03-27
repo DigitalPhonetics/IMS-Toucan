@@ -4,7 +4,7 @@ Train an autoregressive Transformer TTS model on the English single speaker data
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import random
 import warnings
@@ -24,7 +24,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LJSpeech")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_xavier")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "LJSpeech_red2")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -62,5 +62,5 @@ if __name__ == '__main__':
                epochs_per_save=10,
                spemb=False,
                lang="en",
-               lr=0.01,
+               lr=0.05,
                warmup_steps=8000)

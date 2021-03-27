@@ -59,9 +59,9 @@ class Transformer(torch.nn.Module, ABC):
                  use_batch_norm: bool = True,
                  encoder_normalize_before: bool = True,
                  decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=2,
+                 encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 reduction_factor=1,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
@@ -75,7 +75,8 @@ class Transformer(torch.nn.Module, ABC):
                  eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
-                 init_type: str = "xavier_uniform",
+                 init_type: str = "xavier_uniform",  # since we have little to no
+                 # asymetric activations, this seems to work better than kaiming
                  init_enc_alpha: float = 1.0,
                  use_masking: bool = False,  # either this or weighted masking, not both
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch

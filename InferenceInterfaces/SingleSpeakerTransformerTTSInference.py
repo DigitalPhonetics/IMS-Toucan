@@ -51,7 +51,7 @@ class Transformer(torch.nn.Module, ABC):
                  decoder_normalize_before: bool = True,
                  encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
                  decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=2,
+                 reduction_factor=1,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
                  # training related
@@ -310,7 +310,7 @@ class MelGANGenerator(torch.nn.Module):
 
 
 class SingleSpeakerTransformerTTSInference(torch.nn.Module):
-    def __init__(self, device="cpu", lang="en", reduction_factor=2):
+    def __init__(self, device="cpu", lang="en", reduction_factor=1):
         super().__init__()
         self.device = device
         self.text2phone = TextFrontend(language=lang,
