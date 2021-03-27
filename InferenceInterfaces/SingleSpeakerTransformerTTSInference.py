@@ -310,15 +310,15 @@ class MelGANGenerator(torch.nn.Module):
 
 
 class SingleSpeakerTransformerTTSInference(torch.nn.Module):
-    def __init__(self, device="cpu", lang="en"):
+    def __init__(self, device="cpu", lang="en", reduction_factor=2):
         super().__init__()
         self.device = device
         self.text2phone = TextFrontend(language=lang,
                                        use_panphon_vectors=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, lang=lang).to(
-            torch.device(device))
+        self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, lang=lang,
+                                     reduction_factor=reduction_factor).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()

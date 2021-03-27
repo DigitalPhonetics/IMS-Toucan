@@ -75,7 +75,7 @@ class Transformer(torch.nn.Module, ABC):
                  eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
-                 init_type: str = "kaiming_uniform",
+                 init_type: str = "xavier_uniform",
                  init_enc_alpha: float = 1.0,
                  use_masking: bool = False,  # either this or weighted masking, not both
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
@@ -85,8 +85,8 @@ class Transformer(torch.nn.Module, ABC):
                  num_heads_applied_guided_attn: int = 2,
                  num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
-                 guided_attn_loss_sigma: float = 0.4,
-                 guided_attn_loss_lambda: float = 25.0):
+                 guided_attn_loss_sigma: float = 0.4,  # standard deviation from diagonal that is allowed
+                 guided_attn_loss_lambda: float = 25.0):  # forcing the attention to be diagonal
         """Initialize Transformer module."""
         super().__init__()
 
