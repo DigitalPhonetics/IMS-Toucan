@@ -59,9 +59,9 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
     return model
 
 
-def save_model_for_use(model, name="Transformer_English_Single.pt"):
+def save_model_for_use(model, name="Transformer_English_Single.pt", dict_name="model"):
     print("saving model...")
-    torch.save({"model": model.state_dict()}, name)
+    torch.save({dict_name: model.state_dict()}, name)
     print("...done!")
 
 
@@ -76,4 +76,4 @@ if __name__ == '__main__':
 
     checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="../Models/melgan", n=3)
     averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)
-    save_model_for_use(model=averaged_model, name="../Models/Use/MelGAN.pt")
+    save_model_for_use(model=averaged_model, name="../Models/Use/MelGAN.pt", dict_name="generator")
