@@ -328,7 +328,7 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
     def forward(self, text):
         phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
         mel = self.phone2mel(phones).transpose(0, 1).detach()
-        wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0).detach().cpu()
+        wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0).detach()
         return wave
 
     def read_to_file(self, text_list, file_location):
@@ -349,5 +349,5 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text):
-        wav = self(text).numpy()
+        wav = self(text).cpu().numpy()
         sounddevice.play(wav, samplerate=16000)
