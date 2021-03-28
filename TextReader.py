@@ -1,3 +1,5 @@
+import torch
+
 from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeakerTransformerTTSInference
 
 
@@ -9,22 +11,19 @@ def read_texts(lang, sentence, filename, reduction_factor=1, device="cpu"):
 
 
 if __name__ == '__main__':
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
     read_texts(lang="en",
                sentence=[
                    "Lying in a field of glass, underneath the overpass.",
                    "Mangled in the shards of a metal frame.",
                    "Woken from the dream, by my own name."],
                filename="test_en.wav",
-               reduction_factor=1, device="cuda")
-
-    read_texts(lang="en",
-               sentence=[
-                   "Oh, if I never get to show.", "Tell you all of the things I own.", "Fifteen hundred on alcohol.",
-                   "I'm feeling slow.", "Please let me go"],
-               filename="test_en.wav",
-               reduction_factor=1, device="cuda")
+               reduction_factor=1,
+               device=device)
 
     read_texts(lang="de",
                sentence=["Hallo Welt!"],
                filename="test_de.wav",
-               reduction_factor=1)
+               reduction_factor=1,
+               device=device)
