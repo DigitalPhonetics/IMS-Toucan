@@ -1,13 +1,12 @@
 import sys
 
-from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeakerTransformerTTSInference
 import torch
 
-cuda_available = torch.cuda.is_available()
+from InferenceInterfaces.SingleSpeakerTransformerTTSInference import SingleSpeakerTransformerTTSInference
 
 if __name__ == '__main__':
     lang = input("Which language do you want? (currently supported 'en' and 'de')\n")
-    device = "cuda" if cuda_available else "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     tts = SingleSpeakerTransformerTTSInference(lang=lang, reduction_factor=1, device=device)
     while True:
         text = input("\nWhat should I say? (or 'exit')\n")
