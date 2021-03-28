@@ -49,8 +49,8 @@ class Transformer(torch.nn.Module, ABC):
                  use_batch_norm: bool = True,
                  encoder_normalize_before: bool = True,
                  decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 decoder_concat_after: bool = False,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
                  reduction_factor=1,
                  spk_embed_dim: int = None,
                  spk_embed_integration_type: str = "concat",
@@ -65,17 +65,18 @@ class Transformer(torch.nn.Module, ABC):
                  eprenet_dropout_rate: float = 0.0,
                  dprenet_dropout_rate: float = 0.5,
                  postnet_dropout_rate: float = 0.5,
-                 init_type: str = "kaiming_uniform",
+                 init_type: str = "xavier_uniform",  # since we have little to no
+                 # asymetric activations, this seems to work better than kaiming
                  init_enc_alpha: float = 1.0,
-                 use_masking: bool = False,  # either this or weighted masking
+                 use_masking: bool = False,  # either this or weighted masking, not both
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 5.0,
+                 bce_pos_weight: float = 7.0,  # scaling the loss of the stop token prediction
                  loss_type: str = "L1",
                  use_guided_attn_loss: bool = True,
                  num_heads_applied_guided_attn: int = 2,
                  num_layers_applied_guided_attn: int = 2,
                  modules_applied_guided_attn=("encoder-decoder",),
-                 guided_attn_loss_sigma: float = 0.3,
+                 guided_attn_loss_sigma: float = 0.4,  # standard deviation from diagonal that is allowed
                  guided_attn_loss_lambda: float = 25.0,
                  lang='en'):
         super().__init__()
