@@ -17,6 +17,13 @@ if __name__ == '__main__':
                filename="test_en.wav",
                reduction_factor=1, device="cuda")
 
+    read_texts(lang="en",
+               sentence=[
+                   "Oh, if I never get to show.", "Tell you all of the things I own.", "Fifteen hundred on alcohol.",
+                   "I'm feeling slow.", "Please let me go"],
+               filename="test_en.wav",
+               reduction_factor=1, device="cuda")
+
     read_texts(lang="de",
                sentence=["Hallo Welt!"],
                filename="test_de.wav",
