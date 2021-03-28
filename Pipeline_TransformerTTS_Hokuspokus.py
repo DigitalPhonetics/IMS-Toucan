@@ -8,7 +8,7 @@ from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "8"
 import random
 import warnings
 
@@ -61,5 +61,5 @@ if __name__ == '__main__':
                epochs_per_save=10,
                spemb=False,
                lang="en",
-               lr=0.001,
+               lr=0.05,
                warmup_steps=8000)
