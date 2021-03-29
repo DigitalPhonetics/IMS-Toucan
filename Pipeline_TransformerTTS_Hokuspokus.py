@@ -3,6 +3,8 @@ Train an autoregressive Transformer TTS model on the German single speaker datas
 """
 import os
 
+import soundfile
+
 from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop
@@ -15,7 +17,8 @@ import warnings
 import torch
 
 warnings.filterwarnings("ignore")
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus, \
+    build_path_to_transcript_dict_ljspeech
 
 torch.manual_seed(13)
 random.seed(13)
@@ -30,6 +33,22 @@ if __name__ == '__main__':
         os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict_hokuspokus()
+    lens_in_s = list()
+    for el in path_to_transcript_dict:
+        wav, sr = soundfile.read(el)
+        lens_in_s.append(int(wav, sr))
+    lens_in_s.sort()
+    print(lens_in_s)
+
+    print("\n\n\n\n")
+
+    path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
+    lens_in_s = list()
+    for el in path_to_transcript_dict:
+        wav, sr = soundfile.read(el)
+        lens_in_s.append(int(wav, sr))
+    lens_in_s.sort()
+    print(lens_in_s)
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,
