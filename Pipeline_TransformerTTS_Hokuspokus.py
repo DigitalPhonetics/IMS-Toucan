@@ -36,7 +36,7 @@ if __name__ == '__main__':
     lens_in_s = list()
     for el in path_to_transcript_dict:
         wav, sr = soundfile.read(el)
-        lens_in_s.append(int(wav, sr))
+        lens_in_s.append(int(wav / sr))
     lens_in_s.sort()
     print(lens_in_s)
 
@@ -46,7 +46,7 @@ if __name__ == '__main__':
     lens_in_s = list()
     for el in path_to_transcript_dict:
         wav, sr = soundfile.read(el)
-        lens_in_s.append(int(wav, sr))
+        lens_in_s.append(int(wav / sr))
     lens_in_s.sort()
     print(lens_in_s)
 
