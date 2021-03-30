@@ -37,14 +37,14 @@ if __name__ == '__main__':
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len_in_seconds=1,
-                                      max_len_in_seconds=17,
+                                      max_len_in_seconds=10,
                                       rebuild_cache=False)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len_in_seconds=1,
-                                      max_len_in_seconds=17,
+                                      max_len_in_seconds=10,
                                       rebuild_cache=False)
 
     model = Transformer(idim=133, odim=80, spk_embed_dim=None)
@@ -63,5 +63,4 @@ if __name__ == '__main__':
                spemb=False,
                lang="en",
                lr=0.05,
-               warmup_steps=8000,
-               checkpoint="checkpoint_260043.pt")
+               warmup_steps=8000)

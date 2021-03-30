@@ -42,7 +42,7 @@ if __name__ == '__main__':
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len_in_seconds=1,
-                                  max_len_in_seconds=17,
+                                  max_len_in_seconds=10,
                                   device=device)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
@@ -50,7 +50,7 @@ if __name__ == '__main__':
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len_in_seconds=1,
-                                  max_len_in_seconds=17,
+                                  max_len_in_seconds=10,
                                   device=device)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
