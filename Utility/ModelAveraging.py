@@ -34,19 +34,19 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
 
 
 def average_checkpoints(list_of_checkpoint_paths, load_func):
-    snapshots_weights = {}
+    checkpoints_weights = {}
     model = None
     for path_to_checkpoint in list_of_checkpoint_paths:
         print("loading model {}".format(path_to_checkpoint))
         model = load_func(path=path_to_checkpoint)
-        snapshots_weights[path_to_checkpoint] = dict(model.named_parameters())
+        checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
     params = model.named_parameters()
     dict_params = dict(params)
-    checkpoint_amount = len(snapshots_weights)
+    checkpoint_amount = len(checkpoints_weights)
     print("averaging...")
     for name in dict_params.keys():
         custom_params = None
-        for _, checkpoint_parameters in snapshots_weights.items():
+        for _, checkpoint_parameters in checkpoints_weights.items():
             if custom_params is None:
                 custom_params = checkpoint_parameters[name].data
             else:
