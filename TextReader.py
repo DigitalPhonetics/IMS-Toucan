@@ -14,15 +14,6 @@ def read_texts(lang, sentence, filename, reduction_factor=1, device="cpu"):
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    tl = """And just cause he's gone, it doesn't change the fact:
-    He was a bastard in life, thus a bastard in death.""".split("\n")
-
-    read_texts(lang="en",
-               sentence=tl,
-               filename="styrofoam_plates.wav",
-               reduction_factor=1,
-               device=device)
-
     read_texts(lang="en",
                sentence=[
                    "Lying in a field of glass, underneath the overpass.",
@@ -33,7 +24,7 @@ if __name__ == '__main__':
                device=device)
 
     read_texts(lang="de",
-               sentence=["Hallo Welt!"],
+               sentence=["Oder, einem Computer das Sprechen beibringen!"],
                filename="test_de.wav",
                reduction_factor=1,
                device=device)

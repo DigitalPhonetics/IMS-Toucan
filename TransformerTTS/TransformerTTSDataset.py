@@ -16,7 +16,7 @@ class TransformerTTSDataset(Dataset):
     def __init__(self, path_to_transcript_dict,
                  spemb=False,
                  train=True,
-                 loading_processes=4,
+                 loading_processes=2,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len_in_seconds=1,
