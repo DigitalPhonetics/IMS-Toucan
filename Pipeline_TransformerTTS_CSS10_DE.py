@@ -15,21 +15,21 @@ import warnings
 import torch
 
 warnings.filterwarnings("ignore")
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de
 
 torch.manual_seed(13)
 random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Hokuspokus")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "Hokuspokus")
+    cache_dir = os.path.join("Corpora", "CSS10_DE")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "CSS10_DE")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_hokuspokus()
+    path_to_transcript_dict = build_path_to_transcript_dict_css10de()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=True,

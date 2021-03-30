@@ -49,3 +49,14 @@ def build_path_to_transcript_dict_ljspeech():
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10de():
+    path_to_transcript = dict()
+    with open("/mount/resources/speech/corpora/CSS10/german/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["Corpora/CSS10_DE/" + line.split("|")[0]] = line.split("|")[2]
+    return path_to_transcript

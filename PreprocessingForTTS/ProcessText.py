@@ -96,11 +96,11 @@ class TextFrontend:
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~',
                                       with_stress=True).replace(";", ",").replace(":", ",").replace('"', ",").replace(
             "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace(
-            "¿", "?").replace(",", "~")
+            "¿", "?").replace(",", "~").replace("~~", "~")
 
         if not self.use_prosody:
-            # retain , as heuristic pause marker, even though all other symbols are removed with this option.
-            # also retain . ? and ! since they can be indicators o the stop token
+            # retain ~ as heuristic pause marker, even though all other symbols are removed with this option.
+            # also retain . ? and ! since they can be indicators for the stop token
             phones = phones.replace("ˈ", "").replace("ˌ", "").replace("ː", "").replace(
                 "ˑ", "").replace("˘", "").replace("|", "").replace("‖", "")
 

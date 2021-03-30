@@ -14,7 +14,7 @@ I have trained a Full-Band-MelGAN on a combination of 11 large and clean single 
 | Hokuspokus   | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | LJSpeech     | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS     | English   | Multi Speaker       | ✅     | ✅            | ✅          |
-| CSS10DE      | German    | Single Speaker      | ✅     |                |             |
+| CSS10DE      | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | CSS10GR      | Greek     | Single Speaker      | ✅     |                |             |
 | CSS10FR      | French    | Single Speaker      | ✅     |                |             |
 | CSS10FI      | Finnish   | Single Speaker      | ✅     |                |             |
