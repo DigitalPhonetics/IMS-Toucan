@@ -4,6 +4,7 @@ import os
 import soundfile as sf
 import torch
 import torchaudio
+from tqdm import tqdm
 
 from FastSpeech2.DurationCalculator import DurationCalculator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
@@ -32,10 +33,9 @@ def align(path_to_transcript_dict,
     ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
     acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
     dc = DurationCalculator(reduction_factor=reduction_factor)
-    for index, path in enumerate(path_list):
+    for index, path in tqdm(enumerate(path_list)):
         transcript = path_to_transcript_dict[path]
         wave, sr = sf.read(path)
-        print("Aligning {} out of {}.".format(index, len(path_list)))
         norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
         melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
         text = tf.string_to_tensor(transcript).long()

@@ -12,3 +12,4 @@ unidecode
 pyworld
 torch-complex
 sounddevice
+tqdm
