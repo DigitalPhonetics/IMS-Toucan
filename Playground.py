@@ -260,7 +260,7 @@ if __name__ == '__main__':
     from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
 
     align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(),
-          acoustic_model_name="Transformer_English_Single",
+          acoustic_model_name="Transformer_English_Single.pt",
           spemb=False,
           cache_dir="Corpora/LJSpeech",
           lang="en",
