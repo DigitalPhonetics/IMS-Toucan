@@ -14,17 +14,19 @@ def read_texts(lang, sentence, filename, reduction_factor=1, device="cpu"):
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
+    read_texts(lang="de",
+               sentence=["Florian Lux tippt.",
+                         "Sie haben das Nachrichtenfeld ausgewählt.",
+                         "Nachricht senden."],
+               filename="test_de.wav",
+               reduction_factor=1,
+               device=device)
+
     read_texts(lang="en",
                sentence=[
                    "Lying in a field of glass, underneath the overpass.",
                    "Mangled in the shards of a metal frame.",
                    "Woken from the dream, by my own name."],
                filename="test_en.wav",
-               reduction_factor=1,
-               device=device)
-
-    read_texts(lang="de",
-               sentence=["Oder, einem Computer das Sprechen beibringen!"],
-               filename="test_de.wav",
                reduction_factor=1,
                device=device)

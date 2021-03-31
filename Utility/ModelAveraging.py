@@ -70,10 +70,10 @@ if __name__ == '__main__':
     averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans)
     save_model_for_use(model=averaged_model, name="../Models/Use/Transformer_English_Single.pt")
 
-    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="../Models/Transformer_Hokus", n=5)
+    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="../Models/Transformer_CSS10_DE", n=5)
     averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans)
     save_model_for_use(model=averaged_model, name="../Models/Use/Transformer_German_Single.pt")
 
-    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="../Models/melgan", n=3)
+    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="../Models/melgan", n=5)
     averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)
     save_model_for_use(model=averaged_model, name="../Models/Use/MelGAN.pt", dict_name="generator")

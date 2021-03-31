@@ -252,11 +252,11 @@ if __name__ == '__main__':
     # plot_transformertts_architecture()
     # plot_melgan_training()
     # plot_syn_training()
-    # test_spectrogram_inversion(path_to_wav="Corpora/test.wav")
+    test_spectrogram_inversion(path_to_wav="Corpora/test.wav")
     # show_att(lang="en", best_only=True, teacher_forcing=True)
     # show_specs(lang="en")
     # show_specs(lang="de")
-    from Utility.Aligner import align
+    """from Utility.Aligner import align
     from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
 
     align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(),
@@ -266,3 +266,4 @@ if __name__ == '__main__':
           lang="en",
           reduction_factor=1,
           device=torch.device("cpu"))
+    """

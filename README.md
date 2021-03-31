@@ -12,6 +12,7 @@ I have trained a Full-Band-MelGAN on a combination of 11 large and clean single 
 | Dataset      | Language  | Single or Multi     | MelGAN | TransformerTTS | FastSpeech2 | 
 | -------------|-----------|---------------------| :-----:|:--------------:|:-----------:|
 | Hokuspokus   | German    | Single Speaker      | ✅     | ✅            | ✅          |
+| Thorsten   | German    | Single Speaker      | ✅     | ✅            |           |
 | LJSpeech     | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS     | English   | Multi Speaker       | ✅     | ✅            | ✅          |
 | CSS10DE      | German    | Single Speaker      | ✅     | ✅            | ✅          |
