@@ -45,7 +45,7 @@ class MelGANDataset(Dataset):
         # rates.
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         for index, path in tqdm(enumerate(path_split)):
-            print("Processing {} out of {}".format(index, len(path_split)))
+            # print("Processing {} out of {}".format(index, len(path_split)))
             wave, sr = sf.read(path)
             if len(wave) > 10000:
                 # catch files that are too short to apply meaningful signal processing
