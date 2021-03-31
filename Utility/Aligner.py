@@ -20,7 +20,7 @@ def align(path_to_transcript_dict,
           device=torch.device("cpu")):
     spemb = spemb
     transcript_to_durations = dict()
-    path_list = path_to_transcript_dict.keys()
+    path_list = list(path_to_transcript_dict.keys())
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
                       use_word_boundaries=False,
