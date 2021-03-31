@@ -6,6 +6,7 @@ import soundfile as sf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from FastSpeech2.DurationCalculator import DurationCalculator
 from FastSpeech2.EnergyCalculator import EnergyCalculator
@@ -104,7 +105,7 @@ class FastSpeechDataset(Dataset):
         dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
-        for index, path in enumerate(path_list):
+        for index, path in tqdm(enumerate(path_list)):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
             if min_len <= len(wave) / sr <= max_len:

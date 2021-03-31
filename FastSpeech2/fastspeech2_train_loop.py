@@ -9,6 +9,7 @@ import torch.multiprocessing
 from torch.cuda.amp import GradScaler, autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
+from tqdm import tqdm
 
 from PreprocessingForTTS.ProcessText import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
@@ -148,7 +149,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         grad_accum = 0
         optimizer.zero_grad()
         train_losses_this_epoch = list()
-        for train_datapoint in train_loader:
+        for train_datapoint in tqdm(train_loader):
             with autocast():
                 if not spemb:
                     train_loss = net(train_datapoint[0].to(device),

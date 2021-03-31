@@ -4,6 +4,7 @@ from multiprocessing import Process, Manager
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
@@ -43,7 +44,7 @@ class MelGANDataset(Dataset):
         # datasets at once, there could be multiple sampling
         # rates.
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        for index, path in enumerate(path_split):
+        for index, path in tqdm(enumerate(path_split)):
             print("Processing {} out of {}".format(index, len(path_split)))
             wave, sr = sf.read(path)
             if len(wave) > 10000:

@@ -6,6 +6,7 @@ import soundfile as sf
 import torch
 import torchaudio
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
@@ -82,7 +83,7 @@ class TransformerTTSDataset(Dataset):
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
                                cut_silence=cut_silences)
-        for index, path in enumerate(path_list):
+        for index, path in tqdm(enumerate(path_list)):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
             if min_len <= len(wave) / sr <= max_len:

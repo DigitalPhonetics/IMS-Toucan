@@ -7,6 +7,7 @@ import torch
 import torch.multiprocessing
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
+from tqdm import tqdm
 
 from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from Utility.RAdam import RAdam
@@ -92,7 +93,7 @@ def train_loop(batchsize=16,
 
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
-        for datapoint in train_loader:
+        for datapoint in tqdm(train_loader):
             step_counter += 1
             ############################
             #         Generator        #
