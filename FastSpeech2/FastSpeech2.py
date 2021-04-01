@@ -246,11 +246,11 @@ class FastSpeech2(torch.nn.Module, ABC):
         xs = F.pad(text_tensors, [0, 1], "constant", self.padding_idx)
         for i, l in enumerate(text_lengths):
             xs[i, l] = self.eos
-        text_lengths = text_lengths + 1
+            text_lengths_including_eos = text_lengths + 1
 
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors,
-                                                                        text_lengths,
+                                                                        text_lengths_including_eos,
                                                                         gold_speech,
                                                                         speech_lengths,
                                                                         gold_durations,
@@ -273,7 +273,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                          ds=gold_durations,
                                                                          ps=gold_pitch,
                                                                          es=gold_energy,
-                                                                         ilens=text_lengths,
+                                                                         ilens=text_lengths_including_eos,
                                                                          olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
 
