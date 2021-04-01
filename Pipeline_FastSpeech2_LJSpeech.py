@@ -53,12 +53,6 @@ if __name__ == '__main__':
                                   max_len_in_seconds=10,
                                   device=device)
 
-    for index in range(len(train_set)):
-        print(len(train_set[index][4]))
-        print(len(train_set[index][5]))
-        print(len(train_set[index][6]))
-        print("\n\n\n")
-
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
     print("Training model")

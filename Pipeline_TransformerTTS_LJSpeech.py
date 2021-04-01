@@ -38,14 +38,14 @@ if __name__ == '__main__':
                                       lang="en",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
-                                      rebuild_cache=True)
+                                      rebuild_cache=False)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
-                                      rebuild_cache=True)
+                                      rebuild_cache=False)
 
     model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
