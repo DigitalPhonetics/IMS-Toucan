@@ -44,7 +44,7 @@ class MelGANDataset(Dataset):
     def cache_builder_process(self, path_split, samples_per_segment):
         for path in tqdm(path_split):
             wave, sr = sf.read(path)
-            if len(wave) > samples_per_segment + 50:  # + 50 is just to be extra sure
+            if (len(wave) / sr) > (samples_per_segment + 50 / 16000):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
                 self.list_of_norm_wave_paths.append(path)
 
