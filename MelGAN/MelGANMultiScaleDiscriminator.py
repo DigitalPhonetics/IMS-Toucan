@@ -27,7 +27,7 @@ class MelGANMultiScaleDiscriminator(torch.nn.Module):
                                             "stride": 2,
                                             "padding": 1,
                                             "count_include_pad": False},
-                 kernel_sizes=[8, 4],
+                 kernel_sizes=[5, 3],
                  channels=64,
                  max_downsample_channels=1024,
                  bias=True,
