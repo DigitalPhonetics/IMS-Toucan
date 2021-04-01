@@ -10,7 +10,7 @@ import gc
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import random
 import warnings
 
@@ -36,41 +36,69 @@ if __name__ == '__main__':
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-50])
-    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-50:])
+    melgan_cache_dir = "Corpora/MelGAN"
+    if not os.path.exists(melgan_cache_dir):
+        os.makedirs(melgan_cache_dir)
 
-    train_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[:-50])
-    valid_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[-50:])
+    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-50],
+                                 cache=os.path.join(melgan_cache_dir, "LJSpeech_train.txt"))
+    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-50:],
+                                 cache=os.path.join(melgan_cache_dir, "LJSpeech_valid.txt"))
 
-    train_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[:-50])
-    valid_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[-50:])
+    train_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "german_train.txt"))
+    valid_set_css10ge = MelGANDataset(list_of_paths=get_file_list_css10ge()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "german_valid.txt"))
 
-    train_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[:-50])
-    valid_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[-50:])
+    train_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "greek_train.txt"))
+    valid_set_css10gr = MelGANDataset(list_of_paths=get_file_list_css10gr()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "greek_valid.txt"))
 
-    train_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[:-50])
-    valid_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[-50:])
+    train_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "spanish_train.txt"))
+    valid_set_css10es = MelGANDataset(list_of_paths=get_file_list_css10es()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "spanish_valid.txt"))
 
-    train_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[:-50])
-    valid_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[-50:])
+    train_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "finnish_train.txt"))
+    valid_set_css10fi = MelGANDataset(list_of_paths=get_file_list_css10fi()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "finnish_valid.txt"))
 
-    train_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[:-50])
-    valid_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[-50:])
+    train_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "russian_train.txt"))
+    valid_set_css10ru = MelGANDataset(list_of_paths=get_file_list_css10ru()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "russian_valid.txt"))
 
-    train_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[:-50])
-    valid_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[-50:])
+    train_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "hungarian_train.txt"))
+    valid_set_css10hu = MelGANDataset(list_of_paths=get_file_list_css10hu()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "hungarian_valid.txt"))
 
-    train_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[:-50])
-    valid_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[-50:])
+    train_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "dutch_train.txt"))
+    valid_set_css10du = MelGANDataset(list_of_paths=get_file_list_css10du()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "dutch_valid.txt"))
 
-    train_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[:-50])
-    valid_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[-50:])
+    train_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "japanese_train.txt"))
+    valid_set_css10jp = MelGANDataset(list_of_paths=get_file_list_css10jp()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "japanese_valid.txt"))
 
-    train_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[:-50])
-    valid_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[-50:])
+    train_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "chinese_train.txt"))
+    valid_set_css10ch = MelGANDataset(list_of_paths=get_file_list_css10ch()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "chinese_valid.txt"))
 
-    train_set_thorsten = MelGANDataset(list_of_paths=get_file_list_thorsten()[:-50])
-    valid_set_thorsten = MelGANDataset(list_of_paths=get_file_list_thorsten()[-50:])
+    train_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[:-50],
+                                      cache=os.path.join(melgan_cache_dir, "french_train.txt"))
+    valid_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[-50:],
+                                      cache=os.path.join(melgan_cache_dir, "french_valid.txt"))
+
+    train_set_thorsten = MelGANDataset(list_of_paths=get_file_list_thorsten()[:-50],
+                                       cache=os.path.join(melgan_cache_dir, "thorsten_train.txt"))
+    valid_set_thorsten = MelGANDataset(list_of_paths=get_file_list_thorsten()[-50:],
+                                       cache=os.path.join(melgan_cache_dir, "thorsten_valid.txt"))
 
     train_set = ConcatDataset([train_set_lj,
                                train_set_css10ge,

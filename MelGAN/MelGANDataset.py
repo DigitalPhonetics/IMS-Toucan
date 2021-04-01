@@ -1,3 +1,4 @@
+import os
 import random
 from multiprocessing import Process, Manager
 
@@ -14,7 +15,8 @@ class MelGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  samples_per_segment=10240,
-                 loading_processes=6):
+                 loading_processes=6,
+                 cache="Corpora/css10_de.txt"):
         self.samples_per_segment = samples_per_segment
         _, sr = sf.read(list_of_paths[0])
         #  ^ this is the reason why we must create individual
@@ -23,21 +25,27 @@ class MelGANDataset(Dataset):
         # rates.
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
         # hop length must be same as the product of the upscale factors
-        ressource_manager = Manager()
-        self.list_of_eligible_wave_paths = ressource_manager.list()
-        # make processes
-        path_splits = list()
-        process_list = list()
-        for i in range(loading_processes):
-            path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(
-                list_of_paths) // loading_processes])
-        for path_split in path_splits:
-            process_list.append(
-                Process(target=self.cache_builder_process, args=(path_split, samples_per_segment), daemon=True))
-            process_list[-1].start()
-        for process in process_list:
-            process.join()
-        self.list_of_eligible_wave_paths = list(self.list_of_eligible_wave_paths)
+        if not os.path.exists(cache):
+            ressource_manager = Manager()
+            self.list_of_eligible_wave_paths = ressource_manager.list()
+            # make processes
+            path_splits = list()
+            process_list = list()
+            for i in range(loading_processes):
+                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(
+                    list_of_paths) // loading_processes])
+            for path_split in path_splits:
+                process_list.append(
+                    Process(target=self.cache_builder_process, args=(path_split, samples_per_segment), daemon=True))
+                process_list[-1].start()
+            for process in process_list:
+                process.join()
+            self.list_of_eligible_wave_paths = list(self.list_of_eligible_wave_paths)
+            with open(cache, "w") as c:
+                c.write("\n".join(self.list_of_eligible_wave_paths))
+        else:
+            with open(cache, "r") as c:
+                self.list_of_eligible_wave_paths = c.read().split("\n")
         print("{} eligible audios found".format(len(self.list_of_eligible_wave_paths)))
 
     def cache_builder_process(self, path_split, samples_per_segment):
