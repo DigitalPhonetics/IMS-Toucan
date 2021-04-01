@@ -100,6 +100,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # store hyperparameters
         self.idim = idim
         self.odim = odim
+        self.eos = 1
         self.reduction_factor = reduction_factor
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
