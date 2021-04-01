@@ -242,11 +242,22 @@ class FastSpeech2(torch.nn.Module, ABC):
             Dict: Statistics to be monitored.
             Tensor: Weight value.
         """
-        # Add eos at the last of sequence
+        text_tensors = text_tensors[:, : text_lengths.max()]  # for data-parallel
+        gold_speech = gold_speech[:, : speech_lengths.max()]  # for data-parallel
+        gold_durations = gold_durations[:, : text_lengths.max() + 1]  # for data-parallel
+        gold_pitch = gold_pitch[:, : text_lengths.max() + 1]  # for data-parallel
+        gold_energy = gold_energy[:, : text_lengths.max() + 1]  # for data-parallel
+
+        # Texts don't have the stop token in them because they are freshly made,
+        # but all of the other stuff is based on the teacher model, which already
+        # produces outputs for the stop token. So durations, pitch end energies all
+        # have one more element than the text.
+
+        # And now we add the missing EOS tokwn also to the text.
         xs = F.pad(text_tensors, [0, 1], "constant", self.padding_idx)
         for i, l in enumerate(text_lengths):
             xs[i, l] = self.eos
-            text_lengths_including_eos = text_lengths + 1
+        text_lengths_including_eos = text_lengths + 1
 
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors,
