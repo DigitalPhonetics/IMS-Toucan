@@ -144,3 +144,13 @@ def get_file_list_css10fr():
                 if audio.endswith(".wav"):
                     file_list.append(os.path.join("/mount/resources/speech/corpora/CSS10", language, book, audio))
     return file_list
+
+def get_file_list_thorsten():
+    file_list = list()
+    with open("/mount/resources/speech/corpora/Thorsten_DE/metadata_shuf.csv", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            file_list.append("/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav")
+    return file_list

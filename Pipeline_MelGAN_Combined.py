@@ -23,7 +23,7 @@ from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
 from Utility.file_lists import get_file_list_ljspeech, get_file_list_css10ge, get_file_list_css10gr, \
     get_file_list_css10es, get_file_list_css10fi, get_file_list_css10ru, get_file_list_css10hu, get_file_list_css10du, \
-    get_file_list_css10jp, get_file_list_css10ch, get_file_list_css10fr
+    get_file_list_css10jp, get_file_list_css10ch, get_file_list_css10fr, get_file_list_thorsten
 
 warnings.filterwarnings("ignore")
 
@@ -69,6 +69,9 @@ if __name__ == '__main__':
     train_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[:-50])
     valid_set_css10fr = MelGANDataset(list_of_paths=get_file_list_css10fr()[-50:])
 
+    train_set_thorsten = MelGANDataset(list_of_paths=get_file_list_thorsten()[:-50])
+    valid_set_thorsten = MelGANDataset(list_of_paths=get_file_list_thorsten()[-50:])
+
     train_set = ConcatDataset([train_set_lj,
                                train_set_css10ge,
                                train_set_css10gr,
@@ -79,7 +82,8 @@ if __name__ == '__main__':
                                train_set_css10du,
                                train_set_css10jp,
                                train_set_css10ch,
-                               train_set_css10fr])
+                               train_set_css10fr,
+                               train_set_thorsten])
     valid_set = ConcatDataset([valid_set_lj,
                                valid_set_css10ge,
                                valid_set_css10gr,
@@ -90,7 +94,8 @@ if __name__ == '__main__':
                                valid_set_css10du,
                                valid_set_css10jp,
                                valid_set_css10ch,
-                               valid_set_css10fr])
+                               valid_set_css10fr,
+                               valid_set_thorsten])
 
     gc.collect()
 
