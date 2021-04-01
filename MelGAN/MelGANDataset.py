@@ -13,15 +13,19 @@ class MelGANDataset(Dataset):
 
     def __init__(self,
                  list_of_paths,
-                 samples_per_segment=8192,
-                 loading_processes=2):
+                 samples_per_segment=10240,
+                 loading_processes=6):
         self.samples_per_segment = samples_per_segment
-        self.list_of_norm_waves = list()
-        self.ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
+        self.list_of_norm_wave_paths = list()
+        _, sr = sf.read(list_of_paths[0])
+        #  ^ this is the reason why we must create individual
+        # datasets and then concat them. If we just did all
+        # datasets at once, there could be multiple sampling
+        # rates.
+        self.ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
         # hop length must be same as the product of the upscale factors
-        # also the resampling happens in the cache-building, so we must already assume 16kHz here.
         ressource_manager = Manager()
-        self.list_of_norm_waves = ressource_manager.list()
+        self.list_of_norm_wave_paths = ressource_manager.list()
         # make processes
         path_splits = list()
         process_list = list()
@@ -34,24 +38,15 @@ class MelGANDataset(Dataset):
             process_list[-1].start()
         for process in process_list:
             process.join()
-        self.list_of_norm_waves = list(self.list_of_norm_waves)
-        print("{} eligible audios found".format(len(self.list_of_norm_waves)))
+        self.list_of_norm_wave_paths = list(self.list_of_norm_wave_paths)
+        print("{} eligible audios found".format(len(self.list_of_norm_wave_paths)))
 
     def cache_builder_process(self, path_split, samples_per_segment):
-        _, sr = sf.read(path_split[0])
-        #  ^ this is the reason why we must create individual
-        # datasets and then concat them. If we just did all
-        # datasets at once, there could be multiple sampling
-        # rates.
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        for index, path in tqdm(enumerate(path_split)):
-            # print("Processing {} out of {}".format(index, len(path_split)))
+        for path in tqdm(path_split):
             wave, sr = sf.read(path)
-            if len(wave) > 10000:
+            if len(wave) > samples_per_segment + 50:  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
-                norm_wave = ap.audio_to_wave_tensor(wave, normalize=True, mulaw=False)
-                if len(norm_wave) > samples_per_segment:
-                    self.list_of_norm_waves.append(norm_wave.detach().numpy().tolist())
+                self.list_of_norm_wave_paths.append(path)
 
     def __getitem__(self, index):
         """
@@ -61,11 +56,13 @@ class MelGANDataset(Dataset):
 
         return a pair of cleaned audio and corresponding spectrogram
         """
-        max_audio_start = len(self.list_of_norm_waves[index]) - self.samples_per_segment
+        wave_orig, _ = sf.read(self.list_of_norm_wave_paths[index])
+        wave = self.ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False)
+        max_audio_start = len(wave) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
-        segment = torch.Tensor(self.list_of_norm_waves[index][audio_start: audio_start + self.samples_per_segment])
+        segment = torch.Tensor(wave[audio_start: audio_start + self.samples_per_segment])
         melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):
-        return len(self.list_of_norm_waves)
+        return len(self.list_of_norm_wave_paths)

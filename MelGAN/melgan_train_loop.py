@@ -22,7 +22,7 @@ def train_loop(batchsize=16,
                device=None,
                model_save_dir=None,
                generator_warmup_steps=100000,
-               epochs_per_save=10):
+               epochs_per_save=5):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -50,9 +50,13 @@ def train_loop(batchsize=16,
     g.train()
     d.train()
     optimizer_g = RAdam(g.parameters(), lr=0.0001, eps=1.0e-6, weight_decay=0.0)
-    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[200000, 400000, 600000, 800000, 1000000])
+    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5,
+                              milestones=[200000, 400000, 600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000,
+                                          2000000])
     optimizer_d = RAdam(d.parameters(), lr=0.00005, eps=1.0e-6, weight_decay=0.0)
-    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000, 1000000])
+    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5,
+                              milestones=[200000, 400000, 600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000,
+                                          2000000])
 
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,

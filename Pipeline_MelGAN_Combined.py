@@ -18,7 +18,7 @@ import torch
 from torch.utils.data import ConcatDataset
 
 from MelGAN.MelGANDataset import MelGANDataset
-from MelGAN.MelGANGenerator import MelGANGenerator
+from MelGAN.MelGANGenerator_EXPERIMENTAL import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
 from Utility.file_lists import get_file_list_ljspeech, get_file_list_css10ge, get_file_list_css10gr, \
@@ -32,7 +32,7 @@ random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
-    model_save_dir = "Models/MelGAN/MultiSpeaker/Combined"
+    model_save_dir = "Models/MelGAN/MultiSpeaker/Combined_reworked"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
