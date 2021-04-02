@@ -253,7 +253,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # produces outputs for the stop token. So durations, pitch end energies all
         # have one more element than the text.
 
-        # And now we add the missing EOS tokwn also to the text.
+        # And now we add the missing EOS token also to the text.
         xs = F.pad(text_tensors, [0, 1], "constant", self.padding_idx)
         for i, l in enumerate(text_lengths):
             xs[i, l] = self.eos
