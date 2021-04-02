@@ -151,7 +151,38 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for train_datapoint in tqdm(train_loader):
-            with autocast():
+            if gradient_accumulation == 1:
+                with autocast():
+                    if not spemb:
+                        train_loss = net(train_datapoint[0].to(device),
+                                         train_datapoint[1].to(device),
+                                         train_datapoint[2].to(device),
+                                         train_datapoint[3].to(device),
+                                         train_datapoint[4].to(device),
+                                         train_datapoint[5].to(device),
+                                         train_datapoint[6].to(device))
+                    else:
+                        train_loss = net(train_datapoint[0].to(device),
+                                         train_datapoint[1].to(device),
+                                         train_datapoint[2].to(device),
+                                         train_datapoint[3].to(device),
+                                         train_datapoint[4].to(device),
+                                         train_datapoint[5].to(device),
+                                         train_datapoint[6].to(device),
+                                         train_datapoint[7].to(device))
+                    train_losses_this_epoch.append(float(train_loss))
+                scaler.scale(train_loss).backward()
+                del train_loss
+                grad_accum = 0
+                step_counter += 1
+                # update weights
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+                optimizer.zero_grad()
+                torch.cuda.empty_cache()
+            else:
                 if not spemb:
                     train_loss = net(train_datapoint[0].to(device),
                                      train_datapoint[1].to(device),
@@ -170,20 +201,20 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                                      train_datapoint[6].to(device),
                                      train_datapoint[7].to(device))
                 train_losses_this_epoch.append(float(train_loss))
-            scaler.scale((train_loss / gradient_accumulation)).backward()
-            del train_loss
-            grad_accum += 1
-            if grad_accum % gradient_accumulation == 0:
-                grad_accum = 0
-                step_counter += 1
-                # update weights
-                # print("Step: {}".format(step_counter))
-                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-                scaler.step(optimizer)
-                scaler.update()
-                scheduler.step()
-                optimizer.zero_grad()
-                torch.cuda.empty_cache()
+                (train_loss / gradient_accumulation).backward()
+                del train_loss
+                grad_accum += 1
+                if grad_accum % gradient_accumulation == 0:
+                    grad_accum = 0
+                    step_counter += 1
+                    # update weights
+                    # print("Step: {}".format(step_counter))
+                    torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                    optimizer.step()
+                    scheduler.step()
+                    optimizer.zero_grad()
+                    torch.cuda.empty_cache()
+
         # evaluate on valid after every epoch is through
         with torch.no_grad():
             net.eval()
@@ -216,6 +247,9 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
                                    reference_spemb_for_plot=reference_spemb_for_plot)
+                if step_counter > steps:
+                    # DONE
+                    return
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
@@ -226,5 +260,3 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
                 json.dump(loss_plot, plotting_data_file)
             net.train()
-            if step_counter > steps:
-                return

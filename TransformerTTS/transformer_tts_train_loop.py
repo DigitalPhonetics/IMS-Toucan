@@ -278,6 +278,9 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 plot_attentions_best_head(all_atts,
                                           att_dir=save_directory,
                                           step=step_counter, phones=phones)
+                if step_counter > steps:
+                    # DONE
+                    return
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
             print("Valid Loss:   {}".format(average_val_loss))
@@ -288,5 +291,3 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
                 json.dump(loss_plot, plotting_data_file)
             net.train()
-            if step_counter > steps:
-                return

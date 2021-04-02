@@ -219,8 +219,10 @@ def test_spectrogram_inversion(path_to_wav="Corpora/test.wav"):
     axes[1][1].set_title("Reconstructed Spectrogram")
     plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.9, wspace=0, hspace=0.2)
     plt.show()
-    sf.write("audio_orig.wav", data=clean_wave.detach().numpy(), samplerate=16000)
-    sf.write("audio_reconstructed.wav", data=reconstructed_wave.detach().numpy(), samplerate=16000)
+    if not os.path.isdir("audios"):
+        os.makedirs("audios")
+    sf.write("audios/audio_orig.wav", data=clean_wave.detach().numpy(), samplerate=16000)
+    sf.write("audios/audio_reconstructed.wav", data=reconstructed_wave.detach().numpy(), samplerate=16000)
 
 
 def show_audio_lens_in_dataset(path_list):
@@ -253,7 +255,7 @@ if __name__ == '__main__':
     # plot_melgan_training()
     # plot_syn_training()
     test_spectrogram_inversion(path_to_wav="Corpora/test.wav")
-    # show_att(lang="en", best_only=True, teacher_forcing=True)
+    show_att(lang="en", best_only=True, teacher_forcing=True)
     # show_specs(lang="en")
     # show_specs(lang="de")
     """from Utility.Aligner import align

@@ -1,4 +1,3 @@
-import gc
 import json
 import os
 import time
@@ -62,18 +61,18 @@ def train_loop(batchsize=16,
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batchsize,
                               shuffle=True,
-                              num_workers=4,
+                              num_workers=16,
                               pin_memory=False,
                               drop_last=True,
                               prefetch_factor=4,
                               persistent_workers=False)
     valid_loader = DataLoader(dataset=valid_dataset,
-                              batch_size=10,
+                              batch_size=20,
                               shuffle=False,
                               num_workers=5,
                               pin_memory=False,
                               drop_last=False,
-                              prefetch_factor=2,
+                              prefetch_factor=20,
                               persistent_workers=False)
 
     start_time = time.time()
@@ -81,7 +80,6 @@ def train_loop(batchsize=16,
     while True:
 
         epoch += 1
-        gc.collect()
 
         train_losses_this_epoch = dict()
         train_losses_this_epoch["adversarial"] = list()
@@ -210,7 +208,6 @@ def train_loop(batchsize=16,
             valid_gen_mean_epoch_loss = sum(valid_losses_this_epoch["generator_total"][-len(valid_dataset):]) / len(
                 valid_dataset)
             if step_counter > generator_warmup_steps and epoch % epochs_per_save == 0:
-                # only then it gets interesting
                 torch.save({"generator": g.state_dict(),
                             "discriminator": d.state_dict(),
                             "generator_optimizer": optimizer_g.state_dict(),
@@ -218,6 +215,11 @@ def train_loop(batchsize=16,
                             "generator_scheduler": scheduler_g.state_dict(),
                             "discriminator_scheduler": scheduler_d.state_dict()},
                            os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+
+                if step_counter > steps:
+                    # DONE
+                    return
+
             print("Epoch:                  {}".format(epoch + 1))
             print("Valid Generator Loss:   {}".format(valid_gen_mean_epoch_loss))
             print("Time elapsed:           {} Minutes".format(round((time.time() - start_time) / 60), 2))
@@ -253,5 +255,3 @@ def train_loop(batchsize=16,
             with open(os.path.join(model_save_dir, "valid_loss.json"), 'w') as plotting_data_file:
                 json.dump(valid_losses, plotting_data_file)
 
-            if step_counter > steps:
-                return
