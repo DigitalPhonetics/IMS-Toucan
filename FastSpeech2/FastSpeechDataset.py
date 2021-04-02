@@ -35,6 +35,10 @@ class FastSpeechDataset(Dataset):
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or \
                 rebuild_cache:
+            if os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
+                # reset duration sanity check dir
+                os.removedirs(os.path.join(cache_dir, "durations_visualization"))
+            os.makedirs(os.path.join(cache_dir, "durations_visualization"))
             ressource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
             if type(train) is str:
@@ -59,8 +63,7 @@ class FastSpeechDataset(Dataset):
                     Process(target=self.cache_builder_process,
                             args=(
                                 key_split, acoustic_model_name, spemb, lang, min_len_in_seconds, max_len_in_seconds,
-                                reduction_factor,
-                                device),
+                                reduction_factor, device, cache_dir),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -91,7 +94,8 @@ class FastSpeechDataset(Dataset):
                               min_len,
                               max_len,
                               reduction_factor,
-                              device):
+                              device,
+                              cache_dir):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_word_boundaries=False,
@@ -120,10 +124,13 @@ class FastSpeechDataset(Dataset):
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
                 if not spemb:
+                    os.path.join(cache_dir, "durations_visualization")
                     cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
                                                                    speech=melspec.to(device),
                                                                    use_teacher_forcing=True,
-                                                                   spembs=None)[2])[0].cpu()
+                                                                   spembs=None)[2],
+                                          vis=os.path.join(cache_dir, "durations_visualization",
+                                                           ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
@@ -131,7 +138,9 @@ class FastSpeechDataset(Dataset):
                     cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
                                                                    speech=melspec.to(device),
                                                                    use_teacher_forcing=True,
-                                                                   spembs=cached_spemb.to(device))[2])[0].cpu()
+                                                                   spembs=cached_spemb.to(device))[2],
+                                          vis=os.path.join(cache_dir, "durations_visualization",
+                                                           ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
