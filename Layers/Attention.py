@@ -80,8 +80,6 @@ class MultiHeadedAttention(nn.Module):
         """
         n_batch = value.size(0)
         if mask is not None:
-            print(mask)
-            print(mask.shape)
             mask = mask.unsqueeze(1).eq(0)  # (batch, 1, *, time2)
             min_value = float(numpy.finfo(torch.tensor(0, dtype=scores.dtype).numpy().dtype).min)
             scores = scores.masked_fill(mask, min_value)

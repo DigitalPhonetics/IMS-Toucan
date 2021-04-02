@@ -247,13 +247,13 @@ class FastSpeech2(torch.nn.Module, ABC):
         # have one more element than the text.
 
         # And now we add the missing EOS token also to the text.
-        xs = F.pad(text_tensors, [0, 1], "constant", self.padding_idx)
+        text_tensors_including_eos = F.pad(text_tensors, [0, 1], "constant", self.padding_idx)
         for i, l in enumerate(text_lengths):
-            xs[i, l] = self.eos
+            text_tensors_including_eos[i, l] = self.eos
         text_lengths_including_eos = text_lengths + 1
 
         # forward propagation
-        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors,
+        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors_including_eos,
                                                                         text_lengths_including_eos,
                                                                         gold_speech,
                                                                         speech_lengths,
