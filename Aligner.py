@@ -27,6 +27,10 @@ def align(path_to_transcript_dict,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
     _, sr = sf.read(path_list[0])
+    if os.path.isdir(os.path.join(cache_dir, "alignments_visualization")):
+        # reset duration sanity check dir
+        os.removedirs(os.path.join(cache_dir, "alignments_visualization"))
+    os.makedirs(os.path.join(cache_dir, "alignments_visualization"))
     if spemb:
         wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
         dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
@@ -44,7 +48,9 @@ def align(path_to_transcript_dict,
             cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
                                                            speech=melspec.to(device),
                                                            use_teacher_forcing=True,
-                                                           spembs=None)[2])[0].cpu().numpy().tolist()
+                                                           spembs=None)[2],
+                                  vis=os.path.join(cache_dir, "alignments_visualization",
+                                                   ".".join(path.split(".")[:-1]) + ".png"))[0].cpu().numpy().tolist()
         else:
             wav_tensor, sample_rate = torchaudio.load(path)
             mel_tensor = wav2mel(wav_tensor, sample_rate)
@@ -62,3 +68,15 @@ def align(path_to_transcript_dict,
 
     with open(os.path.join(cache_dir, "alignments.json"), 'w') as fp:
         json.dump(transcript_to_durations, fp)
+
+
+if __name__ == '__main__':
+    from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
+
+    align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(),
+          acoustic_model_name="Transformer_English_Single.pt",
+          spemb=False,
+          cache_dir="Corpora/LJSpeech",
+          lang="en",
+          reduction_factor=1,
+          device=torch.device("cpu"))

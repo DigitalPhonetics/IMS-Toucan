@@ -258,14 +258,3 @@ if __name__ == '__main__':
     show_att(lang="en", best_only=True, teacher_forcing=True)
     # show_specs(lang="en")
     # show_specs(lang="de")
-    """from Utility.Aligner import align
-    from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
-
-    align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(),
-          acoustic_model_name="Transformer_English_Single.pt",
-          spemb=False,
-          cache_dir="Corpora/LJSpeech",
-          lang="en",
-          reduction_factor=1,
-          device=torch.device("cpu"))
-    """
