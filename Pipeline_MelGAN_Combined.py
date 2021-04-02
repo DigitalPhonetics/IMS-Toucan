@@ -18,7 +18,7 @@ import torch
 from torch.utils.data import ConcatDataset
 
 from MelGAN.MelGANDataset import MelGANDataset
-from MelGAN.MelGANGenerator_EXPERIMENTAL import MelGANGenerator
+from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
 from Utility.file_lists import get_file_list_ljspeech, get_file_list_css10ge, get_file_list_css10gr, \
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     print("Training model")
     train_loop(batchsize=16,
-               epochs=6000000,  # just kill the process at some point
+               steps=2000000,
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,

@@ -326,9 +326,6 @@ class FastSpeech2(torch.nn.Module, ABC):
             # use groundtruth in training
             p_embs = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             e_embs = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            print(encoded_texts.shape)
-            print(e_embs.shape)
-            print(p_embs.shape)
             encoded_texts = encoded_texts + e_embs + p_embs
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 

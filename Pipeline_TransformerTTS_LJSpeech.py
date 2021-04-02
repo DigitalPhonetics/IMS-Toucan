@@ -56,7 +56,7 @@ if __name__ == '__main__':
                device=torch.device("cuda"),
                config=model.get_conf(),
                save_directory=save_dir,
-               epochs=300000,  # just kill the process at some point
+               steps=400000,
                batchsize=64,
                gradient_accumulation=1,
                epochs_per_save=10,

@@ -14,7 +14,7 @@ from Utility.RAdam import RAdam
 
 
 def train_loop(batchsize=16,
-               epochs=10,
+               steps=2000000,
                generator=None,
                discriminator=None,
                train_dataset=None,
@@ -41,6 +41,7 @@ def train_loop(batchsize=16,
     valid_losses["discriminator_mse"] = list()
 
     step_counter = 0
+    epoch = 0
 
     criterion = MultiResolutionSTFTLoss().to(device)
     discriminator_criterion = torch.nn.MSELoss().to(device)
@@ -77,8 +78,9 @@ def train_loop(batchsize=16,
 
     start_time = time.time()
 
-    for epoch in range(epochs):
+    while True:
 
+        epoch += 1
         gc.collect()
 
         train_losses_this_epoch = dict()
@@ -250,3 +252,6 @@ def train_loop(batchsize=16,
                 json.dump(train_losses, plotting_data_file)
             with open(os.path.join(model_save_dir, "valid_loss.json"), 'w') as plotting_data_file:
                 json.dump(valid_losses, plotting_data_file)
+
+            if step_counter > steps:
+                return

@@ -94,7 +94,7 @@ def collate_and_pad(batch):
 
 
 def train_loop(net, train_dataset, valid_dataset, device, save_directory,
-               config, batchsize=32, epochs=150, gradient_accumulation=1,
+               config, batchsize=32, steps=400000, gradient_accumulation=1,
                epochs_per_save=10, spemb=False, lang="en", lr=0.1, warmup_steps=14000):
     """
     :param lang: language of the synthesis
@@ -142,9 +142,10 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     net.train()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-
+    epoch = 1
     start_time = time.time()
-    for epoch in range(epochs):
+    while True:
+        epoch += 1
         # train one epoch
         grad_accum = 0
         optimizer.zero_grad()
@@ -225,3 +226,5 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
             with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
                 json.dump(loss_plot, plotting_data_file)
             net.train()
+            if step_counter > steps:
+                return

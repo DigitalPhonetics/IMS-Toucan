@@ -34,20 +34,24 @@ if __name__ == '__main__':
 
     path_to_transcript_dict = build_path_to_transcript_dict_css10de()
 
+    device = torch.device("cuda")
+
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
                                   acoustic_model_name="Transformer_German_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="de",
                                   min_len_in_seconds=1,
-                                  max_len_in_seconds=17)
+                                  max_len_in_seconds=10,
+                                  device=device)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="Transformer_German_Single.pt",
                                   cache_dir=cache_dir,
                                   lang="de",
                                   min_len_in_seconds=1,
-                                  max_len_in_seconds=17)
+                                  max_len_in_seconds=10,
+                                  device=device)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
@@ -55,9 +59,14 @@ if __name__ == '__main__':
     train_loop(net=model,
                train_dataset=train_set,
                valid_dataset=valid_set,
-               device=torch.device("cpu"),
+               device=device,
                config=model.get_conf(),
                save_directory=save_dir,
-               epochs=300000,  # just kill the process at some point
+               steps=400000,
                batchsize=32,
-               gradient_accumulation=1)
+               gradient_accumulation=1,
+               epochs_per_save=10,
+               spemb=False,
+               lang="de",
+               lr=0.05,
+               warmup_steps=8000)
