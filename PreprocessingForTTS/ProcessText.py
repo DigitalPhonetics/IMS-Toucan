@@ -72,7 +72,7 @@ class TextFrontend:
             print("Language not supported yet")
             sys.exit()
 
-    def string_to_tensor(self, text, view=False):
+    def string_to_tensor(self, text, view=True):
         """
         Fixes unicode errors, expands some abbreviations,
         turns graphemes into phonemes and then vectorizes

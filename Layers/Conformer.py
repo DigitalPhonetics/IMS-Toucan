@@ -53,15 +53,11 @@ class Conformer(torch.nn.Module):
             input_layer="conv2d",
             normalize_before=True,
             concat_after=False,
-            positionwise_layer_type="linear",
             positionwise_conv_kernel_size=1,
             macaron_style=False,
-            pos_enc_layer_type="abs_pos",
-            selfattention_layer_type="selfattn",
-            activation_type="swish",
             use_cnn_module=False,
             cnn_module_kernel=31,
-            padding_idx=-1,
+            zero_triu=False
     ):
         """Construct a Conformer object."""
         super(Conformer, self).__init__()
@@ -90,6 +86,7 @@ class Conformer(torch.nn.Module):
             attention_heads,
             attention_dim,
             attention_dropout_rate,
+            zero_triu
         )
 
         # feed-forward module definition
