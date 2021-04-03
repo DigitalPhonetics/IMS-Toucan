@@ -44,7 +44,7 @@ if __name__ == '__main__':
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  rebuild_cache=True)
+                                  rebuild_cache=False)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="Transformer_English_Single.pt",
@@ -53,7 +53,7 @@ if __name__ == '__main__':
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  rebuild_cache=True)
+                                  rebuild_cache=False)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
