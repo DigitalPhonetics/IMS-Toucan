@@ -130,7 +130,7 @@ class FastSpeechDataset(Dataset):
                                                                    use_teacher_forcing=True,
                                                                    spembs=None)[2],
                                           vis=os.path.join(cache_dir, "durations_visualization",
-                                                           ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
+                                                           path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)

@@ -50,7 +50,8 @@ def align(path_to_transcript_dict,
                                                            use_teacher_forcing=True,
                                                            spembs=None)[2],
                                   vis=os.path.join(cache_dir, "alignments_visualization",
-                                                   ".".join(path.split(".")[:-1]) + ".png"))[0].cpu().numpy().tolist()
+                                                   path.split("/")[-1].rstrip(".wav") + ".png"))[
+                0].cpu().numpy().tolist()
         else:
             wav_tensor, sample_rate = torchaudio.load(path)
             mel_tensor = wav2mel(wav_tensor, sample_rate)
