@@ -23,7 +23,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "Thorsten")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "Thorsten_with_stress")
+    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "Thorsten")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -37,14 +37,14 @@ if __name__ == '__main__':
                                       lang="de",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
-                                      rebuild_cache=False)
+                                      rebuild_cache=True)
     valid_set = TransformerTTSDataset(path_to_transcript_dict,
                                       train=False,
                                       cache_dir=cache_dir,
                                       lang="de",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
-                                      rebuild_cache=False)
+                                      rebuild_cache=True)
 
     model = Transformer(idim=133, odim=80, spk_embed_dim=None)
 
@@ -62,4 +62,5 @@ if __name__ == '__main__':
                spemb=False,
                lang="de",
                lr=0.05,
-               warmup_steps=8000)
+               warmup_steps=8000,
+               checkpoint="checkpoint_90243.pt")
