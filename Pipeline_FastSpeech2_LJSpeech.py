@@ -7,7 +7,7 @@ This requires having a trained TransformerTTS model in the right directory to kn
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 import random
 import warnings
 
@@ -43,7 +43,8 @@ if __name__ == '__main__':
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
-                                  device=device)
+                                  device=device,
+                                  rebuild_cache=True)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="Transformer_English_Single.pt",
@@ -51,7 +52,8 @@ if __name__ == '__main__':
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
-                                  device=device)
+                                  device=device,
+                                  rebuild_cache=True)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
