@@ -375,7 +375,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             Tensor: Output sequence of features (L, odim).
 
         """
-        self.valid()
+        self.eval()
         x, y = text, speech
         spemb, d, p, e = spembs, durations, pitch, energy
 
