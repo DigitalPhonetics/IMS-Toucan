@@ -35,10 +35,8 @@ class FastSpeechDataset(Dataset):
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or \
                 rebuild_cache:
-            if os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
-                # reset duration sanity check dir
-                os.removedirs(os.path.join(cache_dir, "durations_visualization"))
-            os.makedirs(os.path.join(cache_dir, "durations_visualization"))
+            if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
+                os.makedirs(os.path.join(cache_dir, "durations_visualization"))
             ressource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
             if type(train) is str:
