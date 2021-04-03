@@ -11,7 +11,7 @@ from cleantext import clean
 class TextFrontend:
     def __init__(self,
                  language,
-                 use_panphon_vectors=True,
+                 use_panphon_vectors=False,
                  use_word_boundaries=False,
                  use_explicit_eos=False,
                  use_prosody=False,  # unfortunately the non segmental
@@ -21,7 +21,7 @@ class TextFrontend:
                  # with such information would help such systems.
                  use_lexical_stress=False,
                  path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv",
-                 silent=False):
+                 silent=True):
         """
         Mostly preparing ID lookups
         """
@@ -72,7 +72,7 @@ class TextFrontend:
             print("Language not supported yet")
             sys.exit()
 
-    def string_to_tensor(self, text, view=True):
+    def string_to_tensor(self, text, view=False):
         """
         Fixes unicode errors, expands some abbreviations,
         turns graphemes into phonemes and then vectorizes
