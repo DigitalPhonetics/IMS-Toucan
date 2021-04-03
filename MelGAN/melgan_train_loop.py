@@ -21,7 +21,8 @@ def train_loop(batchsize=16,
                device=None,
                model_save_dir=None,
                generator_warmup_steps=100000,
-               epochs_per_save=5):
+               epochs_per_save=5,
+               checkpoint=None):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -74,6 +75,24 @@ def train_loop(batchsize=16,
                               drop_last=False,
                               prefetch_factor=20,
                               persistent_workers=False)
+
+    if checkpoint is not None:
+        with open(os.path.join(model_save_dir, "train_loss.json"), "r") as tl:
+            train_losses = json.load(tl)
+        with open(os.path.join(model_save_dir, "valid_loss.json"), "r") as vl:
+            valid_losses = json.load(vl)
+        check_dict = torch.load(os.path.join(model_save_dir, checkpoint), map_location=device)
+        optimizer_g.load_state_dict(check_dict["generator_optimizer"])
+        optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
+        scheduler_g.load_state_dict(check_dict["generator_scheduler"])
+        scheduler_d.load_state_dict(check_dict["discriminator_scheduler"])
+        g.load_state_dict(check_dict["generator"])
+        d.load_state_dict(check_dict["discriminator"])
+        if "step_counter" in check_dict:
+            step_counter = check_dict["step_counter"]
+        else:
+            # legacy
+            step_counter = int(checkpoint.split(".")[0].split("_")[1])
 
     start_time = time.time()
 
@@ -213,7 +232,8 @@ def train_loop(batchsize=16,
                             "generator_optimizer": optimizer_g.state_dict(),
                             "discriminator_optimizer": optimizer_d.state_dict(),
                             "generator_scheduler": scheduler_g.state_dict(),
-                            "discriminator_scheduler": scheduler_d.state_dict()},
+                            "discriminator_scheduler": scheduler_d.state_dict(),
+                            "step_counter": step_counter},
                            os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
 
                 if step_counter > steps:

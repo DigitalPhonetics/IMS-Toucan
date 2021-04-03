@@ -95,7 +95,8 @@ def collate_and_pad(batch):
 
 def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                config, batchsize=32, steps=400000, gradient_accumulation=1,
-               epochs_per_save=10, spemb=False, lang="en", lr=0.1, warmup_steps=14000):
+               epochs_per_save=10, spemb=False, lang="en", lr=0.1, warmup_steps=14000,
+               checkpoint=None):
     """
     :param lang: language of the synthesis
     :param spemb: whether to expect speaker embeddings
@@ -143,6 +144,20 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     epoch = 1
+
+    if checkpoint is not None:
+        # careful when restarting, plotting data will be overwritten!
+        check_dict = torch.load(os.path.join(save_directory, checkpoint), map_location=device)
+        optimizer.load_state_dict(check_dict["optimizer"])
+        scaler.load_state_dict(check_dict["scaler"])
+        scheduler.load_state_dict(check_dict["scheduler"])
+        net.load_state_dict(check_dict["model"])
+        if "step_counter" in check_dict:
+            step_counter = check_dict["step_counter"]
+        else:
+            # legacy
+            step_counter = int(checkpoint.split(".")[0].split("_")[1])
+
     start_time = time.time()
     while True:
         epoch += 1
@@ -243,7 +258,8 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                             "optimizer": optimizer.state_dict(),
                             "scaler": scaler.state_dict(),
                             "step_counter": step_counter,
-                            "scheduler": scheduler.state_dict()},
+                            "scheduler": scheduler.state_dict(),
+                            "step_counter": step_counter},
                            os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
                                    reference_spemb_for_plot=reference_spemb_for_plot)

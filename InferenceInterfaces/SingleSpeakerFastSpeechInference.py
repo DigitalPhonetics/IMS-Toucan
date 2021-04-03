@@ -7,7 +7,6 @@ import soundfile
 import torch
 import torch.nn.functional as F
 
-from FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
@@ -235,7 +234,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                 pitch: torch.Tensor = None,
                 energy: torch.Tensor = None,
                 alpha: float = 1.0):
-        self.valid()
+        self.eval()
         x, y = text, speech
         spemb, d, p, e = spembs, durations, pitch, energy
         ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
