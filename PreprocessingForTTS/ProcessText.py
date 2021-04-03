@@ -19,7 +19,7 @@ class TextFrontend:
                  # phonemes hurts the performance of end-to-end models a
                  # lot, even though one might think enriching the input
                  # with such information would help such systems.
-                 use_stress=True,
+                 use_lexical_stress=False,
                  path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv",
                  silent=False):
         """
@@ -29,7 +29,7 @@ class TextFrontend:
         self.use_word_boundaries = use_word_boundaries
         self.use_explicit_eos = use_explicit_eos
         self.use_prosody = use_prosody
-        self.use_stress = use_stress
+        self.use_stress = use_lexical_stress
 
         # list taken and modified from https://github.com/dmort27/panphon
         # see publication: https://www.aclweb.org/anthology/C16-1328/
