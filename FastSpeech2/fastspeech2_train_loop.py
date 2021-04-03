@@ -33,7 +33,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_pl
     if not os.path.exists(os.path.join(save_dir, "spec")):
         os.makedirs(os.path.join(save_dir, "spec"))
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    lbd.specshow(spec, ax=ax[0][0], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
+    lbd.specshow(spec, ax=ax[0], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
     plt.close()
