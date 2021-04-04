@@ -320,11 +320,24 @@ class LJSpeech_TransformerTTSInference(torch.nn.Module):
         self.mel2wav.eval()
         self.to(torch.device(device))
 
-    def forward(self, text):
+    def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
             mel = self.phone2mel(phones).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
+        if view:
+            import matplotlib.pyplot as plt
+            import librosa.display as lbd
+            fig, ax = plt.subplots(nrows=2, ncols=1)
+            ax[0].plot(wave.cpu().numpy())
+            lbd.specshow(mel.cpu().numpy(), ax=ax[1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time',
+                         hop_length=256)
+            ax[0].set_title(self.text2phone.get_phone_string(text))
+            ax[0].yaxis.set_visible(False)
+            ax[1].yaxis.set_visible(False)
+            plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
+            plt.show()
+
         return wave
 
     def read_to_file(self, text_list, file_location, silent=False):
@@ -346,6 +359,6 @@ class LJSpeech_TransformerTTSInference(torch.nn.Module):
                     wav = torch.cat((wav, self(text).cpu()), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
-    def read_aloud(self, text):
-        wav = self(text).cpu().numpy()
+    def read_aloud(self, text, view=False):
+        wav = self(text, view).cpu().numpy()
         sounddevice.play(wav, samplerate=16000)

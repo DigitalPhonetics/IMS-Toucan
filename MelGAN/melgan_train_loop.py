@@ -274,4 +274,3 @@ def train_loop(batchsize=16,
                 json.dump(train_losses, plotting_data_file)
             with open(os.path.join(model_save_dir, "valid_loss.json"), 'w') as plotting_data_file:
                 json.dump(valid_losses, plotting_data_file)
-

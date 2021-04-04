@@ -335,7 +335,7 @@ class Thorsten_TransformerTTSInference(torch.nn.Module):
             ax[0].set_title(self.text2phone.get_phone_string(text))
             ax[0].yaxis.set_visible(False)
             ax[1].yaxis.set_visible(False)
-            plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.9, wspace=0, hspace=0.2)
+            plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()
 
         return wave

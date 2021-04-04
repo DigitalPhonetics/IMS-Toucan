@@ -145,6 +145,7 @@ def get_file_list_css10fr():
                     file_list.append(os.path.join("/mount/resources/speech/corpora/CSS10", language, book, audio))
     return file_list
 
+
 def get_file_list_thorsten():
     file_list = list()
     with open("/mount/resources/speech/corpora/Thorsten_DE/metadata_shuf.csv", encoding="utf8") as f:
