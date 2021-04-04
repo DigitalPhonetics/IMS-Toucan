@@ -23,7 +23,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "Thorsten")
-    save_dir = os.path.join("Models", "TransformerTTS", "SingleSpeaker", "Thorsten")
+    save_dir = os.path.join("Models", "TransformerTTS_Thorsten")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -62,5 +62,4 @@ if __name__ == '__main__':
                spemb=False,
                lang="de",
                lr=0.05,
-               warmup_steps=8000,
-               checkpoint="checkpoint_90243.pt")
+               warmup_steps=8000)

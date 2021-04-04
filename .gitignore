@@ -8,5 +8,5 @@ Models
 *_graph
 *.out
 *.wav
-notes.txt
+audios/notes.txt
 audios/

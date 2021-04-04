@@ -24,7 +24,7 @@ random.seed(13)
 if __name__ == '__main__':
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LibriTTS")
-    save_dir = os.path.join("Models", "TransformerTTS", "MultiSpeaker", "LibriTTS")
+    save_dir = os.path.join("Models", "TransformerTTS_LibriTTS")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):

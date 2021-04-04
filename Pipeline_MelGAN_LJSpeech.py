@@ -24,7 +24,7 @@ random.seed(13)
 
 if __name__ == '__main__':
     print("Preparing")
-    model_save_dir = "Models/MelGAN/LJSpeech"
+    model_save_dir = "Models/MelGAN_LJSpeech"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
