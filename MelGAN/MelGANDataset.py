@@ -23,11 +23,14 @@ class MelGANDataset(Dataset):
         # datasets and then concat them. If we just did all
         # datasets at once, there could be multiple sampling
         # rates.
-        self.ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
+        self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256,
+                                               n_fft=1024)
+        self.melspec_ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256,
+                                            n_fft=1024)
         # hop length must be same as the product of the upscale factors
         if not os.path.exists(cache):
-            ressource_manager = Manager()
-            self.list_of_eligible_wave_paths = ressource_manager.list()
+            resource_manager = Manager()
+            self.list_of_eligible_wave_paths = resource_manager.list()
             # make processes
             path_splits = list()
             process_list = list()
@@ -46,7 +49,26 @@ class MelGANDataset(Dataset):
         else:
             with open(cache, "r") as c:
                 self.list_of_eligible_wave_paths = c.read().split("\n")
-        print("{} eligible audios found".format(len(self.list_of_eligible_wave_paths)))
+
+        # At this point we have a list of eligible
+        # wave paths either way. Now we can process
+        # it and have it in RAM. This is suboptimal
+        # if we do it in one go, but it's fine.
+        resource_manager = Manager()
+        self.waves = resource_manager.list()
+        path_splits = list()
+        process_list = list()
+        for i in range(loading_processes):
+            path_splits.append(self.list_of_eligible_wave_paths[
+                               i * len(self.list_of_eligible_wave_paths) // loading_processes:(i + 1) * len(
+                                   self.list_of_eligible_wave_paths) // loading_processes])
+        for path_split in path_splits:
+            process_list.append(Process(target=self.ram_loader_process, args=(path_split,), daemon=True))
+            process_list[-1].start()
+        for process in process_list:
+            process.join()
+        self.waves = list(self.waves)
+        print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split, samples_per_segment):
         for path in tqdm(path_split):
@@ -54,6 +76,11 @@ class MelGANDataset(Dataset):
             if (len(wave) / sr) > ((samples_per_segment + 50) / 16000):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
                 self.list_of_eligible_wave_paths.append(path)
+
+    def ram_loader_process(self, path_split):
+        for path in tqdm(path_split):
+            wave_orig, _ = sf.read(path)
+            self.waves.append(self.preprocess_ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False))
 
     def __getitem__(self, index):
         """
@@ -63,12 +90,11 @@ class MelGANDataset(Dataset):
 
         return a pair of cleaned audio and corresponding spectrogram
         """
-        wave_orig, _ = sf.read(self.list_of_eligible_wave_paths[index])
-        wave = self.ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False)
-        max_audio_start = len(wave) - self.samples_per_segment
+        max_audio_start = len(self.waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
-        segment = torch.Tensor(wave[audio_start: audio_start + self.samples_per_segment])
-        melspec = self.ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        segment = torch.Tensor(self.waves[index][audio_start: audio_start + self.samples_per_segment])
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0,
+                                                                                                                    1)
         return segment, melspec
 
     def __len__(self):
