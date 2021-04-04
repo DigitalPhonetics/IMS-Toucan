@@ -143,7 +143,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
     net.train()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-    epoch = 1
+    epoch = 0
 
     if checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!

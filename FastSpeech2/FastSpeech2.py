@@ -90,7 +90,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  transformer_dec_attn_dropout_rate: float = 0.2,
                  duration_predictor_dropout_rate: float = 0.2,
                  postnet_dropout_rate: float = 0.5,
-                 init_type: str = "kaiming_uniform",
+                 init_type: str = "xavier_uniform",
                  init_enc_alpha: float = 1.0,
                  init_dec_alpha: float = 1.0,
                  use_masking: bool = False,
