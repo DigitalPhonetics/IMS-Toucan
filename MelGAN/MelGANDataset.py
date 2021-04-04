@@ -1,7 +1,6 @@
 import os
 import random
 from multiprocessing import Process, Manager
-from time import sleep
 
 import soundfile as sf
 import torch
@@ -55,20 +54,11 @@ class MelGANDataset(Dataset):
         # wave paths either way. Now we can process
         # it and have it in RAM. This is suboptimal
         # if we do it in one go, but it's fine.
-        resource_manager = Manager()
-        self.waves = resource_manager.list()
-        path_splits = list()
-        process_list = list()
-        for i in range(loading_processes):
-            path_splits.append(self.list_of_eligible_wave_paths[
-                               i * len(self.list_of_eligible_wave_paths) // loading_processes:(i + 1) * len(
-                                   self.list_of_eligible_wave_paths) // loading_processes])
-        for path_split in path_splits:
-            process_list.append(Process(target=self.ram_loader_process, args=(path_split,), daemon=True))
-            process_list[-1].start()
-        for process in process_list:
-            process.join()
-        self.waves = list(self.waves)
+        self.waves = list()
+        for path in tqdm(self.list_of_eligible_wave_paths):
+            with open(path, "rb") as audio_file:
+                wave_orig, _ = sf.read(audio_file)
+            self.waves.append(self.preprocess_ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False))
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split, samples_per_segment):
@@ -78,13 +68,6 @@ class MelGANDataset(Dataset):
             if (len(wave) / sr) > ((samples_per_segment + 50) / 16000):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
                 self.list_of_eligible_wave_paths.append(path)
-
-    def ram_loader_process(self, path_split):
-        for path in tqdm(path_split):
-            with open(path, "rb") as audio_file:
-                wave_orig, _ = sf.read(audio_file)
-            self.waves.append(self.preprocess_ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False))
-            sleep(0.1)
 
     def __getitem__(self, index):
         """
