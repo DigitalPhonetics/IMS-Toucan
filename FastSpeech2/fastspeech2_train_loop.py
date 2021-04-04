@@ -29,7 +29,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_pl
         sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu " \
                    "ziemlich lang und komplex, dmait man im Spektrogram auch was sieht."
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
-    spec = net.inference(text=text, spembs=reference_spemb_for_plot).to("cpu").numpy()
+    spec = net.inference(text=text, spembs=reference_spemb_for_plot).transpose(0, 1).to("cpu").numpy()
     if not os.path.exists(os.path.join(save_dir, "spec")):
         os.makedirs(os.path.join(save_dir, "spec"))
     fig, ax = plt.subplots(nrows=1, ncols=1)

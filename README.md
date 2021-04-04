@@ -26,4 +26,15 @@ I have trained a Full-Band-MelGAN on a combination of 11 large and clean single 
 | CSS10HU      | Hungarian | Single Speaker      | ✅     |                |             |
 | CSS10ES      | Spanish   | Single Speaker      | ✅     |                |             |
 
+## Embrace Redundancy
 
+While it is a bad practice to have redundancy in regular code, and as much as possible should be abstracted and
+parameterized, my experiences in creating this toolkit and working with other toolkits led me to believe that sometimes
+redundancy is not only ok, it is necessary. It enables safety when making changes, because you know that you don't
+accidentially change too much and cause legacy problems. And it allows parameterization to focus on the truly important
+parameters, which would otherwise drown in tons of case specific parameters.
+
+Parameterized wrappers around redundant code seems to be a simple solution to get the best of both worlds I believe. So
+every system that one might want to train gets its own unique training pipeline with lots of duplicate code among them.
+And every trained system gets a unique inference interface to load and use it, again with lots of shared code inbetween
+them. This ensures every model can be reproduced and loaded.
