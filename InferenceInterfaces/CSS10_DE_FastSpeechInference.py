@@ -170,12 +170,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                n_filts=postnet_filts,
                                use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
-        if lang == "en":
-            self.load_state_dict(
-                torch.load(os.path.join("Models", "Use", "FastSpeech_English_Single.pt"), map_location='cpu')["model"])
-        elif lang == "de":
-            self.load_state_dict(
-                torch.load(os.path.join("Models", "Use", "FastSpeech_German_Single.pt"), map_location='cpu')["model"])
+        self.load_state_dict(
+            torch.load(os.path.join("Models", "FastSpeech2_CSS10_DE", "best.pt"), map_location='cpu')["model"])
 
     def _forward(self,
                  xs: torch.Tensor,
@@ -268,9 +264,9 @@ class MelGANGenerator(torch.nn.Module):
                  kernel_size=7,
                  channels=512,
                  bias=True,
-                 upsample_scales=[8, 8, 2, 2],
+                 upsample_scales=[8, 4, 2, 2, 2],
                  stack_kernel_size=3,
-                 stacks=3,
+                 stacks=4,
                  nonlinear_activation="LeakyReLU",
                  nonlinear_activation_params={"negative_slope": 0.2},
                  pad="ReflectionPad1d",
@@ -312,7 +308,7 @@ class MelGANGenerator(torch.nn.Module):
         if use_weight_norm:
             self.apply_weight_norm()
         self.load_state_dict(
-            torch.load(os.path.join("Models", "Use", "MelGAN.pt"), map_location='cpu')["generator"])
+            torch.load(os.path.join("Models", "MelGAN_CSS10_DE", "best.pt"), map_location='cpu')["generator"])
 
     def remove_weight_norm(self):
         def _remove_weight_norm(m):
@@ -335,16 +331,16 @@ class MelGANGenerator(torch.nn.Module):
         return self.melgan(melspec)
 
 
-class SingleSpeakerTransformerTTSInference(torch.nn.Module):
-    def __init__(self, device="cpu", lang="en", reduction_factor=1):
+class CSS10_DE_FastSpeechInference(torch.nn.Module):
+    def __init__(self, device="cpu"):
         super().__init__()
         self.device = device
-        self.text2phone = TextFrontend(language=lang,
+        self.text2phone = TextFrontend(language="de",
                                        use_panphon_vectors=False,
                                        use_word_boundaries=False,
                                        use_explicit_eos=False)
-        self.phone2mel = FastSpeech2(idim=133, odim=80, spk_embed_dim=None, lang=lang,
-                                     reduction_factor=reduction_factor).to(torch.device(device))
+        self.phone2mel = FastSpeech2(idim=133, odim=80, spk_embed_dim=None,
+                                     reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -357,8 +353,9 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         return wave
 
-    def read_to_file(self, text_list, file_location):
+    def read_to_file(self, text_list, file_location, silent=False):
         """
+        :param silent: Whether to be verbose about the process
         :param text_list: A list of strings to be read
         :param file_location: The path and name of the file it should be saved to
         """
@@ -366,7 +363,8 @@ class SingleSpeakerTransformerTTSInference(torch.nn.Module):
         silence = torch.zeros([8000])
         for text in text_list:
             if text.strip() != "":
-                print("Now synthesizing: {}".format(text))
+                if not silent:
+                    print("Now synthesizing: {}".format(text))
                 if wav is None:
                     wav = self(text).cpu()
                 else:
