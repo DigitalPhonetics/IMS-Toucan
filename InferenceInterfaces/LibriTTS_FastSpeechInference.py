@@ -107,12 +107,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  attention_dropout_rate=transformer_enc_attn_dropout_rate,
                                  normalize_before=encoder_normalize_before,
                                  concat_after=encoder_concat_after,
-                                 positionwise_layer_type=positionwise_layer_type,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer,
-                                 pos_enc_layer_type=conformer_pos_enc_layer_type,
-                                 selfattention_layer_type=conformer_self_attn_layer_type,
-                                 activation_type=conformer_activation_type,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_enc_kernel_size)
         if self.spk_embed_dim is not None:
@@ -154,12 +150,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  attention_dropout_rate=transformer_dec_attn_dropout_rate,
                                  normalize_before=decoder_normalize_before,
                                  concat_after=decoder_concat_after,
-                                 positionwise_layer_type=positionwise_layer_type,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer,
-                                 pos_enc_layer_type=conformer_pos_enc_layer_type,
-                                 selfattention_layer_type=conformer_self_attn_layer_type,
-                                 activation_type=conformer_activation_type,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_dec_kernel_size)
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)

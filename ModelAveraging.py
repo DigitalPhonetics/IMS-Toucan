@@ -50,7 +50,8 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     print("selecting checkpoints...")
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
-        checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+        if el != "best.pt":
+            checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
     if len(checkpoint_list) == 0:
         return None
     elif len(checkpoint_list) < n:

@@ -1,6 +1,7 @@
 import os
 import random
 from multiprocessing import Process, Manager
+from time import sleep
 
 import soundfile as sf
 import torch
@@ -83,6 +84,7 @@ class MelGANDataset(Dataset):
             with open(path, "rb") as audio_file:
                 wave_orig, _ = sf.read(audio_file)
             self.waves.append(self.preprocess_ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False))
+            sleep(0.1)
 
     def __getitem__(self, index):
         """
