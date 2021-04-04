@@ -542,32 +542,11 @@ class Transformer(torch.nn.Module, ABC):
                                 self.adim)
 
 
-def build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt"):
+def build_reference_transformer_tts_model(model_name="Use/Transformer_German_Single.pt"):
     model = Transformer(idim=133, odim=80, spk_embed_dim=None).to("cpu")
-    params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
+    params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
-
-
-def show_spectrogram(sentence, model=None, lang="en"):
-    if model is None:
-        if lang == "en":
-            model = build_reference_transformer_tts_model(model_name="Transformer_English_Single.pt")
-        elif lang == "de":
-            model = build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt")
-    from PreprocessingForTTS.ProcessText import TextFrontend
-    import librosa.display as lbd
-    import matplotlib.pyplot as plt
-    tf = TextFrontend(language=lang,
-                      use_panphon_vectors=False,
-                      use_word_boundaries=False,
-                      use_explicit_eos=False)
-    fig, ax = plt.subplots()
-    ax.set(title=sentence)
-    melspec = model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[0]
-    lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
-                 x_axis='time', hop_length=256)
-    plt.show()
 
 
 def select_best_att_head(att_ws):
@@ -640,9 +619,9 @@ def get_atts(model, sentence, lang, teacher_forcing, get_phones=False):
 def show_attention_plot(sentence, model=None, best_only=False, lang="en", teacher_forcing=False):
     if model is None:
         if lang == "en":
-            model = build_reference_transformer_tts_model(model_name="Transformer_English_Single.pt")
+            model = build_reference_transformer_tts_model(model_name="Use/Transformer_English_Single.pt")
         elif lang == "de":
-            model = build_reference_transformer_tts_model(model_name="Transformer_German_Single.pt")
+            model = build_reference_transformer_tts_model(model_name="Use/Transformer_German_Single.pt")
 
     if best_only:
         att, phones = get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing,
@@ -651,7 +630,5 @@ def show_attention_plot(sentence, model=None, best_only=False, lang="en", teache
     else:
         att, phones = get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing,
                                get_phones=True)
-        atts = torch.cat(
-            [att_w for att_w in att],
-            dim=0)
+        atts = torch.cat([att_w for att_w in att], dim=0)
         plot_attentions(atts)

@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
-                                  acoustic_model_name="Transformer_German_Single.pt",
+                                  acoustic_model_name="TransformerTTS_CSS10_DE/best.pt",
                                   cache_dir=cache_dir,
                                   lang="de",
                                   min_len_in_seconds=1,
@@ -46,7 +46,7 @@ if __name__ == '__main__':
                                   device=device)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
-                                  acoustic_model_name="Transformer_German_Single.pt",
+                                  acoustic_model_name="TransformerTTS_CSS10_DE/best.pt",
                                   cache_dir=cache_dir,
                                   lang="de",
                                   min_len_in_seconds=1,

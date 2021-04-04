@@ -11,11 +11,10 @@ import torch
 import torchviz
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
-from FastSpeech2.FastSpeech2 import show_spectrogram as fast_spec
 from MelGAN.MelGANGenerator import MelGANGenerator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTS import show_spectrogram as trans_spec, show_attention_plot
+from TransformerTTS.TransformerTTS import show_attention_plot
 
 
 def show_att(lang="en", best_only=False, teacher_forcing=False):
@@ -30,25 +29,6 @@ def show_att(lang="en", best_only=False, teacher_forcing=False):
                             "darf es jetzt wohl noch wagen, "
                             "sein Geschichtlein also zu beginnen.", lang=lang, best_only=best_only,
                             teacher_forcing=teacher_forcing)
-
-
-def show_specs(lang="en"):
-    if lang == "de":
-        trans_spec("Es war einmal – welcher Autor darf es "
-                   "jetzt wohl noch wagen, sein Geschichtlein "
-                   "also zu beginnen.", lang=lang)
-        fast_spec("Es war einmal – welcher Autor darf es "
-                  "jetzt wohl noch wagen, sein Geschichtlein "
-                  "also zu beginnen.", lang=lang)
-    elif lang == "en":
-        trans_spec(
-            "Many animals of even complex structure which "
-            "live parasitically within others are wholly "
-            "devoid of an alimentary cavity.",
-            lang=lang)
-        fast_spec("Many animals of even complex structure which "
-                  "live parasitically within others are wholly "
-                  "devoid of an alimentary cavity.", lang=lang)
 
 
 def plot_fastspeech_architecture():
@@ -254,7 +234,5 @@ if __name__ == '__main__':
     # plot_transformertts_architecture()
     plot_melgan_training()
     # plot_syn_training()
-    test_spectrogram_inversion(path_to_wav="Corpora/test.wav")
-    show_att(lang="en", best_only=True, teacher_forcing=True)
-    show_specs(lang="en")
-    # show_specs(lang="de")
+    # test_spectrogram_inversion(path_to_wav="Corpora/test.wav")
+    # show_att(lang="en", best_only=True, teacher_forcing=True)

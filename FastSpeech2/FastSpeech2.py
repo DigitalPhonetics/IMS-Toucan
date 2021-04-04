@@ -451,27 +451,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
 def build_reference_fastspeech2_model(model_name):
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None).to("cpu")
-    params = torch.load(os.path.join("Models", "Use", model_name), map_location='cpu')["model"]
+    params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
 
-
-def show_spectrogram(sentence, model=None, lang="en"):
-    if model is None:
-        if lang == "de":
-            model = build_reference_fastspeech2_model(model_name="FastSpeech2_German_Single.pt")
-        elif lang == "en":
-            model = build_reference_fastspeech2_model(model_name="FastSpeech2_English_Single.pt")
-    from PreprocessingForTTS.ProcessText import TextFrontend
-    import librosa.display as lbd
-    import matplotlib.pyplot as plt
-    tf = TextFrontend(language=lang,
-                      use_panphon_vectors=False,
-                      use_word_boundaries=False,
-                      use_explicit_eos=False)
-    fig, ax = plt.subplots()
-    ax.set(title=sentence)
-    melspec = model.inference(tf.string_to_tensor(sentence).squeeze(0).long())
-    lbd.specshow(melspec.transpose(0, 1).detach().numpy(), ax=ax, sr=16000, cmap='GnBu', y_axis='mel',
-                 x_axis='time', hop_length=256)
-    plt.show()
