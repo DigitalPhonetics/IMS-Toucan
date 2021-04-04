@@ -15,7 +15,7 @@ class MelGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  samples_per_segment=10240,
-                 loading_processes=6,
+                 loading_processes=3,
                  cache="Corpora/css10_de.txt"):
         self.samples_per_segment = samples_per_segment
         _, sr = sf.read(list_of_paths[0])
