@@ -17,7 +17,7 @@ class TransformerTTSDataset(Dataset):
     def __init__(self, path_to_transcript_dict,
                  spemb=False,
                  train=True,
-                 loading_processes=2,
+                 loading_processes=6,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len_in_seconds=1,
@@ -85,7 +85,8 @@ class TransformerTTSDataset(Dataset):
                                cut_silence=cut_silences)
         for index, path in tqdm(enumerate(path_list)):
             transcript = self.path_to_transcript_dict[path]
-            wave, sr = sf.read(path)
+            with open(path, "rb") as audio_file:
+                wave, sr = sf.read(audio_file)
             if min_len <= len(wave) / sr <= max_len:
                 # print("Processing {} out of {}.".format(index, len(path_list)))
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()

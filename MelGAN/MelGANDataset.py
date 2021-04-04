@@ -15,7 +15,7 @@ class MelGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  samples_per_segment=10240,
-                 loading_processes=2,
+                 loading_processes=6,
                  cache="Corpora/css10_de.txt"):
         self.samples_per_segment = samples_per_segment
         _, sr = sf.read(list_of_paths[0])
@@ -72,14 +72,16 @@ class MelGANDataset(Dataset):
 
     def cache_builder_process(self, path_split, samples_per_segment):
         for path in tqdm(path_split):
-            wave, sr = sf.read(path)
+            with open(path, "rb") as audio_file:
+                wave, sr = sf.read(audio_file)
             if (len(wave) / sr) > ((samples_per_segment + 50) / 16000):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
                 self.list_of_eligible_wave_paths.append(path)
 
     def ram_loader_process(self, path_split):
         for path in tqdm(path_split):
-            wave_orig, _ = sf.read(path)
+            with open(path, "rb") as audio_file:
+                wave_orig, _ = sf.read(audio_file)
             self.waves.append(self.preprocess_ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False))
 
     def __getitem__(self, index):

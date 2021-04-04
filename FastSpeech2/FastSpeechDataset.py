@@ -23,7 +23,7 @@ class FastSpeechDataset(Dataset):
                  acoustic_model_name,
                  spemb=False,
                  train=True,
-                 loading_processes=2,
+                 loading_processes=6,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len_in_seconds=1,
@@ -109,7 +109,8 @@ class FastSpeechDataset(Dataset):
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for index, path in tqdm(enumerate(path_list)):
             transcript = self.path_to_transcript_dict[path]
-            wave, sr = sf.read(path)
+            with open(path, "rb") as audio_file:
+                wave, sr = sf.read(audio_file)
             if min_len <= len(wave) / sr <= max_len:
                 # print("Processing {} out of {}.".format(index, len(path_list)))
                 norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
