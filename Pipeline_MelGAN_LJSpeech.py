@@ -41,7 +41,7 @@ if __name__ == '__main__':
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
 
     print("Training model")
-    train_loop(batchsize=16,
+    train_loop(batch_size=16,
                steps=2000000,
                generator=generator,
                discriminator=multi_scale_discriminator,

@@ -12,7 +12,7 @@ from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from Utility.RAdam import RAdam
 
 
-def train_loop(batchsize=16,
+def train_loop(batch_size=16,
                steps=2000000,
                generator=None,
                discriminator=None,
@@ -60,7 +60,7 @@ def train_loop(batchsize=16,
                                           2000000])
 
     train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=batchsize,
+                              batch_size=batch_size,
                               shuffle=True,
                               num_workers=16,
                               pin_memory=False,

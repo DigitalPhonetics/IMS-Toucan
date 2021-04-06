@@ -244,10 +244,6 @@ class FastSpeech2(torch.nn.Module, ABC):
         x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
         return x_masks.unsqueeze(-2)
 
-    def get_conf(self):
-        return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
-
-
 class MelGANGenerator(torch.nn.Module):
 
     def __init__(self,

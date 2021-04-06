@@ -445,9 +445,6 @@ class FastSpeech2(torch.nn.Module, ABC):
         if init_type != "pytorch":
             initialize(self, init_type)
 
-    def get_conf(self):
-        return "idim:{}\nodim:{}\nspk_embed_dim:{}".format(self.idim, self.odim, self.spk_embed_dim)
-
 
 def build_reference_fastspeech2_model(model_name):
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None).to("cpu")

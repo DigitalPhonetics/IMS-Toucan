@@ -528,18 +528,6 @@ class Transformer(torch.nn.Module, ABC):
 
         return hs
 
-    def get_conf(self):
-        return "idim:{}\n" \
-               "odim:{}\n" \
-               "spk_embed_dim:{}\n" \
-               "reduction_factor:{}\n" \
-               "aheads:{}\n" \
-               "adim:{}".format(self.idim,
-                                self.odim,
-                                self.spk_embed_dim,
-                                self.reduction_factor,
-                                self.aheads,
-                                self.adim)
 
 
 def build_reference_transformer_tts_model(model_name="Use/Transformer_German_Single.pt"):

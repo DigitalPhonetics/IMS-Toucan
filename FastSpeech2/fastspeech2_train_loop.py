@@ -93,36 +93,46 @@ def collate_and_pad(batch):
                 torch.stack(spembs))  # may need squeezing, cannot test atm
 
 
-def train_loop(net, train_dataset, valid_dataset, device, save_directory,
-               config, batchsize=32, steps=400000, gradient_accumulation=1,
-               epochs_per_save=10, spemb=False, lang="en", lr=0.1, warmup_steps=14000,
-               checkpoint=None, finetune=False):
+def train_loop(net,
+               train_dataset,
+               valid_dataset,
+               device,
+               save_directory,
+               batch_size=32,
+               steps=400000,
+               gradient_accumulation=1,
+               epochs_per_save=10,
+               use_speaker_embedding=False,
+               lang="en",
+               lr=0.1,
+               warmup_steps=14000,
+               path_to_checkpoint=None,
+               fine_tune=False):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
     :param warmup_steps: how many warmup steps for the warmup scheduler
-    :param checkpoint: reloads a checkpoint to continue training from there
-    :param finetune: whether to load everything from a checkpoint, or only the model parameters
+    :param path_to_checkpoint: reloads a checkpoint to continue training from there
+    :param fine_tune: whether to load everything from a checkpoint, or only the model parameters
     :param lang: language of the synthesis
-    :param spemb: whether to expect speaker embeddings
+    :param use_speaker_embedding: whether to expect speaker embeddings
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
     :param valid_dataset: Pytorch Dataset Object for validation data
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
-    :param config: Config of the model to be trained
-    :param batchsize: How many elements should be loaded at once
+    :param batch_size: How many elements should be loaded at once
     :param gradient_accumulation: how many batches to average before stepping
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
     scaler = GradScaler()
-    if spemb:
+    if use_speaker_embedding:
         reference_spemb_for_plot = torch.Tensor(valid_dataset[0][7]).to(device)
     else:
         reference_spemb_for_plot = None
     torch.multiprocessing.set_sharing_strategy('file_system')
-    train_loader = DataLoader(batch_size=batchsize,
+    train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
                               num_workers=8,
@@ -141,19 +151,17 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                               persistent_workers=True)
 
     loss_plot = [[], []]
-    with open(os.path.join(save_directory, "config.txt"), "w+") as conf:
-        conf.write(config)
     step_counter = 0
     net.train()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     epoch = 0
 
-    if checkpoint is not None:
+    if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
-        check_dict = torch.load(os.path.join(save_directory, checkpoint), map_location=device)
+        check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         net.load_state_dict(check_dict["model"])
-        if not finetune:
+        if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scaler.load_state_dict(check_dict["scaler"])
             scheduler.load_state_dict(check_dict["scheduler"])
@@ -161,7 +169,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 step_counter = check_dict["step_counter"]
             else:
                 # legacy support
-                step_counter = int(checkpoint.split(".")[0].split("_")[1])
+                step_counter = int(path_to_checkpoint.split(".")[0].split("_")[1])
 
     start_time = time.time()
     while True:
@@ -173,7 +181,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
         for train_datapoint in tqdm(train_loader):
             if gradient_accumulation == 1:
                 with autocast():
-                    if not spemb:
+                    if not use_speaker_embedding:
                         train_loss = net(train_datapoint[0].to(device),
                                          train_datapoint[1].to(device),
                                          train_datapoint[2].to(device),
@@ -203,7 +211,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
                 optimizer.zero_grad()
                 torch.cuda.empty_cache()
             else:
-                if not spemb:
+                if not use_speaker_embedding:
                     train_loss = net(train_datapoint[0].to(device),
                                      train_datapoint[1].to(device),
                                      train_datapoint[2].to(device),
@@ -240,7 +248,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory,
             net.eval()
             val_losses = list()
             for validation_datapoint in valid_loader:
-                if not spemb:
+                if not use_speaker_embedding:
                     val_losses.append(float(net(validation_datapoint[0].to(device),
                                                 validation_datapoint[1].to(device),
                                                 validation_datapoint[2].to(device),
