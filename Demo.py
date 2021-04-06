@@ -35,4 +35,4 @@ if __name__ == '__main__':
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":
             sys.exit()
-        tts.read_aloud(text, view=False)
+        tts.read_aloud(text, view=True)
