@@ -21,16 +21,24 @@ class FastSpeechDataset(Dataset):
     def __init__(self,
                  path_to_transcript_dict,
                  acoustic_model_name,
+                 diagonal_attention_head_id=None,  # every transformer has one attention head
+                 # that is the most diagonal. Look for it manually (e.g. using playground)
+                 # and then provide it here.
                  spemb=False,
                  train=True,
-                 loading_processes=6,
+                 loading_processes=1,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  reduction_factor=1,
                  device=torch.device("cpu"),
-                 rebuild_cache=False):
+                 rebuild_cache=False,
+                 path_blacklist=None,  # because for some datasets, some of the alignments
+                 # simply fail because attention heads do weird things. Those need to be
+                 # found in the duration_vis folder and manually added to a list of samples
+                 # to be excluded from the dataset.
+                 ):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or \
@@ -61,7 +69,7 @@ class FastSpeechDataset(Dataset):
                     Process(target=self.cache_builder_process,
                             args=(
                                 key_split, acoustic_model_name, spemb, lang, min_len_in_seconds, max_len_in_seconds,
-                                reduction_factor, device, cache_dir),
+                                reduction_factor, device, cache_dir, diagonal_attention_head_id),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -82,6 +90,13 @@ class FastSpeechDataset(Dataset):
             else:
                 with open(os.path.join(cache_dir, "fast_valid_cache.json"), 'r') as fp:
                     self.datapoints = json.load(fp)
+        if path_blacklist is not None:
+            bl = set(path_blacklist)
+            datapoints_with_durations_that_make_sense = list()
+            for el in self.datapoints:
+                if el[-1] not in bl:
+                    datapoints_with_durations_that_make_sense.append(el)
+            self.datapoints = datapoints_with_durations_that_make_sense
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,
@@ -93,7 +108,8 @@ class FastSpeechDataset(Dataset):
                               max_len,
                               reduction_factor,
                               device,
-                              cache_dir):
+                              cache_dir,
+                              diagonal_attention_head_id):
         tf = TextFrontend(language=lang,
                           use_panphon_vectors=False,
                           use_word_boundaries=False,
@@ -104,7 +120,8 @@ class FastSpeechDataset(Dataset):
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
-        dc = DurationCalculator(reduction_factor=reduction_factor)
+        dc = DurationCalculator(reduction_factor=reduction_factor,
+                                diagonal_attention_head_id=diagonal_attention_head_id)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for index, path in tqdm(enumerate(path_list)):
@@ -157,7 +174,8 @@ class FastSpeechDataset(Dataset):
                      cached_speech_lens,
                      cached_durations.numpy().tolist(),
                      cached_energy.numpy().tolist(),
-                     cached_pitch.numpy().tolist()])
+                     cached_pitch.numpy().tolist(),
+                     path])
                 if self.spemb:
                     self.datapoints.append(
                         [cached_text,
@@ -167,7 +185,8 @@ class FastSpeechDataset(Dataset):
                          cached_durations.numpy().tolist(),
                          cached_energy.numpy().tolist(),
                          cached_pitch.numpy().tolist(),
-                         cached_spemb.detach().numpy().tolist()])
+                         cached_spemb.detach().numpy().tolist(),
+                         path])
 
     def __getitem__(self, index):
         if not self.spemb:

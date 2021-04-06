@@ -13,11 +13,12 @@ class DurationCalculator(torch.nn.Module):
     Duration calculator module.
     """
 
-    def __init__(self, reduction_factor):
+    def __init__(self, reduction_factor, diagonal_attention_head_id):
         """
         Initialize duration calculator.
         """
         self.reduction_factor = reduction_factor
+        self.diagonal_attention_head_id = diagonal_attention_head_id
         super().__init__()
 
     @torch.no_grad()
@@ -42,9 +43,12 @@ class DurationCalculator(torch.nn.Module):
     def _calculate_duration(self, att_ws, vis):
         # get the most diagonal head according to focus rate
         att_ws = torch.cat([att_w for att_w in att_ws], dim=0)  # (#heads * #layers, L, T)
-        diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)  # (#heads * #layers,)
-        diagonal_head_idx = diagonal_scores.argmax()
-        att_ws = att_ws[diagonal_head_idx]  # (L, T)
+        if self.diagonal_attention_head_id is None:
+            diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)  # (#heads * #layers,)
+            diagonal_head_idx = diagonal_scores.argmax()
+            att_ws = att_ws[diagonal_head_idx]  # (L, T)
+        else:
+            att_ws = att_ws[self.diagonal_attention_head_id]
         if vis is not None:
             plt.figure(figsize=(8, 4))
             plt.imshow(att_ws.cpu().numpy(), interpolation='nearest', aspect='auto', origin="lower")

@@ -17,18 +17,8 @@ from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTS import show_attention_plot
 
 
-def show_att(lang="en", best_only=False, teacher_forcing=False):
-    if lang == "en":
-        show_attention_plot(
-            "Many animals of even complex structure which "
-            "live parasitically within others are wholly "
-            "devoid of an alimentary cavity.",
-            lang=lang, best_only=best_only, teacher_forcing=teacher_forcing)
-    elif lang == "de":
-        show_attention_plot("Es war einmal – welcher Autor "
-                            "darf es jetzt wohl noch wagen, "
-                            "sein Geschichtlein also zu beginnen.", lang=lang, best_only=best_only,
-                            teacher_forcing=teacher_forcing)
+def show_att(sentence, lang="de", best_only=False):
+    show_attention_plot(sentence, lang=lang, best_only=best_only)
 
 
 def plot_fastspeech_architecture():
@@ -232,7 +222,7 @@ if __name__ == '__main__':
     # sanity_check_audio_preprocessing("Corpora/CSS10_DE", cut_silence=True)
     # plot_fastspeech_architecture()
     # plot_transformertts_architecture()
-    plot_melgan_training()
+    # plot_melgan_training()
     # plot_syn_training()
     # test_spectrogram_inversion(path_to_wav="Corpora/test.wav")
-    # show_att(lang="en", best_only=True, teacher_forcing=True)
+    show_att(sentence="Hallo Welt, das ist ein kurzer Satz.", lang="de", best_only=False)

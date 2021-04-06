@@ -529,7 +529,6 @@ class Transformer(torch.nn.Module, ABC):
         return hs
 
 
-
 def build_reference_transformer_tts_model(model_name="Use/Transformer_German_Single.pt"):
     model = Transformer(idim=133, odim=80, spk_embed_dim=None).to("cpu")
     params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
@@ -567,56 +566,37 @@ def plot_attentions(atts):
     for index, att in enumerate(atts_1):
         axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
                               origin="lower")
+        axes[index][0].set_title("{}".format(index * 2))
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
         axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
                               origin="lower")
+        axes[index][1].set_title("{}".format((index + 1) * 2))
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)
-    plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
+    # plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
+    plt.tight_layout()
     plt.show()
 
 
-def get_atts(model, sentence, lang, teacher_forcing, get_phones=False):
+def get_atts(model, sentence, lang, get_phones=False):
     from PreprocessingForTTS.ProcessText import TextFrontend
     tf = TextFrontend(language=lang,
                       use_panphon_vectors=False,
                       use_word_boundaries=False,
                       use_explicit_eos=False)
-    if teacher_forcing:
-        from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
-        import soundfile as sf
-        wave, sr = sf.read("Corpora/att_align_test.wav")
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
-        spec = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1)
-        sentence = "Many animals of even complex structure which " \
-                   "live parasitically within others are wholly " \
-                   "devoid of an alimentary cavity."
-        text_tensor = tf.string_to_tensor(sentence).squeeze(0).long()
-        phones = tf.get_phone_string(sentence)
-        if get_phones:
-            return model.inference(text=text_tensor, speech=spec, use_teacher_forcing=True)[2], phones
-        return model.inference(text=text_tensor, speech=spec, use_teacher_forcing=True)[2]
-    else:
-        if get_phones:
-            return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2], tf.get_phone_string(sentence)
-        return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
+    if get_phones:
+        return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2], tf.get_phone_string(sentence)
+    return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
 
 
-def show_attention_plot(sentence, model=None, best_only=False, lang="en", teacher_forcing=False):
-    if model is None:
-        if lang == "en":
-            model = build_reference_transformer_tts_model(model_name="Use/Transformer_English_Single.pt")
-        elif lang == "de":
-            model = build_reference_transformer_tts_model(model_name="Use/Transformer_German_Single.pt")
-
+def show_attention_plot(sentence, model_name="TransformerTTS_Thorsten/best.pt", best_only=False, lang="de"):
+    model = build_reference_transformer_tts_model(model_name=model_name)
     if best_only:
-        att, phones = get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing,
-                               get_phones=True)
+        att, phones = get_atts(model=model, sentence=sentence, lang=lang, get_phones=True)
         plot_attention(select_best_att_head(att), sentence=sentence, phones=phones)
     else:
-        att, phones = get_atts(model=model, sentence=sentence, lang=lang, teacher_forcing=teacher_forcing,
-                               get_phones=True)
+        att, phones = get_atts(model=model, sentence=sentence, lang=lang, get_phones=True)
         atts = torch.cat([att_w for att_w in att], dim=0)
         plot_attentions(atts)
