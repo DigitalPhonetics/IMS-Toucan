@@ -24,6 +24,7 @@ tts_dict = {
 
 }
 
+
 if __name__ == '__main__':
     model_id = input(
         "Which model do you want? \nCurrently supported are: {}\n".format(
@@ -34,4 +35,4 @@ if __name__ == '__main__':
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":
             sys.exit()
-        tts.read_aloud(text, view=True)
+        tts.read_aloud(text, view=False)

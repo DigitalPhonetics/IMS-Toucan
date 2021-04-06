@@ -137,7 +137,7 @@ def train_loop(batchsize=16,
                                                                 d_outs[i][-1].new_ones(d_outs[i][-1].size()))
                 adversarial_loss /= (len(d_outs))
                 train_losses_this_epoch["adversarial"].append(float(adversarial_loss))
-                generator_total_loss = (spectral_loss + magnitude_loss) * 25 + adversarial_loss * 4
+                generator_total_loss = (spectral_loss + magnitude_loss) * 25 + adversarial_loss * 8
             else:
                 train_losses_this_epoch["adversarial"].append(0.0)
                 generator_total_loss = (spectral_loss + magnitude_loss) * 25

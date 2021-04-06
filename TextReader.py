@@ -33,41 +33,30 @@ def read_texts(model_id, sentence, filename, device="cpu"):
     del tts
 
 
-tl = """Peter Piper picked a peck of pickled peppers
-A peck of pickled peppers Peter Piper picked
-If Peter Piper picked a peck of pickled peppers
-Where’s the peck of pickled peppers Peter Piper picked?
-Betty Botter bought some butter
-But she said the butter’s bitter
-If I put it in my batter, it will make my batter bitter
-But a bit of better butter will make my batter better
-So ‘twas better Betty Botter bought a bit of better butter
+tl = """Peter Piper picked a peck of pickled peppers.
+A peck of pickled peppers Peter Piper picked.
+If Peter Piper picked a peck of pickled peppers, where’s the peck of pickled peppers Peter Piper picked?
+Betty Botter bought some butter, but she said the butter’s bitter.
+If I put it in my batter, it will make my batter bitter!
+But a bit of better butter will make my batter better.
+So ‘twas better Betty Botter bought a bit of better butter.
 How much wood would a woodchuck chuck if a woodchuck could chuck wood?
-He would chuck, he would, as much as he could, and chuck as much wood
-As a woodchuck would if a woodchuck could chuck wood
-She sells seashells by the seashore
+He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.
+She sells seashells by the seashore.
 How can a clam cram in a clean cream can?
-I scream, you scream, we all scream for ice cream
-I saw Susie sitting in a shoeshine shop
-Susie works in a shoeshine shop. Where she shines she sits, and where she sits she shines
+I scream, you scream, we all scream for ice cream!
+Susie works in a shoeshine shop. Where she shines she sits, and where she sits she shines.
 Fuzzy Wuzzy was a bear. Fuzzy Wuzzy had no hair. Fuzzy Wuzzy wasn’t fuzzy, was he?
 Can you can a can as a canner can can a can?
-I have got a date at a quarter to eight; I’ll see you at the gate, so don’t be late
+I have got a date at a quarter to eight; I’ll see you at the gate, so don’t be late.
 You know New York, you need New York, you know you need unique New York
-I saw a kitten eating chicken in the kitchen
+I saw a kitten eating chicken in the kitchen.
 If a dog chews shoes, whose shoes does he choose?
-I thought I thought of thinking of thanking you
-I wish to wash my Irish wristwatch
-Near an ear, a nearer ear, a nearly eerie ear
-Eddie edited it
-Willie’s really weary
-A big black bear sat on a big black rug
-Tom threw Tim three thumbtacks
-He threw three free throws
-Nine nice night nurses nursing nicely
-So, this is the sushi chef
-Four fine fresh fish for you
-Wayne went to wales to watch walruses""".split("\n")
+I thought I thought of thinking of thanking you.
+I wish to wash my Irish wristwatch.
+Near an ear, a nearer ear, a nearly eerie ear.
+Nine nice night nurses nursing nicely.
+Wayne went to wales to watch walruses.""".split("\n")
 
 if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -76,5 +65,5 @@ if __name__ == '__main__':
 
     read_texts(model_id="fast_lj",
                sentence=tl,
-               filename="audios/fast_lj.wav",
+               filename="audios/fast_lj_30h.wav",
                device=device)
