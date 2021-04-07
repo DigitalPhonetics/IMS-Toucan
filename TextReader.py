@@ -21,7 +21,6 @@ tts_dict = {
     "trans_lj": LJSpeech_TransformerTTSInference,
     "trans_css10_de": CSS10_DE_TransformerTTSInference,
     "trans_libri": LibriTTS_TransformerTTSInference
-
 }
 
 
@@ -33,7 +32,7 @@ def read_texts(model_id, sentence, filename, device="cpu"):
     del tts
 
 
-tl = """Peter Piper picked a peck of pickled peppers.
+tl_en = """Peter Piper picked a peck of pickled peppers.
 A peck of pickled peppers Peter Piper picked.
 If Peter Piper picked a peck of pickled peppers, where’s the peck of pickled peppers Peter Piper picked?
 Betty Botter bought some butter, but she said the butter’s bitter.
@@ -58,12 +57,20 @@ Near an ear, a nearer ear, a nearly eerie ear.
 Nine nice night nurses nursing nicely.
 Wayne went to wales to watch walruses.""".split("\n")
 
+tl_de = """Halumba
+""".split("\n")
+
 if __name__ == '__main__':
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
     read_texts(model_id="fast_lj",
-               sentence=tl,
-               filename="audios/fast_lj_30h.wav",
-               device=device)
+               sentence=tl_en,
+               filename="audios/fast_lj.wav",
+               device=exec_device)
+
+    read_texts(model_id="fast_thorsten",
+               sentence=tl_de,
+               filename="audios/fast_thorsten.wav",
+               device=exec_device)
