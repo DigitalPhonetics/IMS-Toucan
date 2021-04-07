@@ -136,8 +136,15 @@ def train_loop(batch_size=16,
                     adversarial_loss += discriminator_criterion(d_outs[i][-1],
                                                                 d_outs[i][-1].new_ones(d_outs[i][-1].size()))
                 adversarial_loss /= (len(d_outs))
-                train_losses_this_epoch["adversarial"].append(float(adversarial_loss))
-                generator_total_loss = (spectral_loss + magnitude_loss) * 25 + adversarial_loss * 8
+                lambda_a = 4
+                if step_counter > 200000:
+                    lambda_a = 8
+                    if step_counter > 300000:
+                        lambda_a = 12
+                        # the later into training we get, the more valuable the discriminator feedback becomes
+                train_losses_this_epoch["adversarial"].append(float(adversarial_loss * lambda_a))
+
+                generator_total_loss = (spectral_loss + magnitude_loss) * 25 + adversarial_loss * lambda_a
             else:
                 train_losses_this_epoch["adversarial"].append(0.0)
                 generator_total_loss = (spectral_loss + magnitude_loss) * 25
