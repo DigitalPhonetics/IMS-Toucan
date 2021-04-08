@@ -7,7 +7,7 @@ This requires having a trained TransformerTTS model in the right directory to kn
 import os
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import random
 import warnings
 
@@ -118,4 +118,5 @@ if __name__ == '__main__':
 
     print("Training model")
     train_loop(net=model, train_dataset=train_set, valid_dataset=valid_set, device=device, save_directory=save_dir, steps=400000, batch_size=32,
-               gradient_accumulation=1, epochs_per_save=10, use_speaker_embedding=False, lang="de", lr=0.01, warmup_steps=8000)
+               gradient_accumulation=1, epochs_per_save=10, use_speaker_embedding=False, lang="de", lr=0.01, warmup_steps=8000,
+               path_to_checkpoint="Models/FastSpeech2_Thorsten/checkpoint_108900.pt")
