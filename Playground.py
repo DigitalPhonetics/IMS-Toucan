@@ -67,11 +67,7 @@ def plot_melgan_training(path_to_train_loss_json="Models/Use/train_loss.json",
              'g',
              label="Spectral Magnitude Loss",
              alpha=0.5)
-    plt.plot(list(range(1, len(train_loss_dict["adversarial"]) + 1)),
-             train_loss_dict["adversarial"],
-             'r',
-             label="Adversarial Loss",
-             alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["adversarial"]) + 1)), [a / 12 for a in train_loss_dict["adversarial"]], 'r', label="Adversarial Loss", alpha=0.5)
     plt.plot(list(range(1, len(train_loss_dict["generator_total"]) + 1)),
              [ls / 20 for ls in train_loss_dict["generator_total"]],  # to balance the lambdas of stft and adv
              'm',

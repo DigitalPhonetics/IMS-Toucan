@@ -18,21 +18,8 @@ class MelGANGenerator(torch.nn.Module):
     MelGAN generator module.
     """
 
-    def __init__(self,
-                 in_channels=80,
-                 out_channels=1,
-                 kernel_size=7,
-                 channels=512,
-                 bias=True,
-                 upsample_scales=[8, 4, 2, 2, 2],
-                 stack_kernel_size=3,
-                 stacks=4,
-                 nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.2},
-                 pad="ReflectionPad1d",
-                 pad_params={},
-                 use_final_nonlinear_activation=True,
-                 use_weight_norm=True):
+    def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True, upsample_scales=[8, 8, 2, 2], stack_kernel_size=3, stacks=3, nonlinear_activation="LeakyReLU",
+                 nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={}, use_final_nonlinear_activation=True, use_weight_norm=True):
         """
         Initialize MelGANGenerator module.
         Args:
