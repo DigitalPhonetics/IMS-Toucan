@@ -8,13 +8,16 @@ import numpy
 import numpy as np
 import pyloudnorm as pyln
 import torch
-from torchaudio.transforms import MuLawEncoding, MuLawDecoding, Resample
+from torchaudio.transforms import MuLawDecoding
+from torchaudio.transforms import MuLawEncoding
+from torchaudio.transforms import Resample
 from torchaudio.transforms import Vad as VoiceActivityDetection
 
 warnings.filterwarnings("ignore")
 
 
 class AudioPreprocessor:
+
     def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False):
         """
         The parameters are by default set up to do well
@@ -104,8 +107,7 @@ class AudioPreprocessor:
         """
         audio = audio.numpy()
         # get amplitude spectrogram
-        x_stft = librosa.stft(audio, n_fft=self.n_fft, hop_length=self.hop_length,
-                              win_length=None, window="hann", pad_mode="reflect")
+        x_stft = librosa.stft(audio, n_fft=self.n_fft, hop_length=self.hop_length, win_length=None, window="hann", pad_mode="reflect")
         spc = np.abs(x_stft).T
         # get mel basis
         fmin = 0 if fmin is None else fmin

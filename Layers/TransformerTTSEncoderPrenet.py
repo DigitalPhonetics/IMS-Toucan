@@ -23,21 +23,8 @@ class EncoderPrenet(torch.nn.Module):
 
     """
 
-    def __init__(
-            self,
-            idim,
-            input_layer="embed",
-            embed_dim=512,
-            elayers=1,
-            eunits=512,
-            econv_layers=3,
-            econv_chans=512,
-            econv_filts=5,
-            use_batch_norm=True,
-            use_residual=False,
-            dropout_rate=0.5,
-            padding_idx=0,
-    ):
+    def __init__(self, idim, input_layer="embed", embed_dim=512, elayers=1, eunits=512, econv_layers=3, econv_chans=512, econv_filts=5, use_batch_norm=True,
+                 use_residual=False, dropout_rate=0.5, padding_idx=0, ):
         """Initialize Tacotron2 encoder module.
 
         Args:
@@ -70,47 +57,20 @@ class EncoderPrenet(torch.nn.Module):
         if econv_layers > 0:
             self.convs = torch.nn.ModuleList()
             for layer in range(econv_layers):
-                ichans = (
-                    embed_dim if layer == 0 and input_layer == "embed" else econv_chans
-                )
+                ichans = (embed_dim if layer == 0 and input_layer == "embed" else econv_chans)
                 if use_batch_norm:
                     self.convs += [
-                        torch.nn.Sequential(
-                            torch.nn.Conv1d(
-                                ichans,
-                                econv_chans,
-                                econv_filts,
-                                stride=1,
-                                padding=(econv_filts - 1) // 2,
-                                bias=False,
-                            ),
-                            torch.nn.BatchNorm1d(econv_chans),
-                            torch.nn.ReLU(),
-                            torch.nn.Dropout(dropout_rate),
-                        )
-                    ]
+                        torch.nn.Sequential(torch.nn.Conv1d(ichans, econv_chans, econv_filts, stride=1, padding=(econv_filts - 1) // 2, bias=False, ),
+                                            torch.nn.BatchNorm1d(econv_chans), torch.nn.ReLU(), torch.nn.Dropout(dropout_rate), )]
                 else:
                     self.convs += [
-                        torch.nn.Sequential(
-                            torch.nn.Conv1d(
-                                ichans,
-                                econv_chans,
-                                econv_filts,
-                                stride=1,
-                                padding=(econv_filts - 1) // 2,
-                                bias=False,
-                            ),
-                            torch.nn.ReLU(),
-                            torch.nn.Dropout(dropout_rate),
-                        )
-                    ]
+                        torch.nn.Sequential(torch.nn.Conv1d(ichans, econv_chans, econv_filts, stride=1, padding=(econv_filts - 1) // 2, bias=False, ),
+                                            torch.nn.ReLU(), torch.nn.Dropout(dropout_rate), )]
         else:
             self.convs = None
         if elayers > 0:
             iunits = econv_chans if econv_layers != 0 else embed_dim
-            self.blstm = torch.nn.LSTM(
-                iunits, eunits // 2, elayers, batch_first=True, bidirectional=True
-            )
+            self.blstm = torch.nn.LSTM(iunits, eunits // 2, elayers, batch_first=True, bidirectional=True)
         else:
             self.blstm = None
 

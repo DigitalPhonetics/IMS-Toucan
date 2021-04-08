@@ -20,10 +20,8 @@ class MelGANDataset(Dataset):
         # datasets and then concat them. If we just did all
         # datasets at once, there could be multiple sampling
         # rates.
-        self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256,
-                                               n_fft=1024)
-        self.melspec_ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256,
-                                            n_fft=1024)
+        self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
+        self.melspec_ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
         # hop length must be same as the product of the upscale factors
         if not os.path.exists(cache):
             resource_manager = Manager()
@@ -32,11 +30,9 @@ class MelGANDataset(Dataset):
             path_splits = list()
             process_list = list()
             for i in range(loading_processes):
-                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(
-                    list_of_paths) // loading_processes])
+                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
             for path_split in path_splits:
-                process_list.append(
-                    Process(target=self.cache_builder_process, args=(path_split, samples_per_segment), daemon=True))
+                process_list.append(Process(target=self.cache_builder_process, args=(path_split, samples_per_segment), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
@@ -77,8 +73,7 @@ class MelGANDataset(Dataset):
         max_audio_start = len(self.waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
         segment = torch.Tensor(self.waves[index][audio_start: audio_start + self.samples_per_segment])
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0,
-                                                                                                                    1)
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(segment, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):

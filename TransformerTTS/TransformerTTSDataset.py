@@ -1,6 +1,7 @@
 import json
 import os
-from multiprocessing import Process, Manager
+from multiprocessing import Manager
+from multiprocessing import Process
 
 import soundfile as sf
 import torch
@@ -14,20 +15,11 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, path_to_transcript_dict,
-                 spemb=False,
-                 train=True,
-                 loading_processes=6,
-                 cache_dir=os.path.join("Corpora", "CSS10_DE"),
-                 lang="de",
-                 min_len_in_seconds=1,
-                 max_len_in_seconds=20,
-                 cut_silences=False,
-                 rebuild_cache=False):
+    def __init__(self, path_to_transcript_dict, spemb=False, train=True, loading_processes=6, cache_dir=os.path.join("Corpora", "CSS10_DE"), lang="de",
+                 min_len_in_seconds=1, max_len_in_seconds=20, cut_silences=False, rebuild_cache=False):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
-                (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)) or \
-                rebuild_cache:
+                (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)) or rebuild_cache:
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
             all_keys_ordered = list(self.path_to_transcript_dict.keys())
@@ -43,12 +35,10 @@ class TransformerTTSDataset(Dataset):
             key_splits = list()
             process_list = list()
             for i in range(loading_processes):
-                key_splits.append(
-                    key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
+                key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process,
-                            args=(key_split, spemb, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
+                    Process(target=self.cache_builder_process, args=(key_split, spemb, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -72,17 +62,12 @@ class TransformerTTSDataset(Dataset):
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, spemb, lang, min_len, max_len, cut_silences):
-        tf = TextFrontend(language=lang,
-                          use_panphon_vectors=False,
-                          use_word_boundaries=False,
-                          use_explicit_eos=False,
-                          use_prosody=False)
+        tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
         if spemb:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
-                               cut_silence=cut_silences)
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for index, path in tqdm(enumerate(path_list)):
             transcript = self.path_to_transcript_dict[path]
             with open(path, "rb") as audio_file:
@@ -98,23 +83,15 @@ class TransformerTTSDataset(Dataset):
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
                     cached_spemb = emb_tensor.detach().numpy().tolist()
-                    self.datapoints.append(
-                        [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_spemb])
+                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_spemb])
                 else:
                     self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
 
     def __getitem__(self, index):
         if not self.spemb:
-            return self.datapoints[index][0], \
-                   self.datapoints[index][1], \
-                   self.datapoints[index][2], \
-                   self.datapoints[index][3]
+            return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3]
         else:
-            return self.datapoints[index][0], \
-                   self.datapoints[index][1], \
-                   self.datapoints[index][2], \
-                   self.datapoints[index][3], \
-                   self.datapoints[index][4]
+            return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4]
 
     def __len__(self):
         return len(self.datapoints)

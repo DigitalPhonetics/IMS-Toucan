@@ -10,7 +10,9 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
-from Utility.utils import make_pad_mask, make_non_pad_mask, initialize
+from Utility.utils import initialize
+from Utility.utils import make_non_pad_mask
+from Utility.utils import make_pad_mask
 
 
 class FastSpeech2(torch.nn.Module, ABC):
@@ -29,72 +31,27 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     """
 
-    def __init__(self,
-                 # network structure related
-                 idim: int,
-                 odim: int,
-                 adim: int = 384,
-                 aheads: int = 4,
-                 elayers: int = 6,
-                 eunits: int = 1536,
-                 dlayers: int = 6,
-                 dunits: int = 1536,
-                 postnet_layers: int = 5,
-                 postnet_chans: int = 256,
-                 postnet_filts: int = 5,
-                 positionwise_layer_type: str = "conv1d",
-                 positionwise_conv_kernel_size: int = 1,
-                 use_scaled_pos_enc: bool = True,
-                 use_batch_norm: bool = True,
-                 encoder_normalize_before: bool = True,
-                 decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = False,
-                 decoder_concat_after: bool = False,
-                 reduction_factor=1,
+    def __init__(self,  # network structure related
+                 idim: int, odim: int, adim: int = 384, aheads: int = 4, elayers: int = 6, eunits: int = 1536, dlayers: int = 6, dunits: int = 1536,
+                 postnet_layers: int = 5, postnet_chans: int = 256, postnet_filts: int = 5, positionwise_layer_type: str = "conv1d",
+                 positionwise_conv_kernel_size: int = 1, use_scaled_pos_enc: bool = True, use_batch_norm: bool = True, encoder_normalize_before: bool = True,
+                 decoder_normalize_before: bool = True, encoder_concat_after: bool = False, decoder_concat_after: bool = False, reduction_factor=1,
                  # encoder / decoder
-                 conformer_pos_enc_layer_type: str = "rel_pos",
-                 conformer_self_attn_layer_type: str = "rel_selfattn",
-                 conformer_activation_type: str = "swish",
-                 use_macaron_style_in_conformer: bool = True,
-                 use_cnn_in_conformer: bool = True,
-                 conformer_enc_kernel_size: int = 7,
-                 conformer_dec_kernel_size: int = 31,
-                 # duration predictor
-                 duration_predictor_layers: int = 2,
-                 duration_predictor_chans: int = 256,
-                 duration_predictor_kernel_size: int = 3,
-                 # energy predictor
-                 energy_predictor_layers: int = 2,
-                 energy_predictor_chans: int = 256,
-                 energy_predictor_kernel_size: int = 3,
-                 energy_predictor_dropout: float = 0.5,
-                 energy_embed_kernel_size: int = 1,
-                 energy_embed_dropout: float = 0.0,
-                 stop_gradient_from_energy_predictor: bool = True,
-                 # pitch predictor
-                 pitch_predictor_layers: int = 5,
-                 pitch_predictor_chans: int = 256,
-                 pitch_predictor_kernel_size: int = 5,
-                 pitch_predictor_dropout: float = 0.5,
-                 pitch_embed_kernel_size: int = 1,
-                 pitch_embed_dropout: float = 0.0,
-                 stop_gradient_from_pitch_predictor: bool = True,
-                 # pretrained spk emb
-                 spk_embed_dim: int = None,
-                 # training related
-                 transformer_enc_dropout_rate: float = 0.2,
-                 transformer_enc_positional_dropout_rate: float = 0.2,
-                 transformer_enc_attn_dropout_rate: float = 0.2,
-                 transformer_dec_dropout_rate: float = 0.2,
-                 transformer_dec_positional_dropout_rate: float = 0.2,
-                 transformer_dec_attn_dropout_rate: float = 0.2,
-                 duration_predictor_dropout_rate: float = 0.2,
-                 postnet_dropout_rate: float = 0.5,
-                 init_type: str = "xavier_uniform",
-                 init_enc_alpha: float = 1.0,
-                 init_dec_alpha: float = 1.0,
-                 use_masking: bool = False,
-                 use_weighted_masking: bool = True):
+                 conformer_pos_enc_layer_type: str = "rel_pos", conformer_self_attn_layer_type: str = "rel_selfattn", conformer_activation_type: str = "swish",
+                 use_macaron_style_in_conformer: bool = True, use_cnn_in_conformer: bool = True, conformer_enc_kernel_size: int = 7,
+                 conformer_dec_kernel_size: int = 31,  # duration predictor
+                 duration_predictor_layers: int = 2, duration_predictor_chans: int = 256, duration_predictor_kernel_size: int = 3,  # energy predictor
+                 energy_predictor_layers: int = 2, energy_predictor_chans: int = 256, energy_predictor_kernel_size: int = 3,
+                 energy_predictor_dropout: float = 0.5, energy_embed_kernel_size: int = 1, energy_embed_dropout: float = 0.0,
+                 stop_gradient_from_energy_predictor: bool = True,  # pitch predictor
+                 pitch_predictor_layers: int = 5, pitch_predictor_chans: int = 256, pitch_predictor_kernel_size: int = 5, pitch_predictor_dropout: float = 0.5,
+                 pitch_embed_kernel_size: int = 1, pitch_embed_dropout: float = 0.0, stop_gradient_from_pitch_predictor: bool = True,  # pretrained spk emb
+                 spk_embed_dim: int = None,  # training related
+                 transformer_enc_dropout_rate: float = 0.2, transformer_enc_positional_dropout_rate: float = 0.2,
+                 transformer_enc_attn_dropout_rate: float = 0.2, transformer_dec_dropout_rate: float = 0.2,
+                 transformer_dec_positional_dropout_rate: float = 0.2, transformer_dec_attn_dropout_rate: float = 0.2,
+                 duration_predictor_dropout_rate: float = 0.2, postnet_dropout_rate: float = 0.5, init_type: str = "xavier_uniform",
+                 init_enc_alpha: float = 1.0, init_dec_alpha: float = 1.0, use_masking: bool = False, use_weighted_masking: bool = True):
         super().__init__()
 
         # store hyperparameters
@@ -112,108 +69,61 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # define encoder
         encoder_input_layer = torch.nn.Embedding(num_embeddings=idim, embedding_dim=adim, padding_idx=self.padding_idx)
-        self.encoder = Conformer(idim=idim,
-                                 attention_dim=adim,
-                                 attention_heads=aheads,
-                                 linear_units=eunits,
-                                 num_blocks=elayers,
-                                 input_layer=encoder_input_layer,
-                                 dropout_rate=transformer_enc_dropout_rate,
-                                 positional_dropout_rate=transformer_enc_positional_dropout_rate,
-                                 attention_dropout_rate=transformer_enc_attn_dropout_rate,
-                                 normalize_before=encoder_normalize_before,
-                                 concat_after=encoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=conformer_enc_kernel_size,
-                                 zero_triu=False)
+        self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers,
+                                 input_layer=encoder_input_layer, dropout_rate=transformer_enc_dropout_rate,
+                                 positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
+                                 normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
+                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
+                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False)
 
         # define additional projection for speaker embedding
         if self.spk_embed_dim is not None:
             self.projection = torch.nn.Linear(adim + self.spk_embed_dim, adim)
 
         # define duration predictor
-        self.duration_predictor = DurationPredictor(idim=adim,
-                                                    n_layers=duration_predictor_layers,
-                                                    n_chans=duration_predictor_chans,
-                                                    kernel_size=duration_predictor_kernel_size,
-                                                    dropout_rate=duration_predictor_dropout_rate, )
+        self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers, n_chans=duration_predictor_chans,
+                                                    kernel_size=duration_predictor_kernel_size, dropout_rate=duration_predictor_dropout_rate, )
 
         # define pitch predictor
-        self.pitch_predictor = VariancePredictor(idim=adim,
-                                                 n_layers=pitch_predictor_layers,
-                                                 n_chans=pitch_predictor_chans,
-                                                 kernel_size=pitch_predictor_kernel_size,
-                                                 dropout_rate=pitch_predictor_dropout)
+        self.pitch_predictor = VariancePredictor(idim=adim, n_layers=pitch_predictor_layers, n_chans=pitch_predictor_chans,
+                                                 kernel_size=pitch_predictor_kernel_size, dropout_rate=pitch_predictor_dropout)
         # continuous pitch + FastPitch style avg
-        self.pitch_embed = torch.nn.Sequential(torch.nn.Conv1d(in_channels=1,
-                                                               out_channels=adim,
-                                                               kernel_size=pitch_embed_kernel_size,
-                                                               padding=(pitch_embed_kernel_size - 1) // 2),
-                                               torch.nn.Dropout(pitch_embed_dropout))
+        self.pitch_embed = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=1, out_channels=adim, kernel_size=pitch_embed_kernel_size, padding=(pitch_embed_kernel_size - 1) // 2),
+            torch.nn.Dropout(pitch_embed_dropout))
 
         # define energy predictor
-        self.energy_predictor = VariancePredictor(idim=adim,
-                                                  n_layers=energy_predictor_layers,
-                                                  n_chans=energy_predictor_chans,
-                                                  kernel_size=energy_predictor_kernel_size,
-                                                  dropout_rate=energy_predictor_dropout)
+        self.energy_predictor = VariancePredictor(idim=adim, n_layers=energy_predictor_layers, n_chans=energy_predictor_chans,
+                                                  kernel_size=energy_predictor_kernel_size, dropout_rate=energy_predictor_dropout)
         # continuous energy + FastPitch style avg
-        self.energy_embed = torch.nn.Sequential(torch.nn.Conv1d(in_channels=1,
-                                                                out_channels=adim,
-                                                                kernel_size=energy_embed_kernel_size,
-                                                                padding=(energy_embed_kernel_size - 1) // 2),
-                                                torch.nn.Dropout(energy_embed_dropout))
+        self.energy_embed = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=1, out_channels=adim, kernel_size=energy_embed_kernel_size, padding=(energy_embed_kernel_size - 1) // 2),
+            torch.nn.Dropout(energy_embed_dropout))
 
         # define length regulator
         self.length_regulator = LengthRegulator()
 
-        self.decoder = Conformer(idim=0,
-                                 attention_dim=adim,
-                                 attention_heads=aheads,
-                                 linear_units=dunits,
-                                 num_blocks=dlayers,
-                                 input_layer=None,
-                                 dropout_rate=transformer_dec_dropout_rate,
-                                 positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                                 attention_dropout_rate=transformer_dec_attn_dropout_rate,
-                                 normalize_before=decoder_normalize_before,
-                                 concat_after=decoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=conformer_dec_kernel_size)
+        self.decoder = Conformer(idim=0, attention_dim=adim, attention_heads=aheads, linear_units=dunits, num_blocks=dlayers, input_layer=None,
+                                 dropout_rate=transformer_dec_dropout_rate, positional_dropout_rate=transformer_dec_positional_dropout_rate,
+                                 attention_dropout_rate=transformer_dec_attn_dropout_rate, normalize_before=decoder_normalize_before,
+                                 concat_after=decoder_concat_after, positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
 
         # define postnet
-        self.postnet = PostNet(idim=idim,
-                               odim=odim,
-                               n_layers=postnet_layers,
-                               n_chans=postnet_chans,
-                               n_filts=postnet_filts,
-                               use_batch_norm=use_batch_norm,
+        self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
 
         # initialize parameters
-        self._reset_parameters(init_type=init_type,
-                               init_enc_alpha=init_enc_alpha,
-                               init_dec_alpha=init_dec_alpha)
+        self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
 
-    def forward(self,
-                text_tensors: torch.Tensor,
-                text_lengths: torch.Tensor,
-                gold_speech: torch.Tensor,
-                speech_lengths: torch.Tensor,
-                gold_durations: torch.Tensor,
-                gold_pitch: torch.Tensor,
-                gold_energy: torch.Tensor,
-                spembs: torch.Tensor = None):
+    def forward(self, text_tensors: torch.Tensor, text_lengths: torch.Tensor, gold_speech: torch.Tensor, speech_lengths: torch.Tensor,
+                gold_durations: torch.Tensor, gold_pitch: torch.Tensor, gold_energy: torch.Tensor, spembs: torch.Tensor = None):
         """
         Calculate forward propagation.
 
@@ -253,47 +163,24 @@ class FastSpeech2(torch.nn.Module, ABC):
         text_lengths_including_eos = text_lengths + 1
 
         # forward propagation
-        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors_including_eos,
-                                                                        text_lengths_including_eos,
-                                                                        gold_speech,
-                                                                        speech_lengths,
-                                                                        gold_durations,
-                                                                        gold_pitch,
-                                                                        gold_energy,
-                                                                        spembs=spembs,
-                                                                        is_inference=False)
+        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors_including_eos, text_lengths_including_eos, gold_speech, speech_lengths,
+                                                                        gold_durations, gold_pitch, gold_energy, spembs=spembs, is_inference=False)
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
             speech_lengths = speech_lengths.new([olen - olen % self.reduction_factor for olen in speech_lengths])
 
         # calculate loss
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
-                                                                         before_outs=before_outs,
-                                                                         d_outs=d_outs,
-                                                                         p_outs=p_outs,
-                                                                         e_outs=e_outs,
-                                                                         ys=gold_speech,
-                                                                         ds=gold_durations,
-                                                                         ps=gold_pitch,
-                                                                         es=gold_energy,
-                                                                         ilens=text_lengths_including_eos,
-                                                                         olens=speech_lengths)
+        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs, d_outs=d_outs, p_outs=p_outs,
+                                                                         e_outs=e_outs, ys=gold_speech, ds=gold_durations, ps=gold_pitch, es=gold_energy,
+                                                                         ilens=text_lengths_including_eos, olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
 
         return loss
 
-    def _forward(self,
-                 text_tensors: torch.Tensor,
-                 text_lens: torch.Tensor,
-                 gold_speech: torch.Tensor = None,
-                 speech_lens: torch.Tensor = None,
-                 gold_durations: torch.Tensor = None,
-                 gold_pitch: torch.Tensor = None,
-                 gold_energy: torch.Tensor = None,
-                 spembs: torch.Tensor = None,
-                 is_inference: bool = False,
-                 alpha: float = 1.0):
+    def _forward(self, text_tensors: torch.Tensor, text_lens: torch.Tensor, gold_speech: torch.Tensor = None, speech_lens: torch.Tensor = None,
+                 gold_durations: torch.Tensor = None, gold_pitch: torch.Tensor = None, gold_energy: torch.Tensor = None, spembs: torch.Tensor = None,
+                 is_inference: bool = False, alpha: float = 1.0):
         # forward encoder
         text_masks = self._source_mask(text_lens)
         encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
@@ -339,24 +226,15 @@ class FastSpeech2(torch.nn.Module, ABC):
         else:
             h_masks = None
         zs, _ = self.decoder(encoded_texts, h_masks)  # (B, Lmax, adim)
-        before_outs = self.feat_out(zs).view(
-            zs.size(0), -1, self.odim
-        )  # (B, Lmax, odim)
+        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
 
         return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
 
-    def inference(self,
-                  text: torch.Tensor,
-                  speech: torch.Tensor = None,
-                  spembs: torch.Tensor = None,
-                  durations: torch.Tensor = None,
-                  pitch: torch.Tensor = None,
-                  energy: torch.Tensor = None,
-                  alpha: float = 1.0,
-                  use_teacher_forcing: bool = False):
+    def inference(self, text: torch.Tensor, speech: torch.Tensor = None, spembs: torch.Tensor = None, durations: torch.Tensor = None,
+                  pitch: torch.Tensor = None, energy: torch.Tensor = None, alpha: float = 1.0, use_teacher_forcing: bool = False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -390,20 +268,9 @@ class FastSpeech2(torch.nn.Module, ABC):
         if use_teacher_forcing:
             # use groundtruth of duration, pitch, and energy
             ds, ps, es = d.unsqueeze(0), p.unsqueeze(0), e.unsqueeze(0)
-            _, outs, *_ = self._forward(xs,
-                                        ilens,
-                                        ys,
-                                        gold_durations=ds,
-                                        gold_pitch=ps,
-                                        gold_energy=es,
-                                        spembs=spembs)  # (1, L, odim)
+            _, outs, *_ = self._forward(xs, ilens, ys, gold_durations=ds, gold_pitch=ps, gold_energy=es, spembs=spembs)  # (1, L, odim)
         else:
-            _, outs, *_ = self._forward(xs,
-                                        ilens,
-                                        ys,
-                                        spembs=spembs,
-                                        is_inference=True,
-                                        alpha=alpha)  # (1, L, odim)
+            _, outs, *_ = self._forward(xs, ilens, ys, spembs=spembs, is_inference=True, alpha=alpha)  # (1, L, odim)
         self.train()
         return outs[0]
 
@@ -451,4 +318,3 @@ def build_reference_fastspeech2_model(model_name):
     params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
     return model
-

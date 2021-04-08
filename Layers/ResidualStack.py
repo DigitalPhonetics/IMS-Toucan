@@ -11,16 +11,8 @@ import torch
 class ResidualStack(torch.nn.Module):
     """Residual stack module introduced in MelGAN."""
 
-    def __init__(self,
-                 kernel_size=3,
-                 channels=32,
-                 dilation=1,
-                 bias=True,
-                 nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.2},
-                 pad="ReflectionPad1d",
-                 pad_params={},
-                 ):
+    def __init__(self, kernel_size=3, channels=32, dilation=1, bias=True, nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2},
+                 pad="ReflectionPad1d", pad_params={}, ):
         """Initialize ResidualStack module.
 
         Args:
@@ -32,20 +24,17 @@ class ResidualStack(torch.nn.Module):
             nonlinear_activation_params (dict): Hyperparameters for activation function.
             pad (str): Padding function module name before dilated convolution layer.
             pad_params (dict): Hyperparameters for padding function.
-            use_causal_conv (bool): Whether to use causal convolution.
 
         """
         super(ResidualStack, self).__init__()
 
         # defile residual stack part
         assert (kernel_size - 1) % 2 == 0, "Not support even number kernel size."
-        self.stack = torch.nn.Sequential(
-            getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
-            getattr(torch.nn, pad)((kernel_size - 1) // 2 * dilation, **pad_params),
-            torch.nn.Conv1d(channels, channels, kernel_size, dilation=dilation, bias=bias),
-            getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
-            torch.nn.Conv1d(channels, channels, 1, bias=bias),
-        )
+        self.stack = torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
+                                         getattr(torch.nn, pad)((kernel_size - 1) // 2 * dilation, **pad_params),
+                                         torch.nn.Conv1d(channels, channels, kernel_size, dilation=dilation, bias=bias),
+                                         getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
+                                         torch.nn.Conv1d(channels, channels, 1, bias=bias), )
 
         # defile extra layer for skip connection
         self.skip_layer = torch.nn.Conv1d(channels, channels, 1, bias=bias)

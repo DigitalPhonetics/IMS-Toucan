@@ -12,23 +12,16 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten": Thorsten_FastSpeechInference,
-    "fast_lj": LJSpeech_FastSpeechInference,
-    "fast_css10_de": CSS10_DE_FastSpeechInference,
-    "fast_libri": LibriTTS_FastSpeechInference,
+    "fast_thorsten" : Thorsten_FastSpeechInference, "fast_lj": LJSpeech_FastSpeechInference, "fast_css10_de": CSS10_DE_FastSpeechInference,
+    "fast_libri"    : LibriTTS_FastSpeechInference,
 
-    "trans_thorsten": Thorsten_TransformerTTSInference,
-    "trans_lj": LJSpeech_TransformerTTSInference,
-    "trans_css10_de": CSS10_DE_TransformerTTSInference,
-    "trans_libri": LibriTTS_TransformerTTSInference
+    "trans_thorsten": Thorsten_TransformerTTSInference, "trans_lj": LJSpeech_TransformerTTSInference, "trans_css10_de": CSS10_DE_TransformerTTSInference,
+    "trans_libri"   : LibriTTS_TransformerTTSInference
 
-}
-
+    }
 
 if __name__ == '__main__':
-    model_id = input(
-        "Which model do you want? \nCurrently supported are: {}\n".format(
-            "".join("\n\t- {}".format(key) for key in tts_dict.keys())))
+    model_id = input("Which model do you want? \nCurrently supported are: {}\n".format("".join("\n\t- {}".format(key) for key in tts_dict.keys())))
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tts = tts_dict[model_id](device=device)
     while True:

@@ -12,17 +12,8 @@ from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from Utility.RAdam import RAdam
 
 
-def train_loop(batch_size=16,
-               steps=2000000,
-               generator=None,
-               discriminator=None,
-               train_dataset=None,
-               valid_dataset=None,
-               device=None,
-               model_save_dir=None,
-               generator_warmup_steps=100000,
-               epochs_per_save=5,
-               checkpoint=None):
+def train_loop(batch_size=16, steps=2000000, generator=None, discriminator=None, train_dataset=None, valid_dataset=None, device=None, model_save_dir=None,
+               generator_warmup_steps=100000, epochs_per_save=5, checkpoint=None):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -51,29 +42,13 @@ def train_loop(batch_size=16,
     g.train()
     d.train()
     optimizer_g = RAdam(g.parameters(), lr=0.0001, eps=1.0e-6, weight_decay=0.0)
-    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5,
-                              milestones=[200000, 400000, 600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000,
-                                          2000000])
+    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[200000, 400000, 600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000])
     optimizer_d = RAdam(d.parameters(), lr=0.00005, eps=1.0e-6, weight_decay=0.0)
-    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5,
-                              milestones=[200000, 400000, 600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000,
-                                          2000000])
+    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000, 1000000, 1200000, 1400000, 1600000, 1800000, 2000000])
 
-    train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=batch_size,
-                              shuffle=True,
-                              num_workers=16,
-                              pin_memory=False,
-                              drop_last=True,
-                              prefetch_factor=4,
+    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=False, drop_last=True, prefetch_factor=4,
                               persistent_workers=False)
-    valid_loader = DataLoader(dataset=valid_dataset,
-                              batch_size=20,
-                              shuffle=False,
-                              num_workers=5,
-                              pin_memory=False,
-                              drop_last=False,
-                              prefetch_factor=20,
+    valid_loader = DataLoader(dataset=valid_dataset, batch_size=20, shuffle=False, num_workers=5, pin_memory=False, drop_last=False, prefetch_factor=20,
                               persistent_workers=False)
 
     if checkpoint is not None:
@@ -133,15 +108,13 @@ def train_loop(batch_size=16,
                 d_outs = d(pred_wave)
                 adversarial_loss = 0.0
                 for i in range(len(d_outs)):
-                    adversarial_loss += discriminator_criterion(d_outs[i][-1],
-                                                                d_outs[i][-1].new_ones(d_outs[i][-1].size()))
+                    adversarial_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_ones(d_outs[i][-1].size()))
                 adversarial_loss /= (len(d_outs))
                 lambda_a = 4
                 if step_counter > 200000:
                     lambda_a = 8
                     if step_counter > 300000:
-                        lambda_a = 12
-                        # the later into training we get, the more valuable the discriminator feedback becomes
+                        lambda_a = 12  # the later into training we get, the more valuable the discriminator feedback becomes
                 train_losses_this_epoch["adversarial"].append(float(adversarial_loss * lambda_a))
 
                 generator_total_loss = (spectral_loss + magnitude_loss) * 25 + adversarial_loss * lambda_a
@@ -183,8 +156,7 @@ def train_loop(batch_size=16,
                 scheduler_d.step()
                 optimizer_d.zero_grad()
             else:
-                train_losses_this_epoch["discriminator_mse"].append(0.0)
-            # print("Step {}".format(step_counter))
+                train_losses_this_epoch["discriminator_mse"].append(0.0)  # print("Step {}".format(step_counter))
 
         ############################
         #         Evaluate         #
@@ -205,8 +177,7 @@ def train_loop(batch_size=16,
                     d_outs = d(pred_wave)
                     adversarial_loss = 0.0
                     for i in range(len(d_outs)):
-                        adversarial_loss += discriminator_criterion(d_outs[i][-1],
-                                                                    d_outs[i][-1].new_ones(d_outs[i][-1].size()))
+                        adversarial_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_ones(d_outs[i][-1].size()))
                     adversarial_loss /= (len(d_outs))
                     valid_losses_this_epoch["adversarial"].append(float(adversarial_loss))
                     generator_total_loss = spectral_loss + magnitude_loss + adversarial_loss
@@ -218,30 +189,24 @@ def train_loop(batch_size=16,
                     fake_loss = 0.0
                     d_outs = d(pred_wave)
                     for i in range(len(d_outs)):
-                        fake_loss += discriminator_criterion(d_outs[i][-1],
-                                                             d_outs[i][-1].new_zeros(d_outs[i][-1].size()))
+                        fake_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_zeros(d_outs[i][-1].size()))
                     fake_loss /= len(d_outs)
                     real_loss = 0.0
                     d_outs = d(gold_wave.unsqueeze(1))
                     for i in range(len(d_outs)):
-                        real_loss += discriminator_criterion(d_outs[i][-1],
-                                                             d_outs[i][-1].new_ones(d_outs[i][-1].size()))
+                        real_loss += discriminator_criterion(d_outs[i][-1], d_outs[i][-1].new_ones(d_outs[i][-1].size()))
                     real_loss /= len(d_outs)
                     discriminator_mse_loss = fake_loss + real_loss
                     valid_losses_this_epoch["discriminator_mse"].append(float(discriminator_mse_loss))
                 else:
                     valid_losses_this_epoch["discriminator_mse"].append(0.0)
-            valid_gen_mean_epoch_loss = sum(valid_losses_this_epoch["generator_total"][-len(valid_dataset):]) / len(
-                valid_dataset)
+            valid_gen_mean_epoch_loss = sum(valid_losses_this_epoch["generator_total"][-len(valid_dataset):]) / len(valid_dataset)
             if step_counter > generator_warmup_steps and epoch % epochs_per_save == 0:
-                torch.save({"generator": g.state_dict(),
-                            "discriminator": d.state_dict(),
-                            "generator_optimizer": optimizer_g.state_dict(),
-                            "discriminator_optimizer": optimizer_d.state_dict(),
-                            "generator_scheduler": scheduler_g.state_dict(),
-                            "discriminator_scheduler": scheduler_d.state_dict(),
-                            "step_counter": step_counter},
-                           os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+                torch.save({
+                    "generator"              : g.state_dict(), "discriminator": d.state_dict(), "generator_optimizer": optimizer_g.state_dict(),
+                    "discriminator_optimizer": optimizer_d.state_dict(), "generator_scheduler": scheduler_g.state_dict(),
+                    "discriminator_scheduler": scheduler_d.state_dict(), "step_counter": step_counter
+                    }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
 
                 if step_counter > steps:
                     # DONE
@@ -255,28 +220,20 @@ def train_loop(batch_size=16,
             d.train()
 
             # average the losses of the epoch for a smooth plotting experience
-            train_losses["adversarial"].append(
-                sum(train_losses_this_epoch["adversarial"]) / len(train_losses_this_epoch["adversarial"]))
+            train_losses["adversarial"].append(sum(train_losses_this_epoch["adversarial"]) / len(train_losses_this_epoch["adversarial"]))
             train_losses["multi_res_spectral_convergence"].append(
-                sum(train_losses_this_epoch["multi_res_spectral_convergence"]) / len(
-                    train_losses_this_epoch["multi_res_spectral_convergence"]))
-            train_losses["multi_res_log_stft_mag"].append(sum(train_losses_this_epoch["multi_res_log_stft_mag"]) / len(
-                train_losses_this_epoch["multi_res_log_stft_mag"]))
-            train_losses["generator_total"].append(
-                sum(train_losses_this_epoch["generator_total"]) / len(train_losses_this_epoch["generator_total"]))
-            train_losses["discriminator_mse"].append(
-                sum(train_losses_this_epoch["discriminator_mse"]) / len(train_losses_this_epoch["discriminator_mse"]))
-            valid_losses["adversarial"].append(
-                sum(valid_losses_this_epoch["adversarial"]) / len(valid_losses_this_epoch["adversarial"]))
+                sum(train_losses_this_epoch["multi_res_spectral_convergence"]) / len(train_losses_this_epoch["multi_res_spectral_convergence"]))
+            train_losses["multi_res_log_stft_mag"].append(
+                sum(train_losses_this_epoch["multi_res_log_stft_mag"]) / len(train_losses_this_epoch["multi_res_log_stft_mag"]))
+            train_losses["generator_total"].append(sum(train_losses_this_epoch["generator_total"]) / len(train_losses_this_epoch["generator_total"]))
+            train_losses["discriminator_mse"].append(sum(train_losses_this_epoch["discriminator_mse"]) / len(train_losses_this_epoch["discriminator_mse"]))
+            valid_losses["adversarial"].append(sum(valid_losses_this_epoch["adversarial"]) / len(valid_losses_this_epoch["adversarial"]))
             valid_losses["multi_res_spectral_convergence"].append(
-                sum(valid_losses_this_epoch["multi_res_spectral_convergence"]) / len(
-                    valid_losses_this_epoch["multi_res_spectral_convergence"]))
-            valid_losses["multi_res_log_stft_mag"].append(sum(valid_losses_this_epoch["multi_res_log_stft_mag"]) / len(
-                valid_losses_this_epoch["multi_res_log_stft_mag"]))
-            valid_losses["generator_total"].append(
-                sum(valid_losses_this_epoch["generator_total"]) / len(valid_losses_this_epoch["generator_total"]))
-            valid_losses["discriminator_mse"].append(
-                sum(valid_losses_this_epoch["discriminator_mse"]) / len(valid_losses_this_epoch["discriminator_mse"]))
+                sum(valid_losses_this_epoch["multi_res_spectral_convergence"]) / len(valid_losses_this_epoch["multi_res_spectral_convergence"]))
+            valid_losses["multi_res_log_stft_mag"].append(
+                sum(valid_losses_this_epoch["multi_res_log_stft_mag"]) / len(valid_losses_this_epoch["multi_res_log_stft_mag"]))
+            valid_losses["generator_total"].append(sum(valid_losses_this_epoch["generator_total"]) / len(valid_losses_this_epoch["generator_total"]))
+            valid_losses["discriminator_mse"].append(sum(valid_losses_this_epoch["discriminator_mse"]) / len(valid_losses_this_epoch["discriminator_mse"]))
             with open(os.path.join(model_save_dir, "train_loss.json"), 'w') as plotting_data_file:
                 json.dump(train_losses, plotting_data_file)
             with open(os.path.join(model_save_dir, "valid_loss.json"), 'w') as plotting_data_file:

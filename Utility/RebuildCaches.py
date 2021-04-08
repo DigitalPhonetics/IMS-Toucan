@@ -11,8 +11,9 @@ import warnings
 import torch
 
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech, \
-    build_path_to_transcript_dict_hokuspokus, build_path_to_transcript_dict_libritts
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_hokuspokus
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
 
 warnings.filterwarnings("ignore")
 
@@ -54,43 +55,14 @@ def rebuild_caches():
         os.remove(os.path.join(cache_dir_css10de, valid_cache))
 
     # finally build all the caches anew
-    TransformerTTSDataset(path_to_transcript_dict_lj,
-                          train=True,
-                          cache_dir=cache_dir_lj,
-                          lang="en",
-                          min_len_in_seconds=0,
-                          max_len_in_seconds=1000000)
-    TransformerTTSDataset(path_to_transcript_dict_lj,
-                          train=False,
-                          cache_dir=cache_dir_lj,
-                          lang="en",
-                          min_len_in_seconds=0,
-                          max_len_in_seconds=1000000)
+    TransformerTTSDataset(path_to_transcript_dict_lj, train=True, cache_dir=cache_dir_lj, lang="en", min_len_in_seconds=0, max_len_in_seconds=1000000)
+    TransformerTTSDataset(path_to_transcript_dict_lj, train=False, cache_dir=cache_dir_lj, lang="en", min_len_in_seconds=0, max_len_in_seconds=1000000)
 
-    TransformerTTSDataset(path_to_transcript_dict_libri,
-                          train=True,
-                          cache_dir=cache_dir_libri,
-                          lang="en",
-                          min_len_in_seconds=10000,
-                          max_len_in_seconds=400000,
+    TransformerTTSDataset(path_to_transcript_dict_libri, train=True, cache_dir=cache_dir_libri, lang="en", min_len_in_seconds=10000, max_len_in_seconds=400000,
                           spemb=True)
-    TransformerTTSDataset(path_to_transcript_dict_libri,
-                          train=False,
-                          cache_dir=cache_dir_libri,
-                          lang="en",
-                          min_len_in_seconds=10000,
-                          max_len_in_seconds=400000,
+    TransformerTTSDataset(path_to_transcript_dict_libri, train=False, cache_dir=cache_dir_libri, lang="en", min_len_in_seconds=10000, max_len_in_seconds=400000,
                           spemb=True)
 
-    TransformerTTSDataset(path_to_transcript_dict_css10de,
-                          train=True,
-                          cache_dir=cache_dir_css10de,
-                          lang="de",
-                          min_len_in_seconds=0,
-                          max_len_in_seconds=1000000)
-    TransformerTTSDataset(path_to_transcript_dict_css10de,
-                          train=False,
-                          cache_dir=cache_dir_css10de,
-                          lang="de",
-                          min_len_in_seconds=0,
+    TransformerTTSDataset(path_to_transcript_dict_css10de, train=True, cache_dir=cache_dir_css10de, lang="de", min_len_in_seconds=0, max_len_in_seconds=1000000)
+    TransformerTTSDataset(path_to_transcript_dict_css10de, train=False, cache_dir=cache_dir_css10de, lang="de", min_len_in_seconds=0,
                           max_len_in_seconds=1000000)

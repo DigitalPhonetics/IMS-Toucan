@@ -18,16 +18,8 @@ class Dio(torch.nn.Module):
     introduced in https://doi.org/10.1587/transinf.2015EDP7457
     """
 
-    def __init__(self,
-                 fs=16000,
-                 n_fft: int = 1024,
-                 hop_length: int = 256,
-                 f0min: int = 40,
-                 f0max: int = 400,
-                 use_token_averaged_f0: bool = True,
-                 use_continuous_f0: bool = True,
-                 use_log_f0: bool = True,
-                 reduction_factor=1):
+    def __init__(self, fs=16000, n_fft: int = 1024, hop_length: int = 256, f0min: int = 40, f0max: int = 400, use_token_averaged_f0: bool = True,
+                 use_continuous_f0: bool = True, use_log_f0: bool = True, reduction_factor=1):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
@@ -46,21 +38,11 @@ class Dio(torch.nn.Module):
         return 1
 
     def get_parameters(self):
-        return dict(fs=self.fs,
-                    n_fft=self.n_fft,
-                    hop_length=self.hop_length,
-                    f0min=self.f0min,
-                    f0max=self.f0max,
-                    use_token_averaged_f0=self.use_token_averaged_f0,
-                    use_continuous_f0=self.use_continuous_f0,
-                    use_log_f0=self.use_log_f0,
+        return dict(fs=self.fs, n_fft=self.n_fft, hop_length=self.hop_length, f0min=self.f0min, f0max=self.f0max,
+                    use_token_averaged_f0=self.use_token_averaged_f0, use_continuous_f0=self.use_continuous_f0, use_log_f0=self.use_log_f0,
                     reduction_factor=self.reduction_factor)
 
-    def forward(self,
-                input: torch.Tensor,
-                input_lengths: torch.Tensor = None,
-                feats_lengths: torch.Tensor = None,
-                durations: torch.Tensor = None,
+    def forward(self, input: torch.Tensor, input_lengths: torch.Tensor = None, feats_lengths: torch.Tensor = None, durations: torch.Tensor = None,
                 durations_lengths: torch.Tensor = None):
         # If not provide, we assume that the inputs have the same length
         if input_lengths is None:
@@ -71,13 +53,11 @@ class Dio(torch.nn.Module):
 
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
-            pitch = [self._adjust_num_frames(p, fl).view(-1)
-                     for p, fl in zip(pitch, feats_lengths)]
+            pitch = [self._adjust_num_frames(p, fl).view(-1) for p, fl in zip(pitch, feats_lengths)]
 
         # (Optional): Average by duration to calculate token-wise f0
         if self.use_token_averaged_f0:
-            pitch = [self._average_by_duration(p, d).view(-1)
-                     for p, d in zip(pitch, durations)]
+            pitch = [self._average_by_duration(p, d).view(-1) for p, d in zip(pitch, durations)]
             pitch_lengths = durations_lengths
         else:
             pitch_lengths = input.new_tensor([len(p) for p in pitch], dtype=torch.long)
@@ -90,11 +70,7 @@ class Dio(torch.nn.Module):
 
     def _calculate_f0(self, input: torch.Tensor):
         x = input.cpu().numpy().astype(np.double)
-        f0, timeaxis = pyworld.dio(x,
-                                   self.fs,
-                                   f0_floor=self.f0min,
-                                   f0_ceil=self.f0max,
-                                   frame_period=self.frame_period)
+        f0, timeaxis = pyworld.dio(x, self.fs, f0_floor=self.f0min, f0_ceil=self.f0max, frame_period=self.frame_period)
         f0 = pyworld.stonemask(x, f0, timeaxis, self.fs)
         if self.use_continuous_f0:
             f0 = self._convert_to_continuous_f0(f0)
@@ -136,8 +112,7 @@ class Dio(torch.nn.Module):
     def _average_by_duration(self, x: torch.Tensor, d: torch.Tensor):
         assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
-        x_avg = [x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0)
-                 if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0
-                 else x.new_tensor(0.0)
-                 for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
+        x_avg = [
+            x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
+            for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
         return torch.stack(x_avg)

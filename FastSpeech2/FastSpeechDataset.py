@@ -1,6 +1,7 @@
 import json
 import os
-from multiprocessing import Process, Manager
+from multiprocessing import Manager
+from multiprocessing import Process
 
 import soundfile as sf
 import torch
@@ -18,31 +19,19 @@ from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
 
 class FastSpeechDataset(Dataset):
 
-    def __init__(self,
-                 path_to_transcript_dict,
-                 acoustic_model_name,
-                 diagonal_attention_head_id=None,  # every transformer has one attention head
+    def __init__(self, path_to_transcript_dict, acoustic_model_name, diagonal_attention_head_id=None,  # every transformer has one attention head
                  # that is the most diagonal. Look for it manually (e.g. using playground)
                  # and then provide it here.
-                 spemb=False,
-                 train=True,
-                 loading_processes=1,
-                 cache_dir=os.path.join("Corpora", "CSS10_DE"),
-                 lang="de",
-                 min_len_in_seconds=1,
-                 max_len_in_seconds=20,
-                 reduction_factor=1,
-                 device=torch.device("cpu"),
-                 rebuild_cache=False,
-                 path_blacklist=None,  # because for some datasets, some of the alignments
+                 spemb=False, train=True, loading_processes=1, cache_dir=os.path.join("Corpora", "CSS10_DE"), lang="de", min_len_in_seconds=1,
+                 max_len_in_seconds=20, reduction_factor=1, device=torch.device("cpu"), rebuild_cache=False, path_blacklist=None,
+                 # because for some datasets, some of the alignments
                  # simply fail because attention heads do weird things. Those need to be
                  # found in the duration_vis folder and manually added to a list of samples
                  # to be excluded from the dataset.
                  ):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
-                (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or \
-                rebuild_cache:
+                (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
                 os.makedirs(os.path.join(cache_dir, "durations_visualization"))
             ressource_manager = Manager()
@@ -62,15 +51,11 @@ class FastSpeechDataset(Dataset):
             key_splits = list()
             process_list = list()
             for i in range(loading_processes):
-                key_splits.append(
-                    key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
+                key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
-                process_list.append(
-                    Process(target=self.cache_builder_process,
-                            args=(
-                                key_split, acoustic_model_name, spemb, lang, min_len_in_seconds, max_len_in_seconds,
-                                reduction_factor, device, cache_dir, diagonal_attention_head_id),
-                            daemon=True))
+                process_list.append(Process(target=self.cache_builder_process, args=(
+                    key_split, acoustic_model_name, spemb, lang, min_len_in_seconds, max_len_in_seconds, reduction_factor, device, cache_dir,
+                    diagonal_attention_head_id), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
@@ -99,29 +84,16 @@ class FastSpeechDataset(Dataset):
             self.datapoints = datapoints_with_durations_that_make_sense
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self,
-                              path_list,
-                              acoustic_model_name,
-                              spemb,
-                              lang,
-                              min_len,
-                              max_len,
-                              reduction_factor,
-                              device,
-                              cache_dir,
+    def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor, device, cache_dir,
                               diagonal_attention_head_id):
-        tf = TextFrontend(language=lang,
-                          use_panphon_vectors=False,
-                          use_word_boundaries=False,
-                          use_explicit_eos=False)
+        tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
         if spemb:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
-        dc = DurationCalculator(reduction_factor=reduction_factor,
-                                diagonal_attention_head_id=diagonal_attention_head_id)
+        dc = DurationCalculator(reduction_factor=reduction_factor, diagonal_attention_head_id=diagonal_attention_head_id)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for index, path in tqdm(enumerate(path_list)):
@@ -141,71 +113,37 @@ class FastSpeechDataset(Dataset):
                 cached_speech_lens = len(cached_speech)
                 if not spemb:
                     os.path.join(cache_dir, "durations_visualization")
-                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                   speech=melspec.to(device),
-                                                                   use_teacher_forcing=True,
-                                                                   spembs=None)[2],
-                                          vis=os.path.join(cache_dir, "durations_visualization",
-                                                           path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    cached_durations = \
+                        dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, spembs=None)[2],
+                           vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_spemb = dvector.embed_utterance(mel_tensor)
-                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                   speech=melspec.to(device),
-                                                                   use_teacher_forcing=True,
+                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True,
                                                                    spembs=cached_spemb.to(device))[2],
-                                          vis=os.path.join(cache_dir, "durations_visualization",
-                                                           ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
-                cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
-                                            input_lengths=norm_wave_length,
-                                            feats_lengths=melspec_length,
-                                            durations=cached_durations.unsqueeze(0),
-                                            durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
-                cached_pitch = dio(input=norm_wave.unsqueeze(0),
-                                   input_lengths=norm_wave_length,
-                                   feats_lengths=melspec_length,
-                                   durations=cached_durations.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
+                                          vis=os.path.join(cache_dir, "durations_visualization", ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
+                cached_energy = \
+                energy_calc(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length, durations=cached_durations.unsqueeze(0),
+                            durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
+                cached_pitch = \
+                    dio(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length, durations=cached_durations.unsqueeze(0),
+                        durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
                 self.datapoints.append(
-                    [cached_text,
-                     cached_text_lens,
-                     cached_speech,
-                     cached_speech_lens,
-                     cached_durations.numpy().tolist(),
-                     cached_energy.numpy().tolist(),
-                     cached_pitch.numpy().tolist(),
-                     path])
+                    [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
+                     cached_pitch.numpy().tolist(), path])
                 if self.spemb:
                     self.datapoints.append(
-                        [cached_text,
-                         cached_text_lens,
-                         cached_speech,
-                         cached_speech_lens,
-                         cached_durations.numpy().tolist(),
-                         cached_energy.numpy().tolist(),
-                         cached_pitch.numpy().tolist(),
-                         cached_spemb.detach().numpy().tolist(),
-                         path])
+                        [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
+                         cached_pitch.numpy().tolist(), cached_spemb.detach().numpy().tolist(), path])
 
     def __getitem__(self, index):
         if not self.spemb:
-            return self.datapoints[index][0], \
-                   self.datapoints[index][1], \
-                   self.datapoints[index][2], \
-                   self.datapoints[index][3], \
-                   self.datapoints[index][4], \
-                   self.datapoints[index][5], \
-                   self.datapoints[index][6]
+            return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4], \
+                   self.datapoints[index][5], self.datapoints[index][6]
         else:
-            return self.datapoints[index][0], \
-                   self.datapoints[index][1], \
-                   self.datapoints[index][2], \
-                   self.datapoints[index][3], \
-                   self.datapoints[index][4], \
-                   self.datapoints[index][5], \
-                   self.datapoints[index][6], \
-                   self.datapoints[index][7]
+            return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4], \
+                   self.datapoints[index][5], self.datapoints[index][6], self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)

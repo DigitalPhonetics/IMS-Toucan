@@ -5,11 +5,9 @@ def build_path_to_transcript_dict_hokuspokus():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):
         if transcript_file.endswith(".txt"):
-            with open("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt/" + transcript_file, 'r',
-                      encoding='utf8') as tf:
+            with open("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt/" + transcript_file, 'r', encoding='utf8') as tf:
                 transcript = tf.read()
-            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(
-                ".txt") + ".wav"
+            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(".txt") + ".wav"
             path_to_transcript[wav_path] = transcript
     return path_to_transcript
 
@@ -24,8 +22,7 @@ def build_path_to_transcript_dict_libritts():
         for chapter in os.listdir(os.path.join(path_train, speaker)):
             for file in os.listdir(os.path.join(path_train, speaker, chapter)):
                 if file.endswith("normalized.txt"):
-                    with open(os.path.join(path_train, speaker, chapter, file), 'r',
-                              encoding='utf8') as tf:
+                    with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
@@ -33,8 +30,7 @@ def build_path_to_transcript_dict_libritts():
         for chapter in os.listdir(os.path.join(path_valid, speaker)):
             for file in os.listdir(os.path.join(path_valid, speaker, chapter)):
                 if file.endswith("normalized.txt"):
-                    with open(os.path.join(path_valid, speaker, chapter, file), 'r',
-                              encoding='utf8') as tf:
+                    with open(os.path.join(path_valid, speaker, chapter, file), 'r', encoding='utf8') as tf:
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_valid, speaker, chapter, wav_file)] = transcript
@@ -58,8 +54,7 @@ def build_path_to_transcript_dict_css10de():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/CSS10/german/" + line.split("|")[0]] = line.split("|")[
-                2]
+            path_to_transcript["/mount/resources/speech/corpora/CSS10/german/" + line.split("|")[0]] = line.split("|")[2]
     return path_to_transcript
 
 
@@ -70,6 +65,5 @@ def build_path_to_transcript_dict_thorsten():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = \
-                line.split("|")[1]
+            path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
     return path_to_transcript

@@ -14,17 +14,8 @@ class EnergyCalculator(torch.nn.Module):
     Energy calculator.
     """
 
-    def __init__(self,
-                 fs=16000,
-                 n_fft: int = 1024,
-                 win_length: int = None,
-                 hop_length: int = 256,
-                 window: str = "hann",
-                 center: bool = True,
-                 normalized: bool = False,
-                 onesided: bool = True,
-                 use_token_averaged_energy: bool = True,
-                 reduction_factor=1):
+    def __init__(self, fs=16000, n_fft: int = 1024, win_length: int = None, hop_length: int = 256, window: str = "hann", center: bool = True,
+                 normalized: bool = False, onesided: bool = True, use_token_averaged_energy: bool = True, reduction_factor=1):
         super().__init__()
 
         self.fs = fs
@@ -37,33 +28,16 @@ class EnergyCalculator(torch.nn.Module):
             assert reduction_factor >= 1
         self.reduction_factor = reduction_factor
 
-        self.stft = STFT(n_fft=n_fft,
-                         win_length=win_length,
-                         hop_length=hop_length,
-                         window=window,
-                         center=center,
-                         normalized=normalized,
-                         onesided=onesided)
+        self.stft = STFT(n_fft=n_fft, win_length=win_length, hop_length=hop_length, window=window, center=center, normalized=normalized, onesided=onesided)
 
     def output_size(self):
         return 1
 
     def get_parameters(self):
-        return dict(fs=self.fs,
-                    n_fft=self.n_fft,
-                    hop_length=self.hop_length,
-                    window=self.window,
-                    win_length=self.win_length,
-                    center=self.stft.center,
-                    normalized=self.stft.normalized,
-                    use_token_averaged_energy=self.use_token_averaged_energy,
-                    reduction_factor=self.reduction_factor)
+        return dict(fs=self.fs, n_fft=self.n_fft, hop_length=self.hop_length, window=self.window, win_length=self.win_length, center=self.stft.center,
+                    normalized=self.stft.normalized, use_token_averaged_energy=self.use_token_averaged_energy, reduction_factor=self.reduction_factor)
 
-    def forward(self,
-                input: torch.Tensor,
-                input_lengths: torch.Tensor = None,
-                feats_lengths: torch.Tensor = None,
-                durations: torch.Tensor = None,
+    def forward(self, input: torch.Tensor, input_lengths: torch.Tensor = None, feats_lengths: torch.Tensor = None, durations: torch.Tensor = None,
                 durations_lengths: torch.Tensor = None):
         # If not provide, we assume that the inputs have the same length
         if input_lengths is None:
@@ -82,14 +56,12 @@ class EnergyCalculator(torch.nn.Module):
 
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
-            energy = [self._adjust_num_frames(e[:el].view(-1), fl)
-                      for e, el, fl in zip(energy, energy_lengths, feats_lengths)]
+            energy = [self._adjust_num_frames(e[:el].view(-1), fl) for e, el, fl in zip(energy, energy_lengths, feats_lengths)]
             energy_lengths = feats_lengths
 
         # (Optional): Average by duration to calculate token-wise energy
         if self.use_token_averaged_energy:
-            energy = [self._average_by_duration(e[:el].view(-1), d) for e, el, d in
-                      zip(energy, energy_lengths, durations)]
+            energy = [self._average_by_duration(e[:el].view(-1), d) for e, el, d in zip(energy, energy_lengths, durations)]
             energy_lengths = durations_lengths
 
         # Padding
@@ -102,8 +74,7 @@ class EnergyCalculator(torch.nn.Module):
     def _average_by_duration(self, x: torch.Tensor, d: torch.Tensor):
         assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
-        x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0)
-                 for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
+        x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0) for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
         return torch.stack(x_avg)
 
     @staticmethod

@@ -17,9 +17,10 @@ class MelGANMultiScaleDiscriminator(torch.nn.Module):
     MelGAN multi-scale discriminator module.
     """
 
-    def __init__(self, in_channels=1, out_channels=1, scales=3, downsample_pooling="AvgPool1d", # follow the official implementation setting
-                 downsample_pooling_params={"kernel_size": 4, "stride": 2, "padding": 1, "count_include_pad": False}, kernel_sizes=[5, 3], channels=16, max_downsample_channels=1024, bias=True, downsample_scales=[4, 4, 4, 4],
-                 nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={}, use_weight_norm=True):
+    def __init__(self, in_channels=1, out_channels=1, scales=3, downsample_pooling="AvgPool1d",  # follow the official implementation setting
+                 downsample_pooling_params={"kernel_size": 4, "stride": 2, "padding": 1, "count_include_pad": False}, kernel_sizes=[5, 3], channels=16,
+                 max_downsample_channels=1024, bias=True, downsample_scales=[4, 4, 4, 4], nonlinear_activation="LeakyReLU",
+                 nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={}, use_weight_norm=True):
         """
         Initilize MelGAN multi-scale discriminator module.
         Args:
@@ -41,17 +42,10 @@ class MelGANMultiScaleDiscriminator(torch.nn.Module):
         super(MelGANMultiScaleDiscriminator, self).__init__()
         self.discriminators = torch.nn.ModuleList()
         for _ in range(scales):
-            self.discriminators += [MelGANDiscriminator(in_channels=in_channels,
-                                                        out_channels=out_channels,
-                                                        kernel_sizes=kernel_sizes,
-                                                        channels=channels,
-                                                        max_downsample_channels=max_downsample_channels,
-                                                        bias=bias,
-                                                        downsample_scales=downsample_scales,
-                                                        nonlinear_activation=nonlinear_activation,
-                                                        nonlinear_activation_params=nonlinear_activation_params,
-                                                        pad=pad,
-                                                        pad_params=pad_params)]
+            self.discriminators += [MelGANDiscriminator(in_channels=in_channels, out_channels=out_channels, kernel_sizes=kernel_sizes, channels=channels,
+                                                        max_downsample_channels=max_downsample_channels, bias=bias, downsample_scales=downsample_scales,
+                                                        nonlinear_activation=nonlinear_activation, nonlinear_activation_params=nonlinear_activation_params,
+                                                        pad=pad, pad_params=pad_params)]
         self.pooling = getattr(torch.nn, downsample_pooling)(**downsample_pooling_params)
         if use_weight_norm:
             self.apply_weight_norm()

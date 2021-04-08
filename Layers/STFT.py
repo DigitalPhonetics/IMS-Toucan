@@ -5,13 +5,8 @@ from Utility.utils import make_pad_mask
 
 
 class STFT(torch.nn.Module):
-    def __init__(self,
-                 n_fft: int = 512,
-                 win_length: int = None,
-                 hop_length: int = 128,
-                 window="hann",
-                 center: bool = True,
-                 normalized: bool = False,
+
+    def __init__(self, n_fft: int = 512, win_length: int = None, hop_length: int = 128, window="hann", center: bool = True, normalized: bool = False,
                  onesided: bool = True):
         super().__init__()
         self.n_fft = n_fft
@@ -57,14 +52,8 @@ class STFT(torch.nn.Module):
             window = window_func(self.win_length, dtype=input.dtype, device=input.device)
         else:
             window = None
-        output = torch.stft(input,
-                            n_fft=self.n_fft,
-                            win_length=self.win_length,
-                            hop_length=self.hop_length,
-                            center=self.center,
-                            window=window,
-                            normalized=self.normalized,
-                            onesided=self.onesided)
+        output = torch.stft(input, n_fft=self.n_fft, win_length=self.win_length, hop_length=self.hop_length, center=self.center, window=window,
+                            normalized=self.normalized, onesided=self.onesided)
         # output: (Batch, Freq, Frames, 2=real_imag)
         # -> (Batch, Frames, Freq, 2=real_imag)
         output = output.transpose(1, 2)
@@ -108,14 +97,7 @@ class STFT(torch.nn.Module):
         assert input.shape[-1] == 2
         input = input.transpose(1, 2)
 
-        wavs = istft(input,
-                     n_fft=self.n_fft,
-                     hop_length=self.hop_length,
-                     win_length=self.win_length,
-                     window=window,
-                     center=self.center,
-                     normalized=self.normalized,
-                     onesided=self.onesided,
-                     length=ilens.max() if ilens is not None else ilens)
+        wavs = istft(input, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length, window=window, center=self.center,
+                     normalized=self.normalized, onesided=self.onesided, length=ilens.max() if ilens is not None else ilens)
 
         return wavs, ilens

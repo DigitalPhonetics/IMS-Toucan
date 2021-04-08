@@ -32,22 +32,13 @@ if __name__ == '__main__':
     if not os.path.exists(melgan_cache_dir):
         os.makedirs(melgan_cache_dir)
 
-    train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-50],
-                                    cache=os.path.join(melgan_cache_dir, "LibriTTS_train.txt"))
-    valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-50:],
-                                    cache=os.path.join(melgan_cache_dir, "LibriTTS_valid.txt"))
+    train_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[:-50], cache=os.path.join(melgan_cache_dir, "LibriTTS_train.txt"))
+    valid_set_libri = MelGANDataset(list_of_paths=get_file_list_libritts()[-50:], cache=os.path.join(melgan_cache_dir, "LibriTTS_valid.txt"))
 
     generator = MelGANGenerator()
     generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
 
     print("Training model")
-    train_loop(batch_size=16,
-               steps=2000000,
-               generator=generator,
-               discriminator=multi_scale_discriminator,
-               train_dataset=train_set_libri,
-               valid_dataset=valid_set_libri,
-               device=torch.device("cuda"),
-               generator_warmup_steps=100000,
-               model_save_dir=model_save_dir)
+    train_loop(batch_size=16, steps=2000000, generator=generator, discriminator=multi_scale_discriminator, train_dataset=train_set_libri,
+               valid_dataset=valid_set_libri, device=torch.device("cuda"), generator_warmup_steps=100000, model_save_dir=model_save_dir)

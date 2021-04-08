@@ -148,9 +148,7 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         x_padded = torch.cat([zero_pad, x], dim=-1)
 
         x_padded = x_padded.view(*x.size()[:2], x.size(3) + 1, x.size(2))
-        x = x_padded[:, :, 1:].view_as(x)[
-            :, :, :, : x.size(-1) // 2 + 1
-            ]  # only keep the positions from 0 to time2
+        x = x_padded[:, :, 1:].view_as(x)[:, :, :, : x.size(-1) // 2 + 1]  # only keep the positions from 0 to time2
 
         if self.zero_triu:
             ones = torch.ones((x.size(2), x.size(3)), device=x.device)
@@ -194,9 +192,7 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         matrix_bd = torch.matmul(q_with_bias_v, p.transpose(-2, -1))
         matrix_bd = self.rel_shift(matrix_bd)
 
-        scores = (matrix_ac + matrix_bd) / math.sqrt(
-            self.d_k
-        )  # (batch, head, time1, time2)
+        scores = (matrix_ac + matrix_bd) / math.sqrt(self.d_k)  # (batch, head, time1, time2)
 
         return self.forward_attention(v, scores, mask)
 
@@ -274,9 +270,7 @@ class GuidedAttentionLoss(torch.nn.Module):
         """
         grid_x, grid_y = torch.meshgrid(torch.arange(olen), torch.arange(ilen))
         grid_x, grid_y = grid_x.float().to(olen.device), grid_y.float().to(ilen.device)
-        return 1.0 - torch.exp(
-            -((grid_y / ilen - grid_x / olen) ** 2) / (2 * (sigma ** 2))
-        )
+        return 1.0 - torch.exp(-((grid_y / ilen - grid_x / olen) ** 2) / (2 * (sigma ** 2)))
 
     @staticmethod
     def _make_masks(ilens, olens):

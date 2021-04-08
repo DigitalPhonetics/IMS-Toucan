@@ -103,8 +103,7 @@ def make_best_in_all(n=3):
             if "MelGAN" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)
-                save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir),
-                                   dict_name="generator")
+                save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
             elif "TransformerTTS" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 if "LibriTTS" in model_dir:

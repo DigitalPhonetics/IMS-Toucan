@@ -6,7 +6,8 @@ import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import GradScaler
+from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
@@ -16,10 +17,7 @@ from Utility.WarmupScheduler import WarmupScheduler
 
 
 def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_plot):
-    tf = TextFrontend(language=lang,
-                      use_panphon_vectors=False,
-                      use_word_boundaries=False,
-                      use_explicit_eos=False)
+    tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
     sentence = "Hello"
     if lang == "en":
         sentence = "Many animals of even complex structure which " \
@@ -57,13 +55,9 @@ def collate_and_pad(batch):
             durations.append(torch.LongTensor(datapoint[4]))
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1),
-                pad_sequence(durations, batch_first=True),
-                pad_sequence(pitch, batch_first=True),
-                pad_sequence(energy, batch_first=True))
+        return (
+        pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1),
+        pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
     elif len(batch[0]) == 8:
         # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, spemb]
         texts = list()
@@ -83,31 +77,14 @@ def collate_and_pad(batch):
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
             spembs.append(torch.Tensor(datapoint[7]))
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1),
-                pad_sequence(durations, batch_first=True),
-                pad_sequence(pitch, batch_first=True),
-                pad_sequence(energy, batch_first=True),
-                torch.stack(spembs))  # may need squeezing, cannot test atm
+        return (
+        pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1),
+        pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
+        torch.stack(spembs))  # may need squeezing, cannot test atm
 
 
-def train_loop(net,
-               train_dataset,
-               valid_dataset,
-               device,
-               save_directory,
-               batch_size=32,
-               steps=400000,
-               gradient_accumulation=1,
-               epochs_per_save=10,
-               use_speaker_embedding=False,
-               lang="en",
-               lr=0.1,
-               warmup_steps=14000,
-               path_to_checkpoint=None,
-               fine_tune=False):
+def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_size=32, steps=400000, gradient_accumulation=1, epochs_per_save=10,
+               use_speaker_embedding=False, lang="en", lr=0.1, warmup_steps=14000, path_to_checkpoint=None, fine_tune=False):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -132,23 +109,10 @@ def train_loop(net,
     else:
         reference_spemb_for_plot = None
     torch.multiprocessing.set_sharing_strategy('file_system')
-    train_loader = DataLoader(batch_size=batch_size,
-                              dataset=train_dataset,
-                              drop_last=True,
-                              num_workers=8,
-                              pin_memory=False,
-                              shuffle=True,
-                              prefetch_factor=8,
-                              collate_fn=collate_and_pad,
-                              persistent_workers=True)
-    valid_loader = DataLoader(batch_size=10,
-                              dataset=valid_dataset,
-                              drop_last=False,
-                              num_workers=5,
-                              pin_memory=False,
-                              prefetch_factor=2,
-                              collate_fn=collate_and_pad,
-                              persistent_workers=True)
+    train_loader = DataLoader(batch_size=batch_size, dataset=train_dataset, drop_last=True, num_workers=8, pin_memory=False, shuffle=True, prefetch_factor=8,
+                              collate_fn=collate_and_pad, persistent_workers=True)
+    valid_loader = DataLoader(batch_size=10, dataset=valid_dataset, drop_last=False, num_workers=5, pin_memory=False, prefetch_factor=2,
+                              collate_fn=collate_and_pad, persistent_workers=True)
 
     loss_plot = [[], []]
     step_counter = 0
@@ -182,22 +146,13 @@ def train_loop(net,
             if gradient_accumulation == 1:
                 with autocast():
                     if not use_speaker_embedding:
-                        train_loss = net(train_datapoint[0].to(device),
-                                         train_datapoint[1].to(device),
-                                         train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device),
-                                         train_datapoint[4].to(device),
-                                         train_datapoint[5].to(device),
+                        train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
+                                         train_datapoint[3].to(device), train_datapoint[4].to(device), train_datapoint[5].to(device),
                                          train_datapoint[6].to(device))
                     else:
-                        train_loss = net(train_datapoint[0].to(device),
-                                         train_datapoint[1].to(device),
-                                         train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device),
-                                         train_datapoint[4].to(device),
-                                         train_datapoint[5].to(device),
-                                         train_datapoint[6].to(device),
-                                         train_datapoint[7].to(device))
+                        train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
+                                         train_datapoint[3].to(device), train_datapoint[4].to(device), train_datapoint[5].to(device),
+                                         train_datapoint[6].to(device), train_datapoint[7].to(device))
                     train_losses_this_epoch.append(float(train_loss))
                 scaler.scale(train_loss).backward()
                 del train_loss
@@ -212,22 +167,11 @@ def train_loop(net,
                 torch.cuda.empty_cache()
             else:
                 if not use_speaker_embedding:
-                    train_loss = net(train_datapoint[0].to(device),
-                                     train_datapoint[1].to(device),
-                                     train_datapoint[2].to(device),
-                                     train_datapoint[3].to(device),
-                                     train_datapoint[4].to(device),
-                                     train_datapoint[5].to(device),
-                                     train_datapoint[6].to(device))
+                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device), train_datapoint[3].to(device),
+                                     train_datapoint[4].to(device), train_datapoint[5].to(device), train_datapoint[6].to(device))
                 else:
-                    train_loss = net(train_datapoint[0].to(device),
-                                     train_datapoint[1].to(device),
-                                     train_datapoint[2].to(device),
-                                     train_datapoint[3].to(device),
-                                     train_datapoint[4].to(device),
-                                     train_datapoint[5].to(device),
-                                     train_datapoint[6].to(device),
-                                     train_datapoint[7].to(device))
+                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device), train_datapoint[3].to(device),
+                                     train_datapoint[4].to(device), train_datapoint[5].to(device), train_datapoint[6].to(device), train_datapoint[7].to(device))
                 train_losses_this_epoch.append(float(train_loss))
                 (train_loss / gradient_accumulation).backward()
                 del train_loss
@@ -249,33 +193,20 @@ def train_loop(net,
             val_losses = list()
             for validation_datapoint in valid_loader:
                 if not use_speaker_embedding:
-                    val_losses.append(float(net(validation_datapoint[0].to(device),
-                                                validation_datapoint[1].to(device),
-                                                validation_datapoint[2].to(device),
-                                                validation_datapoint[3].to(device),
-                                                validation_datapoint[4].to(device),
-                                                validation_datapoint[5].to(device),
+                    val_losses.append(float(net(validation_datapoint[0].to(device), validation_datapoint[1].to(device), validation_datapoint[2].to(device),
+                                                validation_datapoint[3].to(device), validation_datapoint[4].to(device), validation_datapoint[5].to(device),
                                                 validation_datapoint[6].to(device))))
                 else:
-                    val_losses.append(float(net(validation_datapoint[0].to(device),
-                                                validation_datapoint[1].to(device),
-                                                validation_datapoint[2].to(device),
-                                                validation_datapoint[3].to(device),
-                                                validation_datapoint[4].to(device),
-                                                validation_datapoint[5].to(device),
-                                                validation_datapoint[6].to(device),
-                                                validation_datapoint[7].to(device))))
+                    val_losses.append(float(net(validation_datapoint[0].to(device), validation_datapoint[1].to(device), validation_datapoint[2].to(device),
+                                                validation_datapoint[3].to(device), validation_datapoint[4].to(device), validation_datapoint[5].to(device),
+                                                validation_datapoint[6].to(device), validation_datapoint[7].to(device))))
             average_val_loss = sum(val_losses) / len(val_losses)
             if epoch & epochs_per_save == 0:
-                torch.save({"model": net.state_dict(),
-                            "optimizer": optimizer.state_dict(),
-                            "scaler": scaler.state_dict(),
-                            "step_counter": step_counter,
-                            "scheduler": scheduler.state_dict(),
-                            "step_counter": step_counter},
-                           os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
-                                   reference_spemb_for_plot=reference_spemb_for_plot)
+                torch.save({
+                    "model"    : net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
+                    "scheduler": scheduler.state_dict(), "step_counter": step_counter
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, reference_spemb_for_plot=reference_spemb_for_plot)
                 if step_counter > steps:
                     # DONE
                     return

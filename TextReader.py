@@ -12,16 +12,12 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten": Thorsten_FastSpeechInference,
-    "fast_lj": LJSpeech_FastSpeechInference,
-    "fast_css10_de": CSS10_DE_FastSpeechInference,
-    "fast_libri": LibriTTS_FastSpeechInference,
+    "fast_thorsten" : Thorsten_FastSpeechInference, "fast_lj": LJSpeech_FastSpeechInference, "fast_css10_de": CSS10_DE_FastSpeechInference,
+    "fast_libri"    : LibriTTS_FastSpeechInference,
 
-    "trans_thorsten": Thorsten_TransformerTTSInference,
-    "trans_lj": LJSpeech_TransformerTTSInference,
-    "trans_css10_de": CSS10_DE_TransformerTTSInference,
-    "trans_libri": LibriTTS_TransformerTTSInference
-}
+    "trans_thorsten": Thorsten_TransformerTTSInference, "trans_lj": LJSpeech_TransformerTTSInference, "trans_css10_de": CSS10_DE_TransformerTTSInference,
+    "trans_libri"   : LibriTTS_TransformerTTSInference
+    }
 
 
 def read_texts(model_id, sentence, filename, device="cpu"):
@@ -104,12 +100,6 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="fast_lj",
-               sentence=tl_en,
-               filename="audios/fast_lj.wav",
-               device=exec_device)
+    read_texts(model_id="fast_lj", sentence=tl_en, filename="audios/fast_lj.wav", device=exec_device)
 
-    read_texts(model_id="fast_thorsten",
-               sentence=tl_de,
-               filename="audios/fast_thorsten.wav",
-               device=exec_device)
+    read_texts(model_id="fast_thorsten", sentence=tl_de, filename="audios/fast_thorsten.wav", device=exec_device)

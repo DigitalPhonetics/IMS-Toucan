@@ -3,7 +3,8 @@
 Toolkit to train state-of-the-art Speech Synthesis models. Everything is pure Python and PyTorch based to keep it as
 simple and beginner-friendly, yet powerful as possible.
 
-The PyTorch Modules of [TransformerTTS](https://arxiv.org/abs/1809.08895) and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from [ESPNet](https://github.com/espnet/espnet), the
+The PyTorch Modules of [TransformerTTS](https://arxiv.org/abs/1809.08895)
+and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from [ESPNet](https://github.com/espnet/espnet), the
 PyTorch Modules of [MelGAN](https://arxiv.org/abs/1910.06711) are taken from
 the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN) which is also made by the
 brillant [Tomoki Hayashi](https://github.com/kan-bayashi).
@@ -20,7 +21,6 @@ Parameterized wrappers around redundant code seems to be a simple solution to ge
 every system that one might want to train gets its own unique training pipeline with lots of duplicate code among them.
 And every trained system gets a unique inference interface to load and use it, again with lots of shared code inbetween
 them. This ensures every model can be reproduced and loaded.
-
 
 ## Dataset Support
 

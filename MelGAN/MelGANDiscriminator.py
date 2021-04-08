@@ -16,18 +16,8 @@ class MelGANDiscriminator(torch.nn.Module):
     MelGAN discriminator module.
     """
 
-    def __init__(self,
-                 in_channels=1,
-                 out_channels=1,
-                 kernel_sizes=[5, 3],
-                 channels=16,
-                 max_downsample_channels=512,
-                 bias=True,
-                 downsample_scales=[4, 4, 4],
-                 nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.2},
-                 pad="ReflectionPad1d",
-                 pad_params={}):
+    def __init__(self, in_channels=1, out_channels=1, kernel_sizes=[5, 3], channels=16, max_downsample_channels=512, bias=True, downsample_scales=[4, 4, 4],
+                 nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={}):
         """
         Initilize MelGAN discriminator module.
         Args:
@@ -60,27 +50,16 @@ class MelGANDiscriminator(torch.nn.Module):
         in_chs = channels
         for downsample_scale in downsample_scales:
             out_chs = min(in_chs * downsample_scale, max_downsample_channels)
-            self.layers += [torch.nn.Sequential(torch.nn.Conv1d(in_chs,
-                                                                out_chs,
-                                                                kernel_size=downsample_scale * 10 + 1,
-                                                                stride=downsample_scale,
-                                                                padding=downsample_scale * 5,
-                                                                groups=in_chs // 4,
-                                                                bias=bias),
-                                                getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params))]
+            self.layers += [torch.nn.Sequential(
+                torch.nn.Conv1d(in_chs, out_chs, kernel_size=downsample_scale * 10 + 1, stride=downsample_scale, padding=downsample_scale * 5,
+                                groups=in_chs // 4, bias=bias), getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params))]
             in_chs = out_chs
 
         # add final layers
         out_chs = min(in_chs * 2, max_downsample_channels)
-        self.layers += [torch.nn.Sequential(torch.nn.Conv1d(in_chs,
-                                                            out_chs,
-                                                            kernel_sizes[0],
-                                                            padding=(kernel_sizes[0] - 1) // 2,
-                                                            bias=bias),
+        self.layers += [torch.nn.Sequential(torch.nn.Conv1d(in_chs, out_chs, kernel_sizes[0], padding=(kernel_sizes[0] - 1) // 2, bias=bias),
                                             getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params))]
-        self.layers += [torch.nn.Conv1d(out_chs, out_channels, kernel_sizes[1],
-                                        padding=(kernel_sizes[1] - 1) // 2,
-                                        bias=bias)]
+        self.layers += [torch.nn.Conv1d(out_chs, out_channels, kernel_sizes[1], padding=(kernel_sizes[1] - 1) // 2, bias=bias)]
 
     def forward(self, x):
         """

@@ -31,20 +31,8 @@ class FastSpeech2Loss(torch.nn.Module):
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.duration_criterion = DurationPredictorLoss(reduction=reduction)
 
-    def forward(
-            self,
-            after_outs: torch.Tensor,
-            before_outs: torch.Tensor,
-            d_outs: torch.Tensor,
-            p_outs: torch.Tensor,
-            e_outs: torch.Tensor,
-            ys: torch.Tensor,
-            ds: torch.Tensor,
-            ps: torch.Tensor,
-            es: torch.Tensor,
-            ilens: torch.Tensor,
-            olens: torch.Tensor,
-    ):
+    def forward(self, after_outs: torch.Tensor, before_outs: torch.Tensor, d_outs: torch.Tensor, p_outs: torch.Tensor, e_outs: torch.Tensor, ys: torch.Tensor,
+                ds: torch.Tensor, ps: torch.Tensor, es: torch.Tensor, ilens: torch.Tensor, olens: torch.Tensor, ):
         """Calculate forward propagation.
 
         Args:
@@ -97,21 +85,15 @@ class FastSpeech2Loss(torch.nn.Module):
             out_weights = out_masks.float() / out_masks.sum(dim=1, keepdim=True).float()
             out_weights /= ys.size(0) * ys.size(2)
             duration_masks = make_non_pad_mask(ilens).to(ys.device)
-            duration_weights = (
-                    duration_masks.float() / duration_masks.sum(dim=1, keepdim=True).float()
-            )
+            duration_weights = (duration_masks.float() / duration_masks.sum(dim=1, keepdim=True).float())
             duration_weights /= ds.size(0)
 
             # apply weight
             l1_loss = l1_loss.mul(out_weights).masked_select(out_masks).sum()
-            duration_loss = (
-                duration_loss.mul(duration_weights).masked_select(duration_masks).sum()
-            )
+            duration_loss = (duration_loss.mul(duration_weights).masked_select(duration_masks).sum())
             pitch_masks = duration_masks.unsqueeze(-1)
             pitch_weights = duration_weights.unsqueeze(-1)
             pitch_loss = pitch_loss.mul(pitch_weights).masked_select(pitch_masks).sum()
-            energy_loss = (
-                energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum()
-            )
+            energy_loss = (energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum())
 
         return l1_loss, duration_loss, pitch_loss, energy_loss

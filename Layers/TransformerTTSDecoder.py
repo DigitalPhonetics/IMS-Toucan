@@ -20,7 +20,8 @@ from Layers.MultiSequential import repeat
 from Layers.PositionalEncoding import PositionalEncoding
 from Layers.PositionwiseFeedForward import PositionwiseFeedForward
 from Layers.TransformerTTSDecoderLayer import DecoderLayer
-from Utility.utils import subsequent_mask, BatchScorerInterface
+from Utility.utils import BatchScorerInterface
+from Utility.utils import subsequent_mask
 
 
 class Decoder(BatchScorerInterface, torch.nn.Module):
@@ -56,61 +57,27 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
 
     """
 
-    def __init__(
-            self,
-            odim,
-            selfattention_layer_type="selfattn",
-            attention_dim=256,
-            attention_heads=4,
-            conv_wshare=4,
-            conv_kernel_length=11,
-            conv_usebias=False,
-            linear_units=2048,
-            num_blocks=6,
-            dropout_rate=0.1,
-            positional_dropout_rate=0.1,
-            self_attention_dropout_rate=0.0,
-            src_attention_dropout_rate=0.0,
-            input_layer="embed",
-            use_output_layer=True,
-            pos_enc_class=PositionalEncoding,
-            normalize_before=True,
-            concat_after=False,
-    ):
+    def __init__(self, odim, selfattention_layer_type="selfattn", attention_dim=256, attention_heads=4, conv_wshare=4, conv_kernel_length=11,
+                 conv_usebias=False, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1, self_attention_dropout_rate=0.0,
+                 src_attention_dropout_rate=0.0, input_layer="embed", use_output_layer=True, pos_enc_class=PositionalEncoding, normalize_before=True,
+                 concat_after=False, ):
         """Construct an Decoder object."""
         torch.nn.Module.__init__(self)
         if input_layer == "embed":
-            self.embed = torch.nn.Sequential(
-                torch.nn.Embedding(odim, attention_dim),
-                pos_enc_class(attention_dim, positional_dropout_rate),
-            )
+            self.embed = torch.nn.Sequential(torch.nn.Embedding(odim, attention_dim), pos_enc_class(attention_dim, positional_dropout_rate), )
         elif input_layer == "linear":
-            self.embed = torch.nn.Sequential(
-                torch.nn.Linear(odim, attention_dim),
-                torch.nn.LayerNorm(attention_dim),
-                torch.nn.Dropout(dropout_rate),
-                torch.nn.ReLU(),
-                pos_enc_class(attention_dim, positional_dropout_rate),
-            )
+            self.embed = torch.nn.Sequential(torch.nn.Linear(odim, attention_dim), torch.nn.LayerNorm(attention_dim), torch.nn.Dropout(dropout_rate),
+                                             torch.nn.ReLU(), pos_enc_class(attention_dim, positional_dropout_rate), )
         elif isinstance(input_layer, torch.nn.Module):
-            self.embed = torch.nn.Sequential(
-                input_layer, pos_enc_class(attention_dim, positional_dropout_rate)
-            )
+            self.embed = torch.nn.Sequential(input_layer, pos_enc_class(attention_dim, positional_dropout_rate))
         else:
             raise NotImplementedError("only `embed` or torch.nn.Module is supported.")
         self.normalize_before = normalize_before
-        self.decoders = repeat(
-            num_blocks,
-            lambda lnum: DecoderLayer(
-                attention_dim,
-                MultiHeadedAttention(attention_heads, attention_dim, self_attention_dropout_rate),
-                MultiHeadedAttention(attention_heads, attention_dim, src_attention_dropout_rate),
-                PositionwiseFeedForward(attention_dim, linear_units, dropout_rate),
-                dropout_rate,
-                normalize_before,
-                concat_after,
-            ),
-        )
+        self.decoders = repeat(num_blocks,
+                               lambda lnum: DecoderLayer(attention_dim, MultiHeadedAttention(attention_heads, attention_dim, self_attention_dropout_rate),
+                                                         MultiHeadedAttention(attention_heads, attention_dim, src_attention_dropout_rate),
+                                                         PositionwiseFeedForward(attention_dim, linear_units, dropout_rate), dropout_rate, normalize_before,
+                                                         concat_after, ), )
         self.selfattention_layer_type = selfattention_layer_type
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
@@ -142,9 +109,7 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
 
         """
         x = self.embed(tgt)
-        x, tgt_mask, memory, memory_mask = self.decoders(
-            x, tgt_mask, memory, memory_mask
-        )
+        x, tgt_mask, memory, memory_mask = self.decoders(x, tgt_mask, memory, memory_mask)
         if self.normalize_before:
             x = self.after_norm(x)
         if self.output_layer is not None:
@@ -173,9 +138,7 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
             cache = [None] * len(self.decoders)
         new_cache = []
         for c, decoder in zip(cache, self.decoders):
-            x, tgt_mask, memory, memory_mask = decoder(
-                x, tgt_mask, memory, None, cache=c
-            )
+            x, tgt_mask, memory, memory_mask = decoder(x, tgt_mask, memory, None, cache=c)
             new_cache.append(x)
 
         if self.normalize_before:
@@ -193,19 +156,13 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
         ys_mask = subsequent_mask(len(ys), device=x.device).unsqueeze(0)
         if self.selfattention_layer_type != "selfattn":
             # TODO(karita): implement cache
-            logging.warning(
-                f"{self.selfattention_layer_type} does not support cached decoding."
-            )
+            logging.warning(f"{self.selfattention_layer_type} does not support cached decoding.")
             state = None
-        logp, state = self.forward_one_step(
-            ys.unsqueeze(0), ys_mask, x.unsqueeze(0), cache=state
-        )
+        logp, state = self.forward_one_step(ys.unsqueeze(0), ys_mask, x.unsqueeze(0), cache=state)
         return logp.squeeze(0), state
 
     # batch beam search API (see BatchScorerInterface)
-    def batch_score(
-            self, ys: torch.Tensor, states: List[Any], xs: torch.Tensor
-    ) -> Tuple[torch.Tensor, List[Any]]:
+    def batch_score(self, ys: torch.Tensor, states: List[Any], xs: torch.Tensor) -> Tuple[torch.Tensor, List[Any]]:
         """Score new token batch (required).
 
         Args:
@@ -227,10 +184,7 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
             batch_state = None
         else:
             # transpose state of [batch, layer] into [layer, batch]
-            batch_state = [
-                torch.stack([states[b][i] for b in range(n_batch)])
-                for i in range(n_layers)
-            ]
+            batch_state = [torch.stack([states[b][i] for b in range(n_batch)]) for i in range(n_layers)]
 
         # batch decoding
         ys_mask = subsequent_mask(ys.size(-1), device=xs.device).unsqueeze(0)

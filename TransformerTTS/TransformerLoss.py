@@ -76,14 +76,7 @@ class TransformerLoss(torch.nn.Module):
 
         return l1_loss, mse_loss, bce_loss
 
-    def _load_state_dict_pre_hook(self,
-                                  state_dict,
-                                  prefix,
-                                  local_metadata,
-                                  strict,
-                                  missing_keys,
-                                  unexpected_keys,
-                                  error_msgs):
+    def _load_state_dict_pre_hook(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
         """
         Apply pre hook function before loading state dict.
 

@@ -11,14 +11,17 @@ import torch.nn.functional as F
 
 from Layers.Attention import GuidedMultiHeadAttentionLoss
 from Layers.Attention import MultiHeadedAttention
-from Layers.PositionalEncoding import PositionalEncoding, ScaledPositionalEncoding
+from Layers.PositionalEncoding import PositionalEncoding
+from Layers.PositionalEncoding import ScaledPositionalEncoding
 from Layers.PostNet import PostNet
 from Layers.TransformerTTSDecoder import Decoder
 from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
 from TransformerTTS.TransformerLoss import TransformerLoss
-from Utility.utils import make_pad_mask, make_non_pad_mask, initialize
+from Utility.utils import initialize
+from Utility.utils import make_non_pad_mask
+from Utility.utils import make_pad_mask
 from Utility.utils import subsequent_mask
 
 
@@ -34,59 +37,25 @@ class Transformer(torch.nn.Module, ABC):
         https://arxiv.org/pdf/1809.08895.pdf
     """
 
-    def __init__(self,
-                 # network structure related
-                 idim: int,
-                 odim: int,
-                 embed_dim: int = 0,
-                 eprenet_conv_layers: int = 0,
-                 eprenet_conv_chans: int = 0,
-                 eprenet_conv_filts: int = 0,
-                 dprenet_layers: int = 2,
-                 dprenet_units: int = 256,
-                 elayers: int = 6,
-                 eunits: int = 1024,
-                 adim: int = 512,
-                 aheads: int = 4,
-                 dlayers: int = 6,
-                 dunits: int = 1024,
-                 postnet_layers: int = 5,
-                 postnet_chans: int = 256,
-                 postnet_filts: int = 5,
-                 positionwise_layer_type: str = "conv1d",
-                 positionwise_conv_kernel_size: int = 1,
-                 use_scaled_pos_enc: bool = True,
-                 use_batch_norm: bool = True,
-                 encoder_normalize_before: bool = True,
-                 decoder_normalize_before: bool = True,
-                 encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
+    def __init__(self,  # network structure related
+                 idim: int, odim: int, embed_dim: int = 0, eprenet_conv_layers: int = 0, eprenet_conv_chans: int = 0, eprenet_conv_filts: int = 0,
+                 dprenet_layers: int = 2, dprenet_units: int = 256, elayers: int = 6, eunits: int = 1024, adim: int = 512, aheads: int = 4, dlayers: int = 6,
+                 dunits: int = 1024, postnet_layers: int = 5, postnet_chans: int = 256, postnet_filts: int = 5, positionwise_layer_type: str = "conv1d",
+                 positionwise_conv_kernel_size: int = 1, use_scaled_pos_enc: bool = True, use_batch_norm: bool = True, encoder_normalize_before: bool = True,
+                 decoder_normalize_before: bool = True, encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
                  decoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=1,
-                 spk_embed_dim: int = None,
-                 spk_embed_integration_type: str = "concat",
-                 # training related
-                 transformer_enc_dropout_rate: float = 0.1,
-                 transformer_enc_positional_dropout_rate: float = 0.1,
-                 transformer_enc_attn_dropout_rate: float = 0.1,
-                 transformer_dec_dropout_rate: float = 0.1,
-                 transformer_dec_positional_dropout_rate: float = 0.1,
-                 transformer_dec_attn_dropout_rate: float = 0.1,
-                 transformer_enc_dec_attn_dropout_rate: float = 0.1,
-                 eprenet_dropout_rate: float = 0.0,
-                 dprenet_dropout_rate: float = 0.5,
-                 postnet_dropout_rate: float = 0.5,
-                 init_type: str = "xavier_uniform",  # since we have little to no
+                 reduction_factor=1, spk_embed_dim: int = None, spk_embed_integration_type: str = "concat",  # training related
+                 transformer_enc_dropout_rate: float = 0.1, transformer_enc_positional_dropout_rate: float = 0.1,
+                 transformer_enc_attn_dropout_rate: float = 0.1, transformer_dec_dropout_rate: float = 0.1,
+                 transformer_dec_positional_dropout_rate: float = 0.1, transformer_dec_attn_dropout_rate: float = 0.1,
+                 transformer_enc_dec_attn_dropout_rate: float = 0.1, eprenet_dropout_rate: float = 0.0, dprenet_dropout_rate: float = 0.5,
+                 postnet_dropout_rate: float = 0.5, init_type: str = "xavier_uniform",  # since we have little to no
                  # asymetric activations, this seems to work better than kaiming
-                 init_enc_alpha: float = 1.0,
-                 use_masking: bool = False,  # either this or weighted masking, not both
+                 init_enc_alpha: float = 1.0, use_masking: bool = False,  # either this or weighted masking, not both
                  use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
                  bce_pos_weight: float = 7.0,  # scaling the loss of the stop token prediction
-                 loss_type: str = "L1",
-                 use_guided_attn_loss: bool = True,
-                 num_heads_applied_guided_attn: int = 2,
-                 num_layers_applied_guided_attn: int = 2,
-                 modules_applied_guided_attn=("encoder-decoder",),
-                 guided_attn_loss_sigma: float = 0.4,  # standard deviation from diagonal that is allowed
+                 loss_type: str = "L1", use_guided_attn_loss: bool = True, num_heads_applied_guided_attn: int = 2, num_layers_applied_guided_attn: int = 2,
+                 modules_applied_guided_attn=("encoder-decoder",), guided_attn_loss_sigma: float = 0.4,  # standard deviation from diagonal that is allowed
                  guided_attn_loss_lambda: float = 25.0):  # forcing the attention to be diagonal
         """Initialize Transformer module."""
         super().__init__()
@@ -125,32 +94,16 @@ class Transformer(torch.nn.Module, ABC):
         # define transformer encoder
         if eprenet_conv_layers != 0:
             # encoder prenet
-            encoder_input_layer = torch.nn.Sequential(EncoderPrenet(idim=idim,
-                                                                    embed_dim=embed_dim,
-                                                                    elayers=0,
-                                                                    econv_layers=eprenet_conv_layers,
-                                                                    econv_chans=eprenet_conv_chans,
-                                                                    econv_filts=eprenet_conv_filts,
-                                                                    use_batch_norm=use_batch_norm,
-                                                                    dropout_rate=eprenet_dropout_rate,
-                                                                    padding_idx=self.padding_idx),
-                                                      torch.nn.Linear(eprenet_conv_chans, adim))
+            encoder_input_layer = torch.nn.Sequential(
+                EncoderPrenet(idim=idim, embed_dim=embed_dim, elayers=0, econv_layers=eprenet_conv_layers, econv_chans=eprenet_conv_chans,
+                              econv_filts=eprenet_conv_filts, use_batch_norm=use_batch_norm, dropout_rate=eprenet_dropout_rate, padding_idx=self.padding_idx),
+                torch.nn.Linear(eprenet_conv_chans, adim))
         else:
-            encoder_input_layer = torch.nn.Embedding(num_embeddings=idim, embedding_dim=adim,
-                                                     padding_idx=self.padding_idx)
-        self.encoder = Encoder(idim=idim,
-                               attention_dim=adim,
-                               attention_heads=aheads,
-                               linear_units=eunits,
-                               num_blocks=elayers,
-                               input_layer=encoder_input_layer,
-                               dropout_rate=transformer_enc_dropout_rate,
-                               positional_dropout_rate=transformer_enc_positional_dropout_rate,
-                               attention_dropout_rate=transformer_enc_attn_dropout_rate,
-                               pos_enc_class=pos_enc_class,
-                               normalize_before=encoder_normalize_before,
-                               concat_after=encoder_concat_after,
-                               positionwise_layer_type=positionwise_layer_type,
+            encoder_input_layer = torch.nn.Embedding(num_embeddings=idim, embedding_dim=adim, padding_idx=self.padding_idx)
+        self.encoder = Encoder(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers, input_layer=encoder_input_layer,
+                               dropout_rate=transformer_enc_dropout_rate, positional_dropout_rate=transformer_enc_positional_dropout_rate,
+                               attention_dropout_rate=transformer_enc_attn_dropout_rate, pos_enc_class=pos_enc_class, normalize_before=encoder_normalize_before,
+                               concat_after=encoder_concat_after, positionwise_layer_type=positionwise_layer_type,
                                positionwise_conv_kernel_size=positionwise_conv_kernel_size)
 
         # define projection layer
@@ -163,53 +116,32 @@ class Transformer(torch.nn.Module, ABC):
         # define transformer decoder
         if dprenet_layers != 0:
             # decoder prenet
-            decoder_input_layer = torch.nn.Sequential(DecoderPrenet(idim=odim,
-                                                                    n_layers=dprenet_layers,
-                                                                    n_units=dprenet_units,
-                                                                    dropout_rate=dprenet_dropout_rate),
-                                                      torch.nn.Linear(dprenet_units, adim))
+            decoder_input_layer = torch.nn.Sequential(
+                DecoderPrenet(idim=odim, n_layers=dprenet_layers, n_units=dprenet_units, dropout_rate=dprenet_dropout_rate),
+                torch.nn.Linear(dprenet_units, adim))
         else:
             decoder_input_layer = "linear"
         self.decoder = Decoder(odim=odim,  # odim is needed when no prenet is used
-                               attention_dim=adim,
-                               attention_heads=aheads,
-                               linear_units=dunits,
-                               num_blocks=dlayers,
-                               dropout_rate=transformer_dec_dropout_rate,
-                               positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                               self_attention_dropout_rate=transformer_dec_attn_dropout_rate,
-                               src_attention_dropout_rate=transformer_enc_dec_attn_dropout_rate,
-                               input_layer=decoder_input_layer,
-                               use_output_layer=False,
-                               pos_enc_class=pos_enc_class,
-                               normalize_before=decoder_normalize_before,
-                               concat_after=decoder_concat_after)
+                               attention_dim=adim, attention_heads=aheads, linear_units=dunits, num_blocks=dlayers, dropout_rate=transformer_dec_dropout_rate,
+                               positional_dropout_rate=transformer_dec_positional_dropout_rate, self_attention_dropout_rate=transformer_dec_attn_dropout_rate,
+                               src_attention_dropout_rate=transformer_enc_dec_attn_dropout_rate, input_layer=decoder_input_layer, use_output_layer=False,
+                               pos_enc_class=pos_enc_class, normalize_before=decoder_normalize_before, concat_after=decoder_concat_after)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.prob_out = torch.nn.Linear(adim, reduction_factor)
 
         # define postnet
-        self.postnet = PostNet(idim=idim,
-                               odim=odim,
-                               n_layers=postnet_layers,
-                               n_chans=postnet_chans,
-                               n_filts=postnet_filts,
-                               use_batch_norm=use_batch_norm,
+        self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
 
         # define loss function
-        self.criterion = TransformerLoss(use_masking=use_masking,
-                                         use_weighted_masking=use_weighted_masking,
-                                         bce_pos_weight=bce_pos_weight)
+        self.criterion = TransformerLoss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, bce_pos_weight=bce_pos_weight)
         if self.use_guided_attn_loss:
-            self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                               alpha=guided_attn_loss_lambda)
+            self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
 
         # initialize parameters
-        self._reset_parameters(init_type=init_type,
-                               init_enc_alpha=init_enc_alpha,
-                               init_dec_alpha=init_enc_alpha)
+        self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_enc_alpha)
 
     def _reset_parameters(self, init_type, init_enc_alpha=1.0, init_dec_alpha=1.0):
         # initialize parameters
@@ -221,12 +153,7 @@ class Transformer(torch.nn.Module, ABC):
             self.encoder.embed[-1].alpha.data = torch.tensor(init_enc_alpha)
             self.decoder.embed[-1].alpha.data = torch.tensor(init_dec_alpha)
 
-    def forward(self,
-                text: torch.Tensor,
-                text_lengths: torch.Tensor,
-                speech: torch.Tensor,
-                speech_lengths: torch.Tensor,
-                spembs: torch.Tensor = None):
+    def forward(self, text: torch.Tensor, text_lengths: torch.Tensor, speech: torch.Tensor, speech_lengths: torch.Tensor, spembs: torch.Tensor = None):
         """Calculate forward propagation.
 
         Args:
@@ -313,12 +240,7 @@ class Transformer(torch.nn.Module, ABC):
 
         return loss
 
-    def _forward(self,
-                 xs: torch.Tensor,
-                 ilens: torch.Tensor,
-                 ys: torch.Tensor,
-                 olens: torch.Tensor,
-                 spembs: torch.Tensor):
+    def _forward(self, xs: torch.Tensor, ilens: torch.Tensor, ys: torch.Tensor, olens: torch.Tensor, spembs: torch.Tensor):
         # forward encoder
         x_masks = self._source_mask(ilens)
         hs, h_masks = self.encoder(xs, x_masks)
@@ -353,14 +275,8 @@ class Transformer(torch.nn.Module, ABC):
 
         return after_outs, before_outs, logits
 
-    def inference(self,
-                  text: torch.Tensor,
-                  speech: torch.Tensor = None,
-                  spembs: torch.Tensor = None,
-                  threshold: float = 0.5,
-                  minlenratio: float = 0.0,
-                  maxlenratio: float = 10.0,
-                  use_teacher_forcing: bool = False):
+    def inference(self, text: torch.Tensor, speech: torch.Tensor = None, spembs: torch.Tensor = None, threshold: float = 0.5, minlenratio: float = 0.0,
+                  maxlenratio: float = 10.0, use_teacher_forcing: bool = False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -564,14 +480,12 @@ def plot_attentions(atts):
     atts_1 = atts[::2]
     atts_2 = atts[1::2]
     for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
-                              origin="lower")
+        axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
         axes[index][0].set_title("{}".format(index * 2))
         axes[index][0].xaxis.set_visible(False)
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto',
-                              origin="lower")
+        axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
         axes[index][1].set_title("{}".format((index + 1) * 2))
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)
@@ -582,10 +496,7 @@ def plot_attentions(atts):
 
 def get_atts(model, sentence, lang, get_phones=False):
     from PreprocessingForTTS.ProcessText import TextFrontend
-    tf = TextFrontend(language=lang,
-                      use_panphon_vectors=False,
-                      use_word_boundaries=False,
-                      use_explicit_eos=False)
+    tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
     if get_phones:
         return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2], tf.get_phone_string(sentence)
     return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]

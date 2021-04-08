@@ -18,8 +18,9 @@ class MelGANGenerator(torch.nn.Module):
     MelGAN generator module.
     """
 
-    def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True, upsample_scales=[8, 8, 2, 2], stack_kernel_size=3, stacks=3, nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={}, use_final_nonlinear_activation=True, use_weight_norm=True):
+    def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True, upsample_scales=[8, 8, 2, 2], stack_kernel_size=3, stacks=3,
+                 nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={},
+                 use_final_nonlinear_activation=True, use_weight_norm=True):
         """
         Initialize MelGANGenerator module.
         Args:
@@ -36,8 +37,7 @@ class MelGANGenerator(torch.nn.Module):
             pad (str): Padding function module name before dilated convolution layer.
             pad_params (dict): Hyperparameters for padding function.
             use_final_nonlinear_activation (torch.nn.Module): Activation function for the final layer.
-            use_weight_norm (bool): Whether to use weight norm.
-                If set to true, it will be applied to all of the conv layers.
+            use_weight_norm (bool): Whether to use weight norm. If set to true, it will be applied to all of the conv layers.
         """
         super(MelGANGenerator, self).__init__()
 
@@ -48,29 +48,18 @@ class MelGANGenerator(torch.nn.Module):
 
         # add initial layer
         layers = []
-        layers += [getattr(torch.nn, pad)((kernel_size - 1) // 2, **pad_params),
-                   torch.nn.Conv1d(in_channels, channels, kernel_size, bias=bias)]
+        layers += [getattr(torch.nn, pad)((kernel_size - 1) // 2, **pad_params), torch.nn.Conv1d(in_channels, channels, kernel_size, bias=bias)]
 
         for i, upsample_scale in enumerate(upsample_scales):
             # add upsampling layer
             layers += [getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params)]
-            layers += [torch.nn.ConvTranspose1d(channels // (2 ** i),
-                                                channels // (2 ** (i + 1)),
-                                                upsample_scale * 2,
-                                                stride=upsample_scale,
-                                                padding=upsample_scale // 2 + upsample_scale % 2,
-                                                output_padding=upsample_scale % 2,
-                                                bias=bias)]
+            layers += [torch.nn.ConvTranspose1d(channels // (2 ** i), channels // (2 ** (i + 1)), upsample_scale * 2, stride=upsample_scale,
+                                                padding=upsample_scale // 2 + upsample_scale % 2, output_padding=upsample_scale % 2, bias=bias)]
 
             # add residual stack
             for j in range(stacks):
-                layers += [ResidualStack(kernel_size=stack_kernel_size,
-                                         channels=channels // (2 ** (i + 1)),
-                                         dilation=stack_kernel_size ** j,
-                                         bias=bias,
-                                         nonlinear_activation=nonlinear_activation,
-                                         nonlinear_activation_params=nonlinear_activation_params,
-                                         pad=pad,
+                layers += [ResidualStack(kernel_size=stack_kernel_size, channels=channels // (2 ** (i + 1)), dilation=stack_kernel_size ** j, bias=bias,
+                                         nonlinear_activation=nonlinear_activation, nonlinear_activation_params=nonlinear_activation_params, pad=pad,
                                          pad_params=pad_params)]
 
         # add final layer

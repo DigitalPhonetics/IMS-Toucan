@@ -12,20 +12,11 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
 
 
-def align(path_to_transcript_dict,
-          acoustic_model_name,
-          spemb,
-          cache_dir,
-          lang,
-          reduction_factor=1,
-          device=torch.device("cpu")):
+def align(path_to_transcript_dict, acoustic_model_name, spemb, cache_dir, lang, reduction_factor=1, device=torch.device("cpu")):
     spemb = spemb
     transcript_to_durations = dict()
     path_list = list(path_to_transcript_dict.keys())
-    tf = TextFrontend(language=lang,
-                      use_panphon_vectors=False,
-                      use_word_boundaries=False,
-                      use_explicit_eos=False)
+    tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
     _, sr = sf.read(path_list[0])
     if os.path.isdir(os.path.join(cache_dir, "alignments_visualization")):
         # reset duration sanity check dir
@@ -45,21 +36,16 @@ def align(path_to_transcript_dict,
         text = tf.string_to_tensor(transcript).long()
         cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
         if not spemb:
-            cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                           speech=melspec.to(device),
-                                                           use_teacher_forcing=True,
-                                                           spembs=None)[2],
-                                  vis=os.path.join(cache_dir, "alignments_visualization",
-                                                   path.split("/")[-1].rstrip(".wav") + ".png"))[
-                0].cpu().numpy().tolist()
+            cached_durations = \
+                dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, spembs=None)[2],
+                   vis=os.path.join(cache_dir, "alignments_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu().numpy().tolist()
         else:
             wav_tensor, sample_rate = torchaudio.load(path)
             mel_tensor = wav2mel(wav_tensor, sample_rate)
             cached_spemb = dvector.embed_utterance(mel_tensor)
-            cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                           speech=melspec.to(device),
-                                                           use_teacher_forcing=True,
-                                                           spembs=cached_spemb.to(device))[2])[0].cpu().numpy().tolist()
+            cached_durations = dc(
+                acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, spembs=cached_spemb.to(device))[
+                    2])[0].cpu().numpy().tolist()
 
         durations_in_seconds = list()
         for duration in cached_durations:
@@ -74,10 +60,5 @@ def align(path_to_transcript_dict,
 if __name__ == '__main__':
     from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
 
-    align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(),
-          acoustic_model_name="Transformer_English_Single.pt",
-          spemb=False,
-          cache_dir="Corpora/LJSpeech",
-          lang="en",
-          reduction_factor=1,
-          device=torch.device("cpu"))
+    align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(), acoustic_model_name="Transformer_English_Single.pt", spemb=False,
+          cache_dir="Corpora/LJSpeech", lang="en", reduction_factor=1, device=torch.device("cpu"))

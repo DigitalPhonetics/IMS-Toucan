@@ -35,16 +35,7 @@ class DecoderLayer(nn.Module):
 
     """
 
-    def __init__(
-            self,
-            size,
-            self_attn,
-            src_attn,
-            feed_forward,
-            dropout_rate,
-            normalize_before=True,
-            concat_after=False,
-    ):
+    def __init__(self, size, self_attn, src_attn, feed_forward, dropout_rate, normalize_before=True, concat_after=False, ):
         """Construct an DecoderLayer object."""
         super(DecoderLayer, self).__init__()
         self.size = size
@@ -88,11 +79,7 @@ class DecoderLayer(nn.Module):
             tgt_q_mask = tgt_mask
         else:
             # compute only the last frame query keeping dim: max_time_out -> 1
-            assert cache.shape == (
-                tgt.shape[0],
-                tgt.shape[1] - 1,
-                self.size,
-            ), f"{cache.shape} == {(tgt.shape[0], tgt.shape[1] - 1, self.size)}"
+            assert cache.shape == (tgt.shape[0], tgt.shape[1] - 1, self.size,), f"{cache.shape} == {(tgt.shape[0], tgt.shape[1] - 1, self.size)}"
             tgt_q = tgt[:, -1:, :]
             residual = residual[:, -1:, :]
             tgt_q_mask = None
@@ -100,9 +87,7 @@ class DecoderLayer(nn.Module):
                 tgt_q_mask = tgt_mask[:, -1:, :]
 
         if self.concat_after:
-            tgt_concat = torch.cat(
-                (tgt_q, self.self_attn(tgt_q, tgt, tgt, tgt_q_mask)), dim=-1
-            )
+            tgt_concat = torch.cat((tgt_q, self.self_attn(tgt_q, tgt, tgt, tgt_q_mask)), dim=-1)
             x = residual + self.concat_linear1(tgt_concat)
         else:
             x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))
@@ -113,9 +98,7 @@ class DecoderLayer(nn.Module):
         if self.normalize_before:
             x = self.norm2(x)
         if self.concat_after:
-            x_concat = torch.cat(
-                (x, self.src_attn(x, memory, memory, memory_mask)), dim=-1
-            )
+            x_concat = torch.cat((x, self.src_attn(x, memory, memory, memory_mask)), dim=-1)
             x = residual + self.concat_linear2(x_concat)
         else:
             x = residual + self.dropout(self.src_attn(x, memory, memory, memory_mask))
