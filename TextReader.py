@@ -12,10 +12,14 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten" : Thorsten_FastSpeechInference, "fast_lj": LJSpeech_FastSpeechInference, "fast_css10_de": CSS10_DE_FastSpeechInference,
+    "fast_thorsten" : Thorsten_FastSpeechInference,
+    "fast_lj"       : LJSpeech_FastSpeechInference,
+    "fast_css10_de" : CSS10_DE_FastSpeechInference,
     "fast_libri"    : LibriTTS_FastSpeechInference,
 
-    "trans_thorsten": Thorsten_TransformerTTSInference, "trans_lj": LJSpeech_TransformerTTSInference, "trans_css10_de": CSS10_DE_TransformerTTSInference,
+    "trans_thorsten": Thorsten_TransformerTTSInference,
+    "trans_lj"      : LJSpeech_TransformerTTSInference,
+    "trans_css10_de": CSS10_DE_TransformerTTSInference,
     "trans_libri"   : LibriTTS_TransformerTTSInference
     }
 
@@ -92,8 +96,8 @@ Der Vater erschrak, kam herbeigelaufen und schalt den Jungen aus. „Was sind da
 „Vater,“ antwortete er, „hört nur an, ich bin ganz unschuldig: er stand da in der Nacht wie einer, der Böses im Sinne hat. 
 Ich wusste nicht, wer’s war, und hab ihn dreimal ermahnt, zu reden oder wegzugehen. 
 „Ach,“ sprach der Vater, „mit dir erleb ich nur Unglück, geh mir aus den Augen, ich will dich nicht mehr ansehen.“ 
-„Ja, Vater, recht gerne, wartet nur, bis der Tag ist, da will ich ausgehen und das Gruseln lernen, so versteh ich doch eine Kunst, die mich ernähren kann.“ 
-""".split("\n")
+„Ja, Vater, recht gerne, wartet nur, bis der Tag ist, da will ich ausgehen und das Gruseln lernen, so versteh ich doch eine Kunst, die mich ernähren kann.“""".split(
+    "\n")
 
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"

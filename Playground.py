@@ -11,7 +11,6 @@ import torch
 import torchviz
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
-from MelGAN.MelGANGenerator import MelGANGenerator
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTS import show_attention_plot
@@ -53,9 +52,8 @@ def plot_melgan_training(path_to_train_loss_json="Models/Use/train_loss.json", p
              label="Spectral Magnitude Loss", alpha=0.5)
     plt.plot(list(range(1, len(train_loss_dict["adversarial"]) + 1)), [a / 12 for a in train_loss_dict["adversarial"]], 'r', label="Adversarial Loss",
              alpha=0.5)
-    plt.plot(list(range(1, len(train_loss_dict["generator_total"]) + 1)), [ls / 20 for ls in train_loss_dict["generator_total"]],
-             # to balance the lambdas of stft and adv
-             'm', label="Total Generator Loss", alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["generator_total"]) + 1)), [ls / 20 for ls in train_loss_dict["generator_total"]], 'm',
+             label="Total Generator Loss", alpha=0.5)
     plt.plot(list(range(1, len(train_loss_dict["discriminator_mse"]) + 1)), train_loss_dict["discriminator_mse"], 'c', label="Discriminator Loss", alpha=0.5)
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
@@ -113,42 +111,6 @@ def sanity_check_audio_preprocessing(path_to_wav_folder, cut_silence):
         sounddevice.wait()
 
 
-def test_spectrogram_inversion(path_to_wav="Corpora/test.wav"):
-    wave, sr = sf.read(path_to_wav)
-    ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
-    clean_wave = ap.normalize_audio(wave)
-    spec = ap.audio_to_mel_spec_tensor(clean_wave, normalize=False)
-    spectrogram_inverter = MelGANGenerator()
-    spectrogram_inverter.load_state_dict(torch.load(os.path.join("Models", "Use", "MelGAN.pt"), map_location='cpu')["generator"])
-    reconstructed_wave = spectrogram_inverter.inference(spec.unsqueeze(0)).squeeze(0).squeeze(0)
-    import matplotlib.pyplot as plt
-    import librosa.display as lbd
-    fig, axes = plt.subplots(nrows=2, ncols=2)
-    axes[0][0].plot(clean_wave.detach().numpy())
-    axes[1][0].plot(reconstructed_wave.detach().numpy())
-    lbd.specshow(spec.detach().numpy(), ax=axes[0][1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
-    lbd.specshow(ap.audio_to_mel_spec_tensor(reconstructed_wave.detach().numpy(), normalize=False).detach().numpy(), ax=axes[1][1], sr=16000, cmap='GnBu',
-                 y_axis='mel', x_axis='time', hop_length=256)
-    axes[0][0].xaxis.set_visible(False)
-    axes[0][0].yaxis.set_visible(False)
-    axes[0][1].xaxis.set_visible(False)
-    axes[0][1].yaxis.set_visible(False)
-    axes[1][0].xaxis.set_visible(False)
-    axes[1][0].yaxis.set_visible(False)
-    axes[1][1].xaxis.set_visible(False)
-    axes[1][1].yaxis.set_visible(False)
-    axes[0][0].set_title("Original Wave")
-    axes[1][0].set_title("Reconstructed Wave")
-    axes[0][1].set_title("Original Spectrogram")
-    axes[1][1].set_title("Reconstructed Spectrogram")
-    plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.9, wspace=0, hspace=0.2)
-    plt.show()
-    if not os.path.isdir("audios"):
-        os.makedirs("audios")
-    sf.write("audios/audio_orig.wav", data=clean_wave.detach().numpy(), samplerate=16000)
-    sf.write("audios/audio_reconstructed.wav", data=reconstructed_wave.detach().numpy(), samplerate=16000)
-
-
 def show_audio_lens_in_dataset(path_list):
     lens = list()
     for path in path_list:
@@ -176,4 +138,6 @@ if __name__ == '__main__':
     # sanity_check_audio_preprocessing("Corpora/CSS10_DE", cut_silence=True)
     # plot_fastspeech_architecture()
     # plot_transformertts_architecture()
-    plot_melgan_training()  # plot_syn_training()  # test_spectrogram_inversion(path_to_wav="Corpora/test.wav")  # show_att(sentence="Hallo Welt, das ist ein kurzer Satz.", lang="de", best_only=False)
+    plot_melgan_training()
+    # plot_syn_training()
+    # show_att(sentence="Hallo Welt, das ist ein kurzer Satz.", lang="de", best_only=False)

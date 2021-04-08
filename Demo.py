@@ -12,10 +12,14 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten" : Thorsten_FastSpeechInference, "fast_lj": LJSpeech_FastSpeechInference, "fast_css10_de": CSS10_DE_FastSpeechInference,
+    "fast_thorsten" : Thorsten_FastSpeechInference,
+    "fast_lj"       : LJSpeech_FastSpeechInference,
+    "fast_css10_de" : CSS10_DE_FastSpeechInference,
     "fast_libri"    : LibriTTS_FastSpeechInference,
 
-    "trans_thorsten": Thorsten_TransformerTTSInference, "trans_lj": LJSpeech_TransformerTTSInference, "trans_css10_de": CSS10_DE_TransformerTTSInference,
+    "trans_thorsten": Thorsten_TransformerTTSInference,
+    "trans_lj"      : LJSpeech_TransformerTTSInference,
+    "trans_css10_de": CSS10_DE_TransformerTTSInference,
     "trans_libri"   : LibriTTS_TransformerTTSInference
 
     }
