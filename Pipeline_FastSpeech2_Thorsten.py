@@ -109,14 +109,39 @@ if __name__ == '__main__':
 
     path_blacklist = ["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + x + ".wav" for x in failed_alignments]
 
-    train_set = FastSpeechDataset(path_to_transcript_dict, train=True, acoustic_model_name="TransformerTTS_Thorsten/best.pt", diagonal_attention_head_id=12,
-                                  cache_dir=cache_dir, lang="de", min_len_in_seconds=1, max_len_in_seconds=10, device=device, path_blacklist=path_blacklist)
-    valid_set = FastSpeechDataset(path_to_transcript_dict, train=False, acoustic_model_name="TransformerTTS_Thorsten/best.pt", diagonal_attention_head_id=12,
-                                  cache_dir=cache_dir, lang="de", min_len_in_seconds=1, max_len_in_seconds=10, device=device, path_blacklist=path_blacklist)
+    train_set = FastSpeechDataset(path_to_transcript_dict,
+                                  train=True,
+                                  acoustic_model_name="TransformerTTS_Thorsten/best.pt",
+                                  diagonal_attention_head_id=12,
+                                  cache_dir=cache_dir, lang="de",
+                                  min_len_in_seconds=1,
+                                  max_len_in_seconds=10,
+                                  device=device,
+                                  path_blacklist=path_blacklist)
+    valid_set = FastSpeechDataset(path_to_transcript_dict,
+                                  train=False,
+                                  acoustic_model_name="TransformerTTS_Thorsten/best.pt",
+                                  diagonal_attention_head_id=12,
+                                  cache_dir=cache_dir,
+                                  lang="de",
+                                  min_len_in_seconds=1,
+                                  max_len_in_seconds=10,
+                                  device=device,
+                                  path_blacklist=path_blacklist)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
     print("Training model")
-    train_loop(net=model, train_dataset=train_set, valid_dataset=valid_set, device=device, save_directory=save_dir, steps=400000, batch_size=32,
-               gradient_accumulation=1, epochs_per_save=10, use_speaker_embedding=False, lang="de", lr=0.01, warmup_steps=8000,
-               path_to_checkpoint="Models/FastSpeech2_Thorsten/checkpoint_108900.pt")
+    train_loop(net=model,
+               train_dataset=train_set,
+               valid_dataset=valid_set,
+               device=device,
+               save_directory=save_dir,
+               steps=400000,
+               batch_size=32,
+               gradient_accumulation=1,
+               epochs_per_save=10,
+               use_speaker_embedding=False,
+               lang="de",
+               lr=0.01,
+               warmup_steps=8000)

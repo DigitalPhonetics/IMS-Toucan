@@ -32,13 +32,34 @@ if __name__ == '__main__':
 
     path_to_transcript_dict = build_path_to_transcript_dict_libritts()
 
-    train_set = TransformerTTSDataset(path_to_transcript_dict, train=True, cache_dir=cache_dir, lang="en", min_len_in_seconds=1, max_len_in_seconds=10,
+    train_set = TransformerTTSDataset(path_to_transcript_dict,
+                                      train=True,
+                                      cache_dir=cache_dir,
+                                      lang="en",
+                                      min_len_in_seconds=1,
+                                      max_len_in_seconds=10,
                                       spemb=True)
-    valid_set = TransformerTTSDataset(path_to_transcript_dict, train=False, cache_dir=cache_dir, lang="en", min_len_in_seconds=1, max_len_in_seconds=10,
+    valid_set = TransformerTTSDataset(path_to_transcript_dict,
+                                      train=False,
+                                      cache_dir=cache_dir,
+                                      lang="en",
+                                      min_len_in_seconds=1,
+                                      max_len_in_seconds=10,
                                       spemb=True)
 
     model = Transformer(idim=133, odim=80, spk_embed_dim=256)
 
     print("Training model")
-    train_loop(net=model, train_dataset=train_set, valid_dataset=valid_set, device=torch.device("cuda"), save_directory=save_dir, steps=400000, batch_size=64,
-               gradient_accumulation=1, epochs_per_save=10, use_speaker_embedding=True, lang="en", lr=0.05, warmup_steps=8000)
+    train_loop(net=model,
+               train_dataset=train_set,
+               valid_dataset=valid_set,
+               device=torch.device("cuda"),
+               save_directory=save_dir,
+               steps=400000,
+               batch_size=64,
+               gradient_accumulation=1,
+               epochs_per_save=10,
+               use_speaker_embedding=True,
+               lang="en",
+               lr=0.05,
+               warmup_steps=8000)
