@@ -169,6 +169,9 @@ class Transformer(torch.nn.Module, ABC):
             Tensor: Weight value.
 
         """
+        text = text[:, : text_lengths.max()]  # for data-parallel if I ever end up implementing that
+        speech = speech[:, : speech_lengths.max()]  # for data-parallel if I ever end up implementing that
+
         # Add eos at the last of sequence
         xs = F.pad(text, [0, 1], "constant", self.padding_idx)
         for i, l in enumerate(text_lengths):
