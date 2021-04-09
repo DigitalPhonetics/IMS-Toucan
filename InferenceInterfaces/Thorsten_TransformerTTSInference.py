@@ -264,9 +264,12 @@ class Thorsten_TransformerTTSInference(torch.nn.Module):
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text, view=False, blocking=False):
-        wav = self(text, view).cpu().numpy()
-        sounddevice.play(wav, samplerate=16000)
-        if blocking:
-            from time import sleep
+        wav = self(text, view).cpu()
+
+        if not blocking:
+            sounddevice.play(wav.numpy(), samplerate=16000)
+
+        else:
+            silence = torch.zeros([12000])
+            sounddevice.play(torch.cat((wav, silence), 0).numpy(), samplerate=16000)
             sounddevice.wait()
-            sleep(0.5)

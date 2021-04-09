@@ -215,10 +215,13 @@ class MelGANGenerator(torch.nn.Module):
 
 class LibriTTS_TransformerTTSInference(torch.nn.Module):
 
-    def __init__(self, speaker_embedding, device="cpu"):
+    def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
         self.device = device
-        self.speaker_embedding = speaker_embedding
+        if speaker_embedding is not None:
+            self.speaker_embedding = speaker_embedding
+        else:
+            self.speaker_embedding = torch.load(os.path.join("Models", "Use", "default_spemb.pt"), map_location='cpu')
         self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
@@ -265,9 +268,12 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text, view=False, blocking=False):
-        wav = self(text, view).cpu().numpy()
-        sounddevice.play(wav, samplerate=16000)
-        if blocking:
-            from time import sleep
+        wav = self(text, view).cpu()
+
+        if not blocking:
+            sounddevice.play(wav.numpy(), samplerate=16000)
+
+        else:
+            silence = torch.zeros([12000])
+            sounddevice.play(torch.cat((wav, silence), 0).numpy(), samplerate=16000)
             sounddevice.wait()
-            sleep(0.5)
