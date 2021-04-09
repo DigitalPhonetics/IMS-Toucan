@@ -161,15 +161,18 @@ class Transformer(torch.nn.Module, ABC):
 
 class MelGANGenerator(torch.nn.Module):
 
-    def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True, upsample_scales=[8, 4, 2, 2, 2], stack_kernel_size=3, stacks=4,
-                 nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={},
+    def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True,
+                 upsample_scales=[8, 8, 2, 2], stack_kernel_size=3, stacks=3,
+                 nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2},
+                 pad="ReflectionPad1d", pad_params={},
                  use_final_nonlinear_activation=True, use_weight_norm=True):
         super(MelGANGenerator, self).__init__()
         assert channels >= np.prod(upsample_scales)
         assert channels % (2 ** len(upsample_scales)) == 0
         assert (kernel_size - 1) % 2 == 0, "even number for kernel size does not work."
         layers = []
-        layers += [getattr(torch.nn, pad)((kernel_size - 1) // 2, **pad_params), torch.nn.Conv1d(in_channels, channels, kernel_size, bias=bias)]
+        layers += [getattr(torch.nn, pad)((kernel_size - 1) // 2, **pad_params),
+                   torch.nn.Conv1d(in_channels, channels, kernel_size, bias=bias)]
         for i, upsample_scale in enumerate(upsample_scales):
             layers += [getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params)]
             layers += [torch.nn.ConvTranspose1d(channels // (2 ** i), channels // (2 ** (i + 1)), upsample_scale * 2, stride=upsample_scale,
@@ -261,6 +264,10 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
                     wav = torch.cat((wav, self(text).cpu()), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
-    def read_aloud(self, text, view=False):
+    def read_aloud(self, text, view=False, blocking=False):
         wav = self(text, view).cpu().numpy()
         sounddevice.play(wav, samplerate=16000)
+        if blocking:
+            from time import sleep
+            sounddevice.wait()
+            sleep(0.5)

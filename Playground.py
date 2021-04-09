@@ -105,10 +105,9 @@ def sanity_check_audio_preprocessing(path_to_wav_folder, cut_silence):
         clean_wave = ap.normalize_audio(wave)
         print("unclean")
         sounddevice.play(wave, sr)
-        sounddevice.wait()
+
         print("clean")
         sounddevice.play(clean_wave, 16000)
-        sounddevice.wait()
 
 
 def show_audio_lens_in_dataset(path_list):
