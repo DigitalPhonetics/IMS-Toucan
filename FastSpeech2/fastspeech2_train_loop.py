@@ -123,7 +123,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_
 
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
-        check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
+        check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
@@ -133,7 +133,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_
                 step_counter = check_dict["step_counter"]
             else:
                 # legacy support
-                step_counter = int(path_to_checkpoint.split(".")[0].split("_")[1])
+                step_counter = int(path_to_checkpoint.split(".")[0].split("_")[-1])
 
     start_time = time.time()
     while True:

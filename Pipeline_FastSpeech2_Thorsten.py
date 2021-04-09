@@ -144,4 +144,5 @@ if __name__ == '__main__':
                use_speaker_embedding=False,
                lang="de",
                lr=0.01,
-               warmup_steps=8000)
+               warmup_steps=8000,
+               path_to_checkpoint="Models/FastSpeech2_Thorsten/checkpoint_270600.pt")

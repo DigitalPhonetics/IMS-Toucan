@@ -50,4 +50,5 @@ if __name__ == '__main__':
                valid_dataset=valid_set_thorsten,
                device=torch.device("cuda"),
                generator_warmup_steps=100000,
-               model_save_dir=model_save_dir)
+               model_save_dir=model_save_dir,
+               checkpoint="checkpoint_445120")
