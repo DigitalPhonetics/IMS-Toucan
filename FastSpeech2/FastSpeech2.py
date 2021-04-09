@@ -145,11 +145,6 @@ class FastSpeech2(torch.nn.Module, ABC):
             Dict: Statistics to be monitored.
             Tensor: Weight value.
         """
-        text_tensors = text_tensors[:, : text_lengths.max()]  # for data-parallel
-        gold_speech = gold_speech[:, : speech_lengths.max()]  # for data-parallel
-        gold_durations = gold_durations[:, : text_lengths.max() + 1]  # for data-parallel
-        gold_pitch = gold_pitch[:, : text_lengths.max() + 1]  # for data-parallel
-        gold_energy = gold_energy[:, : text_lengths.max() + 1]  # for data-parallel
 
         # Texts don't have the stop token in them because they are freshly made,
         # but all of the other stuff is based on the teacher model, which already
