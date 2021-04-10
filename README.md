@@ -29,6 +29,7 @@ them. This ensures every model can be reproduced and loaded.
 | Hokuspokus   | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | Thorsten     | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | LJSpeech     | English   | Single Speaker      | ✅     | ✅            | ✅          |
+| MAILabs Elizabeth     | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS     | English   | Multi Speaker       | ✅     | ✅            | ✅          |
 | MAILabs Karlsson      | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | MAILabs Eva      | German    | Single Speaker      | ✅     | ✅            | ✅          |

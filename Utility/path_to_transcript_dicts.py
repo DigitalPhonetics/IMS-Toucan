@@ -8,6 +8,9 @@ def build_path_to_transcript_dict_karlsson():
 def build_path_to_transcript_dict_eva():
     pass
 
+def build_path_to_transcript_dict_elizabeth():
+    pass
+
 
 def build_path_to_transcript_dict_hokuspokus():
     path_to_transcript = dict()
@@ -75,3 +78,5 @@ def build_path_to_transcript_dict_thorsten():
         if line.strip() != "":
             path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
     return path_to_transcript
+
+

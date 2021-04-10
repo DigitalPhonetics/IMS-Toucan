@@ -8,6 +8,9 @@ def get_file_list_karlsson():
 def get_file_list_eva():
     pass
 
+def get_file_list_elizabeth():
+    pass
+
 
 def get_file_list_hokuspokus():
     file_list = list()
