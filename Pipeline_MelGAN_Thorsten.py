@@ -51,4 +51,4 @@ if __name__ == '__main__':
                device=torch.device("cuda"),
                generator_warmup_steps=100000,
                model_save_dir=model_save_dir,
-               checkpoint="checkpoint_445120")
+               checkpoint="checkpoint_445120.pt")

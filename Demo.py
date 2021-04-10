@@ -21,7 +21,6 @@ tts_dict = {
     "trans_lj"      : LJSpeech_TransformerTTSInference,
     "trans_css10_de": CSS10_DE_TransformerTTSInference,
     "trans_libri"   : LibriTTS_TransformerTTSInference
-
     }
 
 if __name__ == '__main__':

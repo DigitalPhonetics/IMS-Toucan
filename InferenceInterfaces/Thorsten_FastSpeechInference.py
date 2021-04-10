@@ -252,6 +252,9 @@ class Thorsten_FastSpeechInference(torch.nn.Module):
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text, view=False, blocking=False):
+        if text.strip() == "":
+            return
+
         wav = self(text, view).cpu()
 
         if not blocking:

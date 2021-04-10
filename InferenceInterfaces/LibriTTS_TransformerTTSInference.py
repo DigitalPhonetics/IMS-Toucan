@@ -219,9 +219,9 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
         super().__init__()
         self.device = device
         if speaker_embedding is not None:
-            self.speaker_embedding = speaker_embedding
+            self.speaker_embedding = speaker_embedding.to(torch.device(device))
         else:
-            self.speaker_embedding = torch.load(os.path.join("Models", "Use", "default_spemb.pt"), map_location='cpu')
+            self.speaker_embedding = torch.load(os.path.join("Models", "Use", "default_spemb.pt"), map_location='cpu').to(torch.device(device))
         self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))
@@ -232,7 +232,7 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
-            mel = self.phone2mel(phones).transpose(0, 1)
+            mel = self.phone2mel(phones, self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         if view:
             import matplotlib.pyplot as plt
@@ -268,6 +268,9 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text, view=False, blocking=False):
+        if text.strip() == "":
+            return
+
         wav = self(text, view).cpu()
 
         if not blocking:
