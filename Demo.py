@@ -2,8 +2,10 @@ import sys
 
 import torch
 
-from InferenceInterfaces.CSS10_DE_FastSpeechInference import CSS10_DE_FastSpeechInference
-from InferenceInterfaces.CSS10_DE_TransformerTTSInference import CSS10_DE_TransformerTTSInference
+from InferenceInterfaces.Eva_FastSpeechInference import Eva_FastSpeechInference
+from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSInference
+from InferenceInterfaces.Karlsson_FastSpeechInference import Karlsson_FastSpeechInference
+from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
 from InferenceInterfaces.LJSpeech_FastSpeechInference import LJSpeech_FastSpeechInference
 from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
 from InferenceInterfaces.LibriTTS_FastSpeechInference import LibriTTS_FastSpeechInference
@@ -14,13 +16,15 @@ from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_Transf
 tts_dict = {
     "fast_thorsten" : Thorsten_FastSpeechInference,
     "fast_lj"       : LJSpeech_FastSpeechInference,
-    "fast_css10_de" : CSS10_DE_FastSpeechInference,
     "fast_libri"    : LibriTTS_FastSpeechInference,
+    "fast_karl"     : Karlsson_FastSpeechInference,
+    "fast_eva"      : Eva_FastSpeechInference,
 
     "trans_thorsten": Thorsten_TransformerTTSInference,
     "trans_lj"      : LJSpeech_TransformerTTSInference,
-    "trans_css10_de": CSS10_DE_TransformerTTSInference,
-    "trans_libri"   : LibriTTS_TransformerTTSInference
+    "trans_libri"   : LibriTTS_TransformerTTSInference,
+    "trans_karl"    : Karlsson_TransformerTTSInference,
+    "trans_eva"     : Eva_TransformerTTSInference
     }
 
 if __name__ == '__main__':

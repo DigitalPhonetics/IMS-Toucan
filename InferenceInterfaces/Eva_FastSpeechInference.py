@@ -80,7 +80,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
-        self.load_state_dict(torch.load(os.path.join("Models", "FastSpeech2_CSS10_DE", "best.pt"), map_location='cpu')["model"])
+        self.load_state_dict(torch.load(os.path.join("Models", "FastSpeech2_Eva", "best.pt"), map_location='cpu')["model"])
 
     def _forward(self, xs: torch.Tensor, ilens: torch.Tensor, ys: torch.Tensor = None, olens: torch.Tensor = None, ds: torch.Tensor = None,
                  ps: torch.Tensor = None, es: torch.Tensor = None, spembs: torch.Tensor = None, is_inference: bool = False, alpha: float = 1.0):
@@ -178,7 +178,7 @@ class MelGANGenerator(torch.nn.Module):
         self.melgan = torch.nn.Sequential(*layers)
         if use_weight_norm:
             self.apply_weight_norm()
-        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_CSS10_DE", "best.pt"), map_location='cpu')["generator"])
+        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_Eva", "best.pt"), map_location='cpu')["generator"])
 
     def remove_weight_norm(self):
         def _remove_weight_norm(m):
@@ -201,7 +201,7 @@ class MelGANGenerator(torch.nn.Module):
         return self.melgan(melspec)
 
 
-class CSS10_DE_FastSpeechInference(torch.nn.Module):
+class Eva_FastSpeechInference(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()

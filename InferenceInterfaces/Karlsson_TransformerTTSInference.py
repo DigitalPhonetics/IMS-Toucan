@@ -99,7 +99,7 @@ class Transformer(torch.nn.Module, ABC):
         self.criterion = TransformerLoss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, bce_pos_weight=bce_pos_weight)
         if self.use_guided_attn_loss:
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
-        self.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_CSS10_DE", "best.pt"), map_location='cpu')["model"])
+        self.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_Karlsson", "best.pt"), map_location='cpu')["model"])
 
     def forward(self, text: torch.Tensor, spemb=None):
         self.eval()
@@ -190,7 +190,7 @@ class MelGANGenerator(torch.nn.Module):
         self.melgan = torch.nn.Sequential(*layers)
         if use_weight_norm:
             self.apply_weight_norm()
-        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_CSS10_DE", "best.pt"), map_location='cpu')["generator"])
+        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_Karlsson", "best.pt"), map_location='cpu')["generator"])
 
     def remove_weight_norm(self):
         def _remove_weight_norm(m):
@@ -213,7 +213,7 @@ class MelGANGenerator(torch.nn.Module):
         return self.melgan(melspec)
 
 
-class CSS10_DE_TransformerTTSInference(torch.nn.Module):
+class Karlsson_TransformerTTSInference(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()
