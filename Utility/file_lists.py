@@ -1,6 +1,14 @@
 import os
 
 
+def get_file_list_karlsson():
+    pass
+
+
+def get_file_list_eva():
+    pass
+
+
 def get_file_list_hokuspokus():
     file_list = list()
     for wav_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav"):

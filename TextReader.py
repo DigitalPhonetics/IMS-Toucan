@@ -107,3 +107,9 @@ if __name__ == '__main__':
     read_texts(model_id="fast_lj", sentence=tl_en, filename="audios/fast_lj.wav", device=exec_device)
 
     read_texts(model_id="fast_thorsten", sentence=tl_de, filename="audios/fast_thorsten.wav", device=exec_device)
+
+    read_texts(model_id="trans_libri", sentence=["Hello there, I am speaking with my own voice.",
+                                                 "But the speaking style doesn't match, which makes it not really sound like myself.",
+                                                 "That's quite unfortunate, isn't it?",
+                                                 "But I do believe the prosody and robustness are pretty great for this one."],
+               filename="audios/flux.wav", device=exec_device)
