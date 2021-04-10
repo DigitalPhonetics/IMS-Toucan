@@ -15,7 +15,7 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, path_to_transcript_dict, spemb=False, train=True, loading_processes=6, cache_dir=os.path.join("Corpora", "CSS10_DE"), lang="de",
+    def __init__(self, path_to_transcript_dict, spemb=False, train=True, loading_processes=1, cache_dir=os.path.join("Corpora", "CSS10_DE"), lang="de",
                  min_len_in_seconds=1, max_len_in_seconds=20, cut_silences=False, rebuild_cache=False):
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
