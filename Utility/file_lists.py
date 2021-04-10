@@ -2,14 +2,48 @@ import os
 
 
 def get_file_list_karlsson():
-    pass
+    root = "/mount/resources/speech/corpora/MAILabs_german_single_speaker_karlsson"
+    file_list = list()
+    for el in os.listdir(root):
+        if os.path.isdir(os.path.join(root, el)):
+            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
+                lookup = file.read()
+            for line in lookup.split("\n"):
+                if line.strip() != "":
+                    wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
+                    if os.path.exists(wav_path):
+                        file_list.append(wav_path)
+    return file_list
 
 
 def get_file_list_eva():
-    pass
+    root = "/mount/resources/speech/corpora/MAILabs_german_single_speaker_eva"
+    file_list = list()
+    for el in os.listdir(root):
+        if os.path.isdir(os.path.join(root, el)):
+            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
+                lookup = file.read()
+            for line in lookup.split("\n"):
+                if line.strip() != "":
+                    wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
+                    if os.path.exists(wav_path):
+                        file_list.append(wav_path)
+    return file_list
+
 
 def get_file_list_elizabeth():
-    pass
+    root = "/mount/resources/speech/corpora/MAILabs_british_single_speaker_elizabeth"
+    file_list = list()
+    for el in os.listdir(root):
+        if os.path.isdir(os.path.join(root, el)):
+            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
+                lookup = file.read()
+            for line in lookup.split("\n"):
+                if line.strip() != "":
+                    wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
+                    if os.path.exists(wav_path):
+                        file_list.append(wav_path)
+    return file_list
 
 
 def get_file_list_hokuspokus():
