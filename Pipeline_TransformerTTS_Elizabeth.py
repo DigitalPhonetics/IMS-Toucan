@@ -61,5 +61,5 @@ if __name__ == '__main__':
                epochs_per_save=10,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.05,
+               lr=0.01,
                warmup_steps=8000)
