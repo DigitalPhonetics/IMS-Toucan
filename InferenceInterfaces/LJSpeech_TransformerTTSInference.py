@@ -215,7 +215,7 @@ class MelGANGenerator(torch.nn.Module):
 
 class LJSpeech_TransformerTTSInference(torch.nn.Module):
 
-    def __init__(self, device="cpu"):
+    def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
         self.device = device
         self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)

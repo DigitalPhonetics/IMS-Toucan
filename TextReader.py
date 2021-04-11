@@ -32,8 +32,8 @@ tts_dict = {
     }
 
 
-def read_texts(model_id, sentence, filename, device="cpu"):
-    tts = tts_dict[model_id](device=device)
+def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding="default_spemb.pt"):
+    tts = tts_dict[model_id](device=device, speaker_embedding=speaker_embedding)
     if type(sentence) == str:
         sentence = [sentence]
     tts.read_to_file(text_list=sentence, file_location=filename)
@@ -112,11 +112,39 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
+    read_texts(model_id="trans_libri",
+               sentence=["Those of you who volunteered to be injected with praying mantis DNA, I've got some good news and some bad news.",
+                         "Bad news is we're postponing those tests indefinitely.",
+                         "Good news is we've got a much better test for you: fighting an army of mantis men.",
+                         "Pick up a rifle and follow the yellow line.",
+                         "You'll know when the test starts."],
+               filename="audios/cave_mantis.wav",
+               device=exec_device,
+               speaker_embedding="cave_johnson.pt")
+
+    read_texts(model_id="trans_libri",
+               sentence=["All right, I've been thinking.",
+                         "When life gives you lemons?",
+                         "Don't make lemonade.",
+                         "Make life take the lemons back!",
+                         "Get mad!",
+                         "I don't want your damn lemons!",
+                         "What am I supposed to do with these?"],
+               filename="audios/cave_lemons.wav",
+               device=exec_device,
+               speaker_embedding="cave_johnson.pt")
+
+    read_texts(model_id="trans_libri",
+               sentence=["Okay.",
+                         "Look.",
+                         "We both said a lot of things that you're going to regret.",
+                         "But I think we can put our differences behind us.",
+                         "For science.",
+                         "You monster!"],
+               filename="audios/glados_regret.wav",
+               device=exec_device,
+               speaker_embedding="glados.pt")
+
     read_texts(model_id="fast_lj", sentence=tl_en, filename="audios/fast_lj.wav", device=exec_device)
 
     read_texts(model_id="fast_thorsten", sentence=tl_de, filename="audios/fast_thorsten.wav", device=exec_device)
-
-    read_texts(model_id="trans_libri",
-               sentence=["Okay.", "Look.", "We both said a lot of things that you're going to regret.", "But I think we can put our differences behind us.",
-                         "For science.", "You monster."],
-               filename="audios/glados.wav", device=exec_device)

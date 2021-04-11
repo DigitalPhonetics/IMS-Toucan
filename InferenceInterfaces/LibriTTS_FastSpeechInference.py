@@ -206,10 +206,7 @@ class LibriTTS_FastSpeechInference(torch.nn.Module):
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
         self.device = device
-        if speaker_embedding is not None:
-            self.speaker_embedding = speaker_embedding
-        else:
-            self.speaker_embedding = torch.load(os.path.join("Models", "Use", "default_spemb.pt"), map_location='cpu')
+        self.speaker_embedding = torch.load(os.path.join("Models", "Use", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         self.phone2mel = FastSpeech2(idim=133, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator().to(torch.device(device))

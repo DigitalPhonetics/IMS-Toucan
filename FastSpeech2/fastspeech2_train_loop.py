@@ -59,7 +59,7 @@ def collate_and_pad(batch):
         pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1),
         pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
     elif len(batch[0]) == 8:
-        # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, spemb]
+        # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, speaker_embedding]
         texts = list()
         text_lens = list()
         speechs = list()
