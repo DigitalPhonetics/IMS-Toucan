@@ -62,4 +62,4 @@ if __name__ == '__main__':
                lang="de",
                lr=0.05,
                warmup_steps=8000,
-               path_to_checkpoint="Models/TransformerTTS_Eva/checkpoint_78400.pt")
+               path_to_checkpoint="Models/TransformerTTS_Eva/checkpoint_108800.pt")
