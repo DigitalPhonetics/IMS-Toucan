@@ -89,7 +89,8 @@ def collate_and_pad(batch):
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
         return (
-        pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1))
+            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+            torch.stack(speech_lens).squeeze(1))
     elif len(batch[0]) == 5:
         # every entry in batch: [text, text_length, spec, spec_length, speaker_embedding]
         texts = list()
@@ -104,8 +105,9 @@ def collate_and_pad(batch):
             speech_lens.append(torch.LongTensor([datapoint[3]]))
             spembs.append(torch.Tensor(datapoint[4]))
         return (
-        pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1),
-        torch.stack(spembs))  # spembs may need squeezing
+            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+            torch.stack(speech_lens).squeeze(1),
+            torch.stack(spembs))  # spembs may need squeezing
 
 
 def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_size=32, steps=400000, gradient_accumulation=1, epochs_per_save=10,

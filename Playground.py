@@ -137,6 +137,6 @@ if __name__ == '__main__':
     # sanity_check_audio_preprocessing("Corpora/CSS10_DE", cut_silence=True)
     # plot_fastspeech_architecture()
     # plot_transformertts_architecture()
-    plot_melgan_training()
+    # plot_melgan_training()
     # plot_syn_training()
-    # show_att(sentence="Hallo Welt, das ist ein kurzer Satz.", lang="de", best_only=False)
+    show_att(sentence="Hallo Welt, das ist ein kurzer Satz.", lang="de", best_only=False)

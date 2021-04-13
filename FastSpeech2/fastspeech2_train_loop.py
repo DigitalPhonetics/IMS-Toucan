@@ -56,8 +56,9 @@ def collate_and_pad(batch):
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
         return (
-        pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1),
-        pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
+            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+            torch.stack(speech_lens).squeeze(1),
+            pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
     elif len(batch[0]) == 8:
         # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, speaker_embedding]
         texts = list()
@@ -78,9 +79,10 @@ def collate_and_pad(batch):
             pitch.append(torch.Tensor(datapoint[6]))
             spembs.append(torch.Tensor(datapoint[7]))
         return (
-        pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True), torch.stack(speech_lens).squeeze(1),
-        pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
-        torch.stack(spembs))  # may need squeezing, cannot test atm
+            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+            torch.stack(speech_lens).squeeze(1),
+            pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
+            torch.stack(spembs))  # may need squeezing, cannot test atm
 
 
 def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_size=32, steps=400000, gradient_accumulation=1, epochs_per_save=10,

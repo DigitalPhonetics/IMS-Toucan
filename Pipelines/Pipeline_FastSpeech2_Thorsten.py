@@ -1,4 +1,3 @@
-
 import os
 import random
 
@@ -32,7 +31,6 @@ def run(gpu_id, resume_checkpoint, finetune):
         os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict_thorsten()
-
 
     failed_alignments = ["00ef34f25b24d2ebbf90eebc4ae13e22",  # unfortunately, this had to be done manually
                          "0a5e99895d7bf2fc3d13739722bc17d6",  # by looking at the visualization of the

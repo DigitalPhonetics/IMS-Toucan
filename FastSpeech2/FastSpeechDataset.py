@@ -19,16 +19,28 @@ from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
 
 class FastSpeechDataset(Dataset):
 
-    def __init__(self, path_to_transcript_dict, acoustic_model_name, diagonal_attention_head_id=None,  # every transformer has one attention head
+    def __init__(self,
+                 path_to_transcript_dict,
+                 acoustic_model_name,
+                 diagonal_attention_head_id=None,  # every transformer has one attention head
                  # that is the most diagonal. Look for it manually (e.g. using playground)
                  # and then provide it here.
-                 spemb=False, train=True, loading_processes=1, cache_dir=os.path.join("Corpora", "CSS10_DE"), lang="de", min_len_in_seconds=1,
-                 max_len_in_seconds=20, reduction_factor=1, device=torch.device("cpu"), rebuild_cache=False, path_blacklist=None,
-                 # because for some datasets, some of the alignments
+                 spemb=False,
+                 train=True,
+                 loading_processes=1,
+                 cache_dir=os.path.join("Corpora", "CSS10_DE"),
+                 lang="de",
+                 min_len_in_seconds=1,
+                 max_len_in_seconds=20,
+                 reduction_factor=1,
+                 device=torch.device("cpu"),
+                 rebuild_cache=False,
+                 path_blacklist=None  # because for some datasets, some of the alignments
                  # simply fail because attention heads do weird things. Those need to be
                  # found in the duration_vis folder and manually added to a list of samples
                  # to be excluded from the dataset.
                  ):
+
         self.spemb = spemb
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or rebuild_cache:
@@ -92,7 +104,10 @@ class FastSpeechDataset(Dataset):
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
+        if spemb:
+            acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name, spk_embed_dim=256).to(device)
+        else:
+            acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor, diagonal_attention_head_id=diagonal_attention_head_id)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
@@ -124,8 +139,9 @@ class FastSpeechDataset(Dataset):
                                                                    spembs=cached_spemb.to(device))[2],
                                           vis=os.path.join(cache_dir, "durations_visualization", ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
                 cached_energy = \
-                energy_calc(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length, durations=cached_durations.unsqueeze(0),
-                            durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
+                    energy_calc(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length,
+                                durations=cached_durations.unsqueeze(0),
+                                durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
                 cached_pitch = \
                     dio(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length, durations=cached_durations.unsqueeze(0),
                         durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)

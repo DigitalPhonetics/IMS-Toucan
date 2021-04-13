@@ -1,5 +1,3 @@
-
-
 import os
 import random
 
@@ -34,7 +32,6 @@ def run(gpu_id, resume_checkpoint, finetune):
 
     path_to_transcript_dict = build_path_to_transcript_dict_libritts()
 
-
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
                                   acoustic_model_name="TransformerTTS_LibriTTS/best.pt",
@@ -43,7 +40,8 @@ def run(gpu_id, resume_checkpoint, finetune):
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  spemb=True)
+                                  spemb=True,
+                                  diagonal_attention_head_id=16)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
                                   acoustic_model_name="TransformerTTS_LibriTTS/best.pt",
@@ -52,7 +50,8 @@ def run(gpu_id, resume_checkpoint, finetune):
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  spemb=True)
+                                  spemb=True,
+                                  diagonal_attention_head_id=16)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=256)
 

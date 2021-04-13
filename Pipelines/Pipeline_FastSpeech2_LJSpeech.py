@@ -1,4 +1,3 @@
-
 import os
 import random
 
@@ -32,7 +31,6 @@ def run(gpu_id, resume_checkpoint, finetune):
         os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict_ljspeech()
-
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
