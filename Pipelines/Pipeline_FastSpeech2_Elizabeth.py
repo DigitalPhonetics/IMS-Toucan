@@ -1,61 +1,57 @@
-"""
-Train a non-autoregressive FastSpeech 2 model on the English multi speaker dataset LibriTTS
-
-This requires having a trained TransformerTTS model in the right directory to knowledge distill the durations.
-"""
-
 import os
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 import random
-import warnings
 
 import torch
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_elizabeth
 
-warnings.filterwarnings("ignore")
 
-torch.manual_seed(13)
-random.seed(13)
+def run(gpu_id, resume_checkpoint, finetune):
+    if gpu_id == "cpu":
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        device = torch.device("cpu")
 
-if __name__ == '__main__':
+    else:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
+        device = torch.device("cuda")
+
+    torch.manual_seed(13)
+    random.seed(13)
+
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "LibriTTS")
-    save_dir = os.path.join("Models", "FastSpeech2_LibriTTS")
+    cache_dir = os.path.join("Corpora", "Elizabeth")
+    save_dir = os.path.join("Models", "FastSpeech2_Elizabeth")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_libritts()
-
-    device = torch.device("cuda")
+    path_to_transcript_dict = build_path_to_transcript_dict_elizabeth()
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
-                                  acoustic_model_name="TransformerTTS_LibriTTS/best.pt",
+                                  acoustic_model_name="TransformerTTS_Elizabeth/best.pt",
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  spemb=True)
+                                  rebuild_cache=False)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
-                                  acoustic_model_name="TransformerTTS_LibriTTS/best.pt",
+                                  acoustic_model_name="TransformerTTS_Elizabeth/best.pt",
                                   cache_dir=cache_dir,
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  spemb=True)
+                                  rebuild_cache=False)
 
-    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=256)
+    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,
@@ -67,7 +63,9 @@ if __name__ == '__main__':
                batch_size=32,
                gradient_accumulation=1,
                epochs_per_save=10,
-               use_speaker_embedding=True,
+               use_speaker_embedding=False,
                lang="en",
-               lr=0.05,
-               warmup_steps=8000)
+               lr=0.01,
+               warmup_steps=8000,
+               path_to_checkpoint=resume_checkpoint,
+               fine_tune=finetune)

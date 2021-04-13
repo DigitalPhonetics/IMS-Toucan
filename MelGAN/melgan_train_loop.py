@@ -13,7 +13,7 @@ from Utility.RAdam import RAdam
 
 
 def train_loop(batch_size=16, steps=2000000, generator=None, discriminator=None, train_dataset=None, valid_dataset=None, device=None, model_save_dir=None,
-               generator_warmup_steps=100000, epochs_per_save=5, checkpoint=None):
+               generator_warmup_steps=100000, epochs_per_save=5, path_to_checkpoint=None):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -51,12 +51,12 @@ def train_loop(batch_size=16, steps=2000000, generator=None, discriminator=None,
     valid_loader = DataLoader(dataset=valid_dataset, batch_size=20, shuffle=False, num_workers=5, pin_memory=False, drop_last=False, prefetch_factor=20,
                               persistent_workers=False)
 
-    if checkpoint is not None:
+    if path_to_checkpoint is not None:
         with open(os.path.join(model_save_dir, "train_loss.json"), "r") as tl:
             train_losses = json.load(tl)
         with open(os.path.join(model_save_dir, "valid_loss.json"), "r") as vl:
             valid_losses = json.load(vl)
-        check_dict = torch.load(os.path.join(model_save_dir, checkpoint), map_location=device)
+        check_dict = torch.load(path_to_checkpoint, map_location=device)
         optimizer_g.load_state_dict(check_dict["generator_optimizer"])
         optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
         scheduler_g.load_state_dict(check_dict["generator_scheduler"])
@@ -67,7 +67,7 @@ def train_loop(batch_size=16, steps=2000000, generator=None, discriminator=None,
             step_counter = check_dict["step_counter"]
         else:
             # legacy
-            step_counter = int(checkpoint.split(".")[0].split("_")[1])
+            step_counter = int(path_to_checkpoint.split(".")[0].split("_")[-1])
 
     start_time = time.time()
 

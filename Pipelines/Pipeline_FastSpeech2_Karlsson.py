@@ -1,44 +1,43 @@
-"""
-Train a non-autoregressive FastSpeech 2 model on the german single speaker eva_k dataset by MAILabs
 
-This requires having a trained TransformerTTS model in the right directory to knowledge distill the durations.
-"""
 
 import os
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import random
-import warnings
 
 import torch
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_eva
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_karlsson
 
-warnings.filterwarnings("ignore")
 
-torch.manual_seed(13)
-random.seed(13)
+def run(gpu_id, resume_checkpoint, finetune):
+    if gpu_id == "cpu":
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        device = torch.device("cpu")
 
-if __name__ == '__main__':
+    else:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
+        device = torch.device("cuda")
+
+    torch.manual_seed(13)
+    random.seed(13)
+
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Eva")
-    save_dir = os.path.join("Models", "FastSpeech2_Eva")
+    cache_dir = os.path.join("Corpora", "Karlsson")
+    save_dir = os.path.join("Models", "FastSpeech2_Karlsson")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_eva()
+    path_to_transcript_dict = build_path_to_transcript_dict_karlsson()
 
-    device = torch.device("cuda")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=True,
-                                  acoustic_model_name="TransformerTTS_Eva/best.pt",
+                                  acoustic_model_name="TransformerTTS_Karlsson/best.pt",
                                   diagonal_attention_head_id=None,
                                   cache_dir=cache_dir, lang="de",
                                   min_len_in_seconds=1,
@@ -46,7 +45,7 @@ if __name__ == '__main__':
                                   device=device)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
-                                  acoustic_model_name="TransformerTTS_Eva/best.pt",
+                                  acoustic_model_name="TransformerTTS_Karlsson/best.pt",
                                   diagonal_attention_head_id=None,
                                   cache_dir=cache_dir,
                                   lang="de",
@@ -69,4 +68,6 @@ if __name__ == '__main__':
                use_speaker_embedding=False,
                lang="de",
                lr=0.01,
-               warmup_steps=8000)
+               warmup_steps=8000,
+               path_to_checkpoint=resume_checkpoint,
+               fine_tune=finetune)

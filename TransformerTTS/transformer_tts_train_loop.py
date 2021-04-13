@@ -157,7 +157,7 @@ def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_
                 step_counter = check_dict["step_counter"]
             else:
                 # legacy support
-                step_counter = int(path_to_checkpoint.split(".")[0].split("_")[1])
+                step_counter = int(path_to_checkpoint.split(".")[0].split("_")[-1])
 
     start_time = time.time()
     while True:

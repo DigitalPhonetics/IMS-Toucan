@@ -1,14 +1,6 @@
-"""
-Train a non-autoregressive FastSpeech 2 model on the german single speaker dataset by Hokuspokus
-This requires having a trained TransformerTTS model in the right directory to knowledge distill the durations.
-"""
 
 import os
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import random
-import warnings
 
 import torch
 
@@ -17,12 +9,20 @@ from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_thorsten
 
-warnings.filterwarnings("ignore")
 
-torch.manual_seed(13)
-random.seed(13)
+def run(gpu_id, resume_checkpoint, finetune):
+    if gpu_id == "cpu":
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        device = torch.device("cpu")
 
-if __name__ == '__main__':
+    else:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
+        device = torch.device("cuda")
+
+    torch.manual_seed(13)
+    random.seed(13)
+
     print("Preparing")
     cache_dir = os.path.join("Corpora", "Thorsten")
     save_dir = os.path.join("Models", "FastSpeech2_Thorsten")
@@ -33,7 +33,6 @@ if __name__ == '__main__':
 
     path_to_transcript_dict = build_path_to_transcript_dict_thorsten()
 
-    device = torch.device("cuda")
 
     failed_alignments = ["00ef34f25b24d2ebbf90eebc4ae13e22",  # unfortunately, this had to be done manually
                          "0a5e99895d7bf2fc3d13739722bc17d6",  # by looking at the visualization of the
@@ -143,4 +142,6 @@ if __name__ == '__main__':
                use_speaker_embedding=False,
                lang="de",
                lr=0.01,
-               warmup_steps=8000)
+               warmup_steps=8000,
+               path_to_checkpoint=resume_checkpoint,
+               fine_tune=finetune)

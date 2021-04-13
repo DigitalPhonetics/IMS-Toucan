@@ -1,13 +1,6 @@
-"""
-Train non-autoregressive spectrogram inversion model
-"""
 
 import os
-
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import random
-import warnings
 
 import torch
 
@@ -17,12 +10,20 @@ from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
 from Utility.file_lists import get_file_list_libritts
 
-warnings.filterwarnings("ignore")
 
-torch.manual_seed(13)
-random.seed(13)
+def run(gpu_id, resume_checkpoint, finetune):
+    if gpu_id == "cpu":
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        device = torch.device("cpu")
 
-if __name__ == '__main__':
+    else:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
+        device = torch.device("cuda")
+
+    torch.manual_seed(13)
+    random.seed(13)
+
     print("Preparing")
     model_save_dir = "Models/MelGAN_LibriTTS"
     if not os.path.exists(model_save_dir):
@@ -48,6 +49,7 @@ if __name__ == '__main__':
                discriminator=multi_scale_discriminator,
                train_dataset=train_set_libri,
                valid_dataset=valid_set_libri,
-               device=torch.device("cuda"),
+               device=device,
                generator_warmup_steps=100000,
-               model_save_dir=model_save_dir)
+               model_save_dir=model_save_dir,
+               path_to_checkpoint=resume_checkpoint)
