@@ -1,6 +1,6 @@
 # Copyright 2020 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
-
+# Adapted by Florian Lux 2021
 
 import numpy as np
 import pyworld
@@ -18,8 +18,8 @@ class Dio(torch.nn.Module):
     introduced in https://doi.org/10.1587/transinf.2015EDP7457
     """
 
-    def __init__(self, fs=16000, n_fft: int = 1024, hop_length: int = 256, f0min: int = 40, f0max: int = 400, use_token_averaged_f0: bool = True,
-                 use_continuous_f0: bool = True, use_log_f0: bool = True, reduction_factor=1):
+    def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=400, use_token_averaged_f0=True,
+                 use_continuous_f0=True, use_log_f0=True, reduction_factor=1):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
@@ -34,7 +34,7 @@ class Dio(torch.nn.Module):
             assert reduction_factor >= 1
         self.reduction_factor = reduction_factor
 
-    def output_size(self) -> int:
+    def output_size(self):
         return 1
 
     def get_parameters(self):
@@ -42,8 +42,8 @@ class Dio(torch.nn.Module):
                     use_token_averaged_f0=self.use_token_averaged_f0, use_continuous_f0=self.use_continuous_f0, use_log_f0=self.use_log_f0,
                     reduction_factor=self.reduction_factor)
 
-    def forward(self, input: torch.Tensor, input_lengths: torch.Tensor = None, feats_lengths: torch.Tensor = None, durations: torch.Tensor = None,
-                durations_lengths: torch.Tensor = None):
+    def forward(self, input, input_lengths=None, feats_lengths=None, durations=None,
+                durations_lengths=None):
         # If not provide, we assume that the inputs have the same length
         if input_lengths is None:
             input_lengths = (input.new_ones(input.shape[0], dtype=torch.long) * input.shape[1])
@@ -68,7 +68,7 @@ class Dio(torch.nn.Module):
         # Return with the shape (B, T, 1)
         return pitch.unsqueeze(-1), pitch_lengths
 
-    def _calculate_f0(self, input: torch.Tensor):
+    def _calculate_f0(self, input):
         x = input.cpu().numpy().astype(np.double)
         f0, timeaxis = pyworld.dio(x, self.fs, f0_floor=self.f0min, f0_ceil=self.f0max, frame_period=self.frame_period)
         f0 = pyworld.stonemask(x, f0, timeaxis, self.fs)
@@ -80,7 +80,7 @@ class Dio(torch.nn.Module):
         return input.new_tensor(f0.reshape(-1), dtype=torch.float)
 
     @staticmethod
-    def _adjust_num_frames(x: torch.Tensor, num_frames: torch.Tensor):
+    def _adjust_num_frames(x, num_frames):
         if num_frames > len(x):
             x = F.pad(x, (0, num_frames - len(x)))
         elif num_frames < len(x):
@@ -109,7 +109,7 @@ class Dio(torch.nn.Module):
 
         return f0
 
-    def _average_by_duration(self, x: torch.Tensor, d: torch.Tensor):
+    def _average_by_duration(self, x, d):
         assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [

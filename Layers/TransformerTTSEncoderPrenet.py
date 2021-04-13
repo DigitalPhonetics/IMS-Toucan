@@ -1,3 +1,7 @@
+"""
+Taken from ESPNet
+"""
+
 import torch
 
 from torch.nn.utils.rnn import pack_padded_sequence
@@ -5,13 +9,13 @@ from torch.nn.utils.rnn import pad_packed_sequence
 
 
 def encoder_init(m):
-    """Initialize encoder parameters."""
     if isinstance(m, torch.nn.Conv1d):
         torch.nn.init.xavier_uniform_(m.weight, torch.nn.init.calculate_gain("relu"))
 
 
 class EncoderPrenet(torch.nn.Module):
-    """Encoder module of Spectrogram prediction network.
+    """
+    Encoder module of Spectrogram prediction network.
 
     This is a module of encoder of Spectrogram prediction network in Tacotron2,
     which described in `Natural TTS Synthesis by Conditioning WaveNet on Mel
@@ -25,7 +29,8 @@ class EncoderPrenet(torch.nn.Module):
 
     def __init__(self, idim, input_layer="embed", embed_dim=512, elayers=1, eunits=512, econv_layers=3, econv_chans=512, econv_filts=5, use_batch_norm=True,
                  use_residual=False, dropout_rate=0.5, padding_idx=0, ):
-        """Initialize Tacotron2 encoder module.
+        """
+        Initialize Tacotron2 encoder module.
 
         Args:
             idim (int) Dimension of the inputs.
@@ -78,7 +83,8 @@ class EncoderPrenet(torch.nn.Module):
         self.apply(encoder_init)
 
     def forward(self, xs, ilens=None):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             xs (Tensor): Batch of the padded sequence. Either character ids (B, Tmax)
@@ -110,7 +116,8 @@ class EncoderPrenet(torch.nn.Module):
         return xs, hlens
 
     def inference(self, x):
-        """Inference.
+        """
+        Inference.
 
         Args:
             x (Tensor): The sequeunce of character ids (T,)

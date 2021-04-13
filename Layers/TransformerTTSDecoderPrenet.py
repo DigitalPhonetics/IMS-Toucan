@@ -1,9 +1,14 @@
+"""
+Taken from ESPNet
+"""
+
 import torch
 import torch.nn.functional as F
 
 
 class DecoderPrenet(torch.nn.Module):
-    """Prenet module for decoder of Spectrogram prediction network.
+    """
+    Prenet module for decoder of Spectrogram prediction network.
 
     This is a module of Prenet in the decoder of Spectrogram prediction network,
     which described in `Natural TTS
@@ -23,7 +28,8 @@ class DecoderPrenet(torch.nn.Module):
     """
 
     def __init__(self, idim, n_layers=2, n_units=256, dropout_rate=0.5):
-        """Initialize prenet module.
+        """
+        Initialize prenet module.
 
         Args:
             idim (int): Dimension of the inputs.
@@ -40,7 +46,8 @@ class DecoderPrenet(torch.nn.Module):
             self.prenet += [torch.nn.Sequential(torch.nn.Linear(n_inputs, n_units), torch.nn.ReLU())]
 
     def forward(self, x):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             x (Tensor): Batch of input tensors (B, ..., idim).

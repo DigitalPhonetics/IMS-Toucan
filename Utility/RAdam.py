@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 RAdam optimizer.
 This code is derived from https://github.com/LiyuanLucasLiu/RAdam
@@ -13,20 +11,22 @@ from torch.optim.optimizer import Optimizer
 
 
 class RAdam(Optimizer):
-    """Rectified Adam optimizer."""
 
     def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0):
-        """Initialize RAdam optimizer."""
         defaults = dict(lr=lr, betas=betas, eps=eps, weight_decay=weight_decay)
         self.buffer = [[None, None, None] for ind in range(10)]
         super(RAdam, self).__init__(params, defaults)
 
     def __setstate__(self, state):
-        """Set state."""
+        """
+        Set state.
+        """
         super(RAdam, self).__setstate__(state)
 
     def step(self, closure=None):
-        """Run one step."""
+        """
+        Run one step.
+        """
         loss = None
         if closure is not None:
             loss = closure()

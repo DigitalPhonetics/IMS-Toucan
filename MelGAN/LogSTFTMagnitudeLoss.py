@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 2019 Tomoki Hayashi
-#  MIT License (https://opensource.org/licenses/MIT)
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
-"""STFT-based Loss modules."""
 
 import torch
 import torch.nn.functional as F
@@ -15,9 +13,6 @@ class LogSTFTMagnitudeLoss(torch.nn.Module):
     """
 
     def __init__(self):
-        """
-        Initilize los STFT magnitude loss module.
-        """
         super(LogSTFTMagnitudeLoss, self).__init__()
 
     def forward(self, x_mag, y_mag):

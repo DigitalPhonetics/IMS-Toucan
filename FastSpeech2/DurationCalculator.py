@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 2020 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Adapted by Florian Lux 2021
 
 import matplotlib.pyplot as plt
 
@@ -9,27 +8,17 @@ import torch
 
 
 class DurationCalculator(torch.nn.Module):
-    """
-    Duration calculator module.
-    """
 
     def __init__(self, reduction_factor, diagonal_attention_head_id):
-        """
-        Initialize duration calculator.
-        """
+
         self.reduction_factor = reduction_factor
         self.diagonal_attention_head_id = diagonal_attention_head_id
         super().__init__()
 
     @torch.no_grad()
-    def forward(self, att_ws: torch.Tensor, vis=None):
+    def forward(self, att_ws, vis=None):
         """
         Convert attention weight to durations.
-        Args:
-            att_ws (Tensor): Attention weight tensor (L, T) or (#layers, #heads, L, T).
-        Returns:
-            LongTensor: Duration of each input (T,).
-            Tensor: Focus rate value.
         """
         duration = self._calculate_duration(att_ws, vis=vis)
         focus_rate = self._calculate_focus_rate(att_ws)

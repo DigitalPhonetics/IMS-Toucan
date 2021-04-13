@@ -1,7 +1,7 @@
 # Copyright 2020 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Adapted by Florian Lux 2021
 
-"""TTS-Transformer related modules."""
 import os
 from abc import ABC
 from typing import Dict
@@ -38,26 +38,25 @@ class Transformer(torch.nn.Module, ABC):
     """
 
     def __init__(self,  # network structure related
-                 idim: int, odim: int, embed_dim: int = 0, eprenet_conv_layers: int = 0, eprenet_conv_chans: int = 0, eprenet_conv_filts: int = 0,
-                 dprenet_layers: int = 2, dprenet_units: int = 256, elayers: int = 6, eunits: int = 1024, adim: int = 512, aheads: int = 4, dlayers: int = 6,
-                 dunits: int = 1024, postnet_layers: int = 5, postnet_chans: int = 256, postnet_filts: int = 5, positionwise_layer_type: str = "conv1d",
-                 positionwise_conv_kernel_size: int = 1, use_scaled_pos_enc: bool = True, use_batch_norm: bool = True, encoder_normalize_before: bool = True,
-                 decoder_normalize_before: bool = True, encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 decoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=1, spk_embed_dim: int = None, spk_embed_integration_type: str = "concat",  # training related
-                 transformer_enc_dropout_rate: float = 0.1, transformer_enc_positional_dropout_rate: float = 0.1,
-                 transformer_enc_attn_dropout_rate: float = 0.1, transformer_dec_dropout_rate: float = 0.1,
-                 transformer_dec_positional_dropout_rate: float = 0.1, transformer_dec_attn_dropout_rate: float = 0.1,
-                 transformer_enc_dec_attn_dropout_rate: float = 0.1, eprenet_dropout_rate: float = 0.0, dprenet_dropout_rate: float = 0.5,
-                 postnet_dropout_rate: float = 0.5, init_type: str = "xavier_uniform",  # since we have little to no
+                 idim, odim, embed_dim=0, eprenet_conv_layers=0, eprenet_conv_chans=0, eprenet_conv_filts=0,
+                 dprenet_layers=2, dprenet_units=256, elayers=6, eunits=1024, adim=512, aheads=4, dlayers=6,
+                 dunits=1024, postnet_layers=5, postnet_chans=256, postnet_filts=5, positionwise_layer_type="conv1d",
+                 positionwise_conv_kernel_size=1, use_scaled_pos_enc=True, use_batch_norm=True, encoder_normalize_before=True,
+                 decoder_normalize_before=True, encoder_concat_after=True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after=True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 reduction_factor=1, spk_embed_dim=None, spk_embed_integration_type="concat",  # training related
+                 transformer_enc_dropout_rate=0.1, transformer_enc_positional_dropout_rate=0.1,
+                 transformer_enc_attn_dropout_rate=0.1, transformer_dec_dropout_rate=0.1,
+                 transformer_dec_positional_dropout_rate=0.1, transformer_dec_attn_dropout_rate=0.1,
+                 transformer_enc_dec_attn_dropout_rate=0.1, eprenet_dropout_rate=0.0, dprenet_dropout_rate=0.5,
+                 postnet_dropout_rate=0.5, init_type="xavier_uniform",  # since we have little to no
                  # asymetric activations, this seems to work better than kaiming
-                 init_enc_alpha: float = 1.0, use_masking: bool = False,  # either this or weighted masking, not both
-                 use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 7.0,  # scaling the loss of the stop token prediction
-                 loss_type: str = "L1", use_guided_attn_loss: bool = True, num_heads_applied_guided_attn: int = 2, num_layers_applied_guided_attn: int = 2,
-                 modules_applied_guided_attn=("encoder-decoder",), guided_attn_loss_sigma: float = 0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda: float = 25.0):  # forcing the attention to be diagonal
-        """Initialize Transformer module."""
+                 init_enc_alpha=1.0, use_masking=False,  # either this or weighted masking, not both
+                 use_weighted_masking=True,  # if there are severely different sized samples in one batch
+                 bce_pos_weight=7.0,  # scaling the loss of the stop token prediction
+                 loss_type="L1", use_guided_attn_loss=True, num_heads_applied_guided_attn=2, num_layers_applied_guided_attn=2,
+                 modules_applied_guided_attn=("encoder-decoder",), guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
+                 guided_attn_loss_lambda=25.0):  # forcing the attention to be diagonal
         super().__init__()
 
         # store hyperparameters
@@ -153,8 +152,9 @@ class Transformer(torch.nn.Module, ABC):
             self.encoder.embed[-1].alpha.data = torch.tensor(init_enc_alpha)
             self.decoder.embed[-1].alpha.data = torch.tensor(init_dec_alpha)
 
-    def forward(self, text: torch.Tensor, text_lengths: torch.Tensor, speech: torch.Tensor, speech_lengths: torch.Tensor, spembs: torch.Tensor = None):
-        """Calculate forward propagation.
+    def forward(self, text, text_lengths, speech, speech_lengths, spembs=None):
+        """
+        Calculate forward propagation.
 
         Args:
             text (LongTensor): Batch of padded character ids (B, Tmax).
@@ -240,7 +240,7 @@ class Transformer(torch.nn.Module, ABC):
 
         return loss
 
-    def _forward(self, xs: torch.Tensor, ilens: torch.Tensor, ys: torch.Tensor, olens: torch.Tensor, spembs: torch.Tensor):
+    def _forward(self, xs, ilens, ys, olens, spembs):
         # forward encoder
         x_masks = self._source_mask(ilens)
         hs, h_masks = self.encoder(xs, x_masks)
@@ -275,8 +275,8 @@ class Transformer(torch.nn.Module, ABC):
 
         return after_outs, before_outs, logits
 
-    def inference(self, text: torch.Tensor, speech: torch.Tensor = None, spembs: torch.Tensor = None, threshold: float = 0.5, minlenratio: float = 0.0,
-                  maxlenratio: float = 10.0, use_teacher_forcing: bool = False):
+    def inference(self, text, speech=None, spembs=None, threshold=0.5, minlenratio=0.0,
+                  maxlenratio=10.0, use_teacher_forcing=False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -385,7 +385,7 @@ class Transformer(torch.nn.Module, ABC):
         return outs, probs, att_ws
 
     @staticmethod
-    def _add_first_frame_and_remove_last_frame(ys: torch.Tensor):
+    def _add_first_frame_and_remove_last_frame(ys):
         return torch.cat([ys.new_zeros((ys.shape[0], 1, ys.shape[2])), ys[:, :-1]], dim=1)
 
     def _source_mask(self, ilens):
@@ -403,7 +403,7 @@ class Transformer(torch.nn.Module, ABC):
         x_masks = make_non_pad_mask(ilens).to(ilens.device)
         return x_masks.unsqueeze(-2)
 
-    def _target_mask(self, olens: torch.Tensor) -> torch.Tensor:
+    def _target_mask(self, olens):
         """
         Make masks for masked self-attention.
 
@@ -419,7 +419,7 @@ class Transformer(torch.nn.Module, ABC):
         s_masks = subsequent_mask(y_masks.size(-1), device=y_masks.device).unsqueeze(0)
         return y_masks.unsqueeze(-2) & s_masks
 
-    def _integrate_with_spk_embed(self, hs: torch.Tensor, spembs: torch.Tensor) -> torch.Tensor:
+    def _integrate_with_spk_embed(self, hs, spembs):
         """
         Integrate speaker embedding with hidden states.
 

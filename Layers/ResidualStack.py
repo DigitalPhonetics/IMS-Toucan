@@ -1,19 +1,17 @@
-# -*- coding: utf-8 -*-
+# Copyright 2019 Tomoki Hayashi
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
-# Copyright 2020 Tomoki Hayashi
-#  MIT License (https://opensource.org/licenses/MIT)
-
-"""Residual stack module in MelGAN."""
 
 import torch
 
 
 class ResidualStack(torch.nn.Module):
-    """Residual stack module introduced in MelGAN."""
 
     def __init__(self, kernel_size=3, channels=32, dilation=1, bias=True, nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2},
                  pad="ReflectionPad1d", pad_params={}, ):
-        """Initialize ResidualStack module.
+        """
+        Initialize ResidualStack module.
 
         Args:
             kernel_size (int): Kernel size of dilation convolution layer.
@@ -40,7 +38,8 @@ class ResidualStack(torch.nn.Module):
         self.skip_layer = torch.nn.Conv1d(channels, channels, 1, bias=bias)
 
     def forward(self, c):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             c (Tensor): Input tensor (B, channels, T).

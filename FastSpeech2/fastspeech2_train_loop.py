@@ -85,8 +85,21 @@ def collate_and_pad(batch):
             torch.stack(spembs))  # may need squeezing, cannot test atm
 
 
-def train_loop(net, train_dataset, valid_dataset, device, save_directory, batch_size=32, steps=400000, gradient_accumulation=1, epochs_per_save=10,
-               use_speaker_embedding=False, lang="en", lr=0.1, warmup_steps=14000, path_to_checkpoint=None, fine_tune=False):
+def train_loop(net,
+               train_dataset,
+               valid_dataset,
+               device,
+               save_directory,
+               batch_size=32,
+               steps=400000,
+               gradient_accumulation=1,
+               epochs_per_save=10,
+               use_speaker_embedding=False,
+               lang="en",
+               lr=0.1,
+               warmup_steps=14000,
+               path_to_checkpoint=None,
+               fine_tune=False):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser

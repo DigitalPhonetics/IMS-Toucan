@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Written by Shigeki Karita, 2019
 # Published under Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux, 2021
@@ -113,7 +111,8 @@ class MultiHeadedAttention(nn.Module):
 
 
 class RelPositionMultiHeadedAttention(MultiHeadedAttention):
-    """Multi-Head Attention layer with relative position encoding (new implementation).
+    """
+    Multi-Head Attention layer with relative position encoding.
     Details can be found in https://github.com/espnet/espnet/pull/2816.
     Paper: https://arxiv.org/abs/1901.02860
     Args:
@@ -137,7 +136,8 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         torch.nn.init.xavier_uniform_(self.pos_bias_v)
 
     def rel_shift(self, x):
-        """Compute relative positional encoding.
+        """
+        Compute relative positional encoding.
         Args:
             x (torch.Tensor): Input tensor (batch, head, time1, 2*time1-1).
             time1 means the length of query vector.
@@ -157,7 +157,8 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         return x
 
     def forward(self, query, key, value, pos_emb, mask):
-        """Compute 'Scaled Dot Product Attention' with rel. positional encoding.
+        """
+        Compute 'Scaled Dot Product Attention' with rel. positional encoding.
         Args:
             query (torch.Tensor): Query tensor (#batch, time1, size).
             key (torch.Tensor): Key tensor (#batch, time2, size).

@@ -1,7 +1,6 @@
-#!/usr/bin/env python3
-
-# Copyright 2020 Tomoki Hayashi
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Copyright 2019 Tomoki Hayashi
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
 from abc import ABC
 
@@ -22,7 +21,7 @@ class VariancePredictor(torch.nn.Module, ABC):
 
     """
 
-    def __init__(self, idim: int, n_layers: int = 2, n_chans: int = 384, kernel_size: int = 3, bias: bool = True, dropout_rate: float = 0.5, ):
+    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, bias=True, dropout_rate=0.5, ):
         """
         Initilize duration predictor module.
 
@@ -42,7 +41,7 @@ class VariancePredictor(torch.nn.Module, ABC):
                                     LayerNorm(n_chans, dim=1), torch.nn.Dropout(dropout_rate), )]
         self.linear = torch.nn.Linear(n_chans, 1)
 
-    def forward(self, xs: torch.Tensor, x_masks: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, xs, x_masks=None):
         """
         Calculate forward propagation.
 

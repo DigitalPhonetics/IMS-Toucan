@@ -1,3 +1,7 @@
+"""
+Taken from ESPNet
+"""
+
 import torch
 
 from Layers.Attention import RelPositionMultiHeadedAttention
@@ -11,7 +15,8 @@ from Layers.Swish import Swish
 
 
 class Conformer(torch.nn.Module):
-    """Conformer encoder module.
+    """
+    Conformer encoder module.
 
     Args:
         idim (int): Input dimension.
@@ -43,7 +48,6 @@ class Conformer(torch.nn.Module):
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
                  macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False):
-        """Construct a Conformer object."""
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -80,7 +84,8 @@ class Conformer(torch.nn.Module):
             self.after_norm = LayerNorm(attention_dim)
 
     def forward(self, xs, masks):
-        """Encode input sequence.
+        """
+        Encode input sequence.
 
         Args:
             xs (torch.Tensor): Input tensor (#batch, time, idim).

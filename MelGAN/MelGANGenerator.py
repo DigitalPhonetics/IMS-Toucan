@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
+# Copyright 2019 Tomoki Hayashi
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
-# Copyright 2020 Tomoki Hayashi
-#  MIT License (https://opensource.org/licenses/MIT)
-
-"""
-MelGAN Modules.
-"""
 
 import numpy as np
 import torch
@@ -14,13 +10,22 @@ from Layers.ResidualStack import ResidualStack
 
 
 class MelGANGenerator(torch.nn.Module):
-    """
-    MelGAN generator module.
-    """
 
-    def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True, upsample_scales=[8, 8, 2, 2], stack_kernel_size=3, stacks=3,
-                 nonlinear_activation="LeakyReLU", nonlinear_activation_params={"negative_slope": 0.2}, pad="ReflectionPad1d", pad_params={},
-                 use_final_nonlinear_activation=True, use_weight_norm=True):
+    def __init__(self,
+                 in_channels=80,
+                 out_channels=1,
+                 kernel_size=7,
+                 channels=512,
+                 bias=True,
+                 upsample_scales=[8, 8, 2, 2],
+                 stack_kernel_size=3,
+                 stacks=3,
+                 nonlinear_activation="LeakyReLU",
+                 nonlinear_activation_params={"negative_slope": 0.2},
+                 pad="ReflectionPad1d",
+                 pad_params={},
+                 use_final_nonlinear_activation=True,
+                 use_weight_norm=True):
         """
         Initialize MelGANGenerator module.
         Args:

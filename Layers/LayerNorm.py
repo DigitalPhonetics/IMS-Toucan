@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Written by Shigeki Karita, 2019
 # Published under Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux, 2021

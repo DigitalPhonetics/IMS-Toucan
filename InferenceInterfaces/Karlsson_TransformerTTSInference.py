@@ -26,25 +26,25 @@ from Utility.utils import subsequent_mask
 class Transformer(torch.nn.Module, ABC):
 
     def __init__(self,  # network structure related
-                 idim: int, odim: int, embed_dim: int = 0, eprenet_conv_layers: int = 0, eprenet_conv_chans: int = 0, eprenet_conv_filts: int = 0,
-                 dprenet_layers: int = 2, dprenet_units: int = 256, elayers: int = 6, eunits: int = 1024, adim: int = 512, aheads: int = 4, dlayers: int = 6,
-                 dunits: int = 1024, postnet_layers: int = 5, postnet_chans: int = 256, postnet_filts: int = 5, positionwise_layer_type: str = "conv1d",
-                 positionwise_conv_kernel_size: int = 1, use_scaled_pos_enc: bool = True, use_batch_norm: bool = True, encoder_normalize_before: bool = True,
-                 decoder_normalize_before: bool = True, encoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 decoder_concat_after: bool = True,  # True according to https://github.com/soobinseo/Transformer-TTS
-                 reduction_factor=1, spk_embed_dim: int = None, spk_embed_integration_type: str = "concat",  # training related
-                 transformer_enc_dropout_rate: float = 0.1, transformer_enc_positional_dropout_rate: float = 0.1,
-                 transformer_enc_attn_dropout_rate: float = 0.1, transformer_dec_dropout_rate: float = 0.1,
-                 transformer_dec_positional_dropout_rate: float = 0.1, transformer_dec_attn_dropout_rate: float = 0.1,
-                 transformer_enc_dec_attn_dropout_rate: float = 0.1, eprenet_dropout_rate: float = 0.0, dprenet_dropout_rate: float = 0.5,
-                 postnet_dropout_rate: float = 0.5, init_type: str = "xavier_uniform",  # since we have little to no
+                 idim, odim, embed_dim=0, eprenet_conv_layers=0, eprenet_conv_chans=0, eprenet_conv_filts=0,
+                 dprenet_layers=2, dprenet_units=256, elayers=6, eunits=1024, adim=512, aheads=4, dlayers=6,
+                 dunits=1024, postnet_layers=5, postnet_chans=256, postnet_filts=5, positionwise_layer_type="conv1d",
+                 positionwise_conv_kernel_size=1, use_scaled_pos_enc=True, use_batch_norm=True, encoder_normalize_before=True,
+                 decoder_normalize_before=True, encoder_concat_after=True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 decoder_concat_after=True,  # True according to https://github.com/soobinseo/Transformer-TTS
+                 reduction_factor=1, spk_embed_dim=None, spk_embed_integration_type="concat",  # training related
+                 transformer_enc_dropout_rate=0.1, transformer_enc_positional_dropout_rate=0.1,
+                 transformer_enc_attn_dropout_rate=0.1, transformer_dec_dropout_rate=0.1,
+                 transformer_dec_positional_dropout_rate=0.1, transformer_dec_attn_dropout_rate=0.1,
+                 transformer_enc_dec_attn_dropout_rate=0.1, eprenet_dropout_rate=0.0, dprenet_dropout_rate=0.5,
+                 postnet_dropout_rate=0.5, init_type="xavier_uniform",  # since we have little to no
                  # asymetric activations, this seems to work better than kaiming
-                 init_enc_alpha: float = 1.0, use_masking: bool = False,  # either this or weighted masking, not both
-                 use_weighted_masking: bool = True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight: float = 7.0,  # scaling the loss of the stop token prediction
-                 loss_type: str = "L1", use_guided_attn_loss: bool = True, num_heads_applied_guided_attn: int = 2, num_layers_applied_guided_attn: int = 2,
-                 modules_applied_guided_attn=("encoder-decoder",), guided_attn_loss_sigma: float = 0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda: float = 25.0):
+                 init_enc_alpha=1.0, use_masking=False,  # either this or weighted masking, not both
+                 use_weighted_masking=True,  # if there are severely different sized samples in one batch
+                 bce_pos_weight=7.0,  # scaling the loss of the stop token prediction
+                 loss_type="L1", use_guided_attn_loss=True, num_heads_applied_guided_attn=2, num_layers_applied_guided_attn=2,
+                 modules_applied_guided_attn=("encoder-decoder",), guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
+                 guided_attn_loss_lambda=25.0):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -101,7 +101,7 @@ class Transformer(torch.nn.Module, ABC):
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
         self.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_Karlsson", "best.pt"), map_location='cpu')["model"])
 
-    def forward(self, text: torch.Tensor, spemb=None):
+    def forward(self, text, spemb=None):
         self.eval()
         x = text
         xs = x.unsqueeze(0)
@@ -141,19 +141,19 @@ class Transformer(torch.nn.Module, ABC):
         return outs
 
     @staticmethod
-    def _add_first_frame_and_remove_last_frame(ys: torch.Tensor):
+    def _add_first_frame_and_remove_last_frame(ys):
         return torch.cat([ys.new_zeros((ys.shape[0], 1, ys.shape[2])), ys[:, :-1]], dim=1)
 
     def _source_mask(self, ilens):
         x_masks = make_non_pad_mask(ilens).to(ilens.device)
         return x_masks.unsqueeze(-2)
 
-    def _target_mask(self, olens: torch.Tensor) -> torch.Tensor:
+    def _target_mask(self, olens):
         y_masks = make_non_pad_mask(olens).to(olens.device)
         s_masks = subsequent_mask(y_masks.size(-1), device=y_masks.device).unsqueeze(0)
         return y_masks.unsqueeze(-2) & s_masks
 
-    def _integrate_with_spk_embed(self, hs: torch.Tensor, spembs: torch.Tensor) -> torch.Tensor:
+    def _integrate_with_spk_embed(self, hs, spembs):
         spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = self.projection(torch.cat([hs, spembs], dim=-1))
         return hs

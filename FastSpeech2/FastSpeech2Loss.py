@@ -1,3 +1,7 @@
+"""
+Taken from ESPNet
+"""
+
 import torch
 
 from Layers.DurationPredictor import DurationPredictorLoss
@@ -5,15 +9,9 @@ from Utility.utils import make_non_pad_mask
 
 
 class FastSpeech2Loss(torch.nn.Module):
-    """
-    Loss function module for FastSpeech2.
-    """
 
-    def __init__(self, use_masking: bool = True, use_weighted_masking: bool = False):
+    def __init__(self, use_masking=True, use_weighted_masking=False):
         """
-        Initialize feed-forward Transformer loss module.
-
-        Args:
             use_masking (bool):
                 Whether to apply masking for padded part in loss calculation.
             use_weighted_masking (bool):
@@ -31,10 +29,9 @@ class FastSpeech2Loss(torch.nn.Module):
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.duration_criterion = DurationPredictorLoss(reduction=reduction)
 
-    def forward(self, after_outs: torch.Tensor, before_outs: torch.Tensor, d_outs: torch.Tensor, p_outs: torch.Tensor, e_outs: torch.Tensor, ys: torch.Tensor,
-                ds: torch.Tensor, ps: torch.Tensor, es: torch.Tensor, ilens: torch.Tensor, olens: torch.Tensor, ):
-        """Calculate forward propagation.
-
+    def forward(self, after_outs, before_outs, d_outs, p_outs, e_outs, ys,
+                ds, ps, es, ilens, olens, ):
+        """
         Args:
             after_outs (Tensor): Batch of outputs after postnets (B, Lmax, odim).
             before_outs (Tensor): Batch of outputs before postnets (B, Lmax, odim).

@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
+# Copyright 2019 Tomoki Hayashi
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
-# Copyright 2020 Tomoki Hayashi
-#  MIT License (https://opensource.org/licenses/MIT)
-
-"""
-MelGAN Modules.
-"""
 
 import torch
 
@@ -13,9 +9,6 @@ from MelGAN.MelGANDiscriminator import MelGANDiscriminator
 
 
 class MelGANMultiScaleDiscriminator(torch.nn.Module):
-    """
-    MelGAN multi-scale discriminator module.
-    """
 
     def __init__(self, in_channels=1, out_channels=1, scales=3, downsample_pooling="AvgPool1d",  # follow the official implementation setting
                  downsample_pooling_params={"kernel_size": 4, "stride": 2, "padding": 1, "count_include_pad": False}, kernel_sizes=[5, 3], channels=16,

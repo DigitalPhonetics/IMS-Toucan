@@ -1,3 +1,7 @@
+"""
+Taken from ESPNet
+"""
+
 import math
 
 import torch
@@ -46,7 +50,7 @@ class PositionalEncoding(torch.nn.Module):
         pe = pe.unsqueeze(0)
         self.pe = pe.to(device=x.device, dtype=x.dtype)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x):
         """
         Add positional encoding.
 
@@ -112,7 +116,7 @@ class RelPositionalEncoding(torch.nn.Module):
         pe = torch.cat([pe_positive, pe_negative], dim=1)
         self.pe = pe.to(device=x.device, dtype=x.dtype)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x):
         """
         Add positional encoding.
         Args:
@@ -127,7 +131,8 @@ class RelPositionalEncoding(torch.nn.Module):
 
 
 class ScaledPositionalEncoding(PositionalEncoding):
-    """Scaled positional encoding module.
+    """
+    Scaled positional encoding module.
 
     See Sec. 3.2  https://arxiv.org/abs/1809.08895
 
@@ -139,16 +144,15 @@ class ScaledPositionalEncoding(PositionalEncoding):
     """
 
     def __init__(self, d_model, dropout_rate, max_len=5000):
-        """Initialize class."""
         super().__init__(d_model=d_model, dropout_rate=dropout_rate, max_len=max_len)
         self.alpha = torch.nn.Parameter(torch.tensor(1.0))
 
     def reset_parameters(self):
-        """Reset parameters."""
         self.alpha.data = torch.tensor(1.0)
 
     def forward(self, x):
-        """Add positional encoding.
+        """
+        Add positional encoding.
 
         Args:
             x (torch.Tensor): Input tensor (batch, time, `*`).

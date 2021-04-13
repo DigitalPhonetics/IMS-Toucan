@@ -1,8 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Copyright 2019 Tomoki Hayashi
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
 from abc import ABC
 

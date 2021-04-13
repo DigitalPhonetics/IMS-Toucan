@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Copyright 2020 Johns Hopkins University (Shinji Watanabe)
 #                Northwestern Polytechnical University (Pengcheng Guo)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Adapted by Florian Lux 2021
 
-"""Encoder self-attention layer definition."""
 
 import torch
 from torch import nn
@@ -14,7 +11,8 @@ from Layers.LayerNorm import LayerNorm
 
 
 class EncoderLayer(nn.Module):
-    """Encoder layer module.
+    """
+    Encoder layer module.
 
     Args:
         size (int): Input dimension.
@@ -39,7 +37,6 @@ class EncoderLayer(nn.Module):
     """
 
     def __init__(self, size, self_attn, feed_forward, feed_forward_macaron, conv_module, dropout_rate, normalize_before=True, concat_after=False, ):
-        """Construct an EncoderLayer object."""
         super(EncoderLayer, self).__init__()
         self.self_attn = self_attn
         self.feed_forward = feed_forward
@@ -63,7 +60,8 @@ class EncoderLayer(nn.Module):
             self.concat_linear = nn.Linear(size + size, size)
 
     def forward(self, x_input, mask, cache=None):
-        """Compute encoded features.
+        """
+        Compute encoded features.
 
         Args:
             x_input (Union[Tuple, torch.Tensor]): Input tensor w/ or w/o pos emb.

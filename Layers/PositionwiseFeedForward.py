@@ -1,18 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Written by Shigeki Karita, 2019
 # Published under Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux, 2021
 
-"""Positionwise feed forward layer definition."""
 
 import torch
 
 
 class PositionwiseFeedForward(torch.nn.Module):
-    """Positionwise feed forward layer.
-
+    """
     Args:
         idim (int): Input dimenstion.
         hidden_units (int): The number of hidden units.
@@ -21,7 +16,6 @@ class PositionwiseFeedForward(torch.nn.Module):
     """
 
     def __init__(self, idim, hidden_units, dropout_rate, activation=torch.nn.ReLU()):
-        """Construct an PositionwiseFeedForward object."""
         super(PositionwiseFeedForward, self).__init__()
         self.w_1 = torch.nn.Linear(idim, hidden_units)
         self.w_2 = torch.nn.Linear(hidden_units, idim)
@@ -29,5 +23,4 @@ class PositionwiseFeedForward(torch.nn.Module):
         self.activation = activation
 
     def forward(self, x):
-        """Forward funciton."""
         return self.w_2(self.dropout(self.activation(self.w_1(x))))

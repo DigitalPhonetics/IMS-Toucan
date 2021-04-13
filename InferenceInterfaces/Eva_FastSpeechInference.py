@@ -21,26 +21,26 @@ from Utility.utils import make_pad_mask
 class FastSpeech2(torch.nn.Module, ABC):
 
     def __init__(self,  # network structure related
-                 idim: int, odim: int, adim: int = 384, aheads: int = 4, elayers: int = 6, eunits: int = 1536, dlayers: int = 6, dunits: int = 1536,
-                 postnet_layers: int = 5, postnet_chans: int = 256, postnet_filts: int = 5, positionwise_layer_type: str = "conv1d",
-                 positionwise_conv_kernel_size: int = 1, use_scaled_pos_enc: bool = True, use_batch_norm: bool = True, encoder_normalize_before: bool = True,
-                 decoder_normalize_before: bool = True, encoder_concat_after: bool = False, decoder_concat_after: bool = False, reduction_factor=1,
+                 idim, odim, adim=384, aheads=4, elayers=6, eunits=1536, dlayers=6, dunits=1536,
+                 postnet_layers=5, postnet_chans=256, postnet_filts=5, positionwise_layer_type="conv1d",
+                 positionwise_conv_kernel_size=1, use_scaled_pos_enc=True, use_batch_norm=True, encoder_normalize_before=True,
+                 decoder_normalize_before=True, encoder_concat_after=False, decoder_concat_after=False, reduction_factor=1,
                  # encoder / decoder
-                 conformer_pos_enc_layer_type: str = "rel_pos", conformer_self_attn_layer_type: str = "rel_selfattn", conformer_activation_type: str = "swish",
-                 use_macaron_style_in_conformer: bool = True, use_cnn_in_conformer: bool = True, conformer_enc_kernel_size: int = 7,
-                 conformer_dec_kernel_size: int = 31,  # duration predictor
-                 duration_predictor_layers: int = 2, duration_predictor_chans: int = 256, duration_predictor_kernel_size: int = 3,  # energy predictor
-                 energy_predictor_layers: int = 2, energy_predictor_chans: int = 256, energy_predictor_kernel_size: int = 3,
-                 energy_predictor_dropout: float = 0.5, energy_embed_kernel_size: int = 1, energy_embed_dropout: float = 0.0,
-                 stop_gradient_from_energy_predictor: bool = True,  # pitch predictor
-                 pitch_predictor_layers: int = 5, pitch_predictor_chans: int = 256, pitch_predictor_kernel_size: int = 5, pitch_predictor_dropout: float = 0.5,
-                 pitch_embed_kernel_size: int = 1, pitch_embed_dropout: float = 0.0, stop_gradient_from_pitch_predictor: bool = True,  # pretrained spk emb
-                 spk_embed_dim: int = None,  # training related
-                 transformer_enc_dropout_rate: float = 0.2, transformer_enc_positional_dropout_rate: float = 0.2,
-                 transformer_enc_attn_dropout_rate: float = 0.2, transformer_dec_dropout_rate: float = 0.2,
-                 transformer_dec_positional_dropout_rate: float = 0.2, transformer_dec_attn_dropout_rate: float = 0.2,
-                 duration_predictor_dropout_rate: float = 0.2, postnet_dropout_rate: float = 0.5, init_type: str = "kaiming_uniform",
-                 init_enc_alpha: float = 1.0, init_dec_alpha: float = 1.0, use_masking: bool = False, use_weighted_masking: bool = True, lang='en'):
+                 conformer_pos_enc_layer_type="rel_pos", conformer_self_attn_layer_type="rel_selfattn", conformer_activation_type="swish",
+                 use_macaron_style_in_conformer=True, use_cnn_in_conformer=True, conformer_enc_kernel_size=7,
+                 conformer_dec_kernel_size=31,  # duration predictor
+                 duration_predictor_layers=2, duration_predictor_chans=256, duration_predictor_kernel_size=3,  # energy predictor
+                 energy_predictor_layers=2, energy_predictor_chans=256, energy_predictor_kernel_size=3,
+                 energy_predictor_dropout=0.5, energy_embed_kernel_size=1, energy_embed_dropout=0.0,
+                 stop_gradient_from_energy_predictor=True,  # pitch predictor
+                 pitch_predictor_layers=5, pitch_predictor_chans=256, pitch_predictor_kernel_size=5, pitch_predictor_dropout=0.5,
+                 pitch_embed_kernel_size=1, pitch_embed_dropout=0.0, stop_gradient_from_pitch_predictor=True,  # pretrained spk emb
+                 spk_embed_dim=None,  # training related
+                 transformer_enc_dropout_rate=0.2, transformer_enc_positional_dropout_rate=0.2,
+                 transformer_enc_attn_dropout_rate=0.2, transformer_dec_dropout_rate=0.2,
+                 transformer_dec_positional_dropout_rate=0.2, transformer_dec_attn_dropout_rate=0.2,
+                 duration_predictor_dropout_rate=0.2, postnet_dropout_rate=0.5, init_type="kaiming_uniform",
+                 init_enc_alpha=1.0, init_dec_alpha=1.0, use_masking=False, use_weighted_masking=True, lang='en'):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -82,8 +82,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                dropout_rate=postnet_dropout_rate)
         self.load_state_dict(torch.load(os.path.join("Models", "FastSpeech2_Eva", "best.pt"), map_location='cpu')["model"])
 
-    def _forward(self, xs: torch.Tensor, ilens: torch.Tensor, ys: torch.Tensor = None, olens: torch.Tensor = None, ds: torch.Tensor = None,
-                 ps: torch.Tensor = None, es: torch.Tensor = None, spembs: torch.Tensor = None, is_inference: bool = False, alpha: float = 1.0):
+    def _forward(self, xs, ilens, ys=None, olens=None, ds=None,
+                 ps=None, es=None, spembs=None, is_inference=False, alpha=1.0):
         x_masks = self._source_mask(ilens)
         hs, _ = self.encoder(xs, x_masks)
         if self.spk_embed_dim is not None:
@@ -122,8 +122,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
         return before_outs, after_outs, d_outs, p_outs, e_outs
 
-    def forward(self, text: torch.Tensor, speech: torch.Tensor = None, spembs: torch.Tensor = None, durations: torch.Tensor = None, pitch: torch.Tensor = None,
-                energy: torch.Tensor = None, alpha: float = 1.0):
+    def forward(self, text, speech=None, spembs=None, durations=None, pitch=None,
+                energy=None, alpha=1.0):
         self.eval()
         x, y = text, speech
         spemb, d, p, e = spembs, durations, pitch, energy
@@ -137,12 +137,12 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.train()
         return outs[0]
 
-    def _integrate_with_spk_embed(self, hs: torch.Tensor, spembs: torch.Tensor) -> torch.Tensor:
+    def _integrate_with_spk_embed(self, hs, spembs):
         spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = self.projection(torch.cat([hs, spembs], dim=-1))
         return hs
 
-    def _source_mask(self, ilens: torch.Tensor) -> torch.Tensor:
+    def _source_mask(self, ilens):
         x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
         return x_masks.unsqueeze(-2)
 

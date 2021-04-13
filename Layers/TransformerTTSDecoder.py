@@ -1,15 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Written by Shigeki Karita, 2019
 # Published under Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux, 2021
 
-"""Decoder definition."""
 
-from typing import Any
 from typing import List
-from typing import Tuple
 
 import torch
 
@@ -24,7 +18,8 @@ from Utility.utils import subsequent_mask
 
 
 class Decoder(BatchScorerInterface, torch.nn.Module):
-    """Transfomer decoder module.
+    """
+    Transfomer decoder module.
 
     Args:
         odim (int): Output diminsion.
@@ -93,7 +88,8 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
             self.output_layer = None
 
     def forward(self, tgt, tgt_mask, memory, memory_mask):
-        """Forward decoder.
+        """
+        Forward decoder.
 
         Args:
             tgt (torch.Tensor): Input token ids, int64 (#batch, maxlen_out) if
@@ -123,7 +119,8 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
         return x, tgt_mask
 
     def forward_one_step(self, tgt, tgt_mask, memory, cache=None):
-        """Forward one step.
+        """
+        Forward one step.
 
         Args:
             tgt (torch.Tensor): Input token ids, int64 (#batch, maxlen_out).
@@ -158,14 +155,14 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
 
     # beam search API (see ScorerInterface)
     def score(self, ys, state, x):
-        """Score."""
         ys_mask = subsequent_mask(len(ys), device=x.device).unsqueeze(0)
         logp, state = self.forward_one_step(ys.unsqueeze(0), ys_mask, x.unsqueeze(0), cache=state)
         return logp.squeeze(0), state
 
     # batch beam search API (see BatchScorerInterface)
-    def batch_score(self, ys: torch.Tensor, states: List[Any], xs: torch.Tensor) -> Tuple[torch.Tensor, List[Any]]:
-        """Score new token batch (required).
+    def batch_score(self, ys, states, xs):
+        """
+        Score new token batch (required).
 
         Args:
             ys (torch.Tensor): torch.int64 prefix tokens (n_batch, ylen).

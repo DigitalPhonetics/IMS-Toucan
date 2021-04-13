@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
+# Copyright 2019 Tomoki Hayashi
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
-# Copyright 2020 Tomoki Hayashi
-#  MIT License (https://opensource.org/licenses/MIT)
-
-"""
-MelGAN Modules.
-"""
 
 import numpy as np
 import torch

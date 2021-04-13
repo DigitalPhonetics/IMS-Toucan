@@ -1,10 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Copyright 2019 Tomoki Hayashi
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# MIT License (https://opensource.org/licenses/MIT)
+# Adapted by Florian Lux 2021
 
-"""Duration predictor related modules."""
 
 import torch
 
@@ -12,7 +9,8 @@ from Layers.LayerNorm import LayerNorm
 
 
 class DurationPredictor(torch.nn.Module):
-    """Duration predictor module.
+    """
+    Duration predictor module.
 
     This is a module of duration predictor described
     in `FastSpeech: Fast, Robust and Controllable Text to Speech`_.
@@ -31,7 +29,8 @@ class DurationPredictor(torch.nn.Module):
     """
 
     def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, dropout_rate=0.1, offset=1.0):
-        """Initilize duration predictor module.
+        """
+        Initialize duration predictor module.
 
         Args:
             idim (int): Input dimension.
@@ -69,7 +68,8 @@ class DurationPredictor(torch.nn.Module):
         return xs
 
     def forward(self, xs, x_masks=None):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             xs (Tensor): Batch of input sequences (B, Tmax, idim).
@@ -83,7 +83,8 @@ class DurationPredictor(torch.nn.Module):
         return self._forward(xs, x_masks, False)
 
     def inference(self, xs, x_masks=None):
-        """Inference duration.
+        """
+        Inference duration.
 
         Args:
             xs (Tensor): Batch of input sequences (B, Tmax, idim).
@@ -98,15 +99,15 @@ class DurationPredictor(torch.nn.Module):
 
 
 class DurationPredictorLoss(torch.nn.Module):
-    """Loss function module for duration predictor.
+    """
+    Loss function module for duration predictor.
 
     The loss value is Calculated in log domain to make it Gaussian.
 
     """
 
     def __init__(self, offset=1.0, reduction="mean"):
-        """Initilize duration predictor loss module.
-
+        """
         Args:
             offset (float, optional): Offset value to avoid nan in log domain.
             reduction (str): Reduction type in loss calculation.
@@ -117,7 +118,8 @@ class DurationPredictorLoss(torch.nn.Module):
         self.offset = offset
 
     def forward(self, outputs, targets):
-        """Calculate forward propagation.
+        """
+        Calculate forward propagation.
 
         Args:
             outputs (Tensor): Batch of prediction durations in log domain (B, T)

@@ -12,8 +12,17 @@ from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from Utility.RAdam import RAdam
 
 
-def train_loop(batch_size=16, steps=2000000, generator=None, discriminator=None, train_dataset=None, valid_dataset=None, device=None, model_save_dir=None,
-               generator_warmup_steps=100000, epochs_per_save=5, path_to_checkpoint=None):
+def train_loop(batch_size=16,
+               steps=2000000,
+               generator=None,
+               discriminator=None,
+               train_dataset=None,
+               valid_dataset=None,
+               device=None,
+               model_save_dir=None,
+               generator_warmup_steps=100000,
+               epochs_per_save=5,
+               path_to_checkpoint=None):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 

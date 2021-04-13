@@ -1,3 +1,7 @@
+"""
+Taken from ESPNet
+"""
+
 import torch
 from torch_complex.tensor import ComplexTensor
 
@@ -6,8 +10,8 @@ from Utility.utils import make_pad_mask
 
 class STFT(torch.nn.Module):
 
-    def __init__(self, n_fft: int = 512, win_length: int = None, hop_length: int = 128, window="hann", center: bool = True, normalized: bool = False,
-                 onesided: bool = True):
+    def __init__(self, n_fft=512, win_length=None, hop_length=128, window="hann", center=True, normalized=False,
+                 onesided=True):
         super().__init__()
         self.n_fft = n_fft
         if win_length is None:
@@ -28,7 +32,7 @@ class STFT(torch.nn.Module):
                 f"normalized={self.normalized}, "
                 f"onesided={self.onesided}")
 
-    def forward(self, input: torch.Tensor, ilens: torch.Tensor = None):
+    def forward(self, input, ilens=None):
         """
         STFT forward function.
         Args:

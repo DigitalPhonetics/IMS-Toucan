@@ -1,3 +1,7 @@
+"""
+Taken from ESPNet
+"""
+
 from abc import ABC
 
 import torch
@@ -67,7 +71,7 @@ def make_non_pad_mask(lengths, xs=None, length_dim=-1):
     return ~make_pad_mask(lengths, xs, length_dim)
 
 
-def initialize(model: torch.nn.Module, init: str):
+def initialize(model: torch.nn.Module, init):
     """
     Initialize weights of a neural network module.
 
@@ -125,19 +129,21 @@ def pad_list(xs, pad_value):
 
 
 def subsequent_mask(size, device="cpu", dtype=torch.bool):
-    """Create mask for subsequent steps (size, size).
+    """
+    Create mask for subsequent steps (size, size).
 
     :param int size: size of mask
     :param str device: "cpu" or "cuda" or torch.Tensor.device
     :param torch.dtype dtype: result dtype
-    :rtype: torch.Tensor
+    :rtype
     """
     ret = torch.ones(size, size, device=device, dtype=dtype)
     return torch.tril(ret, out=ret)
 
 
 class ScorerInterface:
-    """Scorer interface for beam search.
+    """
+    Scorer interface for beam search.
 
     The scorer performs scoring of the all tokens in vocabulary.
 
@@ -155,7 +161,8 @@ class ScorerInterface:
     """
 
     def init_state(self, x):
-        """Get an initial state for decoding (optional).
+        """
+        Get an initial state for decoding (optional).
 
         Args:
             x (torch.Tensor): The encoded feature tensor
@@ -166,7 +173,8 @@ class ScorerInterface:
         return None
 
     def select_state(self, state, i, new_id=None):
-        """Select state with relative ids in the main beam search.
+        """
+        Select state with relative ids in the main beam search.
 
         Args:
             state: Decoder state for prefix tokens
@@ -180,7 +188,8 @@ class ScorerInterface:
         return None if state is None else state[i]
 
     def score(self, y, state, x):
-        """Score new token (required).
+        """
+        Score new token (required).
 
         Args:
             y (torch.Tensor): 1D torch.int64 prefix tokens.
@@ -196,7 +205,8 @@ class ScorerInterface:
         raise NotImplementedError
 
     def final_score(self, state):
-        """Score eos (optional).
+        """
+        Score eos (optional).
 
         Args:
             state: Scorer state for prefix tokens
@@ -209,10 +219,10 @@ class ScorerInterface:
 
 
 class BatchScorerInterface(ScorerInterface, ABC):
-    """Batch scorer interface."""
 
-    def batch_init_state(self, x: torch.Tensor):
-        """Get an initial state for decoding (optional).
+    def batch_init_state(self, x):
+        """
+        Get an initial state for decoding (optional).
 
         Args:
             x (torch.Tensor): The encoded feature tensor
@@ -223,7 +233,8 @@ class BatchScorerInterface(ScorerInterface, ABC):
         return self.init_state(x)
 
     def batch_score(self, ys, states, xs):
-        """Score new token batch (required).
+        """
+        Score new token batch (required).
 
         Args:
             ys (torch.Tensor): torch.int64 prefix tokens (n_batch, ylen).

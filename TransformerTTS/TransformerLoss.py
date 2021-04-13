@@ -1,10 +1,13 @@
+"""
+Taken from ESPNet
+"""
+
 import torch
 
 from Utility.utils import make_non_pad_mask
 
 
 class TransformerLoss(torch.nn.Module):
-    """Loss function module for TransformerTTS."""
 
     def __init__(self, use_masking=True, use_weighted_masking=False, bce_pos_weight=20.0):
         """

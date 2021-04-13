@@ -1,11 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Written by Shigeki Karita, 2019
 # Published under Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux, 2021
 
-"""Decoder self-attention layer definition."""
 
 import torch
 from torch import nn
@@ -14,7 +10,8 @@ from Layers.LayerNorm import LayerNorm
 
 
 class DecoderLayer(nn.Module):
-    """Single decoder layer module.
+    """
+    Single decoder layer module.
 
     Args:
         size (int): Input dimension.
@@ -36,7 +33,6 @@ class DecoderLayer(nn.Module):
     """
 
     def __init__(self, size, self_attn, src_attn, feed_forward, dropout_rate, normalize_before=True, concat_after=False, ):
-        """Construct an DecoderLayer object."""
         super(DecoderLayer, self).__init__()
         self.size = size
         self.self_attn = self_attn
@@ -53,7 +49,8 @@ class DecoderLayer(nn.Module):
             self.concat_linear2 = nn.Linear(size + size, size)
 
     def forward(self, tgt, tgt_mask, memory, memory_mask, cache=None):
-        """Compute decoded features.
+        """
+        Compute decoded features.
 
         Args:
             tgt (torch.Tensor): Input tensor (#batch, maxlen_out, size).

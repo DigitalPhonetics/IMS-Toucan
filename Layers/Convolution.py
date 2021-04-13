@@ -1,17 +1,15 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # Copyright 2020 Johns Hopkins University (Shinji Watanabe)
 #                Northwestern Polytechnical University (Pengcheng Guo)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
+# Adapted by Florian Lux 2021
 
-"""ConvolutionModule definition."""
 
 from torch import nn
 
 
 class ConvolutionModule(nn.Module):
-    """ConvolutionModule in Conformer model.
+    """
+    ConvolutionModule in Conformer model.
 
     Args:
         channels (int): The number of channels of conv layers.
@@ -20,7 +18,6 @@ class ConvolutionModule(nn.Module):
     """
 
     def __init__(self, channels, kernel_size, activation=nn.ReLU(), bias=True):
-        """Construct an ConvolutionModule object."""
         super(ConvolutionModule, self).__init__()
         # kernerl_size should be a odd number for 'SAME' padding
         assert (kernel_size - 1) % 2 == 0
@@ -32,7 +29,8 @@ class ConvolutionModule(nn.Module):
         self.activation = activation
 
     def forward(self, x):
-        """Compute convolution module.
+        """
+        Compute convolution module.
 
         Args:
             x (torch.Tensor): Input tensor (#batch, time, channels).
