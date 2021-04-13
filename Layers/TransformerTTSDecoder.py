@@ -7,7 +7,6 @@
 
 """Decoder definition."""
 
-import logging
 from typing import Any
 from typing import List
 from typing import Tuple
@@ -57,12 +56,17 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
 
     """
 
-    def __init__(self, odim, selfattention_layer_type="selfattn", attention_dim=256, attention_heads=4, conv_wshare=4, conv_kernel_length=11,
+    def __init__(self, odim, self_att_type="multihead_softmax_att", attention_dim=256, attention_heads=4, conv_wshare=4, conv_kernel_length=11,
                  conv_usebias=False, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1, self_attention_dropout_rate=0.0,
                  src_attention_dropout_rate=0.0, input_layer="embed", use_output_layer=True, pos_enc_class=PositionalEncoding, normalize_before=True,
                  concat_after=False, ):
-        """Construct an Decoder object."""
         torch.nn.Module.__init__(self)
+
+        self_att_dict = {
+            "multihead_softmax_att": MultiHeadedAttention
+            # add more self-attention implementations here
+            }
+
         if input_layer == "embed":
             self.embed = torch.nn.Sequential(torch.nn.Embedding(odim, attention_dim), pos_enc_class(attention_dim, positional_dropout_rate), )
         elif input_layer == "linear":
@@ -74,11 +78,13 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
             raise NotImplementedError("only `embed` or torch.nn.Module is supported.")
         self.normalize_before = normalize_before
         self.decoders = repeat(num_blocks,
-                               lambda lnum: DecoderLayer(attention_dim, MultiHeadedAttention(attention_heads, attention_dim, self_attention_dropout_rate),
+                               lambda lnum: DecoderLayer(attention_dim,
+                                                         self_att_dict[self_att_type](attention_heads, attention_dim, self_attention_dropout_rate),
                                                          MultiHeadedAttention(attention_heads, attention_dim, src_attention_dropout_rate),
-                                                         PositionwiseFeedForward(attention_dim, linear_units, dropout_rate), dropout_rate, normalize_before,
+                                                         PositionwiseFeedForward(attention_dim, linear_units, dropout_rate),
+                                                         dropout_rate,
+                                                         normalize_before,
                                                          concat_after, ), )
-        self.selfattention_layer_type = selfattention_layer_type
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
         if use_output_layer:
@@ -154,10 +160,6 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
     def score(self, ys, state, x):
         """Score."""
         ys_mask = subsequent_mask(len(ys), device=x.device).unsqueeze(0)
-        if self.selfattention_layer_type != "selfattn":
-            # TODO(karita): implement cache
-            logging.warning(f"{self.selfattention_layer_type} does not support cached decoding.")
-            state = None
         logp, state = self.forward_one_step(ys.unsqueeze(0), ys_mask, x.unsqueeze(0), cache=state)
         return logp.squeeze(0), state
 
