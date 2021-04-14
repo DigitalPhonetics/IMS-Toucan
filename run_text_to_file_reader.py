@@ -118,9 +118,9 @@ if __name__ == '__main__':
                          "Good news is we've got a much better test for you: fighting an army of mantis men.",
                          "Pick up a rifle and follow the yellow line.",
                          "You'll know when the test starts."],
-               filename="audios/cave_mantis.wav",
+               filename="audios/turret.wav",
                device=exec_device,
-               speaker_embedding="cave_johnson.pt")
+               speaker_embedding="turret.pt")
 
     read_texts(model_id="trans_libri",
                sentence=["All right, I've been thinking.",

@@ -60,7 +60,7 @@ class Decoder(BatchScorerInterface, torch.nn.Module):
         self_att_dict = {
             "multihead_softmax_att": MultiHeadedAttention
             # add more self-attention implementations here
-            }
+        }
 
         if input_layer == "embed":
             self.embed = torch.nn.Sequential(torch.nn.Embedding(odim, attention_dim), pos_enc_class(attention_dim, positional_dropout_rate), )
