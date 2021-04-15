@@ -61,7 +61,7 @@ def run(gpu_id, resume_checkpoint, finetune):
                epochs_per_save=10,
                use_speaker_embedding=False,
                lang="de",
-               lr=0.05,
+               lr=0.01,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
