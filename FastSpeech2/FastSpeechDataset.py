@@ -27,7 +27,7 @@ class FastSpeechDataset(Dataset):
                  # and then provide it here.
                  spemb=False,
                  train=True,
-                 loading_processes=1,
+                 loading_processes=8,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
                  lang="de",
                  min_len_in_seconds=1,
@@ -145,13 +145,12 @@ class FastSpeechDataset(Dataset):
                 cached_pitch = \
                     dio(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length, durations=cached_durations.unsqueeze(0),
                         durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
-                self.datapoints.append(
-                    [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
-                     cached_pitch.numpy().tolist(), path])
-                if self.spemb:
-                    self.datapoints.append(
-                        [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
-                         cached_pitch.numpy().tolist(), cached_spemb.detach().numpy().tolist(), path])
+                if not self.spemb:
+                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
+                                            cached_pitch.numpy().tolist(), path])
+                else:
+                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
+                                            cached_pitch.numpy().tolist(), cached_spemb.detach().numpy().tolist(), path])
 
     def __getitem__(self, index):
         if not self.spemb:
