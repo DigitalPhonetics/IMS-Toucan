@@ -137,7 +137,7 @@ class FastSpeechDataset(Dataset):
                     cached_spemb = dvector.embed_utterance(mel_tensor)
                     cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True,
                                                                    spembs=cached_spemb.to(device))[2],
-                                          vis=os.path.join(cache_dir, "durations_visualization", ".".join(path.split(".")[:-1]) + ".png"))[0].cpu()
+                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = \
                     energy_calc(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length,
                                 durations=cached_durations.unsqueeze(0),
