@@ -217,7 +217,7 @@ class LibriTTS_FastSpeechInference(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
-            mel = self.phone2mel(phones).transpose(0, 1)
+            mel = self.phone2mel(phones, spembs=self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         if view:
             import matplotlib.pyplot as plt

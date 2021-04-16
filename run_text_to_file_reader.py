@@ -112,7 +112,7 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="trans_libri",
+    read_texts(model_id="fast_libri",
                sentence=["Those of you who volunteered to be injected with praying mantis DNA, I've got some good news and some bad news.",
                          "Bad news is we're postponing those tests indefinitely.",
                          "Good news is we've got a much better test for you: fighting an army of mantis men.",
@@ -122,7 +122,7 @@ if __name__ == '__main__':
                device=exec_device,
                speaker_embedding="turret.pt")
 
-    read_texts(model_id="trans_libri",
+    read_texts(model_id="fast_libri",
                sentence=["All right, I've been thinking.",
                          "When life gives you lemons?",
                          "Don't make lemonade.",
@@ -134,7 +134,7 @@ if __name__ == '__main__':
                device=exec_device,
                speaker_embedding="cave_johnson.pt")
 
-    read_texts(model_id="trans_libri",
+    read_texts(model_id="fast_libri",
                sentence=["Okay.",
                          "Look.",
                          "We both said a lot of things that you're going to regret.",
