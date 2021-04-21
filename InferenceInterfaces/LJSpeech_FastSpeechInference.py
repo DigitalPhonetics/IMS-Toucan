@@ -155,20 +155,14 @@ class FastSpeech2(torch.nn.Module, ABC):
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
         return before_outs, after_outs, d_outs, p_outs, e_outs
 
-    def forward(self, text, speech=None, spembs=None,
-                durations=None, pitch=None,
-                energy=None, alpha=1.0):
+    def forward(self, text, spemb=None, alpha=1.0):
         self.eval()
-        x, y = text, speech
-        spemb, d, p, e = spembs, durations, pitch, energy
+        x = text
         ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
-        xs, ys = x.unsqueeze(0), None
-        if y is not None:
-            ys = y.unsqueeze(0)
+        xs = x.unsqueeze(0)
         if spemb is not None:
             spembs = spemb.unsqueeze(0)
-        _, outs, *_ = self._forward(xs, ilens, ys, spembs=spembs, is_inference=True, alpha=alpha)
-        self.train()
+        _, outs, *_ = self._forward(xs, ilens, None, spembs=spembs, is_inference=True, alpha=alpha)
         return outs[0]
 
     def _integrate_with_spk_embed(self, hs, spembs):
@@ -244,6 +238,7 @@ class LJSpeech_FastSpeechInference(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
+        self.speaker_embedding = speaker_embedding
         self.device = device
         self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False,
                                        use_explicit_eos=False)
@@ -256,7 +251,7 @@ class LJSpeech_FastSpeechInference(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
-            mel = self.phone2mel(phones).transpose(0, 1)
+            mel = self.phone2mel(phones, spemb=self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         if view:
             import matplotlib.pyplot as plt
@@ -287,9 +282,10 @@ class LJSpeech_FastSpeechInference(torch.nn.Module):
                     print("Now synthesizing: {}".format(text))
                 if wav is None:
                     wav = self(text).cpu()
-                else:
                     wav = torch.cat((wav, silence), 0)
+                else:
                     wav = torch.cat((wav, self(text).cpu()), 0)
+                    wav = torch.cat((wav, silence), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text, view=False, blocking=False):
@@ -297,11 +293,11 @@ class LJSpeech_FastSpeechInference(torch.nn.Module):
             return
 
         wav = self(text, view).cpu()
+        wav = torch.cat((wav, torch.zeros([8000])), 0)
 
         if not blocking:
             sounddevice.play(wav.numpy(), samplerate=16000)
 
         else:
-            silence = torch.zeros([12000])
-            sounddevice.play(torch.cat((wav, silence), 0).numpy(), samplerate=16000)
+            sounddevice.play(torch.cat((wav, torch.zeros([12000])), 0).numpy(), samplerate=16000)
             sounddevice.wait()

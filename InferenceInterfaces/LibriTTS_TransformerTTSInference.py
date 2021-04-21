@@ -303,6 +303,7 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
+        self.speaker_embedding = speaker_embedding
         self.device = device
         self.speaker_embedding = torch.load(os.path.join("Models", "Use", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
@@ -315,7 +316,7 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
-            mel = self.phone2mel(phones, self.speaker_embedding).transpose(0, 1)
+            mel = self.phone2mel(phones, spemb=self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         if view:
             import matplotlib.pyplot as plt
@@ -345,9 +346,10 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
                     print("Now synthesizing: {}".format(text))
                 if wav is None:
                     wav = self(text).cpu()
-                else:
                     wav = torch.cat((wav, silence), 0)
+                else:
                     wav = torch.cat((wav, self(text).cpu()), 0)
+                    wav = torch.cat((wav, silence), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
 
     def read_aloud(self, text, view=False, blocking=False):
@@ -355,11 +357,11 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
             return
 
         wav = self(text, view).cpu()
+        wav = torch.cat((wav, torch.zeros([8000])), 0)
 
         if not blocking:
             sounddevice.play(wav.numpy(), samplerate=16000)
 
         else:
-            silence = torch.zeros([12000])
-            sounddevice.play(torch.cat((wav, silence), 0).numpy(), samplerate=16000)
+            sounddevice.play(torch.cat((wav, torch.zeros([12000])), 0).numpy(), samplerate=16000)
             sounddevice.wait()
