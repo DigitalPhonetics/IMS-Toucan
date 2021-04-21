@@ -10,13 +10,19 @@ from cleantext import clean
 
 class TextFrontend:
 
-    def __init__(self, language, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False,
-                 # unfortunately the non segmental
+    def __init__(self,
+                 language,
+                 use_panphon_vectors=False,
+                 use_word_boundaries=False,
+                 use_explicit_eos=False,
+                 use_prosody=False,  # unfortunately the non segmental
                  # nature of prosodic markers mixed with the sequential
                  # phonemes hurts the performance of end-to-end models a
                  # lot, even though one might think enriching the input
                  # with such information would help such systems.
-                 use_lexical_stress=False, path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv", silent=True):
+                 use_lexical_stress=False,
+                 path_to_panphon_table="PreprocessingForTTS/ipa_vector_lookup.csv",
+                 silent=True):
         """
         Mostly preparing ID lookups
         """
@@ -42,7 +48,10 @@ class TextFrontend:
                 self.ipa_to_vector[line_list[0]] = [float(x) for x in line_list[1:]]
             else:
                 self.ipa_to_vector[line_list[
-                    0]] = index  # note: Index 0 is unused, so it can be used for padding as is convention.  #       Index 1 is reserved for EOS, if you want to use explicit EOS.  #       Index 132 is used for unknown characters  #       Index 12 is used for pauses (heuristically)
+                    0]] = index  # note: Index 0 is unused, so it can be used for padding as is convention.
+                #       Index 1 is reserved for EOS, if you want to use explicit EOS.
+                #       Index 132 is used for unknown characters
+                #       Index 12 is used for pauses (heuristically)
 
         if language == "en":
             self.clean_lang = "en"
@@ -79,10 +88,17 @@ class TextFrontend:
         utt = utt.replace("_SIL_", "~")
 
         # phonemize
-        phones = phonemizer.phonemize(utt, language_switch='remove-flags', backend="espeak", language=self.g2p_lang, preserve_punctuation=True, strip=True,
-                                      punctuation_marks=';:,.!?¡¿—…"«»“”~', with_stress=self.use_stress).replace(";", ",").replace(":", ",").replace('"',
-                                                                                                                                                     ",").replace(
-            "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace("¿", "?").replace(",", "~").replace("~~", "~")
+        phones = phonemizer.phonemize(utt,
+                                      language_switch='remove-flags',
+                                      backend="espeak",
+                                      language=self.g2p_lang,
+                                      preserve_punctuation=True,
+                                      strip=True,
+                                      punctuation_marks=';:,.!?¡¿—…"«»“”~',
+                                      with_stress=self.use_stress).replace(";", ",") \
+            .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
+            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~")
+        phones = re.sub("~+", "~", phones)
 
         if not self.use_prosody:
             # retain ~ as heuristic pause marker, even though all other symbols are removed with this option.
@@ -91,6 +107,8 @@ class TextFrontend:
 
         if not self.use_word_boundaries:
             phones = phones.replace(" ", "")
+        else:
+            phones = re.sub(r"\s+", " ", phones)
 
         if view:
             print("Phonemes: \n{}\n".format(phones))
@@ -119,10 +137,17 @@ class TextFrontend:
         utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
         self.expand_abbrevations(utt)
         utt = utt.replace("_SIL_", "~")
-        phones = phonemizer.phonemize(utt, language_switch='remove-flags', backend="espeak", language=self.g2p_lang, preserve_punctuation=True, strip=True,
-                                      punctuation_marks=';:,.!?¡¿—…"«»“”~', with_stress=self.use_stress).replace(";", ",").replace(":", ",").replace('"',
-                                                                                                                                                     ",").replace(
-            "--", ",").replace("-", ",").replace("\n", " ").replace("\t", " ").replace("¡", "!").replace("¿", "?").replace(",", "~")
+        phones = phonemizer.phonemize(utt,
+                                      language_switch='remove-flags',
+                                      backend="espeak",
+                                      language=self.g2p_lang,
+                                      preserve_punctuation=True,
+                                      strip=True,
+                                      punctuation_marks=';:,.!?¡¿—…"«»“”~',
+                                      with_stress=self.use_stress).replace(";", ",") \
+            .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
+            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~")
+        phones = re.sub("~+", "~", phones)
         if not self.use_prosody:
             phones = phones.replace("ˌ", "").replace("ː", "").replace("ˑ", "").replace("˘", "").replace("|", "").replace("‖", "")
         if not self.use_word_boundaries:
