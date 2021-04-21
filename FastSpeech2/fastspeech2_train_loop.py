@@ -16,7 +16,7 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
 
 
-def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_plot):
+def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embedding_for_plot):
     tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
     sentence = "Hello"
     if lang == "en":
@@ -27,7 +27,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_spemb_for_pl
         sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu " \
                    "ziemlich lang und komplex, dmait man im Spektrogram auch was sieht."
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
-    spec = net.inference(text=text, spembs=reference_spemb_for_plot).transpose(0, 1).to("cpu").numpy()
+    spec = net.inference(text=text, speaker_embeddings=reference_speaker_embedding_for_plot).transpose(0, 1).to("cpu").numpy()
     if not os.path.exists(os.path.join(save_dir, "spec")):
         os.makedirs(os.path.join(save_dir, "spec"))
     fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -68,7 +68,7 @@ def collate_and_pad(batch):
         durations = list()
         pitch = list()
         energy = list()
-        spembs = list()
+        speaker_embeddings = list()
         for datapoint in batch:
             texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
             text_lens.append(torch.LongTensor([datapoint[1]]))
@@ -77,12 +77,12 @@ def collate_and_pad(batch):
             durations.append(torch.LongTensor(datapoint[4]))
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
-            spembs.append(torch.Tensor(datapoint[7]))
+            speaker_embeddings.append(torch.Tensor(datapoint[7]))
         return (
             pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
             torch.stack(speech_lens).squeeze(1),
             pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
-            torch.stack(spembs))  # may need squeezing, cannot test atm
+            torch.stack(speaker_embeddings))  # may need squeezing, cannot test atm
 
 
 def train_loop(net,
@@ -120,9 +120,9 @@ def train_loop(net,
     net = net.to(device)
     scaler = GradScaler()
     if use_speaker_embedding:
-        reference_spemb_for_plot = torch.Tensor(valid_dataset[0][7]).to(device)
+        reference_speaker_embedding_for_plot = torch.Tensor(valid_dataset[0][7]).to(device)
     else:
-        reference_spemb_for_plot = None
+        reference_speaker_embedding_for_plot = None
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size, dataset=train_dataset, drop_last=True, num_workers=8, pin_memory=False, shuffle=True, prefetch_factor=8,
                               collate_fn=collate_and_pad, persistent_workers=True)
@@ -218,10 +218,11 @@ def train_loop(net,
             average_val_loss = sum(val_losses) / len(val_losses)
             if epoch & epochs_per_save == 0:
                 torch.save({
-                    "model": net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
+                    "model"    : net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
                     "scheduler": scheduler.state_dict(), "step_counter": step_counter
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, reference_spemb_for_plot=reference_spemb_for_plot)
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
+                                   reference_speaker_embedding_for_plot=reference_speaker_embedding_for_plot)
                 if step_counter > steps:
                     # DONE
                     return

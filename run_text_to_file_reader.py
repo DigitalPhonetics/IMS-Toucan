@@ -34,7 +34,7 @@ tts_dict = {
     }
 
 
-def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding="default_spemb.pt"):
+def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding=None):
     tts = tts_dict[model_id](device=device, speaker_embedding=speaker_embedding)
     if type(sentence) == str:
         sentence = [sentence]

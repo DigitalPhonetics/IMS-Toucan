@@ -15,9 +15,10 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, path_to_transcript_dict, spemb=False, train=True, loading_processes=1, cache_dir=os.path.join("Corpora", "CSS10_DE"), lang="de",
+    def __init__(self, path_to_transcript_dict, speaker_embedding=False, train=True, loading_processes=1, cache_dir=os.path.join("Corpora", "CSS10_DE"),
+                 lang="de",
                  min_len_in_seconds=1, max_len_in_seconds=20, cut_silences=False, rebuild_cache=False):
-        self.spemb = spemb
+        self.speaker_embedding = speaker_embedding
         if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)) or rebuild_cache:
             ressource_manager = Manager()
@@ -38,7 +39,7 @@ class TransformerTTSDataset(Dataset):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process, args=(key_split, spemb, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
+                    Process(target=self.cache_builder_process, args=(key_split, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -61,10 +62,10 @@ class TransformerTTSDataset(Dataset):
                     self.datapoints = json.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, spemb, lang, min_len, max_len, cut_silences):
+    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
         tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
-        if spemb:
+        if speaker_embedding:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
@@ -78,17 +79,17 @@ class TransformerTTSDataset(Dataset):
                 cached_text_lens = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
-                if spemb:
+                if speaker_embedding:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
-                    cached_spemb = emb_tensor.detach().numpy().tolist()
-                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_spemb])
+                    cached_speaker_embedding = emb_tensor.detach().numpy().tolist()
+                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_speaker_embedding])
                 else:
                     self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
 
     def __getitem__(self, index):
-        if not self.spemb:
+        if not self.speaker_embedding:
             return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3]
         else:
             return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4]

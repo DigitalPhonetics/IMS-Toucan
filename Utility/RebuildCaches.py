@@ -59,9 +59,9 @@ def rebuild_caches():
     TransformerTTSDataset(path_to_transcript_dict_lj, train=False, cache_dir=cache_dir_lj, lang="en", min_len_in_seconds=0, max_len_in_seconds=1000000)
 
     TransformerTTSDataset(path_to_transcript_dict_libri, train=True, cache_dir=cache_dir_libri, lang="en", min_len_in_seconds=10000, max_len_in_seconds=400000,
-                          spemb=True)
+                          speaker_embedding=True)
     TransformerTTSDataset(path_to_transcript_dict_libri, train=False, cache_dir=cache_dir_libri, lang="en", min_len_in_seconds=10000, max_len_in_seconds=400000,
-                          spemb=True)
+                          speaker_embedding=True)
 
     TransformerTTSDataset(path_to_transcript_dict_css10de, train=True, cache_dir=cache_dir_css10de, lang="de", min_len_in_seconds=0, max_len_in_seconds=1000000)
     TransformerTTSDataset(path_to_transcript_dict_css10de, train=False, cache_dir=cache_dir_css10de, lang="de", min_len_in_seconds=0,

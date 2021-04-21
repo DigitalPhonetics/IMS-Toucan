@@ -100,14 +100,14 @@ class Transformer(torch.nn.Module, ABC):
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
         self.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"), map_location='cpu')["model"])
 
-    def forward(self, text, spemb=None):
+    def forward(self, text, speaker_embedding=None):
         self.eval()
         x = text
         xs = x.unsqueeze(0)
         hs, _ = self.encoder(xs, None)
         if self.spk_embed_dim is not None:
-            spembs = spemb.unsqueeze(0)
-            hs = self._integrate_with_spk_embed(hs, spembs)
+            speaker_embeddings = speaker_embedding.unsqueeze(0)
+            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         maxlen = int(hs.size(1) * 10.0 / self.reduction_factor)
         minlen = int(hs.size(1) * 0.0 / self.reduction_factor)
         idx = 0
@@ -152,9 +152,9 @@ class Transformer(torch.nn.Module, ABC):
         s_masks = subsequent_mask(y_masks.size(-1), device=y_masks.device).unsqueeze(0)
         return y_masks.unsqueeze(-2) & s_masks
 
-    def _integrate_with_spk_embed(self, hs, spembs):
-        spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.projection(torch.cat([hs, spembs], dim=-1))
+    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
+        speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
         return hs
 
 
@@ -316,7 +316,7 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
-            mel = self.phone2mel(phones, spemb=self.speaker_embedding).transpose(0, 1)
+            mel = self.phone2mel(phones, speaker_embedding=self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         if view:
             import matplotlib.pyplot as plt

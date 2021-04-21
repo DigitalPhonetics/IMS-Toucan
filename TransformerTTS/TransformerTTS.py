@@ -152,7 +152,7 @@ class Transformer(torch.nn.Module, ABC):
             self.encoder.embed[-1].alpha.data = torch.tensor(init_enc_alpha)
             self.decoder.embed[-1].alpha.data = torch.tensor(init_dec_alpha)
 
-    def forward(self, text, text_lengths, speech, speech_lengths, spembs=None):
+    def forward(self, text, text_lengths, speech, speech_lengths, speaker_embeddings=None):
         """
         Calculate forward propagation.
 
@@ -161,7 +161,7 @@ class Transformer(torch.nn.Module, ABC):
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
             speech_lengths (LongTensor): Batch of the lengths of each target (B,).
-            spembs (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
+            speaker_embeddings (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
             Tensor: Loss scalar value.
@@ -182,7 +182,7 @@ class Transformer(torch.nn.Module, ABC):
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate transformer outputs
-        after_outs, before_outs, logits = self._forward(text, text_lengths, speech, speech_lengths, spembs)
+        after_outs, before_outs, logits = self._forward(text, text_lengths, speech, speech_lengths, speaker_embeddings)
 
         # modify mod part of groundtruth
         olens_in = speech_lengths
@@ -240,14 +240,14 @@ class Transformer(torch.nn.Module, ABC):
 
         return loss
 
-    def _forward(self, xs, ilens, ys, olens, spembs):
+    def _forward(self, xs, ilens, ys, olens, speaker_embeddings):
         # forward encoder
         x_masks = self._source_mask(ilens)
         hs, h_masks = self.encoder(xs, x_masks)
 
         # integrate speaker embedding
         if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, spembs)
+            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
 
         # thin out frames for reduction factor (B, Lmax, odim) ->  (B, Lmax//r, odim)
         if self.reduction_factor > 1:
@@ -275,7 +275,7 @@ class Transformer(torch.nn.Module, ABC):
 
         return after_outs, before_outs, logits
 
-    def inference(self, text, speech=None, spembs=None, threshold=0.5, minlenratio=0.0,
+    def inference(self, text, speech=None, speaker_embeddings=None, threshold=0.5, minlenratio=0.0,
                   maxlenratio=10.0, use_teacher_forcing=False):
         """
         Generate the sequence of features given the sequences of characters.
@@ -283,7 +283,7 @@ class Transformer(torch.nn.Module, ABC):
         Args:
             text (LongTensor): Input sequence of characters (T,).
             speech (Tensor, optional): Feature sequence to extract style (N, idim).
-            spembs (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
+            speaker_embeddings (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
             threshold (float, optional): Threshold in inference.
             minlenratio (float, optional): Minimum length ratio in inference.
             maxlenratio (float, optional): Maximum length ratio in inference.
@@ -296,7 +296,7 @@ class Transformer(torch.nn.Module, ABC):
         """
         x = text
         y = speech
-        spemb = spembs
+        speaker_embedding = speaker_embeddings
         self.eval()
 
         # add eos at the last of sequence
@@ -308,10 +308,10 @@ class Transformer(torch.nn.Module, ABC):
 
             # get teacher forcing outputs
             xs, ys = x.unsqueeze(0), y.unsqueeze(0)
-            spembs = None if spemb is None else spemb.unsqueeze(0)
+            speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = x.new_tensor([xs.size(1)]).long()
             olens = y.new_tensor([ys.size(1)]).long()
-            outs, *_ = self._forward(xs, ilens, ys, olens, spembs)
+            outs, *_ = self._forward(xs, ilens, ys, olens, speaker_embeddings)
 
             # get attention weights
             att_ws = []
@@ -327,8 +327,8 @@ class Transformer(torch.nn.Module, ABC):
 
         # integrate speaker embedding
         if self.spk_embed_dim is not None:
-            spembs = spemb.unsqueeze(0)
-            hs = self._integrate_with_spk_embed(hs, spembs)
+            speaker_embeddings = speaker_embedding.unsqueeze(0)
+            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
 
         # set limits of length
         maxlen = int(hs.size(1) * maxlenratio / self.reduction_factor)
@@ -419,26 +419,26 @@ class Transformer(torch.nn.Module, ABC):
         s_masks = subsequent_mask(y_masks.size(-1), device=y_masks.device).unsqueeze(0)
         return y_masks.unsqueeze(-2) & s_masks
 
-    def _integrate_with_spk_embed(self, hs, spembs):
+    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
         """
         Integrate speaker embedding with hidden states.
 
         Args:
             hs (Tensor): Batch of hidden state sequences (B, Tmax, adim).
-            spembs (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
+            speaker_embeddings (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
             Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
         """
         if self.spk_embed_integration_type == "add":
             # apply projection and then add to hidden states
-            # spembs = F.normalize(spembs)
-            spembs = self.projection(spembs)
-            hs = hs + spembs.unsqueeze(1)
+            # speaker_embeddings = F.normalize(speaker_embeddings)
+            speaker_embeddings = self.projection(speaker_embeddings)
+            hs = hs + speaker_embeddings.unsqueeze(1)
         elif self.spk_embed_integration_type == "concat":
             # concat hidden states with spk embeds and then apply projection
-            spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
-            hs = self.projection(torch.cat([hs, spembs], dim=-1))
+            speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+            hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
         else:
             raise NotImplementedError("support only add or concat.")
 

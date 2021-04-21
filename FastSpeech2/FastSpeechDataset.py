@@ -25,7 +25,7 @@ class FastSpeechDataset(Dataset):
                  diagonal_attention_head_id=None,  # every transformer has one attention head
                  # that is the most diagonal. Look for it manually (e.g. using playground)
                  # and then provide it here.
-                 spemb=False,
+                 speaker_embedding=False,
                  train=True,
                  loading_processes=8,
                  cache_dir=os.path.join("Corpora", "CSS10_DE"),
@@ -41,7 +41,7 @@ class FastSpeechDataset(Dataset):
                  # to be excluded from the dataset.
                  ):
 
-        self.spemb = spemb
+        self.speaker_embedding = speaker_embedding
         if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
                 (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
@@ -66,7 +66,7 @@ class FastSpeechDataset(Dataset):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(Process(target=self.cache_builder_process, args=(
-                    key_split, acoustic_model_name, spemb, lang, min_len_in_seconds, max_len_in_seconds, reduction_factor, device, cache_dir,
+                    key_split, acoustic_model_name, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, reduction_factor, device, cache_dir,
                     diagonal_attention_head_id), daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -96,15 +96,15 @@ class FastSpeechDataset(Dataset):
             self.datapoints = datapoints_with_durations_that_make_sense
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, acoustic_model_name, spemb, lang, min_len, max_len, reduction_factor, device, cache_dir,
+    def cache_builder_process(self, path_list, acoustic_model_name, speaker_embedding, lang, min_len, max_len, reduction_factor, device, cache_dir,
                               diagonal_attention_head_id):
         tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
-        if spemb:
+        if speaker_embedding:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        if spemb:
+        if speaker_embedding:
             acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name, spk_embed_dim=256).to(device)
         else:
             acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
@@ -126,17 +126,18 @@ class FastSpeechDataset(Dataset):
                 cached_text_lens = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
                 cached_speech_lens = len(cached_speech)
-                if not spemb:
+                if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
                     cached_durations = \
-                        dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, spembs=None)[2],
+                        dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True,
+                                                    speaker_embeddings=None)[2],
                            vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
-                    cached_spemb = dvector.embed_utterance(mel_tensor)
+                    cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
                     cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True,
-                                                                   spembs=cached_spemb.to(device))[2],
+                                                                   speaker_embeddings=cached_speaker_embedding.to(device))[2],
                                           vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = \
                     energy_calc(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length,
@@ -145,15 +146,17 @@ class FastSpeechDataset(Dataset):
                 cached_pitch = \
                     dio(input=norm_wave.unsqueeze(0), input_lengths=norm_wave_length, feats_lengths=melspec_length, durations=cached_durations.unsqueeze(0),
                         durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
-                if not self.spemb:
-                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
-                                            cached_pitch.numpy().tolist(), path])
+                if not self.speaker_embedding:
+                    self.datapoints.append(
+                        [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
+                         cached_pitch.numpy().tolist(), path])
                 else:
-                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
-                                            cached_pitch.numpy().tolist(), cached_spemb.detach().numpy().tolist(), path])
+                    self.datapoints.append(
+                        [cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_durations.numpy().tolist(), cached_energy.numpy().tolist(),
+                         cached_pitch.numpy().tolist(), cached_speaker_embedding.detach().numpy().tolist(), path])
 
     def __getitem__(self, index):
-        if not self.spemb:
+        if not self.speaker_embedding:
             return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4], \
                    self.datapoints[index][5], self.datapoints[index][6]
         else:

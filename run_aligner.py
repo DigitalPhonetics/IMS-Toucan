@@ -12,8 +12,8 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
 
 
-def align(path_to_transcript_dict, acoustic_model_name, spemb, cache_dir, lang, reduction_factor=1, device=torch.device("cpu")):
-    spemb = spemb
+def align(path_to_transcript_dict, acoustic_model_name, speaker_embedding, cache_dir, lang, reduction_factor=1, device=torch.device("cpu")):
+    speaker_embedding = speaker_embedding
     transcript_to_durations = dict()
     path_list = list(path_to_transcript_dict.keys())
     tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
@@ -22,7 +22,7 @@ def align(path_to_transcript_dict, acoustic_model_name, spemb, cache_dir, lang, 
         # reset duration sanity check dir
         os.removedirs(os.path.join(cache_dir, "alignments_visualization"))
     os.makedirs(os.path.join(cache_dir, "alignments_visualization"))
-    if spemb:
+    if speaker_embedding:
         wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
         dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
     ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
@@ -35,16 +35,17 @@ def align(path_to_transcript_dict, acoustic_model_name, spemb, cache_dir, lang, 
         melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
         text = tf.string_to_tensor(transcript).long()
         cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
-        if not spemb:
+        if not speaker_embedding:
             cached_durations = \
-                dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, spembs=None)[2],
+                dc(acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, speaker_embeddings=None)[2],
                    vis=os.path.join(cache_dir, "alignments_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu().numpy().tolist()
         else:
             wav_tensor, sample_rate = torchaudio.load(path)
             mel_tensor = wav2mel(wav_tensor, sample_rate)
-            cached_spemb = dvector.embed_utterance(mel_tensor)
+            cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
             cached_durations = dc(
-                acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True, spembs=cached_spemb.to(device))[
+                acoustic_model.inference(text=text.squeeze(0).to(device), speech=melspec.to(device), use_teacher_forcing=True,
+                                         speaker_embeddings=cached_speaker_embedding.to(device))[
                     2])[0].cpu().numpy().tolist()
 
         durations_in_seconds = list()
@@ -60,5 +61,5 @@ def align(path_to_transcript_dict, acoustic_model_name, spemb, cache_dir, lang, 
 if __name__ == '__main__':
     from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
 
-    align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(), acoustic_model_name="Transformer_English_Single.pt", spemb=False,
+    align(path_to_transcript_dict=build_path_to_transcript_dict_ljspeech(), acoustic_model_name="Transformer_English_Single.pt", speaker_embedding=False,
           cache_dir="Corpora/LJSpeech", lang="en", reduction_factor=1, device=torch.device("cpu"))

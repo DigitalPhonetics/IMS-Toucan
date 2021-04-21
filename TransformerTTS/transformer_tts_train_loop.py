@@ -52,7 +52,7 @@ def plot_attentions_best_head(atts, att_dir, step, phones):
     plt.close()
 
 
-def get_atts(model, lang, device, spemb):
+def get_atts(model, lang, device, speaker_embedding):
     tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
     sentence = ""
     if lang == "en":
@@ -62,7 +62,7 @@ def get_atts(model, lang, device, spemb):
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    atts = model.inference(text=text, spembs=spemb)[2].to("cpu")
+    atts = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
     del tf
     return atts, phones
@@ -97,17 +97,17 @@ def collate_and_pad(batch):
         text_lens = list()
         speechs = list()
         speech_lens = list()
-        spembs = list()
+        speaker_embeddings = list()
         for datapoint in batch:
             texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
-            spembs.append(torch.Tensor(datapoint[4]))
+            speaker_embeddings.append(torch.Tensor(datapoint[4]))
         return (
             pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
             torch.stack(speech_lens).squeeze(1),
-            torch.stack(spembs))
+            torch.stack(speaker_embeddings))
 
 
 def train_loop(net,
@@ -151,9 +151,9 @@ def train_loop(net,
 
     loss_plot = [[], []]
     if use_speaker_embedding:
-        reference_spemb_for_att_plot = torch.Tensor(valid_dataset[0][4]).to(device)
+        reference_speaker_embedding_for_att_plot = torch.Tensor(valid_dataset[0][4]).to(device)
     else:
-        reference_spemb_for_att_plot = None
+        reference_speaker_embedding_for_att_plot = None
     step_counter = 0
     epoch = 0
     net.train()
@@ -243,7 +243,7 @@ def train_loop(net,
                     "model": net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
                     "scheduler": scheduler.state_dict()
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                all_atts, phones = get_atts(model=net, lang=lang, device=device, spemb=reference_spemb_for_att_plot)
+                all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
                 plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
                 plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)
                 if step_counter > steps:

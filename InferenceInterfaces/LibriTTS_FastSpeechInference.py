@@ -83,11 +83,11 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.load_state_dict(torch.load(os.path.join("Models", "FastSpeech2_LibriTTS", "best.pt"), map_location='cpu')["model"])
 
     def _forward(self, xs, ilens, ys=None, olens=None, ds=None,
-                 ps=None, es=None, spembs=None, is_inference=False, alpha=1.0):
+                 ps=None, es=None, speaker_embeddings=None, is_inference=False, alpha=1.0):
         x_masks = self._source_mask(ilens)
         hs, _ = self.encoder(xs, x_masks)
         if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, spembs)
+            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         d_masks = make_pad_mask(ilens).to(xs.device)
         if self.stop_gradient_from_pitch_predictor:
             p_outs = self.pitch_predictor(hs.detach(), d_masks.unsqueeze(-1))
@@ -122,19 +122,19 @@ class FastSpeech2(torch.nn.Module, ABC):
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
         return before_outs, after_outs, d_outs, p_outs, e_outs
 
-    def forward(self, text, spemb=None, alpha=1.0):
+    def forward(self, text, speaker_embedding=None, alpha=1.0):
         self.eval()
         x = text
         ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
         xs = x.unsqueeze(0)
-        if spemb is not None:
-            spemb = spemb.unsqueeze(0)
-        _, outs, *_ = self._forward(xs, ilens, None, spembs=spemb, is_inference=True, alpha=alpha)
+        if speaker_embedding is not None:
+            speaker_embedding = speaker_embedding.unsqueeze(0)
+        _, outs, *_ = self._forward(xs, ilens, None, speaker_embeddings=speaker_embedding, is_inference=True, alpha=alpha)
         return outs[0]
 
-    def _integrate_with_spk_embed(self, hs, spembs):
-        spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.projection(torch.cat([hs, spembs], dim=-1))
+    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
+        speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
         return hs
 
     def _source_mask(self, ilens):
@@ -213,7 +213,7 @@ class LibriTTS_FastSpeechInference(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
-            mel = self.phone2mel(phones, spemb=self.speaker_embedding).transpose(0, 1)
+            mel = self.phone2mel(phones, speaker_embedding=self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
         if view:
             import matplotlib.pyplot as plt

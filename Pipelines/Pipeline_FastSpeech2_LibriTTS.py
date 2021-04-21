@@ -40,7 +40,7 @@ def run(gpu_id, resume_checkpoint, finetune):
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  spemb=True,
+                                  speaker_embedding=True,
                                   diagonal_attention_head_id=16)
     valid_set = FastSpeechDataset(path_to_transcript_dict,
                                   train=False,
@@ -50,7 +50,7 @@ def run(gpu_id, resume_checkpoint, finetune):
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
                                   device=device,
-                                  spemb=True,
+                                  speaker_embedding=True,
                                   diagonal_attention_head_id=16)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=256)
