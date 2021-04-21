@@ -132,6 +132,8 @@ def train_loop(net,
     loss_plot = [[], []]
     step_counter = 0
     net.train()
+    if fine_tune:
+        lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     epoch = 0

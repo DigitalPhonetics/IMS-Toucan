@@ -157,6 +157,8 @@ def train_loop(net,
     step_counter = 0
     epoch = 0
     net.train()
+    if fine_tune:
+        lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
 

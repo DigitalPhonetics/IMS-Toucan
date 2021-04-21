@@ -47,8 +47,8 @@ class TextFrontend:
             if use_panphon_vectors:
                 self.ipa_to_vector[line_list[0]] = [float(x) for x in line_list[1:]]
             else:
-                self.ipa_to_vector[line_list[
-                    0]] = index  # note: Index 0 is unused, so it can be used for padding as is convention.
+                self.ipa_to_vector[line_list[0]] = index
+                # note: Index 0 is unused, so it can be used for padding as is convention.
                 #       Index 1 is reserved for EOS, if you want to use explicit EOS.
                 #       Index 132 is used for unknown characters
                 #       Index 12 is used for pauses (heuristically)
