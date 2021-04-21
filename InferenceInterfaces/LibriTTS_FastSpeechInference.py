@@ -128,8 +128,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
         xs = x.unsqueeze(0)
         if spemb is not None:
-            spembs = spemb.unsqueeze(0)
-        _, outs, *_ = self._forward(xs, ilens, None, spembs=spembs, is_inference=True, alpha=alpha)
+            spemb = spemb.unsqueeze(0)
+        _, outs, *_ = self._forward(xs, ilens, None, spembs=spemb, is_inference=True, alpha=alpha)
         return outs[0]
 
     def _integrate_with_spk_embed(self, hs, spembs):
