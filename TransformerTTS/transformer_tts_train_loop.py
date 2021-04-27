@@ -242,9 +242,9 @@ def train_loop(net,
             average_val_loss = sum(val_losses) / len(val_losses)
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model": net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
+                    "model"    : net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
                     "scheduler": scheduler.state_dict()
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
                 plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
                 plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)

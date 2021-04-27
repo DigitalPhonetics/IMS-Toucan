@@ -9,7 +9,6 @@ from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSIn
 from InferenceInterfaces.Karlsson_FastSpeechInference import Karlsson_FastSpeechInference
 from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
 from InferenceInterfaces.LJSpeech_FastSpeechInference import LJSpeech_FastSpeechInference
-from InferenceInterfaces.LJSpeech_FastSpeechInference_new_hyp import LJSpeech_FastSpeechInference_new_hyp
 from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
 from InferenceInterfaces.LibriTTS_FastSpeechInference import LibriTTS_FastSpeechInference
 from InferenceInterfaces.LibriTTS_TransformerTTSInference import LibriTTS_TransformerTTSInference
@@ -23,7 +22,6 @@ tts_dict = {
     "fast_karl"      : Karlsson_FastSpeechInference,
     "fast_eva"       : Eva_FastSpeechInference,
     "fast_elizabeth" : Elizabeth_FastSpeechInference,
-    "fast_lj_new_hyp": LJSpeech_FastSpeechInference_new_hyp,
 
     "trans_thorsten" : Thorsten_TransformerTTSInference,
     "trans_lj"       : LJSpeech_TransformerTTSInference,
@@ -65,13 +63,5 @@ So ‘twas better Betty Botter bought a bit of better butter.
 How much wood would a woodchuck chuck if a woodchuck could chuck wood?
 He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.""".split("\n"),
                filename="audios/fast_lj.wav", device=exec_device)
-
-    read_texts(model_id="fast_lj_new_hyp", sentence="""Betty Botter bought some butter, but she said the butter’s bitter.
-If I put it in my batter, it will make my batter bitter!
-But a bit of better butter will make my batter better.
-So ‘twas better Betty Botter bought a bit of better butter.
-How much wood would a woodchuck chuck if a woodchuck could chuck wood?
-He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.""".split("\n"),
-               filename="audios/fast_lj_new_hyp.wav", device=exec_device)
 
     read_texts(model_id="fast_thorsten", sentence=["Hallo, ich bin eine deutsche Stimme."], filename="audios/fast_thorsten.wav", device=exec_device)

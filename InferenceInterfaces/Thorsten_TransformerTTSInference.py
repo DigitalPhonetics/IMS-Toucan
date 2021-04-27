@@ -157,6 +157,7 @@ class Transformer(torch.nn.Module, ABC):
         hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
         return hs
 
+
 class TransformerLoss(torch.nn.Module):
 
     def __init__(self, use_masking=True, use_weighted_masking=False, bce_pos_weight=20.0):
@@ -242,6 +243,8 @@ class TransformerLoss(torch.nn.Module):
         key = prefix + "bce_criterion.pos_weight"
         if key not in state_dict:
             state_dict[key] = self.bce_criterion.pos_weight
+
+
 class MelGANGenerator(torch.nn.Module):
 
     def __init__(self, in_channels=80, out_channels=1, kernel_size=7, channels=512, bias=True,
