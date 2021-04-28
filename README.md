@@ -20,7 +20,7 @@ parameters, which would otherwise drown in tons of case specific parameters.
 Parameterized wrappers around redundant code seems to be a simple solution to get the best of both worlds I believe. So
 every system that one might want to train gets its own unique training pipeline with lots of duplicate code among them.
 And every trained system gets a unique inference interface to load and use it, again with lots of shared code inbetween
-them. This ensures every model can be reproduced and loaded. test
+them. This ensures every model can be reproduced and loaded.
 
 ## Dataset Support
 
