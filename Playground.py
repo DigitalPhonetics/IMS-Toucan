@@ -139,4 +139,4 @@ if __name__ == '__main__':
     # plot_transformertts_architecture()
     # plot_melgan_training()
     # plot_syn_training()
-    show_att(sentence="Hallo Welt, das ist ein kurzer Satz.", lang="de", best_only=False)
+    show_att(sentence="Hello World.", lang="en", best_only=True)

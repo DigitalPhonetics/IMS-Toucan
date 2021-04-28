@@ -276,7 +276,7 @@ class MelGANGenerator(torch.nn.Module):
         self.melgan = torch.nn.Sequential(*layers)
         if use_weight_norm:
             self.apply_weight_norm()
-        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_Karlsson", "best.pt"), map_location='cpu')["generator"])
+        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_combined", "best.pt"), map_location='cpu')["generator"])
 
     def remove_weight_norm(self):
         def _remove_weight_norm(m):
@@ -303,7 +303,7 @@ class Karlsson_TransformerTTSInference(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
-        self.speaker_embedding = speaker_embedding
+        self.speaker_embedding = None
         self.device = device
         self.text2phone = TextFrontend(language="de", use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         self.phone2mel = Transformer(idim=133, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))

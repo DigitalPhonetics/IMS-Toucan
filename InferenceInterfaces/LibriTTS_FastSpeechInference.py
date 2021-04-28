@@ -173,7 +173,7 @@ class MelGANGenerator(torch.nn.Module):
         self.melgan = torch.nn.Sequential(*layers)
         if use_weight_norm:
             self.apply_weight_norm()
-        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_LibriTTS", "best.pt"), map_location='cpu')["generator"])
+        self.load_state_dict(torch.load(os.path.join("Models", "MelGAN_combined", "best.pt"), map_location='cpu')["generator"])
 
     def remove_weight_norm(self):
         def _remove_weight_norm(m):
