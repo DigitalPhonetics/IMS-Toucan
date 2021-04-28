@@ -486,7 +486,7 @@ def plot_attentions(atts):
         axes[index][0].yaxis.set_visible(False)
     for index, att in enumerate(atts_2):
         axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-        axes[index][1].set_title("{}".format((index + 1) * 2))
+        axes[index][1].set_title("{}".format((index + 1) * 2 - 1))
         axes[index][1].xaxis.set_visible(False)
         axes[index][1].yaxis.set_visible(False)
     # plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
