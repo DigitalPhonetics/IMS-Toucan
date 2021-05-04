@@ -32,6 +32,12 @@ pip install -r requirements.txt
 
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code is [dvector](https://github.com/yistLin/dvector), because it is incedibly easy to use and freely available. Create a directory "Models" in the top-level of your clone. Then create a directory "Use" in there and in this directory create another directory called "SpeakerEmbedding". In this directory you put the two files "wav2mel.pt" and "dvector-step250000.pt" that you can obtain from the release page of the [dvector](https://github.com/yistLin/dvector) GitHub. This process might become automated in the future.
 
+And finally you need to have espeak installed on your system, because it is used as backend for the phonemizer. If you replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is not and you have the sufficient rights you can install it by simply running 
+
+```
+apt-get install espeak
+```
+
 ## Creating a new Pipeline
 tbd
 
