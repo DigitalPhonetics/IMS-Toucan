@@ -64,3 +64,9 @@ tbd
 | MAILabs Elizabeth     | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS              | English   | Multi Speaker       | ✅     | ✅            | ✅          |
 
+## List to do
+- declutter piplines and datasets, remove dev sets entirely, not needed for TTS
+- automate loading of a default melgan for inference interfaces, centralize changes to inference interfaces
+- automate retrieval of speaker embedding function for installation
+- finish documentation
+
