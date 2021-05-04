@@ -14,22 +14,20 @@ from FastSpeech2.EnergyCalculator import EnergyCalculator
 from FastSpeech2.PitchCalculator import Dio
 from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 from PreprocessingForTTS.ProcessText import TextFrontend
-from TransformerTTS.TransformerTTS import build_reference_transformer_tts_model
 
 
 class FastSpeechDataset(Dataset):
 
     def __init__(self,
                  path_to_transcript_dict,
-                 acoustic_model_name,
+                 acoustic_model,
+                 cache_dir,
                  diagonal_attention_head_id=None,  # every transformer has one attention head
-                 # that is the most diagonal. Look for it manually (e.g. using playground)
+                 # that is the most diagonal. Look for it manually (e.g. using run_visualization.py)
                  # and then provide it here.
                  speaker_embedding=False,
-                 train=True,
-                 loading_processes=8,
-                 cache_dir=os.path.join("Corpora", "CSS10_DE"),
-                 lang="de",
+                 loading_processes=4,
+                 lang="en",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  reduction_factor=1,
@@ -42,20 +40,12 @@ class FastSpeechDataset(Dataset):
                  ):
 
         self.speaker_embedding = speaker_embedding
-        if ((not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json"))) and train) or (
-                (not os.path.exists(os.path.join(cache_dir, "fast_valid_cache.json"))) and (not train)) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json")) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
                 os.makedirs(os.path.join(cache_dir, "durations_visualization"))
             ressource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
-            if type(train) is str:
-                key_list = list(self.path_to_transcript_dict.keys())[:1]
-            else:
-                all_keys_ordered = list(self.path_to_transcript_dict.keys())
-                if train:
-                    key_list = all_keys_ordered[:-100]
-                else:
-                    key_list = all_keys_ordered[-100:]
+            key_list = list(self.path_to_transcript_dict.keys())
             # build cache
             print("... building dataset cache ...")
             self.datapoints = ressource_manager.list()
@@ -66,27 +56,20 @@ class FastSpeechDataset(Dataset):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(Process(target=self.cache_builder_process, args=(
-                    key_split, acoustic_model_name, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, reduction_factor, device, cache_dir,
+                    key_split, acoustic_model, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, reduction_factor, device, cache_dir,
                     diagonal_attention_head_id), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
-            if train:
-                with open(os.path.join(cache_dir, "fast_train_cache.json"), 'w') as fp:
-                    json.dump(self.datapoints, fp)
-            else:
-                with open(os.path.join(cache_dir, "fast_valid_cache.json"), 'w') as fp:
-                    json.dump(self.datapoints, fp)
+            with open(os.path.join(cache_dir, "fast_train_cache.json"), 'w') as fp:
+                json.dump(self.datapoints, fp)
         else:
             # just load the datapoints
-            if train:
-                with open(os.path.join(cache_dir, "fast_train_cache.json"), 'r') as fp:
-                    self.datapoints = json.load(fp)
-            else:
-                with open(os.path.join(cache_dir, "fast_valid_cache.json"), 'r') as fp:
-                    self.datapoints = json.load(fp)
+            with open(os.path.join(cache_dir, "fast_train_cache.json"), 'r') as fp:
+                self.datapoints = json.load(fp)
+
         if path_blacklist is not None:
             bl = set(path_blacklist)
             datapoints_with_durations_that_make_sense = list()
@@ -96,7 +79,7 @@ class FastSpeechDataset(Dataset):
             self.datapoints = datapoints_with_durations_that_make_sense
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, acoustic_model_name, speaker_embedding, lang, min_len, max_len, reduction_factor, device, cache_dir,
+    def cache_builder_process(self, path_list, acoustic_model, speaker_embedding, lang, min_len, max_len, reduction_factor, device, cache_dir,
                               diagonal_attention_head_id):
         tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
@@ -104,10 +87,7 @@ class FastSpeechDataset(Dataset):
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        if speaker_embedding:
-            acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name, spk_embed_dim=256).to(device)
-        else:
-            acoustic_model = build_reference_transformer_tts_model(model_name=acoustic_model_name).to(device)
+        acoustic_model = acoustic_model.to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor, diagonal_attention_head_id=diagonal_attention_head_id)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)

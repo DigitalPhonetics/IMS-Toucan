@@ -36,14 +36,6 @@ def run(gpu_id, resume_checkpoint, finetune):
     path_to_transcript_dict = build_path_to_transcript_dict_elizabeth()
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=True,
-                                      cache_dir=cache_dir,
-                                      lang="en",
-                                      min_len_in_seconds=1,
-                                      max_len_in_seconds=10,
-                                      rebuild_cache=False)
-    valid_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      train=False,
                                       cache_dir=cache_dir,
                                       lang="en",
                                       min_len_in_seconds=1,
@@ -55,7 +47,6 @@ def run(gpu_id, resume_checkpoint, finetune):
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
-               valid_dataset=valid_set,
                device=device,
                save_directory=save_dir,
                steps=400000,
@@ -64,7 +55,7 @@ def run(gpu_id, resume_checkpoint, finetune):
                epochs_per_save=10,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.01,
+               lr=0.001,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

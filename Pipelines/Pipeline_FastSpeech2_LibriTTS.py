@@ -6,6 +6,7 @@ import torch
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
+from TransformerTTS.TransformerTTS import Transformer
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts
 
 
@@ -32,20 +33,13 @@ def run(gpu_id, resume_checkpoint, finetune):
 
     path_to_transcript_dict = build_path_to_transcript_dict_libritts()
 
+    acoustic_model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
+                                              map_location='cpu')["model"])
+
     train_set = FastSpeechDataset(path_to_transcript_dict,
-                                  train=True,
-                                  acoustic_model_name="TransformerTTS_LibriTTS/best.pt",
                                   cache_dir=cache_dir,
-                                  lang="en",
-                                  min_len_in_seconds=1,
-                                  max_len_in_seconds=10,
-                                  device=device,
-                                  speaker_embedding=True,
-                                  diagonal_attention_head_id=16)
-    valid_set = FastSpeechDataset(path_to_transcript_dict,
-                                  train=False,
-                                  acoustic_model_name="TransformerTTS_LibriTTS/best.pt",
-                                  cache_dir=cache_dir,
+                                  acoustic_model=acoustic_model,
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
@@ -58,7 +52,6 @@ def run(gpu_id, resume_checkpoint, finetune):
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
-               valid_dataset=valid_set,
                device=device,
                save_directory=save_dir,
                steps=400000,
@@ -67,7 +60,7 @@ def run(gpu_id, resume_checkpoint, finetune):
                epochs_per_save=10,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.01,
+               lr=0.001,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

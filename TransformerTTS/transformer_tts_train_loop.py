@@ -1,4 +1,3 @@
-import json
 import os
 import time
 
@@ -112,7 +111,6 @@ def collate_and_pad(batch):
 
 def train_loop(net,
                train_dataset,
-               valid_dataset,
                device,
                save_directory,
                batch_size=32,
@@ -135,7 +133,6 @@ def train_loop(net,
     :param use_speaker_embedding: whether to expect speaker embeddings
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
-    :param valid_dataset: Pytorch Dataset Object for validation data
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
@@ -144,14 +141,17 @@ def train_loop(net,
     """
     net = net.to(device)
     scaler = GradScaler()
-    train_loader = DataLoader(batch_size=batch_size, dataset=train_dataset, drop_last=True, num_workers=8, pin_memory=False, shuffle=True, prefetch_factor=8,
-                              collate_fn=collate_and_pad, persistent_workers=True)
-    valid_loader = DataLoader(batch_size=10, dataset=valid_dataset, drop_last=False, num_workers=5, pin_memory=False, prefetch_factor=2,
-                              collate_fn=collate_and_pad, persistent_workers=True)
-
-    loss_plot = [[], []]
+    train_loader = DataLoader(batch_size=batch_size,
+                              dataset=train_dataset,
+                              drop_last=True,
+                              num_workers=8,
+                              pin_memory=False,
+                              shuffle=True,
+                              prefetch_factor=8,
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     if use_speaker_embedding:
-        reference_speaker_embedding_for_att_plot = torch.Tensor(valid_dataset[0][4]).to(device)
+        reference_speaker_embedding_for_att_plot = torch.Tensor(train_dataset[0][4]).to(device)
     else:
         reference_speaker_embedding_for_att_plot = None
     step_counter = 0
@@ -161,7 +161,6 @@ def train_loop(net,
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
@@ -175,10 +174,8 @@ def train_loop(net,
             else:
                 # legacy support
                 step_counter = int(path_to_checkpoint.split(".")[0].split("_")[-1])
-
     start_time = time.time()
     while True:
-        # train one epoch
         epoch += 1
         grad_accum = 0
         optimizer.zero_grad()
@@ -199,8 +196,6 @@ def train_loop(net,
                 if grad_accum % gradient_accumulation == 0:
                     grad_accum = 0
                     step_counter += 1
-                    # update weights
-                    # print("Step: {}".format(step_counter))
                     torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                     scaler.step(optimizer)
                     scaler.update()
@@ -220,31 +215,21 @@ def train_loop(net,
                 if grad_accum % gradient_accumulation == 0:
                     grad_accum = 0
                     step_counter += 1
-                    # update weights
-                    # print("Step: {}".format(step_counter))
                     torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                     optimizer.step()
                     scheduler.step()
                     optimizer.zero_grad()
                     torch.cuda.empty_cache()
-
-        # evaluate on valid after every epoch
         with torch.no_grad():
             net.eval()
-            val_losses = list()
-            for validation_datapoint in valid_loader:
-                if not use_speaker_embedding:
-                    val_losses.append(float(net(validation_datapoint[0].to(device), validation_datapoint[1].to(device), validation_datapoint[2].to(device),
-                                                validation_datapoint[3].to(device))))
-                else:
-                    val_losses.append(float(net(validation_datapoint[0].to(device), validation_datapoint[1].to(device), validation_datapoint[2].to(device),
-                                                validation_datapoint[3].to(device), validation_datapoint[4].to(device))))
-            average_val_loss = sum(val_losses) / len(val_losses)
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model"    : net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
+                    "step_counter": step_counter,
                     "scheduler": scheduler.state_dict()
-                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
                 plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
                 plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)
@@ -253,11 +238,6 @@ def train_loop(net,
                     return
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-            print("Valid Loss:   {}".format(average_val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
             print("Steps:        {}".format(step_counter))
-            loss_plot[0].append(sum(train_losses_this_epoch) / len(train_losses_this_epoch))
-            loss_plot[1].append(average_val_loss)
-            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
-                json.dump(loss_plot, plotting_data_file)
             net.train()

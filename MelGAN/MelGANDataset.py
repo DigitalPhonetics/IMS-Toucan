@@ -13,7 +13,11 @@ from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
 
 class MelGANDataset(Dataset):
 
-    def __init__(self, list_of_paths, samples_per_segment=8192, loading_processes=6, cache="Corpora/css10_de.txt"):
+    def __init__(self,
+                 list_of_paths,
+                 cache,
+                 samples_per_segment=8192,
+                 loading_processes=6):
         self.samples_per_segment = samples_per_segment
         _, sr = sf.read(list_of_paths[0])
         #  ^ this is the reason why we must create individual

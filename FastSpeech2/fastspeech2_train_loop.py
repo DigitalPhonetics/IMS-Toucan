@@ -1,4 +1,3 @@
-import json
 import os
 import time
 
@@ -20,12 +19,9 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
     tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
     sentence = "Hello"
     if lang == "en":
-        sentence = "Many animals of even complex structure which " \
-                   "live parasitically within others are wholly " \
-                   "devoid of an alimentary cavity."
+        sentence = "This is an unseen sentence."
     elif lang == "de":
-        sentence = "Dies ist ein brandneuer Satz, und er ist noch dazu " \
-                   "ziemlich lang und komplex, dmait man im Spektrogram auch was sieht."
+        sentence = "Dies ist ein ungesehener Satz."
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     spec = net.inference(text=text, speaker_embeddings=reference_speaker_embedding_for_plot).transpose(0, 1).to("cpu").numpy()
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -82,12 +78,11 @@ def collate_and_pad(batch):
             pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
             torch.stack(speech_lens).squeeze(1),
             pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
-            torch.stack(speaker_embeddings))  # may need squeezing, cannot test atm
+            torch.stack(speaker_embeddings))
 
 
 def train_loop(net,
                train_dataset,
-               valid_dataset,
                device,
                save_directory,
                batch_size=32,
@@ -110,7 +105,6 @@ def train_loop(net,
     :param use_speaker_embedding: whether to expect speaker embeddings
     :param net: Model to train
     :param train_dataset: Pytorch Dataset Object for train data
-    :param valid_dataset: Pytorch Dataset Object for validation data
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
@@ -120,16 +114,19 @@ def train_loop(net,
     net = net.to(device)
     scaler = GradScaler()
     if use_speaker_embedding:
-        reference_speaker_embedding_for_plot = torch.Tensor(valid_dataset[0][7]).to(device)
+        reference_speaker_embedding_for_plot = torch.Tensor(train_dataset[0][7]).to(device)
     else:
         reference_speaker_embedding_for_plot = None
     torch.multiprocessing.set_sharing_strategy('file_system')
-    train_loader = DataLoader(batch_size=batch_size, dataset=train_dataset, drop_last=True, num_workers=8, pin_memory=False, shuffle=True, prefetch_factor=8,
-                              collate_fn=collate_and_pad, persistent_workers=True)
-    valid_loader = DataLoader(batch_size=10, dataset=valid_dataset, drop_last=False, num_workers=5, pin_memory=False, prefetch_factor=2,
-                              collate_fn=collate_and_pad, persistent_workers=True)
-
-    loss_plot = [[], []]
+    train_loader = DataLoader(batch_size=batch_size,
+                              dataset=train_dataset,
+                              drop_last=True,
+                              num_workers=8,
+                              pin_memory=False,
+                              shuffle=True,
+                              prefetch_factor=8,
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     step_counter = 0
     net.train()
     if fine_tune:
@@ -137,7 +134,6 @@ def train_loop(net,
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     epoch = 0
-
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(path_to_checkpoint, map_location=device)
@@ -155,7 +151,6 @@ def train_loop(net,
     start_time = time.time()
     while True:
         epoch += 1
-        # train one epoch
         grad_accum = 0
         optimizer.zero_grad()
         train_losses_this_epoch = list()
@@ -175,7 +170,6 @@ def train_loop(net,
                 del train_loss
                 grad_accum = 0
                 step_counter += 1
-                # update weights
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                 scaler.step(optimizer)
                 scaler.update()
@@ -196,33 +190,21 @@ def train_loop(net,
                 if grad_accum % gradient_accumulation == 0:
                     grad_accum = 0
                     step_counter += 1
-                    # update weights
-                    # print("Step: {}".format(step_counter))
                     torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
                     optimizer.step()
                     scheduler.step()
                     optimizer.zero_grad()
                     torch.cuda.empty_cache()
-
-        # evaluate on valid after every epoch is through
         with torch.no_grad():
             net.eval()
-            val_losses = list()
-            for validation_datapoint in valid_loader:
-                if not use_speaker_embedding:
-                    val_losses.append(float(net(validation_datapoint[0].to(device), validation_datapoint[1].to(device), validation_datapoint[2].to(device),
-                                                validation_datapoint[3].to(device), validation_datapoint[4].to(device), validation_datapoint[5].to(device),
-                                                validation_datapoint[6].to(device))))
-                else:
-                    val_losses.append(float(net(validation_datapoint[0].to(device), validation_datapoint[1].to(device), validation_datapoint[2].to(device),
-                                                validation_datapoint[3].to(device), validation_datapoint[4].to(device), validation_datapoint[5].to(device),
-                                                validation_datapoint[6].to(device), validation_datapoint[7].to(device))))
-            average_val_loss = sum(val_losses) / len(val_losses)
-            if epoch & epochs_per_save == 0:
+            if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model"    : net.state_dict(), "optimizer": optimizer.state_dict(), "scaler": scaler.state_dict(), "step_counter": step_counter,
-                    "scheduler": scheduler.state_dict(), "step_counter": step_counter
-                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
+                    "step_counter": step_counter,
+                    "scheduler": scheduler.state_dict(),
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
                                    reference_speaker_embedding_for_plot=reference_speaker_embedding_for_plot)
                 if step_counter > steps:
@@ -230,11 +212,6 @@ def train_loop(net,
                     return
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-            print("Valid Loss:   {}".format(average_val_loss))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
             print("Steps:        {}".format(step_counter))
-            loss_plot[0].append(sum(train_losses_this_epoch) / len(train_losses_this_epoch))
-            loss_plot[1].append(average_val_loss)
-            with open(os.path.join(save_directory, "train_val_loss.json"), 'w') as plotting_data_file:
-                json.dump(loss_plot, plotting_data_file)
             net.train()

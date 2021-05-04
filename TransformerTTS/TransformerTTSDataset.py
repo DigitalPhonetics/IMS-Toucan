@@ -15,19 +15,21 @@ from PreprocessingForTTS.ProcessText import TextFrontend
 
 class TransformerTTSDataset(Dataset):
 
-    def __init__(self, path_to_transcript_dict, speaker_embedding=False, train=True, loading_processes=1, cache_dir=os.path.join("Corpora", "CSS10_DE"),
-                 lang="de",
-                 min_len_in_seconds=1, max_len_in_seconds=20, cut_silences=False, rebuild_cache=False):
+    def __init__(self,
+                 path_to_transcript_dict,
+                 cache_dir,
+                 speaker_embedding=False,
+                 loading_processes=4,
+                 lang="en",
+                 min_len_in_seconds=1,
+                 max_len_in_seconds=20,
+                 cut_silences=False,
+                 rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
-        if ((not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json"))) and train) or (
-                (not os.path.exists(os.path.join(cache_dir, "trans_valid_cache.json"))) and (not train)) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json")) or rebuild_cache:
             ressource_manager = Manager()
             self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
-            all_keys_ordered = list(self.path_to_transcript_dict.keys())
-            if train:
-                key_list = all_keys_ordered[:-100]
-            else:
-                key_list = all_keys_ordered[-100:]
+            key_list = list(self.path_to_transcript_dict.keys())
 
             # build cache
             print("... building dataset cache ...")
@@ -46,20 +48,12 @@ class TransformerTTSDataset(Dataset):
                 process.join()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
-            if train:
-                with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
-                    json.dump(self.datapoints, fp)
-            else:
-                with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'w') as fp:
-                    json.dump(self.datapoints, fp)
+            with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
+                json.dump(self.datapoints, fp)
         else:
             # just load the datapoints
-            if train:
-                with open(os.path.join(cache_dir, "trans_train_cache.json"), 'r') as fp:
-                    self.datapoints = json.load(fp)
-            else:
-                with open(os.path.join(cache_dir, "trans_valid_cache.json"), 'r') as fp:
-                    self.datapoints = json.load(fp)
+            with open(os.path.join(cache_dir, "trans_train_cache.json"), 'r') as fp:
+                self.datapoints = json.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):

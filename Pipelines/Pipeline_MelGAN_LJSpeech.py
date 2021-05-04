@@ -32,10 +32,8 @@ def run(gpu_id, resume_checkpoint, finetune):
     if not os.path.exists(melgan_cache_dir):
         os.makedirs(melgan_cache_dir)
 
-    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[:-50],
+    train_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech(),
                                  cache=os.path.join(melgan_cache_dir, "LJSpeech_train.txt"))
-    valid_set_lj = MelGANDataset(list_of_paths=get_file_list_ljspeech()[-50:],
-                                 cache=os.path.join(melgan_cache_dir, "LJSpeech_valid.txt"))
     generator = MelGANGenerator()
     generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
@@ -46,7 +44,6 @@ def run(gpu_id, resume_checkpoint, finetune):
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_set_lj,
-               valid_dataset=valid_set_lj,
                device=device,
                generator_warmup_steps=100000,
                model_save_dir=model_save_dir,

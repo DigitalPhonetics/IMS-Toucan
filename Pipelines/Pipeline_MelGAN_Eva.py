@@ -32,10 +32,8 @@ def run(gpu_id, resume_checkpoint, finetune):
     if not os.path.exists(melgan_cache_dir):
         os.makedirs(melgan_cache_dir)
 
-    train_set = MelGANDataset(list_of_paths=get_file_list_eva()[:-50],
+    train_set = MelGANDataset(list_of_paths=get_file_list_eva(),
                               cache=os.path.join(melgan_cache_dir, "eva_train.txt"))
-    valid_set = MelGANDataset(list_of_paths=get_file_list_eva()[-50:],
-                              cache=os.path.join(melgan_cache_dir, "eva_valid.txt"))
 
     generator = MelGANGenerator()
     generator.reset_parameters()
@@ -47,7 +45,6 @@ def run(gpu_id, resume_checkpoint, finetune):
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,
-               valid_dataset=valid_set,
                device=device,
                generator_warmup_steps=100000,
                model_save_dir=model_save_dir,
