@@ -10,7 +10,7 @@ from MelGAN.melgan_train_loop import train_loop
 from Utility.file_lists import get_file_list_elizabeth
 
 
-def run(gpu_id, resume_checkpoint, finetune):
+def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -24,7 +24,10 @@ def run(gpu_id, resume_checkpoint, finetune):
     random.seed(13)
 
     print("Preparing")
-    model_save_dir = "Models/MelGAN_Elizabeth"
+    if model_dir is not None:
+        model_save_dir = model_dir
+    else:
+        model_save_dir = "Models/MelGAN_Elizabeth"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 

@@ -64,8 +64,13 @@ parser.add_argument('--resume_checkpoint',
 
 parser.add_argument('--finetune',
                     action="store_true",
-                    help="Whether to fine-tune from the specified checkpoint",
+                    help="Whether to fine-tune from the specified checkpoint.",
                     default=False)
+
+parser.add_argument('--model_save_dir',
+                    type=str,
+                    help="Directory where the checkpoints should be saved to.",
+                    default=None)
 
 args = parser.parse_args()
 
@@ -77,4 +82,4 @@ if args.finetune and "melgan" in args.pipeline:
     print("Fine-tuning for MelGAN is not implemented as it didn't seem necessary and the GAN would most likely fail. Just train from scratch.")
     sys.exit()
 
-pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, finetune=args.finetune)
+pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, finetune=args.finetune, model_dir=args.model_save_dir)

@@ -10,7 +10,7 @@ from TransformerTTS.TransformerTTS import Transformer
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts
 
 
-def run(gpu_id, resume_checkpoint, finetune):
+def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -25,7 +25,10 @@ def run(gpu_id, resume_checkpoint, finetune):
 
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LibriTTS")
-    save_dir = os.path.join("Models", "FastSpeech2_LibriTTS")
+    if model_dir is not None:
+        save_dir = model_dir
+    else:
+        save_dir = os.path.join("Models", "FastSpeech2_LibriTTS")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -33,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune):
 
     path_to_transcript_dict = build_path_to_transcript_dict_libritts()
 
-    acoustic_model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    acoustic_model = Transformer(idim=133, odim=80, spk_embed_dim=256)
     acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
                                               map_location='cpu')["model"])
 

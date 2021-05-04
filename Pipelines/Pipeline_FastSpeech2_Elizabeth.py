@@ -10,7 +10,7 @@ from TransformerTTS.TransformerTTS import Transformer
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_elizabeth
 
 
-def run(gpu_id, resume_checkpoint, finetune):
+def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -25,7 +25,10 @@ def run(gpu_id, resume_checkpoint, finetune):
 
     print("Preparing")
     cache_dir = os.path.join("Corpora", "Elizabeth")
-    save_dir = os.path.join("Models", "FastSpeech2_Elizabeth")
+    if model_dir is not None:
+        save_dir = model_dir
+    else:
+        save_dir = os.path.join("Models", "FastSpeech2_Elizabeth")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
