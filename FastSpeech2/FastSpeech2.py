@@ -2,7 +2,6 @@
 Taken from ESPNet
 """
 
-import os
 from abc import ABC
 
 import torch
@@ -326,9 +325,3 @@ class FastSpeech2(torch.nn.Module, ABC):
         if init_type != "pytorch":
             initialize(self, init_type)
 
-
-def build_reference_fastspeech2_model(model_name):
-    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None).to("cpu")
-    params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
-    model.load_state_dict(params)
-    return model

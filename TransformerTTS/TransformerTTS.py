@@ -2,7 +2,6 @@
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux 2021
 
-import os
 from abc import ABC
 from typing import Dict
 
@@ -445,33 +444,6 @@ class Transformer(torch.nn.Module, ABC):
         return hs
 
 
-def build_reference_transformer_tts_model(model_name="TransformerTTS_Thorsten/best.pt", spk_embed_dim=None):
-    model = Transformer(idim=133, odim=80, spk_embed_dim=spk_embed_dim).to("cpu")
-    params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
-    model.load_state_dict(params)
-    return model
-
-
-def select_best_att_head(att_ws):
-    att_ws = torch.cat([att_w for att_w in att_ws], dim=0)
-    diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)
-    diagonal_head_idx = diagonal_scores.argmax()
-    att_ws = att_ws[diagonal_head_idx]
-    return att_ws
-
-
-def plot_attention(att, sentence=None, phones=None):
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(8, 4))
-    plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    if phones is not None:
-        plt.xticks(range(len(att[0])), labels=[phone for phone in phones])
-    plt.xlabel("Inputs")
-    plt.ylabel("Outputs")
-    if sentence is not None:
-        plt.title(sentence)
-    plt.tight_layout()
-    plt.show()
 
 
 def plot_attentions(atts):
@@ -501,13 +473,3 @@ def get_atts(model, sentence, lang, get_phones=False):
         return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2], tf.get_phone_string(sentence)
     return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
 
-
-def show_attention_plot(sentence, model_name="TransformerTTS_Thorsten/best.pt", best_only=False, lang="de"):
-    model = build_reference_transformer_tts_model(model_name=model_name)
-    if best_only:
-        att, phones = get_atts(model=model, sentence=sentence, lang=lang, get_phones=True)
-        plot_attention(select_best_att_head(att), sentence=sentence, phones=phones)
-    else:
-        att, phones = get_atts(model=model, sentence=sentence, lang=lang, get_phones=True)
-        atts = torch.cat([att_w for att_w in att], dim=0)
-        plot_attentions(atts)

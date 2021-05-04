@@ -33,7 +33,9 @@ also makes it also more difficult to break things and cause legacy problems.
 
 ## Working with this Toolkit
 
-The standard way of working with this toolkit is to make your own fork of it, so you can change as much of the code as you like and fully adapt it to your needs. Making pipelines to train models on new datasets, even in new languages requires absolutely minimal new code and you can take the existing code for such models as reference/template.
+The standard way of working with this toolkit is to make your own fork of it, so you can change as much of the code as
+you like and fully adapt it to your needs. Making pipelines to train models on new datasets, even in new languages,
+requires absolutely minimal new code and you can take the existing code for such models as reference/template.
 
 ## Installation
 To install this toolkit, clone it onto the machine you want to use it on (should have at least one GPU if you intend to train models on that machine. For inference you can get by without GPU). Navigate to the directory you have cloned and run the command shown below. It is recommended to first create and activate a [pip virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment). 
