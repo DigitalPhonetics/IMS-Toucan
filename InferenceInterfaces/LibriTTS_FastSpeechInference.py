@@ -4,8 +4,8 @@ import sounddevice
 import soundfile
 import torch
 
-from InferenceInterfaces.InferenceFastSpeech import FastSpeech2
-from InferenceInterfaces.InferenceMelGAN import MelGANGenerator
+from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech import FastSpeech2
+from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
 from PreprocessingForTTS.ProcessText import TextFrontend
 
 

@@ -95,7 +95,7 @@ class Transformer(torch.nn.Module, ABC):
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["model"])
 
-    def forward(self, text, speaker_embedding=None):
+    def forward(self, text, speaker_embedding=None, return_atts=False):
         self.eval()
         x = text
         xs = x.unsqueeze(0)
@@ -132,7 +132,10 @@ class Transformer(torch.nn.Module, ABC):
                     outs = outs + self.postnet(outs)
                 outs = outs.transpose(2, 1).squeeze(0)
                 break
-        return outs
+        if return_atts:
+            return att_ws
+        else:
+            return outs
 
     @staticmethod
     def _add_first_frame_and_remove_last_frame(ys):

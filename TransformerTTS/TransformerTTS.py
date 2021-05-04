@@ -442,34 +442,3 @@ class Transformer(torch.nn.Module, ABC):
             raise NotImplementedError("support only add or concat.")
 
         return hs
-
-
-
-
-def plot_attentions(atts):
-    import matplotlib.pyplot as plt
-    fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
-    atts_1 = atts[::2]
-    atts_2 = atts[1::2]
-    for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-        axes[index][0].set_title("{}".format(index * 2))
-        axes[index][0].xaxis.set_visible(False)
-        axes[index][0].yaxis.set_visible(False)
-    for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-        axes[index][1].set_title("{}".format((index + 1) * 2 - 1))
-        axes[index][1].xaxis.set_visible(False)
-        axes[index][1].yaxis.set_visible(False)
-    # plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
-    plt.tight_layout()
-    plt.show()
-
-
-def get_atts(model, sentence, lang, get_phones=False):
-    from PreprocessingForTTS.ProcessText import TextFrontend
-    tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
-    if get_phones:
-        return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2], tf.get_phone_string(sentence)
-    return model.inference(tf.string_to_tensor(sentence).squeeze(0).long())[2]
-

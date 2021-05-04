@@ -79,9 +79,8 @@ will be added shortly
 | LibriTTS              | English   | Multi Speaker       | ✅     | ✅            | ✅          |
 
 ## List to do
-- declutter piplines and datasets, remove dev sets entirely, not needed for TTS
+- declutter pipelines and datasets, remove dev sets entirely, not needed for TTS
 - automate loading of a default melgan for inference interfaces, centralize changes to inference interfaces
 - automate retrieval of speaker embedding function for installation
 - finish documentation
 - argparse model dir name
-- remove outdated reference TTS building and att plotting, add to inference interface instead

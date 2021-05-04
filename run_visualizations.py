@@ -10,12 +10,28 @@ import torch
 import torchviz
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
+from InferenceInterfaces.Elizabeth_TransformerTTSInference import Elizabeth_TransformerTTSInference
+from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSInference
+from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
+from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
+from InferenceInterfaces.LibriTTS_TransformerTTSInference import LibriTTS_TransformerTTSInference
+from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTS import show_attention_plot
 
 
-def show_att(sentence, lang="de", best_only=False):
-    show_attention_plot(sentence, lang=lang, best_only=best_only)
+def view_attention_heads(model_id, sentence):
+    import os
+    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+    tts_dict = {
+        "trans_thorsten": Thorsten_TransformerTTSInference,
+        "trans_lj": LJSpeech_TransformerTTSInference,
+        "trans_libri": LibriTTS_TransformerTTSInference,
+        "trans_karl": Karlsson_TransformerTTSInference,
+        "trans_eva": Eva_TransformerTTSInference,
+        "trans_elizabeth": Elizabeth_TransformerTTSInference
+    }
+    tts = tts_dict[model_id]()
+    tts.plot_attentions(sentence=sentence)
 
 
 def plot_fastspeech_architecture():
@@ -88,4 +104,4 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    show_att(sentence="Hello World, this is a test.", lang="en", best_only=False)
+    view_attention_heads("trans_thorsten", sentence="Hallo Welt!")
