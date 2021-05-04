@@ -75,25 +75,6 @@ class Elizabeth_TransformerTTSInference(torch.nn.Module):
             sounddevice.wait()
 
     def plot_attentions(self, sentence):
-        sentence_tensor = self.text2phone.string_to_tensor(sentence)
-        atts = self.phone2mel(text=sentence_tensor, speaker_embedding=self.speaker_embedding, return_atts=True)
-        fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
-        atts_1 = atts[::2]
-        atts_2 = atts[1::2]
-        for index, att in enumerate(atts_1):
-            axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-            axes[index][0].set_title("{}".format(index * 2))
-            axes[index][0].xaxis.set_visible(False)
-            axes[index][0].yaxis.set_visible(False)
-        for index, att in enumerate(atts_2):
-            axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-            axes[index][1].set_title("{}".format((index + 1) * 2 - 1))
-            axes[index][1].xaxis.set_visible(False)
-            axes[index][1].yaxis.set_visible(False)
-        plt.tight_layout()
-        plt.show()
-
-    def plot_attentions(self, sentence):
         sentence_tensor = self.text2phone.string_to_tensor(sentence).squeeze(0).long().to(torch.device(self.device))
         att_ws = self.phone2mel(text=sentence_tensor, speaker_embedding=self.speaker_embedding, return_atts=True)
         atts = torch.cat([att_w for att_w in att_ws], dim=0)
