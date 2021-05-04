@@ -10,3 +10,9 @@ Models
 *.wav
 audios/notes.txt
 audios/
+!Utility/german_demo.wav
+!Utility/english_demo.wav
+!Utility/multi_demo.wav
+!Utility/german_demo.png
+!Utility/english_demo.png
+!Utility/multi_demo.png
