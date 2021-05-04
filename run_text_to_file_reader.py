@@ -64,4 +64,4 @@ How much wood would a woodchuck chuck if a woodchuck could chuck wood?
 He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.""".split("\n"),
                filename="audios/fast_lj.wav", device=exec_device)
 
-    read_texts(model_id="fast_thorsten", sentence=["Hallo, ich bin eine deutsche Stimme."], filename="audios/fast_thorsten.wav", device=exec_device)
+    read_texts(model_id="trans_thorsten", sentence=["Hallo, ich bin eine deutsche Stimme."], filename="audios/fast_thorsten.wav", device=exec_device)

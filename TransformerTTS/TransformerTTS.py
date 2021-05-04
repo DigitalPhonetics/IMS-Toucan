@@ -445,7 +445,7 @@ class Transformer(torch.nn.Module, ABC):
         return hs
 
 
-def build_reference_transformer_tts_model(model_name="Use/Transformer_German_Single.pt", spk_embed_dim=None):
+def build_reference_transformer_tts_model(model_name="TransformerTTS_Thorsten/best.pt", spk_embed_dim=None):
     model = Transformer(idim=133, odim=80, spk_embed_dim=spk_embed_dim).to("cpu")
     params = torch.load(os.path.join("Models", model_name), map_location='cpu')["model"]
     model.load_state_dict(params)
