@@ -4,7 +4,7 @@ This is a toolkit to train state-of-the-art Speech Synthesis models. Everything 
 it as simple and beginner-friendly, yet powerful as possible.
 
 The PyTorch Modules of [TransformerTTS](https://arxiv.org/abs/1809.08895)
-and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from [ESPNet](https://github.com/espnet/espnet), the
+and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from [ESPnet](https://github.com/espnet/espnet), the
 PyTorch Modules of [MelGAN](https://arxiv.org/abs/1910.06711) are taken from
 the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN) which is also made by the
 brillant [Tomoki Hayashi](https://github.com/kan-bayashi).
@@ -27,8 +27,7 @@ this toolkit. Fans of the videogame Portal may recognize who was used as the ref
 While it is a bad practice to have redundancy in regular code, and as much as possible should be abstracted and
 parameterized, my experiences in creating this toolkit and working with other toolkits led me to believe that sometimes
 redundancy is not only ok, it is actually very convenient. While it does make it more difficult to change things, it
-also makes it also more difficult to break things and cause legacy problems. Also it allows parameterization to focus on
-the truly important parameters, which would otherwise drown in tons of case specific parameters that are never changed.
+also makes it also more difficult to break things and cause legacy problems.
 
 ---
 
@@ -52,16 +51,16 @@ apt-get install espeak
 ```
 
 ## Creating a new Pipeline
-tbd
+will be added shortly
 
 ## Training a Model
-tbd
+will be added shortly
 
 ## Creating a new Inference Interface
-tbd
+will be added shortly
 
 ## Using a trained Model for Inference
-tbd
+will be added shortly
 
 ---
 
