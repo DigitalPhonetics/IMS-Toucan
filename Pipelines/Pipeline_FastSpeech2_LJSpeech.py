@@ -46,6 +46,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
+                                  diagonal_attention_head_id=None,
                                   device=device,
                                   rebuild_cache=False)
 

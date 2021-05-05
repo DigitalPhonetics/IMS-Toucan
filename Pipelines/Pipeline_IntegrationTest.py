@@ -223,12 +223,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    melgan_cache_dir = os.path.join("Corpora", "IntegrationTest")
-    if not os.path.exists(melgan_cache_dir):
-        os.makedirs(melgan_cache_dir)
-
-    train_set_lj_melgan = MelGANDataset(list_of_paths=list(path_to_transcript_dict.keys()),
-                                        cache=os.path.join(melgan_cache_dir, "smol.txt"))
+    train_set_lj_melgan = MelGANDataset(list_of_paths=list(path_to_transcript_dict.keys()))
     generator = MelGANGenerator()
     generator.reset_parameters()
     multi_scale_discriminator = MelGANMultiScaleDiscriminator()
