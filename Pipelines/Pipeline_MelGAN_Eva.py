@@ -7,7 +7,7 @@ from MelGAN.MelGANDataset import MelGANDataset
 from MelGAN.MelGANGenerator import MelGANGenerator
 from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
 from MelGAN.melgan_train_loop import train_loop
-from Utility.file_lists import get_file_list_eva
+from Utility.file_lists import get_file_list_eva as get_file_list
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -31,12 +31,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    melgan_cache_dir = "Corpora/MelGAN"
-    if not os.path.exists(melgan_cache_dir):
-        os.makedirs(melgan_cache_dir)
-
-    train_set = MelGANDataset(list_of_paths=get_file_list_eva(),
-                              cache=os.path.join(melgan_cache_dir, "eva_train.txt"))
+    train_set = MelGANDataset(list_of_paths=get_file_list())
 
     generator = MelGANGenerator()
     generator.reset_parameters()

@@ -1,4 +1,3 @@
-import os
 import random
 from multiprocessing import Manager
 from multiprocessing import Process
@@ -15,7 +14,6 @@ class MelGANDataset(Dataset):
 
     def __init__(self,
                  list_of_paths,
-                 cache,
                  samples_per_segment=8192,
                  loading_processes=6):
         self.samples_per_segment = samples_per_segment
@@ -27,30 +25,19 @@ class MelGANDataset(Dataset):
         self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
         self.melspec_ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
         # hop length must be same as the product of the upscale factors
-        if not os.path.exists(cache):
-            resource_manager = Manager()
-            self.list_of_eligible_wave_paths = resource_manager.list()
-            # make processes
-            path_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
-            for path_split in path_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(path_split, samples_per_segment), daemon=True))
-                process_list[-1].start()
-            for process in process_list:
-                process.join()
-            self.list_of_eligible_wave_paths = list(self.list_of_eligible_wave_paths)
-            with open(cache, "w") as c:
-                c.write("\n".join(self.list_of_eligible_wave_paths))
-        else:
-            with open(cache, "r") as c:
-                self.list_of_eligible_wave_paths = c.read().split("\n")
-
-        # At this point we have a list of eligible
-        # wave paths either way. Now we can process
-        # it and have it in RAM. This is suboptimal
-        # if we do it in one go, but it's fine.
+        resource_manager = Manager()
+        self.list_of_eligible_wave_paths = resource_manager.list()
+        # make processes
+        path_splits = list()
+        process_list = list()
+        for i in range(loading_processes):
+            path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
+        for path_split in path_splits:
+            process_list.append(Process(target=self.cache_builder_process, args=(path_split, samples_per_segment), daemon=True))
+            process_list[-1].start()
+        for process in process_list:
+            process.join()
+        self.list_of_eligible_wave_paths = list(self.list_of_eligible_wave_paths)
         self.waves = list()
         for path in tqdm(self.list_of_eligible_wave_paths):
             with open(path, "rb") as audio_file:
