@@ -1,10 +1,25 @@
 """
-Taken from ESPNet
+Taken from ESPNet, modified by Florian Lux
 """
 
+import os
 from abc import ABC
 
 import torch
+
+
+def delete_old_checkpoints(checkpoint_dir, keep=5):
+    checkpoint_list = list()
+    for el in os.listdir(checkpoint_dir):
+        if el.endswith(".pt") and el != "best.pt":
+            checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+    if len(checkpoint_list) <= keep:
+        return
+    else:
+        checkpoint_list.sort(reverse=False)
+        checkpoints_to_delete = [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:-keep]]
+        for old_checkpoint in checkpoints_to_delete:
+            os.remove(os.path.join(checkpoint_dir, old_checkpoint))
 
 
 def make_pad_mask(lengths, xs=None, length_dim=-1):

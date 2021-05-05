@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from PreprocessingForTTS.ProcessText import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
+from Utility.utils import delete_old_checkpoints
 
 
 def plot_attentions_all_heads(atts, att_dir, step):
@@ -230,6 +231,7 @@ def train_loop(net,
                     "step_counter": step_counter,
                     "scheduler": scheduler.state_dict()
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                delete_old_checkpoints(save_directory, keep=5)
                 all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
                 plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
                 plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)

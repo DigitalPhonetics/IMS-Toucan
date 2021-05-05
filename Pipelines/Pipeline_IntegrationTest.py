@@ -152,7 +152,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                             min_len_in_seconds=1,
                                             max_len_in_seconds=10,
                                             rebuild_cache=True,
-                                            loading_processes=1)
+                                            loading_processes=2)
 
     print("Training Transformer")
 
@@ -163,9 +163,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                      device=device,
                      save_directory=save_dir,
                      steps=20,
-                     batch_size=2,
+                     batch_size=4,
                      gradient_accumulation=1,
-                     epochs_per_save=10,
+                     epochs_per_save=1,
                      use_speaker_embedding=False,
                      lang="en",
                      lr=0.001,
@@ -196,7 +196,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                        max_len_in_seconds=10,
                                        device=device,
                                        rebuild_cache=True,
-                                       loading_processes=1)
+                                       loading_processes=2)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 

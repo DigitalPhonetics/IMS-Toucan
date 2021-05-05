@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from Utility.RAdam import RAdam
+from Utility.utils import delete_old_checkpoints
 
 
 def train_loop(generator,
@@ -149,7 +150,7 @@ def train_loop(generator,
             else:
                 train_losses_this_epoch["discriminator_mse"].append(0.0)
 
-                ##########################
+        ##########################
         #     Epoch Complete     #
         ##########################
 
@@ -166,14 +167,14 @@ def train_loop(generator,
                     "discriminator_scheduler": scheduler_d.state_dict(),
                     "step_counter": step_counter
                 }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
-
+                delete_old_checkpoints(model_save_dir, keep=5)
                 if step_counter > steps:
                     # DONE
                     return
 
-            print("Epoch:                  {}".format(epoch + 1))
-            print("Time elapsed:           {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            print("Steps:                  {}".format(step_counter))
+            print("Epoch:        {}".format(epoch + 1))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            print("Steps:        {}".format(step_counter))
             g.train()
             d.train()
 
