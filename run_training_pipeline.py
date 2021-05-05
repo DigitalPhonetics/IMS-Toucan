@@ -56,7 +56,7 @@ parser.add_argument('pipeline',
                     help="Select pipeline to train.")
 
 parser.add_argument('--gpu_id',
-                    type=int,
+                    type=str,
                     help="Which GPU to run on. If not specified runs on CPU, but other than for integration tests that doesn't make much sense.",
                     default="cpu")
 
