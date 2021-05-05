@@ -1,5 +1,6 @@
 import os
 import random
+import shutil
 
 import torch
 
@@ -14,6 +15,16 @@ from TransformerTTS.TransformerTTS import Transformer
 from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
 from TransformerTTS.transformer_tts_train_loop import train_loop as trans_train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech
+
+
+def list_files(startpath):
+    for root, dirs, files in os.walk(startpath):
+        level = root.replace(startpath, '').count(os.sep)
+        indent = ' ' * 4 * (level)
+        print('{}{}/'.format(indent, os.path.basename(root)))
+        subindent = ' ' * 4 * (level + 1)
+        for f in files:
+            print('{}{}'.format(subindent, f))
 
 
 def load_net_trans(path, idim=133, odim=80):
@@ -249,4 +260,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                       model_save_dir=model_save_dir,
                       path_to_checkpoint=resume_checkpoint)
 
-    print("Integration Test ran successfully!")
+    print("Integration Test ran successfully!\n"
+          "Here is what has been produced:\n\n")
+
+    list_files(os.path.join("Models", "IntegrationTest"))
+
+    shutil.rmtree(os.path.join("Models", "IntegrationTest"))
+
+    print("Cleanup is complete.")
