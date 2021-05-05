@@ -113,27 +113,10 @@ def save_model_for_use(model, name="Transformer_English_Single.pt", dict_name="m
 
 
 def make_best_in_all(n=3):
-    pass
     for model_dir in os.listdir("Models/IntegrationTest"):
-        if model_dir != "Use":
-            if "MelGAN" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/IntegrationTest/{}".format(model_dir), n=n)
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)
-                save_model_for_use(model=averaged_model, name="Models/IntegrationTest/{}/best.pt".format(model_dir), dict_name="generator")
-            elif "TransformerTTS" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/IntegrationTest/{}".format(model_dir), n=n)
-                if "LibriTTS" in model_dir:
-                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans_multi)
-                else:
-                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans)
-                save_model_for_use(model=averaged_model, name="Models/IntegrationTest/{}/best.pt".format(model_dir))
-            elif "FastSpeech" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/IntegrationTest/{}".format(model_dir), n=n)
-                if "LibriTTS" in model_dir:
-                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast_multi)
-                else:
-                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
-                save_model_for_use(model=averaged_model, name="Models/IntegrationTest/{}/best.pt".format(model_dir))
+        checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/IntegrationTest/{}".format(model_dir), n=n)
+        averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans)
+        save_model_for_use(model=averaged_model, name="Models/IntegrationTest/{}/best.pt".format(model_dir))
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):

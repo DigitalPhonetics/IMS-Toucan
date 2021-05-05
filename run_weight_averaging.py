@@ -97,7 +97,6 @@ def save_model_for_use(model, name="Transformer_English_Single.pt", dict_name="m
 
 
 def make_best_in_all(n=3):
-    pass
     for model_dir in os.listdir("Models"):
         if model_dir != "Use":
             if "MelGAN" in model_dir:
