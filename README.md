@@ -82,4 +82,3 @@ will be added shortly
 - automate loading of a default MelGAN for inference interfaces
 - automate retrieval of speaker embedding function for installation
 - finish documentation
-- argparse model dir name
