@@ -151,7 +151,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                             lang="en",
                                             min_len_in_seconds=1,
                                             max_len_in_seconds=10,
-                                            rebuild_cache=False)
+                                            rebuild_cache=True,
+                                            loading_processes=1)
 
     print("Training Transformer")
 
@@ -161,8 +162,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                      train_dataset=train_set_trans,
                      device=device,
                      save_directory=save_dir,
-                     steps=100,
-                     batch_size=4,
+                     steps=20,
+                     batch_size=2,
                      gradient_accumulation=1,
                      epochs_per_save=10,
                      use_speaker_embedding=False,
@@ -194,7 +195,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                        min_len_in_seconds=1,
                                        max_len_in_seconds=10,
                                        device=device,
-                                       rebuild_cache=False)
+                                       rebuild_cache=True,
+                                       loading_processes=1)
 
     model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
 
@@ -204,8 +206,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                     train_dataset=train_set_fast,
                     device=device,
                     save_directory=save_dir,
-                    steps=100,
-                    batch_size=4,
+                    steps=20,
+                    batch_size=2,
                     gradient_accumulation=1,
                     epochs_per_save=10,
                     use_speaker_embedding=False,
@@ -233,20 +235,18 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     print("Training MelGAN")
 
-    train_loop_melgan(batch_size=4,
-                      steps=100,
+    train_loop_melgan(batch_size=2,
+                      steps=20,
                       generator=generator,
                       discriminator=multi_scale_discriminator,
                       train_dataset=train_set_lj_melgan,
                       device=device,
-                      generator_warmup_steps=50,
+                      generator_warmup_steps=10,
                       model_save_dir=model_save_dir,
                       path_to_checkpoint=resume_checkpoint)
 
     print("Integration Test ran successfully!\n"
           "Here is what has been produced:\n\n")
-
-    make_best_in_all(5)
 
     list_files(os.path.join("Models", "IntegrationTest"))
 
