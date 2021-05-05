@@ -19,7 +19,7 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
         checkpoint_list.sort(reverse=False)
         checkpoints_to_delete = [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:-keep]]
         for old_checkpoint in checkpoints_to_delete:
-            os.remove(os.path.join(checkpoint_dir, old_checkpoint))
+            os.remove(os.path.join(old_checkpoint))
 
 
 def make_pad_mask(lengths, xs=None, length_dim=-1):
