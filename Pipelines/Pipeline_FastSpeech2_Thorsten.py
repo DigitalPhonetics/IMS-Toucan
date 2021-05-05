@@ -7,7 +7,7 @@ from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
 from TransformerTTS.TransformerTTS import Transformer
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_thorsten
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_thorsten as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -34,7 +34,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_thorsten()
+    path_to_transcript_dict = build_path_to_transcript_dict()
 
     failed_alignments = ["00ef34f25b24d2ebbf90eebc4ae13e22",  # unfortunately, this had to be done manually
                          "0a5e99895d7bf2fc3d13739722bc17d6",  # by looking at the visualization of the

@@ -7,7 +7,7 @@ from FastSpeech2.FastSpeech2 import FastSpeech2
 from FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from FastSpeech2.fastspeech2_train_loop import train_loop
 from TransformerTTS.TransformerTTS import Transformer
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -34,7 +34,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict_libritts()
+    path_to_transcript_dict = build_path_to_transcript_dict()
 
     acoustic_model = Transformer(idim=133, odim=80, spk_embed_dim=256)
     acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
