@@ -38,7 +38,7 @@ class FastSpeechDataset(Dataset):
                  # found in the duration_vis folder and manually added to a list of samples
                  # to be excluded from the dataset.
                  ):
-
+        torch.multiprocessing.set_start_method('spawn')
         self.speaker_embedding = speaker_embedding
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json")) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
