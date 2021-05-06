@@ -1,4 +1,4 @@
-# Speech Synthesis ![A Toucan to catch your Eye](Utility/toucan.png)
+# Speech Synthesis 🐣
 
 This is a toolkit to train state-of-the-art Speech Synthesis models. Everything is pure Python and PyTorch based to keep
 it as simple and beginner-friendly, yet powerful as possible.
