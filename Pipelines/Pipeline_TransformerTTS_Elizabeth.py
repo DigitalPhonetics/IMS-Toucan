@@ -45,7 +45,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                       max_len_in_seconds=10,
                                       rebuild_cache=False)
 
-    model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=123, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,

@@ -53,7 +53,7 @@ def plot_attentions_best_head(atts, att_dir, step, phones):
 
 
 def get_atts(model, lang, device, speaker_embedding):
-    tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
+    tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
     sentence = ""
     if lang == "en":
         sentence = "This is a complex sentence, it even has a pause!"

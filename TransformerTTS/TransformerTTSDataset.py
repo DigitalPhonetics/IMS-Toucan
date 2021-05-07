@@ -57,7 +57,7 @@ class TransformerTTSDataset(Dataset):
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
-        tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
+        tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
             wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")

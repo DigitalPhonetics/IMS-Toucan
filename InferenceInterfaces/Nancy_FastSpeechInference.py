@@ -15,10 +15,10 @@ class Nancy_FastSpeechInference(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = None
         self.device = device
-        self.text2phone = TextFrontend(language="en", use_panphon_vectors=False, use_word_boundaries=False,
+        self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt"),
-                                     idim=133, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
+                                     idim=123, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Nancy", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()

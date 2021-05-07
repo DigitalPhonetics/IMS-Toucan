@@ -45,7 +45,7 @@ class FastSpeechDataset(Dataset):
             print("... building dataset cache ...")
             self.datapoints = list()
 
-            tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
+            tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
             _, sr = sf.read(key_list[0])
             if speaker_embedding:
                 wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")

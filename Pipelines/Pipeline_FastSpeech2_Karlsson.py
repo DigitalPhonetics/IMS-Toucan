@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_model = Transformer(idim=133, odim=80, spk_embed_dim=None)
+    acoustic_model = Transformer(idim=123, odim=80, spk_embed_dim=None)
     acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_Karlsson", "best.pt"),
                                               map_location='cpu')["model"])
 
@@ -49,7 +49,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   max_len_in_seconds=10,
                                   device=device)
 
-    model = FastSpeech2(idim=133, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=123, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,

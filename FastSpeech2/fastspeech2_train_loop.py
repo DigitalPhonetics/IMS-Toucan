@@ -17,7 +17,7 @@ from Utility.utils import delete_old_checkpoints
 
 
 def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embedding_for_plot):
-    tf = TextFrontend(language=lang, use_panphon_vectors=False, use_word_boundaries=False, use_explicit_eos=False)
+    tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
     sentence = "Hello"
     if lang == "en":
         sentence = "This is an unseen sentence."
