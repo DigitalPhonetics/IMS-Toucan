@@ -49,6 +49,22 @@ def build_path_to_transcript_dict_elizabeth():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_nancy():
+    root = "/mount/resources/speech/corpora/NancyKrebs"
+    path_to_transcript = dict()
+    for el in os.listdir(root):
+        if os.path.isdir(os.path.join(root, el)):
+            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
+                lookup = file.read()
+            for line in lookup.split("\n"):
+                if line.strip() != "":
+                    norm_transcript = line.split("|")[1]
+                    wav_path = os.path.join(root, el, "wav", line.split("|")[0] + ".wav")
+                    if os.path.exists(wav_path):
+                        path_to_transcript[wav_path] = norm_transcript
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_hokuspokus():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):

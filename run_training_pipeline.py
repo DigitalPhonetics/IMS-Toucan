@@ -6,6 +6,7 @@ from Pipelines.Pipeline_FastSpeech2_Eva import run as fast_Eva
 from Pipelines.Pipeline_FastSpeech2_Karlsson import run as fast_Karlsson
 from Pipelines.Pipeline_FastSpeech2_LJSpeech import run as fast_LJSpeech
 from Pipelines.Pipeline_FastSpeech2_LibriTTS import run as fast_LibriTTS
+from Pipelines.Pipeline_FastSpeech2_Nancy import run as fast_Nancy
 from Pipelines.Pipeline_FastSpeech2_Thorsten import run as fast_Thorsten
 from Pipelines.Pipeline_IntegrationTest import run as integration_test
 from Pipelines.Pipeline_MelGAN_Elizabeth import run as melgan_Elizabeth
@@ -13,12 +14,14 @@ from Pipelines.Pipeline_MelGAN_Eva import run as melgan_Eva
 from Pipelines.Pipeline_MelGAN_Karlsson import run as melgan_Karlsson
 from Pipelines.Pipeline_MelGAN_LJSpeech import run as melgan_LJSpeech
 from Pipelines.Pipeline_MelGAN_LibriTTS import run as melgan_LibriTTS
+from Pipelines.Pipeline_MelGAN_Nancy import run as melgan_Nancy
 from Pipelines.Pipeline_MelGAN_Thorsten import run as melgan_Thorsten
 from Pipelines.Pipeline_TransformerTTS_Elizabeth import run as trans_Elizabeth
 from Pipelines.Pipeline_TransformerTTS_Eva import run as trans_Eva
 from Pipelines.Pipeline_TransformerTTS_Karlsson import run as trans_Karlsson
 from Pipelines.Pipeline_TransformerTTS_LJSpeech import run as trans_LJSpeech
 from Pipelines.Pipeline_TransformerTTS_LibriTTS import run as trans_LibriTTS
+from Pipelines.Pipeline_TransformerTTS_Nancy import run as trans_Nancy
 from Pipelines.Pipeline_TransformerTTS_Thorsten import run as trans_Thorsten
 
 pipeline_dict = {
@@ -45,6 +48,10 @@ pipeline_dict = {
     "fast_LJSpeech": fast_LJSpeech,
     "melgan_LJSpeech": melgan_LJSpeech,
     "trans_LJSpeech": trans_LJSpeech,
+
+    "fast_Nancy": fast_Nancy,
+    "melgan_Nancy": melgan_Nancy,
+    "trans_Nancy": trans_Nancy,
 
     "integration_test": integration_test
 }

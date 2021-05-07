@@ -54,6 +54,14 @@ def get_file_list_hokuspokus():
     return file_list
 
 
+def get_file_list_nancy():
+    file_list = list()
+    for wav_file in os.listdir("/mount/resources/speech/corpora/NancyKrebs/wav"):
+        if ".wav" in wav_file:
+            file_list.append("/mount/resources/speech/corpora/NancyKrebs/wav/" + wav_file)
+    return file_list
+
+
 def get_file_list_libritts():
     path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
     path_valid = "/mount/resources/speech/corpora/LibriTTS/dev-clean"

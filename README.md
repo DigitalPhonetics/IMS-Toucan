@@ -126,5 +126,6 @@ instructions will be added shortly
 | MAILabs Karlsson      | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | MAILabs Eva           | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | LJSpeech              | English   | Single Speaker      | ✅     | ✅            | ✅          |
+| Nancy Krebs Lessac    | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | MAILabs Elizabeth     | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS              | English   | Multi Speaker       | ✅     | ✅            | ✅          |

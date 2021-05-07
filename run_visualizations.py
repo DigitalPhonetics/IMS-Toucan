@@ -15,6 +15,7 @@ from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSIn
 from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
 from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
 from InferenceInterfaces.LibriTTS_TransformerTTSInference import LibriTTS_TransformerTTSInference
+from InferenceInterfaces.Nancy_TransformerTTSInference import Nancy_TransformerTTSInference
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 from TransformerTTS.TransformerTTS import Transformer
 
@@ -28,7 +29,8 @@ def view_attention_heads(model_id, sentence):
         "trans_libri": LibriTTS_TransformerTTSInference,
         "trans_karl": Karlsson_TransformerTTSInference,
         "trans_eva": Eva_TransformerTTSInference,
-        "trans_elizabeth": Elizabeth_TransformerTTSInference
+        "trans_elizabeth": Elizabeth_TransformerTTSInference,
+        "trans_nancy": Nancy_TransformerTTSInference
     }
     tts = tts_dict[model_id]()
     tts.plot_attentions(sentence=sentence)
@@ -104,4 +106,4 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    view_attention_heads("trans_thorsten", sentence="Hallo Welt!")
+    view_attention_heads("trans_nancy", sentence="This is a complicated sentence, it even contains a pause!")
