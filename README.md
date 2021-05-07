@@ -110,10 +110,18 @@ Speaking of plots, in the directory you specified for saving models checkpoints 
 After training is complete, it is recommended to run *run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it will automatically load any models you produced with one pipeline, average their parameters to get a slightly more robust model and save the result as *best.pt* in the same directory where all of the corresponding checkpoints lie. This also compresses the file size slightly, so you should do this and then use the *best.pt* model for inference.
 
 ## Creating a new Inference Interface
-instructions will be added shortly
+To build a new InferenceInterface, which you can then use for super simple inference, we're going to use an existing one as template again. If you use multi-speaker, take the LibriTTS ones as template, otherwise take any other one. Make a copy of the InferenceInterface. Change the name of the Class in the copy and change the paths to the models to use the trained models of your choice. Instanciate the model with the same hyperparameters that you used when you created it in the corresponding training pipeline. The last thing to check is the language IS that you supply to the text frontend. Make sure it matches what you used during training. 
+
+With your newly created InferenceInterface, you can use your trained models pretty much anywhere, e.g. in other projects. All you need is the Utility directory, the Layers directory, the PreprocessingForTTS directory and the Inferenceinterface directory (and of course your model checkpoint). That's all the code you need, it works standalone.
 
 ## Using a trained Model for Inference
-instructions will be added shortly
+A InferenceInterface of TransformerTTS contains 3 useful methods for inference, a FastSpeech 2 one contains 2 useful methods. The ones they share are read_to_file and read_aloud. 
+
+- The first one takes as input a list of strings and a filename. It will synthesize the sentences in the list and concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument. 
+- The second one takes just a string, which it will then convert to speech and immediately play using the systems speakers.
+- The one that is exclusive to TransformerTTS is plot_attentions. This will take a string, synthesize it and show a plot of the attention matrices of all of the attention heads in all of the attention layers. By default there are 24. The index of each head is displayed above (0-23 by default). This is useful to figure out which one of the heads contains the best temporal relation between text and audio, which is the ID that should be given to the FastSpeech 2 feature-extraction to herustically get duration information using a technique called *knowledge-distillation*.
+
+Those three methods are used in demo code in the toolkit. In *run_interactive_demo.py*, *run_text_to_file_reader.py* and *run_visualizations.py* you can import InferenceInterfaces that you create and add them to the dictionary in each of the files with a shorthand that makes sense. In the interactive demo, you can just call the python script, type in the shorthand when prompted and immediately listen to your synthesis saying whatever you put in next (be wary of out of memory errors for too long inputs). In the other two demo scripts you have to call the function that wraps around the inference interface and supply the shorthand of your choice. It should be pretty clear from looking at it.
 
 ---
 
@@ -129,3 +137,7 @@ instructions will be added shortly
 | Nancy Krebs Lessac    | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | MAILabs Elizabeth     | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS              | English   | Multi Speaker       | ✅     | ✅            | ✅          |
+
+---
+
+This toolkit has been written by Florian Lux (except for the pytorch modules taken from [ESPnet](https://github.com/espnet/espnet) and [ParallelWaveGAN](https://github.com/kan-bayashi/ParallelWaveGAN), as mentioned above), so if you come across problems or questions, feel free to write a mail to [florian.lux@ims.uni-stuttgart.de](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something cool with it. Thank you for reading.
