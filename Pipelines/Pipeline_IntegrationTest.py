@@ -27,28 +27,28 @@ def list_files(startpath):
             print('{}{}'.format(subindent, f))
 
 
-def load_net_trans(path, idim=161, odim=80):
+def load_net_trans(path, idim=165, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = Transformer(idim=idim, odim=odim, spk_embed_dim=None)
     net.load_state_dict(check_dict["model"])
     return net
 
 
-def load_net_fast(path, idim=161, odim=80):
+def load_net_fast(path, idim=165, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=None)
     net.load_state_dict(check_dict["model"])
     return net
 
 
-def load_net_trans_multi(path, idim=161, odim=80):
+def load_net_trans_multi(path, idim=165, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = Transformer(idim=idim, odim=odim, spk_embed_dim=256)
     net.load_state_dict(check_dict["model"])
     return net
 
 
-def load_net_fast_multi(path, idim=161, odim=80):
+def load_net_fast_multi(path, idim=165, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=256)
     net.load_state_dict(check_dict["model"])
@@ -156,7 +156,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     print("Training Transformer")
 
-    model = Transformer(idim=161, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=165, odim=80, spk_embed_dim=None)
 
     trans_train_loop(net=model,
                      train_dataset=train_set_trans,
@@ -184,7 +184,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    acoustic_model = Transformer(idim=161, odim=80, spk_embed_dim=None)
+    acoustic_model = Transformer(idim=165, odim=80, spk_embed_dim=None)
     acoustic_model.load_state_dict(torch.load(os.path.join("Models", "IntegrationTest", "trans", "best.pt"),
                                               map_location='cpu')["model"])
 
@@ -197,7 +197,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                        device=device,
                                        rebuild_cache=True)
 
-    model = FastSpeech2(idim=161, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=165, odim=80, spk_embed_dim=None)
 
     print("Training FastSpeech")
 

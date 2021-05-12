@@ -32,11 +32,12 @@ class TextFrontend:
         self.use_stress = use_lexical_stress
         if allow_unknown:
             self.ipa_to_vector = defaultdict()
-            self.default_vector = 160
+            self.default_vector = 165
         else:
             self.ipa_to_vector = dict()
         with open(path_to_phoneme_list, "r", encoding='utf8') as f:
             phonemes = f.read()
+            # using https://github.com/espeak-ng/espeak-ng/blob/master/docs/phonemes.md
         phoneme_list = phonemes.split("\n")
         for index in range(1, len(phoneme_list)):
             self.ipa_to_vector[phoneme_list[index]] = index
@@ -110,8 +111,10 @@ class TextFrontend:
             if self.allow_unknown:
                 phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
             else:
-                if char in self.ipa_to_vector.keys():
+                try:
                     phones_vector.append(self.ipa_to_vector[char])
+                except KeyError:
+                    print("unknown phoneme: {}".format(char))
         if self.use_explicit_eos:
             phones_vector.append(self.ipa_to_vector["end_of_input"])
         return torch.LongTensor(phones_vector).unsqueeze(0)

@@ -18,7 +18,7 @@ class Nancy_TransformerTTSInference(torch.nn.Module):
         self.device = device
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False, use_explicit_eos=False)
         self.phone2mel = Transformer(path_to_weights=os.path.join("Models", "TransformerTTS_Nancy", "best.pt"),
-                                     idim=161, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
+                                     idim=165, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Nancy", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
