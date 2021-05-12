@@ -115,7 +115,7 @@ To build a new *InferenceInterface*, which you can then use for super simple inf
 With your newly created InferenceInterface, you can use your trained models pretty much anywhere, e.g. in other projects. All you need is the *Utility* directory, the *Layers* directory, the *PreprocessingForTTS* directory and the *InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works standalone.
 
 ## Using a trained Model for Inference
-A *InferenceInterface* of TransformerTTS contains 3 useful methods for inference, a FastSpeech 2 one contains 2 useful methods. The ones they share are *read_to_file* and *read_aloud*. 
+An *InferenceInterface* of TransformerTTS contains 3 useful methods for inference, a FastSpeech 2 one contains 2 useful methods. The ones they share are *read_to_file* and *read_aloud*. 
 
 - The first one takes as input a list of strings and a filename. It will synthesize the sentences in the list and concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument. 
 - The second one takes just a string, which it will then convert to speech and immediately play using the system's speakers. If you set the optional argument *view* to *True* when calling it, it will also show a plot of the phonemes it produced, the spectrogram it came up with and the wave it created from that spectrogram. So all of the representations can be seen, text to phoneme, phoneme to spectrogram and finally spectrogram to wave. 
