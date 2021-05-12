@@ -20,16 +20,21 @@ class TextFrontend:
                  # with such information would help such systems.
                  use_lexical_stress=False,
                  path_to_phoneme_list="PreprocessingForTTS/ipa_list.txt",
-                 silent=True):
+                 silent=True,
+                 allow_unknown=False):
         """
         Mostly preparing ID lookups
         """
         self.use_word_boundaries = use_word_boundaries
+        self.allow_unknown = allow_unknown
         self.use_explicit_eos = use_explicit_eos
         self.use_prosody = use_prosody
         self.use_stress = use_lexical_stress
-        self.ipa_to_vector = defaultdict()
-        self.default_vector = 122
+        if allow_unknown:
+            self.ipa_to_vector = defaultdict()
+            self.default_vector = 122
+        else:
+            self.ipa_to_vector = dict()
         with open(path_to_phoneme_list, "r", encoding='utf8') as f:
             phonemes = f.read()
         phoneme_list = phonemes.split("\n")
@@ -102,7 +107,11 @@ class TextFrontend:
         phones_vector = list()
         # turn into numeric vectors
         for char in phones:
-            phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
+            if self.allow_unknown:
+                phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
+            else:
+                if char in self.ipa_to_vector.keys():
+                    phones_vector.append(self.ipa_to_vector[char])
         if self.use_explicit_eos:
             phones_vector.append(self.ipa_to_vector["end_of_input"])
         return torch.LongTensor(phones_vector).unsqueeze(0)
