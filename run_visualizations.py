@@ -42,7 +42,7 @@ def plot_fastspeech_architecture():
     durations = torch.LongTensor([1, 2, 3, 4])
     pitch = torch.Tensor([1.0]).unsqueeze(0)
     energy = torch.Tensor([1.0]).unsqueeze(0)
-    model = FastSpeech2(idim=123, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=161, odim=80, spk_embed_dim=None)
     out = model.inference(text=text, speech=speech, durations=durations, pitch=pitch,
                           energy=energy, speaker_embeddings=None, use_teacher_forcing=True)
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
@@ -51,7 +51,7 @@ def plot_fastspeech_architecture():
 def plot_transformertts_architecture():
     text = torch.LongTensor([1, 2, 3, 4])
     speech = torch.zeros(80, 50)
-    model = Transformer(idim=123, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=161, odim=80, spk_embed_dim=None)
     out = model.inference(text=text, speech=speech, speaker_embeddings=None, use_teacher_forcing=False)
     torchviz.make_dot(out, dict(model.named_parameters())).render("transformertts_graph", format="png")
 
@@ -95,13 +95,13 @@ def count_parameters(net):
 def show_all_models_params():
     from TransformerTTS.TransformerTTS import Transformer
     from FastSpeech2.FastSpeech2 import FastSpeech2
-    model = Transformer(idim=123, odim=80)
+    model = Transformer(idim=161, odim=80)
     print("Number of Parameters in Transformer without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = Transformer(idim=123, odim=80, spk_embed_dim=256)
+    model = Transformer(idim=161, odim=80, spk_embed_dim=256)
     print("Number of Parameters in Transformer with speedy config: {}".format(count_parameters(model)))
-    model = FastSpeech2(idim=123, odim=80)
+    model = FastSpeech2(idim=161, odim=80)
     print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = FastSpeech2(idim=123, odim=80, spk_embed_dim=256)
+    model = FastSpeech2(idim=161, odim=80, spk_embed_dim=256)
     print("Number of Parameters in FastSpeech2 with Speaker Embeddings: {}".format(count_parameters(model)))
 
 

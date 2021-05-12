@@ -19,7 +19,7 @@ class LibriTTS_TransformerTTSInference(torch.nn.Module):
         self.speaker_embedding = torch.load(os.path.join("Models", "Use", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False, use_explicit_eos=False)
         self.phone2mel = Transformer(path_to_weights=os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
-                                     idim=123, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
+                                     idim=161, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()

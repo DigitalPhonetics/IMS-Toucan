@@ -32,7 +32,7 @@ class TextFrontend:
         self.use_stress = use_lexical_stress
         if allow_unknown:
             self.ipa_to_vector = defaultdict()
-            self.default_vector = 122
+            self.default_vector = 160
         else:
             self.ipa_to_vector = dict()
         with open(path_to_phoneme_list, "r", encoding='utf8') as f:
@@ -42,8 +42,8 @@ class TextFrontend:
             self.ipa_to_vector[phoneme_list[index]] = index
             # note: Index 0 is unused, so it can be used for padding as is convention.
             #       Index 1 is reserved for end_of_utterance
-            #       Index 12 is used for pauses (heuristically)
-            #       Index 122 is used for unknown characters
+            #       Index 2 is reserved for begin of sentence token
+            #       Index 13 is used for pauses (heuristically)
 
         # The point of having the phonemes in a separate file is to ensure reproducibility.
         # The line of the phoneme is the ID of the phoneme, so you can have multiple such

@@ -18,7 +18,7 @@ class LJSpeech_FastSpeechInference(torch.nn.Module):
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_LJSpeech", "best.pt"),
-                                     idim=123, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
+                                     idim=161, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
         self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_LJSpeech", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
