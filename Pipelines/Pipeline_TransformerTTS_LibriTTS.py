@@ -42,7 +42,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                       max_len_in_seconds=10,
                                       speaker_embedding=True)
 
-    model = Transformer(idim=165, odim=80, spk_embed_dim=256)
+    model = Transformer(idim=166, odim=80, spk_embed_dim=256)
 
     print("Training model")
     train_loop(net=model,
