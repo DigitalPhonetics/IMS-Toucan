@@ -106,4 +106,4 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    view_attention_heads("trans_nancy", sentence="This is a complicated sentence, it even contains a pause!")
+    view_attention_heads("trans_lj", sentence="This is a complicated sentence, it even contains a pause!")
