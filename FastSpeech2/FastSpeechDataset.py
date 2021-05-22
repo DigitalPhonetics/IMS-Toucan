@@ -1,11 +1,11 @@
 import json
 import os
-from multiprocessing import Manager
-from multiprocessing import Process
 
 import soundfile as sf
 import torch
 import torchaudio
+from torch.multiprocessing import Manager
+from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -26,7 +26,7 @@ class FastSpeechDataset(Dataset):
                  # that is the most diagonal. Look for it manually (e.g. using run_visualization.py)
                  # and then provide it here.
                  speaker_embedding=False,
-                 loading_processes=20,
+                 loading_processes=5,
                  lang="en",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
