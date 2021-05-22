@@ -32,7 +32,7 @@ def view_attention_heads(model_id, sentence):
         "trans_elizabeth": Elizabeth_TransformerTTSInference,
         "trans_nancy": Nancy_TransformerTTSInference
     }
-    tts = tts_dict[model_id]()
+    tts = tts_dict[model_id](speaker_embedding="glados.pt")
     tts.plot_attentions(sentence=sentence)
 
 
@@ -106,4 +106,6 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    view_attention_heads("trans_lj", sentence="This is a complicated sentence, it even contains a pause!")
+    view_attention_heads("trans_libri", sentence="This is a complicated sentence, it even contains a pause!")
+    view_attention_heads("trans_libri", sentence="Also maybe let's try another one.")
+    view_attention_heads("trans_libri", sentence="This one, however, contains quite the significant amount of pauses, dunnit?.")
