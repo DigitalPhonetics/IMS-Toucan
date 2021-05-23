@@ -83,7 +83,7 @@ It is recommended to use an InferenceInterface of the aforementioned Transformer
 Everything else is exactly like creating a TransformerTTS pipeline, except that in the training_loop, instead of attentions plots, spectrograms are plotted to visualize training progress. So there you may need to add a sentence if you are using a new language in the function called *plot_progress_spec*.
 
 ## Training a Model
-Once you have a pipeline built, training is super easy. Just activate your virtual environment and run the command below. You might want to use something like nohup to keep it running after you log out from the server (then you should also add -u as option to python) and add an & to start it in the background. Also you might want to direct the std:out and std:err into a file using > but all of that is just standard shell use and has nothing to to with the toolkit.
+Once you have a pipeline built, training is super easy. Just activate your virtual environment and run the command below. You might want to use something like nohup to keep it running after you log out from the server (then you should also add -u as option to python) and add an & to start it in the background. Also you might want to direct the std:out and std:err into a file using > but all of that is just standard shell use and has nothing to do with the toolkit.
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>
