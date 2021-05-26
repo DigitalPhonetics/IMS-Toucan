@@ -68,12 +68,4 @@ if __name__ == '__main__':
     He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.""".split("\n"),
                filename="audios/fast_lj.wav", device=exec_device)
 
-    read_texts(model_id="fast_nancy", sentence="""Betty Botter bought some butter, but she said the butter’s bitter.
-    If I put it in my batter, it will make my batter bitter!
-    But a bit of better butter will make my batter better.
-    So ‘twas better Betty Botter bought a bit of better butter.
-    How much wood would a woodchuck chuck if a woodchuck could chuck wood?
-    He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.""".split("\n"),
-               filename="audios/fast_nancy.wav", device=exec_device)
-
     read_texts(model_id="trans_thorsten", sentence=["Hallo, ich bin eine deutsche Stimme."], filename="audios/trans_thorsten.wav", device=exec_device)

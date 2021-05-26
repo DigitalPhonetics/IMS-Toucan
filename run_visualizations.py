@@ -45,7 +45,7 @@ def plot_fastspeech_architecture():
     model = FastSpeech2(idim=166, odim=80, spk_embed_dim=None)
     out = model.inference(text=text, speech=speech, durations=durations, pitch=pitch,
                           energy=energy, speaker_embeddings=None, use_teacher_forcing=True)
-    torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="pdf")
+    torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="png")
 
 
 def plot_transformertts_architecture():

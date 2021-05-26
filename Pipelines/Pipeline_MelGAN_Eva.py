@@ -39,7 +39,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     print("Training model")
     train_loop(batch_size=16,
-               steps=2000000,
+               steps=500000,
                generator=generator,
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,
