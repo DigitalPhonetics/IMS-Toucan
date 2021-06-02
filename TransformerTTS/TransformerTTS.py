@@ -78,6 +78,7 @@ class Transformer(torch.nn.Module, ABC):
                  init_type="xavier_uniform",  # since we have little to no
                  # asymetric activations, this seems to work better than kaiming
                  init_enc_alpha=1.0,
+                 init_dec_alpha=1.0,
                  use_masking=False,  # either this or weighted masking, not both
                  use_weighted_masking=True,  # if there are severely different sized samples in one batch
                  bce_pos_weight=7.0,  # scaling the loss of the stop token prediction
@@ -171,7 +172,7 @@ class Transformer(torch.nn.Module, ABC):
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
 
         # initialize parameters
-        self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_enc_alpha)
+        self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
 
     def _reset_parameters(self, init_type, init_enc_alpha=1.0, init_dec_alpha=1.0):
         # initialize parameters

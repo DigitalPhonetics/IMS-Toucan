@@ -42,8 +42,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                       max_len_in_seconds=10,
                                       rebuild_cache=False)
 
-    model = Transformer(idim=166, odim=80, spk_embed_dim=None, num_heads_applied_guided_attn=-1, aheads=1, guided_attn_loss_lambda=10.0,
-                        num_layers_applied_guided_attn=-1, adim=256)
+    model = Transformer(idim=166,
+                        odim=80,
+                        spk_embed_dim=None,
+                        num_heads_applied_guided_attn=-1,
+                        aheads=1,
+                        guided_attn_loss_lambda=10.0,
+                        dlayers=1,
+                        num_layers_applied_guided_attn=-1,
+                        adim=256)
+
+    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     print("Training model")
     train_loop(net=model,
