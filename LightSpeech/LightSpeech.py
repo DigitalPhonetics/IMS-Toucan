@@ -1,5 +1,5 @@
 """
-Taken from ESPNet
+Taken from ESPNet, modified to match LightSpeech
 """
 
 from abc import ABC
@@ -7,30 +7,38 @@ from abc import ABC
 import torch
 import torch.nn.functional as F
 
-from FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
+from LightSpeech.LightSpeechLoss import LightSpeechLoss
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
 
-class FastSpeech2(torch.nn.Module, ABC):
-    """
-    FastSpeech 2 module.
+# TODO This is an early work in progess, right now it exactly corresponds to FastSpeech 2, since LightSpeech is a derivation of it.
 
-    This is a module of FastSpeech 2 described in FastSpeech 2: Fast and
-    High-Quality End-to-End Text to Speech. Instead of quantized pitch and
-    energy, we use token-averaged value introduced in FastPitch: Parallel
-    Text-to-speech with Pitch Prediction. The encoder and decoder are Conformers
-    instead of regular Transformers.
+class LightSpeech(torch.nn.Module, ABC):
+    """
+    LightSpeech module.
+
+    This is a module of LightSpeech described in LightSpeech: Lightweight
+    and Fast Text to Speech with Neural Architecture Search
+
+    It is based on FastSpeech 2: Fast and High-Quality End-to-End Text to
+    Speech.
+
+    Instead of quantized pitch and energy, token-averaged values introduced
+    in FastPitch: Parallel Text-to-speech with Pitch Prediction are used.
+
+    The encoder and decoder are Conformers instead of regular Transformers.
 
         https://arxiv.org/abs/2006.04558
         https://arxiv.org/abs/2006.06873
         https://arxiv.org/pdf/2005.08100
+        https://arxiv.org/abs/2102.04040
 
     """
 
@@ -165,7 +173,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
 
         # define criterions
-        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
+        self.criterion = LightSpeechLoss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
 
     def forward(self, text_tensors,
                 text_lengths,
@@ -361,4 +369,3 @@ class FastSpeech2(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
-

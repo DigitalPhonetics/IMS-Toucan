@@ -17,6 +17,7 @@ from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_Transf
 from InferenceInterfaces.LibriTTS_TransformerTTSInference import LibriTTS_TransformerTTSInference
 from InferenceInterfaces.Nancy_TransformerTTSInference import Nancy_TransformerTTSInference
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
+from LightSpeech.LightSpeech import LightSpeech
 from TransformerTTS.TransformerTTS import Transformer
 
 
@@ -103,6 +104,10 @@ def show_all_models_params():
     print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
     model = FastSpeech2(idim=166, odim=80, spk_embed_dim=256)
     print("Number of Parameters in FastSpeech2 with Speaker Embeddings: {}".format(count_parameters(model)))
+    model = LightSpeech(idim=166, odim=80)
+    print("Number of Parameters in LightSpeech without Speaker Embeddings: {}".format(count_parameters(model)))
+    model = LightSpeech(idim=166, odim=80, spk_embed_dim=256)
+    print("Number of Parameters in LightSpeech with Speaker Embeddings: {}".format(count_parameters(model)))
 
 
 if __name__ == '__main__':
