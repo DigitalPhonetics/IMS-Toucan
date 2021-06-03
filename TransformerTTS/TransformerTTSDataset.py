@@ -27,13 +27,13 @@ class TransformerTTSDataset(Dataset):
                  rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
         if not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json")) or rebuild_cache:
-            ressource_manager = Manager()
-            self.path_to_transcript_dict = ressource_manager.dict(path_to_transcript_dict)
+            resource_manager = Manager()
+            self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
 
             # build cache
             print("... building dataset cache ...")
-            self.datapoints = ressource_manager.list()
+            self.datapoints = resource_manager.list()
             # make processes
             key_splits = list()
             process_list = list()

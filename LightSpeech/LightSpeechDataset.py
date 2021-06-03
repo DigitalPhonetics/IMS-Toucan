@@ -42,12 +42,12 @@ class LightSpeechDataset(Dataset):
         if not os.path.exists(os.path.join(cache_dir, "light_train_cache.json")) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
                 os.makedirs(os.path.join(cache_dir, "durations_visualization"))
-            ressource_manager = Manager()
+            resource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
             key_list = list(self.path_to_transcript_dict.keys())
             # build cache
             print("... building dataset cache ...")
-            self.datapoints = ressource_manager.list()
+            self.datapoints = resource_manager.list()
             # make processes
             key_splits = list()
             process_list = list()
