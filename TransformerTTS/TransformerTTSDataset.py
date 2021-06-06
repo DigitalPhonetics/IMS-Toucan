@@ -57,6 +57,7 @@ class TransformerTTSDataset(Dataset):
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
+        process_internal_dataset_chunk = list()
         tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
@@ -77,9 +78,10 @@ class TransformerTTSDataset(Dataset):
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
                     cached_speaker_embedding = emb_tensor.detach().numpy().tolist()
-                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_speaker_embedding])
+                    process_internal_dataset_chunk.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_speaker_embedding])
                 else:
-                    self.datapoints.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
+                    process_internal_dataset_chunk.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
+        self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
         if not self.speaker_embedding:

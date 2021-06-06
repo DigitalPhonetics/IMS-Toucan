@@ -96,6 +96,7 @@ class FastSpeechDataset(Dataset):
                               device,
                               cache_dir,
                               diagonal_attention_head_id):
+        process_internal_dataset_chunk = list()
         tf = TextFrontend(language=lang,
                           use_word_boundaries=False,
                           use_explicit_eos=False)
@@ -154,24 +155,25 @@ class FastSpeechDataset(Dataset):
                                    durations=cached_durations.unsqueeze(0),
                                    durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
                 if not self.speaker_embedding:
-                    self.datapoints.append([cached_text,
-                                            cached_text_lens,
-                                            cached_speech,
-                                            cached_speech_lens,
-                                            cached_durations.numpy().tolist(),
-                                            cached_energy.numpy().tolist(),
-                                            cached_pitch.numpy().tolist(),
-                                            path])
+                    process_internal_dataset_chunk.append([cached_text,
+                                                           cached_text_lens,
+                                                           cached_speech,
+                                                           cached_speech_lens,
+                                                           cached_durations.numpy().tolist(),
+                                                           cached_energy.numpy().tolist(),
+                                                           cached_pitch.numpy().tolist(),
+                                                           path])
                 else:
-                    self.datapoints.append([cached_text,
-                                            cached_text_lens,
-                                            cached_speech,
-                                            cached_speech_lens,
-                                            cached_durations.numpy().tolist(),
-                                            cached_energy.numpy().tolist(),
-                                            cached_pitch.numpy().tolist(),
-                                            cached_speaker_embedding.detach().numpy().tolist(),
-                                            path])
+                    process_internal_dataset_chunk.append([cached_text,
+                                                           cached_text_lens,
+                                                           cached_speech,
+                                                           cached_speech_lens,
+                                                           cached_durations.numpy().tolist(),
+                                                           cached_energy.numpy().tolist(),
+                                                           cached_pitch.numpy().tolist(),
+                                                           cached_speaker_embedding.detach().numpy().tolist(),
+                                                           path])
+        self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
         if not self.speaker_embedding:

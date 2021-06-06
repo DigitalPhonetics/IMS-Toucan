@@ -40,12 +40,6 @@ class AudioPreprocessor:
         else:
             self.resample = lambda x: x
 
-    def mel_spec_orig_sr(self, audio):
-        return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
-
-    def mel_spec_new_sr(self, audio):
-        return self.logmelfilterbank(audio=audio, sampling_rate=self.new_sr)
-
     def apply_mu_law(self, audio):
         """
         brings the audio down from 16 bit
@@ -91,7 +85,6 @@ class AudioPreprocessor:
         signal with different magnitudes into
         the same magnitude by analysing loudness
         """
-
         loudness = self.meter.integrated_loudness(audio)
         loud_normed = pyln.normalize.loudness(audio, loudness, -30.0)
         peak = numpy.amax(numpy.abs(loud_normed))
@@ -162,8 +155,8 @@ class AudioPreprocessor:
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
-            return self.mel_spec_new_sr(self.normalize_audio(audio))
+            return self.logmelfilterbank(audio=self.normalize_audio(audio), sampling_rate=self.new_sr)
         else:
             if isinstance(audio, torch.Tensor):
-                return self.mel_spec_orig_sr(audio)
-            return self.mel_spec_orig_sr(torch.Tensor(audio))
+                return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
+            return self.logmelfilterbank(audio=torch.Tensor(audio), sampling_rate=self.sr)
