@@ -1,5 +1,3 @@
-import warnings
-
 import librosa
 import librosa.core as lb
 import librosa.display as lbd
@@ -13,15 +11,13 @@ from torchaudio.transforms import MuLawEncoding
 from torchaudio.transforms import Resample
 from torchaudio.transforms import Vad as VoiceActivityDetection
 
-warnings.filterwarnings("ignore")
-
 
 class AudioPreprocessor:
 
     def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False):
         """
         The parameters are by default set up to do well
-        on a 16kHz signal. A different frequency may
+        on a 16kHz signal. A different sampling rate may
         require different hop_length and n_fft (e.g.
         doubling frequency --> doubling hop_length and
         doubling n_fft)
@@ -32,7 +28,8 @@ class AudioPreprocessor:
         self.hop_length = hop_length
         self.n_fft = n_fft
         self.mel_buckets = melspec_buckets
-        self.vad = VoiceActivityDetection(sample_rate=input_sr)  # This needs heavy tweaking, depending of the data
+        self.vad = VoiceActivityDetection(sample_rate=input_sr)
+        # ^^^^ This needs heavy tweaking if used, depends very much on the data
         self.mu_encode = MuLawEncoding()
         self.mu_decode = MuLawDecoding()
         self.meter = pyln.Meter(input_sr)

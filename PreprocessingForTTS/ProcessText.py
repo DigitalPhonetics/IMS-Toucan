@@ -75,6 +75,24 @@ class TextFrontend:
         the sequence as IDs to be fed into an embedding
         layer
         """
+        phones = self.get_phone_string(text=text, include_eos_symbol=False)
+        if view:
+            print("Phonemes: \n{}\n".format(phones))
+        phones_vector = list()
+        # turn into numeric vectors
+        for char in phones:
+            if self.allow_unknown:
+                phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
+            else:
+                try:
+                    phones_vector.append(self.ipa_to_vector[char])
+                except KeyError:
+                    print("unknown phoneme: {}".format(char))
+        if self.use_explicit_eos:
+            phones_vector.append(self.ipa_to_vector["end_of_input"])
+        return torch.LongTensor(phones_vector).unsqueeze(0)
+
+    def get_phone_string(self, text, include_eos_symbol=True):
         # clean unicode errors, expand abbreviations, handle emojis etc.
         utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
         self.expand_abbreviations(utt)
@@ -103,42 +121,9 @@ class TextFrontend:
             phones = phones.replace(" ", "")
         else:
             phones = re.sub(r"\s+", " ", phones)
-        if view:
-            print("Phonemes: \n{}\n".format(phones))
-        phones_vector = list()
-        # turn into numeric vectors
-        for char in phones:
-            if self.allow_unknown:
-                phones_vector.append(self.ipa_to_vector.get(char, self.default_vector))
-            else:
-                try:
-                    phones_vector.append(self.ipa_to_vector[char])
-                except KeyError:
-                    print("unknown phoneme: {}".format(char))
-        if self.use_explicit_eos:
-            phones_vector.append(self.ipa_to_vector["end_of_input"])
-        return torch.LongTensor(phones_vector).unsqueeze(0)
-
-    def get_phone_string(self, text):
-        utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
-        self.expand_abbreviations(utt)
-        utt = utt.replace("_SIL_", "~")
-        phones = phonemizer.phonemize(utt,
-                                      language_switch='remove-flags',
-                                      backend="espeak",
-                                      language=self.g2p_lang,
-                                      preserve_punctuation=True,
-                                      strip=True,
-                                      punctuation_marks=';:,.!?¡¿—…"«»“”~/',
-                                      with_stress=self.use_stress).replace(";", ",").replace("/", " ") \
-            .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
-            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~")
-        phones = re.sub("~+", "~", phones)
-        if not self.use_prosody:
-            phones = phones.replace("ˌ", "").replace("ː", "").replace("ˑ", "").replace("˘", "").replace("|", "").replace("‖", "")
-        if not self.use_word_boundaries:
-            phones = phones.replace(" ", "")
-        return phones + "#"
+        if include_eos_symbol:
+            phones += "#"
+        return phones
 
 
 def english_text_expansion(text):
