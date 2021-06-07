@@ -64,20 +64,12 @@ def get_file_list_nancy():
 
 def get_file_list_libritts():
     path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
-    path_valid = "/mount/resources/speech/corpora/LibriTTS/dev-clean"
     file_list = list()
-    # we split training and validation differently, so we merge both folders into a single dict
     for speaker in os.listdir(path_train):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
             for file in os.listdir(os.path.join(path_train, speaker, chapter)):
                 if file.endswith(".wav"):
                     file_list.append(os.path.join(path_train, speaker, chapter, file))
-    for speaker in os.listdir(path_valid):
-        for chapter in os.listdir(os.path.join(path_valid, speaker)):
-            for file in os.listdir(os.path.join(path_valid, speaker, chapter)):
-                if file.endswith("normalized.txt"):
-                    if file.endswith(".wav"):
-                        file_list.append(os.path.join(path_train, speaker, chapter, file))
     return file_list
 
 

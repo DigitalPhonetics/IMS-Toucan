@@ -49,13 +49,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=400000,  # this has a lot more data than the others, so it can learn for longer
                batch_size=64,
                gradient_accumulation=1,
-               epochs_per_save=10,
+               epochs_per_save=5,  # more datapoints per epoch needs fewer epochs per save
                use_speaker_embedding=True,
                lang="en",
-               lr=0.001,
-               warmup_steps=8000,
+               lr=0.05,  # this is very unusually high, but it worked in the past
+               warmup_steps=9000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
