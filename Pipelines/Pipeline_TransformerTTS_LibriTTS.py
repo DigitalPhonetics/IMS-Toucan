@@ -55,7 +55,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=5,  # more datapoints per epoch needs fewer epochs per save
                use_speaker_embedding=True,
                lang="en",
-               lr=0.05,  # this is very unusually high, but it worked in the past
+               lr=0.02,  # this is very unusually high, but it worked in the past
                warmup_steps=9000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
