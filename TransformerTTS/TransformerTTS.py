@@ -82,14 +82,14 @@ class Transformer(torch.nn.Module, ABC):
                  init_dec_alpha=1.0,
                  use_masking=False,  # either this or weighted masking, not both
                  use_weighted_masking=True,  # if there are severely different sized samples in one batch
-                 bce_pos_weight=10.0,  # scaling the loss of the stop token prediction
+                 bce_pos_weight=7.0,  # scaling the loss of the stop token prediction
                  loss_type="L1",
                  use_guided_attn_loss=True,
                  num_heads_applied_guided_attn=2,
                  num_layers_applied_guided_attn=2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda=20.0):  # forcing the attention to be diagonal
+                 guided_attn_loss_lambda=25.0):  # forcing the attention to be diagonal
         super().__init__()
 
         # store hyperparameters

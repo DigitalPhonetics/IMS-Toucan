@@ -18,6 +18,7 @@ from Pipelines.Pipeline_MelGAN_LJSpeech import run as melgan_LJSpeech
 from Pipelines.Pipeline_MelGAN_LibriTTS import run as melgan_LibriTTS
 from Pipelines.Pipeline_MelGAN_Nancy import run as melgan_Nancy
 from Pipelines.Pipeline_MelGAN_Thorsten import run as melgan_Thorsten
+from Pipelines.Pipeline_MelGAN_combined import run as melgan_combined
 from Pipelines.Pipeline_TransformerTTS_Elizabeth import run as trans_Elizabeth
 from Pipelines.Pipeline_TransformerTTS_Eva import run as trans_Eva
 from Pipelines.Pipeline_TransformerTTS_Karlsson import run as trans_Karlsson
@@ -48,17 +49,18 @@ pipeline_dict = {
     "melgan_LibriTTS" : melgan_LibriTTS,
     "trans_LibriTTS"  : trans_LibriTTS,
 
-    "fast_LJSpeech"   : fast_LJSpeech,
-    "melgan_LJSpeech" : melgan_LJSpeech,
-    "trans_LJSpeech"  : trans_LJSpeech,
+    "fast_LJSpeech": fast_LJSpeech,
+    "melgan_LJSpeech": melgan_LJSpeech,
+    "trans_LJSpeech": trans_LJSpeech,
 
-    "fast_Nancy"      : fast_Nancy,
-    "melgan_Nancy"    : melgan_Nancy,
-    "trans_Nancy"     : trans_Nancy,
+    "fast_Nancy": fast_Nancy,
+    "melgan_Nancy": melgan_Nancy,
+    "trans_Nancy": trans_Nancy,
 
     "integration_test": integration_test,
-    "single_head"     : single_head
-    }
+    "single_head": single_head,
+    "melgan_combined": melgan_combined
+}
 
 if __name__ == '__main__':
 
