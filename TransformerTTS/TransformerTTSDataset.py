@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 from multiprocessing import Manager
@@ -44,8 +45,10 @@ class TransformerTTSDataset(Dataset):
                     Process(target=self.cache_builder_process, args=(key_split, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
                             daemon=True))
                 process_list[-1].start()
+            gc.disable()  # potentially huge amount of live objects
             for process in process_list:
                 process.join()
+            gc.enable()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
             with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
