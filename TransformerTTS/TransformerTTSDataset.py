@@ -1,4 +1,3 @@
-import gc
 import json
 import os
 from multiprocessing import Manager
@@ -45,10 +44,8 @@ class TransformerTTSDataset(Dataset):
                     Process(target=self.cache_builder_process, args=(key_split, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
                             daemon=True))
                 process_list[-1].start()
-            gc.disable()  # potentially huge amount of live objects
             for process in process_list:
                 process.join()
-            gc.enable()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
             with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
@@ -60,7 +57,7 @@ class TransformerTTSDataset(Dataset):
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
-        process_internal_dataset_chunk = set()
+        process_internal_dataset_chunk = list()
         tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
@@ -81,17 +78,10 @@ class TransformerTTSDataset(Dataset):
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
                     cached_speaker_embedding = emb_tensor.detach().numpy().tolist()
-                    process_internal_dataset_chunk.add((to_tuple(cached_text),
-                                                        cached_text_lens,
-                                                        to_tuple(cached_speech),
-                                                        cached_speech_lens,
-                                                        to_tuple(cached_speaker_embedding)))
+                    process_internal_dataset_chunk.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_speaker_embedding])
                 else:
-                    process_internal_dataset_chunk.add((to_tuple(cached_text),
-                                                        cached_text_lens,
-                                                        to_tuple(cached_speech),
-                                                        cached_speech_lens))
-        self.datapoints += list(process_internal_dataset_chunk)
+                    process_internal_dataset_chunk.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
+        self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
         if not self.speaker_embedding:
@@ -101,8 +91,3 @@ class TransformerTTSDataset(Dataset):
 
     def __len__(self):
         return len(self.datapoints)
-
-
-def to_tuple(lst):
-    # make the lists immutable, so that they can go into sets and don't experience performance drops for large amounts of datapoints
-    return tuple(to_tuple(i) if isinstance(i, list) else i for i in lst)
