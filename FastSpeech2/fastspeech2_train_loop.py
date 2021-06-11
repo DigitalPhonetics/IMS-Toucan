@@ -228,6 +228,7 @@ def train_loop(net,
                 print("Steps:        {}".format(step_counter))
                 net.train()
         except RuntimeError:
+            del train_loader
             if batch_size > 5:
                 batch_size -= 5
             else:
@@ -247,3 +248,5 @@ def train_loop(net,
                                       prefetch_factor=8,
                                       collate_fn=collate_and_pad,
                                       persistent_workers=True)
+        except AssertionError:
+            pass
