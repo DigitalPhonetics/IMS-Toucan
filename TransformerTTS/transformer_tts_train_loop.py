@@ -140,12 +140,6 @@ def train_loop(net,
     :param gradient_accumulation: how many batches to average before stepping
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
-
-    try:
-        torch.multiprocessing.set_start_method('fork', force=False)
-    except RuntimeError:
-        pass
-
     net = net.to(device)
     scaler = GradScaler()
 
@@ -275,5 +269,3 @@ def train_loop(net,
                                       prefetch_factor=8,
                                       collate_fn=collate_and_pad,
                                       persistent_workers=True)
-        except AssertionError:
-            pass

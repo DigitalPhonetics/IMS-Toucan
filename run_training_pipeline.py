@@ -100,7 +100,7 @@ if __name__ == '__main__':
         print("Fine-tuning for MelGAN is not implemented as it didn't seem necessary and the GAN would most likely fail. Just train from scratch.")
         sys.exit()
 
-    if "fast" in args.pipeline:
+    if "melgan" not in args.pipeline:
         torch.multiprocessing.set_start_method('spawn', force=False)
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, finetune=args.finetune, model_dir=args.model_save_dir)
