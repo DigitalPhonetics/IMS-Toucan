@@ -82,15 +82,15 @@ class TransformerTTSDataset(Dataset):
                     emb_tensor = dvector.embed_utterance(mel_tensor)
                     cached_speaker_embedding = emb_tensor.detach().numpy().tolist()
                     process_internal_dataset_chunk.add((to_tuple(cached_text),
-                                                        to_tuple(cached_text_lens),
+                                                        cached_text_lens,
                                                         to_tuple(cached_speech),
-                                                        to_tuple(cached_speech_lens),
+                                                        cached_speech_lens,
                                                         to_tuple(cached_speaker_embedding)))
                 else:
                     process_internal_dataset_chunk.add((to_tuple(cached_text),
-                                                        to_tuple(cached_text_lens),
+                                                        cached_text_lens,
                                                         to_tuple(cached_speech),
-                                                        to_tuple(cached_speech_lens)))
+                                                        cached_speech_lens))
         self.datapoints += list(process_internal_dataset_chunk)
 
     def __getitem__(self, index):
