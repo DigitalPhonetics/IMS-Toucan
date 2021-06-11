@@ -140,6 +140,9 @@ def train_loop(net,
     :param gradient_accumulation: how many batches to average before stepping
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
+
+    torch.multiprocessing.set_start_method('fork', force=False)
+
     net = net.to(device)
     scaler = GradScaler()
 
