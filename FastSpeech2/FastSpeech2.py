@@ -361,4 +361,3 @@ class FastSpeech2(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
-

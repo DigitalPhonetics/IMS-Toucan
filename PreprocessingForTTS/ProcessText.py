@@ -21,7 +21,8 @@ class TextFrontend:
                  use_lexical_stress=False,
                  path_to_phoneme_list="PreprocessingForTTS/ipa_list.txt",
                  silent=True,
-                 allow_unknown=False):
+                 allow_unknown=False,
+                 inference=False):
         """
         Mostly preparing ID lookups
         """
@@ -30,6 +31,7 @@ class TextFrontend:
         self.use_explicit_eos = use_explicit_eos
         self.use_prosody = use_prosody
         self.use_stress = use_lexical_stress
+        self.inference = inference
         if allow_unknown:
             self.ipa_to_vector = defaultdict()
             self.default_vector = 165
@@ -76,6 +78,8 @@ class TextFrontend:
         layer
         """
         phones = self.get_phone_string(text=text, include_eos_symbol=False)
+        if self.inference:
+            phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if view:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()
