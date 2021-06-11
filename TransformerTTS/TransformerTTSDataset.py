@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 from multiprocessing import Manager
@@ -19,7 +20,7 @@ class TransformerTTSDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  speaker_embedding=False,
-                 loading_processes=4,
+                 loading_processes=8,
                  lang="en",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
@@ -37,6 +38,7 @@ class TransformerTTSDataset(Dataset):
             # make processes
             key_splits = list()
             process_list = list()
+            gc.disable()
             for i in range(loading_processes):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
@@ -46,6 +48,7 @@ class TransformerTTSDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
+            gc.enable()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
             with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:

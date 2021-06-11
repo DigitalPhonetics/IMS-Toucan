@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 
@@ -53,6 +54,7 @@ class FastSpeechDataset(Dataset):
             process_list = list()
             for i in range(loading_processes):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
+            gc.disable()
             for key_split in key_splits:
                 process_list.append(Process(target=self.cache_builder_process, args=(key_split,
                                                                                      acoustic_model,
@@ -67,6 +69,7 @@ class FastSpeechDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
+            gc.enable()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
             with open(os.path.join(cache_dir, "fast_train_cache.json"), 'w') as fp:
