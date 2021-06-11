@@ -113,7 +113,10 @@ def train_loop(net,
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
 
-    torch.multiprocessing.set_start_method('fork', force=False)
+    try:
+        torch.multiprocessing.set_start_method('fork', force=False)
+    except RuntimeError:
+        pass
 
     net = net.to(device)
     scaler = GradScaler()
