@@ -251,6 +251,10 @@ def train_loop(net,
         except RuntimeError:
             if batch_size > 5:
                 batch_size -= 5
+            else:
+                import sys
+                print("cuda space is just too small, check if another process is already running on it.\n EXITING")
+                sys.exit()
             while batch_size * gradient_accumulation < 60:
                 gradient_accumulation += 1
             print("Encountered cuda memory overload. \n"
