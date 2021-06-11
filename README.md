@@ -52,8 +52,8 @@ pip install -r requirements.txt
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. Create a
 directory *Models* in the top-level of your clone. Then create a directory *Use* in there and in this directory create
-another directory called *SpeakerEmbedding*. In this directory you put the two files *wav2mel.pt* and *
-dvector-step250000.pt* that you can obtain from the release page of the [dvector](https://github.com/yistLin/dvector)
+another directory called *SpeakerEmbedding*. In this directory you put the two files *wav2mel.pt* and 
+*dvector-step250000.pt* that you can obtain from the release page of the [dvector](https://github.com/yistLin/dvector)
 GitHub. This process might become automated in the future.
 
 And finally you need to have espeak installed on your system, because it is used as backend for the phonemizer. If you
@@ -102,8 +102,8 @@ restarts. So find the variable *cache_dir* and adapt it to your needs. The same 
 is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling the pipeline later
 using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a different directory.
 
-Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in *
-PreprocessingForTTS/ProcessText* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
+Since we are using text here, we have to make sure that the text processing is adequate for the language. So check 
+in *PreprocessingForTTS/ProcessText* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
 language of your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just
 doing it analogous to what is there already. Now back in the pipeline, change the *lang* argument in the creation of the
 dataset and in the call to the train loop function to the language ID that matches your data.
@@ -129,8 +129,8 @@ the *train_set*. In there, there is an argument called *diagonal_attention_head_
 
 It is recommended to use an *InferenceInterface* of the aforementioned TransformerTTS model to determine which of the
 attention heads looks the most like a duration graph. How to make one is described in a later section. To determine the
-attention head to use, add the *InferenceInterface* to the dictionary in the *view_attention_heads* function in the *
-run_visualizations.py* file in the top level of the toolkit. Then call it to see a plot of all of the attention heads
+attention head to use, add the *InferenceInterface* to the dictionary in the *view_attention_heads* function in 
+the *run_visualizations.py* file in the top level of the toolkit. Then call it to see a plot of all of the attention heads
 visualized with their ID displayed above them. This ID is what you want to supply to the *diagonal_attention_head_id*
 argument in the pipeline as an integer. If you use the default argument (*None*) it will try to select the most diagonal
 head for each sample automatically, but this fails for some samples, so it is safer to do it manually.
@@ -196,8 +196,8 @@ in the corresponding training pipeline. The last thing to check is the language 
 Make sure it matches what you used during training.
 
 With your newly created *InferenceInterface*, you can use your trained models pretty much anywhere, e.g. in other
-projects. All you need is the *Utility* directory, the *Layers* directory, the *PreprocessingForTTS* directory and the *
-InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works standalone.
+projects. All you need is the *Utility* directory, the *Layers* directory, the *PreprocessingForTTS* directory and 
+the *InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works standalone.
 
 ## Using a trained Model for Inference
 
