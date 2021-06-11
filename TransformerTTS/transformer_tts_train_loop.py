@@ -142,7 +142,6 @@ def train_loop(net,
     """
     net = net.to(device)
     scaler = GradScaler()
-
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
@@ -152,7 +151,6 @@ def train_loop(net,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-
     if use_speaker_embedding:
         reference_speaker_embedding_for_att_plot = torch.Tensor(train_dataset[0][4]).to(device)
     else:
@@ -179,93 +177,69 @@ def train_loop(net,
                 step_counter = int(path_to_checkpoint.split(".")[0].split("_")[-1])
     start_time = time.time()
     while True:
-        try:
-            epoch += 1
-            grad_accum = 0
-            optimizer.zero_grad()
-            train_losses_this_epoch = list()
-            for train_datapoint in tqdm(train_loader):
-                if gradient_accumulation == 1:
-                    with autocast():
-                        if not use_speaker_embedding:
-                            train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                             train_datapoint[3].to(device))
-                        else:
-                            train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                             train_datapoint[3].to(device), train_datapoint[4].to(device))
-                        train_losses_this_epoch.append(float(train_loss))
-                    scaler.scale(train_loss).backward()
-                    del train_loss
-                    grad_accum += 1
-                    if grad_accum % gradient_accumulation == 0:
-                        grad_accum = 0
-                        step_counter += 1
-                        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-                        scaler.step(optimizer)
-                        scaler.update()
-                        scheduler.step()
-                        optimizer.zero_grad()
-                        torch.cuda.empty_cache()
-                else:
+        epoch += 1
+        grad_accum = 0
+        optimizer.zero_grad()
+        train_losses_this_epoch = list()
+        for train_datapoint in tqdm(train_loader):
+            if gradient_accumulation == 1:
+                with autocast():
                     if not use_speaker_embedding:
                         train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
                                          train_datapoint[3].to(device))
                     else:
                         train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device),
-                                         train_datapoint[4].to(device))
+                                         train_datapoint[3].to(device), train_datapoint[4].to(device))
                     train_losses_this_epoch.append(float(train_loss))
-                    (train_loss / gradient_accumulation).backward()
-                    del train_loss
-                    grad_accum += 1
-                    if grad_accum % gradient_accumulation == 0:
-                        grad_accum = 0
-                        step_counter += 1
-                        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-                        optimizer.step()
-                        scheduler.step()
-                        optimizer.zero_grad()
-                        torch.cuda.empty_cache()
-            with torch.no_grad():
-                net.eval()
-                if epoch % epochs_per_save == 0:
-                    torch.save({
-                        "model"       : net.state_dict(),
-                        "optimizer"   : optimizer.state_dict(),
-                        "scaler"      : scaler.state_dict(),
-                        "step_counter": step_counter,
-                        "scheduler"   : scheduler.state_dict()
-                        }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                    delete_old_checkpoints(save_directory, keep=5)
-                    all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
-                    plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
-                    plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)
-                    if step_counter > steps:
-                        # DONE
-                        return
-                print("Epoch:        {}".format(epoch + 1))
-                print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-                print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-                print("Steps:        {}".format(step_counter))
-                net.train()
-        except RuntimeError:
-            del train_loader
-            if batch_size > 5:
-                batch_size -= 5
+                scaler.scale(train_loss).backward()
+                del train_loss
+                grad_accum += 1
+                if grad_accum % gradient_accumulation == 0:
+                    grad_accum = 0
+                    step_counter += 1
+                    torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                    scaler.step(optimizer)
+                    scaler.update()
+                    scheduler.step()
+                    optimizer.zero_grad()
+                    torch.cuda.empty_cache()
             else:
-                import sys
-                print("cuda space is just too small, check if another process is already running on it.\n EXITING")
-                sys.exit()
-            while batch_size * gradient_accumulation < 60:
-                gradient_accumulation += 1
-            print("Encountered cuda memory overload. \n"
-                  "Trying smaller batchsize={} with gradient_accumulation={} to remain stable.".format(batch_size, gradient_accumulation))
-            train_loader = DataLoader(batch_size=batch_size,
-                                      dataset=train_dataset,
-                                      drop_last=True,
-                                      num_workers=8,
-                                      pin_memory=False,
-                                      shuffle=True,
-                                      prefetch_factor=8,
-                                      collate_fn=collate_and_pad,
-                                      persistent_workers=True)
+                if not use_speaker_embedding:
+                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device), train_datapoint[3].to(device))
+                else:
+                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device), train_datapoint[3].to(device),
+                                     train_datapoint[4].to(device))
+                train_losses_this_epoch.append(float(train_loss))
+                (train_loss / gradient_accumulation).backward()
+                del train_loss
+                grad_accum += 1
+                if grad_accum % gradient_accumulation == 0:
+                    grad_accum = 0
+                    step_counter += 1
+                    torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+                    optimizer.step()
+                    scheduler.step()
+                    optimizer.zero_grad()
+                    torch.cuda.empty_cache()
+        with torch.no_grad():
+            net.eval()
+            if epoch % epochs_per_save == 0:
+                torch.save({
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
+                    "step_counter": step_counter,
+                    "scheduler": scheduler.state_dict()
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                delete_old_checkpoints(save_directory, keep=5)
+                all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
+                plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
+                plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)
+                if step_counter > steps:
+                    # DONE
+                    return
+            print("Epoch:        {}".format(epoch + 1))
+            print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            print("Steps:        {}".format(step_counter))
+            net.train()
