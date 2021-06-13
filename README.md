@@ -6,7 +6,7 @@ it as simple and beginner-friendly, yet powerful as possible.
 The PyTorch Modules of [TransformerTTS](https://arxiv.org/abs/1809.08895)
 and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from [ESPnet](https://github.com/espnet/espnet), the
 PyTorch Modules of [MelGAN](https://arxiv.org/abs/1910.06711) are taken from
-the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN) which is also made by the
+the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN) which are also authored by the
 brillant [Tomoki Hayashi](https://github.com/kan-bayashi).
 
 ## Demonstration
@@ -242,6 +242,5 @@ the *InferenceInterface* and supply the shorthand of your choice. It should be p
 
 This toolkit has been written by Florian Lux (except for the pytorch modules taken
 from [ESPnet](https://github.com/espnet/espnet) and [ParallelWaveGAN](https://github.com/kan-bayashi/ParallelWaveGAN),
-as mentioned above), so if you come across problems or questions, feel free to write a mail
-to [florian.lux@ims.uni-stuttgart.de](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
+as mentioned above), so if you come across problems or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
 cool with it. Thank you for reading.
