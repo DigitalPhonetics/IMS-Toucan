@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import soundfile as sf
 import torch
 import torchviz
+from LightSpeech.LightSpeech import LightSpeech
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from InferenceInterfaces.Elizabeth_TransformerTTSInference import Elizabeth_TransformerTTSInference
@@ -17,7 +18,6 @@ from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_Transf
 from InferenceInterfaces.LibriTTS_TransformerTTSInference import LibriTTS_TransformerTTSInference
 from InferenceInterfaces.Nancy_TransformerTTSInference import Nancy_TransformerTTSInference
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
-from LightSpeech.LightSpeech import LightSpeech
 from TransformerTTS.TransformerTTS import Transformer
 
 
@@ -25,14 +25,14 @@ def view_attention_heads(model_id, sentence):
     import os
     os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
     tts_dict = {
-        "trans_thorsten": Thorsten_TransformerTTSInference,
-        "trans_lj": LJSpeech_TransformerTTSInference,
-        "trans_libri": LibriTTS_TransformerTTSInference,
-        "trans_karl": Karlsson_TransformerTTSInference,
-        "trans_eva": Eva_TransformerTTSInference,
+        "trans_thorsten" : Thorsten_TransformerTTSInference,
+        "trans_lj"       : LJSpeech_TransformerTTSInference,
+        "trans_libri"    : LibriTTS_TransformerTTSInference,
+        "trans_karl"     : Karlsson_TransformerTTSInference,
+        "trans_eva"      : Eva_TransformerTTSInference,
         "trans_elizabeth": Elizabeth_TransformerTTSInference,
-        "trans_nancy": Nancy_TransformerTTSInference
-    }
+        "trans_nancy"    : Nancy_TransformerTTSInference
+        }
     tts = tts_dict[model_id](speaker_embedding="glados.pt")
     tts.plot_attentions(sentence=sentence)
 
@@ -72,6 +72,9 @@ def plot_melgan_training(path_to_train_loss_json="Models/Use/train_loss.json"):
     plt.plot(list(range(1, len(train_loss_dict["discriminator_mse"]) + 1)),
              train_loss_dict["discriminator_mse"], 'c',
              label="Discriminator Loss", alpha=0.5)
+    plt.plot(list(range(1, len(train_loss_dict["generator_total"]) + 1)),
+             [t / 32 for t in train_loss_dict["generator_total"]], 'm',
+             label="Total Generator Loss", alpha=0.5)
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
     plt.legend()
@@ -111,6 +114,7 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
+    plot_melgan_training()
     view_attention_heads("trans_lj", sentence="This is a complicated sentence, it even contains a pause!")
     view_attention_heads("trans_lj", sentence="Also maybe let's try another one.")
     view_attention_heads("trans_lj", sentence="This one, however, contains quite the significant amount of pauses, dunnit?.")
