@@ -4,13 +4,13 @@
 body {
   padding: 0;
   margin: 0;
-  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Times New Roman", "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 16px;
-  line-height: 1.5;
-  color: #606c71; }
+  line-height: 1.8;
+  color: #505c61; }
 
 a {
-  color: #1e6bb8;
+  color: #1e60b0;
   text-decoration: none; }
   a:hover {
     text-decoration: underline; }
