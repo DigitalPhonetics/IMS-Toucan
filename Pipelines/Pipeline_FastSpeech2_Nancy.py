@@ -43,10 +43,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
                                   acoustic_model=acoustic_model,
-                                  diagonal_attention_head_id=7,
+                                  diagonal_attention_head_id=None,
                                   lang="en",
                                   min_len_in_seconds=1,
-                                  max_len_in_seconds=10,
+                                  max_len_in_seconds=12,
                                   device=device,
                                   rebuild_cache=False)
 
@@ -63,7 +63,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=10,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.02,
+               lr=0.008,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
