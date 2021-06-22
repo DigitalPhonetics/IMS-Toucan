@@ -57,7 +57,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=500000,  # this is the nicest model, so we train for a bit longer
                batch_size=32,
                gradient_accumulation=1,
                epochs_per_save=10,
