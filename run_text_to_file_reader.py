@@ -18,22 +18,22 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten": Thorsten_FastSpeechInference,
-    "fast_lj": LJSpeech_FastSpeechInference,
-    "fast_libri": LibriTTS_FastSpeechInference,
-    "fast_karl": Karlsson_FastSpeechInference,
-    "fast_eva": Eva_FastSpeechInference,
-    "fast_elizabeth": Elizabeth_FastSpeechInference,
-    "fast_nancy": Nancy_FastSpeechInference,
+    "fast_thorsten"  : Thorsten_FastSpeechInference,
+    "fast_lj"        : LJSpeech_FastSpeechInference,
+    "fast_libri"     : LibriTTS_FastSpeechInference,
+    "fast_karlsson"  : Karlsson_FastSpeechInference,
+    "fast_eva"       : Eva_FastSpeechInference,
+    "fast_elizabeth" : Elizabeth_FastSpeechInference,
+    "fast_nancy"     : Nancy_FastSpeechInference,
 
-    "trans_thorsten": Thorsten_TransformerTTSInference,
-    "trans_lj": LJSpeech_TransformerTTSInference,
-    "trans_libri": LibriTTS_TransformerTTSInference,
-    "trans_karl": Karlsson_TransformerTTSInference,
-    "trans_eva": Eva_TransformerTTSInference,
+    "trans_thorsten" : Thorsten_TransformerTTSInference,
+    "trans_lj"       : LJSpeech_TransformerTTSInference,
+    "trans_libri"    : LibriTTS_TransformerTTSInference,
+    "trans_karlsson" : Karlsson_TransformerTTSInference,
+    "trans_eva"      : Eva_TransformerTTSInference,
     "trans_elizabeth": Elizabeth_TransformerTTSInference,
-    "trans_nancy": Nancy_TransformerTTSInference
-}
+    "trans_nancy"    : Nancy_TransformerTTSInference
+    }
 
 
 def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding=None):
@@ -49,23 +49,38 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="fast_libri",
-               sentence=["Okay.",
-                         "Look.",
-                         "We both said a lot of things that you're going to regret.",
-                         "But I think we can put our differences behind us.",
-                         "For science.",
-                         "You monster!"],
-               filename="audios/glados_regret.wav",
+    read_texts(model_id="trans_libri",
+               sentence=["Hello world, I am a synthesis voice."],
                device=exec_device,
-               speaker_embedding="glados.pt")
+               speaker_embedding="glados.pt",
+               filename="audios/trans_libri.wav")
 
-    read_texts(model_id="fast_lj", sentence="""Betty Botter bought some butter, but she said the butter’s bitter.
-    If I put it in my batter, it will make my batter bitter!
-    But a bit of better butter will make my batter better.
-    So ‘twas better Betty Botter bought a bit of better butter.
-    How much wood would a woodchuck chuck if a woodchuck could chuck wood?
-    He would chuck, he would, as much as he could, and chuck as much wood, as a woodchuck would if a woodchuck could chuck wood.""".split("\n"),
-               filename="audios/fast_lj.wav", device=exec_device)
+    read_texts(model_id="trans_nancy",
+               sentence=["Hello world, I am a synthesis voice."],
+               device=exec_device,
+               speaker_embedding="glados.pt",
+               filename="audios/trans_nancy.wav")
 
-    read_texts(model_id="trans_thorsten", sentence=["Hallo, ich bin eine deutsche Stimme."], filename="audios/trans_thorsten.wav", device=exec_device)
+    read_texts(model_id="trans_lj",
+               sentence=["Hello world, I am a synthesis voice."],
+               device=exec_device,
+               speaker_embedding="glados.pt",
+               filename="audios/trans_lj.wav")
+
+    read_texts(model_id="fast_lj",
+               sentence=["Hello world, I am a synthesis voice."],
+               device=exec_device,
+               speaker_embedding="glados.pt",
+               filename="audios/fast_lj.wav")
+
+    read_texts(model_id="trans_thorsten",
+               sentence=["Hallo Welt, ich bin eine Synthese-Stimme."],
+               device=exec_device,
+               speaker_embedding="glados.pt",
+               filename="audios/trans_thorsten.wav")
+
+    read_texts(model_id="trans_karlsson",
+               sentence=["Hallo Welt, ich bin eine Synthese-Stimme."],
+               device=exec_device,
+               speaker_embedding="glados.pt",
+               filename="audios/trans_karlsson.wav")

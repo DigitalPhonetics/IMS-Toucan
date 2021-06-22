@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import soundfile as sf
 import torch
 import torchviz
-from LightSpeech.LightSpeech import LightSpeech
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
 from InferenceInterfaces.Elizabeth_TransformerTTSInference import Elizabeth_TransformerTTSInference
@@ -107,14 +106,10 @@ def show_all_models_params():
     print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
     model = FastSpeech2(idim=166, odim=80, spk_embed_dim=256)
     print("Number of Parameters in FastSpeech2 with Speaker Embeddings: {}".format(count_parameters(model)))
-    model = LightSpeech(idim=166, odim=80)
-    print("Number of Parameters in LightSpeech without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = LightSpeech(idim=166, odim=80, spk_embed_dim=256)
-    print("Number of Parameters in LightSpeech with Speaker Embeddings: {}".format(count_parameters(model)))
 
 
 if __name__ == '__main__':
     plot_melgan_training()
-    view_attention_heads("trans_lj", sentence="This is a complicated sentence, it even contains a pause!")
-    view_attention_heads("trans_lj", sentence="Also maybe let's try another one.")
-    view_attention_heads("trans_lj", sentence="This one, however, contains quite the significant amount of pauses, dunnit?.")
+    view_attention_heads("trans_libri", sentence="This is a complicated sentence, it even contains a pause!")
+    view_attention_heads("trans_libri", sentence="Also maybe let's try another one.")
+    view_attention_heads("trans_libri", sentence="This one, however, contains quite the significant amount of pauses, dunnit?.")

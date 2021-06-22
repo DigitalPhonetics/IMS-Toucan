@@ -75,7 +75,7 @@ def build_path_to_transcript_dict_hokuspokus():
 
 
 def build_path_to_transcript_dict_libritts():
-    path_train = "/mount/resources/speech/corpora/LibriTTS"
+    path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
     path_to_transcript = dict()
     for speaker in os.listdir(path_train):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
