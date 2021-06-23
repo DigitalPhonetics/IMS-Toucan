@@ -10,6 +10,7 @@ from Pipelines.Pipeline_FastSpeech2_LJSpeech import run as fast_LJSpeech
 from Pipelines.Pipeline_FastSpeech2_LibriTTS import run as fast_LibriTTS
 from Pipelines.Pipeline_FastSpeech2_Nancy import run as fast_Nancy
 from Pipelines.Pipeline_FastSpeech2_Thorsten import run as fast_Thorsten
+from Pipelines.Pipeline_GradientAccum import run as grad
 from Pipelines.Pipeline_IntegrationTest import run as integration_test
 from Pipelines.Pipeline_MelGAN_Elizabeth import run as melgan_Elizabeth
 from Pipelines.Pipeline_MelGAN_Eva import run as melgan_Eva
@@ -29,38 +30,39 @@ from Pipelines.Pipeline_TransformerTTS_SingleHead import run as single_head
 from Pipelines.Pipeline_TransformerTTS_Thorsten import run as trans_Thorsten
 
 pipeline_dict = {
-    "fast_Eva": fast_Eva,
-    "melgan_Eva": melgan_Eva,
-    "trans_Eva": trans_Eva,
+    "fast_Eva"        : fast_Eva,
+    "melgan_Eva"      : melgan_Eva,
+    "trans_Eva"       : trans_Eva,
 
-    "fast_Karlsson": fast_Karlsson,
-    "melgan_Karlsson": melgan_Karlsson,
-    "trans_Karlsson": trans_Karlsson,
+    "fast_Karlsson"   : fast_Karlsson,
+    "melgan_Karlsson" : melgan_Karlsson,
+    "trans_Karlsson"  : trans_Karlsson,
 
-    "fast_Elizabeth": fast_Elizabeth,
+    "fast_Elizabeth"  : fast_Elizabeth,
     "melgan_Elizabeth": melgan_Elizabeth,
-    "trans_Elizabeth": trans_Elizabeth,
+    "trans_Elizabeth" : trans_Elizabeth,
 
-    "fast_Thorsten": fast_Thorsten,
-    "melgan_Thorsten": melgan_Thorsten,
-    "trans_Thorsten": trans_Thorsten,
+    "fast_Thorsten"   : fast_Thorsten,
+    "melgan_Thorsten" : melgan_Thorsten,
+    "trans_Thorsten"  : trans_Thorsten,
 
-    "fast_LibriTTS": fast_LibriTTS,
-    "melgan_LibriTTS": melgan_LibriTTS,
-    "trans_LibriTTS": trans_LibriTTS,
+    "fast_LibriTTS"   : fast_LibriTTS,
+    "melgan_LibriTTS" : melgan_LibriTTS,
+    "trans_LibriTTS"  : trans_LibriTTS,
 
-    "fast_LJSpeech": fast_LJSpeech,
-    "melgan_LJSpeech": melgan_LJSpeech,
-    "trans_LJSpeech": trans_LJSpeech,
+    "fast_LJSpeech"   : fast_LJSpeech,
+    "melgan_LJSpeech" : melgan_LJSpeech,
+    "trans_LJSpeech"  : trans_LJSpeech,
 
-    "fast_Nancy": fast_Nancy,
-    "melgan_Nancy": melgan_Nancy,
-    "trans_Nancy": trans_Nancy,
+    "fast_Nancy"      : fast_Nancy,
+    "melgan_Nancy"    : melgan_Nancy,
+    "trans_Nancy"     : trans_Nancy,
 
     "integration_test": integration_test,
-    "single_head": single_head,
-    "melgan_combined": melgan_combined
-}
+    "single_head"     : single_head,
+    "melgan_combined" : melgan_combined,
+    "grad"            : grad
+    }
 
 if __name__ == '__main__':
 
