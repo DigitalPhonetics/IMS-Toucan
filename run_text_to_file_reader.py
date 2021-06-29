@@ -2,12 +2,6 @@ import os
 
 import torch
 
-from InferenceInterfaces.Elizabeth_FastSpeechInference import Elizabeth_FastSpeechInference
-from InferenceInterfaces.Elizabeth_TransformerTTSInference import Elizabeth_TransformerTTSInference
-from InferenceInterfaces.Eva_FastSpeechInference import Eva_FastSpeechInference
-from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSInference
-from InferenceInterfaces.Karlsson_FastSpeechInference import Karlsson_FastSpeechInference
-from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
 from InferenceInterfaces.LJSpeech_FastSpeechInference import LJSpeech_FastSpeechInference
 from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
 from InferenceInterfaces.LibriTTS_FastSpeechInference import LibriTTS_FastSpeechInference
@@ -21,17 +15,11 @@ tts_dict = {
     "fast_thorsten"  : Thorsten_FastSpeechInference,
     "fast_lj"        : LJSpeech_FastSpeechInference,
     "fast_libri"     : LibriTTS_FastSpeechInference,
-    "fast_karlsson"  : Karlsson_FastSpeechInference,
-    "fast_eva"       : Eva_FastSpeechInference,
-    "fast_elizabeth" : Elizabeth_FastSpeechInference,
     "fast_nancy"     : Nancy_FastSpeechInference,
 
     "trans_thorsten" : Thorsten_TransformerTTSInference,
     "trans_lj"       : LJSpeech_TransformerTTSInference,
     "trans_libri"    : LibriTTS_TransformerTTSInference,
-    "trans_karlsson" : Karlsson_TransformerTTSInference,
-    "trans_eva"      : Eva_TransformerTTSInference,
-    "trans_elizabeth": Elizabeth_TransformerTTSInference,
     "trans_nancy"    : Nancy_TransformerTTSInference
     }
 
@@ -49,23 +37,17 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="trans_libri",
+    read_texts(model_id="fast_libri",
                sentence=["Hello world, I am a synthesis voice."],
                device=exec_device,
                speaker_embedding="glados.pt",
-               filename="audios/trans_libri.wav")
+               filename="audios/fast_libri.wav")
 
-    read_texts(model_id="trans_nancy",
+    read_texts(model_id="fast_nancy",
                sentence=["Hello world, I am a synthesis voice."],
                device=exec_device,
                speaker_embedding="glados.pt",
-               filename="audios/trans_nancy.wav")
-
-    read_texts(model_id="trans_lj",
-               sentence=["Hello world, I am a synthesis voice."],
-               device=exec_device,
-               speaker_embedding="glados.pt",
-               filename="audios/trans_lj.wav")
+               filename="audios/fast_nancy.wav")
 
     read_texts(model_id="fast_lj",
                sentence=["Hello world, I am a synthesis voice."],
@@ -73,14 +55,8 @@ if __name__ == '__main__':
                speaker_embedding="glados.pt",
                filename="audios/fast_lj.wav")
 
-    read_texts(model_id="trans_thorsten",
+    read_texts(model_id="fast_thorsten",
                sentence=["Hallo Welt, ich bin eine Synthese-Stimme."],
                device=exec_device,
                speaker_embedding="glados.pt",
-               filename="audios/trans_thorsten.wav")
-
-    read_texts(model_id="trans_karlsson",
-               sentence=["Hallo Welt, ich bin eine Synthese-Stimme."],
-               device=exec_device,
-               speaker_embedding="glados.pt",
-               filename="audios/trans_karlsson.wav")
+               filename="audios/fast_thorsten.wav")

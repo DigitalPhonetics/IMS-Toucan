@@ -2,12 +2,6 @@ import sys
 
 import torch
 
-from InferenceInterfaces.Elizabeth_FastSpeechInference import Elizabeth_FastSpeechInference
-from InferenceInterfaces.Elizabeth_TransformerTTSInference import Elizabeth_TransformerTTSInference
-from InferenceInterfaces.Eva_FastSpeechInference import Eva_FastSpeechInference
-from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSInference
-from InferenceInterfaces.Karlsson_FastSpeechInference import Karlsson_FastSpeechInference
-from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
 from InferenceInterfaces.LJSpeech_FastSpeechInference import LJSpeech_FastSpeechInference
 from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
 from InferenceInterfaces.LibriTTS_FastSpeechInference import LibriTTS_FastSpeechInference
@@ -21,17 +15,11 @@ tts_dict = {
     "fast_thorsten": Thorsten_FastSpeechInference,
     "fast_lj": LJSpeech_FastSpeechInference,
     "fast_libri": LibriTTS_FastSpeechInference,
-    "fast_karl": Karlsson_FastSpeechInference,
-    "fast_eva": Eva_FastSpeechInference,
-    "fast_elizabeth": Elizabeth_FastSpeechInference,
     "fast_nancy": Nancy_FastSpeechInference,
 
     "trans_thorsten": Thorsten_TransformerTTSInference,
     "trans_lj": LJSpeech_TransformerTTSInference,
     "trans_libri": LibriTTS_TransformerTTSInference,
-    "trans_karl": Karlsson_TransformerTTSInference,
-    "trans_eva": Eva_TransformerTTSInference,
-    "trans_elizabeth": Elizabeth_TransformerTTSInference,
     "trans_nancy": Nancy_TransformerTTSInference
 }
 
