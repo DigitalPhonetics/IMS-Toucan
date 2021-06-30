@@ -7,7 +7,6 @@ from Pipelines.Pipeline_FastSpeech2_LJSpeech import run as fast_LJSpeech
 from Pipelines.Pipeline_FastSpeech2_LibriTTS import run as fast_LibriTTS
 from Pipelines.Pipeline_FastSpeech2_Nancy import run as fast_Nancy
 from Pipelines.Pipeline_FastSpeech2_Thorsten import run as fast_Thorsten
-from Pipelines.Pipeline_GradientAccum import run as grad
 from Pipelines.Pipeline_IntegrationTest import run as integration_test
 from Pipelines.Pipeline_MelGAN_LJSpeech import run as melgan_LJSpeech
 from Pipelines.Pipeline_MelGAN_Nancy import run as melgan_Nancy
@@ -36,7 +35,6 @@ pipeline_dict = {
 
     "integration_test": integration_test,
     "melgan_combined" : melgan_combined,
-    "grad"            : grad
     }
 
 if __name__ == '__main__':
