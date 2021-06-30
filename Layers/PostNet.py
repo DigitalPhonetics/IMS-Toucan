@@ -42,7 +42,7 @@ class PostNet(torch.nn.Module):
             ochans = odim if layer == n_layers - 1 else n_chans
             if use_batch_norm:
                 self.postnet += [torch.nn.Sequential(torch.nn.Conv1d(ichans, ochans, n_filts, stride=1, padding=(n_filts - 1) // 2, bias=False, ),
-                                                     torch.nn.BatchNorm1d(ochans), torch.nn.Tanh(), torch.nn.Dropout(dropout_rate), )]
+                                                     torch.nn.GroupNorm(num_groups=32, num_channels=ochans), torch.nn.Tanh(), torch.nn.Dropout(dropout_rate), )]
             else:
                 self.postnet += [
                     torch.nn.Sequential(torch.nn.Conv1d(ichans, ochans, n_filts, stride=1, padding=(n_filts - 1) // 2, bias=False, ), torch.nn.Tanh(),
@@ -50,7 +50,8 @@ class PostNet(torch.nn.Module):
         ichans = n_chans if n_layers != 1 else odim
         if use_batch_norm:
             self.postnet += [
-                torch.nn.Sequential(torch.nn.Conv1d(ichans, odim, n_filts, stride=1, padding=(n_filts - 1) // 2, bias=False, ), torch.nn.BatchNorm1d(odim),
+                torch.nn.Sequential(torch.nn.Conv1d(ichans, odim, n_filts, stride=1, padding=(n_filts - 1) // 2, bias=False, ),
+                                    torch.nn.GroupNorm(num_groups=20, num_channels=odim),
                                     torch.nn.Dropout(dropout_rate), )]
         else:
             self.postnet += [torch.nn.Sequential(torch.nn.Conv1d(ichans, odim, n_filts, stride=1, padding=(n_filts - 1) // 2, bias=False, ),

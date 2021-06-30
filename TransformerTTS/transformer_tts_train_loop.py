@@ -114,9 +114,8 @@ def train_loop(net,
                train_dataset,
                device,
                save_directory,
-               batch_size=32,
+               batch_size=22,
                steps=400000,
-               gradient_accumulation=1,
                epochs_per_save=10,
                use_speaker_embedding=False,
                lang="en",
@@ -172,50 +171,26 @@ def train_loop(net,
             scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
-    accumulated_loss = 0.0
     while True:
         epoch += 1
-        grad_accum = 0
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for train_datapoint in tqdm(train_loader):
-            if gradient_accumulation == 1:
-                with autocast():
-                    if not use_speaker_embedding:
-                        train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device))
-                    else:
-                        train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device), train_datapoint[4].to(device))
-                    train_losses_this_epoch.append(float(train_loss))
-                optimizer.zero_grad()
-                scaler.scale(train_loss).backward()
-                step_counter += 1
-                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-                scaler.step(optimizer)
-                scaler.update()
-                scheduler.step()
-            else:
-                with autocast():
-                    if not use_speaker_embedding:
-                        train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device))
-                    else:
-                        train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                         train_datapoint[3].to(device), train_datapoint[4].to(device))
-                    train_losses_this_epoch.append(float(train_loss))
-                accumulated_loss += train_loss / gradient_accumulation
-                grad_accum += 1
-                if grad_accum % gradient_accumulation == 0:
-                    grad_accum = 0
-                    optimizer.zero_grad()
-                    scaler.scale(accumulated_loss).backward()
-                    accumulated_loss = 0.0
-                    step_counter += 1
-                    torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-                    scaler.step(optimizer)
-                    scaler.update()
-                    scheduler.step()
+            with autocast():
+                if not use_speaker_embedding:
+                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
+                                     train_datapoint[3].to(device))
+                else:
+                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
+                                     train_datapoint[3].to(device), train_datapoint[4].to(device))
+                train_losses_this_epoch.append(float(train_loss))
+            optimizer.zero_grad()
+            scaler.scale(train_loss).backward()
+            step_counter += 1
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+            scaler.step(optimizer)
+            scaler.update()
+            scheduler.step()
         with torch.no_grad():
             net.eval()
             if epoch % epochs_per_save == 0:

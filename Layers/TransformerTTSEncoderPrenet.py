@@ -66,7 +66,7 @@ class EncoderPrenet(torch.nn.Module):
                 if use_batch_norm:
                     self.convs += [
                         torch.nn.Sequential(torch.nn.Conv1d(ichans, econv_chans, econv_filts, stride=1, padding=(econv_filts - 1) // 2, bias=False, ),
-                                            torch.nn.BatchNorm1d(econv_chans), torch.nn.ReLU(), torch.nn.Dropout(dropout_rate), )]
+                                            torch.nn.GroupNorm(num_groups=32, num_channels=econv_chans), torch.nn.ReLU(), torch.nn.Dropout(dropout_rate), )]
                 else:
                     self.convs += [
                         torch.nn.Sequential(torch.nn.Conv1d(ichans, econv_chans, econv_filts, stride=1, padding=(econv_filts - 1) // 2, bias=False, ),

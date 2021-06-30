@@ -240,14 +240,10 @@
         running.</p>
     <p align="justify">If you get cuda out of memory errors, you need to decrease the batchsize in the arguments of
         the call to the
-        training_loop in the pipeline you are running. You can compensate for the smaller batchsize by increasing the
-        gradient_accumulation argument. This will cause an update to the weigths to only happen after the specified
-        amount of
-        batches. This is important for training stability, but makes training a lot slower. So try decreasing the
-        batchsize
-        until you get no more out of cuda memory errors, and only increase the gradient_accumulation if training fails
-        then due
-        to the smaller batch size (i.e. the plots don't show improvements after a few hours).</p>
+        training_loop in the pipeline you are running. Try decreasing the
+        batchsize in small steps
+        until you get no more out of cuda memory errors. Decreasing the batchsize may also require you to use a
+        smaller learning rate. The use of GroupNorm should make it so that the training remains mostly stable.</p>
     <p align="justify">Speaking of plots: in the directory you specified for saving models checkpoint files and self
         explanatory visualization
         data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training

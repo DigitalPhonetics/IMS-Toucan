@@ -52,7 +52,7 @@ pip install -r requirements.txt
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. Create a
 directory *Models* in the top-level of your clone. Then create a directory *Use* in there and in this directory create
-another directory called *SpeakerEmbedding*. In this directory you put the two files *wav2mel.pt* and 
+another directory called *SpeakerEmbedding*. In this directory you put the two files *wav2mel.pt* and
 *dvector-step250000.pt* that you can obtain from the release page of the [dvector](https://github.com/yistLin/dvector)
 GitHub. This process might become automated in the future.
 
@@ -102,8 +102,8 @@ restarts. So find the variable *cache_dir* and adapt it to your needs. The same 
 is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling the pipeline later
 using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a different directory.
 
-Since we are using text here, we have to make sure that the text processing is adequate for the language. So check 
-in *PreprocessingForTTS/ProcessText* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
+Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
+*PreprocessingForTTS/ProcessText* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
 language of your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just
 doing it analogous to what is there already. Now back in the pipeline, change the *lang* argument in the creation of the
 dataset and in the call to the train loop function to the language ID that matches your data.
@@ -129,8 +129,8 @@ the *train_set*. In there, there is an argument called *diagonal_attention_head_
 
 It is recommended to use an *InferenceInterface* of the aforementioned TransformerTTS model to determine which of the
 attention heads looks the most like a duration graph. How to make one is described in a later section. To determine the
-attention head to use, add the *InferenceInterface* to the dictionary in the *view_attention_heads* function in 
-the *run_visualizations.py* file in the top level of the toolkit. Then call it to see a plot of all of the attention heads
+attention head to use, add the *InferenceInterface* to the dictionary in the *view_attention_heads* function in the
+*run_visualizations.py* file in the top level of the toolkit. Then call it to see a plot of all of the attention heads
 visualized with their ID displayed above them. This ID is what you want to supply to the *diagonal_attention_head_id*
 argument in the pipeline as an integer. If you use the default argument (*None*) it will try to select the most diagonal
 head for each sample automatically, but this fails for some samples, so it is safer to do it manually.
@@ -167,11 +167,9 @@ After every epoch, some logs will be written to the console. If the loss becomes
 learning rate or more warmup steps in the arguments of the call to the training_loop in the pipeline you are running.
 
 If you get cuda out of memory errors, you need to decrease the batchsize in the arguments of the call to the
-training_loop in the pipeline you are running. You can compensate for the smaller batchsize by increasing the
-gradient_accumulation argument. This will cause an update to the weigths to only happen after the specified amount of
-batches. This is important for training stability, but makes training a lot slower. So try decreasing the batchsize
-until you get no more out of cuda memory errors, and only increase the gradient_accumulation if training fails then due
-to the smaller batch size (i.e. the plots don't show improvements after a few hours).
+training_loop in the pipeline you are running. Try decreasing the batchsize in small steps until you get no more out of
+cuda memory errors. Decreasing the batchsize may also require you to use a smaller learning rate. The use of GroupNorm
+should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving models checkpoint files and self explanatory visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
@@ -196,8 +194,9 @@ in the corresponding training pipeline. The last thing to check is the language 
 Make sure it matches what you used during training.
 
 With your newly created *InferenceInterface*, you can use your trained models pretty much anywhere, e.g. in other
-projects. All you need is the *Utility* directory, the *Layers* directory, the *PreprocessingForTTS* directory and 
-the *InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works standalone.
+projects. All you need is the *Utility* directory, the *Layers* directory, the *PreprocessingForTTS* directory and the
+*InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works
+standalone.
 
 ## Using a trained Model for Inference
 
@@ -223,24 +222,34 @@ in the shorthand when prompted and immediately listen to your synthesis saying w
 of memory errors for too long inputs). In the other two demo scripts you have to call the function that wraps around
 the *InferenceInterface* and supply the shorthand of your choice. It should be pretty clear from looking at it.
 
+## FAQ
+
+Here are a few points that were brought up by users:
+
+- My error message shows GPU0, even though I specified a different GPU - The way GPU selection works is that the
+  specified GPU is set as the only visible device, in order to avoid backend stuff running accidentially on different
+  GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. But it is actually
+  running on the GPU you specified.
+- I'm getting device side assert triggered errors - The amount of phonemes in the phoneme set used has to be specified
+  as idim in the instanciation of a model. If a phoneme index is passed tot he model during runtime which is higher than
+  the amount specified as idim, this is the cryptic error that will occur. So if you make changes to the phoneme set,
+  remember to also change the models idim.
+
 ---
 
 ## Example Pipelines available
 
 | Dataset               | Language  | Single or Multi     | MelGAN | TransformerTTS | FastSpeech2 | 
 | ----------------------|-----------|---------------------| :-----:|:--------------:|:-----------:|
-| Hokuspokus            | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | Thorsten              | German    | Single Speaker      | ✅     | ✅            | ✅          |
-| MAILabs Karlsson      | German    | Single Speaker      | ✅     | ✅            | ✅          |
-| MAILabs Eva           | German    | Single Speaker      | ✅     | ✅            | ✅          |
 | LJSpeech              | English   | Single Speaker      | ✅     | ✅            | ✅          |
-| Nancy Krebs Lessac    | English   | Single Speaker      | ✅     | ✅            | ✅          |
-| MAILabs Elizabeth     | English   | Single Speaker      | ✅     | ✅            | ✅          |
+| Nancy Krebs           | English   | Single Speaker      | ✅     | ✅            | ✅          |
 | LibriTTS              | English   | Multi Speaker       | ✅     | ✅            | ✅          |
 
 ---
 
 This toolkit has been written by Florian Lux (except for the pytorch modules taken
 from [ESPnet](https://github.com/espnet/espnet) and [ParallelWaveGAN](https://github.com/kan-bayashi/ParallelWaveGAN),
-as mentioned above), so if you come across problems or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
-cool with it. Thank you for reading.
+as mentioned above), so if you come across problems or questions, feel free
+to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something cool with it. Thank you
+for reading.
