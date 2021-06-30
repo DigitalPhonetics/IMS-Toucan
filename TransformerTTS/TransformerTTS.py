@@ -89,7 +89,8 @@ class Transformer(torch.nn.Module, ABC):
                  num_layers_applied_guided_attn=2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda=25.0):  # forcing the attention to be diagonal
+                 guided_attn_loss_lambda=25.0,  # forcing the attention to be diagonal
+                 legacy_model=False):
         super().__init__()
 
         # store hyperparameters
@@ -165,7 +166,7 @@ class Transformer(torch.nn.Module, ABC):
 
         # define postnet
         self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
-                               dropout_rate=postnet_dropout_rate)
+                               dropout_rate=postnet_dropout_rate, legacy_model=legacy_model)
 
         # define loss function
         self.criterion = TransformerLoss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, bce_pos_weight=bce_pos_weight)

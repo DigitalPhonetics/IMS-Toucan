@@ -47,7 +47,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, legacy_model=False):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -73,7 +73,7 @@ class Conformer(torch.nn.Module):
 
         # convolution module definition
         convolution_layer = ConvolutionModule
-        convolution_layer_args = (attention_dim, cnn_module_kernel, activation)
+        convolution_layer_args = (attention_dim, cnn_module_kernel, activation, legacy_model)
 
         self.encoders = repeat(num_blocks, lambda lnum: EncoderLayer(attention_dim, encoder_selfattn_layer(*encoder_selfattn_layer_args),
                                                                      positionwise_layer(*positionwise_layer_args),

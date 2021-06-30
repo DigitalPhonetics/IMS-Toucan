@@ -96,7 +96,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  init_enc_alpha=1.0,
                  init_dec_alpha=1.0,
                  use_masking=False,
-                 use_weighted_masking=True):
+                 use_weighted_masking=True,
+                 legacy_model=False):
         super().__init__()
 
         # store hyperparameters
@@ -119,7 +120,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False)
+                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
+                                 legacy_model=legacy_model)
 
         # define additional projection for speaker embedding
         if self.spk_embed_dim is not None:
@@ -152,14 +154,15 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  dropout_rate=transformer_dec_dropout_rate, positional_dropout_rate=transformer_dec_positional_dropout_rate,
                                  attention_dropout_rate=transformer_dec_attn_dropout_rate, normalize_before=decoder_normalize_before,
                                  concat_after=decoder_concat_after, positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size)
+                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size,
+                                 legacy_model=legacy_model)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
 
         # define postnet
         self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
-                               dropout_rate=postnet_dropout_rate)
+                               dropout_rate=postnet_dropout_rate, legacy_model=legacy_model)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)

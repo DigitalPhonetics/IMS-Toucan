@@ -38,7 +38,7 @@ class Transformer(torch.nn.Module, ABC):
                  bce_pos_weight=7.0,  # scaling the loss of the stop token prediction
                  loss_type="L1", use_guided_attn_loss=True, num_heads_applied_guided_attn=2, num_layers_applied_guided_attn=2,
                  modules_applied_guided_attn=("encoder-decoder",), guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda=25.0):
+                 guided_attn_loss_lambda=25.0, legacy_model=False):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -87,7 +87,7 @@ class Transformer(torch.nn.Module, ABC):
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.prob_out = torch.nn.Linear(adim, reduction_factor)
         self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
-                               dropout_rate=postnet_dropout_rate)
+                               dropout_rate=postnet_dropout_rate, legacy_model=legacy_model)
         if self.use_guided_attn_loss:
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
         self.criterion = TransformerLoss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, bce_pos_weight=bce_pos_weight)
