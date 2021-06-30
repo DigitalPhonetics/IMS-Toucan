@@ -17,9 +17,9 @@ class ConvolutionModule(nn.Module):
 
     """
 
-    def __init__(self, channels, kernel_size, activation=nn.ReLU(), bias=True, legacy_model=False):
+    def __init__(self, channels, kernel_size, activation=nn.ReLU(), legacy_model=False, bias=True):
         super(ConvolutionModule, self).__init__()
-        # kernerl_size should be a odd number for 'SAME' padding
+        # kernel_size should be an odd number for 'SAME' padding
         assert (kernel_size - 1) % 2 == 0
 
         self.pointwise_conv1 = nn.Conv1d(channels, 2 * channels, kernel_size=1, stride=1, padding=0, bias=bias, )
