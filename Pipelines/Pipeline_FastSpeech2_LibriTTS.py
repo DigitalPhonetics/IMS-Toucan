@@ -36,9 +36,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=256)
-    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
-                                              map_location='cpu')["model"])
+    try:
+        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=256)
+        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
+                                                  map_location='cpu')["model"])
+    except RuntimeError:
+        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=256, legacy_model=True)
+        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
+                                                  map_location='cpu')["model"])
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
