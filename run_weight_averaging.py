@@ -39,7 +39,7 @@ def load_net_trans_multi(path, idim=166, odim=80):
     try:
         net.load_state_dict(check_dict["model"])
     except RuntimeError:
-        net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=256, legacy_model=True)
+        net = Transformer(idim=idim, odim=odim, spk_embed_dim=256, legacy_model=True)
         net.load_state_dict(check_dict["model"])
     return net
 
