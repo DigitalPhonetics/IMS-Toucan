@@ -14,14 +14,22 @@ from TransformerTTS.TransformerTTS import Transformer
 def load_net_trans(path, idim=166, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = Transformer(idim=idim, odim=odim, spk_embed_dim=None)
-    net.load_state_dict(check_dict["model"])
+    try:
+        net.load_state_dict(check_dict["model"])
+    except RuntimeError:
+        net = Transformer(idim=idim, odim=odim, spk_embed_dim=None, legacy_model=True)
+        net.load_state_dict(check_dict["model"])
     return net
 
 
 def load_net_fast(path, idim=166, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=None)
-    net.load_state_dict(check_dict["model"])
+    try:
+        net.load_state_dict(check_dict["model"])
+    except RuntimeError:
+        net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=None, legacy_model=True)
+        net.load_state_dict(check_dict["model"])
     return net
 
 
