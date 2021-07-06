@@ -10,9 +10,6 @@ import torch
 import torchviz
 
 from FastSpeech2.FastSpeech2 import FastSpeech2
-from InferenceInterfaces.Elizabeth_TransformerTTSInference import Elizabeth_TransformerTTSInference
-from InferenceInterfaces.Eva_TransformerTTSInference import Eva_TransformerTTSInference
-from InferenceInterfaces.Karlsson_TransformerTTSInference import Karlsson_TransformerTTSInference
 from InferenceInterfaces.LJSpeech_TransformerTTSInference import LJSpeech_TransformerTTSInference
 from InferenceInterfaces.LibriTTS_TransformerTTSInference import LibriTTS_TransformerTTSInference
 from InferenceInterfaces.Nancy_TransformerTTSInference import Nancy_TransformerTTSInference
@@ -27,9 +24,6 @@ def view_attention_heads(model_id, sentence):
         "trans_thorsten" : Thorsten_TransformerTTSInference,
         "trans_lj"       : LJSpeech_TransformerTTSInference,
         "trans_libri"    : LibriTTS_TransformerTTSInference,
-        "trans_karl"     : Karlsson_TransformerTTSInference,
-        "trans_eva"      : Eva_TransformerTTSInference,
-        "trans_elizabeth": Elizabeth_TransformerTTSInference,
         "trans_nancy"    : Nancy_TransformerTTSInference
         }
     tts = tts_dict[model_id](speaker_embedding="glados.pt")
@@ -109,7 +103,6 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
-    plot_melgan_training()
     view_attention_heads("trans_libri", sentence="This is a complicated sentence, it even contains a pause!")
     view_attention_heads("trans_libri", sentence="Also maybe let's try another one.")
     view_attention_heads("trans_libri", sentence="This one, however, contains quite the significant amount of pauses, dunnit?.")

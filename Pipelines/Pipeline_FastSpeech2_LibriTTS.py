@@ -48,7 +48,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   max_len_in_seconds=10,
                                   device=device,
                                   speaker_embedding=True,
-                                  diagonal_attention_head_id=10,
+                                  diagonal_attention_head_id=5,
                                   loading_processes=8)
 
     model = FastSpeech2(idim=166, odim=80, spk_embed_dim=256)
@@ -58,12 +58,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=500000,
                batch_size=32,
                epochs_per_save=10,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.02,
+               lr=0.03,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
