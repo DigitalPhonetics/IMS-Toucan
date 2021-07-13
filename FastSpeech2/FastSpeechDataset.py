@@ -128,50 +128,50 @@ class FastSpeechDataset(Dataset):
                 melspec_length = torch.LongTensor([len(melspec)])
                 text = tf.string_to_tensor(transcript).long()
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
-                cached_text_lens = len(cached_text)
+                cached_text_len = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
-                cached_speech_lens = len(cached_speech)
+                cached_speech_len = len(cached_speech)
                 if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
-                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                   speech=melspec.to(device),
-                                                                   use_teacher_forcing=True,
-                                                                   speaker_embeddings=None)[2],
-                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    cached_duration = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
+                                                                  speech=melspec.to(device),
+                                                                  use_teacher_forcing=True,
+                                                                  speaker_embeddings=None)[2],
+                                         vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
-                    cached_durations = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                   speech=melspec.to(device),
-                                                                   use_teacher_forcing=True,
-                                                                   speaker_embeddings=cached_speaker_embedding.to(device))[2],
-                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    cached_duration = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
+                                                                  speech=melspec.to(device),
+                                                                  use_teacher_forcing=True,
+                                                                  speaker_embeddings=cached_speaker_embedding.to(device))[2],
+                                         vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
-                                            durations=cached_durations.unsqueeze(0),
-                                            durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
+                                            durations=cached_duration.unsqueeze(0),
+                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
                 cached_pitch = dio(input=norm_wave.unsqueeze(0),
                                    input_lengths=norm_wave_length,
                                    feats_lengths=melspec_length,
-                                   durations=cached_durations.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_durations)]))[0].squeeze(0)
+                                   durations=cached_duration.unsqueeze(0),
+                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
                 if not self.speaker_embedding:
                     process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_lens,
+                                                           cached_text_len,
                                                            cached_speech,
-                                                           cached_speech_lens,
-                                                           cached_durations.numpy().tolist(),
+                                                           cached_speech_len,
+                                                           cached_duration.numpy().tolist(),
                                                            cached_energy.numpy().tolist(),
                                                            cached_pitch.numpy().tolist(),
                                                            path])
                 else:
                     process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_lens,
+                                                           cached_text_len,
                                                            cached_speech,
-                                                           cached_speech_lens,
-                                                           cached_durations.numpy().tolist(),
+                                                           cached_speech_len,
+                                                           cached_duration.numpy().tolist(),
                                                            cached_energy.numpy().tolist(),
                                                            cached_pitch.numpy().tolist(),
                                                            cached_speaker_embedding.detach().numpy().tolist(),

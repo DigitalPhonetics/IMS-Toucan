@@ -175,14 +175,14 @@ def train_loop(net,
         epoch += 1
         optimizer.zero_grad()
         train_losses_this_epoch = list()
-        for train_datapoint in tqdm(train_loader):
+        for batch in tqdm(train_loader):
             with autocast():
                 if not use_speaker_embedding:
-                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                     train_datapoint[3].to(device))
+                    train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
+                                     batch[3].to(device))
                 else:
-                    train_loss = net(train_datapoint[0].to(device), train_datapoint[1].to(device), train_datapoint[2].to(device),
-                                     train_datapoint[3].to(device), train_datapoint[4].to(device))
+                    train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
+                                     batch[3].to(device), batch[4].to(device))
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()

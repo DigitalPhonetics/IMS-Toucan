@@ -60,3 +60,9 @@ if __name__ == '__main__':
                device=exec_device,
                speaker_embedding="glados.pt",
                filename="audios/fast_thorsten.wav")
+
+    read_texts(model_id="trans_lj",
+               sentence=["Betty Botter bought some butter, but she said the butter's bitter."],
+               device=exec_device,
+               speaker_embedding="glados.pt",
+               filename="audios/trans_lj.wav")

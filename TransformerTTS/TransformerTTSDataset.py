@@ -73,17 +73,17 @@ class TransformerTTSDataset(Dataset):
                 wave, sr = sf.read(audio_file)
             if min_len <= len(wave) / sr <= max_len:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
-                cached_text_lens = len(cached_text)
+                cached_text_len = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
-                cached_speech_lens = len(cached_speech)
+                cached_speech_len = len(cached_speech)
                 if speaker_embedding:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
                     cached_speaker_embedding = emb_tensor.detach().numpy().tolist()
-                    process_internal_dataset_chunk.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens, cached_speaker_embedding])
+                    process_internal_dataset_chunk.append([cached_text, cached_text_len, cached_speech, cached_speech_len, cached_speaker_embedding])
                 else:
-                    process_internal_dataset_chunk.append([cached_text, cached_text_lens, cached_speech, cached_speech_lens])
+                    process_internal_dataset_chunk.append([cached_text, cached_text_len, cached_speech, cached_speech_len])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
