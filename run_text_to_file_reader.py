@@ -12,15 +12,15 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten"  : Thorsten_FastSpeechInference,
-    "fast_lj"        : LJSpeech_FastSpeechInference,
-    "fast_libri"     : LibriTTS_FastSpeechInference,
-    "fast_nancy"     : Nancy_FastSpeechInference,
+    "fast_thorsten" : Thorsten_FastSpeechInference,
+    "fast_lj"       : LJSpeech_FastSpeechInference,
+    "fast_libri"    : LibriTTS_FastSpeechInference,
+    "fast_nancy"    : Nancy_FastSpeechInference,
 
-    "trans_thorsten" : Thorsten_TransformerTTSInference,
-    "trans_lj"       : LJSpeech_TransformerTTSInference,
-    "trans_libri"    : LibriTTS_TransformerTTSInference,
-    "trans_nancy"    : Nancy_TransformerTTSInference
+    "trans_thorsten": Thorsten_TransformerTTSInference,
+    "trans_lj"      : LJSpeech_TransformerTTSInference,
+    "trans_libri"   : LibriTTS_TransformerTTSInference,
+    "trans_nancy"   : Nancy_TransformerTTSInference
     }
 
 
@@ -30,6 +30,27 @@ def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding=Non
         sentence = [sentence]
     tts.read_to_file(text_list=sentence, file_location=filename)
     del tts
+
+
+def read_harvard_sentences(model_id):
+    exec_device = "cuda" if torch.cuda.is_available() else "cpu"
+    tts = tts_dict[model_id](device=exec_device, speaker_embedding="glados.pt")
+
+    with open("audios/test_sentences_combined_3.txt", "r", encoding="utf8") as f:
+        sents = f.read().split("\n")
+    output_dir = "audios/harvard_03_{}".format(model_id)
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+    for index, sent in enumerate(sents):
+        tts.read_to_file(text_list=[sent], file_location=output_dir + "/{}.wav".format(index))
+
+    with open("audios/test_sentences_combined_6.txt", "r", encoding="utf8") as f:
+        sents = f.read().split("\n")
+    output_dir = "audios/harvard_06_{}".format(model_id)
+    if not os.path.isdir(output_dir):
+        os.makedirs(output_dir)
+    for index, sent in enumerate(sents):
+        tts.read_to_file(text_list=[sent], file_location=output_dir + "/{}.wav".format(index))
 
 
 if __name__ == '__main__':
