@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from PreprocessingForTTS.ProcessText import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
+from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 
 
@@ -23,12 +24,26 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
         sentence = "This is an unseen sentence."
     elif lang == "de":
         sentence = "Dies ist ein ungesehener Satz."
-    text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
-    spec = net.inference(text=text, speaker_embeddings=reference_speaker_embedding_for_plot).transpose(0, 1).to("cpu").numpy()
+    phoneme_vector = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    spec, durations, *_ = net.inference(text=phoneme_vector, speaker_embeddings=reference_speaker_embedding_for_plot, return_duration_pitch_energy=True)
+    spec = spec.transpose(0, 1).to("cpu").numpy()
+    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
         os.makedirs(os.path.join(save_dir, "spec"))
     fig, ax = plt.subplots(nrows=1, ncols=1)
-    lbd.specshow(spec, ax=ax, sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
+    lbd.specshow(spec,
+                 ax=ax,
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax.yaxis.set_visible(False)
+    ax.set_xticks(duration_splits, minor=True)
+    ax.xaxis.grid(True, which='minor')
+    ax.set_xticks(label_positions, minor=False)
+    ax.set_xticklabels(tf.get_phone_string(sentence))
+    ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
     plt.close()

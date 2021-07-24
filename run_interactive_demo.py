@@ -12,16 +12,16 @@ from InferenceInterfaces.Thorsten_FastSpeechInference import Thorsten_FastSpeech
 from InferenceInterfaces.Thorsten_TransformerTTSInference import Thorsten_TransformerTTSInference
 
 tts_dict = {
-    "fast_thorsten": Thorsten_FastSpeechInference,
-    "fast_lj": LJSpeech_FastSpeechInference,
-    "fast_libri": LibriTTS_FastSpeechInference,
-    "fast_nancy": Nancy_FastSpeechInference,
+    "fast_thorsten" : Thorsten_FastSpeechInference,
+    "fast_lj"       : LJSpeech_FastSpeechInference,
+    "fast_libri"    : LibriTTS_FastSpeechInference,
+    "fast_nancy"    : Nancy_FastSpeechInference,
 
     "trans_thorsten": Thorsten_TransformerTTSInference,
-    "trans_lj": LJSpeech_TransformerTTSInference,
-    "trans_libri": LibriTTS_TransformerTTSInference,
-    "trans_nancy": Nancy_TransformerTTSInference
-}
+    "trans_lj"      : LJSpeech_TransformerTTSInference,
+    "trans_libri"   : LibriTTS_TransformerTTSInference,
+    "trans_nancy"   : Nancy_TransformerTTSInference
+    }
 
 if __name__ == '__main__':
     model_id = input("Which model do you want? \nCurrently supported are: {}\n".format("".join("\n\t- {}".format(key) for key in tts_dict.keys())))

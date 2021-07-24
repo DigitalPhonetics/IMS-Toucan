@@ -289,7 +289,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
 
     def inference(self, text, speech=None, speaker_embeddings=None, durations=None,
-                  pitch=None, energy=None, alpha=1.0, use_teacher_forcing=False):
+                  pitch=None, energy=None, alpha=1.0, use_teacher_forcing=False, return_duration_pitch_energy=False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -303,6 +303,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             alpha (float, optional): Alpha to control the speed.
             use_teacher_forcing (bool, optional): Whether to use teacher forcing.
                 If true, groundtruth of duration, pitch and energy will be used.
+            return_duration_pitch_energy: whether to return the list of predicted durations for nicer plotting
 
         Returns:
             Tensor: Output sequence of features (L, odim).
@@ -323,11 +324,24 @@ class FastSpeech2(torch.nn.Module, ABC):
         if use_teacher_forcing:
             # use groundtruth of duration, pitch, and energy
             ds, ps, es = d.unsqueeze(0), p.unsqueeze(0), e.unsqueeze(0)
-            _, outs, *_ = self._forward(xs, ilens, ys, gold_durations=ds, gold_pitch=ps, gold_energy=es, speaker_embeddings=speaker_embeddings)  # (1, L, odim)
+            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
+                                                                                                   ilens,
+                                                                                                   ys,
+                                                                                                   gold_durations=ds,
+                                                                                                   gold_pitch=ps,
+                                                                                                   gold_energy=es,
+                                                                                                   speaker_embeddings=speaker_embeddings)  # (1, L, odim)
         else:
-            _, outs, *_ = self._forward(xs, ilens, ys, speaker_embeddings=speaker_embeddings, is_inference=True, alpha=alpha)  # (1, L, odim)
+            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
+                                                                                                   ilens,
+                                                                                                   ys,
+                                                                                                   speaker_embeddings=speaker_embeddings,
+                                                                                                   is_inference=True,
+                                                                                                   alpha=alpha)  # (1, L, odim)
         self.train()
-        return outs[0]
+        if return_duration_pitch_energy:
+            return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
+        return after_outs[0]
 
     def _integrate_with_spk_embed(self, hs, speaker_embeddings):
         """

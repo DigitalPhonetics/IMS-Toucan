@@ -8,6 +8,17 @@ from abc import ABC
 import torch
 
 
+def cumsum_durations(durations):
+    out = [0]
+    for duration in durations:
+        out.append(duration + out[-1])
+    centers = list()
+    for index, _ in enumerate(out):
+        if index + 1 < len(out):
+            centers.append((out[index] + out[index + 1]) / 2)
+    return out, centers
+
+
 def delete_old_checkpoints(checkpoint_dir, keep=5):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
