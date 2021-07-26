@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from PreprocessingForTTS.ProcessAudio import AudioPreprocessor
+from PreprocessingForTTS.AudioPreprocessor import AudioPreprocessor
 
 
 class MelGANDataset(Dataset):

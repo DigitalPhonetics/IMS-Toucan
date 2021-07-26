@@ -7,7 +7,7 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceTransformerTTS import Transformer
-from PreprocessingForTTS.ProcessText import TextFrontend
+from PreprocessingForTTS.TextFrontend import TextFrontend
 
 
 class Thorsten_TransformerTTSInference(torch.nn.Module):

@@ -6,7 +6,7 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
-from PreprocessingForTTS.ProcessText import TextFrontend
+from PreprocessingForTTS.TextFrontend import TextFrontend
 
 
 class LibriTTS_FastSpeechInference(torch.nn.Module):

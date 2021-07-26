@@ -103,7 +103,7 @@ is where the checkpoints will be saved to. This is a default value, you can over
 using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a different directory.
 
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
-*PreprocessingForTTS/ProcessText* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
+*PreprocessingForTTS/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
 language of your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just
 doing it analogous to what is there already. Now back in the pipeline, change the *lang* argument in the creation of the
 dataset and in the call to the train loop function to the language ID that matches your data.
