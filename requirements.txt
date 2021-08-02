@@ -1,4 +1,4 @@
-librosa==0.8.0
+librosa==0.8.1
 matplotlib==3.3.4
 pyloudnorm==0.1.0
 SoundFile==0.10.3.post1
@@ -8,8 +8,11 @@ torchviz==0.0.1
 torch-complex==0.2.0
 numpy==1.19.2
 phonemizer==2.2.2
+panphon==0.19
 clean-text==0.3.0
 Unidecode==1.2.0
 pyworld==0.2.12
 sounddevice==0.4.1
 tqdm==4.56.2
+numba
+scipy

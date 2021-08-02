@@ -44,7 +44,7 @@ class Dio(torch.nn.Module):
 
     def forward(self, input, input_lengths=None, feats_lengths=None, durations=None,
                 durations_lengths=None):
-        # If not provide, we assume that the inputs have the same length
+        # If not provided, we assume that the inputs have the same length
         if input_lengths is None:
             input_lengths = (input.new_ones(input.shape[0], dtype=torch.long) * input.shape[1])
 
