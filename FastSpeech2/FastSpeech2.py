@@ -97,12 +97,15 @@ class FastSpeech2(torch.nn.Module, ABC):
                  init_dec_alpha=1.0,
                  use_masking=False,
                  use_weighted_masking=True,
-                 legacy_model=False):
+                 # additional features
+                 legacy_model=False,
+                 use_dtw_loss=True):
         super().__init__()
 
         # store hyperparameters
         self.idim = idim
         self.odim = odim
+        self.use_dtw_loss = use_dtw_loss
         self.eos = 1
         self.reduction_factor = reduction_factor
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
@@ -230,6 +233,12 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                          e_outs=e_outs, ys=gold_speech, ds=gold_durations, ps=gold_pitch, es=gold_energy,
                                                                          ilens=text_lengths_including_eos, olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
+
+        if self.use_dtw_loss:
+            # print("Regular Loss: {}".format(loss))
+            dtw_loss = self.dtw_criterion(after_outs, gold_speech).mean() / 6000.0  # division to balance orders of magnitude
+            # print("DTW Loss: {}".format(dtw_loss))
+            loss += dtw_loss
 
         return loss
 
