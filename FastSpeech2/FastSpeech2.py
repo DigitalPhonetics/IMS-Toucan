@@ -100,7 +100,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  legacy_model=False,
-                 use_dtw_loss=True):
+                 use_dtw_loss=False):
         super().__init__()
 
         # store hyperparameters

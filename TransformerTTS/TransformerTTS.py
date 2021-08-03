@@ -90,9 +90,10 @@ class Transformer(torch.nn.Module, ABC):
                  num_layers_applied_guided_attn=2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda=15.0,  # forcing the attention to be diagonal
+                 guided_attn_loss_lambda=25.0,  # forcing the attention to be diagonal
+                 # additional features
                  legacy_model=False,
-                 use_dtw_loss=True):
+                 use_dtw_loss=False):
         super().__init__()
 
         # store hyperparameters
