@@ -103,10 +103,10 @@ is where the checkpoints will be saved to. This is a default value, you can over
 using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a different directory.
 
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
-*PreprocessingForTTS/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the
-language of your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just
-doing it analogous to what is there already. Now back in the pipeline, change the *lang* argument in the creation of the
-dataset and in the call to the train loop function to the language ID that matches your data.
+*Preprocessing/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the language of
+your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just doing it
+analogous to what is there already. Now back in the pipeline, change the *lang* argument in the creation of the dataset
+and in the call to the train loop function to the language ID that matches your data.
 
 Now navigate to the implementation of the *train_loop* that is called in the pipeline. In this file, find the function
 called *get_atts*. This function will produce attention plots during training, which is the most important way to
@@ -194,7 +194,7 @@ in the corresponding training pipeline. The last thing to check is the language 
 Make sure it matches what you used during training.
 
 With your newly created *InferenceInterface*, you can use your trained models pretty much anywhere, e.g. in other
-projects. All you need is the *Utility* directory, the *Layers* directory, the *PreprocessingForTTS* directory and the
+projects. All you need is the *Utility* directory, the *Layers* directory, the *Preprocessing* directory and the
 *InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works
 standalone.
 

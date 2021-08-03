@@ -19,7 +19,7 @@ class TextFrontend:
                  # lot, even though one might think enriching the input
                  # with such information would help such systems.
                  use_lexical_stress=False,
-                 path_to_phoneme_list="PreprocessingForTTS/ipa_list.txt",
+                 path_to_phoneme_list="Preprocessing/ipa_list.txt",
                  silent=True,
                  allow_unknown=False,
                  inference=False):

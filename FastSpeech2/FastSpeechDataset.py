@@ -13,8 +13,8 @@ from tqdm import tqdm
 from FastSpeech2.DurationCalculator import DurationCalculator
 from FastSpeech2.EnergyCalculator import EnergyCalculator
 from FastSpeech2.PitchCalculator import Dio
-from PreprocessingForTTS.AudioPreprocessor import AudioPreprocessor
-from PreprocessingForTTS.TextFrontend import TextFrontend
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.TextFrontend import TextFrontend
 
 
 class FastSpeechDataset(Dataset):

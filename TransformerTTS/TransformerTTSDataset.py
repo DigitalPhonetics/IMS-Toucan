@@ -10,8 +10,8 @@ import torchaudio
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from PreprocessingForTTS.AudioPreprocessor import AudioPreprocessor
-from PreprocessingForTTS.TextFrontend import TextFrontend
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.TextFrontend import TextFrontend
 
 
 class TransformerTTSDataset(Dataset):
