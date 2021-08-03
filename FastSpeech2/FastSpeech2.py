@@ -13,6 +13,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
+from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
@@ -172,6 +173,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
+        self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
     def forward(self, text_tensors,
                 text_lengths,

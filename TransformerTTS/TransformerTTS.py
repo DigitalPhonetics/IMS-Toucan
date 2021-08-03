@@ -17,8 +17,8 @@ from Layers.TransformerTTSDecoder import Decoder
 from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
-from SoftDTW.sdtw_cuda_loss import SoftDTW
 from TransformerTTS.TransformerLoss import TransformerLoss
+from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
