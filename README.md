@@ -22,20 +22,8 @@ toolkit.
 multi-speaker FastSpeech 2 with MelGAN trained on [LibriTTS](https://research.google/tools/datasets/libri-tts/) using
 this toolkit. Fans of the videogame Portal may recognize who was used as the reference speaker for this utterance.
 
-## Embrace Redundancy
-
-While it is a bad practice to have redundancy in regular code, and as much as possible should be abstracted and
-parameterized, my experiences in creating this toolkit and working with other toolkits led me to believe that sometimes
-redundancy is not only ok, it is actually very convenient. While it does make it more difficult to change things, it
-also makes it also more difficult to break things and cause legacy problems.
 
 ---
-
-## Working with this Toolkit
-
-The standard way of working with this toolkit is to make your own fork of it, so you can change as much of the code as
-you like and fully adapt it to your needs. Making pipelines to train models on new datasets, even in new languages,
-requires absolutely minimal new code and you can take the existing code for such models as reference/template.
 
 ## Installation
 
@@ -231,7 +219,7 @@ Here are a few points that were brought up by users:
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. But it is actually
   running on the GPU you specified.
 - I'm getting device side assert triggered errors - The amount of phonemes in the phoneme set used has to be specified
-  as idim in the instanciation of a model. If a phoneme index is passed tot he model during runtime which is higher than
+  as idim in the instanciation of a model. If a phoneme index is passed to the model during runtime which is higher than
   the amount specified as idim, this is the cryptic error that will occur. So if you make changes to the phoneme set,
   remember to also change the models idim.
 
