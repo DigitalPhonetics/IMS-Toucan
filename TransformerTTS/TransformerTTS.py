@@ -245,7 +245,7 @@ class Transformer(torch.nn.Module, ABC):
 
         if self.use_dtw_loss:
             print("Regular Loss: {}".format(loss))
-            dtw_loss = self.dtw_criterion(after_outs, speech)
+            dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 20000.0  # division to balance orders of magnitude
             print("DTW Loss: {}".format(dtw_loss))
             loss += dtw_loss
 
