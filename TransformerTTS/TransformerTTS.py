@@ -17,6 +17,7 @@ from Layers.TransformerTTSDecoder import Decoder
 from Layers.TransformerTTSDecoderPrenet import DecoderPrenet
 from Layers.TransformerTTSEncoder import Encoder
 from Layers.TransformerTTSEncoderPrenet import EncoderPrenet
+from SoftDTW.sdtw_cuda_loss import SoftDTW
 from TransformerTTS.TransformerLoss import TransformerLoss
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
@@ -89,11 +90,13 @@ class Transformer(torch.nn.Module, ABC):
                  num_layers_applied_guided_attn=2,
                  modules_applied_guided_attn=("encoder-decoder",),
                  guided_attn_loss_sigma=0.4,  # standard deviation from diagonal that is allowed
-                 guided_attn_loss_lambda=25.0,  # forcing the attention to be diagonal
-                 legacy_model=False):
+                 guided_attn_loss_lambda=15.0,  # forcing the attention to be diagonal
+                 legacy_model=False,
+                 use_dtw_loss=True):
         super().__init__()
 
         # store hyperparameters
+        self.use_dtw_loss = use_dtw_loss
         self.idim = idim
         self.odim = odim
         self.eos = 1
@@ -172,6 +175,7 @@ class Transformer(torch.nn.Module, ABC):
         self.criterion = TransformerLoss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, bce_pos_weight=bce_pos_weight)
         if self.use_guided_attn_loss:
             self.attn_criterion = GuidedMultiHeadAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
+        self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
@@ -238,6 +242,12 @@ class Transformer(torch.nn.Module, ABC):
             loss = l1_loss + l2_loss + bce_loss
         else:
             raise ValueError("unknown --loss-type " + self.loss_type)
+
+        if self.use_dtw_loss:
+            print("Regular Loss: {}".format(loss))
+            dtw_loss = self.dtw_criterion(after_outs, speech)
+            print("DTW Loss: {}".format(dtw_loss))
+            loss += dtw_loss
 
         # calculate guided attention loss
         if self.use_guided_attn_loss:
