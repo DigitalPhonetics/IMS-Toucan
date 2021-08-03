@@ -1,7 +1,7 @@
-# Speech Synthesis 🐣
+![image](Utility/toucan.png)
 
-This is a toolkit to train state-of-the-art Speech Synthesis models. Everything is pure Python and PyTorch based to keep
-it as simple and beginner-friendly, yet powerful as possible.
+IMS-Toucan is a toolkit to train state-of-the-art Speech Synthesis models. Everything is pure Python and PyTorch based
+to keep it as simple and beginner-friendly, yet powerful as possible.
 
 The PyTorch Modules of [TransformerTTS](https://arxiv.org/abs/1809.08895)
 and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from [ESPnet](https://github.com/espnet/espnet), the
