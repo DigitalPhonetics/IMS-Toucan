@@ -16,7 +16,7 @@ They are separated to keep the code clean, simple and minimal.
 ## Demonstration
 
 [Here is some speech](https://drive.google.com/file/d/1mZ1LvTlY6pJ5ZQ4UXZ9jbzB651mufBrB/view?usp=sharing)
-produced by FastSpeech 2 and MelGAN trained on [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)
+produced by FastSpeech2 and MelGAN trained on [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)
 using this toolkit.
 
 And [here is a sentence](https://drive.google.com/file/d/1FT49Jf0yyibwMDbsEJEO9mjwHkHRIGXc/view?usp=sharing)
@@ -24,7 +24,7 @@ produced by TransformerTTS and MelGAN trained on [Thorsten](https://github.com/t
 using this toolkit.
 
 [Here is some speech](https://drive.google.com/file/d/14nPo2o1VKtWLPGF7e_0TxL8XGI3n7tAs/view?usp=sharing)
-produced by a multi-speaker FastSpeech 2 with MelGAN trained on
+produced by a multi-speaker FastSpeech2 with MelGAN trained on
 [LibriTTS](https://research.google/tools/datasets/libri-tts/) using this toolkit. Fans of the videogame Portal may
 recognize who was used as the reference speaker for this utterance.
 
@@ -63,8 +63,8 @@ apt-get install espeak
 ## Creating a new Pipeline
 
 To create a new pipeline to train a MelGAN vocoder, you only need a set of audio files. To create a new pipeline for a
-TransformerTTS you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech 2, you need
-audio files, corresponding text labels, and an already trained TransformerTTS to estimate the duration information that
+Tacotron2 you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech2, you need
+audio files, corresponding text labels, and an already trained Tacotron2 model to estimate the duration information that
 FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
 
 #### Build a MelGAN Pipeline
@@ -115,7 +115,7 @@ the top level. In said file, import the *run* function from the pipeline you jus
 Now in the *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And that's
 it.
 
-#### Build a FastSpeech 2 Pipeline
+#### Build a FastSpeech2 Pipeline
 
 Most of this is exactly analogous to building a Tacotron2 pipeline. So to keep this brief, this section will only
 mention the additional things you have to do.
