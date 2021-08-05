@@ -50,7 +50,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                device=device,
                save_directory=save_dir,
                steps=500000,  # this has a lot more data than the others, so it can learn for longer
-               batch_size=64,
+               batch_size=84,
                epochs_per_save=5,  # more datapoints per epoch needs fewer epochs per save
                use_speaker_embedding=True,
                lang="en",
