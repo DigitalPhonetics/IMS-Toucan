@@ -128,7 +128,7 @@ class Encoder(torch.nn.Module):
             return xs.transpose(1, 2)
         if not isinstance(ilens, torch.Tensor):
             ilens = torch.tensor(ilens)
-        xs = pack_padded_sequence(xs.transpose(1, 2), ilens.cpu(), batch_first=True)
+        xs = pack_padded_sequence(xs.transpose(1, 2), ilens.cpu(), batch_first=True, enforce_sorted=False)
         self.blstm.flatten_parameters()
         xs, _ = self.blstm(xs)  # (B, Tmax, C)
         xs, hlens = pad_packed_sequence(xs, batch_first=True)
