@@ -34,9 +34,9 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     plt.ylabel("Outputs")
     plt.xticks(range(len(att[0])), labels=[phone for phone in phones])
     plt.tight_layout()
-    if not os.path.exists(att_dir):
-        os.makedirs(att_dir)
-    plt.savefig(os.path.join(att_dir, str(step) + ".png"))
+    if not os.path.exists(os.path.join(att_dir, "attention_plots")):
+        os.makedirs(os.path.join(att_dir, "attention_plots"))
+    plt.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
     plt.clf()
     plt.close()
 
