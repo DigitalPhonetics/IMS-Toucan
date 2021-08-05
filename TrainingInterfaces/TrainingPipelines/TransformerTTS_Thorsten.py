@@ -3,9 +3,9 @@ import random
 
 import torch
 
-from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
-from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.transformer_tts_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTSDataset import TransformerTTSDataset
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.transformer_tts_train_loop import train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_thorsten as build_path_to_transcript_dict
 
 

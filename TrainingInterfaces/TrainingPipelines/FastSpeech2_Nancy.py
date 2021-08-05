@@ -6,7 +6,7 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
 
 

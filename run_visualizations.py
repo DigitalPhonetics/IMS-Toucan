@@ -14,7 +14,7 @@ from InferenceInterfaces.LibriTTS_TransformerTTS import LibriTTS_TransformerTTSI
 from InferenceInterfaces.Nancy_TransformerTTS import Nancy_TransformerTTSInference
 from InferenceInterfaces.Thorsten_TransformerTTS import Thorsten_TransformerTTSInference
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
 
 
 def view_attention_heads(model_id, sentence):
@@ -90,10 +90,10 @@ def count_parameters(net):
 
 
 def show_all_models_params():
-    from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+    from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
     model = Transformer(idim=166, odim=80)
-    print("Number of Parameters in TransformerTTS: {}".format(count_parameters(model)))
+    print("Number of Parameters in Tacotron2: {}".format(count_parameters(model)))
     model = FastSpeech2(idim=166, odim=80)
     print("Number of Parameters in FastSpeech2: {}".format(count_parameters(model)))
 

@@ -8,7 +8,7 @@ import torch
 
 from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANGenerator import MelGANGenerator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
 
 
 def load_net_trans(path, idim=166, odim=80):
@@ -119,7 +119,7 @@ def make_best_in_all(n=3):
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)
                 save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
-            elif "TransformerTTS" in model_dir:
+            elif "Tacotron2" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 if "LibriTTS" in model_dir:
                     averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans_multi)
