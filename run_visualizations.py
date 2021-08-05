@@ -93,13 +93,9 @@ def show_all_models_params():
     from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
     model = Transformer(idim=166, odim=80)
-    print("Number of Parameters in Transformer without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = Transformer(idim=166, odim=80, spk_embed_dim=256)
-    print("Number of Parameters in Transformer with speedy config: {}".format(count_parameters(model)))
+    print("Number of Parameters in TransformerTTS: {}".format(count_parameters(model)))
     model = FastSpeech2(idim=166, odim=80)
-    print("Number of Parameters in FastSpeech2 without Speaker Embeddings: {}".format(count_parameters(model)))
-    model = FastSpeech2(idim=166, odim=80, spk_embed_dim=256)
-    print("Number of Parameters in FastSpeech2 with Speaker Embeddings: {}".format(count_parameters(model)))
+    print("Number of Parameters in FastSpeech2: {}".format(count_parameters(model)))
 
 
 if __name__ == '__main__':
