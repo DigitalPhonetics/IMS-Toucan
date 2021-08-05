@@ -175,7 +175,7 @@ class Postnet(torch.nn.Module):
                                                                      stride=1,
                                                                      padding=(n_filts - 1) // 2,
                                                                      bias=False, ),
-                                                     torch.nn.BatchNorm1d(ochans),
+                                                     torch.nn.GroupNorm(num_channels=ochans, num_groups=32),
                                                      torch.nn.Tanh(),
                                                      torch.nn.Dropout(dropout_rate), )]
             else:
@@ -195,7 +195,7 @@ class Postnet(torch.nn.Module):
                                                                  stride=1,
                                                                  padding=(n_filts - 1) // 2,
                                                                  bias=False, ),
-                                                 torch.nn.BatchNorm1d(odim),
+                                                 torch.nn.GroupNorm(num_channels=odim, num_groups=32),
                                                  torch.nn.Dropout(dropout_rate), )]
         else:
             self.postnet += [torch.nn.Sequential(torch.nn.Conv1d(ichans,
