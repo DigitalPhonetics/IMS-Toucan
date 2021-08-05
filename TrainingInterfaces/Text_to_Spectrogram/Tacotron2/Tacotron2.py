@@ -160,7 +160,7 @@ class Tacotron2(torch.nn.Module):
                 text_lengths: torch.Tensor,
                 speech: torch.Tensor,
                 speech_lengths: torch.Tensor,
-                spembs: torch.Tensor = None, ):
+                speaker_embeddings: torch.Tensor = None, ):
         """
         Calculate forward propagation.
 
@@ -169,7 +169,7 @@ class Tacotron2(torch.nn.Module):
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
             speech_lengths (LongTensor): Batch of the lengths of each target (B,).
-            spembs (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
+            speaker_embeddings (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
             Tensor: Loss scalar value.
@@ -193,7 +193,7 @@ class Tacotron2(torch.nn.Module):
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws = self._forward(xs, ilens, ys, olens, spembs)
+        after_outs, before_outs, logits, att_ws = self._forward(xs, ilens, ys, olens, speaker_embeddings)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -239,16 +239,16 @@ class Tacotron2(torch.nn.Module):
                  ilens: torch.Tensor,
                  ys: torch.Tensor,
                  olens: torch.Tensor,
-                 spembs: torch.Tensor, ):
+                 speaker_embeddings: torch.Tensor, ):
         hs, hlens = self.enc(xs, ilens)
         if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, spembs)
+            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         return self.dec(hs, hlens, ys)
 
     def inference(self,
                   text: torch.Tensor,
                   speech: torch.Tensor = None,
-                  spembs: torch.Tensor = None,
+                  speaker_embeddings: torch.Tensor = None,
                   threshold: float = 0.5,
                   minlenratio: float = 0.0,
                   maxlenratio: float = 10.0,
@@ -262,7 +262,7 @@ class Tacotron2(torch.nn.Module):
         Args:
             text (LongTensor): Input sequence of characters (T,).
             speech (Tensor, optional): Feature sequence to extract style (N, idim).
-            spembs (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
+            speaker_embeddings (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
             threshold (float, optional): Threshold in inference.
             minlenratio (float, optional): Minimum length ratio in inference.
             maxlenratio (float, optional): Maximum length ratio in inference.
@@ -278,7 +278,7 @@ class Tacotron2(torch.nn.Module):
         """
         x = text
         y = speech
-        spemb = spembs
+        speaker_embedding = speaker_embeddings
 
         # add eos at the last of sequence
         x = F.pad(x, [0, 1], "constant", self.eos)
@@ -288,18 +288,18 @@ class Tacotron2(torch.nn.Module):
             assert speech is not None, "speech must be provided with teacher forcing."
 
             xs, ys = x.unsqueeze(0), y.unsqueeze(0)
-            spembs = None if spemb is None else spemb.unsqueeze(0)
+            speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = x.new_tensor([xs.size(1)]).long()
             olens = y.new_tensor([ys.size(1)]).long()
-            outs, _, _, att_ws = self._forward(xs, ilens, ys, olens, spembs)
+            outs, _, _, att_ws = self._forward(xs, ilens, ys, olens, speaker_embeddings)
 
             return outs[0], None, att_ws[0]
 
         # inference
         h = self.enc.inference(x)
         if self.spk_embed_dim is not None:
-            hs, spembs = h.unsqueeze(0), spemb.unsqueeze(0)
-            h = self._integrate_with_spk_embed(hs, spembs)[0]
+            hs, speaker_embeddings = h.unsqueeze(0), speaker_embedding.unsqueeze(0)
+            h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
         outs, probs, att_ws = self.dec.inference(h,
                                                  threshold=threshold,
                                                  minlenratio=minlenratio,
@@ -311,13 +311,13 @@ class Tacotron2(torch.nn.Module):
         return outs, probs, att_ws
 
     def _integrate_with_spk_embed(self, hs: torch.Tensor,
-                                  spembs: torch.Tensor):
+                                  speaker_embeddings: torch.Tensor):
         """
         Integrate speaker embedding with hidden states.
 
         Args:
             hs (Tensor): Batch of hidden state sequences (B, Tmax, eunits).
-            spembs (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
+            speaker_embeddings (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
             Tensor: Batch of integrated hidden state sequences (B, Tmax, eunits) if
@@ -325,12 +325,12 @@ class Tacotron2(torch.nn.Module):
         """
         if self.spk_embed_integration_type == "add":
             # apply projection and then add to hidden states
-            spembs = self.projection(F.normalize(spembs))
-            hs = hs + spembs.unsqueeze(1)
+            speaker_embeddings = self.projection(F.normalize(speaker_embeddings))
+            hs = hs + speaker_embeddings.unsqueeze(1)
         elif self.spk_embed_integration_type == "concat":
             # concat hidden states with spk embeds
-            spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
-            hs = torch.cat([hs, spembs], dim=-1)
+            speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+            hs = torch.cat([hs, speaker_embeddings], dim=-1)
         else:
             raise NotImplementedError("support only add or concat.")
 
