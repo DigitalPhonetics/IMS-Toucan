@@ -3,10 +3,10 @@ import random
 
 import torch
 
-from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from TransformerTTS.transformer_tts_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.transformer_tts_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -23,11 +23,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     random.seed(13)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "LJSpeech")
+    cache_dir = os.path.join("Corpora", "Nancy")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "TransformerTTS_LJSpeech")
+        save_dir = os.path.join("Models", "TransformerTTS_Nancy")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):

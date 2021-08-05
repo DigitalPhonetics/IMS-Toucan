@@ -64,8 +64,8 @@ class TransformerTTSDataset(Dataset):
         tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
+            wav2mel = torch.jit.load("Models/Vis/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/Vis/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]

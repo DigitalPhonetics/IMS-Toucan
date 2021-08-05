@@ -3,10 +3,10 @@ import random
 
 import torch
 
-from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from TransformerTTS.transformer_tts_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.transformer_tts_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -23,11 +23,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     random.seed(13)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "LibriTTS")
+    cache_dir = os.path.join("Corpora", "LJSpeech")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "TransformerTTS_LibriTTS")
+        save_dir = os.path.join("Models", "TransformerTTS_LJSpeech")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -40,21 +40,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                       lang="en",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
-                                      speaker_embedding=True)
+                                      rebuild_cache=False)
 
-    model = Transformer(idim=166, odim=80, spk_embed_dim=256)
+    model = Transformer(idim=166, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=500000,  # this has a lot more data than the others, so it can learn for longer
+               steps=300000,
                batch_size=64,
-               epochs_per_save=5,  # more datapoints per epoch needs fewer epochs per save
-               use_speaker_embedding=True,
+               epochs_per_save=10,
+               use_speaker_embedding=False,
                lang="en",
-               lr=0.05,
+               lr=0.01,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

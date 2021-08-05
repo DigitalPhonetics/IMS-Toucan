@@ -5,7 +5,7 @@
 
 import torch
 
-from MelGAN.STFTLoss import STFTLoss
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.STFTLoss import STFTLoss
 
 
 class MultiResolutionSTFTLoss(torch.nn.Module):

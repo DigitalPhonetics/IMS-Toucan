@@ -5,7 +5,7 @@
 
 import torch
 
-from MelGAN.MelGANDiscriminator import MelGANDiscriminator
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANDiscriminator import MelGANDiscriminator
 
 
 class MelGANMultiScaleDiscriminator(torch.nn.Module):

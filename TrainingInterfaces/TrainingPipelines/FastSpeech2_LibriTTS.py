@@ -3,11 +3,11 @@ import random
 
 import torch
 
-from FastSpeech2.FastSpeech2 import FastSpeech2
-from FastSpeech2.FastSpeechDataset import FastSpeechDataset
-from FastSpeech2.fastspeech2_train_loop import train_loop
-from TransformerTTS.TransformerTTS import Transformer
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -24,11 +24,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     random.seed(13)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "LJSpeech")
+    cache_dir = os.path.join("Corpora", "LibriTTS")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_LJSpeech")
+        save_dir = os.path.join("Models", "FastSpeech2_LibriTTS")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -37,12 +37,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     path_to_transcript_dict = build_path_to_transcript_dict()
 
     try:
-        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=None)
-        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LJSpeech", "best.pt"),
+        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=256)
+        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
                                                   map_location='cpu')["model"])
     except RuntimeError:
-        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=None, legacy_model=True)
-        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LJSpeech", "best.pt"),
+        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=256, legacy_model=True)
+        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LibriTTS", "best.pt"),
                                                   map_location='cpu')["model"])
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
@@ -51,23 +51,24 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
-                                  diagonal_attention_head_id=2,
                                   device=device,
-                                  rebuild_cache=False)
+                                  speaker_embedding=True,
+                                  diagonal_attention_head_id=5,
+                                  loading_processes=8)
 
-    model = FastSpeech2(idim=166, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=166, odim=80, spk_embed_dim=256)
 
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=100000,
                batch_size=32,
-               epochs_per_save=10,
-               use_speaker_embedding=False,
+               epochs_per_save=7,
+               use_speaker_embedding=True,
                lang="en",
-               lr=0.02,
+               lr=0.03,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

@@ -10,9 +10,9 @@ from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from FastSpeech2.DurationCalculator import DurationCalculator
-from FastSpeech2.EnergyCalculator import EnergyCalculator
-from FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import TextFrontend
 
@@ -105,8 +105,8 @@ class FastSpeechDataset(Dataset):
                           use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/Use/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/Use/SpeakerEmbedding/dvector-step250000.pt").eval()
+            wav2mel = torch.jit.load("Models/Vis/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/Vis/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,

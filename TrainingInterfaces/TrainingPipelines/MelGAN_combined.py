@@ -2,10 +2,10 @@ import random
 
 import torch
 
-from MelGAN.MelGANDataset import MelGANDataset
-from MelGAN.MelGANGenerator import MelGANGenerator
-from MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
-from MelGAN.melgan_train_loop import train_loop
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANDataset import MelGANDataset
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANGenerator import MelGANGenerator
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.melgan_train_loop import train_loop
 from Utility.file_lists import *
 
 

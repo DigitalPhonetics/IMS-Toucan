@@ -6,9 +6,9 @@ import os
 
 import torch
 
-from FastSpeech2.FastSpeech2 import FastSpeech2
-from MelGAN.MelGANGenerator import MelGANGenerator
-from TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANGenerator import MelGANGenerator
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
 
 
 def load_net_trans(path, idim=166, odim=80):
@@ -114,7 +114,7 @@ def save_model_for_use(model, name="Transformer_English_Single.pt", dict_name="m
 
 def make_best_in_all(n=3):
     for model_dir in os.listdir("Models"):
-        if model_dir != "Use":
+        if model_dir != "Vis":
             if "MelGAN" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)

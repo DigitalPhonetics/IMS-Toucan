@@ -3,38 +3,36 @@ import sys
 
 import torch
 
-from Pipelines.Pipeline_FastSpeech2_LJSpeech import run as fast_LJSpeech
-from Pipelines.Pipeline_FastSpeech2_LibriTTS import run as fast_LibriTTS
-from Pipelines.Pipeline_FastSpeech2_Nancy import run as fast_Nancy
-from Pipelines.Pipeline_FastSpeech2_Thorsten import run as fast_Thorsten
-from Pipelines.Pipeline_IntegrationTest import run as integration_test
-from Pipelines.Pipeline_MelGAN_LJSpeech import run as melgan_LJSpeech
-from Pipelines.Pipeline_MelGAN_Nancy import run as melgan_Nancy
-from Pipelines.Pipeline_MelGAN_Thorsten import run as melgan_Thorsten
-from Pipelines.Pipeline_MelGAN_combined import run as melgan_combined
-from Pipelines.Pipeline_TransformerTTS_LJSpeech import run as trans_LJSpeech
-from Pipelines.Pipeline_TransformerTTS_LibriTTS import run as trans_LibriTTS
-from Pipelines.Pipeline_TransformerTTS_Nancy import run as trans_Nancy
-from Pipelines.Pipeline_TransformerTTS_Thorsten import run as trans_Thorsten
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJSpeech import run as fast_LJSpeech
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as fast_LibriTTS
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_Nancy
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Thorsten import run as fast_Thorsten
+from TrainingInterfaces.TrainingPipelines.MelGAN_LJSpeech import run as melgan_LJSpeech
+from TrainingInterfaces.TrainingPipelines.MelGAN_Nancy import run as melgan_Nancy
+from TrainingInterfaces.TrainingPipelines.MelGAN_Thorsten import run as melgan_Thorsten
+from TrainingInterfaces.TrainingPipelines.MelGAN_combined import run as melgan_combined
+from TrainingInterfaces.TrainingPipelines.TransformerTTS_LJSpeech import run as trans_LJSpeech
+from TrainingInterfaces.TrainingPipelines.TransformerTTS_LibriTTS import run as trans_LibriTTS
+from TrainingInterfaces.TrainingPipelines.TransformerTTS_Nancy import run as trans_Nancy
+from TrainingInterfaces.TrainingPipelines.TransformerTTS_Thorsten import run as trans_Thorsten
 
 pipeline_dict = {
-    "fast_Thorsten"   : fast_Thorsten,
-    "melgan_Thorsten" : melgan_Thorsten,
-    "trans_Thorsten"  : trans_Thorsten,
+    "fast_Thorsten"  : fast_Thorsten,
+    "melgan_Thorsten": melgan_Thorsten,
+    "trans_Thorsten" : trans_Thorsten,
 
-    "fast_LibriTTS"   : fast_LibriTTS,
-    "trans_LibriTTS"  : trans_LibriTTS,
+    "fast_LibriTTS"  : fast_LibriTTS,
+    "trans_LibriTTS" : trans_LibriTTS,
 
-    "fast_LJSpeech"   : fast_LJSpeech,
-    "melgan_LJSpeech" : melgan_LJSpeech,
-    "trans_LJSpeech"  : trans_LJSpeech,
+    "fast_LJSpeech"  : fast_LJSpeech,
+    "melgan_LJSpeech": melgan_LJSpeech,
+    "trans_LJSpeech" : trans_LJSpeech,
 
-    "fast_Nancy"      : fast_Nancy,
-    "melgan_Nancy"    : melgan_Nancy,
-    "trans_Nancy"     : trans_Nancy,
+    "fast_Nancy"     : fast_Nancy,
+    "melgan_Nancy"   : melgan_Nancy,
+    "trans_Nancy"    : trans_Nancy,
 
-    "integration_test": integration_test,
-    "melgan_combined" : melgan_combined,
+    "melgan_combined": melgan_combined,
     }
 
 if __name__ == '__main__':

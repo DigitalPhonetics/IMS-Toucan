@@ -7,7 +7,7 @@ from abc import ABC
 import torch
 import torch.nn.functional as F
 
-from FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator

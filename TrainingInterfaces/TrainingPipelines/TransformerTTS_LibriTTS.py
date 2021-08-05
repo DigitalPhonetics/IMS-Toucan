@@ -3,10 +3,10 @@ import random
 
 import torch
 
-from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from TransformerTTS.transformer_tts_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_thorsten as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.transformer_tts_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -23,11 +23,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     random.seed(13)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Thorsten")
+    cache_dir = os.path.join("Corpora", "LibriTTS")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "TransformerTTS_Thorsten")
+        save_dir = os.path.join("Models", "TransformerTTS_LibriTTS")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -37,24 +37,24 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       cache_dir=cache_dir,
-                                      lang="de",
+                                      lang="en",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
-                                      rebuild_cache=False)
+                                      speaker_embedding=True)
 
-    model = Transformer(idim=166, odim=80, spk_embed_dim=None)
+    model = Transformer(idim=166, odim=80, spk_embed_dim=256)
 
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=500000,  # this has a lot more data than the others, so it can learn for longer
                batch_size=64,
-               epochs_per_save=10,
-               use_speaker_embedding=False,
-               lang="de",
-               lr=0.01,
+               epochs_per_save=5,  # more datapoints per epoch needs fewer epochs per save
+               use_speaker_embedding=True,
+               lang="en",
+               lr=0.05,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

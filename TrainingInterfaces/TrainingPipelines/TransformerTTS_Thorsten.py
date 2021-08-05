@@ -3,10 +3,10 @@ import random
 
 import torch
 
-from TransformerTTS.TransformerTTS import Transformer
-from TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
-from TransformerTTS.transformer_tts_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.TransformerTTSDataset import TransformerTTSDataset
+from TrainingInterfaces.Text_to_Spectrogram.TransformerTTS.transformer_tts_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_thorsten as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir):
@@ -23,11 +23,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     random.seed(13)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Nancy")
+    cache_dir = os.path.join("Corpora", "Thorsten")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "TransformerTTS_Nancy")
+        save_dir = os.path.join("Models", "TransformerTTS_Thorsten")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -37,7 +37,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     train_set = TransformerTTSDataset(path_to_transcript_dict,
                                       cache_dir=cache_dir,
-                                      lang="en",
+                                      lang="de",
                                       min_len_in_seconds=1,
                                       max_len_in_seconds=10,
                                       rebuild_cache=False)
@@ -53,7 +53,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                batch_size=64,
                epochs_per_save=10,
                use_speaker_embedding=False,
-               lang="en",
+               lang="de",
                lr=0.01,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,

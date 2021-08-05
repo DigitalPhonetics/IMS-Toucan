@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
+from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MultiResolutionSTFTLoss import MultiResolutionSTFTLoss
 from Utility.RAdam import RAdam
 from Utility.utils import delete_old_checkpoints
 
