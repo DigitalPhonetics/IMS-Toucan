@@ -10,11 +10,11 @@ from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.TextFrontend import TextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
-from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.TextFrontend import TextFrontend
 
 
 class FastSpeechDataset(Dataset):
@@ -23,9 +23,6 @@ class FastSpeechDataset(Dataset):
                  path_to_transcript_dict,
                  acoustic_model,
                  cache_dir,
-                 diagonal_attention_head_id=None,  # every transformer has one attention head
-                 # that is the most diagonal. Look for it manually (e.g. using run_visualization.py)
-                 # and then provide it here.
                  speaker_embedding=False,
                  loading_processes=5,
                  lang="en",
@@ -64,8 +61,7 @@ class FastSpeechDataset(Dataset):
                                                                                      max_len_in_seconds,
                                                                                      reduction_factor,
                                                                                      device,
-                                                                                     cache_dir,
-                                                                                     diagonal_attention_head_id), daemon=True))
+                                                                                     cache_dir), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
@@ -97,24 +93,22 @@ class FastSpeechDataset(Dataset):
                               max_len,
                               reduction_factor,
                               device,
-                              cache_dir,
-                              diagonal_attention_head_id):
+                              cache_dir):
         process_internal_dataset_chunk = list()
         tf = TextFrontend(language=lang,
                           use_word_boundaries=False,
                           use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/Vis/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/Vis/SpeakerEmbedding/dvector-step250000.pt").eval()
+            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
                                hop_length=256,
                                n_fft=1024)
         acoustic_model = acoustic_model.to(device)
-        dc = DurationCalculator(reduction_factor=reduction_factor,
-                                diagonal_attention_head_id=diagonal_attention_head_id)
+        dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio(reduction_factor=reduction_factor)
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for path in tqdm(path_list):

@@ -14,7 +14,7 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import TextFrontend
 
 
-class TransformerTTSDataset(Dataset):
+class TacotronDataset(Dataset):
 
     def __init__(self,
                  path_to_transcript_dict,
@@ -27,7 +27,7 @@ class TransformerTTSDataset(Dataset):
                  cut_silences=False,
                  rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
-        if not os.path.exists(os.path.join(cache_dir, "trans_train_cache.json")) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.json")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
@@ -51,11 +51,11 @@ class TransformerTTSDataset(Dataset):
             gc.enable()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
-            with open(os.path.join(cache_dir, "trans_train_cache.json"), 'w') as fp:
+            with open(os.path.join(cache_dir, "taco_train_cache.json"), 'w') as fp:
                 json.dump(self.datapoints, fp)
         else:
             # just load the datapoints
-            with open(os.path.join(cache_dir, "trans_train_cache.json"), 'r') as fp:
+            with open(os.path.join(cache_dir, "taco_train_cache.json"), 'r') as fp:
                 self.datapoints = json.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
@@ -64,8 +64,8 @@ class TransformerTTSDataset(Dataset):
         tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/Vis/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/Vis/SpeakerEmbedding/dvector-step250000.pt").eval()
+            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]

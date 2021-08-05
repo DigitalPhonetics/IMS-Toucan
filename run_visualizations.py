@@ -9,25 +9,8 @@ import soundfile as sf
 import torch
 import torchviz
 
-from InferenceInterfaces.LJSpeech_TransformerTTS import LJSpeech_TransformerTTSInference
-from InferenceInterfaces.LibriTTS_TransformerTTS import LibriTTS_TransformerTTSInference
-from InferenceInterfaces.Nancy_TransformerTTS import Nancy_TransformerTTSInference
-from InferenceInterfaces.Thorsten_TransformerTTS import Thorsten_TransformerTTSInference
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
-
-
-def view_attention_heads(model_id, sentence):
-    import os
-    os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
-    tts_dict = {
-        "trans_thorsten": Thorsten_TransformerTTSInference,
-        "trans_lj"      : LJSpeech_TransformerTTSInference,
-        "trans_libri"   : LibriTTS_TransformerTTSInference,
-        "trans_nancy"   : Nancy_TransformerTTSInference
-        }
-    tts = tts_dict[model_id](speaker_embedding="default_speaker_embedding.pt")
-    tts.plot_attentions(sentence=sentence)
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 
 
 def plot_fastspeech_architecture():
@@ -42,12 +25,12 @@ def plot_fastspeech_architecture():
     torchviz.make_dot(out, dict(model.named_parameters())).render("fastspeech2_graph", format="png")
 
 
-def plot_transformertts_architecture():
+def plot_tacotron2_architecture():
     text = torch.LongTensor([1, 2, 3, 4])
     speech = torch.zeros(80, 50)
-    model = Transformer(idim=166, odim=80, spk_embed_dim=None)
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=None)
     out = model.inference(text=text, speech=speech, speaker_embeddings=None, use_teacher_forcing=False)
-    torchviz.make_dot(out, dict(model.named_parameters())).render("transformertts_graph", format="png")
+    torchviz.make_dot(out, dict(model.named_parameters())).render("tacotron2_graph", format="png")
 
 
 def plot_melgan_training(path_to_train_loss_json="Models/Vis/train_loss.json"):
@@ -90,15 +73,13 @@ def count_parameters(net):
 
 
 def show_all_models_params():
-    from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
+    from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-    model = Transformer(idim=166, odim=80)
-    print("Number of Parameters in Tacotron2: {}".format(count_parameters(model)))
+    model = Tacotron2(idim=166, odim=80)
+    print("Number of (trainable) Parameters in Tacotron2: {}".format(count_parameters(model)))
     model = FastSpeech2(idim=166, odim=80)
-    print("Number of Parameters in FastSpeech2: {}".format(count_parameters(model)))
+    print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(model)))
 
 
 if __name__ == '__main__':
-    view_attention_heads("trans_libri", sentence="This is a complicated sentence, it even contains a pause!")
-    view_attention_heads("trans_libri", sentence="Also maybe let's try another one.")
-    view_attention_heads("trans_libri", sentence="This one, however, contains quite the significant amount of pauses, dunnit?.")
+    show_all_models_params()

@@ -8,17 +8,13 @@ import torch
 
 from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANGenerator import MelGANGenerator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 
 
-def load_net_trans(path, idim=166, odim=80):
+def load_net_taco(path, idim=166, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Transformer(idim=idim, odim=odim, spk_embed_dim=None)
-    try:
-        net.load_state_dict(check_dict["model"])
-    except RuntimeError:
-        net = Transformer(idim=idim, odim=odim, spk_embed_dim=None, legacy_model=True)
-        net.load_state_dict(check_dict["model"])
+    net = Tacotron2(idim=idim, odim=odim, spk_embed_dim=None)
+    net.load_state_dict(check_dict["model"])
     return net
 
 
@@ -33,14 +29,10 @@ def load_net_fast(path, idim=166, odim=80):
     return net
 
 
-def load_net_trans_multi(path, idim=166, odim=80):
+def load_net_taco_multi(path, idim=166, odim=80):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Transformer(idim=idim, odim=odim, spk_embed_dim=256)
-    try:
-        net.load_state_dict(check_dict["model"])
-    except RuntimeError:
-        net = Transformer(idim=idim, odim=odim, spk_embed_dim=256, legacy_model=True)
-        net.load_state_dict(check_dict["model"])
+    net = Tacotron2(idim=idim, odim=odim, spk_embed_dim=256)
+    net.load_state_dict(check_dict["model"])
     return net
 
 
@@ -122,11 +114,11 @@ def make_best_in_all(n=3):
             elif "Tacotron2" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 if "LibriTTS" in model_dir:
-                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans_multi)
+                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_taco_multi)
                 else:
-                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_trans)
+                    averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_taco)
                 save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir))
-            elif "FastSpeech" in model_dir:
+            elif "FastSpeech2" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 if "LibriTTS" in model_dir:
                     averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast_multi)

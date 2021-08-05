@@ -3,9 +3,9 @@ import random
 
 import torch
 
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTSDataset import TransformerTTSDataset
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.transformer_tts_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_tts_train_loop import train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
 
 
@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "TransformerTTS_Nancy")
+        save_dir = os.path.join("Models", "Tacotron2S_Nancy")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -35,14 +35,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    train_set = TransformerTTSDataset(path_to_transcript_dict,
-                                      cache_dir=cache_dir,
-                                      lang="en",
-                                      min_len_in_seconds=1,
-                                      max_len_in_seconds=10,
-                                      rebuild_cache=False)
+    train_set = TacotronDataset(path_to_transcript_dict,
+                                cache_dir=cache_dir,
+                                lang="en",
+                                min_len_in_seconds=1,
+                                max_len_in_seconds=10,
+                                rebuild_cache=False)
 
-    model = Transformer(idim=166, odim=80, spk_embed_dim=None)
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,

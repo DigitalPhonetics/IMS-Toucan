@@ -1,13 +1,17 @@
 ![image](Utility/toucan.png)
 
-IMS-Toucan is a toolkit to train state-of-the-art Speech Synthesis models. Everything is pure Python and PyTorch based
-to keep it as simple and beginner-friendly, yet powerful as possible.
+IMS-Toucan is a toolkit for teaching, training and using state-of-the-art Speech Synthesis models, developed at the
+**Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
+PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
 
-The PyTorch Modules of [TransformerTTS](https://arxiv.org/abs/1809.08895)
+The PyTorch Modules of [Tacotron2](https://arxiv.org/abs/1712.05884)
 and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from
 [ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of [MelGAN](https://arxiv.org/abs/1910.06711) are taken
 from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
 which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
+
+For a version of the toolkit that includes TransformerTTS instead of Tacotron2, check out the TransformerTTS branch.
+They are separated to keep the code clean, simple and minimal.
 
 ## Demonstration
 
@@ -68,27 +72,27 @@ FastSpeech 2 needs as input. Let's go through them in order of increasing comple
 In the directory called *Utility* there is a file called *file_lists.py*. In this file you should write a function that
 returns a list of all the absolute paths to each of the audio files in your dataset as strings.
 
-Then go to the directory *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline
-that has MelGAN in its name. We will use this as reference and only make the necessary changes to use the new dataset.
-Import the function you have just written as *get_file_list*. Now look out for a variable called *model_save_dir*. This
-is the default directory that checkpoints will be saved into, unless you specify another one when calling the training
-script. Change it to whatever you like.
+Then go to the directory *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has
+MelGAN in its name. We will use this as reference and only make the necessary changes to use the new dataset. Import the
+function you have just written as *get_file_list*. Now look out for a variable called *model_save_dir*. This is the
+default directory that checkpoints will be saved into, unless you specify another one when calling the training script.
+Change it to whatever you like.
 
 Now you need to add your newly created pipeline to the pipeline dictionary in the file *run_training_pipeline.py* in the
 top level of the toolkit. In this file, import the *run* function from the pipeline you just created and give it a
 speaking name. Now in the *pipeline_dict*, add your imported function as value and use as key a shorthand that makes
 sense. And just like that you're done.
 
-#### Build a TransformerTTS Pipeline
+#### Build a Tacotron2 Pipeline
 
 In the directory called *Utility* there is a file called
 *path_to_transcript_dicts.py*. In this file you should write a function that returns a dictionary that has all the
 absolute paths to each of the audio files in your dataset as strings as the keys and the textual transcriptions of the
 corresponding audios as the values.
 
-Then go to the directory *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline
-that has TransformerTTS in its name. If your dataset is single-speaker, choose any that is not LibriTTS. If your dataset
-is multi-speaker, choose the one for LibriTTS as your template. We will use this copy as reference and only make the
+Then go to the directory *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has
+Tacotron2 in its name. If your dataset is single-speaker, choose any that is not LibriTTS. If your dataset is
+multi-speaker, choose the one for LibriTTS as your template. We will use this copy as reference and only make the
 necessary changes to use the new dataset. Import the function you have just written as *build_path_to_transcript_dict*.
 Since the data will be processed a considerable amount, a cache will be built and saved as file for quick and easy
 restarts. So find the variable *cache_dir* and adapt it to your needs. The same goes for the variable *save_dir*, which
@@ -102,7 +106,7 @@ analogous to what is there already. Now back in the pipeline, change the *lang* 
 and in the call to the train loop function to the language ID that matches your data.
 
 Now navigate to the implementation of the *train_loop* that is called in the pipeline. In this file, find the function
-called *get_atts*. This function will produce attention plots during training, which is the most important way to
+called *plot_attention*. This function will produce attention plots during training, which is the most important way to
 monitor the progress of the training. In there, you may need to add an example sentence for the language of the data you
 are using. It should all be pretty clear from looking at it.
 
@@ -113,25 +117,16 @@ it.
 
 #### Build a FastSpeech 2 Pipeline
 
-Most of this is exactly analogous to building a TransformerTTS pipeline. So to keep this brief, this section will only
+Most of this is exactly analogous to building a Tacotron2 pipeline. So to keep this brief, this section will only
 mention the additional things you have to do.
 
 In your new pipeline file, look out for the line in which the
-*acoustic_model* is loaded. Change the path to the checkpoint of a TransformerTTS model that you trained on the same
-dataset previously. Then look out for the creation of the *train_set*. In there, there is an argument called
-*diagonal_attention_head_id*.
+*acoustic_model* is loaded. Change the path to the checkpoint of a Tacotron2 model that you trained on the same dataset
+previously. This is used to estimate phoneme-durations based on knowledge-distillation.
 
-It is recommended to use an *InferenceInterface* of the aforementioned TransformerTTS model to determine which of the
-attention heads looks the most like a duration graph. How to make one is described in a later section. To determine the
-attention head to use, add the *InferenceInterface* to the dictionary in the *view_attention_heads* function in the
-*run_visualizations.py* file in the top level of the toolkit. Then call it to see a plot of all the attention heads
-visualized with their ID displayed above them. This ID is what you want to supply to the *diagonal_attention_head_id*
-argument in the pipeline as an integer. If you use the default argument (*None*) it will try to select the most diagonal
-head for each sample automatically, but this fails for some samples, so it is safer to do it manually.
-
-Everything else is exactly like creating a TransformerTTS pipeline, except that in the training_loop, instead of
-attentions plots, spectrograms are plotted to visualize training progress. So there you may need to add a sentence if
-you are using a new language in the function called *plot_progress_spec*.
+Everything else is exactly like creating a Tacotron2 pipeline, except that in the training_loop, instead of attentions
+plots, spectrograms are plotted to visualize training progress. So there you may need to add a sentence if you are using
+a new language in the function called *plot_progress_spec*.
 
 ## Training a Model
 
@@ -167,10 +162,10 @@ should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
-after 300,000 update steps have been made by default for TransformerTTS and FastSpeech2, and after 500,000 steps for
-MelGAN. Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify that
-everything works on small tests before running the big thing. If you want to stop earlier, just kill the process, since
-everything is daemonic all the child-processes should die with it.
+after 300,000 update steps have been made by default for Tacotron2 and FastSpeech2, and after 500,000 steps for MelGAN.
+Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify that everything
+works on small tests before running the big thing. If you want to stop earlier, just kill the process, since everything
+is daemonic all the child-processes should die with it.
 
 After training is complete, it is recommended to run
 *run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it
@@ -195,29 +190,23 @@ standalone.
 
 ## Using a trained Model for Inference
 
-An *InferenceInterface* of TransformerTTS contains 3 useful methods for inference, a FastSpeech 2 one contains 2 useful
-methods. The ones they share are *read_to_file* and *read_aloud*.
+An *InferenceInterface* contains 2 useful methods. They are *read_to_file* and *read_aloud*.
 
-- The first one takes as input a list of strings and a filename. It will synthesize the sentences in the list and
+- *read_to_file* takes as input a list of strings and a filename. It will synthesize the sentences in the list and
   concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument.
-- The second one takes just a string, which it will then convert to speech and immediately play using the system's
+- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
   speakers. If you set the optional argument *view* to *True* when calling it, it will also show a plot of the phonemes
   it produced, the spectrogram it came up with, and the wave it created from that spectrogram. So all the
   representations can be seen, text to phoneme, phoneme to spectrogram and finally spectrogram to wave.
-- The one that is exclusive to TransformerTTS is *plot_attentions*. This will take a string, synthesize it and show a
-  plot of the attention matrices of all the attention heads in all the attention layers. By default, there are 24. The
-  index of each head is displayed above (0-23 by default). This is useful to figure out which one of the heads contains
-  the best temporal relation between text and audio, which is the ID that should be given to the FastSpeech 2
-  feature-extraction to heuristically get duration information using a technique called *knowledge-distillation*.
+- Additionally, Tacotron2 *InferenceInterfaces* offer a method called *plot_attention*. This will take a string,
+  synthesize it and show a plot of the attention matrix, which can be useful to gain insights.
 
-Those three methods are used in demo code in the toolkit. In
-*run_interactive_demo.py*, *run_text_to_file_reader.py*
-and *run_visualizations.py* you can import *InferenceInterfaces*
-that you created and add them to the dictionary in each of the files with a shorthand that makes sense. In the
-interactive demo, you can just call the python script, then type in the shorthand when prompted and immediately listen
-to your synthesis saying whatever you put in next (be wary of out of memory errors for too long inputs). In the other
-two demo scripts you have to call the function that wraps around the *InferenceInterface* and supply the shorthand of
-your choice. It should be pretty clear from looking at it.
+Those methods are used in demo code in the toolkit. In *run_interactive_demo.py* and
+*run_text_to_file_reader.py*, you can import *InferenceInterfaces* that you created and add them to the dictionary in
+each of the files with a shorthand that makes sense. In the interactive demo, you can just call the python script, then
+type in the shorthand when prompted and immediately listen to your synthesis saying whatever you put in next (be wary of
+out of memory errors for too long inputs). In the text reader demo script you have to call the function that wraps
+around the *InferenceInterface* and supply the shorthand of your choice. It should be pretty clear from looking at it.
 
 ## FAQ
 
@@ -236,12 +225,12 @@ Here are a few points that were brought up by users:
 
 ## Example Pipelines available
 
-| Dataset     | Language | Single or Multi| MelGAN | TransformerTTS | FastSpeech2 | 
-| ------------|----------|----------------| :-----:|:--------------:|:-----------:|
-| Thorsten    | German   | Single Speaker | ✅     | ✅              | ✅          |
-| LJSpeech    | English  | Single Speaker | ✅     | ✅              | ✅          |
-| Nancy Krebs | English  | Single Speaker | ✅     | ✅              | ✅          |
-| LibriTTS    | English  | Multi Speaker  | ✅     | ✅              | ✅          |
+| Dataset                                                                              | Language | Single or Multi| MelGAN | TransformerTTS | Tacotron2 | FastSpeech2 | 
+| -------------------------------------------------------------------------------------|----------|----------------| :-----:|:--------------:|:---------:|:-----------:|
+| [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)              | German   | Single Speaker | ✅     | ✅              | ✅        |✅           |
+| [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅     | ✅              | ✅        |✅           |
+| [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) | English  | Single Speaker | ✅     | ✅              | ✅        |✅           |
+| [LibriTTS](https://research.google/tools/datasets/libri-tts/)                        | English  | Multi Speaker  | ✅     | ✅              | ✅        |✅           |
 
 ---
 

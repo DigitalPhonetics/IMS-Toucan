@@ -4,26 +4,25 @@ import sounddevice
 import soundfile
 import torch
 
-from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech import FastSpeech2
+from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
 from Preprocessing.TextFrontend import TextFrontend
 
 
-class Nancy_FastSpeechInference(torch.nn.Module):
+class Thorsten_FastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
         self.speaker_embedding = None
         self.device = device
-        self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
-                                       use_explicit_eos=False, inference=True)
+        self.text2phone = TextFrontend(language="de", use_word_boundaries=False, use_explicit_eos=False, inference=True)
         try:
-            self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt"),
+            self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Thorsten", "best.pt"),
                                          idim=166, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
         except RuntimeError:
-            self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt"),
+            self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Thorsten", "best.pt"),
                                          idim=166, odim=80, spk_embed_dim=None, reduction_factor=1, legacy_model=True).to(torch.device(device))
-        self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Nancy", "best.pt")).to(torch.device(device))
+        self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Thorsten", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))

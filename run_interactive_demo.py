@@ -1,27 +1,27 @@
 import sys
-
-import torch
 import warnings
 
-from InferenceInterfaces.LJSpeech_FastSpeech import LJSpeech_FastSpeechInference
-from InferenceInterfaces.LJSpeech_TransformerTTS import LJSpeech_TransformerTTSInference
-from InferenceInterfaces.LibriTTS_FastSpeech import LibriTTS_FastSpeechInference
-from InferenceInterfaces.LibriTTS_TransformerTTS import LibriTTS_TransformerTTSInference
-from InferenceInterfaces.Nancy_FastSpeech import Nancy_FastSpeechInference
-from InferenceInterfaces.Nancy_TransformerTTS import Nancy_TransformerTTSInference
-from InferenceInterfaces.Thorsten_FastSpeech import Thorsten_FastSpeechInference
-from InferenceInterfaces.Thorsten_TransformerTTS import Thorsten_TransformerTTSInference
+import torch
+
+from InferenceInterfaces.LJSpeech_FastSpeech2 import LJSpeech_FastSpeech2
+from InferenceInterfaces.LJSpeech_Tacotron2 import LJSpeech_Tacotron2
+from InferenceInterfaces.LibriTTS_FastSpeech2 import LibriTTS_FastSpeech2
+from InferenceInterfaces.LibriTTS_Tacotron2 import LibriTTS_Tacotron2
+from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
+from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
+from InferenceInterfaces.Thorsten_FastSpeech2 import Thorsten_FastSpeech2
+from InferenceInterfaces.Thorsten_Tacotron2 import Thorsten_Tacotron2
 
 tts_dict = {
-    "fast_thorsten" : Thorsten_FastSpeechInference,
-    "fast_lj"       : LJSpeech_FastSpeechInference,
-    "fast_libri"    : LibriTTS_FastSpeechInference,
-    "fast_nancy"    : Nancy_FastSpeechInference,
+    "fast_thorsten": Thorsten_FastSpeech2,
+    "fast_lj"      : LJSpeech_FastSpeech2,
+    "fast_libri"   : LibriTTS_FastSpeech2,
+    "fast_nancy"   : Nancy_FastSpeech2,
 
-    "trans_thorsten": Thorsten_TransformerTTSInference,
-    "trans_lj"      : LJSpeech_TransformerTTSInference,
-    "trans_libri"   : LibriTTS_TransformerTTSInference,
-    "trans_nancy"   : Nancy_TransformerTTSInference
+    "taco_thorsten": Thorsten_Tacotron2,
+    "taco_lj"      : LJSpeech_Tacotron2,
+    "taco_libri"   : LibriTTS_Tacotron2,
+    "taco_nancy"   : Nancy_Tacotron2
     }
 
 if __name__ == '__main__':

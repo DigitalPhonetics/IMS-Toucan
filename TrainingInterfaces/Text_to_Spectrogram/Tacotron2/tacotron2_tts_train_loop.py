@@ -15,44 +15,7 @@ from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 
 
-def plot_attentions_all_heads(atts, att_dir, step):
-    # plot all attention heads in one plot
-    fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
-    atts_1 = atts[::2]
-    atts_2 = atts[1::2]
-    for index, att in enumerate(atts_1):
-        axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-        axes[index][0].xaxis.set_visible(False)
-        axes[index][0].yaxis.set_visible(False)
-    for index, att in enumerate(atts_2):
-        axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-        axes[index][1].xaxis.set_visible(False)
-        axes[index][1].yaxis.set_visible(False)
-    plt.subplots_adjust(left=0.02, bottom=0.02, right=.98, top=.98, wspace=0, hspace=0)
-    if not os.path.exists(os.path.join(att_dir, "atts")):
-        os.makedirs(os.path.join(att_dir, "atts"))
-    plt.savefig(os.path.join(os.path.join(att_dir, "atts"), str(step) + ".png"))
-    plt.clf()
-    plt.close()
-
-
-def plot_attentions_best_head(atts, att_dir, step, phones):
-    # plot most diagonal attention head individually
-    most_diagonal_att = select_best_att_head(atts)
-    plt.figure(figsize=(8, 4))
-    plt.imshow(most_diagonal_att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    plt.xlabel("Inputs")
-    plt.ylabel("Outputs")
-    plt.xticks(range(len(most_diagonal_att[0])), labels=[phone for phone in phones])
-    plt.tight_layout()
-    if not os.path.exists(os.path.join(att_dir, "atts_diag")):
-        os.makedirs(os.path.join(att_dir, "atts_diag"))
-    plt.savefig(os.path.join(os.path.join(att_dir, "atts_diag"), str(step) + ".png"))
-    plt.clf()
-    plt.close()
-
-
-def get_atts(model, lang, device, speaker_embedding):
+def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
     sentence = ""
     if lang == "en":
@@ -62,18 +25,20 @@ def get_atts(model, lang, device, speaker_embedding):
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    atts = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
+    att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
     del tf
-    return atts, phones
-
-
-def select_best_att_head(att_ws):
-    att_ws = torch.cat([att_w for att_w in att_ws], dim=0)
-    diagonal_scores = att_ws.max(dim=-1)[0].mean(dim=-1)
-    diagonal_head_idx = diagonal_scores.argmax()
-    att_ws = att_ws[diagonal_head_idx]
-    return att_ws
+    plt.figure(figsize=(8, 4))
+    plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    plt.xlabel("Inputs")
+    plt.ylabel("Outputs")
+    plt.xticks(range(len(att[0])), labels=[phone for phone in phones])
+    plt.tight_layout()
+    if not os.path.exists(att_dir):
+        os.makedirs(att_dir)
+    plt.savefig(os.path.join(att_dir, str(step) + ".png"))
+    plt.clf()
+    plt.close()
 
 
 def collate_and_pad(batch):
@@ -202,9 +167,12 @@ def train_loop(net,
                     "scheduler"   : scheduler.state_dict()
                     }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
-                all_atts, phones = get_atts(model=net, lang=lang, device=device, speaker_embedding=reference_speaker_embedding_for_att_plot)
-                plot_attentions_all_heads(torch.cat([att_w for att_w in all_atts], dim=0), att_dir=save_directory, step=step_counter)
-                plot_attentions_best_head(all_atts, att_dir=save_directory, step=step_counter, phones=phones)
+                plot_attention(model=net,
+                               lang=lang,
+                               device=device,
+                               speaker_embedding=reference_speaker_embedding_for_att_plot,
+                               att_dir=save_directory,
+                               step=step_counter)
                 if step_counter > steps:
                     # DONE
                     return

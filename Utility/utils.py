@@ -282,3 +282,22 @@ class BatchScorerInterface(ScorerInterface, ABC):
             scores.append(score)
         scores = torch.cat(scores, 0).view(ys.shape[0], -1)
         return scores, outstates
+
+
+def to_device(m, x):
+    """Send tensor into the device of the module.
+    Args:
+        m (torch.nn.Module): Torch module.
+        x (Tensor): Torch tensor.
+    Returns:
+        Tensor: Torch tensor located in the same place as torch module.
+    """
+    if isinstance(m, torch.nn.Module):
+        device = next(m.parameters()).device
+    elif isinstance(m, torch.Tensor):
+        device = m.device
+    else:
+        raise TypeError(
+            "Expected torch.nn.Module or torch.tensor, " f"bot got: {type(m)}"
+            )
+    return x.to(device)

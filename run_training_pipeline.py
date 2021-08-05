@@ -11,26 +11,26 @@ from TrainingInterfaces.TrainingPipelines.MelGAN_LJSpeech import run as melgan_L
 from TrainingInterfaces.TrainingPipelines.MelGAN_Nancy import run as melgan_Nancy
 from TrainingInterfaces.TrainingPipelines.MelGAN_Thorsten import run as melgan_Thorsten
 from TrainingInterfaces.TrainingPipelines.MelGAN_combined import run as melgan_combined
-from TrainingInterfaces.TrainingPipelines.TransformerTTS_LJSpeech import run as trans_LJSpeech
-from TrainingInterfaces.TrainingPipelines.TransformerTTS_LibriTTS import run as trans_LibriTTS
-from TrainingInterfaces.TrainingPipelines.TransformerTTS_Nancy import run as trans_Nancy
-from TrainingInterfaces.TrainingPipelines.TransformerTTS_Thorsten import run as trans_Thorsten
+from TrainingInterfaces.TrainingPipelines.Tacotron2_LJSpeech import run as taco_LJSpeech
+from TrainingInterfaces.TrainingPipelines.Tacotron2_LibriTTS import run as taco_LibriTTS
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_Nancy
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_Thorsten
 
 pipeline_dict = {
     "fast_Thorsten"  : fast_Thorsten,
     "melgan_Thorsten": melgan_Thorsten,
-    "trans_Thorsten" : trans_Thorsten,
+    "taco_Thorsten"  : taco_Thorsten,
 
     "fast_LibriTTS"  : fast_LibriTTS,
-    "trans_LibriTTS" : trans_LibriTTS,
+    "taco_LibriTTS"  : taco_LibriTTS,
 
     "fast_LJSpeech"  : fast_LJSpeech,
     "melgan_LJSpeech": melgan_LJSpeech,
-    "trans_LJSpeech" : trans_LJSpeech,
+    "taco_LJSpeech"  : taco_LJSpeech,
 
     "fast_Nancy"     : fast_Nancy,
     "melgan_Nancy"   : melgan_Nancy,
-    "trans_Nancy"    : trans_Nancy,
+    "taco_Nancy"     : taco_Nancy,
 
     "melgan_combined": melgan_combined,
     }

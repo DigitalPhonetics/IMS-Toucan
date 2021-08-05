@@ -1,7 +1,3 @@
-# Copyright 2020 Nagoya University (Tomoki Hayashi)
-#  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
-# Adapted by Florian Lux 2021
-
 import torch
 import torch.nn.functional as F
 
@@ -13,22 +9,15 @@ from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
-from Utility.utils import make_pad_mask
+from Utility.utils import make_non_pad_mask
 
 
 class Tacotron2(torch.nn.Module):
-    """
-    Tacotron2 module.
-
-    This is a module of Spectrogram prediction network in Tacotron2
-
-    .. _`Natural TTS Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions`:
-       https://arxiv.org/abs/1712.05884
-   """
 
     def __init__(
             self,
             # network structure related
+            path_to_weights,
             idim,
             odim,
             embed_dim=512,
@@ -155,84 +144,35 @@ class Tacotron2(torch.nn.Module):
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
-    def forward(self,
-                text: torch.Tensor,
-                text_lengths: torch.Tensor,
-                speech: torch.Tensor,
-                speech_lengths: torch.Tensor,
-                spembs: torch.Tensor = None, ):
-        """
-        Calculate forward propagation.
+        self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["model"])
 
-        Args:
-            text (LongTensor): Batch of padded character ids (B, Tmax).
-            text_lengths (LongTensor): Batch of lengths of each input batch (B,).
-            speech (Tensor): Batch of padded target features (B, Lmax, odim).
-            speech_lengths (LongTensor): Batch of the lengths of each target (B,).
-            spembs (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
+    def forward(self, text, speaker_embedding=None, return_atts=False,
+                threshold=0.5,
+                minlenratio=0.0,
+                maxlenratio=10.0,
+                use_att_constraint=False,
+                backward_window=1,
+                forward_window=3):
+        x = text
+        spemb = speaker_embedding
 
-        Returns:
-            Tensor: Loss scalar value.
-            Dict: Statistics to be monitored.
-            Tensor: Weight value.
-        """
-        text = text[:, : text_lengths.max()]  # for data-parallel
-        speech = speech[:, : speech_lengths.max()]  # for data-parallel
-
-        # Add eos at the last of sequence
-        xs = F.pad(text, [0, 1], "constant", self.padding_idx)
-        for i, l in enumerate(text_lengths):
-            xs[i, l] = self.eos
-        ilens = text_lengths + 1
-
-        ys = speech
-        olens = speech_lengths
-
-        # make labels for stop prediction
-        labels = make_pad_mask(olens - 1).to(ys.device, ys.dtype)
-        labels = F.pad(labels, [0, 1], "constant", 1.0)
-
-        # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws = self._forward(xs, ilens, ys, olens, spembs)
-
-        # modify mod part of groundtruth
-        if self.reduction_factor > 1:
-            assert olens.ge(self.reduction_factor).all(), "Output length must be greater than or equal to reduction factor."
-            olens = olens.new([olen - olen % self.reduction_factor for olen in olens])
-            max_out = max(olens)
-            ys = ys[:, :max_out]
-            labels = labels[:, :max_out]
-            labels = torch.scatter(labels, 1, (olens - 1).unsqueeze(1), 1.0)  # see #3388
-
-        # calculate taco2 loss
-        l1_loss, mse_loss, bce_loss = self.taco2_loss(after_outs, before_outs, logits, ys, labels, olens)
-        if self.loss_type == "L1+L2":
-            loss = l1_loss + mse_loss + bce_loss
-        elif self.loss_type == "L1":
-            loss = l1_loss + bce_loss
-        elif self.loss_type == "L2":
-            loss = mse_loss + bce_loss
+        # add eos at the last of sequence
+        x = F.pad(x, [0, 1], "constant", self.eos)
+        h = self.enc.inference(x)
+        if self.spk_embed_dim is not None:
+            hs, spembs = h.unsqueeze(0), spemb.unsqueeze(0)
+            h = self._integrate_with_spk_embed(hs, spembs)[0]
+        outs, probs, att_ws = self.dec.inference(h,
+                                                 threshold=threshold,
+                                                 minlenratio=minlenratio,
+                                                 maxlenratio=maxlenratio,
+                                                 use_att_constraint=use_att_constraint,
+                                                 backward_window=backward_window,
+                                                 forward_window=forward_window, )
+        if return_atts:
+            return att_ws
         else:
-            raise ValueError(f"unknown --loss-type {self.loss_type}")
-
-        if self.use_dtw_loss:
-            # print("Regular Loss: {}".format(loss))
-            dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 6000.0  # division to balance orders of magnitude
-            # print("DTW Loss: {}".format(dtw_loss))
-            loss += dtw_loss
-
-        # calculate attention loss
-        if self.use_guided_attn_loss:
-            # NOTE(kan-bayashi): length of output for auto-regressive
-            # input will be changed when r > 1
-            if self.reduction_factor > 1:
-                olens_in = olens.new([olen // self.reduction_factor for olen in olens])
-            else:
-                olens_in = olens
-            attn_loss = self.attn_loss(att_ws, ilens, olens_in)
-            loss = loss + attn_loss
-
-        return loss
+            return outs
 
     def _forward(self,
                  xs: torch.Tensor,
@@ -245,84 +185,8 @@ class Tacotron2(torch.nn.Module):
             hs = self._integrate_with_spk_embed(hs, spembs)
         return self.dec(hs, hlens, ys)
 
-    def inference(self,
-                  text: torch.Tensor,
-                  speech: torch.Tensor = None,
-                  spembs: torch.Tensor = None,
-                  threshold: float = 0.5,
-                  minlenratio: float = 0.0,
-                  maxlenratio: float = 10.0,
-                  use_att_constraint: bool = False,
-                  backward_window: int = 1,
-                  forward_window: int = 3,
-                  use_teacher_forcing: bool = False, ):
-        """
-        Generate the sequence of features given the sequences of characters.
-
-        Args:
-            text (LongTensor): Input sequence of characters (T,).
-            speech (Tensor, optional): Feature sequence to extract style (N, idim).
-            spembs (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
-            threshold (float, optional): Threshold in inference.
-            minlenratio (float, optional): Minimum length ratio in inference.
-            maxlenratio (float, optional): Maximum length ratio in inference.
-            use_att_constraint (bool, optional): Whether to apply attention constraint.
-            backward_window (int, optional): Backward window in attention constraint.
-            forward_window (int, optional): Forward window in attention constraint.
-            use_teacher_forcing (bool, optional): Whether to use teacher forcing.
-
-        Returns:
-            Tensor: Output sequence of features (L, odim).
-            Tensor: Output sequence of stop probabilities (L,).
-            Tensor: Attention weights (L, T).
-        """
-        x = text
-        y = speech
-        spemb = spembs
-
-        # add eos at the last of sequence
-        x = F.pad(x, [0, 1], "constant", self.eos)
-
-        # inference with teacher forcing
-        if use_teacher_forcing:
-            assert speech is not None, "speech must be provided with teacher forcing."
-
-            xs, ys = x.unsqueeze(0), y.unsqueeze(0)
-            spembs = None if spemb is None else spemb.unsqueeze(0)
-            ilens = x.new_tensor([xs.size(1)]).long()
-            olens = y.new_tensor([ys.size(1)]).long()
-            outs, _, _, att_ws = self._forward(xs, ilens, ys, olens, spembs)
-
-            return outs[0], None, att_ws[0]
-
-        # inference
-        h = self.enc.inference(x)
-        if self.spk_embed_dim is not None:
-            hs, spembs = h.unsqueeze(0), spemb.unsqueeze(0)
-            h = self._integrate_with_spk_embed(hs, spembs)[0]
-        outs, probs, att_ws = self.dec.inference(h,
-                                                 threshold=threshold,
-                                                 minlenratio=minlenratio,
-                                                 maxlenratio=maxlenratio,
-                                                 use_att_constraint=use_att_constraint,
-                                                 backward_window=backward_window,
-                                                 forward_window=forward_window, )
-
-        return outs, probs, att_ws
-
     def _integrate_with_spk_embed(self, hs: torch.Tensor,
                                   spembs: torch.Tensor):
-        """
-        Integrate speaker embedding with hidden states.
-
-        Args:
-            hs (Tensor): Batch of hidden state sequences (B, Tmax, eunits).
-            spembs (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
-
-        Returns:
-            Tensor: Batch of integrated hidden state sequences (B, Tmax, eunits) if
-                integration_type is "add" else (B, Tmax, eunits + spk_embed_dim).
-        """
         if self.spk_embed_integration_type == "add":
             # apply projection and then add to hidden states
             spembs = self.projection(F.normalize(spembs))
@@ -335,3 +199,75 @@ class Tacotron2(torch.nn.Module):
             raise NotImplementedError("support only add or concat.")
 
         return hs
+
+
+class Tacotron2Loss(torch.nn.Module):
+
+    def __init__(self, use_masking=False, use_weighted_masking=True, bce_pos_weight=20.0):
+        super(Tacotron2Loss, self).__init__()
+        assert (use_masking != use_weighted_masking) or not use_masking
+        self.use_masking = use_masking
+        self.use_weighted_masking = use_weighted_masking
+
+        # define criterions
+        reduction = "none" if self.use_weighted_masking else "mean"
+        self.l1_criterion = torch.nn.L1Loss(reduction=reduction)
+        self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
+        self.bce_criterion = torch.nn.BCEWithLogitsLoss(
+            reduction=reduction, pos_weight=torch.tensor(bce_pos_weight)
+            )
+
+        self._register_load_state_dict_pre_hook(self._load_state_dict_pre_hook)
+
+    def forward(self, after_outs, before_outs, logits, ys, labels, olens):
+        # make mask and apply it
+        if self.use_masking:
+            masks = make_non_pad_mask(olens).unsqueeze(-1).to(ys.device)
+            ys = ys.masked_select(masks)
+            after_outs = after_outs.masked_select(masks)
+            before_outs = before_outs.masked_select(masks)
+            labels = labels.masked_select(masks[:, :, 0])
+            logits = logits.masked_select(masks[:, :, 0])
+
+        # calculate loss
+        l1_loss = self.l1_criterion(after_outs, ys) + self.l1_criterion(before_outs, ys)
+        mse_loss = self.mse_criterion(after_outs, ys) + self.mse_criterion(
+            before_outs, ys
+            )
+        bce_loss = self.bce_criterion(logits, labels)
+
+        # make weighted mask and apply it
+        if self.use_weighted_masking:
+            masks = make_non_pad_mask(olens).unsqueeze(-1).to(ys.device)
+            weights = masks.float() / masks.sum(dim=1, keepdim=True).float()
+            out_weights = weights.div(ys.size(0) * ys.size(2))
+            logit_weights = weights.div(ys.size(0))
+
+            # apply weight
+            l1_loss = l1_loss.mul(out_weights).masked_select(masks).sum()
+            mse_loss = mse_loss.mul(out_weights).masked_select(masks).sum()
+            bce_loss = (
+                bce_loss.mul(logit_weights.squeeze(-1)).masked_select(masks.squeeze(-1)).sum())
+
+        return l1_loss, mse_loss, bce_loss
+
+    def _load_state_dict_pre_hook(
+            self,
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
+            ):
+        """Apply pre hook fucntion before loading state dict.
+        From v.0.6.1 `bce_criterion.pos_weight` param is registered as a parameter but
+        old models do not include it and as a result, it causes missing key error when
+        loading old model parameter. This function solve the issue by adding param in
+        state dict before loading as a pre hook function
+        of the `load_state_dict` method.
+        """
+        key = prefix + "bce_criterion.pos_weight"
+        if key not in state_dict:
+            state_dict[key] = self.bce_criterion.pos_weight

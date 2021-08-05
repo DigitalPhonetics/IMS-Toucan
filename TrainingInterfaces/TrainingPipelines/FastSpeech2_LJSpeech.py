@@ -6,7 +6,7 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TransformerTTS import Transformer
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech as build_path_to_transcript_dict
 
 
@@ -36,14 +36,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    try:
-        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=None)
-        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LJSpeech", "best.pt"),
-                                                  map_location='cpu')["model"])
-    except RuntimeError:
-        acoustic_model = Transformer(idim=166, odim=80, spk_embed_dim=None, legacy_model=True)
-        acoustic_model.load_state_dict(torch.load(os.path.join("Models", "TransformerTTS_LJSpeech", "best.pt"),
-                                                  map_location='cpu')["model"])
+    acoustic_model = Tacotron2(idim=166, odim=80, spk_embed_dim=None)
+    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_LJSpeech", "best.pt"),
+                                              map_location='cpu')["model"])
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,

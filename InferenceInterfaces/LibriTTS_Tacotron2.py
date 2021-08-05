@@ -6,25 +6,22 @@ import soundfile
 import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
-from InferenceInterfaces.InferenceArchitectures.InferenceTransformerTTS import Transformer
+from InferenceInterfaces.InferenceArchitectures.InferenceTacotron2 import Tacotron2
 from Preprocessing.TextFrontend import TextFrontend
 
 
-class Nancy_TransformerTTSInference(torch.nn.Module):
+class LibriTTS_Tacotron2(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
-        self.speaker_embedding = None
+        self.speaker_embedding = speaker_embedding
         self.device = device
+        self.speaker_embedding = torch.load(os.path.join("Models", "Vis", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False, inference=True)
-        try:
-            self.phone2mel = Transformer(path_to_weights=os.path.join("Models", "TransformerTTS_Nancy", "best.pt"),
-                                         idim=166, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
-        except RuntimeError:
-            self.phone2mel = Transformer(path_to_weights=os.path.join("Models", "TransformerTTS_Nancy", "best.pt"),
-                                         idim=166, odim=80, spk_embed_dim=None, reduction_factor=1, legacy_model=True).to(torch.device(device))
-        self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Nancy", "best.pt")).to(torch.device(device))
+        self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_LibriTTS", "best.pt"),
+                                   idim=166, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
+        self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))
@@ -79,22 +76,13 @@ class Nancy_TransformerTTSInference(torch.nn.Module):
             sounddevice.play(torch.cat((wav, torch.zeros([12000])), 0).numpy(), samplerate=16000)
             sounddevice.wait()
 
-    def plot_attentions(self, sentence):
+    def plot_attention(self, sentence):
         sentence_tensor = self.text2phone.string_to_tensor(sentence).squeeze(0).long().to(torch.device(self.device))
-        att_ws = self.phone2mel(text=sentence_tensor, speaker_embedding=self.speaker_embedding, return_atts=True)
-        atts = torch.cat([att_w for att_w in att_ws], dim=0)
-        fig, axes = plt.subplots(nrows=len(atts) // 2, ncols=2, figsize=(6, 8))
-        atts_1 = atts[::2]
-        atts_2 = atts[1::2]
-        for index, att in enumerate(atts_1):
-            axes[index][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-            axes[index][0].set_title("{}".format(index * 2))
-            axes[index][0].xaxis.set_visible(False)
-            axes[index][0].yaxis.set_visible(False)
-        for index, att in enumerate(atts_2):
-            axes[index][1].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-            axes[index][1].set_title("{}".format((index + 1) * 2 - 1))
-            axes[index][1].xaxis.set_visible(False)
-            axes[index][1].yaxis.set_visible(False)
+        att = self.phone2mel(text=sentence_tensor, speaker_embedding=self.speaker_embedding, return_atts=True)
+        fig, axes = plt.subplots(nrows=1, ncols=1)
+        axes.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+        axes.set_title("{}".format(sentence))
+        axes.xaxis.set_visible(False)
+        axes.yaxis.set_visible(False)
         plt.tight_layout()
         plt.show()
