@@ -46,11 +46,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   lang="en",
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=10,
-                                  diagonal_attention_head_id=2,
                                   device=device,
                                   rebuild_cache=False)
 
-    model = FastSpeech2(idim=166, odim=80, spk_embed_dim=None)
+    model = FastSpeech2(idim=166, odim=80, spk_embed_dim=None, use_dtw_loss=True)
 
     print("Training model")
     train_loop(net=model,
