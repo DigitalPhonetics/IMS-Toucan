@@ -105,8 +105,8 @@ class FastSpeechDataset(Dataset):
                           use_explicit_eos=False)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/Vis/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/Vis/SpeakerEmbedding/dvector-step250000.pt").eval()
+            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
