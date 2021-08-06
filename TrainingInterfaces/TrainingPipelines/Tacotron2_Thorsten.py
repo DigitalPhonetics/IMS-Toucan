@@ -50,11 +50,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                device=device,
                save_directory=save_dir,
                steps=300000,
-               batch_size=84,
-               epochs_per_save=10,
+               batch_size=42,  # this works for a 24GB GPU. For a smaller GPU consider turning off use_dtw_loss or decreasing batchsize.
+               epochs_per_save=2,
                use_speaker_embedding=False,
                lang="de",
-               lr=0.01,
+               lr=0.001,
                warmup_steps=8000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

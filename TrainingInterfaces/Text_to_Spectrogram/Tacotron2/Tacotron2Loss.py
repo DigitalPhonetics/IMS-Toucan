@@ -62,9 +62,7 @@ class Tacotron2Loss(torch.nn.Module):
 
         # calculate loss
         l1_loss = self.l1_criterion(after_outs, ys) + self.l1_criterion(before_outs, ys)
-        mse_loss = self.mse_criterion(after_outs, ys) + self.mse_criterion(
-            before_outs, ys
-            )
+        mse_loss = self.mse_criterion(after_outs, ys) + self.mse_criterion(before_outs, ys)
         bce_loss = self.bce_criterion(logits, labels)
 
         # make weighted mask and apply it
@@ -77,11 +75,7 @@ class Tacotron2Loss(torch.nn.Module):
             # apply weight
             l1_loss = l1_loss.mul(out_weights).masked_select(masks).sum()
             mse_loss = mse_loss.mul(out_weights).masked_select(masks).sum()
-            bce_loss = (
-                bce_loss.mul(logit_weights.squeeze(-1))
-                    .masked_select(masks.squeeze(-1))
-                    .sum()
-            )
+            bce_loss = (bce_loss.mul(logit_weights.squeeze(-1)).masked_select(masks.squeeze(-1)).sum())
 
         return l1_loss, mse_loss, bce_loss
 

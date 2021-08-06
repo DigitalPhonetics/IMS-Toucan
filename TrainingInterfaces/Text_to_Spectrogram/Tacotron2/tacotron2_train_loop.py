@@ -15,6 +15,8 @@ from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 
 
+# TODO detect model collapse and employ soft restart
+
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
     sentence = ""
@@ -53,9 +55,10 @@ def collate_and_pad(batch):
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
-        return (
-            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1))
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lens).squeeze(1),
+                pad_sequence(speechs, batch_first=True),
+                torch.stack(speech_lens).squeeze(1))
     elif len(batch[0]) == 5:
         # every entry in batch: [text, text_length, spec, spec_length, speaker_embedding]
         texts = list()
@@ -69,10 +72,11 @@ def collate_and_pad(batch):
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
             speaker_embeddings.append(torch.Tensor(datapoint[4]))
-        return (
-            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1),
-            torch.stack(speaker_embeddings))
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lens).squeeze(1),
+                pad_sequence(speechs, batch_first=True),
+                torch.stack(speech_lens).squeeze(1),
+                torch.stack(speaker_embeddings))
 
 
 def train_loop(net,

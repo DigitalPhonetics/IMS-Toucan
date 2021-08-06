@@ -7,12 +7,12 @@ from abc import ABC
 import torch
 import torch.nn.functional as F
 
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
@@ -238,7 +238,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         if self.use_dtw_loss:
             # print("Regular Loss: {}".format(loss))
-            dtw_loss = self.dtw_criterion(after_outs, gold_speech).mean() / 6000.0  # division to balance orders of magnitude
+            dtw_loss = self.dtw_criterion(after_outs.transpose(0, 1), gold_speech.transpose(0, 1)).mean() / 10.0  # division to balance orders of magnitude
             # print("DTW Loss: {}".format(dtw_loss))
             loss += dtw_loss
 
