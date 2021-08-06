@@ -216,8 +216,8 @@ class Tacotron2(torch.nn.Module):
             raise ValueError(f"unknown --loss-type {self.loss_type}")
 
         if self.use_dtw_loss:
-            # print("Regular Loss: {}".format(loss))
-            dtw_loss = self.dtw_criterion(after_outs.transpose(0, 1), speech.transpose(0, 1)).mean() / 10.0  # division to balance orders of magnitude
+            print("Regular Loss: {}".format(loss))
+            dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
             # print("\n\n")
             # import matplotlib.pyplot as plt
             # import librosa.display as lbd
@@ -225,7 +225,7 @@ class Tacotron2(torch.nn.Module):
             # lbd.specshow(after_outs[0].transpose(0,1).detach().cpu().numpy(), ax=ax[0], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
             # lbd.specshow(speech[0].transpose(0,1).cpu().numpy(), ax=ax[1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
             # plt.show()
-            # print("DTW Loss: {}".format(dtw_loss))
+            print("DTW Loss: {}".format(dtw_loss))
             loss += dtw_loss
 
         # calculate attention loss
