@@ -46,8 +46,8 @@ pip install -r requirements.txt
 
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. Create a
-directory *Models* in the top-level of your clone. Then create a directory called *SpeakerEmbedding*. In this directory
-you put the two files *wav2mel.pt* and
+directory *Models* in the top-level of your clone. In there, create a directory called *SpeakerEmbedding*. In this
+directory you put the two files *wav2mel.pt* and
 *dvector-step250000.pt* that you can obtain from the release page of the
 [dvector](https://github.com/yistLin/dvector)
 GitHub. This process might become automated in the future.

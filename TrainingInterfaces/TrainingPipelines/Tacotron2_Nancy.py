@@ -49,8 +49,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
-               batch_size=84,  # this works for a 24GB GPU. For a smaller GPU consider decreasing batchsize.
+               steps=100000,
+               batch_size=84,  # this works for a 24GB GPU. For a smaller GPU, consider decreasing batchsize.
                epochs_per_save=2,
                use_speaker_embedding=False,
                lang="en",
