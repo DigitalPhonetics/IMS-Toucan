@@ -15,8 +15,6 @@ from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 
 
-# TODO detect model collapse and employ soft restart
-
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
     sentence = ""
