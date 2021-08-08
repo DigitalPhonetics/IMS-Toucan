@@ -176,11 +176,10 @@ should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
-after 100,000 update steps have been made by default for Tacotron2, 300,000 for FastSpeech2, and after 2,000,000 steps
-for HiFiGAN (even though HiFiGAN should be totally fine after 500,000 already). Depending on the machine and
-configuration you are using this will take between 2 and 4 days, so verify that everything works on small tests before
-running the big thing. If you want to stop earlier, just kill the process, since everything is daemonic all the
-child-processes should die with it.
+after 100,000 update steps have been made by default for Tacotron2, 300,000 for FastSpeech2, and after 500,000 steps for
+HiFiGAN. Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify that
+everything works on small tests before running the big thing. If you want to stop earlier, just kill the process, since
+everything is daemonic all the child-processes should die with it.
 
 After training is complete, it is recommended to run
 *run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it

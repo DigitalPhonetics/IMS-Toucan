@@ -62,5 +62,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,
                device=device,
+               epochs_per_save=1,
                model_save_dir=model_save_dir,
                path_to_checkpoint=resume_checkpoint)
