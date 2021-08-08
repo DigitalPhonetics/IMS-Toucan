@@ -2,10 +2,10 @@ import random
 
 import torch
 
-from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANDataset import MelGANDataset
-from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANGenerator import MelGANGenerator
-from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANMultiScaleDiscriminator import MelGANMultiScaleDiscriminator
-from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.melgan_train_loop import train_loop
+from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANGenerator
+from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANMultiScaleMultiPeriodDiscriminator
+from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGANDataset import HiFiGANDataset
+from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.hifigan_train_loop import train_loop
 from Utility.file_lists import *
 
 
@@ -50,10 +50,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     giant_file_list += get_file_list_karlsson()
     giant_file_list += get_file_list_nancy()
 
-    train_set = MelGANDataset(list_of_paths=giant_file_list)
-    generator = MelGANGenerator()
+    train_set = HiFiGANDataset(list_of_paths=giant_file_list)
+    generator = HiFiGANGenerator()
     generator.reset_parameters()
-    multi_scale_discriminator = MelGANMultiScaleDiscriminator()
+    multi_scale_discriminator = HiFiGANMultiScaleMultiPeriodDiscriminator()
 
     print("Training model")
     train_loop(batch_size=16,
@@ -62,6 +62,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                discriminator=multi_scale_discriminator,
                train_dataset=train_set,
                device=device,
-               generator_warmup_steps=100000,
                model_save_dir=model_save_dir,
                path_to_checkpoint=resume_checkpoint)

@@ -10,7 +10,7 @@ from tqdm import tqdm
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 
-class MelGANDataset(Dataset):
+class HiFiGANDataset(Dataset):
 
     def __init__(self,
                  list_of_paths,

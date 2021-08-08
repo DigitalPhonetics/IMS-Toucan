@@ -7,10 +7,7 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJSpeech import run as fas
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as fast_LibriTTS
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_Nancy
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Thorsten import run as fast_Thorsten
-from TrainingInterfaces.TrainingPipelines.MelGAN_LJSpeech import run as melgan_LJSpeech
-from TrainingInterfaces.TrainingPipelines.MelGAN_Nancy import run as melgan_Nancy
-from TrainingInterfaces.TrainingPipelines.MelGAN_Thorsten import run as melgan_Thorsten
-from TrainingInterfaces.TrainingPipelines.MelGAN_combined import run as melgan_combined
+from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.Tacotron2_LJSpeech import run as taco_LJSpeech
 from TrainingInterfaces.TrainingPipelines.Tacotron2_LibriTTS import run as taco_LibriTTS
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_Nancy
@@ -18,21 +15,18 @@ from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_
 
 pipeline_dict = {
     "fast_Thorsten"  : fast_Thorsten,
-    "melgan_Thorsten": melgan_Thorsten,
     "taco_Thorsten"  : taco_Thorsten,
 
     "fast_LibriTTS"  : fast_LibriTTS,
     "taco_LibriTTS"  : taco_LibriTTS,
 
     "fast_LJSpeech"  : fast_LJSpeech,
-    "melgan_LJSpeech": melgan_LJSpeech,
     "taco_LJSpeech"  : taco_LJSpeech,
 
     "fast_Nancy"     : fast_Nancy,
-    "melgan_Nancy"   : melgan_Nancy,
     "taco_Nancy"     : taco_Nancy,
 
-    "melgan_combined": melgan_combined,
+    "melgan_combined": hifigan_combined,
     }
 
 if __name__ == '__main__':
@@ -69,8 +63,8 @@ if __name__ == '__main__':
         print("Need to provide path to checkpoint to fine-tune from!")
         sys.exit()
 
-    if args.finetune and "melgan" in args.pipeline:
-        print("Fine-tuning for MelGAN is not implemented as it didn't seem necessary and the GAN would most likely fail. Just train from scratch.")
+    if args.finetune and "hifigan" in args.pipeline:
+        print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
 
     if "fast" in args.pipeline:
