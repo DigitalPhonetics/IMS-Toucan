@@ -26,7 +26,7 @@ pipeline_dict = {
     "fast_Nancy"     : fast_Nancy,
     "taco_Nancy"     : taco_Nancy,
 
-    "melgan_combined": hifigan_combined,
+    "hifi_combined"  : hifigan_combined,
     }
 
 if __name__ == '__main__':
