@@ -6,7 +6,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 The PyTorch Modules of [Tacotron2](https://arxiv.org/abs/1712.05884)
 and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from
-[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of [MelGAN](https://arxiv.org/abs/1910.06711) are taken
+[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of [HiFiGAN](https://arxiv.org/abs/2010.05646) are taken
 from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
 which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
 
@@ -46,8 +46,10 @@ pip install -r requirements.txt
 
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. Create a
-directory *Models* in the top-level of your clone. In there, create a directory called *SpeakerEmbedding*. In this
-directory you put the two files *wav2mel.pt* and
+directory
+*Models* in the top-level of your clone. In there, create a directory called
+*SpeakerEmbedding*. In this directory you put the two files
+*wav2mel.pt* and
 *dvector-step250000.pt* that you can obtain from the release page of the
 [dvector](https://github.com/yistLin/dvector)
 GitHub. This process might become automated in the future.
@@ -62,58 +64,69 @@ apt-get install espeak
 
 ## Creating a new Pipeline
 
-To create a new pipeline to train a MelGAN vocoder, you only need a set of audio files. To create a new pipeline for a
-Tacotron2 you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech2, you need
-audio files, corresponding text labels, and an already trained Tacotron2 model to estimate the duration information that
+To create a new pipeline to train a HiFiGAN vocoder, you only need a set of audio files. To create a new pipeline for a
+Tacotron2 you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech2, you need audio
+files, corresponding text labels, and an already trained Tacotron2 model to estimate the duration information that
 FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
 
-#### Build a MelGAN Pipeline
+#### Build a HiFiGAN Pipeline
 
-In the directory called *Utility* there is a file called *file_lists.py*. In this file you should write a function that
-returns a list of all the absolute paths to each of the audio files in your dataset as strings.
+In the directory called
+*Utility* there is a file called
+*file_lists.py*. In this file you should write a function that returns a list of all the absolute paths to each of the
+audio files in your dataset as strings.
 
-Then go to the directory *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has
-MelGAN in its name. We will use this as reference and only make the necessary changes to use the new dataset. Import the
-function you have just written as *get_file_list*. Now look out for a variable called *model_save_dir*. This is the
-default directory that checkpoints will be saved into, unless you specify another one when calling the training script.
-Change it to whatever you like.
+Then go to the directory
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has HiFiGAN in its name. We
+will use this as reference and only make the necessary changes to use the new dataset. Import the function you have just
+written as
+*get_file_list*. Now look out for a variable called
+*model_save_dir*. This is the default directory that checkpoints will be saved into, unless you specify another one when
+calling the training script. Change it to whatever you like.
 
-Now you need to add your newly created pipeline to the pipeline dictionary in the file *run_training_pipeline.py* in the
-top level of the toolkit. In this file, import the *run* function from the pipeline you just created and give it a
-speaking name. Now in the *pipeline_dict*, add your imported function as value and use as key a shorthand that makes
-sense. And just like that you're done.
+Now you need to add your newly created pipeline to the pipeline dictionary in the file
+*run_training_pipeline.py* in the top level of the toolkit. In this file, import the
+*run* function from the pipeline you just created and give it a speaking name. Now in the
+*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And just like that
+you're done.
 
 #### Build a Tacotron2 Pipeline
 
-In the directory called *Utility* there is a file called
+In the directory called
+*Utility* there is a file called
 *path_to_transcript_dicts.py*. In this file you should write a function that returns a dictionary that has all the
 absolute paths to each of the audio files in your dataset as strings as the keys and the textual transcriptions of the
 corresponding audios as the values.
 
-Then go to the directory *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has
-Tacotron2 in its name. If your dataset is single-speaker, choose any that is not LibriTTS. If your dataset is
-multi-speaker, choose the one for LibriTTS as your template. We will use this copy as reference and only make the
-necessary changes to use the new dataset. Import the function you have just written as *build_path_to_transcript_dict*.
-Since the data will be processed a considerable amount, a cache will be built and saved as file for quick and easy
-restarts. So find the variable *cache_dir* and adapt it to your needs. The same goes for the variable *save_dir*, which
-is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling the pipeline later
-using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a different directory.
+Then go to the directory
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Tacotron2 in its name.
+If your dataset is single-speaker, choose any that is not LibriTTS. If your dataset is multi-speaker, choose the one for
+LibriTTS as your template. We will use this copy as reference and only make the necessary changes to use the new
+dataset. Import the function you have just written as
+*build_path_to_transcript_dict*. Since the data will be processed a considerable amount, a cache will be built and saved
+as file for quick and easy restarts. So find the variable
+*cache_dir* and adapt it to your needs. The same goes for the variable
+*save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
+the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
+different directory.
 
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
 *Preprocessing/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the language of
 your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just doing it
-analogous to what is there already. Now back in the pipeline, change the *lang* argument in the creation of the dataset
-and in the call to the train loop function to the language ID that matches your data.
+analogous to what is there already. Now back in the pipeline, change the
+*lang* argument in the creation of the dataset and in the call to the train loop function to the language ID that
+matches your data.
 
-Now navigate to the implementation of the *train_loop* that is called in the pipeline. In this file, find the function
-called *plot_attention*. This function will produce attention plots during training, which is the most important way to
-monitor the progress of the training. In there, you may need to add an example sentence for the language of the data you
-are using. It should all be pretty clear from looking at it.
+Now navigate to the implementation of the
+*train_loop* that is called in the pipeline. In this file, find the function called
+*plot_attention*. This function will produce attention plots during training, which is the most important way to monitor
+the progress of the training. In there, you may need to add an example sentence for the language of the data you are
+using. It should all be pretty clear from looking at it.
 
-Once this is done, we are almost done, now we just need to make it available to the *run_training_pipeline.py* file in
-the top level. In said file, import the *run* function from the pipeline you just created and give it a speaking name.
-Now in the *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And that's
-it.
+Once this is done, we are almost done, now we just need to make it available to the
+*run_training_pipeline.py* file in the top level. In said file, import the
+*run* function from the pipeline you just created and give it a speaking name. Now in the
+*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And that's it.
 
 #### Build a FastSpeech2 Pipeline
 
@@ -126,7 +139,8 @@ previously. This is used to estimate phoneme-durations based on knowledge-distil
 
 Everything else is exactly like creating a Tacotron2 pipeline, except that in the training_loop, instead of attentions
 plots, spectrograms are plotted to visualize training progress. So there you may need to add a sentence if you are using
-a new language in the function called *plot_progress_spec*.
+a new language in the function called
+*plot_progress_spec*.
 
 ## Training a Model
 
@@ -162,51 +176,69 @@ should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
-after 300,000 update steps have been made by default for Tacotron2 and FastSpeech2, and after 500,000 steps for MelGAN.
-Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify that everything
-works on small tests before running the big thing. If you want to stop earlier, just kill the process, since everything
-is daemonic all the child-processes should die with it.
+after 100,000 update steps have been made by default for Tacotron2, 300,000 for FastSpeech2, and after 2,000,000 steps
+for HiFiGAN (even though HiFiGAN should be totally fine after 500,000 already). Depending on the machine and
+configuration you are using this will take between 2 and 4 days, so verify that everything works on small tests before
+running the big thing. If you want to stop earlier, just kill the process, since everything is daemonic all the
+child-processes should die with it.
 
 After training is complete, it is recommended to run
 *run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it
 will automatically load any models you produced with one pipeline, average their parameters to get a slightly more
-robust model and save the result as *best.pt* in the same directory where all the corresponding checkpoints lie. This
-also compresses the file size slightly, so you should do this and then use the *best.pt* model for inference.
+robust model and save the result as
+*best.pt* in the same directory where all the corresponding checkpoints lie. This also compresses the file size
+slightly, so you should do this and then use the
+*best.pt* model for inference.
 
 ## Creating a new InferenceInterface
 
-To build a new *InferenceInterface*, which you can then use for super simple inference, we're going to use an existing
-one as template again. If you use multi-speaker, take the LibriTTS ones as template, otherwise take any other one. Make
-a copy of the *InferenceInterface*. Change the name of the class in the copy and change the paths to the models to use
-the trained models of your choice. Instantiate the model with the same hyperparameters that you used when you created it
-in the corresponding training pipeline. The last thing to check is the language that you supply to the text frontend.
-Make sure it matches what you used during training.
+To build a new
+*InferenceInterface*, which you can then use for super simple inference, we're going to use an existing one as template
+again. If you use multi-speaker, take the LibriTTS ones as template, otherwise take any other one. Make a copy of the
+*InferenceInterface*. Change the name of the class in the copy and change the paths to the models to use the trained
+models of your choice. Instantiate the model with the same hyperparameters that you used when you created it in the
+corresponding training pipeline. The last thing to check is the language that you supply to the text frontend. Make sure
+it matches what you used during training.
 
-With your newly created *InferenceInterface*, you can use your trained models pretty much anywhere, e.g. in other
-projects. All you need is the *Utility* directory, the *Layers*
-directory, the *Preprocessing* directory and the
+With your newly created
+*InferenceInterface*, you can use your trained models pretty much anywhere, e.g. in other projects. All you need is the
+*Utility* directory, the
+*Layers*
+directory, the
+*Preprocessing* directory and the
 *InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works
 standalone.
 
 ## Using a trained Model for Inference
 
-An *InferenceInterface* contains 2 useful methods. They are *read_to_file* and *read_aloud*.
+An
+*InferenceInterface* contains 2 useful methods. They are
+*read_to_file* and
+*read_aloud*.
 
 - *read_to_file* takes as input a list of strings and a filename. It will synthesize the sentences in the list and
   concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument.
-- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
-  speakers. If you set the optional argument *view* to *True* when calling it, it will also show a plot of the phonemes
-  it produced, the spectrogram it came up with, and the wave it created from that spectrogram. So all the
-  representations can be seen, text to phoneme, phoneme to spectrogram and finally spectrogram to wave.
-- Additionally, Tacotron2 *InferenceInterfaces* offer a method called *plot_attention*. This will take a string,
-  synthesize it and show a plot of the attention matrix, which can be useful to gain insights.
 
-Those methods are used in demo code in the toolkit. In *run_interactive_demo.py* and
-*run_text_to_file_reader.py*, you can import *InferenceInterfaces* that you created and add them to the dictionary in
-each of the files with a shorthand that makes sense. In the interactive demo, you can just call the python script, then
-type in the shorthand when prompted and immediately listen to your synthesis saying whatever you put in next (be wary of
-out of memory errors for too long inputs). In the text reader demo script you have to call the function that wraps
-around the *InferenceInterface* and supply the shorthand of your choice. It should be pretty clear from looking at it.
+- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
+  speakers. If you set the optional argument
+  *view* to
+  *True* when calling it, it will also show a plot of the phonemes it produced, the spectrogram it came up with, and the
+  wave it created from that spectrogram. So all the representations can be seen, text to phoneme, phoneme to spectrogram
+  and finally spectrogram to wave.
+
+- Additionally, Tacotron2
+  *InferenceInterfaces* offer a method called
+  *plot_attention*. This will take a string, synthesize it and show a plot of the attention matrix, which can be useful
+  to gain insights.
+
+Those methods are used in demo code in the toolkit. In
+*run_interactive_demo.py* and
+*run_text_to_file_reader.py*, you can import
+*InferenceInterfaces* that you created and add them to the dictionary in each of the files with a shorthand that makes
+sense. In the interactive demo, you can just call the python script, then type in the shorthand when prompted and
+immediately listen to your synthesis saying whatever you put in next (be wary of out of memory errors for too long
+inputs). In the text reader demo script you have to call the function that wraps around the
+*InferenceInterface* and supply the shorthand of your choice. It should be pretty clear from looking at it.
 
 ## FAQ
 
@@ -225,12 +257,12 @@ Here are a few points that were brought up by users:
 
 ## Example Pipelines available
 
-| Dataset                                                                              | Language | Single or Multi| MelGAN | TransformerTTS | Tacotron2 | FastSpeech2 | 
-| -------------------------------------------------------------------------------------|----------|----------------| :-----:|:--------------:|:---------:|:-----------:|
-| [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)              | German   | Single Speaker | ✅     | ✅              | ✅        |✅           |
-| [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅     | ✅              | ✅        |✅           |
-| [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) | English  | Single Speaker | ✅     | ✅              | ✅        |✅           |
-| [LibriTTS](https://research.google/tools/datasets/libri-tts/)                        | English  | Multi Speaker  | ✅     | ✅              | ✅        |✅           |
+| Dataset                                                                              | Language | Single or Multi | TransformerTTS | Tacotron2 | FastSpeech2 | 
+| -------------------------------------------------------------------------------------|----------|-----------------|:--------------:|:---------:|:-----------:|
+| [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)              | German   | Single Speaker | ✅              | ✅        |✅           |
+| [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅              | ✅        |✅           |
+| [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) | English  | Single Speaker | ✅              | ✅        |✅           |
+| [LibriTTS](https://research.google/tools/datasets/libri-tts/)                        | English  | Multi Speaker  | ✅              | ✅        |✅           |
 
 ---
 
