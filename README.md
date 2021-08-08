@@ -10,8 +10,8 @@ and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from
 from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
 which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
 
-For a version of the toolkit that includes TransformerTTS instead of Tacotron2, check out the TransformerTTS branch.
-They are separated to keep the code clean, simple and minimal.
+For a version of the toolkit that includes TransformerTTS instead of Tacotron2 and MelGAN instead of HiFiGAN, check out
+the TransformerTTS and MelGAN branch. They are separated to keep the code clean, simple and minimal.
 
 ## Demonstration
 
