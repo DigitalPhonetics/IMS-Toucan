@@ -10,8 +10,8 @@ import torch.nn.functional as F
 class FeatureMatchLoss(torch.nn.Module):
 
     def __init__(self,
-                 average_by_layers=True,
-                 average_by_discriminators=True,
+                 average_by_layers=False,
+                 average_by_discriminators=False,
                  include_final_outputs=False, ):
         super().__init__()
         self.average_by_layers = average_by_layers
@@ -24,7 +24,7 @@ class FeatureMatchLoss(torch.nn.Module):
 
         Args:
             feats_hat (list): List of list of discriminator outputs
-                calcuated from generater outputs.
+                calcuated from generator outputs.
             feats (list): List of list of discriminator outputs
                 calcuated from groundtruth.
 

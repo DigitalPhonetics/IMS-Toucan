@@ -11,7 +11,7 @@ import torch.nn.functional as F
 class MelSpectrogram(torch.nn.Module):
 
     def __init__(self,
-                 fs=22050,
+                 fs=16000,
                  fft_size=1024,
                  hop_size=256,
                  win_length=None,
@@ -102,7 +102,7 @@ class MelSpectrogram(torch.nn.Module):
 class MelSpectrogramLoss(torch.nn.Module):
 
     def __init__(self,
-                 fs=22050,
+                 fs=16000,
                  fft_size=1024,
                  hop_size=256,
                  win_length=None,

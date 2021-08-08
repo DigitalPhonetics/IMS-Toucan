@@ -573,7 +573,7 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
                      "max_downsample_channels"    : 1024,
                      "max_groups"                 : 16,
                      "bias"                       : True,
-                     "downsample_scales"          : [2, 2, 4, 4, 1],
+                     "downsample_scales"          : [4, 4, 4, 4, 1],
                      "nonlinear_activation"       : "LeakyReLU",
                      "nonlinear_activation_params": {"negative_slope": 0.1},
                      },
