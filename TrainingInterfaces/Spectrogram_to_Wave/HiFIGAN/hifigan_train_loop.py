@@ -73,11 +73,9 @@ def train_loop(generator,
             #         Generator        #
             ############################
 
-            gold_wave = datapoint[0].to(device)
+            gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
-            print(pred_wave.shape)
-            print(gold_wave.shape)
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
             adversarial_loss = generator_adv_criterion(d_outs)
