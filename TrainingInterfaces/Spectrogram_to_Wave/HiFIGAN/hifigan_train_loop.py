@@ -82,9 +82,8 @@ def train_loop(generator,
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
             generator_total_loss = mel_loss * 45 + adversarial_loss * 1 + feature_matching_loss * 2
-            # generator step time
             optimizer_g.zero_grad()
-            generator_total_loss.backward(retain_graph=True)
+            generator_total_loss.backward()
             generator_losses.append(float(generator_total_loss))
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
@@ -95,8 +94,9 @@ def train_loop(generator,
             #       Discriminator      #
             ############################
 
+            d_outs = d(pred_wave.detach())  # have to recompute unfortunately due to autograd behaviour
+            d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
             discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
-            # discriminator step time
             optimizer_d.zero_grad()
             discriminator_loss.backward()
             discriminator_losses.append(float(discriminator_loss))
