@@ -98,7 +98,7 @@ class DiscriminatorAdversarialLoss(torch.nn.Module):
             real_loss = self.real_criterion(outputs)
             fake_loss = self.fake_criterion(outputs_hat)
 
-        return real_loss, fake_loss
+        return real_loss + fake_loss
 
     def _mse_real_loss(self, x):
         return F.mse_loss(x, x.new_ones(x.size()))
