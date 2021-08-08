@@ -77,9 +77,7 @@ def train_loop(generator,
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
             d_outs = d(pred_wave)
-            d_outs_for_d_update = d_outs.detach().copy()
             d_gold_outs = d(gold_wave)
-            d_gold_outs_for_d_update = d_gold_outs.copy()
             adversarial_loss = generator_adv_criterion(d_outs)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
@@ -97,7 +95,9 @@ def train_loop(generator,
             #       Discriminator      #
             ############################
 
-            discriminator_loss = discriminator_adv_criterion(d_outs_for_d_update, d_gold_outs_for_d_update)
+            d_outs = d(pred_wave.detach())
+            d_gold_outs = d(gold_wave)
+            discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
             # discriminator step time
             optimizer_d.zero_grad()
             discriminator_loss.backward()
