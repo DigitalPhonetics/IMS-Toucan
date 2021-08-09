@@ -14,7 +14,7 @@ from torchaudio.transforms import Vad as VoiceActivityDetection
 
 class AudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=True):
         """
         The parameters are by default set up to do well
         on a 16kHz signal. A different sampling rate may
@@ -63,7 +63,8 @@ class AudioPreprocessor:
         cut silence from the beginning
         and end of a recording
         """
-        no_silence_front = self.vad(torch.Tensor(audio))
+        silence = torch.zeros([20000])
+        no_silence_front = self.vad(torch.cat((silence, torch.Tensor(audio), silence), 0))
         reversed_audio = torch.flip(no_silence_front, (0,))
         no_silence_back = self.vad(torch.Tensor(reversed_audio))
         unreversed_audio = torch.flip(no_silence_back, (0,))
