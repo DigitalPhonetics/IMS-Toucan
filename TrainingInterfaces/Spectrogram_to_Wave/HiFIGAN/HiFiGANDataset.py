@@ -22,8 +22,8 @@ class HiFiGANDataset(Dataset):
         # datasets and then concat them. If we just did all
         # datasets at once, there could be multiple sampling
         # rates.
-        self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024)
-        self.melspec_ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024)
+        self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
+        self.melspec_ap = AudioPreprocessor(input_sr=16000, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         # hop length must be same as the product of the upscale factors
         resource_manager = Manager()
         self.list_of_eligible_wave_paths = resource_manager.list()

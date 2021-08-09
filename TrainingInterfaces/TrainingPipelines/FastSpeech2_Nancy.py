@@ -47,7 +47,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   min_len_in_seconds=1,
                                   max_len_in_seconds=12,
                                   device=device,
-                                  rebuild_cache=False)
+                                  rebuild_cache=False,
+                                  cut_silence=True)
 
     model = FastSpeech2(idim=166, odim=80, spk_embed_dim=None, use_dtw_loss=False)
 
