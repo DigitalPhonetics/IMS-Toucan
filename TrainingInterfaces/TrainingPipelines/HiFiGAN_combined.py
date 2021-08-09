@@ -26,7 +26,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = "Models/MelGAN_combined"
+        model_save_dir = "Models/HiFiGAN_combined"
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 

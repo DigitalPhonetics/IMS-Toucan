@@ -6,7 +6,7 @@ import os
 
 import torch
 
-from TrainingInterfaces.Spectrogram_to_Wave.MelGAN.MelGANGenerator import MelGANGenerator
+from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANGenerator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 
@@ -47,9 +47,9 @@ def load_net_fast_multi(path, idim=166, odim=80):
     return net
 
 
-def load_net_melgan(path):
+def load_net_hifigan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = MelGANGenerator()
+    net = HiFiGANGenerator()
     net.load_state_dict(check_dict["generator"])
     return net
 
@@ -96,7 +96,7 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
     return model
 
 
-def save_model_for_use(model, name="Transformer_English_Single.pt", dict_name="model"):
+def save_model_for_use(model, name="", dict_name="model"):
     if model is None:
         return
     print("saving model...")
@@ -106,9 +106,9 @@ def save_model_for_use(model, name="Transformer_English_Single.pt", dict_name="m
 
 def make_best_in_all(n=3):
     for model_dir in os.listdir("Models"):
-        if "MelGAN" in model_dir:
+        if "HiFiGAN" in model_dir:
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-            averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_melgan)
+            averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
         elif "Tacotron2" in model_dir:
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
