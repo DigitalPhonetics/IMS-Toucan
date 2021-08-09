@@ -40,7 +40,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 lang="en",
                                 min_len_in_seconds=1,
                                 max_len_in_seconds=10,
-                                speaker_embedding=True)
+                                speaker_embedding=True,
+                                cut_silences=True)
 
     model = Tacotron2(idim=166, odim=80, spk_embed_dim=256, use_dtw_loss=False)
 

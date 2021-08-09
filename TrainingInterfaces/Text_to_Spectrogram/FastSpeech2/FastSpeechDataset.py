@@ -28,6 +28,7 @@ class FastSpeechDataset(Dataset):
                  lang="en",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
+                 cut_silence=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False,
@@ -61,7 +62,8 @@ class FastSpeechDataset(Dataset):
                                                                                      max_len_in_seconds,
                                                                                      reduction_factor,
                                                                                      device,
-                                                                                     cache_dir), daemon=True))
+                                                                                     cache_dir,
+                                                                                     cut_silence), daemon=True))
                 process_list[-1].start()
             for process in process_list:
                 process.join()
@@ -93,7 +95,8 @@ class FastSpeechDataset(Dataset):
                               max_len,
                               reduction_factor,
                               device,
-                              cache_dir):
+                              cache_dir,
+                              cut_silence):
         process_internal_dataset_chunk = list()
         tf = TextFrontend(language=lang,
                           use_word_boundaries=False,
@@ -106,7 +109,8 @@ class FastSpeechDataset(Dataset):
                                output_sr=16000,
                                melspec_buckets=80,
                                hop_length=256,
-                               n_fft=1024)
+                               n_fft=1024,
+                               cut_silence=cut_silence)
         acoustic_model = acoustic_model.to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio(reduction_factor=reduction_factor)
