@@ -63,7 +63,7 @@ def get_file_list_nancy():
 
 
 def get_file_list_libritts():
-    path_train = "/mount/resources/speech/corpora/LibriTTS"
+    path_train = "/mount/resources/speech/corpora/LibriTTS/all_clean"
     file_list = list()
     for speaker in os.listdir(path_train):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
