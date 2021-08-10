@@ -62,9 +62,30 @@ class HiFiGANGenerator(torch.nn.Module):
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["generator"])
 
     def forward(self, c, normalize_before=False):
-        if not isinstance(c, torch.Tensor):
-            c = torch.tensor(c, dtype=torch.float).to(next(self.parameters()).device)
         if normalize_before:
             c = (c - self.mean) / self.scale
-        c = self.forward(c.transpose(1, 0).unsqueeze(0))
-        return c.squeeze(0).transpose(1, 0)
+        c = self.input_conv(c.unsqueeze(0))
+        for i in range(self.num_upsamples):
+            c = self.upsamples[i](c)
+            cs = 0.0  # initialize
+            for j in range(self.num_blocks):
+                cs += self.blocks[i * self.num_blocks + j](c)
+            c = cs / self.num_blocks
+        c = self.output_conv(c)
+        return c.squeeze(0).squeeze(0)
+
+    def remove_weight_norm(self):
+        def _remove_weight_norm(m):
+            try:
+                torch.nn.utils.remove_weight_norm(m)
+            except ValueError:
+                return
+
+        self.apply(_remove_weight_norm)
+
+    def apply_weight_norm(self):
+        def _apply_weight_norm(m):
+            if isinstance(m, torch.nn.Conv1d) or isinstance(m, torch.nn.ConvTranspose1d):
+                torch.nn.utils.weight_norm(m)
+
+        self.apply(_apply_weight_norm)

@@ -151,9 +151,7 @@ class HiFiGANGenerator(torch.nn.Module):
         """
 
         def _apply_weight_norm(m):
-            if isinstance(m, torch.nn.Conv1d) or isinstance(
-                    m, torch.nn.ConvTranspose1d
-                    ):
+            if isinstance(m, torch.nn.Conv1d) or isinstance(m, torch.nn.ConvTranspose1d):
                 torch.nn.utils.weight_norm(m)
 
         self.apply(_apply_weight_norm)
