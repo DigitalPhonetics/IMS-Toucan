@@ -1,11 +1,13 @@
 import os
 
+import librosa.display as lbd
+import matplotlib.pyplot as plt
 import sounddevice
 import soundfile
 import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
-from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
+from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
 from Preprocessing.TextFrontend import TextFrontend
 
 
@@ -22,7 +24,7 @@ class Thorsten_FastSpeech2(torch.nn.Module):
         except RuntimeError:
             self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Thorsten", "best.pt"),
                                          idim=166, odim=80, spk_embed_dim=None, reduction_factor=1, legacy_model=True).to(torch.device(device))
-        self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Thorsten", "best.pt")).to(torch.device(device))
+        self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))
@@ -32,10 +34,8 @@ class Thorsten_FastSpeech2(torch.nn.Module):
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones, speaker_embedding=self.speaker_embedding, return_duration_pitch_energy=True)
             mel = mel.transpose(0, 1)
-            wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
+            wave = self.mel2wav(mel)
         if view:
-            import matplotlib.pyplot as plt
-            import librosa.display as lbd
             from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(nrows=2, ncols=1)
             ax[0].plot(wave.cpu().numpy())

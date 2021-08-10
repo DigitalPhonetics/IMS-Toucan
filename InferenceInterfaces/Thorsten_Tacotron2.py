@@ -1,11 +1,12 @@
 import os
 
+import librosa.display as lbd
 import matplotlib.pyplot as plt
 import sounddevice
 import soundfile
 import torch
 
-from InferenceInterfaces.InferenceArchitectures.InferenceMelGAN import MelGANGenerator
+from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceTacotron2 import Tacotron2
 from Preprocessing.TextFrontend import TextFrontend
 
@@ -19,7 +20,7 @@ class Thorsten_Tacotron2(torch.nn.Module):
         self.text2phone = TextFrontend(language="de", use_word_boundaries=False, use_explicit_eos=False, inference=True)
         self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_Thorsten", "best.pt"),
                                    idim=166, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
-        self.mel2wav = MelGANGenerator(path_to_weights=os.path.join("Models", "MelGAN_Thorsten", "best.pt")).to(torch.device(device))
+        self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))
@@ -28,10 +29,8 @@ class Thorsten_Tacotron2(torch.nn.Module):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
             mel = self.phone2mel(phones, speaker_embedding=self.speaker_embedding).transpose(0, 1)
-            wave = self.mel2wav(mel.unsqueeze(0)).squeeze(0).squeeze(0)
+            wave = self.mel2wav(mel)
         if view:
-            import matplotlib.pyplot as plt
-            import librosa.display as lbd
             fig, ax = plt.subplots(nrows=2, ncols=1)
             ax[0].plot(wave.cpu().numpy())
             lbd.specshow(mel.cpu().numpy(), ax=ax[1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
