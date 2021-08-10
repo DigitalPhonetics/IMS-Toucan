@@ -17,7 +17,7 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = speaker_embedding
         self.device = device
-        self.speaker_embedding = torch.load(os.path.join("Models", "Vis", speaker_embedding), map_location='cpu').to(torch.device(device))
+        self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False, inference=True)
         try:
