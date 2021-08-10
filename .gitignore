@@ -6,6 +6,7 @@ tensorboard_logs
 !Models/SpeakerEmbedding/dvector-step250000.pt
 !Models/SpeakerEmbedding/wav2mel.pt
 !Models/SpeakerEmbedding/default_speaker_embedding.pt
+!Models/SpeakerEmbedding/README.md
 Corpora
 Models
 *_graph
