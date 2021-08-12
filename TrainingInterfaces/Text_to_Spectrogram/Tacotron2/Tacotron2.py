@@ -29,8 +29,8 @@ class Tacotron2(torch.nn.Module):
     def __init__(
             self,
             # network structure related
-            idim,
-            odim,
+            idim=25,  # 24 articulatory features + 1 feature to indicate a pause
+            odim=80,
             embed_dim=512,
             elayers=1,
             eunits=512,
@@ -88,14 +88,14 @@ class Tacotron2(torch.nn.Module):
         elif hasattr(F, output_activation):
             self.output_activation_fn = getattr(F, output_activation)
         else:
-            raise ValueError(f"there is no such an activation function. " f"({output_activation})")
+            raise ValueError(f"there is no such activation function. " f"({output_activation})")
 
         # set padding idx
-        padding_idx = 0
-        self.padding_idx = padding_idx
+        self.padding_idx = torch.zeros(idim)
 
         # define network modules
         self.enc = Encoder(idim=idim,
+                           input_layer="linear",
                            embed_dim=embed_dim,
                            elayers=elayers,
                            eunits=eunits,
@@ -104,8 +104,7 @@ class Tacotron2(torch.nn.Module):
                            econv_filts=econv_filts,
                            use_batch_norm=use_batch_norm,
                            use_residual=use_residual,
-                           dropout_rate=dropout_rate,
-                           padding_idx=padding_idx, )
+                           dropout_rate=dropout_rate, )
 
         if spk_embed_dim is None:
             dec_idim = eunits
@@ -176,36 +175,28 @@ class Tacotron2(torch.nn.Module):
             Dict: Statistics to be monitored.
             Tensor: Weight value.
         """
-        text = text[:, : text_lengths.max()]  # for data-parallel
-        speech = speech[:, : speech_lengths.max()]  # for data-parallel
 
-        # Add eos at the last of sequence
-        xs = F.pad(text, [0, 1], "constant", self.padding_idx)
-        for i, l in enumerate(text_lengths):
-            xs[i, l] = self.eos
-        ilens = text_lengths + 1
-
-        ys = speech
-        olens = speech_lengths
+        # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
+        # eos is [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
         # make labels for stop prediction
-        labels = make_pad_mask(olens - 1).to(ys.device, ys.dtype)
+        labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws = self._forward(xs, ilens, ys, olens, speaker_embeddings)
+        after_outs, before_outs, logits, att_ws = self._forward(text, text_lengths, speech, speech_lengths, speaker_embeddings)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
-            assert olens.ge(self.reduction_factor).all(), "Output length must be greater than or equal to reduction factor."
-            olens = olens.new([olen - olen % self.reduction_factor for olen in olens])
-            max_out = max(olens)
-            ys = ys[:, :max_out]
+            assert speech_lengths.ge(self.reduction_factor).all(), "Output length must be greater than or equal to reduction factor."
+            speech_lengths = speech_lengths.new([olen - olen % self.reduction_factor for olen in speech_lengths])
+            max_out = max(speech_lengths)
+            speech = speech[:, :max_out]
             labels = labels[:, :max_out]
-            labels = torch.scatter(labels, 1, (olens - 1).unsqueeze(1), 1.0)  # see #3388
+            labels = torch.scatter(labels, 1, (speech_lengths - 1).unsqueeze(1), 1.0)  # see #3388
 
         # calculate taco2 loss
-        l1_loss, mse_loss, bce_loss = self.taco2_loss(after_outs, before_outs, logits, ys, labels, olens)
+        l1_loss, mse_loss, bce_loss = self.taco2_loss(after_outs, before_outs, logits, speech, labels, speech_lengths)
         if self.loss_type == "L1+L2":
             loss = l1_loss + mse_loss + bce_loss
         elif self.loss_type == "L1":
@@ -233,28 +224,28 @@ class Tacotron2(torch.nn.Module):
             # NOTE(kan-bayashi): length of output for auto-regressive
             # input will be changed when r > 1
             if self.reduction_factor > 1:
-                olens_in = olens.new([olen // self.reduction_factor for olen in olens])
+                speech_lengths_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
-                olens_in = olens
-            attn_loss = self.attn_loss(att_ws, ilens, olens_in)
+                speech_lengths_in = speech_lengths
+            attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
             loss = loss + attn_loss
 
         return loss
 
     def _forward(self,
-                 xs: torch.Tensor,
+                 text_tensors: torch.Tensor,
                  ilens: torch.Tensor,
                  ys: torch.Tensor,
-                 olens: torch.Tensor,
+                 speech_lengths: torch.Tensor,
                  speaker_embeddings: torch.Tensor, ):
-        hs, hlens = self.enc(xs, ilens)
+        hs, hlens = self.enc(text_tensors, ilens)
         if self.spk_embed_dim is not None:
             hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         return self.dec(hs, hlens, ys)
 
     def inference(self,
-                  text: torch.Tensor,
-                  speech: torch.Tensor = None,
+                  text_tensor: torch.Tensor,
+                  speech_tensor: torch.Tensor = None,
                   speaker_embeddings: torch.Tensor = None,
                   threshold: float = 0.5,
                   minlenratio: float = 0.0,
@@ -283,27 +274,25 @@ class Tacotron2(torch.nn.Module):
             Tensor: Output sequence of stop probabilities (L,).
             Tensor: Attention weights (L, T).
         """
-        x = text
-        y = speech
         speaker_embedding = speaker_embeddings
 
         # add eos at the last of sequence
-        x = F.pad(x, [0, 1], "constant", self.eos)
+        text_tensor = F.pad(text_tensor, [0, 1], "constant", self.eos)
 
         # inference with teacher forcing
         if use_teacher_forcing:
-            assert speech is not None, "speech must be provided with teacher forcing."
+            assert speech_tensor is not None, "speech must be provided with teacher forcing."
 
-            xs, ys = x.unsqueeze(0), y.unsqueeze(0)
+            text_tensors, speech_tensors = text_tensor.unsqueeze(0), speech_tensor.unsqueeze(0)
             speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
-            ilens = x.new_tensor([xs.size(1)]).long()
-            olens = y.new_tensor([ys.size(1)]).long()
-            outs, _, _, att_ws = self._forward(xs, ilens, ys, olens, speaker_embeddings)
+            ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
+            speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
+            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings)
 
             return outs[0], None, att_ws[0]
 
         # inference
-        h = self.enc.inference(x)
+        h = self.enc.inference(text_tensor)
         if self.spk_embed_dim is not None:
             hs, speaker_embeddings = h.unsqueeze(0), speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]

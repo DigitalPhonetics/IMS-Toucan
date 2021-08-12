@@ -10,8 +10,8 @@ import torchaudio
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.TextFrontend import TextFrontend
 
 
 class TacotronDataset(Dataset):
@@ -61,7 +61,7 @@ class TacotronDataset(Dataset):
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
         process_internal_dataset_chunk = list()
-        tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False, use_prosody=False)
+        tf = ArticulatoryTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
             wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")

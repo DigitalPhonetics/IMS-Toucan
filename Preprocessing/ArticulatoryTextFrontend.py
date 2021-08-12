@@ -52,7 +52,9 @@ class ArticulatoryTextFrontend:
             for articulatory_features in articulatory_features_seg:
                 articulatory_features_seg_sil_dim_added.append(articulatory_features + [0])
             articulatory_features_full += articulatory_features_seg_sil_dim_added + \
-                                          [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]
+                                          [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
+        articulatory_features_full += articulatory_features_full + \
+                                      [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]  # end of sentence
         articulatory_features_tensor = torch.FloatTensor(articulatory_features_full)
 
         if view:

@@ -10,13 +10,13 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.TextFrontend import TextFrontend
+from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 
 
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
-    tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
+    tf = ArticulatoryTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
         sentence = "This is a complex sentence, it even has a pause!"
@@ -49,10 +49,11 @@ def collate_and_pad(batch):
         speechs = list()
         speech_lens = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
+            texts.append(torch.Tensor(datapoint[0]))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
+            print(pad_sequence(texts, batch_first=True).shape)
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
@@ -65,7 +66,7 @@ def collate_and_pad(batch):
         speech_lens = list()
         speaker_embeddings = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
+            texts.append(torch.Tensor(datapoint[0]))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
