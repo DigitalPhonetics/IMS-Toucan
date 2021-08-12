@@ -10,8 +10,8 @@ from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.TextFrontend import TextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
@@ -98,9 +98,7 @@ class FastSpeechDataset(Dataset):
                               cache_dir,
                               cut_silence):
         process_internal_dataset_chunk = list()
-        tf = TextFrontend(language=lang,
-                          use_word_boundaries=False,
-                          use_explicit_eos=False)
+        tf = ArticulatoryTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
             wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")

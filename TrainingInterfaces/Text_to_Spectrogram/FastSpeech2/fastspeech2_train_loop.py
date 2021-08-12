@@ -11,14 +11,14 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.TextFrontend import TextFrontend
+from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 
 
 def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embedding_for_plot):
-    tf = TextFrontend(language=lang, use_word_boundaries=False, use_explicit_eos=False)
+    tf = ArticulatoryTextFrontend(language=lang)
     sentence = "Hello"
     if lang == "en":
         sentence = "This is an unseen sentence."
