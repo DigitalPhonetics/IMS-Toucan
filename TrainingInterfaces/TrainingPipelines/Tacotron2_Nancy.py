@@ -23,11 +23,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     random.seed(13)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Nancy")
+    cache_dir = os.path.join("Corpora", "ArticulatoryNancy")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_Nancy")
+        save_dir = os.path.join("Models", "ArticulatoryTacotron2_Nancy")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -43,7 +43,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 rebuild_cache=False,
                                 cut_silences=True)
 
-    model = Tacotron2(idim=166, odim=80, spk_embed_dim=None, use_dtw_loss=False)
+    model = Tacotron2()
 
     print("Training model")
     train_loop(net=model,
