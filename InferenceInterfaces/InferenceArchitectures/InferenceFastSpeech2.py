@@ -16,7 +16,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def __init__(self,  # network structure related
                  path_to_weights,
-                 idim, odim, adim=384, aheads=4, elayers=6, eunits=1536,
+                 idim=25, odim=80, adim=384, aheads=4, elayers=6, eunits=1536,
                  dlayers=6, dunits=1536,
                  postnet_layers=5, postnet_chans=256, postnet_filts=5,
                  positionwise_layer_type="conv1d",
@@ -59,7 +59,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.use_scaled_pos_enc = use_scaled_pos_enc
         self.spk_embed_dim = spk_embed_dim
         self.padding_idx = 0
-        encoder_input_layer = torch.nn.Embedding(num_embeddings=idim, embedding_dim=adim, padding_idx=self.padding_idx)
+        encoder_input_layer = torch.nn.Linear(idim, adim)
         self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits,
                                  num_blocks=elayers,
                                  input_layer=encoder_input_layer, dropout_rate=transformer_enc_dropout_rate,

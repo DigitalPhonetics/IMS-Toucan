@@ -8,7 +8,7 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceTacotron2 import Tacotron2
-from Preprocessing.TextFrontend import TextFrontend
+from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 
 
 class LJSpeech_Tacotron2(torch.nn.Module):
@@ -17,11 +17,8 @@ class LJSpeech_Tacotron2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = None
         self.device = device
-        self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
-                                       use_explicit_eos=False, inference=True)
-        self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_LJSpeech", "best.pt"),
-                                   idim=166, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
-
+        self.text2phone = ArticulatoryTextFrontend(language="en", inference=True)
+        self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_LJSpeech", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -29,7 +26,7 @@ class LJSpeech_Tacotron2(torch.nn.Module):
 
     def forward(self, text, view=False):
         with torch.no_grad():
-            phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
+            phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
             mel = self.phone2mel(phones, speaker_embedding=self.speaker_embedding).transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:

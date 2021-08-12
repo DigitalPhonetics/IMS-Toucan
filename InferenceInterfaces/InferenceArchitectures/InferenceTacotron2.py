@@ -18,8 +18,8 @@ class Tacotron2(torch.nn.Module):
             self,
             # network structure related
             path_to_weights,
-            idim,
-            odim,
+            idim=25,
+            odim=80,
             embed_dim=512,
             elayers=1,
             eunits=512,
@@ -85,6 +85,7 @@ class Tacotron2(torch.nn.Module):
 
         # define network modules
         self.enc = Encoder(idim=idim,
+                           input_layer="linear",
                            embed_dim=embed_dim,
                            elayers=elayers,
                            eunits=eunits,
@@ -153,12 +154,8 @@ class Tacotron2(torch.nn.Module):
                 use_att_constraint=False,
                 backward_window=1,
                 forward_window=3):
-        x = text
         spemb = speaker_embedding
-
-        # add eos at the last of sequence
-        x = F.pad(x, [0, 1], "constant", self.eos)
-        h = self.enc.inference(x)
+        h = self.enc.inference(text)
         if self.spk_embed_dim is not None:
             hs, spembs = h.unsqueeze(0), spemb.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, spembs)[0]

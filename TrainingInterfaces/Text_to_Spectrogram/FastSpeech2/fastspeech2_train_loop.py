@@ -13,7 +13,6 @@ from tqdm import tqdm
 
 from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
-from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 
 
@@ -24,10 +23,9 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
         sentence = "This is an unseen sentence."
     elif lang == "de":
         sentence = "Dies ist ein ungesehener Satz."
-    phoneme_vector = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
-    spec, durations, *_ = net.inference(text=phoneme_vector, speaker_embeddings=reference_speaker_embedding_for_plot, return_duration_pitch_energy=True)
+    phoneme_matrix = tf.string_to_tensor(sentence).to(device)
+    spec = net.inference(text=phoneme_matrix, speaker_embeddings=reference_speaker_embedding_for_plot, return_duration_pitch_energy=False)
     spec = spec.transpose(0, 1).to("cpu").numpy()
-    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
         os.makedirs(os.path.join(save_dir, "spec"))
     fig, ax = plt.subplots(nrows=1, ncols=1)
@@ -36,13 +34,9 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
                  sr=16000,
                  cmap='GnBu',
                  y_axis='mel',
-                 x_axis=None,
+                 x_axis='time',
                  hop_length=256)
     ax.yaxis.set_visible(False)
-    ax.set_xticks(duration_splits, minor=True)
-    ax.xaxis.grid(True, which='minor')
-    ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence)[:-1])
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
@@ -60,17 +54,16 @@ def collate_and_pad(batch):
         pitch = list()
         energy = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
+            texts.append(torch.Tensor(datapoint[0]))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
             durations.append(torch.LongTensor(datapoint[4]))
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
-        return (
-            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1),
-            pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
+        return (pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+                torch.stack(speech_lens).squeeze(1),
+                pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
     elif len(batch[0]) == 8:
         # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, speaker_embedding]
         texts = list()
@@ -82,7 +75,7 @@ def collate_and_pad(batch):
         energy = list()
         speaker_embeddings = list()
         for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
+            texts.append(torch.Tensor(datapoint[0]))
             text_lens.append(torch.LongTensor([datapoint[1]]))
             speechs.append(torch.Tensor(datapoint[2]))
             speech_lens.append(torch.LongTensor([datapoint[3]]))
@@ -90,11 +83,10 @@ def collate_and_pad(batch):
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
             speaker_embeddings.append(torch.Tensor(datapoint[7]))
-        return (
-            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1),
-            pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
-            torch.stack(speaker_embeddings))
+        return (pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+                torch.stack(speech_lens).squeeze(1),
+                pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
+                torch.stack(speaker_embeddings))
 
 
 def train_loop(net,
@@ -150,7 +142,6 @@ def train_loop(net,
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     epoch = 0
     if path_to_checkpoint is not None:
-        # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
         if not fine_tune:

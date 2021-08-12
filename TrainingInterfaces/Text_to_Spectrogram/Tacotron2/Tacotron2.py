@@ -276,9 +276,6 @@ class Tacotron2(torch.nn.Module):
         """
         speaker_embedding = speaker_embeddings
 
-        # add eos at the last of sequence
-        text_tensor = F.pad(text_tensor, [0, 1], "constant", self.eos)
-
         # inference with teacher forcing
         if use_teacher_forcing:
             assert speech_tensor is not None, "speech must be provided with teacher forcing."

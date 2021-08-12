@@ -8,7 +8,7 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
-from Preprocessing.TextFrontend import TextFrontend
+from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 
 
 class Nancy_FastSpeech2(torch.nn.Module):
@@ -17,14 +17,8 @@ class Nancy_FastSpeech2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = None
         self.device = device
-        self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
-                                       use_explicit_eos=False, inference=True)
-        try:
-            self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt"),
-                                         idim=166, odim=80, spk_embed_dim=None, reduction_factor=1).to(torch.device(device))
-        except RuntimeError:
-            self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt"),
-                                         idim=166, odim=80, spk_embed_dim=None, reduction_factor=1, legacy_model=True).to(torch.device(device))
+        self.text2phone = ArticulatoryTextFrontend(language="en", inference=True)
+        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -32,12 +26,11 @@ class Nancy_FastSpeech2(torch.nn.Module):
 
     def forward(self, text, view=False):
         with torch.no_grad():
-            phones = self.text2phone.string_to_tensor(text).squeeze(0).long().to(torch.device(self.device))
+            phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones, speaker_embedding=self.speaker_embedding, return_duration_pitch_energy=True)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:
-            from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(nrows=2, ncols=1)
             ax[0].plot(wave.cpu().numpy())
             lbd.specshow(mel.cpu().numpy(),
@@ -45,15 +38,10 @@ class Nancy_FastSpeech2(torch.nn.Module):
                          sr=16000,
                          cmap='GnBu',
                          y_axis='mel',
-                         x_axis=None,
+                         x_axis='time',
                          hop_length=256)
             ax[0].yaxis.set_visible(False)
             ax[1].yaxis.set_visible(False)
-            duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-            ax[1].set_xticks(duration_splits, minor=True)
-            ax[1].xaxis.grid(True, which='minor')
-            ax[1].set_xticks(label_positions, minor=False)
-            ax[1].set_xticklabels(self.text2phone.get_phone_string(text))
             ax[0].set_title(text)
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()

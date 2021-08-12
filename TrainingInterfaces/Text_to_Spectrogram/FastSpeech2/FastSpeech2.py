@@ -37,8 +37,8 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def __init__(self,
                  # network structure related
-                 idim,
-                 odim,
+                 idim=25,
+                 odim=80,
                  adim=384,
                  aheads=4,
                  elayers=6,
@@ -118,7 +118,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.padding_idx = 0
 
         # define encoder
-        encoder_input_layer = torch.nn.Embedding(num_embeddings=idim, embedding_dim=adim, padding_idx=self.padding_idx)
+        encoder_input_layer = torch.nn.Linear(idim, adim)
         self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers,
                                  input_layer=encoder_input_layer, dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
@@ -204,25 +204,10 @@ class FastSpeech2(torch.nn.Module, ABC):
             Dict: Statistics to be monitored.
             Tensor: Weight value.
         """
-        text_tensors = text_tensors[:, : text_lengths.max()]  # for data-parallel
-        gold_speech = gold_speech[:, : speech_lengths.max()]  # for data-parallel
-        gold_durations = gold_durations[:, : text_lengths.max() + 1]  # for data-parallel
-        gold_pitch = gold_pitch[:, : text_lengths.max() + 1]  # for data-parallel
-        gold_energy = gold_energy[:, : text_lengths.max() + 1]  # for data-parallel
-
-        # Texts don't have the stop token in them because they are freshly made,
-        # but all of the other stuff is based on the teacher model, which already
-        # produces outputs for the stop token. So durations, pitch end energies all
-        # have one more element than the text.
-
-        # And now we add the missing EOS token also to the text.
-        text_tensors_including_eos = F.pad(text_tensors, [0, 1], "constant", self.padding_idx)
-        for i, l in enumerate(text_lengths):
-            text_tensors_including_eos[i, l] = self.eos
-        text_lengths_including_eos = text_lengths + 1
+        # Texts include EOS token from the teacher model already in this version
 
         # forward propagation
-        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors_including_eos, text_lengths_including_eos, gold_speech, speech_lengths,
+        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy, speaker_embeddings=speaker_embeddings,
                                                                         is_inference=False)
 
@@ -233,7 +218,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs, d_outs=d_outs, p_outs=p_outs,
                                                                          e_outs=e_outs, ys=gold_speech, ds=gold_durations, ps=gold_pitch, es=gold_energy,
-                                                                         ilens=text_lengths_including_eos, olens=speech_lengths)
+                                                                         ilens=text_lengths, olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
 
         if self.use_dtw_loss:
