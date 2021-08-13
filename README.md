@@ -53,7 +53,7 @@ replace the phonemizer, you don't need it. On most Linux environments it will be
 and you have the sufficient rights, you can install it by simply running
 
 ```
-apt-get install espeak
+apt-get install espeak-ng
 ```
 
 ## Creating a new Pipeline
