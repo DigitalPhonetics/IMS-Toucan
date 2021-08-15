@@ -10,10 +10,10 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-from Utility.utils import cumsum_durations
 
 from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
+from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 
 
