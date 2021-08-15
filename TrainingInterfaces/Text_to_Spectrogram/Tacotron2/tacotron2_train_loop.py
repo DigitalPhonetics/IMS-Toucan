@@ -23,7 +23,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     elif lang == "de":
         sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
     text = tf.string_to_tensor(sentence).to(device)
-    phones = tf.get_phone_string(sentence)
+    phones = tf.get_phone_string(sentence, for_labelling=True)
     model.eval()
     att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
@@ -32,7 +32,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     plt.xlabel("Inputs")
     plt.ylabel("Outputs")
-    plt.xticks(range(len(att[0])), labels=[phone for phone in phones])
+    plt.xticks(range(len(att[0])), labels=phones)
     plt.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))

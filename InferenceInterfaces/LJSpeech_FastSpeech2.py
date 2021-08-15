@@ -31,6 +31,7 @@ class LJSpeech_FastSpeech2(torch.nn.Module):
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:
+            from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(nrows=2, ncols=1)
             ax[0].plot(wave.cpu().numpy())
             lbd.specshow(mel.cpu().numpy(),
@@ -38,10 +39,15 @@ class LJSpeech_FastSpeech2(torch.nn.Module):
                          sr=16000,
                          cmap='GnBu',
                          y_axis='mel',
-                         x_axis='time',
+                         x_axis=None,
                          hop_length=256)
             ax[0].yaxis.set_visible(False)
             ax[1].yaxis.set_visible(False)
+            duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+            ax[1].set_xticks(duration_splits, minor=True)
+            ax[1].xaxis.grid(True, which='minor')
+            ax[1].set_xticks(label_positions, minor=False)
+            ax[1].set_xticklabels(self.text2phone.get_phone_string(text, for_labelling=True))
             ax[0].set_title(text)
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()
