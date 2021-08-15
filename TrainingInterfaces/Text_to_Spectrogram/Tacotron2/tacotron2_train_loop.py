@@ -25,7 +25,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
+    att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
     del tf
     plt.figure(figsize=(8, 4))
