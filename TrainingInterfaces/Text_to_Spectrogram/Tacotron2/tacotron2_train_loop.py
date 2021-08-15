@@ -22,7 +22,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
         sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
         sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
-    text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    text = tf.string_to_tensor(sentence).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
     att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding)[2].to("cpu")

@@ -73,7 +73,7 @@ class LJSpeech_Tacotron2(torch.nn.Module):
             sounddevice.wait()
 
     def plot_attention(self, sentence):
-        sentence_tensor = self.text2phone.string_to_tensor(sentence).squeeze(0).long().to(torch.device(self.device))
+        sentence_tensor = self.text2phone.string_to_tensor(sentence).to(torch.device(self.device))
         att = self.phone2mel(text=sentence_tensor, speaker_embedding=self.speaker_embedding, return_atts=True)
         fig, axes = plt.subplots(nrows=1, ncols=1)
         axes.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
