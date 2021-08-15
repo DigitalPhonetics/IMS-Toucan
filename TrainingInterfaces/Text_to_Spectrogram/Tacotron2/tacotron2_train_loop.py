@@ -32,7 +32,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     plt.xlabel("Inputs")
     plt.ylabel("Outputs")
-    plt.xticks(range(len(att[0])), labels=phones)
+    plt.xticks(range(len(att)), labels=phones)
     plt.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
