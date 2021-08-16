@@ -104,11 +104,12 @@ class ArticulatoryTextFrontend:
                 articulatory_features_full += articulatory_features_seg_sil_dim_added + \
                                               [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
         articulatory_features_full += articulatory_features_full[:-1] + \
-                                      [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]  # end of sentence
+                                      [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0]]  # cut out the silence that is added when splitting, then add end of sentence
         articulatory_features_tensor = torch.FloatTensor(articulatory_features_full)
 
         if view:
-            print("Phonemes: \n{}\n".format(phones))
+            print("Phonemes: \n{}\n".format(self.get_phone_string(text=text, include_eos_symbol=True, for_labelling=True)))
             print("Features: \n{}\n".format(articulatory_features_tensor))
             print(len(phones))
             print(articulatory_features_tensor.shape)
@@ -164,4 +165,4 @@ if __name__ == '__main__':
     # test an English utterance
     tfr_en = ArticulatoryTextFrontend(language="en")
     tfr_en.string_to_tensor("Hello, world!", view=True)
-    print(tfr_en.get_phone_string("But can it do diphones?", for_labelling=True))
+    print(tfr_en.get_phone_string("But can it do, diphones?", for_labelling=True))
