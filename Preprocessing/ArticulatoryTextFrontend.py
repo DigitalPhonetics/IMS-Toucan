@@ -94,24 +94,25 @@ class ArticulatoryTextFrontend:
         """
         phones = self.get_phone_string(text=text, include_eos_symbol=False)
         phone_segments_between_pauses = phones.split("~")
-        articulatory_features_full = []
+        articulatory_features_full_utt = []
         for phone_segment_between_pauses in phone_segments_between_pauses:
+            articulatory_features_between_pauses = []
             for word in phone_segment_between_pauses.split():
                 articulatory_features_seg = self.feature_table.word_to_vector_list(word, numeric=True)
                 articulatory_features_seg_sil_dim_added = []
                 for articulatory_features in articulatory_features_seg:
                     articulatory_features_seg_sil_dim_added.append(articulatory_features + [0])
-                articulatory_features_full += articulatory_features_seg_sil_dim_added + \
-                                              [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
-        articulatory_features_full = articulatory_features_full[:-1] + \
-                                     [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                       0]]  # cut out the silence that is added when splitting, then add end of sentence
-        articulatory_features_tensor = torch.FloatTensor(articulatory_features_full)
+                articulatory_features_between_pauses += articulatory_features_seg_sil_dim_added
+            articulatory_features_full_utt += articulatory_features_between_pauses + [
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
+        articulatory_features_full_utt = articulatory_features_full_utt[:-1] + \
+                                         [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                           0]]  # cut out the silence that is added when splitting, then add end of sentence
+        articulatory_features_tensor = torch.FloatTensor(articulatory_features_full_utt)
 
         if view:
             print("Phonemes: \n{}\n".format(self.get_phone_string(text=text, include_eos_symbol=True, for_labelling=True)))
             print("Features: \n{}\n".format(articulatory_features_tensor))
-            print(len(phones))
             print(articulatory_features_tensor.shape)
         return articulatory_features_tensor
 
@@ -169,5 +170,4 @@ def english_text_expansion(text):
 if __name__ == '__main__':
     # test an English utterance
     tfr_en = ArticulatoryTextFrontend(language="en")
-    tfr_en.string_to_tensor("Hello, world!", view=True)
-    print(tfr_en.get_phone_string("But can it do, diphones", for_labelling=True))
+    tfr_en.string_to_tensor("This is a complex sentence, it even has a pause!", view=True)
