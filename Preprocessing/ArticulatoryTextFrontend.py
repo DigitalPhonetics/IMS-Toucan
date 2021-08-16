@@ -103,9 +103,9 @@ class ArticulatoryTextFrontend:
                     articulatory_features_seg_sil_dim_added.append(articulatory_features + [0])
                 articulatory_features_full += articulatory_features_seg_sil_dim_added + \
                                               [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
-        articulatory_features_full += articulatory_features_full[:-1] + \
-                                      [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                        0]]  # cut out the silence that is added when splitting, then add end of sentence
+        articulatory_features_full = articulatory_features_full[:-1] + \
+                                     [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                       0]]  # cut out the silence that is added when splitting, then add end of sentence
         articulatory_features_tensor = torch.FloatTensor(articulatory_features_full)
 
         if view:
@@ -139,10 +139,15 @@ class ArticulatoryTextFrontend:
         if include_eos_symbol:
             phones += "#"
         if for_labelling:
-            segments = list()
-            for word in phones.split():
-                segments += self.feature_table.ipa_segs(word)
-            return segments + ['#']
+            phone_segments_between_pauses = phones.split("~")
+            ipa_segments_full_utt = []
+            for phone_segment_between_pauses in phone_segments_between_pauses:
+                for word in phone_segment_between_pauses.split():
+                    ipa_segment_of_word = self.feature_table.ipa_segs(word)
+                    ipa_segments_full_utt += ipa_segment_of_word
+                ipa_segments_full_utt += ['~']
+            ipa_segments_full_utt = ipa_segments_full_utt[:-1] + ['#']
+            return ipa_segments_full_utt
         return phones
 
 
@@ -165,4 +170,4 @@ if __name__ == '__main__':
     # test an English utterance
     tfr_en = ArticulatoryTextFrontend(language="en")
     tfr_en.string_to_tensor("Hello, world!", view=True)
-    print(tfr_en.get_phone_string("But can it do, diphones?", for_labelling=True))
+    print(tfr_en.get_phone_string("But can it do, diphones", for_labelling=True))
