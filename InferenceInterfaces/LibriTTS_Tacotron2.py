@@ -80,7 +80,7 @@ class LibriTTS_Tacotron2(torch.nn.Module):
         axes.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
         axes.set_title("{}".format(sentence))
         phones = self.text2phone.get_phone_string(sentence, for_labelling=True)
-        plt.xticks(range(len(att)), labels=phones)
+        plt.xticks(range(len(att[0])), labels=phones)
         axes.xaxis.set_visible(True)
         axes.yaxis.set_visible(False)
         plt.tight_layout()
