@@ -4,13 +4,13 @@ IMS-Toucan is a toolkit for teaching, training and using state-of-the-art Speech
 **Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
 PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
 
-The PyTorch Modules of [Tacotron2](https://arxiv.org/abs/1712.05884)
-and [FastSpeech2](https://arxiv.org/abs/2006.04558) are taken from
+The PyTorch Modules of [Tacotron 2](https://arxiv.org/abs/1712.05884)
+and [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
 [ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of [HiFiGAN](https://arxiv.org/abs/2010.05646) are taken
 from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
 which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
 
-For a version of the toolkit that includes TransformerTTS instead of Tacotron2 and MelGAN instead of HiFiGAN, check out
+For a version of the toolkit that includes TransformerTTS instead of Tacotron 2 and MelGAN instead of HiFiGAN, check out
 the TransformerTTS and MelGAN branch. They are separated to keep the code clean, simple and minimal.
 
 ## Demonstration
@@ -20,7 +20,7 @@ produced by Tacotron 2 combined with HiFi-GAN, trained on
 [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) using this toolkit.
 
 [Here is some speech](https://drive.google.com/file/d/1mZ1LvTlY6pJ5ZQ4UXZ9jbzB651mufBrB/view?usp=sharing)
-produced by FastSpeech2 and MelGAN trained on [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)
+produced by FastSpeech 2 and MelGAN trained on [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)
 using this toolkit.
 
 And [here is a sentence](https://drive.google.com/file/d/1FT49Jf0yyibwMDbsEJEO9mjwHkHRIGXc/view?usp=sharing)
@@ -28,7 +28,7 @@ produced by TransformerTTS and MelGAN trained on [Thorsten](https://github.com/t
 using this toolkit.
 
 [Here is some speech](https://drive.google.com/file/d/14nPo2o1VKtWLPGF7e_0TxL8XGI3n7tAs/view?usp=sharing)
-produced by a multi-speaker FastSpeech2 with MelGAN trained on
+produced by a multi-speaker FastSpeech 2 with MelGAN trained on
 [LibriTTS](https://research.google/tools/datasets/libri-tts/) using this toolkit. Fans of the videogame Portal may
 recognize who was used as the reference speaker for this utterance.
 
@@ -52,9 +52,9 @@ If you want to use multi-speaker synthesis, you will need a speaker embedding fu
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. In the
 current version of the toolkit it is included by default and should require no further action.
 
-And finally you need to have espeak installed on your system, because it is used as backend for the phonemizer. If you
-replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is not,
-and you have the sufficient rights, you can install it by simply running
+And finally you need to have espeak-ng installed on your system, because it is used as backend for the phonemizer. If
+you replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is
+not, and you have the sufficient rights, you can install it by simply running
 
 ```
 apt-get install espeak-ng
@@ -63,9 +63,9 @@ apt-get install espeak-ng
 ## Creating a new Pipeline
 
 To create a new pipeline to train a HiFiGAN vocoder, you only need a set of audio files. To create a new pipeline for a
-Tacotron2 you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech2, you need audio
-files, corresponding text labels, and an already trained Tacotron2 model to estimate the duration information that
-FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
+Tacotron 2 you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech 2, you need
+audio files, corresponding text labels, and an already trained Tacotron 2 model to estimate the duration information
+that FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
 
 #### Build a HiFiGAN Pipeline
 
@@ -88,7 +88,7 @@ Now you need to add your newly created pipeline to the pipeline dictionary in th
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And just like that
 you're done.
 
-#### Build a Tacotron2 Pipeline
+#### Build a Tacotron 2 Pipeline
 
 In the directory called
 *Utility* there is a file called
@@ -97,7 +97,7 @@ absolute paths to each of the audio files in your dataset as strings as the keys
 corresponding audios as the values.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Tacotron2 in its name.
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Tacotron 2 in its name.
 If your dataset is single-speaker, choose any that is not LibriTTS. If your dataset is multi-speaker, choose the one for
 LibriTTS as your template. We will use this copy as reference and only make the necessary changes to use the new
 dataset. Import the function you have just written as
@@ -126,16 +126,16 @@ Once this is done, we are almost done, now we just need to make it available to 
 *run* function from the pipeline you just created and give it a speaking name. Now in the
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And that's it.
 
-#### Build a FastSpeech2 Pipeline
+#### Build a FastSpeech 2 Pipeline
 
-Most of this is exactly analogous to building a Tacotron2 pipeline. So to keep this brief, this section will only
+Most of this is exactly analogous to building a Tacotron 2 pipeline. So to keep this brief, this section will only
 mention the additional things you have to do.
 
 In your new pipeline file, look out for the line in which the
-*acoustic_model* is loaded. Change the path to the checkpoint of a Tacotron2 model that you trained on the same dataset
+*acoustic_model* is loaded. Change the path to the checkpoint of a Tacotron 2 model that you trained on the same dataset
 previously. This is used to estimate phoneme-durations based on knowledge-distillation.
 
-Everything else is exactly like creating a Tacotron2 pipeline, except that in the training_loop, instead of attentions
+Everything else is exactly like creating a Tacotron 2 pipeline, except that in the training_loop, instead of attentions
 plots, spectrograms are plotted to visualize training progress. So there you may need to add a sentence if you are using
 a new language in the function called
 *plot_progress_spec*.
@@ -174,10 +174,10 @@ should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
-after 100,000 update steps have been made by default for Tacotron2, 300,000 for FastSpeech2, and after 500,000 steps for
-HiFiGAN. Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify that
-everything works on small tests before running the big thing. If you want to stop earlier, just kill the process, since
-everything is daemonic all the child-processes should die with it.
+after 100,000 update steps have been made by default for Tacotron 2, 300,000 for FastSpeech 2, and after 500,000 steps
+for HiFiGAN. Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify
+that everything works on small tests before running the big thing. If you want to stop earlier, just kill the process,
+since everything is daemonic all the child-processes should die with it.
 
 After training is complete, it is recommended to run
 *run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it
@@ -223,7 +223,7 @@ An
   wave it created from that spectrogram. So all the representations can be seen, text to phoneme, phoneme to spectrogram
   and finally spectrogram to wave.
 
-- Additionally, Tacotron2
+- Additionally, Tacotron 2
   *InferenceInterfaces* offer a method called
   *plot_attention*. This will take a string, synthesize it and show a plot of the attention matrix, which can be useful
   to gain insights.
@@ -254,7 +254,7 @@ Here are a few points that were brought up by users:
 
 ## Example Pipelines available
 
-| Dataset                                                                              | Language | Single or Multi | TransformerTTS | Tacotron2 | FastSpeech2 | 
+| Dataset                                                                              | Language | Single or Multi | TransformerTTS | Tacotron 2 | FastSpeech 2 | 
 | -------------------------------------------------------------------------------------|----------|-----------------|:--------------:|:---------:|:-----------:|
 | [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)              | German   | Single Speaker | ✅              | ✅        |✅           |
 | [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅              | ✅        |✅           |

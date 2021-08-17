@@ -11,39 +11,31 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastS
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 
 
-def load_net_taco(path, idim=166, odim=80):
+def load_net_taco(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Tacotron2(idim=idim, odim=odim, spk_embed_dim=None)
+    net = Tacotron2()
     net.load_state_dict(check_dict["model"])
     return net
 
 
-def load_net_fast(path, idim=166, odim=80):
+def load_net_fast(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=None)
-    try:
-        net.load_state_dict(check_dict["model"])
-    except RuntimeError:
-        net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=None, legacy_model=True)
-        net.load_state_dict(check_dict["model"])
-    return net
-
-
-def load_net_taco_multi(path, idim=166, odim=80):
-    check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Tacotron2(idim=idim, odim=odim, spk_embed_dim=256)
+    net = FastSpeech2()
     net.load_state_dict(check_dict["model"])
     return net
 
 
-def load_net_fast_multi(path, idim=166, odim=80):
+def load_net_taco_multi(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=256)
-    try:
-        net.load_state_dict(check_dict["model"])
-    except RuntimeError:
-        net = FastSpeech2(idim=idim, odim=odim, spk_embed_dim=256, legacy_model=True)
-        net.load_state_dict(check_dict["model"])
+    net = Tacotron2(spk_embed_dim=256)
+    net.load_state_dict(check_dict["model"])
+    return net
+
+
+def load_net_fast_multi(path):
+    check_dict = torch.load(path, map_location=torch.device("cpu"))
+    net = FastSpeech2(spk_embed_dim=256)
+    net.load_state_dict(check_dict["model"])
     return net
 
 
