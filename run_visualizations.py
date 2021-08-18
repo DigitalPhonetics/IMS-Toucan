@@ -56,8 +56,3 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     show_all_models_params()
-    from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
-
-    model = Nancy_Tacotron2()
-    model.plot_attention("This is a complex sentence, it even has a pause!")
-    model.read_aloud("hello world", view=True)
