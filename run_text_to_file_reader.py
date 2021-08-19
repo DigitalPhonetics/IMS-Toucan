@@ -57,32 +57,4 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="fast_libri",
-               sentence=["Hello world, I am a synthesis voice."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/fast_libri.wav")
-
-    read_texts(model_id="fast_nancy",
-               sentence=["Hello world, I am a synthesis voice."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/fast_nancy.wav")
-
-    read_texts(model_id="fast_lj",
-               sentence=["Hello world, I am a synthesis voice."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/fast_lj.wav")
-
-    read_texts(model_id="fast_thorsten",
-               sentence=["Hallo Welt, ich bin eine Synthese-Stimme."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/fast_thorsten.wav")
-
-    read_texts(model_id="taco_lj",
-               sentence=["Betty Botter bought some butter, but she said the butter's bitter."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/trans_lj.wav")
+    read_harvard_sentences(model_id="taco_nancy", device=exec_device)
