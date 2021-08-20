@@ -7,7 +7,6 @@ from Layers.RNNAttention import AttForwardTA
 from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import make_non_pad_mask
 

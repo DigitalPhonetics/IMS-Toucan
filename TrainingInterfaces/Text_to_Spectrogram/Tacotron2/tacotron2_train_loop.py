@@ -126,7 +126,7 @@ def train_loop(net,
     net.train()
     if fine_tune:
         lr = lr * 0.01
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
