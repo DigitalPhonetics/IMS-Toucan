@@ -56,6 +56,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                use_speaker_embedding=True,
                lang="en",
                lr=0.002,
-               warmup_steps=10000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

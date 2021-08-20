@@ -11,7 +11,6 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
-from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 
 
@@ -87,7 +86,6 @@ def train_loop(net,
                use_speaker_embedding=False,
                lang="en",
                lr=0.001,
-               warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False):
     """
@@ -127,7 +125,6 @@ def train_loop(net,
     if fine_tune:
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
-    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
@@ -135,7 +132,6 @@ def train_loop(net,
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scaler.load_state_dict(check_dict["scaler"])
-            scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
     while True:
@@ -157,7 +153,6 @@ def train_loop(net,
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             scaler.step(optimizer)
             scaler.update()
-            scheduler.step()
         with torch.no_grad():
             net.eval()
             if epoch % epochs_per_save == 0:
@@ -166,7 +161,6 @@ def train_loop(net,
                     "optimizer"   : optimizer.state_dict(),
                     "scaler"      : scaler.state_dict(),
                     "step_counter": step_counter,
-                    "scheduler"   : scheduler.state_dict()
                     }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 plot_attention(model=net,

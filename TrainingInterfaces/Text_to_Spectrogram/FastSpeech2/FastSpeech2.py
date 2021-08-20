@@ -73,7 +73,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
                  energy_embed_dropout=0.0,
-                 stop_gradient_from_energy_predictor=True,
+                 stop_gradient_from_energy_predictor=False,
                  # pitch predictor
                  pitch_predictor_layers=5,
                  pitch_predictor_chans=256,
