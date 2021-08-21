@@ -37,7 +37,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="location",
+            atype="forward_ta",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -64,9 +64,10 @@ class Tacotron2(torch.nn.Module):
             bce_pos_weight=10.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
-            guided_attn_loss_sigma=0.4,
-            guided_attn_loss_lambda=25.0,
+            guided_attn_loss_sigma=0.3,
+            guided_attn_loss_lambda=20.0,
             guided_attn_loss_lambda_later=1.0,
+            guided_attn_loss_sigma_later=0.4,
             use_dtw_loss=False):
         super().__init__()
 
@@ -152,7 +153,7 @@ class Tacotron2(torch.nn.Module):
         if self.use_guided_attn_loss:
             self.attn_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
                                                  alpha=guided_attn_loss_lambda, )
-            self.attn_loss_later = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+            self.attn_loss_later = GuidedAttentionLoss(sigma=guided_attn_loss_sigma_later,
                                                        alpha=guided_attn_loss_lambda_later, )
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
@@ -168,6 +169,7 @@ class Tacotron2(torch.nn.Module):
         Calculate forward propagation.
 
         Args:
+            step: Indicator for when to relax the attention constraint
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
