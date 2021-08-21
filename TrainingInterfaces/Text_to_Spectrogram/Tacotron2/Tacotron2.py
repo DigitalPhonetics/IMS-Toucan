@@ -65,7 +65,8 @@ class Tacotron2(torch.nn.Module):
             loss_type="L1+L2",
             use_guided_attn_loss=True,
             guided_attn_loss_sigma=0.4,
-            guided_attn_loss_lambda=1.0,
+            guided_attn_loss_lambda=25.0,
+            guided_attn_loss_lambda_later=1.0,
             use_dtw_loss=False):
         super().__init__()
 
@@ -151,6 +152,8 @@ class Tacotron2(torch.nn.Module):
         if self.use_guided_attn_loss:
             self.attn_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
                                                  alpha=guided_attn_loss_lambda, )
+            self.attn_loss_later = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                       alpha=guided_attn_loss_lambda_later, )
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
@@ -159,7 +162,8 @@ class Tacotron2(torch.nn.Module):
                 text_lengths: torch.Tensor,
                 speech: torch.Tensor,
                 speech_lengths: torch.Tensor,
-                speaker_embeddings: torch.Tensor = None, ):
+                speaker_embeddings: torch.Tensor = None,
+                step=None):
         """
         Calculate forward propagation.
 
@@ -227,7 +231,14 @@ class Tacotron2(torch.nn.Module):
                 speech_lengths_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 speech_lengths_in = speech_lengths
-            attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
+
+            if step is not None:
+                if step < 20000:
+                    attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
+                else:
+                    attn_loss = self.attn_loss_later(att_ws, text_lengths, speech_lengths_in)
+            else:
+                attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
             loss = loss + attn_loss
 
         return loss
