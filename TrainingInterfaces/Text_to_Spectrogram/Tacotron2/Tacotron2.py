@@ -236,7 +236,7 @@ class Tacotron2(torch.nn.Module):
                 speech_lengths_in = speech_lengths
 
             if step is not None:
-                if step < 20000:
+                if step < 5000:
                     attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
                 else:
                     attn_loss = self.attn_loss_later(att_ws, text_lengths, speech_lengths_in)
