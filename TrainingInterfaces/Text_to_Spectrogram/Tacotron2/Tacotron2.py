@@ -68,7 +68,8 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_lambda=10.0,
             guided_attn_loss_lambda_later=1.0,
             guided_attn_loss_sigma_later=0.4,
-            use_dtw_loss=False):
+            use_dtw_loss=False,
+            input_layer_type="complex"):
         super().__init__()
 
         # store hyperparameters
@@ -97,7 +98,7 @@ class Tacotron2(torch.nn.Module):
 
         # define network modules
         self.enc = Encoder(idim=idim,
-                           input_layer="linear",
+                           input_layer=input_layer_type,
                            embed_dim=embed_dim,
                            elayers=elayers,
                            eunits=eunits,
