@@ -64,8 +64,8 @@ class Tacotron2(torch.nn.Module):
             bce_pos_weight=10.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
-            guided_attn_loss_sigma=0.3,
-            guided_attn_loss_lambda=20.0,
+            guided_attn_loss_sigma=0.2,
+            guided_attn_loss_lambda=10.0,
             guided_attn_loss_lambda_later=1.0,
             guided_attn_loss_sigma_later=0.4,
             use_dtw_loss=False):
