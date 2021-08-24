@@ -141,15 +141,23 @@ def train_loop(net,
         for batch in tqdm(train_loader):
             with autocast():
                 if not use_speaker_embedding:
-                    train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                     batch[3].to(device), step_counter)
+                    train_loss = net(text=batch[0].to(device),
+                                     text_lengths=batch[1].to(device),
+                                     speech=batch[2].to(device),
+                                     speech_lengths=batch[3].to(device),
+                                     speaker_embeddings=None,
+                                     step=step_counter)
                 else:
-                    train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                     batch[3].to(device), batch[4].to(device), step_counter)
+                    train_loss = net(text=batch[0].to(device),
+                                     text_lengths=batch[1].to(device),
+                                     speech=batch[2].to(device),
+                                     speech_lengths=batch[3].to(device),
+                                     speaker_embeddings=batch[4].to(device),
+                                     step=step_counter)
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
-            # if step_counter - 1 == net.switch_on_prenet_step:
+            # if step_counter == net.switch_on_prenet_step:
             #     optimizer.add_param_group(net.dec.prenet.parameters())
             print(step_counter)
             print(net.dec.prenet)
