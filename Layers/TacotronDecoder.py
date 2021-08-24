@@ -355,7 +355,6 @@ class Decoder(torch.nn.Module):
                                                  dropout_rate=self.prenet_dropout_rate, ),
                                           torch.nn.Linear(self.prenet_n_units, self.odim))
         initialize(self.prenet, "xavier_uniform")
-        print("prenet should now be added")
 
     def _zero_state(self, hs):
         init_hs = hs.new_zeros(hs.size(0), self.lstm[0].hidden_size)
