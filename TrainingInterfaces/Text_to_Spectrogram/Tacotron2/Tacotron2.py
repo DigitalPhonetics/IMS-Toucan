@@ -72,7 +72,7 @@ class Tacotron2(torch.nn.Module):
             use_dtw_loss=False,
             input_layer_type="linear",
             start_with_prenet=False,
-            switch_on_prenet_step=20000):
+            switch_on_prenet_step=1000):
         super().__init__()
 
         # store hyperparameters
@@ -194,6 +194,11 @@ class Tacotron2(torch.nn.Module):
         # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
         # eos is [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+        if step is not None:
+            if step > self.switch_on_prenet_step and not self.prenet_on:
+                self.prenet_on = True
+                self.dec.add_prenet()
+
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
         labels = F.pad(labels, [0, 1], "constant", 1.0)
@@ -248,9 +253,6 @@ class Tacotron2(torch.nn.Module):
                     attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
                 else:
                     attn_loss = self.attn_loss_later(att_ws, text_lengths, speech_lengths_in)
-                if step > self.switch_on_prenet_step and not self.prenet_on:
-                    self.prenet_on = True
-                    self.dec.add_prenet()
             else:
                 attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
             loss = loss + attn_loss

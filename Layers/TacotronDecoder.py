@@ -298,7 +298,7 @@ class Decoder(torch.nn.Module):
             self.use_att_extra_inputs = False
 
         # define lstm network
-        prenet_units = prenet_units if prenet_layers != 0 else odim
+        prenet_units = prenet_units if prenet_layers != 0 and start_with_prenet else odim
         self.lstm = torch.nn.ModuleList()
         for layer in range(dlayers):
             iunits = idim + prenet_units if layer == 0 else dunits
@@ -346,11 +346,14 @@ class Decoder(torch.nn.Module):
         teacher forcing to predict the next output during training.
         So it can make sense to use no prenet first and then add a
         prenet after a few thousand steps.
+        Have to project the size to the decoder LSTM output though
+        in order to get consistent shapes.
         """
-        self.prenet = Prenet(idim=self.prenet_idim,
-                             n_layers=self.prenet_n_layers,
-                             n_units=self.prenet_n_units,
-                             dropout_rate=self.prenet_dropout_rate, )
+        self.prenet = torch.nn.Sequential(Prenet(idim=self.prenet_idim,
+                                                 n_layers=self.prenet_n_layers,
+                                                 n_units=self.prenet_n_units,
+                                                 dropout_rate=self.prenet_dropout_rate, ),
+                                          torch.nn.Linear(self.prenet_n_units, self.odim))
         initialize(self.prenet, "xavier_uniform")
 
     def _zero_state(self, hs):
