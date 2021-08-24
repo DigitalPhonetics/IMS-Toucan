@@ -37,7 +37,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="forward_ta",
+            atype="location",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -69,7 +69,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_lambda_later=1.0,
             guided_attn_loss_sigma_later=0.4,
             use_dtw_loss=False,
-            input_layer_type="complex"):
+            input_layer_type="linear"):
         super().__init__()
 
         # store hyperparameters

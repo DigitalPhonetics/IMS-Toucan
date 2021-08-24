@@ -106,8 +106,8 @@ class ArticulatoryTextFrontend:
             articulatory_features_full_utt += articulatory_features_between_pauses + [
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
         articulatory_features_full_utt = articulatory_features_full_utt[:-1] + \
-                                         [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                           0]]  # cut out the silence that is added when splitting, then add end of sentence
+                                         [[-100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100,
+                                           -100, -100, -100, -100, -100, 100]]  # cut out the silence that is added when splitting, then add end of sentence
         articulatory_features_tensor = torch.FloatTensor(articulatory_features_full_utt)
 
         if view:

@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_Nancy")
+        save_dir = os.path.join("Models", "Tacotron2_Nancy_eos_no_prenet")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -40,10 +40,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 lang="en",
                                 min_len_in_seconds=1,
                                 max_len_in_seconds=10,
-                                rebuild_cache=False,
+                                rebuild_cache=True,
                                 cut_silences=True)
 
-    model = Tacotron2()
+    model = Tacotron2(prenet_layers=0)
 
     print("Training model")
     train_loop(net=model,
