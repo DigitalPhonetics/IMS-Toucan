@@ -72,7 +72,7 @@ class Tacotron2(torch.nn.Module):
             use_dtw_loss=False,
             input_layer_type="linear",
             start_with_prenet=False,
-            switch_on_prenet_step=1000):
+            switch_on_prenet_step=10):
         super().__init__()
 
         # store hyperparameters
