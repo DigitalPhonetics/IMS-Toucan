@@ -97,7 +97,7 @@ def make_non_pad_mask(lengths, xs=None, length_dim=-1):
     return ~make_pad_mask(lengths, xs, length_dim)
 
 
-def initialize(model: torch.nn.Module, init):
+def initialize(model, init):
     """
     Initialize weights of a neural network module.
 

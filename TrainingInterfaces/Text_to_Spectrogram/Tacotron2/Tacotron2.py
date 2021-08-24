@@ -13,6 +13,7 @@ from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
+from Utility.utils import initialize
 from Utility.utils import make_pad_mask
 
 
@@ -37,7 +38,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="location",
+            atype="forward_ta",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -69,11 +70,15 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_lambda_later=1.0,
             guided_attn_loss_sigma_later=0.4,
             use_dtw_loss=False,
-            input_layer_type="linear"):
+            input_layer_type="linear",
+            start_with_prenet=False,
+            switch_on_prenet_step=20000):
         super().__init__()
 
         # store hyperparameters
         self.use_dtw_loss = use_dtw_loss
+        self.switch_on_prenet_step = switch_on_prenet_step
+        self.prenet_on = start_with_prenet
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
@@ -147,7 +152,8 @@ class Tacotron2(torch.nn.Module):
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
                            zoneout_rate=zoneout_rate,
-                           reduction_factor=reduction_factor, )
+                           reduction_factor=reduction_factor,
+                           start_with_prenet=start_with_prenet)
         self.taco2_loss = Tacotron2Loss(use_masking=use_masking,
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
@@ -158,6 +164,8 @@ class Tacotron2(torch.nn.Module):
                                                        alpha=guided_attn_loss_lambda_later, )
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
+
+        initialize(self, "xavier_uniform")
 
     def forward(self,
                 text: torch.Tensor,
@@ -240,6 +248,9 @@ class Tacotron2(torch.nn.Module):
                     attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
                 else:
                     attn_loss = self.attn_loss_later(att_ws, text_lengths, speech_lengths_in)
+                if step > self.switch_on_prenet_step and not self.prenet_on:
+                    self.prenet_on = True
+                    self.dec.add_prenet()
             else:
                 attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
             loss = loss + attn_loss
@@ -272,8 +283,8 @@ class Tacotron2(torch.nn.Module):
         Generate the sequence of features given the sequences of characters.
 
         Args:
-            text (LongTensor): Input sequence of characters (T,).
-            speech (Tensor, optional): Feature sequence to extract style (N, idim).
+            text_tensor (LongTensor): Input sequence of characters (T,).
+            speech_tensor (Tensor, optional): Feature sequence to extract style (N, idim).
             speaker_embeddings (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
             threshold (float, optional): Threshold in inference.
             minlenratio (float, optional): Minimum length ratio in inference.

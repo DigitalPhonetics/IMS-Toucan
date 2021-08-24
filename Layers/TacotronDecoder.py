@@ -7,6 +7,7 @@ import torch
 import torch.nn.functional as F
 
 from Layers.RNNAttention import AttForwardTA
+from Utility.utils import initialize
 
 
 def decoder_init(m):
@@ -252,7 +253,8 @@ class Decoder(torch.nn.Module):
                  use_concate=True,
                  dropout_rate=0.5,
                  zoneout_rate=0.1,
-                 reduction_factor=1, ):
+                 reduction_factor=1,
+                 start_with_prenet=True):
         """
         Initialize Tacotron2 decoder module.
 
@@ -306,11 +308,15 @@ class Decoder(torch.nn.Module):
             self.lstm += [lstm]
 
         # define prenet
-        if prenet_layers > 0:
-            self.prenet = Prenet(idim=odim,
-                                 n_layers=prenet_layers,
-                                 n_units=prenet_units,
-                                 dropout_rate=dropout_rate, )
+        self.prenet_idim = odim
+        self.prenet_n_layers = prenet_layers
+        self.prenet_n_units = prenet_units
+        self.prenet_dropout_rate = dropout_rate
+        if start_with_prenet and prenet_layers > 0:
+            self.prenet = Prenet(idim=self.prenet_idim,
+                                 n_layers=self.prenet_n_layers,
+                                 n_units=self.prenet_n_units,
+                                 dropout_rate=self.prenet_dropout_rate, )
         else:
             self.prenet = None
 
@@ -333,6 +339,19 @@ class Decoder(torch.nn.Module):
 
         # initialize
         self.apply(decoder_init)
+
+    def add_prenet(self):
+        """
+        With a strong prenet, the model can learn to overly rely on
+        teacher forcing to predict the next output during training.
+        So it can make sense to use no prenet first and then add a
+        prenet after a few thousand steps.
+        """
+        self.prenet = Prenet(idim=self.prenet_idim,
+                             n_layers=self.prenet_n_layers,
+                             n_units=self.prenet_n_units,
+                             dropout_rate=self.prenet_dropout_rate, )
+        initialize(self.prenet, "xavier_uniform")
 
     def _zero_state(self, hs):
         init_hs = hs.new_zeros(hs.size(0), self.lstm[0].hidden_size)
