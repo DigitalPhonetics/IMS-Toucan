@@ -197,6 +197,7 @@ class Tacotron2(torch.nn.Module):
         if step is not None:
             if step > self.switch_on_prenet_step and not self.prenet_on:
                 self.prenet_on = True
+                print("adding prenet")
                 self.dec.add_prenet()
 
         # make labels for stop prediction
