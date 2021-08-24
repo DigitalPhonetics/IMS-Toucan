@@ -158,7 +158,7 @@ def train_loop(net,
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
             if step_counter - 1 == net.switch_on_prenet_step:
-                optimizer.add_param_group({'prenet': net.dec.prenet.parameters()})
+                optimizer.add_param_group({'params': net.dec.prenet.parameters()})
             step_counter += 1
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             scaler.step(optimizer)
