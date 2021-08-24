@@ -198,7 +198,7 @@ class Tacotron2(torch.nn.Module):
             if step > self.switch_on_prenet_step and not self.prenet_on:
                 self.prenet_on = True
                 self.dec.add_prenet()
-                self.dec.prenet.to(self.device)
+                self.dec.prenet.to(text.device)
 
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
