@@ -45,7 +45,7 @@ class Tacotron2(torch.nn.Module):
             cumulate_att_w=True,
             dlayers=2,
             dunits=1024,
-            prenet_layers=2,
+            prenet_layers=0,  # default used to be 2
             prenet_units=256,
             postnet_layers=5,
             postnet_chans=512,
@@ -72,8 +72,7 @@ class Tacotron2(torch.nn.Module):
             use_dtw_loss=False,
             input_layer_type="linear",
             start_with_prenet=False,
-            switch_on_prenet_step=999999  # to disable prenet entirely, set this to a greater step than you are training for.
-            ):
+            switch_on_prenet_step=20000):
         super().__init__()
 
         # store hyperparameters

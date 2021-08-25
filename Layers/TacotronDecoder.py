@@ -349,12 +349,13 @@ class Decoder(torch.nn.Module):
         Have to project the size to the decoder LSTM output though
         in order to get consistent shapes.
         """
-        self.prenet = torch.nn.Sequential(Prenet(idim=self.prenet_idim,
-                                                 n_layers=self.prenet_n_layers,
-                                                 n_units=self.prenet_n_units,
-                                                 dropout_rate=self.prenet_dropout_rate, ),
-                                          torch.nn.Linear(self.prenet_n_units, self.odim))
-        initialize(self.prenet, "xavier_uniform")
+        if self.prenet_n_layers > 0:
+            self.prenet = torch.nn.Sequential(Prenet(idim=self.prenet_idim,
+                                                     n_layers=self.prenet_n_layers,
+                                                     n_units=self.prenet_n_units,
+                                                     dropout_rate=self.prenet_dropout_rate, ),
+                                              torch.nn.Linear(self.prenet_n_units, self.odim))
+            initialize(self.prenet, "xavier_uniform")
 
     def _zero_state(self, hs):
         init_hs = hs.new_zeros(hs.size(0), self.lstm[0].hidden_size)
