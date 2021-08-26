@@ -63,12 +63,9 @@ class Encoder(torch.nn.Module):
 
         # define network layer modules
         if input_layer == "linear":
-            self.embed = torch.nn.Linear(idim, econv_chans)
-        elif input_layer == "complex":
-            self.embed = torch.nn.Sequential(torch.nn.Linear(idim, idim * 2),
+            self.embed = torch.nn.Sequential(torch.nn.Linear(idim, 50),
                                              torch.nn.Tanh(),
-                                             torch.nn.Linear(idim * 2, econv_chans),
-                                             torch.nn.Tanh())
+                                             torch.nn.Linear(50, econv_chans))
         elif input_layer == "embed":
             self.embed = torch.nn.Embedding(idim, embed_dim, padding_idx=padding_idx)
         else:
@@ -108,7 +105,7 @@ class Encoder(torch.nn.Module):
         # initialize
         self.apply(encoder_init)
 
-    def forward(self, xs, ilens=None):
+    def forward(self, xs, ilens=None, frozen_embedding=False):
         """
         Calculate forward propagation.
 
@@ -123,6 +120,8 @@ class Encoder(torch.nn.Module):
             LongTensor: Batch of lengths of each sequence (B,)
         """
         xs = self.embed(xs).transpose(1, 2)
+        if frozen_embedding:
+            xs = xs.detach()
         if self.convs is not None:
             for i in range(len(self.convs)):
                 if self.use_residual:

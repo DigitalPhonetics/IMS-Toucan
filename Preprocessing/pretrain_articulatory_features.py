@@ -42,3 +42,5 @@ for _ in range(6000):
             optimizer.zero_grad()
             distance.backward()
             optimizer.step()
+
+torch.save({"embedding_weights": embedding.state_dict()}, "embedding_pretrained_weights.pt")

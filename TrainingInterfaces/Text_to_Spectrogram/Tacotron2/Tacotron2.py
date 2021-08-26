@@ -72,13 +72,17 @@ class Tacotron2(torch.nn.Module):
             use_dtw_loss=False,
             input_layer_type="linear",
             start_with_prenet=True,
-            switch_on_prenet_step=20000):
+            switch_on_prenet_step=20000,  # 20% into the training progress is recommended
+            freeze_embedding_until=20000  # pass None to not freeze the pretrained weights for the articulatory embedding function
+            ):
         super().__init__()
 
         # store hyperparameters
         self.use_dtw_loss = use_dtw_loss
         self.switch_on_prenet_step = switch_on_prenet_step
         self.prenet_on = start_with_prenet
+        self.start_with_prenet = start_with_prenet
+        self.freeze_embedding_step = freeze_embedding_until
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
@@ -166,6 +170,7 @@ class Tacotron2(torch.nn.Module):
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
         initialize(self, "xavier_uniform")
+        self.enc.embed.load_state_dict(torch.load("Preprocesing/embedding_pretrained_weights.pt", map_location='cpu')["embedding_weights"])
 
     def forward(self,
                 text: torch.Tensor,
@@ -193,18 +198,22 @@ class Tacotron2(torch.nn.Module):
 
         # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
 
+        freeze_embedding = False
         if step is not None:
             if step > self.switch_on_prenet_step and not self.prenet_on:
                 self.prenet_on = True
                 self.dec.add_prenet()
                 self.dec.prenet.to(text.device)
+            if self.freeze_embedding_step is not None:
+                if self.freeze_embedding_step < step:
+                    freeze_embedding = True
 
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws = self._forward(text, text_lengths, speech, speech_lengths, speaker_embeddings)
+        after_outs, before_outs, logits, att_ws = self._forward(text, text_lengths, speech, speech_lengths, speaker_embeddings, frozen_embed=freeze_embedding)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -260,12 +269,13 @@ class Tacotron2(torch.nn.Module):
         return loss
 
     def _forward(self,
-                 text_tensors: torch.Tensor,
-                 ilens: torch.Tensor,
-                 ys: torch.Tensor,
-                 speech_lengths: torch.Tensor,
-                 speaker_embeddings: torch.Tensor, ):
-        hs, hlens = self.enc(text_tensors, ilens)
+                 text_tensors,
+                 ilens,
+                 ys,
+                 speech_lengths,
+                 speaker_embeddings,
+                 frozen_embed=False):
+        hs, hlens = self.enc(text_tensors, ilens, frozen_embed=frozen_embed)
         if self.spk_embed_dim is not None:
             hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         return self.dec(hs, hlens, ys)
