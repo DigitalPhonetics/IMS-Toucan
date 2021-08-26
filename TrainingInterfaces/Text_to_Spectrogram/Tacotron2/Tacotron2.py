@@ -213,7 +213,12 @@ class Tacotron2(torch.nn.Module):
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws = self._forward(text, text_lengths, speech, speech_lengths, speaker_embeddings, frozen_embed=freeze_embedding)
+        after_outs, before_outs, logits, att_ws = self._forward(text,
+                                                                text_lengths,
+                                                                speech,
+                                                                speech_lengths,
+                                                                speaker_embeddings,
+                                                                frozen_embedding=freeze_embedding)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -274,8 +279,8 @@ class Tacotron2(torch.nn.Module):
                  ys,
                  speech_lengths,
                  speaker_embeddings,
-                 frozen_embed=False):
-        hs, hlens = self.enc(text_tensors, ilens, frozen_embed=frozen_embed)
+                 frozen_embedding=False):
+        hs, hlens = self.enc(text_tensors, ilens, frozen_embedding=frozen_embedding)
         if self.spk_embed_dim is not None:
             hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         return self.dec(hs, hlens, ys)
