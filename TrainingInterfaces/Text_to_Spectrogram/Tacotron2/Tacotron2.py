@@ -170,7 +170,7 @@ class Tacotron2(torch.nn.Module):
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
         initialize(self, "xavier_uniform")
-        self.enc.embed.load_state_dict(torch.load("Preprocesing/embedding_pretrained_weights.pt", map_location='cpu')["embedding_weights"])
+        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights.pt", map_location='cpu')["embedding_weights"])
 
     def forward(self,
                 text: torch.Tensor,
