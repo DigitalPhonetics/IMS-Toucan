@@ -44,12 +44,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   cache_dir=cache_dir,
                                   acoustic_model=acoustic_model,
                                   lang="en",
-                                  min_len_in_seconds=1,
-                                  max_len_in_seconds=10,
                                   device=device,
-                                  speaker_embedding=True,
-                                  loading_processes=8,
-                                  cut_silence=False)
+                                  speaker_embedding=True)
 
     model = FastSpeech2(idim=166, odim=80, spk_embed_dim=256, use_dtw_loss=False)
 

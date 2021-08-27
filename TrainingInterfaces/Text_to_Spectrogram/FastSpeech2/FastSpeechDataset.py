@@ -31,12 +31,7 @@ class FastSpeechDataset(Dataset):
                  cut_silence=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
-                 rebuild_cache=False,
-                 path_blacklist=None  # because for some datasets, some of the alignments
-                 # simply fail because attention heads do weird things. Those need to be
-                 # found in the duration_vis folder and manually added to a list of samples
-                 # to be excluded from the dataset.
-                 ):
+                 rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json")) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
@@ -77,13 +72,6 @@ class FastSpeechDataset(Dataset):
             with open(os.path.join(cache_dir, "fast_train_cache.json"), 'r') as fp:
                 self.datapoints = json.load(fp)
 
-        if path_blacklist is not None:
-            bl = set(path_blacklist)
-            datapoints_with_durations_that_make_sense = list()
-            for el in self.datapoints:
-                if el[-1] not in bl:
-                    datapoints_with_durations_that_make_sense.append(el)
-            self.datapoints = datapoints_with_durations_that_make_sense
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,

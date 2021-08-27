@@ -20,7 +20,7 @@ class TacotronDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  speaker_embedding=False,
-                 loading_processes=8,
+                 loading_processes=10,
                  lang="en",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,

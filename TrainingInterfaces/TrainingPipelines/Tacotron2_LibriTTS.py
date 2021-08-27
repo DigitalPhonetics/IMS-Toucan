@@ -38,8 +38,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="en",
-                                min_len_in_seconds=1,
-                                max_len_in_seconds=10,
                                 speaker_embedding=True,
                                 cut_silences=False)
 
@@ -51,10 +49,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                device=device,
                save_directory=save_dir,
                steps=100000,
-               batch_size=84,  # this works for a 24GB GPU. For a smaller GPU, consider decreasing batchsize.
+               batch_size=32,
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.001,
+               lr=0.01,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
