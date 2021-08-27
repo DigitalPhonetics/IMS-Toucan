@@ -1,6 +1,7 @@
 import random
 
 import torch
+from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANGenerator
 from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANMultiScaleMultiPeriodDiscriminator
@@ -54,7 +55,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     for file_list in file_lists:
         datasets.append(HiFiGANDataset(list_of_paths=file_list))
-    train_set = torch.utils.data.ConcatDataset(datasets)
+    train_set = ConcatDataset(datasets)
 
     generator = HiFiGANGenerator()
     generator.reset_parameters()

@@ -65,15 +65,15 @@ class Tacotron2(torch.nn.Module):
             bce_pos_weight=10.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
+            guided_attn_loss_lambda=0.5,  # 5.0 can work
             guided_attn_loss_sigma=0.4,  # 0.3 can work
-            guided_attn_loss_lambda=1.0,  # 5.0 can work
-            guided_attn_loss_lambda_later=1.0,
+            guided_attn_loss_lambda_later=0.5,
             guided_attn_loss_sigma_later=0.4,
             use_dtw_loss=False,
             input_layer_type="linear",
             start_with_prenet=True,
             switch_on_prenet_step=20000,  # 20% into the training progress is recommended
-            freeze_embedding_until=15000  # pass None to not freeze the pretrained weights for the articulatory embedding function
+            freeze_embedding_until=5000  # pass None to not freeze the pretrained weights for the articulatory embedding function. 2000 seems sensible
             ):
         super().__init__()
 

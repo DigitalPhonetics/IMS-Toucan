@@ -41,7 +41,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 min_len_in_seconds=1,
                                 max_len_in_seconds=10,
                                 rebuild_cache=False,
-                                cut_silences=True)
+                                cut_silences=False)
 
     model = Tacotron2()
 

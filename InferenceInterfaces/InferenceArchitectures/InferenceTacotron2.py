@@ -32,7 +32,7 @@ class Tacotron2(torch.nn.Module):
             cumulate_att_w=True,
             dlayers=2,
             dunits=1024,
-            prenet_layers=0,  # default used to be 2
+            prenet_layers=2,
             prenet_units=256,
             postnet_layers=5,
             postnet_chans=512,
