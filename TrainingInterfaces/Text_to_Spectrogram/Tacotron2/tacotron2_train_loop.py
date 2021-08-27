@@ -4,8 +4,6 @@ import time
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
-from torch.cuda.amp import GradScaler
-from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
@@ -105,7 +103,6 @@ def train_loop(net,
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
-    scaler = GradScaler()
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
@@ -131,7 +128,6 @@ def train_loop(net,
         net.load_state_dict(check_dict["model"])
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
-            scaler.load_state_dict(check_dict["scaler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
     while True:
@@ -139,47 +135,44 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
-            with autocast():
-                if not use_speaker_embedding:
-                    train_loss = net(text=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     speaker_embeddings=None,
-                                     step=step_counter)
-                else:
-                    train_loss = net(text=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     speaker_embeddings=batch[4].to(device),
-                                     step=step_counter)
-                train_losses_this_epoch.append(float(train_loss))
+            if not use_speaker_embedding:
+                train_loss = net(text=batch[0].to(device),
+                                 text_lengths=batch[1].to(device),
+                                 speech=batch[2].to(device),
+                                 speech_lengths=batch[3].to(device),
+                                 speaker_embeddings=None,
+                                 step=step_counter)
+            else:
+                train_loss = net(text=batch[0].to(device),
+                                 text_lengths=batch[1].to(device),
+                                 speech=batch[2].to(device),
+                                 speech_lengths=batch[3].to(device),
+                                 speaker_embeddings=batch[4].to(device),
+                                 step=step_counter)
+            train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
-            scaler.scale(train_loss).backward()
+            train_loss.backward()
             if step_counter - 1 == net.switch_on_prenet_step:
                 if net.dec.prenet is not None and not net.start_with_prenet:
                     optimizer.add_param_group({'params': net.dec.prenet.parameters()})
             step_counter += 1
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-            scaler.step(optimizer)
-            scaler.update()
-        with torch.no_grad():
+            optimizer.step()
             net.eval()
             if epoch % epochs_per_save == 0:
                 torch.save({
                     "model"       : net.state_dict(),
                     "optimizer"   : optimizer.state_dict(),
-                    "scaler"      : scaler.state_dict(),
                     "step_counter": step_counter,
                     }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
-                plot_attention(model=net,
-                               lang=lang,
-                               device=device,
-                               speaker_embedding=reference_speaker_embedding_for_att_plot,
-                               att_dir=save_directory,
-                               step=step_counter)
+                with torch.no_grad():
+                    plot_attention(model=net,
+                                   lang=lang,
+                                   device=device,
+                                   speaker_embedding=reference_speaker_embedding_for_att_plot,
+                                   att_dir=save_directory,
+                                   step=step_counter)
                 if step_counter > steps:
                     # DONE
                     return
