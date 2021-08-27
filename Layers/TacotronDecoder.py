@@ -7,7 +7,6 @@ import torch
 import torch.nn.functional as F
 
 from Layers.RNNAttention import AttForwardTA
-from Utility.utils import initialize
 
 
 def decoder_init(m):
@@ -18,11 +17,9 @@ def decoder_init(m):
 class ZoneOutCell(torch.nn.Module):
     """
     ZoneOut Cell module.
-
     This is a module of zoneout described in
     `Zoneout: Regularizing RNNs by Randomly Preserving Hidden Activations`_.
     This code is modified from `eladhoffer/seq2seq.pytorch`_.
-
     .. _`Zoneout: Regularizing RNNs by Randomly Preserving Hidden Activations`:
         https://arxiv.org/abs/1606.01305
     .. _`eladhoffer/seq2seq.pytorch`:
@@ -32,7 +29,6 @@ class ZoneOutCell(torch.nn.Module):
     def __init__(self, cell, zoneout_rate=0.1):
         """
         Initialize zone out cell module.
-
         Args:
             cell (torch.nn.Module): Pytorch recurrent cell module
                 e.g. `torch.nn.Module.LSTMCell`.
@@ -48,13 +44,11 @@ class ZoneOutCell(torch.nn.Module):
     def forward(self, inputs, hidden):
         """
         Calculate forward propagation.
-
         Args:
             inputs (Tensor): Batch of input tensor (B, input_size).
             hidden (tuple):
                 - Tensor: Batch of initial hidden states (B, hidden_size).
                 - Tensor: Batch of initial cell states (B, hidden_size).
-
         Returns:
             tuple:
                 - Tensor: Batch of next hidden states (B, hidden_size).
@@ -82,19 +76,16 @@ class ZoneOutCell(torch.nn.Module):
 class Prenet(torch.nn.Module):
     """
     Prenet module for decoder of Spectrogram prediction network.
-
     This is a module of Prenet in the decoder of Spectrogram prediction network,
     which described in `Natural TTS
     Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions`_.
     The Prenet preforms nonlinear conversion
     of inputs before input to auto-regressive lstm,
     which helps to learn diagonal attentions.
-
     Note:
         This module always applies dropout even in evaluation.
         See the detail in `Natural TTS Synthesis by
         Conditioning WaveNet on Mel Spectrogram Predictions`_.
-
     .. _`Natural TTS Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions`:
        https://arxiv.org/abs/1712.05884
     """
@@ -102,7 +93,6 @@ class Prenet(torch.nn.Module):
     def __init__(self, idim, n_layers=2, n_units=256, dropout_rate=0.5):
         """
         Initialize prenet module.
-
         Args:
             idim (int): Dimension of the inputs.
             odim (int): Dimension of the outputs.
@@ -119,10 +109,8 @@ class Prenet(torch.nn.Module):
     def forward(self, x):
         """
         Calculate forward propagation.
-
         Args:
             x (Tensor): Batch of input tensors (B, ..., idim).
-
         Returns:
             Tensor: Batch of output tensors (B, ..., odim).
         """
@@ -134,14 +122,12 @@ class Prenet(torch.nn.Module):
 class Postnet(torch.nn.Module):
     """
     Postnet module for Spectrogram prediction network.
-
     This is a module of Postnet in Spectrogram prediction network,
     which described in `Natural TTS Synthesis by
     Conditioning WaveNet on Mel Spectrogram Predictions`_.
     The Postnet predicts refines the predicted
     Mel-filterbank of the decoder,
     which helps to compensate the detail sturcture of spectrogram.
-
     .. _`Natural TTS Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions`:
        https://arxiv.org/abs/1712.05884
     """
@@ -210,10 +196,8 @@ class Postnet(torch.nn.Module):
     def forward(self, xs):
         """
         Calculate forward propagation.
-
         Args:
             xs (Tensor): Batch of the sequences of padded input tensors (B, idim, Tmax).
-
         Returns:
             Tensor: Batch of padded output tensor. (B, odim, Tmax).
         """
@@ -225,13 +209,11 @@ class Postnet(torch.nn.Module):
 class Decoder(torch.nn.Module):
     """
     Decoder module of Spectrogram prediction network.
-
     This is a module of decoder of Spectrogram prediction network in Tacotron2,
     which described in `Natural TTS
     Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions`_.
     The decoder generates the sequence of
     features from the sequence of the hidden states.
-
     .. _`Natural TTS Synthesis by Conditioning WaveNet on Mel Spectrogram Predictions`:
        https://arxiv.org/abs/1712.05884
     """
@@ -253,11 +235,9 @@ class Decoder(torch.nn.Module):
                  use_concate=True,
                  dropout_rate=0.5,
                  zoneout_rate=0.1,
-                 reduction_factor=1,
-                 start_with_prenet=True):
+                 reduction_factor=1, ):
         """
         Initialize Tacotron2 decoder module.
-
         Args:
             idim (int): Dimension of the inputs.
             odim (int): Dimension of the outputs.
@@ -298,7 +278,7 @@ class Decoder(torch.nn.Module):
             self.use_att_extra_inputs = False
 
         # define lstm network
-        prenet_units = prenet_units if prenet_layers != 0 and start_with_prenet else odim
+        prenet_units = prenet_units if prenet_layers != 0 else odim
         self.lstm = torch.nn.ModuleList()
         for layer in range(dlayers):
             iunits = idim + prenet_units if layer == 0 else dunits
@@ -308,15 +288,11 @@ class Decoder(torch.nn.Module):
             self.lstm += [lstm]
 
         # define prenet
-        self.prenet_idim = odim
-        self.prenet_n_layers = prenet_layers
-        self.prenet_n_units = prenet_units
-        self.prenet_dropout_rate = dropout_rate
-        if start_with_prenet and prenet_layers > 0:
-            self.prenet = Prenet(idim=self.prenet_idim,
-                                 n_layers=self.prenet_n_layers,
-                                 n_units=self.prenet_n_units,
-                                 dropout_rate=self.prenet_dropout_rate, )
+        if prenet_layers > 0:
+            self.prenet = Prenet(idim=odim,
+                                 n_layers=prenet_layers,
+                                 n_units=prenet_units,
+                                 dropout_rate=dropout_rate, )
         else:
             self.prenet = None
 
@@ -340,42 +316,22 @@ class Decoder(torch.nn.Module):
         # initialize
         self.apply(decoder_init)
 
-    def add_prenet(self):
-        """
-        With a strong prenet, the model can learn to overly rely on
-        teacher forcing to predict the next output during training.
-        So it can make sense to use no prenet first and then add a
-        prenet after a few thousand steps.
-        Have to project the size to the decoder LSTM output though
-        in order to get consistent shapes.
-        """
-        if self.prenet_n_layers > 0:
-            self.prenet = torch.nn.Sequential(Prenet(idim=self.prenet_idim,
-                                                     n_layers=self.prenet_n_layers,
-                                                     n_units=self.prenet_n_units,
-                                                     dropout_rate=self.prenet_dropout_rate, ),
-                                              torch.nn.Linear(self.prenet_n_units, self.odim))
-            initialize(self.prenet, "xavier_uniform")
-
     def _zero_state(self, hs):
         init_hs = hs.new_zeros(hs.size(0), self.lstm[0].hidden_size)
         return init_hs
 
     def forward(self, hs, hlens, ys):
         """Calculate forward propagation.
-
         Args:
             hs (Tensor): Batch of the sequences of padded hidden states (B, Tmax, idim).
             hlens (LongTensor): Batch of lengths of each input batch (B,).
             ys (Tensor):
                 Batch of the sequences of padded target features (B, Lmax, odim).
-
         Returns:
             Tensor: Batch of output tensors after postnet (B, Lmax, odim).
             Tensor: Batch of output tensors before postnet (B, Lmax, odim).
             Tensor: Batch of logits of stop prediction (B, Lmax).
             Tensor: Batch of attention weights (B, Lmax, Tmax).
-
         Note:
             This computation is performed in teacher-forcing manner.
         """
@@ -452,7 +408,6 @@ class Decoder(torch.nn.Module):
                   forward_window=None, ):
         """
         Generate the sequence of features given the sequences of characters.
-
         Args:
             h (Tensor): Input sequence of encoder hidden states (T, C).
             threshold (float, optional): Threshold to stop generation.
@@ -466,12 +421,10 @@ class Decoder(torch.nn.Module):
                 Whether to apply attention constraint introduced in `Deep Voice 3`_.
             backward_window (int): Backward window size in attention constraint.
             forward_window (int): Forward window size in attention constraint.
-
         Returns:
             Tensor: Output sequence of features (L, odim).
             Tensor: Output sequence of stop probabilities (L,).
             Tensor: Attention weights (L, T).
-
         Note:
             This computation is performed in auto-regressive manner.
         .. _`Deep Voice 3`: https://arxiv.org/abs/1710.07654
@@ -568,16 +521,13 @@ class Decoder(torch.nn.Module):
     def calculate_all_attentions(self, hs, hlens, ys):
         """
         Calculate all of the attention weights.
-
         Args:
             hs (Tensor): Batch of the sequences of padded hidden states (B, Tmax, idim).
             hlens (LongTensor): Batch of lengths of each input batch (B,).
             ys (Tensor):
                 Batch of the sequences of padded target features (B, Lmax, odim).
-
         Returns:
             numpy.ndarray: Batch of attention weights (B, Lmax, Tmax).
-
         Note:
             This computation is performed in teacher-forcing manner.
         """

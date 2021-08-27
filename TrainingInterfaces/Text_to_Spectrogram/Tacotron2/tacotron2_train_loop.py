@@ -89,7 +89,6 @@ def train_loop(net,
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
-    :param warmup_steps: how many warmup steps for the warmup scheduler
     :param path_to_checkpoint: reloads a checkpoint to continue training from there
     :param fine_tune: whether to load everything from a checkpoint, or only the model parameters
     :param lang: language of the synthesis
@@ -99,7 +98,6 @@ def train_loop(net,
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
-    :param gradient_accumulation: how many batches to average before stepping
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
@@ -123,7 +121,6 @@ def train_loop(net,
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     if path_to_checkpoint is not None:
-        # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         net.load_state_dict(check_dict["model"])
         if not fine_tune:
@@ -152,32 +149,29 @@ def train_loop(net,
             train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             train_loss.backward()
-            if step_counter - 1 == net.switch_on_prenet_step:
-                if net.dec.prenet is not None and not net.start_with_prenet:
-                    optimizer.add_param_group({'params': net.dec.prenet.parameters()})
             step_counter += 1
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             optimizer.step()
-            net.eval()
-            if epoch % epochs_per_save == 0:
-                torch.save({
-                    "model"       : net.state_dict(),
-                    "optimizer"   : optimizer.state_dict(),
-                    "step_counter": step_counter,
-                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-                delete_old_checkpoints(save_directory, keep=5)
-                with torch.no_grad():
-                    plot_attention(model=net,
-                                   lang=lang,
-                                   device=device,
-                                   speaker_embedding=reference_speaker_embedding_for_att_plot,
-                                   att_dir=save_directory,
-                                   step=step_counter)
-                if step_counter > steps:
-                    # DONE
-                    return
-            print("Epoch:        {}".format(epoch + 1))
-            print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-            print("Steps:        {}".format(step_counter))
-            net.train()
+        net.eval()
+        if epoch % epochs_per_save == 0:
+            torch.save({
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
+                "step_counter": step_counter,
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            delete_old_checkpoints(save_directory, keep=5)
+            with torch.no_grad():
+                plot_attention(model=net,
+                               lang=lang,
+                               device=device,
+                               speaker_embedding=reference_speaker_embedding_for_att_plot,
+                               att_dir=save_directory,
+                               step=step_counter)
+            if step_counter > steps:
+                # DONE
+                return
+        print("Epoch:        {}".format(epoch + 1))
+        print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+        print("Steps:        {}".format(step_counter))
+        net.train()

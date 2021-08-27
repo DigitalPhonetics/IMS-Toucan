@@ -65,23 +65,16 @@ class Tacotron2(torch.nn.Module):
             bce_pos_weight=10.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
-            guided_attn_loss_lambda=0.2,  # 5.0 can work
-            guided_attn_loss_sigma=0.4,  # 0.3 can work
-            guided_attn_loss_lambda_later=0.2,
-            guided_attn_loss_sigma_later=0.4,
+            guided_attn_loss_lambda=0.2,
+            guided_attn_loss_sigma=0.4,
             use_dtw_loss=False,
             input_layer_type="linear",
-            start_with_prenet=True,
-            switch_on_prenet_step=20000,  # 20% into the training progress is recommended
             freeze_embedding_until=5000  # pass None to not freeze the pretrained weights for the articulatory embedding function. 2000 seems sensible
             ):
         super().__init__()
 
         # store hyperparameters
         self.use_dtw_loss = use_dtw_loss
-        self.switch_on_prenet_step = switch_on_prenet_step
-        self.prenet_on = start_with_prenet
-        self.start_with_prenet = start_with_prenet
         self.freeze_embedding_step = freeze_embedding_until
         self.idim = idim
         self.odim = odim
@@ -156,16 +149,13 @@ class Tacotron2(torch.nn.Module):
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
                            zoneout_rate=zoneout_rate,
-                           reduction_factor=reduction_factor,
-                           start_with_prenet=start_with_prenet)
+                           reduction_factor=reduction_factor)
         self.taco2_loss = Tacotron2Loss(use_masking=use_masking,
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
             self.attn_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
                                                  alpha=guided_attn_loss_lambda, )
-            self.attn_loss_later = GuidedAttentionLoss(sigma=guided_attn_loss_sigma_later,
-                                                       alpha=guided_attn_loss_lambda_later, )
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
@@ -183,7 +173,7 @@ class Tacotron2(torch.nn.Module):
         Calculate forward propagation.
 
         Args:
-            step: Indicator for when to relax the attention constraint
+            step: Indicator for when to unfreeze the weigths of the embedding function
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -200,10 +190,6 @@ class Tacotron2(torch.nn.Module):
 
         freeze_embedding = False
         if step is not None:
-            if step > self.switch_on_prenet_step and not self.prenet_on:
-                self.prenet_on = True
-                self.dec.add_prenet()
-                self.dec.prenet.to(text.device)
             if self.freeze_embedding_step is not None:
                 if self.freeze_embedding_step < step:
                     freeze_embedding = True
@@ -262,13 +248,7 @@ class Tacotron2(torch.nn.Module):
             else:
                 speech_lengths_in = speech_lengths
 
-            if step is not None:
-                if step < 5000:
-                    attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
-                else:
-                    attn_loss = self.attn_loss_later(att_ws, text_lengths, speech_lengths_in)
-            else:
-                attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
+            attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
             loss = loss + attn_loss
 
         return loss
