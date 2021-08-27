@@ -103,11 +103,14 @@ class ArticulatoryTextFrontend:
                 for articulatory_features in articulatory_features_seg:
                     articulatory_features_seg_sil_dim_added.append(articulatory_features + [0])
                 articulatory_features_between_pauses += articulatory_features_seg_sil_dim_added
+                if "?" in word:
+                    articulatory_features_between_pauses += [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]
             articulatory_features_full_utt += articulatory_features_between_pauses + [
-                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]]  # silence
-        articulatory_features_full_utt = articulatory_features_full_utt[:-1] + \
-                                         [[-100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100, -100,
-                                           -100, -100, -100, -100, -100, 100]]  # cut out the silence that is added when splitting, then add end of sentence
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1]]  # silence
+        # now cut out the silence that is added when splitting, then add end of sentence
+        articulatory_features_full_utt = articulatory_features_full_utt[:-1] + [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]
         articulatory_features_tensor = torch.FloatTensor(articulatory_features_full_utt)
 
         if view:
@@ -133,8 +136,7 @@ class ArticulatoryTextFrontend:
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~/',
                                       with_stress=True).replace(";", ",").replace("/", " ") \
             .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
-            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(".", "~") \
-            .replace("?", "~").replace("!", "~")
+            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(".", "~").replace("!", "~")
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
         if include_eos_symbol:
@@ -146,6 +148,8 @@ class ArticulatoryTextFrontend:
                 for word in phone_segment_between_pauses.split():
                     ipa_segment_of_word = self.feature_table.ipa_segs(word)
                     ipa_segments_full_utt += ipa_segment_of_word
+                    if "?" in word:
+                        ipa_segments_full_utt += "?"
                 ipa_segments_full_utt += ['~']
             ipa_segments_full_utt = ipa_segments_full_utt[:-1] + ['#']
             return ipa_segments_full_utt
@@ -170,4 +174,4 @@ def english_text_expansion(text):
 if __name__ == '__main__':
     # test an English utterance
     tfr_en = ArticulatoryTextFrontend(language="en")
-    tfr_en.string_to_tensor("This is a complex sentence, it even has a pause!", view=True)
+    tfr_en.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this?", view=True)

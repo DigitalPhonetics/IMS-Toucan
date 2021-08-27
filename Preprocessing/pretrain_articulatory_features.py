@@ -5,7 +5,6 @@ import torch
 
 with open("embedding_table.json", 'r', encoding="utf8") as fp:
     datapoints = json.load(fp)
-datapoints.pop("?")
 datapoints.pop(".")
 datapoints.pop("!")
 datapoints.pop('̩')
@@ -25,6 +24,8 @@ distances = list()
 for _ in range(6000):
     for phone in datapoints.keys():
         if phone == "~":
+            art_vec = torch.Tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1]])
+        elif phone == "?":
             art_vec = torch.Tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
         else:
             art_vec = feature_table.word_to_vector_list(phone, numeric=True)
