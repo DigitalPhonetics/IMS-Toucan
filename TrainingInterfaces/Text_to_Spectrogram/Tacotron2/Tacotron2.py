@@ -46,7 +46,7 @@ class Tacotron2(torch.nn.Module):
             dlayers=2,
             dunits=1024,
             prenet_layers=2,
-            prenet_units=256,  # some suggest 64 to mitigate teacher forcing over reliance
+            prenet_units=64,  # default in the paper is 256, but can cause over-reliance on teacher forcing
             postnet_layers=5,
             postnet_chans=512,
             postnet_filts=5,
