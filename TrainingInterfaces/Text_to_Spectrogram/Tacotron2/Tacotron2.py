@@ -69,7 +69,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,
             use_dtw_loss=False,
             input_layer_type="linear",
-            freeze_embedding_until=5000  # pass None to not freeze the pretrained weights for the articulatory embedding function. 2000 seems sensible
+            freeze_embedding_until=8000  # pass None to not freeze the pretrained weights for the articulatory embedding function.
             ):
         super().__init__()
 
