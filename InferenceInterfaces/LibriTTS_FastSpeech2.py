@@ -8,7 +8,7 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
-from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
 class LibriTTS_FastSpeech2(torch.nn.Module):
@@ -18,7 +18,7 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
         self.speaker_embedding = speaker_embedding
         self.device = device
         self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
-        self.text2phone = ArticulatoryTextFrontend(language="en", inference=True)
+        self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_LibriTTS", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
@@ -48,7 +48,7 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
             ax[1].set_xticks(duration_splits, minor=True)
             ax[1].xaxis.grid(True, which='minor')
             ax[1].set_xticks(label_positions, minor=False)
-            ax[1].set_xticklabels(self.text2phone.get_phone_string(text, for_labelling=True))
+            ax[1].set_xticklabels(self.text2phone.get_phone_string(text))
             ax[0].set_title(text)
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()

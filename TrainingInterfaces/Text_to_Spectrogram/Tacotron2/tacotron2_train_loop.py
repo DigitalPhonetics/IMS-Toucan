@@ -8,19 +8,19 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.utils import delete_old_checkpoints
 
 
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
-    tf = ArticulatoryTextFrontend(language=lang)
+    tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
         sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
         sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
     text = tf.string_to_tensor(sentence).to(device)
-    phones = tf.get_phone_string(sentence, for_labelling=True)
+    phones = tf.get_phone_string(sentence)
     model.eval()
     att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()

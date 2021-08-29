@@ -46,7 +46,7 @@ class Tacotron2(torch.nn.Module):
             dlayers=2,
             dunits=1024,
             prenet_layers=2,
-            prenet_units=64,  # default in the paper is 256, but can cause over-reliance on teacher forcing
+            prenet_units=256,  # default in the paper is 256, but can cause over-reliance on teacher forcing, so 64 sometimes recommended
             postnet_layers=5,
             postnet_chans=512,
             postnet_filts=5,
@@ -160,7 +160,7 @@ class Tacotron2(torch.nn.Module):
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
         initialize(self, "xavier_uniform")
-        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights.pt", map_location='cpu')["embedding_weights"])
+        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
 
     def forward(self,
                 text: torch.Tensor,

@@ -9,14 +9,14 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 
 
 def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embedding_for_plot):
-    tf = ArticulatoryTextFrontend(language=lang)
+    tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = "Hello"
     if lang == "en":
         sentence = "This is an unseen sentence."
@@ -40,7 +40,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence, for_labelling=True)[:-1])
+    ax.set_xticklabels(tf.get_phone_string(sentence)[:-1])
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()

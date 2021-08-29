@@ -8,7 +8,7 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceTacotron2 import Tacotron2
-from Preprocessing.ArticulatoryTextFrontend import ArticulatoryTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
 class LJSpeech_Tacotron2(torch.nn.Module):
@@ -17,7 +17,7 @@ class LJSpeech_Tacotron2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = None
         self.device = device
-        self.text2phone = ArticulatoryTextFrontend(language="en", inference=True)
+        self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
         self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_LJSpeech", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
@@ -78,7 +78,7 @@ class LJSpeech_Tacotron2(torch.nn.Module):
         fig, axes = plt.subplots(nrows=1, ncols=1)
         axes.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
         axes.set_title("{}".format(sentence))
-        phones = self.text2phone.get_phone_string(sentence, for_labelling=True)
+        phones = self.text2phone.get_phone_string(sentence)
         plt.xticks(range(len(att[0])), labels=phones)
         axes.xaxis.set_visible(True)
         axes.yaxis.set_visible(False)

@@ -63,9 +63,9 @@ class Encoder(torch.nn.Module):
 
         # define network layer modules
         if input_layer == "linear":
-            self.embed = torch.nn.Sequential(torch.nn.Linear(idim, 50),
+            self.embed = torch.nn.Sequential(torch.nn.Linear(66, 100),
                                              torch.nn.Tanh(),
-                                             torch.nn.Linear(50, econv_chans))
+                                             torch.nn.Linear(100, 512))
         elif input_layer == "embed":
             self.embed = torch.nn.Embedding(idim, embed_dim, padding_idx=padding_idx)
         else:

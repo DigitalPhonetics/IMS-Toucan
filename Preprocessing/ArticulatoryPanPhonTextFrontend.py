@@ -7,7 +7,7 @@ import torch
 from cleantext import clean
 
 
-class ArticulatoryTextFrontend:
+class ArticulatoryPanphonTextFrontend:
 
     def __init__(self,
                  language,
@@ -173,5 +173,5 @@ def english_text_expansion(text):
 
 if __name__ == '__main__':
     # test an English utterance
-    tfr_en = ArticulatoryTextFrontend(language="en")
+    tfr_en = ArticulatoryPanphonTextFrontend(language="en")
     tfr_en.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this?", view=True)
