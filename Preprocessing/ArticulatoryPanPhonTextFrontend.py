@@ -136,7 +136,7 @@ class ArticulatoryPanphonTextFrontend:
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~/',
                                       with_stress=True).replace(";", ",").replace("/", " ") \
             .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
-            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(".", "~").replace("!", "~")
+            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "")
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
         if include_eos_symbol:
