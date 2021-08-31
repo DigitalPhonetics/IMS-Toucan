@@ -33,7 +33,7 @@ class Tacotron2(torch.nn.Module):
             dlayers=2,
             dunits=1024,
             prenet_layers=2,
-            prenet_units=256,
+            prenet_units=64,  # 64 or 256 are defaults
             postnet_layers=5,
             postnet_chans=512,
             postnet_filts=5,
