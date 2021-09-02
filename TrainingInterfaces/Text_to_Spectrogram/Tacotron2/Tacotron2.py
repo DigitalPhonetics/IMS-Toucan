@@ -30,7 +30,7 @@ class Tacotron2(torch.nn.Module):
     def __init__(
             self,
             # network structure related
-            idim=25,  # 24 articulatory features + 1 feature to indicate a pause
+            idim=66,  # 24 articulatory features from PanPhon, 42 from Papercup (one-hot)
             odim=80,
             embed_dim=512,
             elayers=1,
@@ -69,7 +69,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,
             input_layer_type="linear",
-            freeze_embedding_until=23000,  # pass None to not freeze the pretrained weights for the articulatory embedding function.
+            freeze_embedding_until=8000,  # pass None to not freeze the pretrained weights for the articulatory embedding function.
             init_type=None
             ):
         super().__init__()
