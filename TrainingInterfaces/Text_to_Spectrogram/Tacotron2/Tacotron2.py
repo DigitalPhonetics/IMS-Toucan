@@ -69,7 +69,8 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,
             input_layer_type="linear",
-            freeze_embedding_until=23000  # pass None to not freeze the pretrained weights for the articulatory embedding function.
+            freeze_embedding_until=23000,  # pass None to not freeze the pretrained weights for the articulatory embedding function.
+            init_type=None
             ):
         super().__init__()
 
@@ -159,7 +160,8 @@ class Tacotron2(torch.nn.Module):
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
-        initialize(self, "xavier_uniform")
+        if init_type == "xavier_uniform":
+            initialize(self, "xavier_uniform")
         self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
 
     def forward(self,
