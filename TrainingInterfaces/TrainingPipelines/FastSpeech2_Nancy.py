@@ -36,9 +36,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_model = Tacotron2(idim=166, odim=80, spk_embed_dim=None)
-    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_Nancy", "best.pt"),
-                                              map_location='cpu')["model"])
+    acoustic_model = Tacotron2()
+    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_Nancy", "best.pt"), map_location='cpu')["model"])
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
