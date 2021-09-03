@@ -157,13 +157,24 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             if not use_speaker_embedding:
-                train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                 batch[3].to(device), batch[4].to(device), batch[5].to(device),
-                                 batch[6].to(device))
+                train_loss = net(text_tensors=batch[0].to(device),
+                                 text_lengths=batch[1].to(device),
+                                 gold_speech=batch[2].to(device),
+                                 speech_lengths=batch[3].to(device),
+                                 gold_durations=batch[4].to(device),
+                                 gold_pitch=batch[5].to(device),
+                                 gold_energy=batch[6].to(device),
+                                 step=step_counter)
             else:
-                train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                 batch[3].to(device), batch[4].to(device), batch[5].to(device),
-                                 batch[6].to(device), batch[7].to(device))
+                train_loss = net(text_tensors=batch[0].to(device),
+                                 text_lengths=batch[1].to(device),
+                                 gold_speech=batch[2].to(device),
+                                 speech_lengths=batch[3].to(device),
+                                 gold_durations=batch[4].to(device),
+                                 gold_pitch=batch[5].to(device),
+                                 gold_energy=batch[6].to(device),
+                                 speaker_embeddings=batch[7].to(device),
+                                 step=step_counter)
             train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             train_loss.backward()

@@ -17,7 +17,7 @@ class Tacotron2(torch.nn.Module):
             self,
             # network structure related
             path_to_weights,
-            idim=25,
+            idim=66,
             odim=80,
             embed_dim=512,
             elayers=1,
@@ -33,7 +33,7 @@ class Tacotron2(torch.nn.Module):
             dlayers=2,
             dunits=1024,
             prenet_layers=2,
-            prenet_units=64,  # 64 or 256 are defaults
+            prenet_units=256,  # 64 or 256 are defaults
             postnet_layers=5,
             postnet_chans=512,
             postnet_filts=5,

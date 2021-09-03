@@ -37,7 +37,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def __init__(self,
                  # network structure related
-                 idim=25,
+                 idim=66,
                  odim=80,
                  adim=384,
                  aheads=4,
@@ -99,8 +99,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_masking=False,
                  use_weighted_masking=True,
                  # additional features
-                 legacy_model=False,
-                 use_dtw_loss=False):
+                 use_dtw_loss=False,
+                 embedding_freeze_until=8000):
         super().__init__()
 
         # store hyperparameters
@@ -118,14 +118,16 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.padding_idx = 0
 
         # define encoder
-        encoder_input_layer = torch.nn.Linear(idim, adim)
+        self.embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
+                                         torch.nn.Tanh(),
+                                         torch.nn.Linear(100, 512))
         self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers,
-                                 input_layer=encoder_input_layer, dropout_rate=transformer_enc_dropout_rate,
+                                 input_layer=self.embed, dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
-                                 legacy_model=legacy_model)
+                                 embedding_freeze_until=embedding_freeze_until)
 
         # define additional projection for speaker embedding
         if self.spk_embed_dim is not None:
@@ -158,35 +160,38 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  dropout_rate=transformer_dec_dropout_rate, positional_dropout_rate=transformer_dec_positional_dropout_rate,
                                  attention_dropout_rate=transformer_dec_attn_dropout_rate, normalize_before=decoder_normalize_before,
                                  concat_after=decoder_concat_after, positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size,
-                                 legacy_model=legacy_model)
+                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
 
         # define postnet
         self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans, n_filts=postnet_filts, use_batch_norm=use_batch_norm,
-                               dropout_rate=postnet_dropout_rate, legacy_model=legacy_model)
+                               dropout_rate=postnet_dropout_rate)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
+        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
         self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
-    def forward(self, text_tensors,
+    def forward(self,
+                text_tensors,
                 text_lengths,
                 gold_speech,
                 speech_lengths,
                 gold_durations,
                 gold_pitch,
                 gold_energy,
-                speaker_embeddings=None):
+                speaker_embeddings=None,
+                step=None):
         """
         Calculate forward propagation.
 
         Args:
+            step: indicator when to start updating the embedding
             text_tensors (LongTensor): Batch of padded text vectors (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input (B,).
             gold_speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -209,7 +214,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy, speaker_embeddings=speaker_embeddings,
-                                                                        is_inference=False)
+                                                                        is_inference=False, step=step)
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
@@ -231,10 +236,10 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None, speaker_embeddings=None,
-                 is_inference=False, alpha=1.0):
+                 is_inference=False, alpha=1.0, step=None):
         # forward encoder
         text_masks = self._source_mask(text_lens)
-        encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, step=step)  # (B, Tmax, adim)
 
         # integrate speaker embedding
         if self.spk_embed_dim is not None:
