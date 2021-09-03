@@ -110,7 +110,7 @@ class FastSpeechDataset(Dataset):
                 norm_wave_length = torch.LongTensor([len(norm_wave)])
                 melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
                 melspec_length = torch.LongTensor([len(melspec)])
-                text = tf.string_to_tensor(transcript).long()
+                text = tf.string_to_tensor(transcript)
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
                 cached_text_len = len(cached_text)
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
