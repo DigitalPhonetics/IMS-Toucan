@@ -117,8 +117,8 @@ class FastSpeechDataset(Dataset):
                 cached_speech_len = len(cached_speech)
                 if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
-                    cached_duration = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                  speech=melspec.to(device),
+                    cached_duration = dc(acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
+                                                                  speech_tensor=melspec.to(device),
                                                                   use_teacher_forcing=True,
                                                                   speaker_embeddings=None)[2],
                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
@@ -126,8 +126,8 @@ class FastSpeechDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
-                    cached_duration = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                  speech=melspec.to(device),
+                    cached_duration = dc(acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
+                                                                  speech_tensor=melspec.to(device),
                                                                   use_teacher_forcing=True,
                                                                   speaker_embeddings=cached_speaker_embedding.to(device))[2],
                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()

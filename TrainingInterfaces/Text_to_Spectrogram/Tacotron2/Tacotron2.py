@@ -165,11 +165,11 @@ class Tacotron2(torch.nn.Module):
         self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
 
     def forward(self,
-                text: torch.Tensor,
-                text_lengths: torch.Tensor,
-                speech: torch.Tensor,
-                speech_lengths: torch.Tensor,
-                speaker_embeddings: torch.Tensor = None,
+                text,
+                text_lengths,
+                speech,
+                speech_lengths,
+                speaker_embeddings=None,
                 step=None):
         """
         Calculate forward propagation.
@@ -268,16 +268,16 @@ class Tacotron2(torch.nn.Module):
         return self.dec(hs, hlens, ys)
 
     def inference(self,
-                  text_tensor: torch.Tensor,
-                  speech_tensor: torch.Tensor = None,
-                  speaker_embeddings: torch.Tensor = None,
-                  threshold: float = 0.5,
-                  minlenratio: float = 0.0,
-                  maxlenratio: float = 10.0,
-                  use_att_constraint: bool = False,
-                  backward_window: int = 1,
-                  forward_window: int = 3,
-                  use_teacher_forcing: bool = False, ):
+                  text_tensor,
+                  speech_tensor=None,
+                  speaker_embeddings=None,
+                  threshold=0.5,
+                  minlenratio=0.0,
+                  maxlenratio=10.0,
+                  use_att_constraint=False,
+                  backward_window=1,
+                  forward_window=3,
+                  use_teacher_forcing=False, ):
         """
         Generate the sequence of features given the sequences of characters.
 
