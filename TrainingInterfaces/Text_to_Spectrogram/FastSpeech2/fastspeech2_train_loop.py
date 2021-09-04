@@ -22,7 +22,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
         sentence = "This is an unseen sentence."
     elif lang == "de":
         sentence = "Dies ist ein ungesehener Satz."
-    phoneme_vector = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
+    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     spec, durations, *_ = net.inference(text=phoneme_vector, speaker_embeddings=reference_speaker_embedding_for_plot, return_duration_pitch_energy=True)
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
@@ -65,9 +65,13 @@ def collate_and_pad(batch):
             durations.append(torch.LongTensor(datapoint[4]))
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
-        return (pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lens).squeeze(1),
+                pad_sequence(speechs, batch_first=True),
                 torch.stack(speech_lens).squeeze(1),
-                pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
+                pad_sequence(durations, batch_first=True),
+                pad_sequence(pitch, batch_first=True),
+                pad_sequence(energy, batch_first=True))
     elif len(batch[0]) == 8:
         # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, speaker_embedding]
         texts = list()
@@ -87,9 +91,13 @@ def collate_and_pad(batch):
             energy.append(torch.Tensor(datapoint[5]))
             pitch.append(torch.Tensor(datapoint[6]))
             speaker_embeddings.append(torch.Tensor(datapoint[7]))
-        return (pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lens).squeeze(1),
+                pad_sequence(speechs, batch_first=True),
                 torch.stack(speech_lens).squeeze(1),
-                pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
+                pad_sequence(durations, batch_first=True),
+                pad_sequence(pitch, batch_first=True),
+                pad_sequence(energy, batch_first=True),
                 torch.stack(speaker_embeddings))
 
 
