@@ -52,12 +52,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=500000,  # this is the nicest model, so we train for a bit longer
+               steps=300000,
                batch_size=32,
                epochs_per_save=10,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.008,
-               warmup_steps=8000,
+               lr=0.001,
+               warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)
