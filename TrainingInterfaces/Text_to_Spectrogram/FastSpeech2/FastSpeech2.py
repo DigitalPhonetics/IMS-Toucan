@@ -171,7 +171,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
-        self.encoder.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
+        self.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
