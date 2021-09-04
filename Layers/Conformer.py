@@ -56,9 +56,11 @@ class Conformer(torch.nn.Module):
         self.embedding_freeze_until = embedding_freeze_until
 
         if isinstance(input_layer, torch.nn.Module):
-            self.embed = torch.nn.Sequential(input_layer, RelPositionalEncoding(attention_dim, positional_dropout_rate), )
+            self.embed = input_layer
+            self.pos_enc = RelPositionalEncoding(attention_dim, positional_dropout_rate)
         elif input_layer is None:
-            self.embed = torch.nn.Sequential(RelPositionalEncoding(attention_dim, positional_dropout_rate))
+            self.embed = None
+            self.pos_enc = torch.nn.Sequential(RelPositionalEncoding(attention_dim, positional_dropout_rate))
         else:
             raise ValueError("unknown input_layer: " + input_layer)
 
@@ -98,10 +100,13 @@ class Conformer(torch.nn.Module):
             torch.Tensor: Mask tensor (#batch, time).
 
         """
-        xs = self.embed(xs)
-        if self.embedding_freeze_until is not None and step is not None:
-            if step < self.embedding_freeze_until:
-                xs = xs.detach()
+        if self.embed is not None:
+            xs = self.embed(xs)
+            if self.embedding_freeze_until is not None and step is not None:
+                if step < self.embedding_freeze_until:
+                    xs = xs.detach()
+
+        xs = self.pos_enc(xs)
 
         xs, masks = self.encoders(xs, masks)
         if isinstance(xs, tuple):
