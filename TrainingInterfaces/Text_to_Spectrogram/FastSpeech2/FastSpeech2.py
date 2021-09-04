@@ -99,7 +99,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_masking=False,
                  use_weighted_masking=True,
                  # additional features
-                 use_dtw_loss=False):
+                 use_dtw_loss=False,
+                 embedding_freeze_until=20000):
         super().__init__()
 
         # store hyperparameters
@@ -117,15 +118,16 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.padding_idx = 0
 
         # define encoder
-        self.embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
-                                         torch.nn.Tanh(),
-                                         torch.nn.Linear(100, adim))
+        embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
+                                    torch.nn.Tanh(),
+                                    torch.nn.Linear(100, adim))
         self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers,
-                                 input_layer=self.embed, dropout_rate=transformer_enc_dropout_rate,
+                                 input_layer=embed, dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False)
+                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
+                                 embedding_freeze_until=embedding_freeze_until)
 
         # define additional projection for speaker embedding
         if self.spk_embed_dim is not None:
@@ -169,6 +171,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
+        self.encoder.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_384dim.pt", map_location='cpu')["embedding_weights"])
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
@@ -182,21 +185,20 @@ class FastSpeech2(torch.nn.Module, ABC):
                 gold_durations,
                 gold_pitch,
                 gold_energy,
-                speaker_embeddings=None):
+                speaker_embeddings=None,
+                step=None):
         """
         Calculate forward propagation.
 
         Args:
+            step: indicator when to start updating the embedding
             text_tensors (LongTensor): Batch of padded text vectors (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input (B,).
             gold_speech (Tensor): Batch of padded target features (B, Lmax, odim).
             speech_lengths (LongTensor): Batch of the lengths of each target (B,).
             gold_durations (LongTensor): Batch of padded durations (B, Tmax + 1).
-            durations_lengths (LongTensor): Batch of duration lengths (B, Tmax + 1).
             gold_pitch (Tensor): Batch of padded token-averaged pitch (B, Tmax + 1, 1).
-            pitch_lengths (LongTensor): Batch of pitch lengths (B, Tmax + 1).
             gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
-            energy_lengths (LongTensor): Batch of energy lengths (B, Tmax + 1).
             speaker_embeddings (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
@@ -209,7 +211,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy, speaker_embeddings=speaker_embeddings,
-                                                                        is_inference=False)
+                                                                        is_inference=False, step=step)
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
@@ -231,10 +233,10 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None, speaker_embeddings=None,
-                 is_inference=False, alpha=1.0):
+                 is_inference=False, alpha=1.0, step=None):
         # forward encoder
         text_masks = self._source_mask(text_lens)
-        encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, step=step)  # (B, Tmax, adim)
 
         # integrate speaker embedding
         if self.spk_embed_dim is not None:

@@ -81,15 +81,15 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.use_scaled_pos_enc = use_scaled_pos_enc
         self.spk_embed_dim = spk_embed_dim
         self.padding_idx = 0
-        self.embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
-                                         torch.nn.Tanh(),
-                                         torch.nn.Linear(100, adim))
+        embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
+                                    torch.nn.Tanh(),
+                                    torch.nn.Linear(100, adim))
         self.encoder = Conformer(idim=idim,
                                  attention_dim=adim,
                                  attention_heads=aheads,
                                  linear_units=eunits,
                                  num_blocks=elayers,
-                                 input_layer=self.embed,
+                                 input_layer=embed,
                                  dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate,
                                  attention_dropout_rate=transformer_enc_attn_dropout_rate,

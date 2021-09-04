@@ -162,7 +162,7 @@ class Tacotron2(torch.nn.Module):
 
         if init_type == "xavier_uniform":
             initialize(self, "xavier_uniform")
-        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined.pt", map_location='cpu')["embedding_weights"])
+        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_512dim.pt", map_location='cpu')["embedding_weights"])
 
     def forward(self,
                 text,

@@ -176,7 +176,8 @@ def train_loop(net,
                                      speech_lengths=batch[3].to(device),
                                      gold_durations=batch[4].to(device),
                                      gold_pitch=batch[5].to(device),
-                                     gold_energy=batch[6].to(device))
+                                     gold_energy=batch[6].to(device),
+                                     step=step_counter)
                 else:
                     train_loss = net(text_tensors=batch[0].to(device),
                                      text_lengths=batch[1].to(device),
@@ -185,7 +186,8 @@ def train_loop(net,
                                      gold_durations=batch[4].to(device),
                                      gold_pitch=batch[5].to(device),
                                      gold_energy=batch[6].to(device),
-                                     speaker_embeddings=batch[7].to(device))
+                                     speaker_embeddings=batch[7].to(device),
+                                     step=step_counter)
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
