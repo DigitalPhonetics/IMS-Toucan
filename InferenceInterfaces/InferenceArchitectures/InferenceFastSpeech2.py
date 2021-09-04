@@ -83,7 +83,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.padding_idx = 0
         self.embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                          torch.nn.Tanh(),
-                                         torch.nn.Linear(100, 512))
+                                         torch.nn.Linear(100, adim))
         self.encoder = Conformer(idim=idim,
                                  attention_dim=adim,
                                  attention_heads=aheads,
