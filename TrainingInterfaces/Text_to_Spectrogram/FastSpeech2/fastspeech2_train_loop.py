@@ -60,13 +60,13 @@ def collate_and_pad(batch):
         pitch = list()
         energy = list()
         for datapoint in batch:
-            texts.append(torch.Tensor(datapoint[0]))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-            durations.append(torch.LongTensor(datapoint[4]))
-            energy.append(torch.Tensor(datapoint[5]))
-            pitch.append(torch.Tensor(datapoint[6]))
+            texts.append(datapoint[0])
+            text_lens.append([datapoint[1]])
+            speechs.append(datapoint[2])
+            speech_lens.append([datapoint[3]])
+            durations.append(datapoint[4])
+            energy.append(datapoint[5])
+            pitch.append(datapoint[6])
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
@@ -85,14 +85,14 @@ def collate_and_pad(batch):
         energy = list()
         speaker_embeddings = list()
         for datapoint in batch:
-            texts.append(torch.Tensor(datapoint[0]))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-            durations.append(torch.LongTensor(datapoint[4]))
-            energy.append(torch.Tensor(datapoint[5]))
-            pitch.append(torch.Tensor(datapoint[6]))
-            speaker_embeddings.append(torch.Tensor(datapoint[7]))
+            texts.append(datapoint[0])
+            text_lens.append([datapoint[1]])
+            speechs.append(datapoint[2])
+            speech_lens.append([datapoint[3]])
+            durations.append(datapoint[4])
+            energy.append(datapoint[5])
+            pitch.append(datapoint[6])
+            speaker_embeddings.append(datapoint[7])
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
@@ -112,7 +112,7 @@ def train_loop(net,
                epochs_per_save=5,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.01,
+               lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False):

@@ -1,5 +1,4 @@
 import gc
-import json
 import os
 from multiprocessing import Manager
 from multiprocessing import Process
@@ -19,15 +18,15 @@ class TacotronDataset(Dataset):
     def __init__(self,
                  path_to_transcript_dict,
                  cache_dir,
+                 lang,
                  speaker_embedding=False,
                  loading_processes=10,
-                 lang="en",
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=False,
                  rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
-        if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.json")) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
@@ -51,12 +50,12 @@ class TacotronDataset(Dataset):
             gc.enable()
             self.datapoints = list(self.datapoints)
             # save to json so we can rebuild cache quickly
-            with open(os.path.join(cache_dir, "taco_train_cache.json"), 'w') as fp:
-                json.dump(self.datapoints, fp)
+            with open(os.path.join(cache_dir, "taco_train_cache.pt"), 'w') as fp:
+                torch.save(self.datapoints, fp)
         else:
             # just load the datapoints
-            with open(os.path.join(cache_dir, "taco_train_cache.json"), 'r') as fp:
-                self.datapoints = json.load(fp)
+            with open(os.path.join(cache_dir, "taco_train_cache.pt"), 'r') as fp:
+                self.datapoints = torch.load(fp)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
@@ -72,15 +71,15 @@ class TacotronDataset(Dataset):
             with open(path, "rb") as audio_file:
                 wave, sr = sf.read(audio_file)
             if min_len <= len(wave) / sr <= max_len:
-                cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
-                cached_text_len = len(cached_text)
-                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
-                cached_speech_len = len(cached_speech)
+                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
+                cached_text_len = torch.LongTensor(len(cached_text))
+                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu()
+                cached_speech_len = torch.LongTensor(len(cached_speech))
                 if speaker_embedding:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
-                    cached_speaker_embedding = emb_tensor.detach().numpy().tolist()
+                    cached_speaker_embedding = emb_tensor.detach().cpu()
                     process_internal_dataset_chunk.append([cached_text, cached_text_len, cached_speech, cached_speech_len, cached_speaker_embedding])
                 else:
                     process_internal_dataset_chunk.append([cached_text, cached_text_len, cached_speech, cached_speech_len])

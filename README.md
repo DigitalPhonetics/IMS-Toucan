@@ -37,20 +37,41 @@ recognize who was used as the reference speaker for this utterance.
 
 ## Installation
 
+#### Basic Requirements
+
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you can get by without GPU).
 Navigate to the directory you have cloned and run the command shown below. It is recommended to first create and
-activate
-a [pip virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
+activate a
+[conda virtual environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 .
 
 ```
-pip install -r requirements.txt 
+pip install -r requirements.txt --no-chache-dir
 ```
+
+#### Speaker Embedding
 
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. In the
 current version of the toolkit it is included by default and should require no further action.
+
+#### Nvidia Apex
+
+To speed up training and make the most of the GPU, you can optionally install nvidia-apex. To install it, activate the
+conda environment and run the following command:
+
+```
+conda install -c conda-forge nvidia-apex
+```
+
+This may however break a part of the previous installation, but simply running the following should fix it:
+
+```
+pip install torchaudio
+```
+
+#### espeak-ng
 
 And finally you need to have espeak-ng installed on your system, because it is used as backend for the phonemizer. If
 you replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is

@@ -48,10 +48,10 @@ def collate_and_pad(batch):
         speechs = list()
         speech_lens = list()
         for datapoint in batch:
-            texts.append(torch.Tensor(datapoint[0]))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
+            texts.append(datapoint[0])
+            text_lens.append([datapoint[1]])
+            speechs.append(datapoint[2])
+            speech_lens.append([datapoint[3]])
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
@@ -64,11 +64,11 @@ def collate_and_pad(batch):
         speech_lens = list()
         speaker_embeddings = list()
         for datapoint in batch:
-            texts.append(torch.Tensor(datapoint[0]))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-            speaker_embeddings.append(torch.Tensor(datapoint[4]))
+            texts.append(datapoint[0])
+            text_lens.append([datapoint[1]])
+            speechs.append(datapoint[2])
+            speech_lens.append([datapoint[3]])
+            speaker_embeddings.append(datapoint[4])
         return (pad_sequence(texts, batch_first=True),
                 torch.stack(text_lens).squeeze(1),
                 pad_sequence(speechs, batch_first=True),
