@@ -60,17 +60,6 @@ If you want to use multi-speaker synthesis, you will need a speaker embedding fu
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. In the
 current version of the toolkit it is included by default and should require no further action.
 
-#### Nvidia Apex
-
-To speed up training and make the most of the GPU, you can optionally install nvidia-apex. To install it, activate the
-conda environment and run the following commands:
-
-```
-git clone https://github.com/NVIDIA/apex
-cd apex
-pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
-```
-
 #### espeak-ng
 
 And finally you need to have espeak-ng installed on your system, because it is used as backend for the phonemizer. If
