@@ -121,7 +121,13 @@ def train_loop(net,
     net.train()
     if fine_tune:
         lr = lr * 0.01
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+    try:
+        import apex
+        optimizer = apex.optimizers.FusedAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+        print("Using apex parallelized optimizer.")
+    except ImportError:
+        optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+        print("Using pytorch internal optimizer. Consider installing apex for performance gain.")
     scaler = GradScaler()
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)

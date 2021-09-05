@@ -55,7 +55,7 @@ class TacotronDataset(Dataset):
         else:
             # just load the datapoints
             with open(os.path.join(cache_dir, "taco_train_cache.pt"), 'r') as fp:
-                self.datapoints = torch.load(fp)
+                self.datapoints = torch.load(fp, map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):

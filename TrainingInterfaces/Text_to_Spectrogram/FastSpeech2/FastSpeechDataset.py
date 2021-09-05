@@ -69,7 +69,7 @@ class FastSpeechDataset(Dataset):
         else:
             # just load the datapoints
             with open(os.path.join(cache_dir, "fast_train_cache.pt"), 'r') as fp:
-                self.datapoints = torch.load(fp)
+                self.datapoints = torch.load(fp, map_location='cpu')
 
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 

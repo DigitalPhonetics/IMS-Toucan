@@ -150,7 +150,13 @@ def train_loop(net,
     net.train()
     if fine_tune:
         lr = lr * 0.01
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    try:
+        import apex
+        apex.optimizers.FusedAdam(net.parameters(), lr=lr)
+        print("Using apex parallelized optimizer.")
+    except ImportError:
+        optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+        print("Using pytorch internal optimizer. Consider installing apex for performance gain.")
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
