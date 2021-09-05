@@ -1,4 +1,3 @@
-import gc
 import os
 
 import soundfile as sf
@@ -46,7 +45,6 @@ class FastSpeechDataset(Dataset):
             process_list = list()
             for i in range(loading_processes):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
-            gc.disable()
             for key_split in key_splits:
                 process_list.append(Process(target=self.cache_builder_process, args=(key_split,
                                                                                      acoustic_model,
@@ -61,15 +59,12 @@ class FastSpeechDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-            gc.enable()
             self.datapoints = list(self.datapoints)
-            # save to json so we can rebuild cache quickly
-            with open(os.path.join(cache_dir, "fast_train_cache.pt"), 'w') as fp:
-                torch.save(self.datapoints, fp)
+            # save to cache
+            torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
         else:
-            # just load the datapoints
-            with open(os.path.join(cache_dir, "fast_train_cache.pt"), 'r') as fp:
-                self.datapoints = torch.load(fp, map_location='cpu')
+            # just load the datapoints from cache
+            self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
 
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
@@ -102,8 +97,12 @@ class FastSpeechDataset(Dataset):
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
-            with open(path, "rb") as audio_file:
-                wave, sr = sf.read(audio_file)
+            try:
+                with open(path, "rb") as audio_file:
+                    wave, sr = sf.read(audio_file)
+            except RuntimeError:
+                print("Could not read {}".format(path))
+                continue
             if min_len <= len(wave) / sr <= max_len:
                 norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
                 norm_wave_length = torch.LongTensor([len(norm_wave)])

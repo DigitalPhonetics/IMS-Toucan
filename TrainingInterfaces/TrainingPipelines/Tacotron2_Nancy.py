@@ -34,6 +34,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
         os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict()
+    for index, key in enumerate(list(path_to_transcript_dict.keys())):
+        if index > 100:
+            path_to_transcript_dict.pop(key)
 
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,

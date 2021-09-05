@@ -1,4 +1,3 @@
-import gc
 import os
 from multiprocessing import Manager
 from multiprocessing import Process
@@ -37,7 +36,6 @@ class TacotronDataset(Dataset):
             # make processes
             key_splits = list()
             process_list = list()
-            gc.disable()
             for i in range(loading_processes):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
@@ -47,15 +45,12 @@ class TacotronDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-            gc.enable()
             self.datapoints = list(self.datapoints)
-            # save to json so we can rebuild cache quickly
-            with open(os.path.join(cache_dir, "taco_train_cache.pt"), 'w') as fp:
-                torch.save(self.datapoints, fp)
+            # save to cache
+            torch.save(self.datapoints, os.path.join(cache_dir, "taco_train_cache.pt"))
         else:
-            # just load the datapoints
-            with open(os.path.join(cache_dir, "taco_train_cache.pt"), 'r') as fp:
-                self.datapoints = torch.load(fp, map_location='cpu')
+            # just load the datapoints from cache
+            self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
@@ -68,8 +63,12 @@ class TacotronDataset(Dataset):
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
-            with open(path, "rb") as audio_file:
-                wave, sr = sf.read(audio_file)
+            try:
+                with open(path, "rb") as audio_file:
+                    wave, sr = sf.read(audio_file)
+            except RuntimeError:
+                print("Could not read {}".format(path))
+                continue
             if min_len <= len(wave) / sr <= max_len:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
                 cached_text_len = torch.LongTensor(len(cached_text))
