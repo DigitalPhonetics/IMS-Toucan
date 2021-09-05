@@ -47,7 +47,7 @@ activate a
 .
 
 ```
-pip install -r requirements.txt --no-chache-dir
+pip install --no-cache-dir -r requirements.txt
 ```
 
 #### Speaker Embedding
