@@ -41,39 +41,30 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
 
 
 def collate_and_pad(batch):
-    if len(batch[0]) == 4:
-        # every entry in batch: [text, text_length, spec, spec_length]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        for datapoint in batch:
-            texts.append(datapoint[0])
-            text_lens.append([datapoint[1]])
-            speechs.append(datapoint[2])
-            speech_lens.append([datapoint[3]])
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1))
-    elif len(batch[0]) == 5:
-        # every entry in batch: [text, text_length, spec, spec_length, speaker_embedding]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
+    # [text, text_length, spec, spec_length, (speaker_embedding)]
+    texts = list()
+    text_lengths = list()
+    spectrograms = list()
+    spectrogram_lengths = list()
+    if len(batch[0]) == 5:
         speaker_embeddings = list()
-        for datapoint in batch:
-            texts.append(datapoint[0])
-            text_lens.append([datapoint[1]])
-            speechs.append(datapoint[2])
-            speech_lens.append([datapoint[3]])
+    for datapoint in batch:
+        texts.append(datapoint[0])
+        text_lengths.append(datapoint[1])
+        spectrograms.append(datapoint[2])
+        spectrogram_lengths.append(datapoint[3])
+        if len(batch[0]) == 5:
             speaker_embeddings.append(datapoint[4])
+    if len(batch[0]) == 5:
         return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1),
+                torch.stack(text_lengths).squeeze(1),
+                pad_sequence(spectrograms, batch_first=True),
+                torch.stack(spectrogram_lengths).squeeze(1),
                 torch.stack(speaker_embeddings))
+    return (pad_sequence(texts, batch_first=True),
+            torch.stack(text_lengths).squeeze(1),
+            pad_sequence(spectrograms, batch_first=True),
+            torch.stack(spectrogram_lengths).squeeze(1))
 
 
 def train_loop(net,

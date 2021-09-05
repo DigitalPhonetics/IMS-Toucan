@@ -50,57 +50,42 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
 
 
 def collate_and_pad(batch):
-    if len(batch[0]) == 7:
-        # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        durations = list()
-        pitch = list()
-        energy = list()
-        for datapoint in batch:
-            texts.append(datapoint[0])
-            text_lens.append([datapoint[1]])
-            speechs.append(datapoint[2])
-            speech_lens.append([datapoint[3]])
-            durations.append(datapoint[4])
-            energy.append(datapoint[5])
-            pitch.append(datapoint[6])
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1),
-                pad_sequence(durations, batch_first=True),
-                pad_sequence(pitch, batch_first=True),
-                pad_sequence(energy, batch_first=True))
-    elif len(batch[0]) == 8:
-        # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, speaker_embedding]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        durations = list()
-        pitch = list()
-        energy = list()
+    # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, (speaker_embedding)]
+    texts = list()
+    text_lengths = list()
+    spectrograms = list()
+    spectrogram_lengths = list()
+    durations = list()
+    pitch = list()
+    energy = list()
+    if len(batch[0]) == 8:
         speaker_embeddings = list()
-        for datapoint in batch:
-            texts.append(datapoint[0])
-            text_lens.append([datapoint[1]])
-            speechs.append(datapoint[2])
-            speech_lens.append([datapoint[3]])
-            durations.append(datapoint[4])
-            energy.append(datapoint[5])
-            pitch.append(datapoint[6])
+    for datapoint in batch:
+        texts.append(datapoint[0])
+        text_lengths.append(datapoint[1])
+        spectrograms.append(datapoint[2])
+        spectrogram_lengths.append(datapoint[3])
+        durations.append(datapoint[4])
+        energy.append(datapoint[5])
+        pitch.append(datapoint[6])
+        if len(batch[0]) == 8:
             speaker_embeddings.append(datapoint[7])
+    if len(batch[0]) == 8:
         return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1),
+                torch.stack(text_lengths).squeeze(1),
+                pad_sequence(spectrograms, batch_first=True),
+                torch.stack(spectrogram_lengths).squeeze(1),
                 pad_sequence(durations, batch_first=True),
                 pad_sequence(pitch, batch_first=True),
                 pad_sequence(energy, batch_first=True),
                 torch.stack(speaker_embeddings))
+    return (pad_sequence(texts, batch_first=True),
+            torch.stack(text_lengths).squeeze(1),
+            pad_sequence(spectrograms, batch_first=True),
+            torch.stack(spectrogram_lengths).squeeze(1),
+            pad_sequence(durations, batch_first=True),
+            pad_sequence(pitch, batch_first=True),
+            pad_sequence(energy, batch_first=True))
 
 
 def train_loop(net,
