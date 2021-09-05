@@ -110,9 +110,9 @@ class FastSpeechDataset(Dataset):
                 melspec_length = torch.LongTensor([len(melspec)])
                 text = tf.string_to_tensor(transcript)
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
-                cached_text_len = torch.LongTensor(len(cached_text))
+                cached_text_len = torch.LongTensor([len(cached_text)])
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu()
-                cached_speech_len = torch.LongTensor(len(cached_speech))
+                cached_speech_len = torch.LongTensor([len(cached_speech)])
                 if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
                     cached_duration = dc(acoustic_model.inference(text_tensor=text.squeeze(0).to(device),

@@ -41,13 +41,17 @@ recognize who was used as the reference speaker for this utterance.
 
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you can get by without GPU).
-Navigate to the directory you have cloned and run the command shown below. It is recommended to first create and
-activate a
+Navigate to the directory you have cloned. We are going to create and activate a
 [conda virtual environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
-.
+to install the basic requirements into. After creating the environment, the command you need to use to activate the
+virtual environment is displayed. The commands below show everything you need to do.
 
 ```
+conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
+
 pip install --no-cache-dir -r requirements.txt
+
+pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 #### Speaker Embedding
@@ -59,16 +63,12 @@ current version of the toolkit it is included by default and should require no f
 #### Nvidia Apex
 
 To speed up training and make the most of the GPU, you can optionally install nvidia-apex. To install it, activate the
-conda environment and run the following command:
+conda environment and run the following commands:
 
 ```
-conda install -c conda-forge nvidia-apex
-```
-
-This may however break a part of the previous installation, but simply running the following should fix it:
-
-```
-pip install torchaudio
+git clone https://github.com/NVIDIA/apex
+cd apex
+pip install -v --disable-pip-version-check --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext" ./
 ```
 
 #### espeak-ng

@@ -71,9 +71,9 @@ class TacotronDataset(Dataset):
                 continue
             if min_len <= len(wave) / sr <= max_len:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
-                cached_text_len = torch.LongTensor(len(cached_text))
+                cached_text_len = torch.LongTensor([len(cached_text)])
                 cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu()
-                cached_speech_len = torch.LongTensor(len(cached_speech))
+                cached_speech_len = torch.LongTensor([len(cached_speech)])
                 if speaker_embedding:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
