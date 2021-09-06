@@ -66,6 +66,55 @@ class TextFrontend:
             if not silent:
                 print("Created a German Text-Frontend")
 
+        elif language == "el":
+            self.clean_lang = None
+            self.g2p_lang = "el"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Greek Text-Frontend")
+
+        elif language == "es":
+            self.clean_lang = None
+            self.g2p_lang = "es"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Spanish Text-Frontend")
+
+        elif language == "fi":
+            self.clean_lang = None
+            self.g2p_lang = "fi"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Finnish Text-Frontend")
+
+        elif language == "ru":
+            self.clean_lang = None
+            self.g2p_lang = "ru"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Russian Text-Frontend")
+
+        elif language == "hu":
+            self.clean_lang = None
+            self.g2p_lang = "hu"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Hungarian Text-Frontend")
+
+        elif language == "nl":
+            self.clean_lang = None
+            self.g2p_lang = "nl"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Dutch Text-Frontend")
+
+        elif language == "fr":
+            self.clean_lang = None
+            self.g2p_lang = "fr"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a French Text-Frontend")
+
         else:
             print("Language not supported yet")
             sys.exit()
