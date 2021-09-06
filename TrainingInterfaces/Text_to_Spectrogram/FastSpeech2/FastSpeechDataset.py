@@ -139,7 +139,7 @@ class FastSpeechDataset(Dataset):
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
                                                              speaker_embeddings=None)[2]
-                    focus_rate = self._calculate_focus_rate(attention_map.unsqueeze(1))
+                    focus_rate = self._calculate_focus_rate(attention_map)
                     print(focus_rate)
                     cached_duration = dc(attention_map,
                                          vis=os.path.join(cache_dir, "durations_visualization",
@@ -152,7 +152,7 @@ class FastSpeechDataset(Dataset):
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
                                                              speaker_embeddings=cached_speaker_embedding.to(device))[2]
-                    focus_rate = self._calculate_focus_rate(attention_map.unsqueeze(1))
+                    focus_rate = self._calculate_focus_rate(attention_map)
                     cached_duration = dc(attention_map,
                                          vis=os.path.join(cache_dir, "durations_visualization",
                                                           str(int(focus_rate * 1000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
@@ -187,8 +187,7 @@ class FastSpeechDataset(Dataset):
 
     @staticmethod
     def _calculate_focus_rate(att_ws):
-        # transformer case -> (#layers, #heads, L, T)
-        return att_ws.max(dim=-1)[0].mean(dim=-1).max()
+        return att_ws.max(dim=-1)[0].mean()
 
     def __getitem__(self, index):
         if not self.speaker_embedding:
