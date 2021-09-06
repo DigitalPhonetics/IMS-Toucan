@@ -1,12 +1,12 @@
 import gc
 import json
 import os
-from multiprocessing import Manager
-from multiprocessing import Process
 
 import soundfile as sf
 import torch
 import torchaudio
+from torch.multiprocessing import Manager
+from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
