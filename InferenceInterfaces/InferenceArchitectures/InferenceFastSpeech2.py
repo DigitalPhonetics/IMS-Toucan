@@ -80,7 +80,6 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
         self.use_scaled_pos_enc = use_scaled_pos_enc
         self.spk_embed_dim = spk_embed_dim
-        self.padding_idx = 0
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                     torch.nn.Tanh(),
                                     torch.nn.Linear(100, adim))

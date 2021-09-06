@@ -177,8 +177,6 @@ class ArticulatoryCombinedTextFrontend:
         the sequence as articulatory features
         """
         phones = self.get_phone_string(text=text, include_eos_symbol=True)
-        if self.inference:
-            phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if view:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()
@@ -216,6 +214,8 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace(" ", "")
         else:
             phones = re.sub(r"\s+", " ", phones)
+        if self.inference:
+            phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
         return phones
