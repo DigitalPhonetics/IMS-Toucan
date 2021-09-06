@@ -144,11 +144,14 @@ class FastSpeechDataset(Dataset):
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
-                    cached_duration = dc(acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
-                                                                  speech_tensor=melspec.to(device),
-                                                                  use_teacher_forcing=True,
-                                                                  speaker_embeddings=cached_speaker_embedding.to(device))[2],
-                                         vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
+                                                             speech_tensor=melspec.to(device),
+                                                             use_teacher_forcing=True,
+                                                             speaker_embeddings=cached_speaker_embedding.to(device))[2]
+                    focus_rate = self._calculate_focus_rate(attention_map)
+                    cached_duration = dc(attention_map,
+                                         vis=os.path.join(cache_dir, "durations_visualization",
+                                                          str(int(focus_rate * 1000)) + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
@@ -177,6 +180,11 @@ class FastSpeechDataset(Dataset):
                                                            cached_pitch.cpu().numpy(),
                                                            cached_speaker_embedding.detach().cpu().numpy()])
         self.datapoints += process_internal_dataset_chunk
+
+    @staticmethod
+    def _calculate_focus_rate(att_ws):
+        # transformer case -> (#layers, #heads, L, T)
+        return att_ws.max(dim=-1)[0].mean(dim=-1).max()
 
     def __getitem__(self, index):
         if not self.speaker_embedding:
