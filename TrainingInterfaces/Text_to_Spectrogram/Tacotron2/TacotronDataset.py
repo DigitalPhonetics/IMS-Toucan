@@ -46,6 +46,25 @@ class TacotronDataset(Dataset):
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
+            tensored_datapoints = list()
+            # we had to turn all of the tensors to numpy arrays to avoid shared memory
+            # issues. Now that the multi-processing is over, we can convert them back
+            # to tensors to save on conversions in the future.
+            print("Converting into convenient format...")
+            if self.speaker_embedding:
+                for datapoint in tqdm(self.datapoints):
+                    tensored_datapoints.append([torch.Tensor(datapoint[0]),
+                                                torch.LongTensor(datapoint[1]),
+                                                torch.Tensor(datapoint[2]),
+                                                torch.LongTensor(datapoint[3]),
+                                                torch.Tensor(datapoint[4])])
+            else:
+                for datapoint in tqdm(self.datapoints):
+                    tensored_datapoints.append([torch.Tensor(datapoint[0]),
+                                                torch.LongTensor(datapoint[1]),
+                                                torch.Tensor(datapoint[2]),
+                                                torch.LongTensor(datapoint[3])])
+            self.datapoints = tensored_datapoints
             # save to cache
             torch.save(self.datapoints, os.path.join(cache_dir, "taco_train_cache.pt"))
         else:
@@ -63,12 +82,7 @@ class TacotronDataset(Dataset):
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
-            try:
-                with open(path, "rb") as audio_file:
-                    wave, sr = sf.read(audio_file)
-            except RuntimeError:
-                print("Could not read {}".format(path))
-                continue
+            wave, sr = sf.read(path)
             if min_len <= len(wave) / sr <= max_len:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
                 cached_text_len = torch.LongTensor([len(cached_text)])
@@ -79,9 +93,16 @@ class TacotronDataset(Dataset):
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
                     cached_speaker_embedding = emb_tensor.detach().cpu()
-                    process_internal_dataset_chunk.append([cached_text, cached_text_len, cached_speech, cached_speech_len, cached_speaker_embedding])
+                    process_internal_dataset_chunk.append([cached_text.numpy(),
+                                                           cached_text_len.numpy(),
+                                                           cached_speech.numpy(),
+                                                           cached_speech_len.numpy(),
+                                                           cached_speaker_embedding.numpy()])
                 else:
-                    process_internal_dataset_chunk.append([cached_text, cached_text_len, cached_speech, cached_speech_len])
+                    process_internal_dataset_chunk.append([cached_text.numpy(),
+                                                           cached_text_len.numpy(),
+                                                           cached_speech.numpy(),
+                                                           cached_speech_len.numpy()])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):

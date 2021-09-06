@@ -60,6 +60,31 @@ class FastSpeechDataset(Dataset):
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
+            tensored_datapoints = list()
+            # we had to turn all of the tensors to numpy arrays to avoid shared memory
+            # issues. Now that the multi-processing is over, we can convert them back
+            # to tensors to save on conversions in the future.
+            print("Converting into convenient format...")
+            if self.speaker_embedding:
+                for datapoint in tqdm(self.datapoints):
+                    tensored_datapoints.append([torch.Tensor(datapoint[0]),
+                                                torch.LongTensor(datapoint[1]),
+                                                torch.Tensor(datapoint[2]),
+                                                torch.LongTensor(datapoint[3]),
+                                                torch.Tensor(datapoint[4]),
+                                                torch.Tensor(datapoint[5]),
+                                                torch.Tensor(datapoint[6]),
+                                                torch.Tensor(datapoint[7])])
+            else:
+                for datapoint in tqdm(self.datapoints):
+                    tensored_datapoints.append([torch.Tensor(datapoint[0]),
+                                                torch.LongTensor(datapoint[1]),
+                                                torch.Tensor(datapoint[2]),
+                                                torch.LongTensor(datapoint[3]),
+                                                torch.Tensor(datapoint[4]),
+                                                torch.Tensor(datapoint[5]),
+                                                torch.Tensor(datapoint[6])])
+            self.datapoints = tensored_datapoints
             # save to cache
             torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
         else:
@@ -97,12 +122,7 @@ class FastSpeechDataset(Dataset):
         energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
-            try:
-                with open(path, "rb") as audio_file:
-                    wave, sr = sf.read(audio_file)
-            except RuntimeError:
-                print("Could not read {}".format(path))
-                continue
+            wave, sr = sf.read(path)
             if min_len <= len(wave) / sr <= max_len:
                 norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
                 norm_wave_length = torch.LongTensor([len(norm_wave)])
@@ -140,22 +160,22 @@ class FastSpeechDataset(Dataset):
                                    durations=cached_duration.unsqueeze(0),
                                    durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
                 if not self.speaker_embedding:
-                    process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_len,
-                                                           cached_speech,
-                                                           cached_speech_len,
-                                                           cached_duration.cpu(),
-                                                           cached_energy.cpu(),
-                                                           cached_pitch.cpu()])
+                    process_internal_dataset_chunk.append([cached_text.numpy(),
+                                                           cached_text_len.numpy(),
+                                                           cached_speech.numpy(),
+                                                           cached_speech_len.numpy(),
+                                                           cached_duration.cpu().numpy(),
+                                                           cached_energy.cpu().numpy(),
+                                                           cached_pitch.cpu().numpy()])
                 else:
-                    process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_len,
-                                                           cached_speech,
-                                                           cached_speech_len,
-                                                           cached_duration.cpu(),
-                                                           cached_energy.cpu(),
-                                                           cached_pitch.cpu(),
-                                                           cached_speaker_embedding.detach().cpu()])
+                    process_internal_dataset_chunk.append([cached_text.numpy(),
+                                                           cached_text_len.numpy(),
+                                                           cached_speech.numpy(),
+                                                           cached_speech_len.numpy(),
+                                                           cached_duration.cpu().numpy(),
+                                                           cached_energy.cpu().numpy(),
+                                                           cached_pitch.cpu().numpy(),
+                                                           cached_speaker_embedding.detach().cpu().numpy()])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
