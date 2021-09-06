@@ -138,12 +138,14 @@ class FastSpeechDataset(Dataset):
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
-                                                             speaker_embeddings=None)[2]
-                    focus_rate = self._calculate_focus_rate(attention_map)
-                    print(focus_rate)
+                                                             speaker_embeddings=None,
+                                                             use_att_constraint=True)[2]
+                    focus_rate = float(self._calculate_focus_rate(attention_map))
+                    if focus_rate < 0.68:
+                        continue
                     cached_duration = dc(attention_map,
                                          vis=os.path.join(cache_dir, "durations_visualization",
-                                                          str(int(focus_rate * 1000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                                                          str(int(focus_rate * 10000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
@@ -151,11 +153,14 @@ class FastSpeechDataset(Dataset):
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
-                                                             speaker_embeddings=cached_speaker_embedding.to(device))[2]
-                    focus_rate = self._calculate_focus_rate(attention_map)
+                                                             speaker_embeddings=cached_speaker_embedding.to(device),
+                                                             use_att_constraint=True)[2]
+                    focus_rate = float(self._calculate_focus_rate(attention_map))
+                    if focus_rate < 0.68:
+                        continue
                     cached_duration = dc(attention_map,
                                          vis=os.path.join(cache_dir, "durations_visualization",
-                                                          str(int(focus_rate * 1000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                                                          str(int(focus_rate * 10000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
