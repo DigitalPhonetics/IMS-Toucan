@@ -141,14 +141,9 @@ class FastSpeechDataset(Dataset):
                                                              use_teacher_forcing=True,
                                                              speaker_embeddings=None,
                                                              use_att_constraint=True)[2]
-                    focus_rate = float(self._calculate_focus_rate(attention_map))
-                    # if focus_rate < 0.68:
-                    #     continue
-                    cached_duration = dc(attention_map,
-                                         vis=os.path.join(cache_dir, "durations_visualization",
-                                                          str(int(focus_rate * 10000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
-                    if np.count_nonzero(cached_duration.numpy() == 0) > 5:
-                        print("exclude file {} because it has too many zero duration frames".format(path))
+                    cached_duration = dc(attention_map, vis=os.path.join(cache_dir, "durations_visualization",
+                                                                         path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                         continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
@@ -159,12 +154,10 @@ class FastSpeechDataset(Dataset):
                                                              use_teacher_forcing=True,
                                                              speaker_embeddings=cached_speaker_embedding.to(device),
                                                              use_att_constraint=True)[2]
-                    focus_rate = float(self._calculate_focus_rate(attention_map))
-                    if focus_rate < 0.68:
+                    cached_duration = dc(attention_map, vis=os.path.join(cache_dir, "durations_visualization",
+                                                                         path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                         continue
-                    cached_duration = dc(attention_map,
-                                         vis=os.path.join(cache_dir, "durations_visualization",
-                                                          str(int(focus_rate * 10000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
@@ -193,10 +186,6 @@ class FastSpeechDataset(Dataset):
                                                            cached_pitch.cpu().numpy(),
                                                            cached_speaker_embedding.detach().cpu().numpy()])
         self.datapoints += process_internal_dataset_chunk
-
-    @staticmethod
-    def _calculate_focus_rate(att_ws):
-        return att_ws.max(dim=-1)[0].mean()
 
     def __getitem__(self, index):
         if not self.speaker_embedding:
