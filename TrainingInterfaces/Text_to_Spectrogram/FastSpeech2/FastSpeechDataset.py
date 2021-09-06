@@ -135,11 +135,14 @@ class FastSpeechDataset(Dataset):
                 cached_speech_len = torch.LongTensor([len(cached_speech)])
                 if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
-                    cached_duration = dc(acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
-                                                                  speech_tensor=melspec.to(device),
-                                                                  use_teacher_forcing=True,
-                                                                  speaker_embeddings=None)[2],
-                                         vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
+                                                             speech_tensor=melspec.to(device),
+                                                             use_teacher_forcing=True,
+                                                             speaker_embeddings=None)[2]
+                    focus_rate = self._calculate_focus_rate(attention_map)
+                    cached_duration = dc(attention_map,
+                                         vis=os.path.join(cache_dir, "durations_visualization",
+                                                          str(int(focus_rate * 1000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
@@ -151,7 +154,7 @@ class FastSpeechDataset(Dataset):
                     focus_rate = self._calculate_focus_rate(attention_map)
                     cached_duration = dc(attention_map,
                                          vis=os.path.join(cache_dir, "durations_visualization",
-                                                          str(int(focus_rate * 1000)) + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                                                          str(int(focus_rate * 1000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
