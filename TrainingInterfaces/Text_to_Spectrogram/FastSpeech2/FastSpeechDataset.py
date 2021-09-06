@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import soundfile as sf
 import torch
 import torchaudio
@@ -141,11 +142,14 @@ class FastSpeechDataset(Dataset):
                                                              speaker_embeddings=None,
                                                              use_att_constraint=True)[2]
                     focus_rate = float(self._calculate_focus_rate(attention_map))
-                    if focus_rate < 0.68:
-                        continue
+                    # if focus_rate < 0.68:
+                    #     continue
                     cached_duration = dc(attention_map,
                                          vis=os.path.join(cache_dir, "durations_visualization",
                                                           str(int(focus_rate * 10000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    if np.count_nonzero(cached_duration.numpy() == 0) > 5:
+                        print("exclude file {} because it has too many zero duration frames")
+                        continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
