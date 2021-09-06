@@ -148,7 +148,7 @@ class FastSpeechDataset(Dataset):
                                          vis=os.path.join(cache_dir, "durations_visualization",
                                                           str(int(focus_rate * 10000)) + "_" + path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                     if np.count_nonzero(cached_duration.numpy() == 0) > 5:
-                        print("exclude file {} because it has too many zero duration frames")
+                        print("exclude file {} because it has too many zero duration frames".format(path))
                         continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
