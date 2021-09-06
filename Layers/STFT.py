@@ -57,7 +57,7 @@ class STFT(torch.nn.Module):
         else:
             window = None
         output = torch.stft(input, n_fft=self.n_fft, win_length=self.win_length, hop_length=self.hop_length, center=self.center, window=window,
-                            normalized=self.normalized, onesided=self.onesided, return_complex=True)
+                            normalized=self.normalized, onesided=self.onesided)
         # output: (Batch, Freq, Frames, 2=real_imag)
         # -> (Batch, Frames, Freq, 2=real_imag)
         output = output.transpose(1, 2)
