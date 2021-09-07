@@ -56,7 +56,7 @@ class Tacotron2(torch.nn.Module):
             use_residual=False,
             reduction_factor=1,
             spk_embed_dim=None,
-            spk_embed_integration_type="concat",
+            spk_embed_integration_type="add",
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
@@ -70,7 +70,9 @@ class Tacotron2(torch.nn.Module):
             use_dtw_loss=False,
             input_layer_type="linear",
             freeze_embedding_until=8000,  # pass None to not freeze the pretrained weights for the articulatory embedding function.
-            init_type=None
+            init_type=None,
+            initialize_from_pretrained_embedding_weights=False,
+            initialize_from_pretrained_model=True
             ):
         super().__init__()
 
@@ -161,8 +163,14 @@ class Tacotron2(torch.nn.Module):
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
         if init_type == "xavier_uniform":
-            initialize(self, "xavier_uniform")
-        self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_512dim.pt", map_location='cpu')["embedding_weights"])
+            initialize(self, "xavier_uniform")  # doesn't go together well with forward attention
+        if initialize_from_pretrained_embedding_weights:
+            self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_512dim.pt", map_location='cpu')["embedding_weights"])
+        if initialize_from_pretrained_model:
+            pretrained_weights = torch.load("Models/Tacotron2_Nancy/best.pt", map_location='cpu')
+            print(pretrained_weights.state_dict().keys())
+            self.enc.load_state_dict(pretrained_weights["enc"])
+            self.dec.load_state_dict(pretrained_weights["dec"])
 
     def forward(self,
                 text,
