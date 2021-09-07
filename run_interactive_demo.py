@@ -34,3 +34,4 @@ if __name__ == '__main__':
         if text == "exit":
             sys.exit()
         tts.read_aloud(text, view=True, blocking=False)
+        tts.save_encoder_decoder_weights()
