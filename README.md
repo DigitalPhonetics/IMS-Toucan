@@ -1,6 +1,6 @@
 ![image](Utility/toucan.png)
 
-IMS-Toucan is a toolkit for teaching, training and using state-of-the-art Speech Synthesis models, developed at the
+IMS Toucan is a toolkit for teaching, training and using state-of-the-art Speech Synthesis models, developed at the
 **Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
 PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
 
