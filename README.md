@@ -32,6 +32,7 @@ produced by a multi-speaker FastSpeech 2 with MelGAN trained on
 [LibriTTS](https://research.google/tools/datasets/libri-tts/) using this toolkit. Fans of the videogame Portal may
 recognize who was used as the reference speaker for this utterance.
 
+[Interactive Demo of our entry to the Blizzard Challenge 2021.](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw) This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5 hours of Spanish.
 
 ---
 
