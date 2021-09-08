@@ -19,7 +19,7 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
         self.device = device
         self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
-        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_LibriTTS", "best.pt")).to(torch.device(device))
+        self.phone2mel = FastSpeech2(spk_embed_dim=256, path_to_weights=os.path.join("Models", "FastSpeech2_LibriTTS", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()

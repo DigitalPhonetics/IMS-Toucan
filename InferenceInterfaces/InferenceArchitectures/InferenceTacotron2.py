@@ -43,7 +43,7 @@ class Tacotron2(torch.nn.Module):
             use_residual=False,
             reduction_factor=1,
             spk_embed_dim=None,
-            spk_embed_integration_type="concat",
+            spk_embed_integration_type="add",
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
