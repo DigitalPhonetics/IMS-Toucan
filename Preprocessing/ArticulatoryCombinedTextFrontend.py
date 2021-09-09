@@ -34,6 +34,19 @@ class ArticulatoryCombinedTextFrontend:
         self.inference = inference
         self.feature_table = panphon.FeatureTable()
 
+        self.language_id_lookup = {
+            "en": 1,
+            "de": 2,
+            "el": 3,
+            "es": 4,
+            "fi": 5,
+            "ru": 6,
+            "hu": 7,
+            "nl": 8,
+            "fr": 9,
+            # add up to 30, if you want more, you need to hack in more embeddings into the language embedding layer
+        }
+
         if language == "en":
             self.clean_lang = "en"
             self.g2p_lang = "en-us"
@@ -160,7 +173,7 @@ class ArticulatoryCombinedTextFrontend:
             'y': [0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
             'ʏ': [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0],
             'ɑ': [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0]
-            }
+        }
 
         self.phone_to_vector = dict()
         for phone in self.phone_to_vector_papercup:
