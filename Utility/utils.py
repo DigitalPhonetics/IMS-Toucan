@@ -33,6 +33,22 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
             os.remove(os.path.join(old_checkpoint))
 
 
+def reload_most_recent_checkpoint(model, checkpoint_dir, device):
+    checkpoint_list = list()
+    for el in os.listdir(checkpoint_dir):
+        if el.endswith(".pt") and el != "best.pt":
+            checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+    if len(checkpoint_list) == 0:
+        print("No previous checkpoints found, cannot reload. \nExiting ...")
+        import sys
+        sys.exit()
+    checkpoint_list.sort(reverse=True)
+    print("Reloading checkpoint_{}.pt".format(checkpoint_list[0]))
+    model = model.to("cpu")
+    model.load_state_dict(torch.load(os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(checkpoint_list[0])), map_location='cpu'))
+    return model.to(device)
+
+
 def make_pad_mask(lengths, xs=None, length_dim=-1):
     """
     Make mask tensor containing indices of padded part.
@@ -299,5 +315,5 @@ def to_device(m, x):
     else:
         raise TypeError(
             "Expected torch.nn.Module or torch.tensor, " f"bot got: {type(m)}"
-            )
+        )
     return x.to(device)

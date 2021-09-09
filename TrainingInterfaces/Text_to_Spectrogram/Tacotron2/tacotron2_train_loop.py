@@ -11,7 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Utility.utils import delete_old_checkpoints
+from Utility.utils import delete_old_checkpoints, reload_most_recent_checkpoint
 
 
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
@@ -94,6 +94,7 @@ def train_loop(net,
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
+    previous_error = 999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
@@ -151,26 +152,33 @@ def train_loop(net,
             scaler.step(optimizer)
             scaler.update()
         net.eval()
-        if epoch % epochs_per_save == 0:
-            torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "scaler"      : scaler.state_dict(),
-                "step_counter": step_counter,
+        loss_this_epoch = sum(train_losses_this_epoch) / len(train_losses_this_epoch)
+        if previous_error + 0.01 < loss_this_epoch:
+            print("Model Collapse detected! \nPrevious Loss: {}\nNew Loss: {}".format(previous_error, loss_this_epoch))
+            print("Trying to reset to a stable state ...")
+            net = reload_most_recent_checkpoint(model=net, device=device, checkpoint_dir=save_directory)
+        else:
+            previous_error = loss_this_epoch
+            if epoch % epochs_per_save == 0:
+                torch.save({
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
+                    "step_counter": step_counter,
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-            delete_old_checkpoints(save_directory, keep=5)
-            with torch.no_grad():
-                plot_attention(model=net,
-                               lang=lang,
-                               device=device,
-                               speaker_embedding=reference_speaker_embedding_for_att_plot,
-                               att_dir=save_directory,
-                               step=step_counter)
-            if step_counter > steps:
-                # DONE
-                return
-        print("Epoch:        {}".format(epoch + 1))
-        print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
-        print("Steps:        {}".format(step_counter))
+                delete_old_checkpoints(save_directory, keep=5)
+                with torch.no_grad():
+                    plot_attention(model=net,
+                                   lang=lang,
+                                   device=device,
+                                   speaker_embedding=reference_speaker_embedding_for_att_plot,
+                                   att_dir=save_directory,
+                                   step=step_counter)
+                if step_counter > steps:
+                    # DONE
+                    return
+            print("Epoch:        {}".format(epoch + 1))
+            print("Train Loss:   {}".format(loss_this_epoch))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            print("Steps:        {}".format(step_counter))
         net.train()
