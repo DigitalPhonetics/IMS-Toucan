@@ -72,7 +72,8 @@ class Tacotron2(torch.nn.Module):
             freeze_embedding_until=8000,  # pass None to not freeze the pretrained weights for the articulatory embedding function.
             init_type=None,
             initialize_from_pretrained_embedding_weights=False,
-            initialize_from_pretrained_model=True
+            initialize_from_pretrained_model=True,
+            language_embedding_amount=None  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
             ):
         super().__init__()
 
@@ -98,6 +99,10 @@ class Tacotron2(torch.nn.Module):
         else:
             raise ValueError(f"there is no such activation function. " f"({output_activation})")
 
+        self.language_embedding = None
+        if language_embedding_amount is not None:
+            self.language_embedding = torch.nn.Embedding(language_embedding_amount, eunits)
+
         # set padding idx
         self.padding_idx = torch.zeros(idim)
 
@@ -112,7 +117,7 @@ class Tacotron2(torch.nn.Module):
                            econv_filts=econv_filts,
                            use_batch_norm=use_batch_norm,
                            use_residual=use_residual,
-                           dropout_rate=dropout_rate, )
+                           dropout_rate=dropout_rate)
 
         if spk_embed_dim is None:
             dec_idim = eunits
@@ -176,11 +181,13 @@ class Tacotron2(torch.nn.Module):
                 speech,
                 speech_lengths,
                 speaker_embeddings=None,
-                step=None):
+                step=None,
+                language_id=None):
         """
         Calculate forward propagation.
 
         Args:
+            language_id: batch of lookup IDs for language embedding vectors
             step: Indicator for when to unfreeze the weigths of the embedding function
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
@@ -212,7 +219,8 @@ class Tacotron2(torch.nn.Module):
                                                                 speech,
                                                                 speech_lengths,
                                                                 speaker_embeddings,
-                                                                frozen_embedding=freeze_embedding)
+                                                                frozen_embedding=freeze_embedding,
+                                                                language_id=language_id)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -267,8 +275,12 @@ class Tacotron2(torch.nn.Module):
                  ys,
                  speech_lengths,
                  speaker_embeddings,
-                 frozen_embedding=False):
+                 frozen_embedding=False,
+                 language_id=None):
         hs, hlens = self.enc(text_tensors, ilens, frozen_embedding=frozen_embedding)
+        if self.language_embedding is not None and language_id is not None:
+            language_embedding_vector = self.language_embedding(language_id.view(-1))
+            hs = hs + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
         if self.spk_embed_dim is not None:
             hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
         return self.dec(hs, hlens, ys)
@@ -283,11 +295,13 @@ class Tacotron2(torch.nn.Module):
                   use_att_constraint=False,
                   backward_window=1,
                   forward_window=3,
-                  use_teacher_forcing=False, ):
+                  use_teacher_forcing=False,
+                  language_id=None):
         """
         Generate the sequence of features given the sequences of characters.
 
         Args:
+            language_id: lookup ID for language embedding vectors
             text_tensor (LongTensor): Input sequence of characters (T,).
             speech_tensor (Tensor, optional): Feature sequence to extract style (N, idim).
             speaker_embeddings (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
@@ -314,12 +328,15 @@ class Tacotron2(torch.nn.Module):
             speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
             speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
-            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings)
+            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings, language_id=language_id)
 
             return outs[0], None, att_ws[0]
 
         # inference
         h = self.enc.inference(text_tensor)
+        if self.language_embedding is not None and language_id is not None:
+            language_embedding_vector = self.language_embedding(language_id.view(-1))
+            h = h + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
         if self.spk_embed_dim is not None:
             hs, speaker_embeddings = h.unsqueeze(0), speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
