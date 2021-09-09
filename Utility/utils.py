@@ -33,7 +33,7 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
             os.remove(os.path.join(old_checkpoint))
 
 
-def reload_most_recent_checkpoint(model, checkpoint_dir, device):
+def get_most_recent_checkpoint(checkpoint_dir):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
         if el.endswith(".pt") and el != "best.pt":
@@ -44,9 +44,7 @@ def reload_most_recent_checkpoint(model, checkpoint_dir, device):
         sys.exit()
     checkpoint_list.sort(reverse=True)
     print("Reloading checkpoint_{}.pt".format(checkpoint_list[0]))
-    model = model.to("cpu")
-    model.load_state_dict(torch.load(os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(checkpoint_list[0])), map_location='cpu'))
-    return model.to(device)
+    return os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(checkpoint_list[0]))
 
 
 def make_pad_mask(lengths, xs=None, length_dim=-1):

@@ -11,7 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Utility.utils import delete_old_checkpoints, reload_most_recent_checkpoint
+from Utility.utils import delete_old_checkpoints, get_most_recent_checkpoint
 
 
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
@@ -94,7 +94,7 @@ def train_loop(net,
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
-    previous_error = 999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
+    previous_error = 99999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
@@ -156,7 +156,13 @@ def train_loop(net,
         if previous_error + 0.01 < loss_this_epoch:
             print("Model Collapse detected! \nPrevious Loss: {}\nNew Loss: {}".format(previous_error, loss_this_epoch))
             print("Trying to reset to a stable state ...")
-            net = reload_most_recent_checkpoint(model=net, device=device, checkpoint_dir=save_directory)
+            path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
+            check_dict = torch.load(path_to_checkpoint, map_location=device)
+            net.load_state_dict(check_dict["model"])
+            if not fine_tune:
+                optimizer.load_state_dict(check_dict["optimizer"])
+                step_counter = check_dict["step_counter"]
+                scaler.load_state_dict(check_dict["scaler"])
         else:
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
