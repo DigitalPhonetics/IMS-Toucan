@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_LibriTTS")
+        save_dir = os.path.join("Models", "Tacotron2_LibriTTS_smaller_lr")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -53,6 +53,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.001,
+               lr=0.0005,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

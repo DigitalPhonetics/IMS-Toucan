@@ -118,5 +118,18 @@ def make_best_in_all(n=3):
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir))
 
 
+def count_parameters(net):
+    return sum(p.numel() for p in net.parameters() if p.requires_grad)
+
+
+def show_all_models_params():
+    from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
+    from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+    model = Tacotron2()
+    print("Number of (trainable) Parameters in Tacotron2: {}".format(count_parameters(model)))
+    model = FastSpeech2()
+    print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(model)))
+
+
 if __name__ == '__main__':
     make_best_in_all(n=5)
