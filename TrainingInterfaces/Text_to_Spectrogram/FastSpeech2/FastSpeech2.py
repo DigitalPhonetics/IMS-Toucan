@@ -183,6 +183,8 @@ class FastSpeech2(torch.nn.Module, ABC):
             self.pitch_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/pitch_predictor.pt", map_location='cpu'))
             self.energy_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/energy_predictor.pt", map_location='cpu'))
             self.duration_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/duration_predictor.pt", map_location='cpu'))
+            self.feat_out.load_state_dict(torch.load("Models/PretrainedModelFast/feat_out.pt", map_location='cpu'))
+            self.postnet.load_state_dict(torch.load("Models/PretrainedModelFast/postnet.pt", map_location='cpu'))
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)

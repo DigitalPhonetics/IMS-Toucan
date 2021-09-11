@@ -25,6 +25,7 @@ tts_dict = {
     }
 
 if __name__ == '__main__':
+    Nancy_FastSpeech2().save_pretrained_weights()
     warnings.filterwarnings("ignore", category=UserWarning)
     model_id = input("Which model do you want? \nCurrently supported are: {}\n".format("".join("\n\t- {}".format(key) for key in tts_dict.keys())))
     device = "cuda" if torch.cuda.is_available() else "cpu"

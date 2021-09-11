@@ -90,3 +90,5 @@ class Nancy_FastSpeech2(torch.nn.Module):
         torch.save(self.phone2mel.pitch_predictor.state_dict(), "Models/PretrainedModelFast/pitch_predictor.pt")
         torch.save(self.phone2mel.energy_predictor.state_dict(), "Models/PretrainedModelFast/energy_predictor.pt")
         torch.save(self.phone2mel.duration_predictor.state_dict(), "Models/PretrainedModelFast/duration_predictor.pt")
+        torch.save(self.phone2mel.feat_out.state_dict(), "Models/PretrainedModelFast/feat_out.pt")
+        torch.save(self.phone2mel.postnet.state_dict(), "Models/PretrainedModelFast/postnet.pt")
