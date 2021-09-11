@@ -100,7 +100,10 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  use_dtw_loss=False,
-                 embedding_freeze_until=20000):
+                 embedding_freeze_until=None,
+                 initialize_from_pretrained_embedding_weights=False,
+                 initialize_from_pretrained_model=True
+                 ):
         super().__init__()
 
         # store hyperparameters
@@ -171,7 +174,15 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
-        self.encoder.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_384dim.pt", map_location='cpu')["embedding_weights"])
+        if initialize_from_pretrained_embedding_weights:
+            self.encoder.embed.load_state_dict(
+                torch.load("Preprocessing/embedding_pretrained_weights_combined_384dim.pt", map_location='cpu')["embedding_weights"])
+        if initialize_from_pretrained_model:
+            self.encoder.load_state_dict(torch.load("Models/PretrainedModelFast/enc.pt", map_location='cpu'))
+            self.decoder.load_state_dict(torch.load("Models/PretrainedModelFast/dec.pt", map_location='cpu'))
+            self.pitch_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/pitch_predictor.pt", map_location='cpu'))
+            self.energy_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/energy_predictor.pt", map_location='cpu'))
+            self.duration_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/duration_predictor.pt", map_location='cpu'))
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)

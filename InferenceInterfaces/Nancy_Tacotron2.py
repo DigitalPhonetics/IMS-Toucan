@@ -85,6 +85,6 @@ class Nancy_Tacotron2(torch.nn.Module):
         plt.tight_layout()
         plt.show()
 
-    def save_encoder_decoder_weights(self):
-        torch.save(self.phone2mel.enc.state_dict(), "Models/PretrainedModel/enc.pt")
-        torch.save(self.phone2mel.dec.state_dict(), "Models/PretrainedModel/dec.pt")
+    def save_pretrained_weights(self):
+        torch.save(self.phone2mel.enc.state_dict(), "Models/PretrainedModelTaco/enc.pt")
+        torch.save(self.phone2mel.dec.state_dict(), "Models/PretrainedModelTaco/dec.pt")

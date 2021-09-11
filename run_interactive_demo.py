@@ -1,8 +1,3 @@
-import sys
-import warnings
-
-import torch
-
 from InferenceInterfaces.LJSpeech_FastSpeech2 import LJSpeech_FastSpeech2
 from InferenceInterfaces.LJSpeech_Tacotron2 import LJSpeech_Tacotron2
 from InferenceInterfaces.LibriTTS_FastSpeech2 import LibriTTS_FastSpeech2
@@ -25,6 +20,11 @@ tts_dict = {
     }
 
 if __name__ == '__main__':
+    Nancy_FastSpeech2().save_pretrained_weights()
+    import sys
+
+    sys.exit()
+
     warnings.filterwarnings("ignore", category=UserWarning)
     model_id = input("Which model do you want? \nCurrently supported are: {}\n".format("".join("\n\t- {}".format(key) for key in tts_dict.keys())))
     device = "cuda" if torch.cuda.is_available() else "cpu"

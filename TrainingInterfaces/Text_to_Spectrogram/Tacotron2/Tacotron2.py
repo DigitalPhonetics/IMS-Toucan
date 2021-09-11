@@ -172,8 +172,8 @@ class Tacotron2(torch.nn.Module):
         if initialize_from_pretrained_embedding_weights:
             self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_512dim.pt", map_location='cpu')["embedding_weights"])
         if initialize_from_pretrained_model:
-            self.enc.load_state_dict(torch.load("Models/PretrainedModel/enc.pt", map_location='cpu'))
-            self.dec.load_state_dict(torch.load("Models/PretrainedModel/dec.pt", map_location='cpu'))
+            self.enc.load_state_dict(torch.load("Models/PretrainedModelTaco/enc.pt", map_location='cpu'))
+            self.dec.load_state_dict(torch.load("Models/PretrainedModelTaco/dec.pt", map_location='cpu'))
 
     def forward(self,
                 text,
