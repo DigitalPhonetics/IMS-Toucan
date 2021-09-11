@@ -85,8 +85,8 @@ class Nancy_FastSpeech2(torch.nn.Module):
             sounddevice.wait()
 
     def save_pretrained_weights(self):
-        torch.save(self.phone2mel.enc.state_dict(), "Models/PretrainedModelFast/enc.pt")
-        torch.save(self.phone2mel.dec.state_dict(), "Models/PretrainedModelFast/dec.pt")
+        torch.save(self.phone2mel.encoder.state_dict(), "Models/PretrainedModelFast/enc.pt")
+        torch.save(self.phone2mel.decoder.state_dict(), "Models/PretrainedModelFast/dec.pt")
         torch.save(self.phone2mel.pitch_predictor.state_dict(), "Models/PretrainedModelFast/pitch_predictor.pt")
         torch.save(self.phone2mel.energy_predictor.state_dict(), "Models/PretrainedModelFast/energy_predictor.pt")
         torch.save(self.phone2mel.duration_predictor.state_dict(), "Models/PretrainedModelFast/duration_predictor.pt")
