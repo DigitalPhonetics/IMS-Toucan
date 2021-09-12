@@ -24,7 +24,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=5,
+                 loading_processes=8,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
@@ -109,8 +109,8 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
+            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt").to(device)
+            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval().to(device)
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
@@ -130,10 +130,10 @@ class FastSpeechDataset(Dataset):
                 melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
                 melspec_length = torch.LongTensor([len(melspec)])
                 text = tf.string_to_tensor(transcript)
-                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
-                cached_text_len = torch.LongTensor([len(cached_text)])
-                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu()
-                cached_speech_len = torch.LongTensor([len(cached_speech)])
+                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+                cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
+                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu().numpy()
+                cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
@@ -147,13 +147,14 @@ class FastSpeechDataset(Dataset):
                         continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor, sample_rate)
+                    mel_tensor = wav2mel(wav_tensor.to(device), sample_rate.to(device))
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
-                                                             speaker_embeddings=cached_speaker_embedding.to(device),
+                                                             speaker_embeddings=cached_speaker_embedding,
                                                              use_att_constraint=True)[2]
+                    cached_speaker_embedding = cached_speaker_embedding.detach().cpu().numpy()
                     cached_duration = dc(attention_map, vis=os.path.join(cache_dir, "durations_visualization",
                                                                          path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                     if np.count_nonzero(cached_duration.numpy() == 0) > 4:
@@ -162,29 +163,29 @@ class FastSpeechDataset(Dataset):
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
                                             durations=cached_duration.unsqueeze(0),
-                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
+                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
                 cached_pitch = dio(input=norm_wave.unsqueeze(0),
                                    input_lengths=norm_wave_length,
                                    feats_lengths=melspec_length,
                                    durations=cached_duration.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
+                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
                 if not self.speaker_embedding:
-                    process_internal_dataset_chunk.append([cached_text.numpy(),
-                                                           cached_text_len.numpy(),
-                                                           cached_speech.numpy(),
-                                                           cached_speech_len.numpy(),
+                    process_internal_dataset_chunk.append([cached_text,
+                                                           cached_text_len,
+                                                           cached_speech,
+                                                           cached_speech_len,
                                                            cached_duration.cpu().numpy(),
-                                                           cached_energy.cpu().numpy(),
-                                                           cached_pitch.cpu().numpy()])
+                                                           cached_energy,
+                                                           cached_pitch])
                 else:
-                    process_internal_dataset_chunk.append([cached_text.numpy(),
-                                                           cached_text_len.numpy(),
-                                                           cached_speech.numpy(),
-                                                           cached_speech_len.numpy(),
+                    process_internal_dataset_chunk.append([cached_text,
+                                                           cached_text_len,
+                                                           cached_speech,
+                                                           cached_speech_len,
                                                            cached_duration.cpu().numpy(),
-                                                           cached_energy.cpu().numpy(),
-                                                           cached_pitch.cpu().numpy(),
-                                                           cached_speaker_embedding.detach().cpu().numpy()])
+                                                           cached_energy,
+                                                           cached_pitch,
+                                                           cached_speaker_embedding])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
