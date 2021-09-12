@@ -24,7 +24,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=8,
+                 loading_processes=9,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
@@ -111,6 +111,7 @@ class FastSpeechDataset(Dataset):
         if speaker_embedding:
             wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval().to(device)
+            dvector.flatten_parameters()
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
