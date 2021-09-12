@@ -95,18 +95,6 @@ class FastSpeechDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
-            tensored_datapoints = list()
-            for datapoint in tqdm(self.datapoints):
-                tensored_datapoints.append([datapoint[0],
-                                            datapoint[1],
-                                            datapoint[2],
-                                            datapoint[3],
-                                            datapoint[4].long(),
-                                            datapoint[5],
-                                            datapoint[6],
-                                            datapoint[7]])
-            torch.save(tensored_datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
-
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,
