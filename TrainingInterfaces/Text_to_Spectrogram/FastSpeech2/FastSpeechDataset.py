@@ -147,7 +147,7 @@ class FastSpeechDataset(Dataset):
                         continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor.to(device), sample_rate.to(device))
+                    mel_tensor = wav2mel(wav_tensor.to(device), sample_rate)
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
