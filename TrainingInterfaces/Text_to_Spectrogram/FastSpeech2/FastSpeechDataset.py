@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 import soundfile as sf
@@ -24,7 +25,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=9,
+                 loading_processes=8,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
@@ -47,17 +48,20 @@ class FastSpeechDataset(Dataset):
             for i in range(loading_processes):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(key_split,
-                                                                                     acoustic_model,
-                                                                                     speaker_embedding,
-                                                                                     lang,
-                                                                                     min_len_in_seconds,
-                                                                                     max_len_in_seconds,
-                                                                                     reduction_factor,
-                                                                                     device,
-                                                                                     cache_dir,
-                                                                                     cut_silence), daemon=True))
+                process_list.append(Process(target=self.cache_builder_process,
+                                            args=(key_split,
+                                                  acoustic_model,
+                                                  speaker_embedding,
+                                                  lang,
+                                                  min_len_in_seconds,
+                                                  max_len_in_seconds,
+                                                  reduction_factor,
+                                                  device,
+                                                  cache_dir,
+                                                  cut_silence),
+                                            daemon=True))
                 process_list[-1].start()
+                time.sleep(5)
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
