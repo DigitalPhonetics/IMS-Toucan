@@ -84,25 +84,25 @@ class TacotronDataset(Dataset):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
             if min_len <= len(wave) / sr <= max_len:
-                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu()
-                cached_text_len = torch.LongTensor([len(cached_text)])
-                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu()
-                cached_speech_len = torch.LongTensor([len(cached_speech)])
+                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+                cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
+                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu().numpy()
+                cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if speaker_embedding:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
                     emb_tensor = dvector.embed_utterance(mel_tensor)
-                    cached_speaker_embedding = emb_tensor.detach().cpu()
-                    process_internal_dataset_chunk.append([cached_text.numpy(),
-                                                           cached_text_len.numpy(),
-                                                           cached_speech.numpy(),
-                                                           cached_speech_len.numpy(),
-                                                           cached_speaker_embedding.numpy()])
+                    cached_speaker_embedding = emb_tensor.detach().cpu().numpy()
+                    process_internal_dataset_chunk.append([cached_text,
+                                                           cached_text_len,
+                                                           cached_speech,
+                                                           cached_speech_len,
+                                                           cached_speaker_embedding])
                 else:
-                    process_internal_dataset_chunk.append([cached_text.numpy(),
-                                                           cached_text_len.numpy(),
-                                                           cached_speech.numpy(),
-                                                           cached_speech_len.numpy()])
+                    process_internal_dataset_chunk.append([cached_text,
+                                                           cached_text_len,
+                                                           cached_speech,
+                                                           cached_speech_len])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
