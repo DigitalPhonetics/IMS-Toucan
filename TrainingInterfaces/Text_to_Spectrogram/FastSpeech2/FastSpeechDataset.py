@@ -109,9 +109,10 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
+            import warnings
+            warnings.filterwarnings('ignore')  # warning to flatten parameters is printed at every step, however we cannot do that because of jit
             wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval().to(device)
-            dvector.lstm.flatten_parameters()
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
