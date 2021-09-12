@@ -97,7 +97,7 @@ def train_loop(net,
                epochs_per_save=5,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.001,
+               lr=0.0005,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False):
