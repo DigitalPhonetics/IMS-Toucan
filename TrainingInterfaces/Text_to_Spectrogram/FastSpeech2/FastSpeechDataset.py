@@ -25,7 +25,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=8,
+                 loading_processes=6,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
@@ -113,10 +113,8 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            import warnings
-            warnings.filterwarnings('ignore')  # warning to flatten parameters is printed at every step, however we cannot do that because of jit
             wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval().to(device)
+            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
@@ -154,13 +152,13 @@ class FastSpeechDataset(Dataset):
                         continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor, sample_rate).to(device)
+                    mel_tensor = wav2mel(wav_tensor, sample_rate)
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
                     del mel_tensor
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
-                                                             speaker_embeddings=cached_speaker_embedding,
+                                                             speaker_embeddings=cached_speaker_embedding.to(device),
                                                              use_att_constraint=True)[2]
                     del melspec
                     cached_speaker_embedding = cached_speaker_embedding.detach().cpu().numpy()
