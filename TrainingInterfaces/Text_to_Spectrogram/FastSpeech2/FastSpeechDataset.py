@@ -109,7 +109,7 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt").to(device)
+            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
             dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval().to(device)
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
@@ -130,10 +130,10 @@ class FastSpeechDataset(Dataset):
                 melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
                 melspec_length = torch.LongTensor([len(melspec)])
                 text = tf.string_to_tensor(transcript)
-                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+                cached_text = text.squeeze(0).cpu().numpy()
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
-                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu().numpy()
-                cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
+                cached_speech = melspec.cpu().numpy()
+                cached_speech_len = melspec_length.numpy()
                 if not speaker_embedding:
                     os.path.join(cache_dir, "durations_visualization")
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
@@ -141,19 +141,22 @@ class FastSpeechDataset(Dataset):
                                                              use_teacher_forcing=True,
                                                              speaker_embeddings=None,
                                                              use_att_constraint=True)[2]
+                    del melspec
                     cached_duration = dc(attention_map, vis=os.path.join(cache_dir, "durations_visualization",
                                                                          path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
                     if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                         continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor.to(device), sample_rate)
+                    mel_tensor = wav2mel(wav_tensor, sample_rate).to(device)
                     cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
+                    del mel_tensor
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,
                                                              speaker_embeddings=cached_speaker_embedding,
                                                              use_att_constraint=True)[2]
+                    del melspec
                     cached_speaker_embedding = cached_speaker_embedding.detach().cpu().numpy()
                     cached_duration = dc(attention_map, vis=os.path.join(cache_dir, "durations_visualization",
                                                                          path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
