@@ -4,7 +4,7 @@ import time
 import numpy as np
 import soundfile as sf
 import torch
-import torchaudio
+from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
@@ -112,8 +112,8 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
@@ -150,10 +150,7 @@ class FastSpeechDataset(Dataset):
                     if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                         continue
                 else:
-                    wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor, sample_rate)
-                    cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
-                    del mel_tensor
+                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave).squeeze(0).squeeze(0)
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,

@@ -59,4 +59,5 @@ Unidecode==1.2.0
 uritemplate==3.0.1
 urllib3==1.26.6
 wcwidth==0.2.5
+speechbrain==0.5.10
 gdown

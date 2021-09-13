@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_model = Tacotron2(spk_embed_dim=256)
+    acoustic_model = Tacotron2(spk_embed_dim=192)
     acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_LibriTTS", "best.pt"), map_location='cpu')["model"])
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
@@ -47,7 +47,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   speaker_embedding=True)
     del acoustic_model
 
-    model = FastSpeech2(spk_embed_dim=256)
+    model = FastSpeech2(spk_embed_dim=192, initialize_from_pretrained_model=True)
 
     print("Training model")
     train_loop(net=model,

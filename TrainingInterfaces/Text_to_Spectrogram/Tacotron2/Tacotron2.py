@@ -72,7 +72,8 @@ class Tacotron2(torch.nn.Module):
             freeze_embedding_until=None,  # pass None to not freeze the pretrained weights for the articulatory embedding function. (default 8000)
             init_type=None,
             initialize_from_pretrained_embedding_weights=False,
-            initialize_from_pretrained_model=True,
+            initialize_from_pretrained_model=False,
+            initialize_multispeaker_projection=False,
             language_embedding_amount=None  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
             ):
         super().__init__()
@@ -174,7 +175,8 @@ class Tacotron2(torch.nn.Module):
         if initialize_from_pretrained_model:
             self.enc.load_state_dict(torch.load("Models/PretrainedModelTaco/enc.pt", map_location='cpu'))
             self.dec.load_state_dict(torch.load("Models/PretrainedModelTaco/dec.pt", map_location='cpu'))
-            self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
+            if initialize_multispeaker_projection:
+                self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
 
     def forward(self,
                 text,

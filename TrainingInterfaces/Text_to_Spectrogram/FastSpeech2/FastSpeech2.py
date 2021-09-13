@@ -102,7 +102,10 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_dtw_loss=False,
                  embedding_freeze_until=None,
                  initialize_from_pretrained_embedding_weights=False,
-                 initialize_from_pretrained_model=True
+                 initialize_from_pretrained_model=False,
+                 initialize_multispeaker_projection=False,
+                 language_embedding_amount=None
+                 # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
                  ):
         super().__init__()
 
@@ -185,6 +188,8 @@ class FastSpeech2(torch.nn.Module, ABC):
             self.duration_predictor.load_state_dict(torch.load("Models/PretrainedModelFast/duration_predictor.pt", map_location='cpu'))
             self.feat_out.load_state_dict(torch.load("Models/PretrainedModelFast/feat_out.pt", map_location='cpu'))
             self.postnet.load_state_dict(torch.load("Models/PretrainedModelFast/postnet.pt", map_location='cpu'))
+            if initialize_multispeaker_projection:
+                self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)

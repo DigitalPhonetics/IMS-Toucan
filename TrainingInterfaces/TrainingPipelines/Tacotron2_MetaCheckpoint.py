@@ -54,7 +54,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     train_set = ConcatDataset(datasets)
 
-    model = Tacotron2(spk_embed_dim=256, language_embedding_amount=30)
+    model = Tacotron2(spk_embed_dim=192, language_embedding_amount=30)
 
     print("Training model")
     train_loop(net=model,

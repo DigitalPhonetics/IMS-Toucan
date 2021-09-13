@@ -27,14 +27,14 @@ def load_net_fast(path):
 
 def load_net_taco_multi(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Tacotron2(spk_embed_dim=256)
+    net = Tacotron2(spk_embed_dim=192)
     net.load_state_dict(check_dict["model"])
     return net
 
 
 def load_net_fast_multi(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = FastSpeech2(spk_embed_dim=256)
+    net = FastSpeech2(spk_embed_dim=192)
     net.load_state_dict(check_dict["model"])
     return net
 

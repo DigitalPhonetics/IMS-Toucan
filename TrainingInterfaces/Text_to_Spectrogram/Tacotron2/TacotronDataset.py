@@ -2,7 +2,7 @@ import os
 
 import soundfile as sf
 import torch
-import torchaudio
+from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
@@ -80,22 +80,20 @@ class TacotronDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
             if min_len <= len(wave) / sr <= max_len:
+                norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
-                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).cpu().numpy()
+                cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
                 cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if speaker_embedding:
-                    wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor, sample_rate)
-                    emb_tensor = dvector.embed_utterance(mel_tensor)
-                    cached_speaker_embedding = emb_tensor.detach().cpu().numpy()
+                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave).squeeze(0).squeeze(0).detach().cpu().numpy()
                     process_internal_dataset_chunk.append([cached_text,
                                                            cached_text_len,
                                                            cached_speech,
@@ -113,7 +111,8 @@ class TacotronDataset(Dataset):
             if not self.speaker_embedding:
                 return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.language_id
             else:
-                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4], self.language_id
+                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][
+                    4], self.language_id
         else:
             if not self.speaker_embedding:
                 return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3]

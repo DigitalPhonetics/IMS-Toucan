@@ -32,7 +32,9 @@ produced by a multi-speaker FastSpeech 2 with MelGAN trained on
 [LibriTTS](https://research.google/tools/datasets/libri-tts/) using this toolkit. Fans of the videogame Portal may
 recognize who was used as the reference speaker for this utterance.
 
-[Interactive Demo of our entry to the Blizzard Challenge 2021.](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw) This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5 hours of Spanish.
+[Interactive Demo of our entry to the Blizzard Challenge 2021.](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw)
+This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5
+hours of Spanish.
 
 ---
 
@@ -57,9 +59,11 @@ pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f ht
 
 #### Speaker Embedding
 
-If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
-is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. In the
-current version of the toolkit it is included by default and should require no further action.
+If you want to use multi-speaker synthesis, you will need a speaker embedding function. IMS Toucan recently switched
+from using [dvector](https://github.com/yistLin/dvector) to
+[Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb). In the current version of the
+toolkit no further action should be required. When you are using it for the first time, it requires an internet
+connection to download the pretrained models though.
 
 #### espeak-ng
 
