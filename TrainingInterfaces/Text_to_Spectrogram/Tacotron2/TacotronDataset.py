@@ -23,7 +23,10 @@ class TacotronDataset(Dataset):
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=False,
-                 rebuild_cache=False):
+                 rebuild_cache=False,
+                 return_language_id=False):
+        self.return_language_id = return_language_id
+        self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
@@ -106,10 +109,16 @@ class TacotronDataset(Dataset):
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
-        if not self.speaker_embedding:
-            return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3]
+        if self.return_language_id:
+            if not self.speaker_embedding:
+                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.language_id
+            else:
+                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4], self.language_id
         else:
-            return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4]
+            if not self.speaker_embedding:
+                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3]
+            else:
+                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4]
 
     def __len__(self):
         return len(self.datapoints)

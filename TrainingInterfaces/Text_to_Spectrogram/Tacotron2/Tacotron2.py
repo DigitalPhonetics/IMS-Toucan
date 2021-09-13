@@ -174,6 +174,7 @@ class Tacotron2(torch.nn.Module):
         if initialize_from_pretrained_model:
             self.enc.load_state_dict(torch.load("Models/PretrainedModelTaco/enc.pt", map_location='cpu'))
             self.dec.load_state_dict(torch.load("Models/PretrainedModelTaco/dec.pt", map_location='cpu'))
+            self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
 
     def forward(self,
                 text,

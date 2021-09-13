@@ -14,7 +14,7 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedT
 from Utility.utils import delete_old_checkpoints, get_most_recent_checkpoint
 
 
-def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
+def plot_attention(model, lang, device, speaker_embedding, att_dir, step, language_id):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -24,7 +24,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     text = tf.string_to_tensor(sentence).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
+    att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding, language_id=language_id)[2].to("cpu")
     model.train()
     del tf
     plt.figure(figsize=(8, 4))
@@ -41,11 +41,35 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
 
 
 def collate_and_pad(batch):
-    # [text, text_length, spec, spec_length, (speaker_embedding)]
+    # [text, text_length, spec, spec_length, (speaker_embedding), (language_id)]
     texts = list()
     text_lengths = list()
     spectrograms = list()
     spectrogram_lengths = list()
+    if type(batch[0][-1]) is int:
+        language_ids = list()
+        if len(batch[0]) == 6:
+            speaker_embeddings = list()
+        for datapoint in batch:
+            texts.append(datapoint[0])
+            text_lengths.append(datapoint[1])
+            spectrograms.append(datapoint[2])
+            spectrogram_lengths.append(datapoint[3])
+            if len(batch[0]) == 6:
+                speaker_embeddings.append(datapoint[4])
+            language_ids.append(torch.LongTensor(datapoint[5]))
+        if len(batch[0]) == 6:
+            return (pad_sequence(texts, batch_first=True),
+                    torch.stack(text_lengths).squeeze(1),
+                    pad_sequence(spectrograms, batch_first=True),
+                    torch.stack(spectrogram_lengths).squeeze(1),
+                    torch.stack(speaker_embeddings),
+                    torch.stack(language_ids).squeeze(1))
+        return (pad_sequence(texts, batch_first=True),
+                torch.stack(text_lengths).squeeze(1),
+                pad_sequence(spectrograms, batch_first=True),
+                torch.stack(spectrogram_lengths).squeeze(1),
+                torch.stack(language_ids).squeeze(1))
     if len(batch[0]) == 5:
         speaker_embeddings = list()
     for datapoint in batch:
@@ -78,7 +102,8 @@ def train_loop(net,
                lang="en",
                lr=0.001,
                path_to_checkpoint=None,
-               fine_tune=False):
+               fine_tune=False,
+               multi_ling=False):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -92,9 +117,12 @@ def train_loop(net,
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
     :param epochs_per_save: how many epochs to train in between checkpoints
+
+    Args:
+        multi_ling: whether to use language IDs for language embeddings
     """
     net = net.to(device)
-    previous_error = 99999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
+    previous_error = 999999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
@@ -104,6 +132,10 @@ def train_loop(net,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
+    if multi_ling:
+        reference_language_id = 1
+    else:
+        reference_language_id = None
     if use_speaker_embedding:
         reference_speaker_embedding_for_att_plot = torch.Tensor(train_dataset[0][4]).to(device)
     else:
@@ -129,20 +161,39 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                if not use_speaker_embedding:
-                    train_loss = net(text=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     speaker_embeddings=None,
-                                     step=step_counter)
+                if multi_ling:
+                    if not use_speaker_embedding:
+                        train_loss = net(text=batch[0].to(device),
+                                         text_lengths=batch[1].to(device),
+                                         speech=batch[2].to(device),
+                                         speech_lengths=batch[3].to(device),
+                                         speaker_embeddings=None,
+                                         language_id=batch[4].to(device),
+                                         step=step_counter)
+                    else:
+                        train_loss = net(text=batch[0].to(device),
+                                         text_lengths=batch[1].to(device),
+                                         speech=batch[2].to(device),
+                                         speech_lengths=batch[3].to(device),
+                                         speaker_embeddings=batch[4].to(device),
+                                         language_id=batch[5].to(device),
+                                         step=step_counter)
                 else:
-                    train_loss = net(text=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     speaker_embeddings=batch[4].to(device),
-                                     step=step_counter)
+                    if not use_speaker_embedding:
+                        train_loss = net(text=batch[0].to(device),
+                                         text_lengths=batch[1].to(device),
+                                         speech=batch[2].to(device),
+                                         speech_lengths=batch[3].to(device),
+                                         speaker_embeddings=None,
+                                         step=step_counter)
+                    else:
+                        train_loss = net(text=batch[0].to(device),
+                                         text_lengths=batch[1].to(device),
+                                         speech=batch[2].to(device),
+                                         speech_lengths=batch[3].to(device),
+                                         speaker_embeddings=batch[4].to(device),
+                                         step=step_counter)
+
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
@@ -179,12 +230,13 @@ def train_loop(net,
                                    device=device,
                                    speaker_embedding=reference_speaker_embedding_for_att_plot,
                                    att_dir=save_directory,
-                                   step=step_counter)
+                                   step=step_counter,
+                                   language_id=reference_language_id)
                 if step_counter > steps:
                     # DONE
                     return
             print("Epoch:        {}".format(epoch + 1))
             print("Train Loss:   {}".format(loss_this_epoch))
-            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
             print("Steps:        {}".format(step_counter))
         net.train()

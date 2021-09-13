@@ -47,6 +47,8 @@ class ArticulatoryCombinedTextFrontend:
             # add up to 30, if you want more, you need to hack in more embeddings into the language embedding layer of the meta checkpoint
         }
 
+        self.language_id = self.language_id_lookup[language]
+
         if language == "en":
             self.clean_lang = "en"
             self.g2p_lang = "en-us"
