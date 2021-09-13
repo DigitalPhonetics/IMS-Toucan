@@ -34,12 +34,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
         os.makedirs(save_dir)
 
     path_to_transcript_dict = build_path_to_transcript_dict()
+    count = 0
+    for el in path_to_transcript_dict.keys():
+        path_to_transcript_dict.pop(el)
+        count += 1
+        if count > 100:
+            break
 
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="en",
                                 speaker_embedding=True,
-                                cut_silences=False)
+                                cut_silences=False,
+                                device=device)
 
     model = Tacotron2(spk_embed_dim=192, initialize_from_pretrained_model=True)
 

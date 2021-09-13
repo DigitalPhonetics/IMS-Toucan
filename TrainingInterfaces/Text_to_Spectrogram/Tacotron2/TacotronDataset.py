@@ -24,7 +24,8 @@ class TacotronDataset(Dataset):
                  max_len_in_seconds=20,
                  cut_silences=False,
                  rebuild_cache=False,
-                 return_language_id=False):
+                 return_language_id=False,
+                 device="cpu"):
         self.return_language_id = return_language_id
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
@@ -43,7 +44,13 @@ class TacotronDataset(Dataset):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process, args=(key_split, speaker_embedding, lang, min_len_in_seconds, max_len_in_seconds, cut_silences),
+                    Process(target=self.cache_builder_process, args=(key_split,
+                                                                     speaker_embedding,
+                                                                     lang,
+                                                                     min_len_in_seconds,
+                                                                     max_len_in_seconds,
+                                                                     cut_silences,
+                                                                     device),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -75,12 +82,12 @@ class TacotronDataset(Dataset):
             self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
+    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, device):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": device})
             # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
@@ -93,7 +100,7 @@ class TacotronDataset(Dataset):
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
                 cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if speaker_embedding:
-                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave).squeeze(0).squeeze(0).detach().cpu().numpy()
+                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave.to(device)).squeeze(0).squeeze(0).detach().cpu().numpy()
                     process_internal_dataset_chunk.append([cached_text,
                                                            cached_text_len,
                                                            cached_speech,
