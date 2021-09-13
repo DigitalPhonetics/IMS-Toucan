@@ -33,6 +33,9 @@ class FastSpeechDataset(Dataset):
                  device=torch.device("cpu"),
                  rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
+        if speaker_embedding:
+            EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            # make sure download happens before parallel part
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
                 os.makedirs(os.path.join(cache_dir, "durations_visualization"))
@@ -112,7 +115,7 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": device})
             # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
@@ -150,7 +153,7 @@ class FastSpeechDataset(Dataset):
                     if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                         continue
                 else:
-                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave).squeeze(0).squeeze(0)
+                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave.to(device)).squeeze(0).squeeze(0)
                     attention_map = acoustic_model.inference(text_tensor=text.squeeze(0).to(device),
                                                              speech_tensor=melspec.to(device),
                                                              use_teacher_forcing=True,

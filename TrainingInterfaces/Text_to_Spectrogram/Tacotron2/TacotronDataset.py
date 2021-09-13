@@ -27,6 +27,9 @@ class TacotronDataset(Dataset):
                  return_language_id=False,
                  device="cpu"):
         self.return_language_id = return_language_id
+        if speaker_embedding:
+            EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            # make sure download happens before parallel part
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:

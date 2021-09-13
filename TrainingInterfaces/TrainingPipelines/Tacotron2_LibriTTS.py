@@ -35,7 +35,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
     count = 0
-    for el in path_to_transcript_dict.keys():
+    keys = list(path_to_transcript_dict.keys())
+    for el in keys:
         path_to_transcript_dict.pop(el)
         count += 1
         if count > 100:
