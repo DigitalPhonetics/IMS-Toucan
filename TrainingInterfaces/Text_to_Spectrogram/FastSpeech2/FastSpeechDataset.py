@@ -115,7 +115,7 @@ class FastSpeechDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": device})
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": str(device)})
             # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,

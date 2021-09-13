@@ -47,7 +47,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 lang="en",
                                 speaker_embedding=True,
                                 cut_silences=False,
-                                device="cpu" if gpu_id is "cpu" else "cuda")
+                                device=device)
 
     model = Tacotron2(spk_embed_dim=192, initialize_from_pretrained_model=True)
 

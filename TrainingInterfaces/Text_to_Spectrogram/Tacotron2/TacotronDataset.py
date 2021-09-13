@@ -93,7 +93,7 @@ class TacotronDataset(Dataset):
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
             print("loading speaker embedding function")
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": device})
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": str(device)})
             print("speaker embedding function loaded")
             # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
