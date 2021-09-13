@@ -1,4 +1,5 @@
 import os
+import time
 
 import soundfile as sf
 import torch
@@ -56,6 +57,7 @@ class TacotronDataset(Dataset):
                                                                      device),
                             daemon=True))
                 process_list[-1].start()
+                time.sleep(5)
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
@@ -90,7 +92,9 @@ class TacotronDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         if speaker_embedding:
+            print("loading speaker embedding function")
             speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": device})
+            print("speaker embedding function loaded")
             # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
@@ -119,15 +123,30 @@ class TacotronDataset(Dataset):
     def __getitem__(self, index):
         if self.return_language_id:
             if not self.speaker_embedding:
-                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.language_id
+                return self.datapoints[index][0], \
+                       self.datapoints[index][1], \
+                       self.datapoints[index][2], \
+                       self.datapoints[index][3], \
+                       self.language_id
             else:
-                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][
-                    4], self.language_id
+                return self.datapoints[index][0], \
+                       self.datapoints[index][1], \
+                       self.datapoints[index][2], \
+                       self.datapoints[index][3], \
+                       self.datapoints[index][4], \
+                       self.language_id
         else:
             if not self.speaker_embedding:
-                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3]
+                return self.datapoints[index][0], \
+                       self.datapoints[index][1], \
+                       self.datapoints[index][2], \
+                       self.datapoints[index][3]
             else:
-                return self.datapoints[index][0], self.datapoints[index][1], self.datapoints[index][2], self.datapoints[index][3], self.datapoints[index][4]
+                return self.datapoints[index][0], \
+                       self.datapoints[index][1], \
+                       self.datapoints[index][2], \
+                       self.datapoints[index][3], \
+                       self.datapoints[index][4]
 
     def __len__(self):
         return len(self.datapoints)
