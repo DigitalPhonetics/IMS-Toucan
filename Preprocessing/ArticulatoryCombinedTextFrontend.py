@@ -44,7 +44,7 @@ class ArticulatoryCombinedTextFrontend:
             "hu": 7,
             "nl": 8,
             "fr": 9,
-            # add up to 30, if you want more, you need to hack in more embeddings into the language embedding layer
+            # add up to 30, if you want more, you need to hack in more embeddings into the language embedding layer of the meta checkpoint
         }
 
         if language == "en":

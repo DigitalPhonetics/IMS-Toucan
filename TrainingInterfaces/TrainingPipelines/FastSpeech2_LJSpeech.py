@@ -44,6 +44,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                   acoustic_model=acoustic_model,
                                   lang="en",
                                   device=device)
+    del acoustic_model
 
     model = FastSpeech2()
 
@@ -56,7 +57,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                batch_size=20,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.0002,
+               lr=0.0001,
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

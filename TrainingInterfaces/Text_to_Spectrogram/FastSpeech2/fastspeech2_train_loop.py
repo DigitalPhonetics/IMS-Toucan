@@ -97,10 +97,11 @@ def train_loop(net,
                epochs_per_save=5,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.0005,
+               lr=0.0001,
                warmup_steps=14000,
                path_to_checkpoint=None,
-               fine_tune=False):
+               fine_tune=False,
+               freeze_until=14000):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -115,8 +116,16 @@ def train_loop(net,
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
     :param epochs_per_save: how many epochs to train in between checkpoints
+
+    Args:
+        freeze_until: amount of steps to train the projection of a multi-speaker model on its own
     """
     net = net.to(device)
+    if freeze_until is not None and freeze_until > 0:
+        for param in net.parameters():
+            param.requires_grad = False
+        for param in net.projection.parameters():
+            param.requires_grad = True
     if use_speaker_embedding:
         reference_speaker_embedding_for_plot = torch.Tensor(train_dataset[0][7]).to(device)
     else:
@@ -182,6 +191,11 @@ def train_loop(net,
             scaler.step(optimizer)
             scaler.update()
             scheduler.step()
+            if freeze_until is not None and freeze_until < step_counter:
+                for param in net.parameters():
+                    param.requires_grad = True
+                freeze_until = None
+                print("Weights are now unfrozen, good luck!")
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({

@@ -69,7 +69,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,
             input_layer_type="linear",
-            freeze_embedding_until=8000,  # pass None to not freeze the pretrained weights for the articulatory embedding function.
+            freeze_embedding_until=None,  # pass None to not freeze the pretrained weights for the articulatory embedding function. (default 8000)
             init_type=None,
             initialize_from_pretrained_embedding_weights=False,
             initialize_from_pretrained_model=True,
