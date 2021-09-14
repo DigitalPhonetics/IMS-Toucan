@@ -34,13 +34,6 @@ class TacotronDataset(Dataset):
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
-            if speaker_embedding:
-                speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                            run_opts={"device": str(device)},
-                                                                            savedir="Models/speechbrain_speaker_embedding")
-                # is trained on 16kHz audios and produces 192 dimensional vectors
-                # make sure download happens before parallel part
-
             # build cache
             print("... building dataset cache ...")
             self.datapoints = resource_manager.list()
@@ -70,6 +63,11 @@ class TacotronDataset(Dataset):
             # to tensors to save on conversions in the future.
             print("Converting into convenient format...")
             if self.speaker_embedding:
+                if speaker_embedding:
+                    speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                                run_opts={"device": str(device)},
+                                                                                savedir="Models/speechbrain_speaker_embedding")
+                    # is trained on 16kHz audios and produces 192 dimensional vectors
                 for datapoint in tqdm(self.datapoints):
                     tensored_datapoints.append([torch.Tensor(datapoint[0]),
                                                 torch.LongTensor(datapoint[1]),
@@ -103,10 +101,8 @@ class TacotronDataset(Dataset):
             if min_len <= len(norm_wave) / sr <= max_len:
                 print(len(norm_wave))
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
-                print("cahced text")
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
-                print("cached speech")
                 cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if speaker_embedding:
                     process_internal_dataset_chunk.append([cached_text,
