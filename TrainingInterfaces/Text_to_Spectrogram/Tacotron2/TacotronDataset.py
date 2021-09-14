@@ -30,7 +30,9 @@ class TacotronDataset(Dataset):
         self.return_language_id = return_language_id
         speaker_embedding_function = None
         if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": str(device)})
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                        run_opts={"device": str(device)},
+                                                                        savedir="Models/speechbrain_speaker_embedding")
             # make sure download happens before parallel part
             # is trained on 16kHz audios and produces 192 dimensional vectors
 
