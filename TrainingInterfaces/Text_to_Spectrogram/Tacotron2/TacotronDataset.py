@@ -28,19 +28,18 @@ class TacotronDataset(Dataset):
                  return_language_id=False,
                  device="cpu"):
         self.return_language_id = return_language_id
-        speaker_embedding_function = None
-        if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                        run_opts={"device": str(device)},
-                                                                        savedir="Models/speechbrain_speaker_embedding")
-            # is trained on 16kHz audios and produces 192 dimensional vectors
-            # make sure download happens before parallel part
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
+            if speaker_embedding:
+                speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                            run_opts={"device": str(device)},
+                                                                            savedir="Models/speechbrain_speaker_embedding")
+                # is trained on 16kHz audios and produces 192 dimensional vectors
+                # make sure download happens before parallel part
 
             # build cache
             print("... building dataset cache ...")
@@ -57,9 +56,7 @@ class TacotronDataset(Dataset):
                                                                      lang,
                                                                      min_len_in_seconds,
                                                                      max_len_in_seconds,
-                                                                     cut_silences,
-                                                                     device,
-                                                                     speaker_embedding_function),
+                                                                     cut_silences),
                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -77,7 +74,7 @@ class TacotronDataset(Dataset):
                                                 torch.LongTensor(datapoint[1]),
                                                 torch.Tensor(datapoint[2]),
                                                 torch.LongTensor(datapoint[3]),
-                                                torch.Tensor(datapoint[4])])
+                                                speaker_embedding_function.encode_batch(datapoint[4].to(device)).squeeze(0).squeeze(0).detach().cpu().numpy()])
             else:
                 for datapoint in tqdm(self.datapoints):
                     tensored_datapoints.append([torch.Tensor(datapoint[0]),
@@ -92,7 +89,7 @@ class TacotronDataset(Dataset):
             self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, device, speaker_embedding_function):
+    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
@@ -108,12 +105,11 @@ class TacotronDataset(Dataset):
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
                 cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if speaker_embedding:
-                    cached_speaker_embedding = speaker_embedding_function.encode_batch(norm_wave.to(device)).squeeze(0).squeeze(0).detach().cpu().numpy()
                     process_internal_dataset_chunk.append([cached_text,
                                                            cached_text_len,
                                                            cached_speech,
                                                            cached_speech_len,
-                                                           cached_speaker_embedding])
+                                                           norm_wave.numpy()])
                 else:
                     process_internal_dataset_chunk.append([cached_text,
                                                            cached_text_len,
