@@ -102,7 +102,7 @@ class TacotronDataset(Dataset):
             print(transcript)
             wave, sr = sf.read(path)
             print(sr)
-            norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            norm_wave = ap.audio_to_wave_tensor(normalize=False, audio=wave)
             if min_len <= len(norm_wave) / sr <= max_len:
                 print(len(norm_wave))
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
