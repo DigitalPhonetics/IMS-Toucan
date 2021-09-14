@@ -33,9 +33,12 @@ class FastSpeechDataset(Dataset):
                  device=torch.device("cpu"),
                  rebuild_cache=False):
         self.speaker_embedding = speaker_embedding
+        speaker_embedding_function = None
         if speaker_embedding:
-            EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb")
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": str(device)})
             # make sure download happens before parallel part
+            # is trained on 16kHz audios and produces 192 dimensional vectors
+
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
                 os.makedirs(os.path.join(cache_dir, "durations_visualization"))
@@ -61,7 +64,8 @@ class FastSpeechDataset(Dataset):
                                                   reduction_factor,
                                                   device,
                                                   cache_dir,
-                                                  cut_silence),
+                                                  cut_silence,
+                                                  speaker_embedding_function),
                                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -110,13 +114,11 @@ class FastSpeechDataset(Dataset):
                               reduction_factor,
                               device,
                               cache_dir,
-                              cut_silence):
+                              cut_silence,
+                              speaker_embedding_function):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
-        if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", run_opts={"device": str(device)})
-            # is trained on 16kHz audios and produces 192 dimensional vectors
         ap = AudioPreprocessor(input_sr=sr,
                                output_sr=16000,
                                melspec_buckets=80,
