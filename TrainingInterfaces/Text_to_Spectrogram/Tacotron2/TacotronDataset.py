@@ -73,7 +73,7 @@ class TacotronDataset(Dataset):
                                                 torch.LongTensor(datapoint[1]),
                                                 torch.Tensor(datapoint[2]),
                                                 torch.LongTensor(datapoint[3]),
-                                                speaker_embedding_function.encode_batch(datapoint[4].to(device)).squeeze(0).squeeze(0).detach().cpu().numpy()])
+                                                speaker_embedding_function.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu().numpy()])
             else:
                 for datapoint in tqdm(self.datapoints):
                     tensored_datapoints.append([torch.Tensor(datapoint[0]),
