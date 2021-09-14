@@ -118,7 +118,7 @@ class AudioPreprocessor:
             audio = self.cut_silence_from_beginning_and_end(audio)
         else:
             audio = torch.tensor(audio)
-        audio = self.resample(audio)
+        audio = self.resample(audio.double())
         return audio
 
     def visualize_cleaning(self, unclean_audio):
