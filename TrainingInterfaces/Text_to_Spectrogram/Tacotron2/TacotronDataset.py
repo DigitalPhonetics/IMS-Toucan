@@ -62,6 +62,7 @@ class TacotronDataset(Dataset):
             # issues. Now that the multi-processing is over, we can convert them back
             # to tensors to save on conversions in the future.
             print("Converting into convenient format...")
+            norm_waves = list()
             if self.speaker_embedding:
                 if speaker_embedding:
                     speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
@@ -74,18 +75,21 @@ class TacotronDataset(Dataset):
                                                 torch.Tensor(datapoint[2]),
                                                 torch.LongTensor(datapoint[3]),
                                                 speaker_embedding_function.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu()])
+                    norm_waves.append(torch.Tensor(datapoint[-1]))
             else:
                 for datapoint in tqdm(self.datapoints):
                     tensored_datapoints.append([torch.Tensor(datapoint[0]),
                                                 torch.LongTensor(datapoint[1]),
                                                 torch.Tensor(datapoint[2]),
                                                 torch.LongTensor(datapoint[3])])
+                    norm_waves.append(torch.Tensor(datapoint[-1]))
+
             self.datapoints = tensored_datapoints
             # save to cache
-            torch.save(self.datapoints, os.path.join(cache_dir, "taco_train_cache.pt"))
+            torch.save([self.datapoints, norm_waves], os.path.join(cache_dir, "taco_train_cache.pt"))
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
+            self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')[0]
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
@@ -111,12 +115,14 @@ class TacotronDataset(Dataset):
                                                            cached_text_len,
                                                            cached_speech,
                                                            cached_speech_len,
-                                                           norm_wave.numpy()])
+                                                           norm_wave.numpy(),
+                                                           norm_wave.cpu().detach.numpy()])
                 else:
                     process_internal_dataset_chunk.append([cached_text,
                                                            cached_text_len,
                                                            cached_speech,
-                                                           cached_speech_len])
+                                                           cached_speech_len,
+                                                           norm_wave.cpu().detach.numpy()])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
