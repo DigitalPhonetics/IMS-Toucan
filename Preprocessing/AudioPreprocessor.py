@@ -117,7 +117,7 @@ class AudioPreprocessor:
         if self.cut_silence:
             audio = self.cut_silence_from_beginning_and_end(audio)
         else:
-            audio = torch.Tensor(audio)
+            audio = torch.from_numpy(audio)
         audio = self.resample(audio)
         return audio
 
