@@ -28,9 +28,12 @@ class TacotronDataset(Dataset):
                  return_language_id=False,
                  device="cpu"):
         self.return_language_id = return_language_id
+        speaker_embedding_function = None
         if speaker_embedding:
-            EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                           savedir="Models/speechbrain_speaker_embedding")
+            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                        run_opts={"device": str(device)},
+                                                                        savedir="Models/speechbrain_speaker_embedding")
+            # is trained on 16kHz audios and produces 192 dimensional vectors
             # make sure download happens before parallel part
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
@@ -55,7 +58,8 @@ class TacotronDataset(Dataset):
                                                                      min_len_in_seconds,
                                                                      max_len_in_seconds,
                                                                      cut_silences,
-                                                                     device),
+                                                                     device,
+                                                                     speaker_embedding_function),
                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -88,15 +92,11 @@ class TacotronDataset(Dataset):
             self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, device):
+    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, device, speaker_embedding_function):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
-        if speaker_embedding:
-            speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                        run_opts={"device": str(device)},
-                                                                        savedir="Models/speechbrain_speaker_embedding")
-            # is trained on 16kHz audios and produces 192 dimensional vectors
+
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
