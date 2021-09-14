@@ -51,12 +51,13 @@ class TacotronDataset(Dataset):
                 key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
                 process_list.append(
-                    Process(target=self.cache_builder_process, args=(key_split,
-                                                                     speaker_embedding,
-                                                                     lang,
-                                                                     min_len_in_seconds,
-                                                                     max_len_in_seconds,
-                                                                     cut_silences),
+                    Process(target=self.cache_builder_process,
+                            args=(key_split,
+                                  speaker_embedding,
+                                  lang,
+                                  min_len_in_seconds,
+                                  max_len_in_seconds,
+                                  cut_silences),
                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -96,13 +97,19 @@ class TacotronDataset(Dataset):
 
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
+            print(path)
             transcript = self.path_to_transcript_dict[path]
+            print(transcript)
             wave, sr = sf.read(path)
-            if min_len <= len(wave) / sr <= max_len:
-                norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            print(sr)
+            norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            if min_len <= len(norm_wave) / sr <= max_len:
+                print(len(norm_wave))
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+                print("cahced text")
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
+                print("cached speech")
                 cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
                 if speaker_embedding:
                     process_internal_dataset_chunk.append([cached_text,
