@@ -35,10 +35,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    keylist = list(path_to_transcript_dict.keys())
-    for el in keylist[:-100]:
-        path_to_transcript_dict.pop(el)
-
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="en",
@@ -54,7 +50,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                device=device,
                save_directory=save_dir,
                steps=100000,
-               batch_size=32,
+               batch_size=26,
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
