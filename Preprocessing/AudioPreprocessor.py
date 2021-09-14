@@ -64,9 +64,9 @@ class AudioPreprocessor:
         and end of a recording
         """
         silence = torch.zeros([20000])
-        no_silence_front = self.vad(torch.cat((silence, torch.Tensor(audio), silence), 0))
+        no_silence_front = self.vad(torch.cat((silence, torch.tensor(audio), silence), 0))
         reversed_audio = torch.flip(no_silence_front, (0,))
-        no_silence_back = self.vad(torch.Tensor(reversed_audio))
+        no_silence_back = self.vad(torch.tensor(reversed_audio))
         unreversed_audio = torch.flip(no_silence_back, (0,))
         return unreversed_audio
 
@@ -105,7 +105,7 @@ class AudioPreprocessor:
         fmax = sampling_rate / 2 if fmax is None else fmax
         mel_basis = librosa.filters.mel(sampling_rate, self.n_fft, self.mel_buckets, fmin, fmax)
         # apply log and return
-        return torch.Tensor(np.log10(np.maximum(eps, np.dot(spc, mel_basis.T)))).transpose(0, 1)
+        return torch.tensor(np.log10(np.maximum(eps, np.dot(spc, mel_basis.T)))).transpose(0, 1)
 
     def normalize_audio(self, audio):
         """
@@ -117,7 +117,7 @@ class AudioPreprocessor:
         if self.cut_silence:
             audio = self.cut_silence_from_beginning_and_end(audio)
         else:
-            audio = torch.from_numpy(audio)
+            audio = torch.tensor(audio)
         audio = self.resample(audio)
         return audio
 
@@ -147,12 +147,12 @@ class AudioPreprocessor:
             if normalize:
                 return self.apply_mu_law(self.normalize_audio(audio))
             else:
-                return self.apply_mu_law(torch.Tensor(audio))
+                return self.apply_mu_law(torch.tensor(audio))
         else:
             if normalize:
                 return self.normalize_audio(audio)
             else:
-                return torch.Tensor(audio)
+                return torch.tensor(audio)
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
@@ -160,4 +160,4 @@ class AudioPreprocessor:
         else:
             if isinstance(audio, torch.Tensor):
                 return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
-            return self.logmelfilterbank(audio=torch.Tensor(audio), sampling_rate=self.sr)
+            return self.logmelfilterbank(audio=torch.tensor(audio), sampling_rate=self.sr)
