@@ -120,6 +120,7 @@ class AudioPreprocessor:
             audio = self.cut_silence_from_beginning_and_end(audio)
         else:
             print("calling torch.tensor")
+            print(type(audio))
             audio = torch.Tensor(audio)
         print("should be tensor now")
         audio = self.resample(audio)
