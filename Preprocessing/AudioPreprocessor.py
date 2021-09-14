@@ -112,13 +112,17 @@ class AudioPreprocessor:
         one function to apply them all in an
         order that makes sense.
         """
+        print("started normalizing")
         audio = self.to_mono(audio)
+        print("should be mono now")
         audio = self.normalize_loudness(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_beginning_and_end(audio)
         else:
             audio = torch.Tensor(audio)
+        print("should be tensor now")
         audio = self.resample(audio)
+        print("should be resampled now")
         return audio
 
     def visualize_cleaning(self, unclean_audio):
