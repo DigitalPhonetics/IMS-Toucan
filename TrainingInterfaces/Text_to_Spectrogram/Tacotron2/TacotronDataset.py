@@ -97,7 +97,10 @@ class TacotronDataset(Dataset):
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
-            norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            try:
+                norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            except ValueError:
+                continue
             if min_len <= len(norm_wave) / sr <= max_len:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
