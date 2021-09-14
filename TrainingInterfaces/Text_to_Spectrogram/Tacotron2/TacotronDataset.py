@@ -74,7 +74,8 @@ class TacotronDataset(Dataset):
                                                 torch.LongTensor(datapoint[1]),
                                                 torch.Tensor(datapoint[2]),
                                                 torch.LongTensor(datapoint[3]),
-                                                speaker_embedding_function.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu()])
+                                                speaker_embedding_function.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(
+                                                    0).detach().cpu()])
                     norm_waves.append(torch.Tensor(datapoint[-1]))
             else:
                 for datapoint in tqdm(self.datapoints):
@@ -86,10 +87,12 @@ class TacotronDataset(Dataset):
 
             self.datapoints = tensored_datapoints
             # save to cache
-            torch.save([self.datapoints, norm_waves], os.path.join(cache_dir, "taco_train_cache.pt"))
+            torch.save((self.datapoints, norm_waves), os.path.join(cache_dir, "taco_train_cache.pt"))
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')[0]
+            self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
+            if isinstance(self.datapoints, tuple):  # check for backwards compatibility
+                self.datapoints = self.datapoints[0]
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
