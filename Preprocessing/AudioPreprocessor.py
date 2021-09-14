@@ -113,18 +113,12 @@ class AudioPreprocessor:
         order that makes sense.
         """
         audio = self.to_mono(audio)
-        print("loudness not normalized")
         audio = self.normalize_loudness(audio)
-        print("loudness normalized")
         if self.cut_silence:
             audio = self.cut_silence_from_beginning_and_end(audio)
         else:
-            print("calling torch.tensor")
-            print(type(audio))
             audio = torch.Tensor(audio)
-        print("should be tensor now")
         audio = self.resample(audio)
-        print("should be resampled now")
         return audio
 
     def visualize_cleaning(self, unclean_audio):

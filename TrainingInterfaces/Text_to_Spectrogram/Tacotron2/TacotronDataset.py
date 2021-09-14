@@ -99,7 +99,6 @@ class TacotronDataset(Dataset):
             wave, sr = sf.read(path)
             norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
             if min_len <= len(norm_wave) / sr <= max_len:
-                print(len(norm_wave))
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
