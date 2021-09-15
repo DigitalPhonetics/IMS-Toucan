@@ -191,7 +191,7 @@ class Tacotron2(torch.nn.Module):
 
         Args:
             language_id: batch of lookup IDs for language embedding vectors
-            step: Indicator for when to unfreeze the weigths of the embedding function
+            step: Indicator for when to unfreeze the weights of the embedding function
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
