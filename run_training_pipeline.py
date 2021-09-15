@@ -1,31 +1,34 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJSpeech import run as fast_LJSpeech
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as fast_LibriTTS
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_Nancy
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Thorsten import run as fast_Thorsten
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJSpeech import run as fast_lj
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as fast_libri
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Thorsten import run as fast_thorsten
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.Tacotron2_LJSpeech import run as taco_LJSpeech
-from TrainingInterfaces.TrainingPipelines.Tacotron2_LibriTTS import run as taco_LibriTTS
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_Nancy
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_Thorsten
+from TrainingInterfaces.TrainingPipelines.Tacotron2_LJSpeech import run as taco_lj
+from TrainingInterfaces.TrainingPipelines.Tacotron2_LibriTTS import run as taco_libri
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_thorsten
 
 pipeline_dict = {
-    "fast_thorsten": fast_Thorsten,
-    "taco_thorsten": taco_Thorsten,
+    "fast_thorsten": fast_thorsten,
+    "taco_thorsten": taco_thorsten,
 
-    "fast_libri"   : fast_LibriTTS,
-    "taco_libri"   : taco_LibriTTS,
+    "fast_libri": fast_libri,
+    "taco_libri": taco_libri,
 
-    "fast_lj"      : fast_LJSpeech,
-    "taco_lj"      : taco_LJSpeech,
+    "fast_lj": fast_lj,
+    "taco_lj": taco_lj,
 
-    "fast_nancy"   : fast_Nancy,
-    "taco_nancy"   : taco_Nancy,
+    "fast_nancy": fast_nancy,
+    "taco_nancy": taco_nancy,
 
     "hifi_combined": hifigan_combined,
-    }
+
+    "meta_checkpoint": meta_taco
+}
 
 if __name__ == '__main__':
 
@@ -61,7 +64,7 @@ if __name__ == '__main__':
         print("Need to provide path to checkpoint to fine-tune from!")
         sys.exit()
 
-    if args.finetune and "hifigan" in args.pipeline:
+    if args.finetune and "hifi" in args.pipeline:
         print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
 
