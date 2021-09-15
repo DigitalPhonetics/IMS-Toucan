@@ -146,7 +146,9 @@ class Tacotron2(torch.nn.Module):
 
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["model"])
 
-    def forward(self, text, speaker_embedding=None, return_atts=False,
+    def forward(self, text,
+                speaker_embedding=None,
+                return_atts=False,
                 threshold=0.5,
                 minlenratio=0.0,
                 maxlenratio=10.0,
@@ -170,16 +172,6 @@ class Tacotron2(torch.nn.Module):
         else:
             return outs
 
-    def _forward(self,
-                 xs: torch.Tensor,
-                 ilens: torch.Tensor,
-                 ys: torch.Tensor,
-                 olens: torch.Tensor,
-                 spembs: torch.Tensor, ):
-        hs, hlens = self.enc(xs, ilens)
-        if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, spembs)
-        return self.dec(hs, hlens, ys)
 
     def _integrate_with_spk_embed(self, hs: torch.Tensor,
                                   spembs: torch.Tensor):

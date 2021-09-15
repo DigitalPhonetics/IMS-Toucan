@@ -17,7 +17,7 @@ class LibriTTS_Tacotron2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = speaker_embedding
         self.device = device
-        self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
+        self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device)).squeeze(0).squeeze(0)
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
         self.phone2mel = Tacotron2(spk_embed_dim=192, path_to_weights=os.path.join("Models", "Tacotron2_LibriTTS", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
