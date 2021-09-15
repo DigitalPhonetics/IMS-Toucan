@@ -85,3 +85,9 @@ class LibriTTS_Tacotron2(torch.nn.Module):
         axes.yaxis.set_visible(False)
         plt.tight_layout()
         plt.show()
+
+    def save_pretrained_weights(self):
+        torch.save(self.phone2mel.enc.state_dict(), "Models/PretrainedModelTaco/enc.pt")
+        torch.save(self.phone2mel.dec.state_dict(), "Models/PretrainedModelTaco/dec.pt")
+        torch.save(self.phone2mel.projection.state_dict(), "Models/PretrainedModelTaco/projection.pt")
+
