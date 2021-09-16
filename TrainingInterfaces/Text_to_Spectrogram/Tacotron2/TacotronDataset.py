@@ -1,4 +1,5 @@
 import os
+import random
 import time
 
 import soundfile as sf
@@ -34,6 +35,7 @@ class TacotronDataset(Dataset):
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
+            random.shuffle(key_list)
             # build cache
             print("... building dataset cache ...")
             self.datapoints = resource_manager.list()

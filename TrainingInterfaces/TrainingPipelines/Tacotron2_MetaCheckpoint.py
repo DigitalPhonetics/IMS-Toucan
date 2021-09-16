@@ -61,56 +61,64 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                     lang="en",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
                                     cache_dir=cache_dir_greek,
                                     lang="el",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10es(),
                                     cache_dir=cache_dir_spanish,
                                     lang="es",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fi(),
                                     cache_dir=cache_dir_finnish,
                                     lang="fi",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10ru(),
                                     cache_dir=cache_dir_russian,
                                     lang="ru",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10hu(),
                                     cache_dir=cache_dir_hungarian,
                                     lang="hu",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10nl(),
                                     cache_dir=cache_dir_dutch,
                                     lang="nl",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fr(),
                                     cache_dir=cache_dir_french,
                                     lang="fr",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=True))
+                                    return_language_id=True,
+                                    device=device))
 
     train_set = ConcatDataset(datasets)
 

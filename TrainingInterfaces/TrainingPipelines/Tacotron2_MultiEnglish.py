@@ -46,21 +46,24 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                     lang="en",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=False))
+                                    return_language_id=False,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
                                     cache_dir=cache_dir_nancy,
                                     lang="el",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=False))
+                                    return_language_id=False,
+                                    device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_ljspeech(),
                                     cache_dir=cache_dir_lj,
                                     lang="es",
                                     speaker_embedding=True,
                                     cut_silences=False,
-                                    return_language_id=False))
+                                    return_language_id=False,
+                                    device=device))
 
     train_set = ConcatDataset(datasets)
 

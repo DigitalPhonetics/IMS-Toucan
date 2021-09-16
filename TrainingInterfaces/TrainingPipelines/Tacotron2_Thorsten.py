@@ -38,7 +38,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="de",
-                                cut_silences=False)
+                                cut_silences=False,
+                                device=device)
 
     model = Tacotron2()
 
