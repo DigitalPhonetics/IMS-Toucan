@@ -119,13 +119,13 @@ class TacotronDataset(Dataset):
                                                            cached_speech,
                                                            cached_speech_len,
                                                            norm_wave.numpy(),
-                                                           norm_wave.cpu().detach.numpy()])
+                                                           norm_wave.cpu().detach().numpy()])
                 else:
                     process_internal_dataset_chunk.append([cached_text,
                                                            cached_text_len,
                                                            cached_speech,
                                                            cached_speech_len,
-                                                           norm_wave.cpu().detach.numpy()])
+                                                           norm_wave.cpu().detach().numpy()])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
