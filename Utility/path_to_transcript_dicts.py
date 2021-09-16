@@ -221,7 +221,9 @@ def build_path_to_transcript_dict_nvidia_hifitts():
                   f"{root}/92_manifest_clean_test.json",
                   f"{root}/92_manifest_clean_train.json"]:
         with open(jpath, encoding='utf8', mode='r') as jfile:
-            transcripts += json.load(jfile)
+            for line in jfile.read().split("n"):
+                if line.strip() != "":
+                    transcripts.append(json.loads(line))
 
     for transcript in transcripts:
         path = transcript["audio_filepath"]
