@@ -202,3 +202,28 @@ def build_path_to_transcript_dict_css10fr():
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_nvidia_hifitts():
+    path_to_transcript = dict()
+    transcripts = list()
+    root = "/mount/resources/speech/corpora/hi_fi_tts_v0"
+
+    import json
+
+    transcripts += json.load(f"{root}/6097_manifest_clean_dev.json")
+    transcripts += json.load(f"{root}/6097_manifest_clean_test.json")
+    transcripts += json.load(f"{root}/6097_manifest_clean_train.json")
+    transcripts += json.load(f"{root}/9017_manifest_clean_dev.json")
+    transcripts += json.load(f"{root}/9017_manifest_clean_test.json")
+    transcripts += json.load(f"{root}/9017_manifest_clean_train.json")
+    transcripts += json.load(f"{root}/92_manifest_clean_dev.json")
+    transcripts += json.load(f"{root}/92_manifest_clean_test.json")
+    transcripts += json.load(f"{root}/92_manifest_clean_train.json")
+
+    for transcript in transcripts:
+        path = transcript["audio_filepath"]
+        norm_text = transcript["text_normalized"]
+        path_to_transcript[f"{root}/{path}"] = norm_text
+
+    return path_to_transcript
