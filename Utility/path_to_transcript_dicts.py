@@ -223,6 +223,7 @@ def build_path_to_transcript_dict_nvidia_hifitts():
         with open(jpath, encoding='utf8', mode='r') as jfile:
             for line in jfile.read().split("n"):
                 if line.strip() != "":
+                    print(line)
                     transcripts.append(json.loads(line))
 
     for transcript in transcripts:
