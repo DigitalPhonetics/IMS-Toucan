@@ -211,15 +211,17 @@ def build_path_to_transcript_dict_nvidia_hifitts():
 
     import json
 
-    transcripts += json.load(f"{root}/6097_manifest_clean_dev.json")
-    transcripts += json.load(f"{root}/6097_manifest_clean_test.json")
-    transcripts += json.load(f"{root}/6097_manifest_clean_train.json")
-    transcripts += json.load(f"{root}/9017_manifest_clean_dev.json")
-    transcripts += json.load(f"{root}/9017_manifest_clean_test.json")
-    transcripts += json.load(f"{root}/9017_manifest_clean_train.json")
-    transcripts += json.load(f"{root}/92_manifest_clean_dev.json")
-    transcripts += json.load(f"{root}/92_manifest_clean_test.json")
-    transcripts += json.load(f"{root}/92_manifest_clean_train.json")
+    for jpath in [f"{root}/6097_manifest_clean_dev.json",
+                  f"{root}/6097_manifest_clean_test.json",
+                  f"{root}/6097_manifest_clean_train.json",
+                  f"{root}/9017_manifest_clean_dev.json",
+                  f"{root}/9017_manifest_clean_test.json",
+                  f"{root}/9017_manifest_clean_train.json",
+                  f"{root}/92_manifest_clean_dev.json",
+                  f"{root}/92_manifest_clean_test.json",
+                  f"{root}/92_manifest_clean_train.json"]:
+        with open(jpath, encoding='utf8', mode='r') as jfile:
+            transcripts += json.load(jfile)
 
     for transcript in transcripts:
         path = transcript["audio_filepath"]
