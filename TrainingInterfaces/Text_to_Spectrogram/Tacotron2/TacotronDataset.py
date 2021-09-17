@@ -117,7 +117,10 @@ class TacotronDataset(Dataset):
                 norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
             except ValueError:
                 continue
-            if min_len <= len(norm_wave) / 16000 <= max_len:
+            dur_in_seconds = len(norm_wave) / 16000
+            if not (min_len <= dur_in_seconds <= max_len):
+                print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+            else:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
