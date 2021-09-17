@@ -129,8 +129,8 @@ class FastSpeechDataset(Dataset):
 
         acoustic_model = acoustic_model.to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
-        dio = Dio(reduction_factor=reduction_factor)
-        energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
+        dio = Dio(reduction_factor=reduction_factor, fs=16000)
+        energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
 
         for index in tqdm(range(len(datapoint_list))):
 
@@ -147,8 +147,6 @@ class FastSpeechDataset(Dataset):
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=None)[2]
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
-                if np.count_nonzero(cached_duration.numpy() == 0) > 4:
-                    continue
             else:
                 speaker_embedding = datapoint_list[index][4]
                 attention_map = acoustic_model.inference(text_tensor=text.to(device),
@@ -156,8 +154,8 @@ class FastSpeechDataset(Dataset):
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
-                if np.count_nonzero(cached_duration.numpy() == 0) > 4:
-                    continue
+            if np.count_nonzero(cached_duration.numpy() == 0) > 4:
+                continue
             cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                         input_lengths=norm_wave_length,
                                         feats_lengths=melspec_length,
