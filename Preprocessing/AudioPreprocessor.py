@@ -6,9 +6,9 @@ import numpy
 import numpy as np
 import pyloudnorm as pyln
 import torch
-from librosa import resample
 from torchaudio.transforms import MuLawDecoding
 from torchaudio.transforms import MuLawEncoding
+from torchaudio.transforms import Resample
 from torchaudio.transforms import Vad as VoiceActivityDetection
 
 
@@ -34,7 +34,7 @@ class AudioPreprocessor:
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
         if output_sr is not None and output_sr != input_sr:
-            # self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)  # switch to librosa to fix interference with speechbrain
+            self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
@@ -53,7 +53,10 @@ class AudioPreprocessor:
         to. Apply mu-law decoding before
         saving or listening to the audio.
         """
-        return self.mu_encode(torch.Tensor(audio))
+        if isinstance(audio, torch.Tensor):
+            return self.mu_encode(audio)
+        else:
+            return self.mu_encode(torch.Tensor(audio))
 
     def cut_silence_from_beginning_and_end(self, audio):
         """
@@ -115,10 +118,10 @@ class AudioPreprocessor:
         audio = self.to_mono(audio)
         audio = self.normalize_loudness(audio)
         if self.cut_silence:
-            audio = self.cut_silence_from_beginning_and_end(audio).numpy()
-        if self.final_sr != self.sr:
-            audio = resample(y=audio, orig_sr=self.sr, target_sr=self.new_sr, res_type="sinc_best")
-            # if you really want to make it count, use kaiser_best, but it will take very long
+            audio = self.cut_silence_from_beginning_and_end(audio)
+        else:
+            audio = torch.Tensor(audio)
+        audio = self.resample(audio)
         return audio
 
     def visualize_cleaning(self, unclean_audio):
@@ -143,19 +146,18 @@ class AudioPreprocessor:
         plt.show()
 
     def audio_to_wave_tensor(self, audio, normalize=True, mulaw=False):
+        if normalize:
+            audio = self.normalize_audio(audio)
         if mulaw:
-            if normalize:
-                return self.apply_mu_law(self.normalize_audio(audio))
-            else:
-                return self.apply_mu_law(audio)
+            return self.apply_mu_law(audio)
         else:
-            if normalize:
-                return torch.Tensor(self.normalize_audio(audio))
+            if isinstance(audio, torch.Tensor):
+                return audio
             else:
                 return torch.Tensor(audio)
 
+
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
-            return self.logmelfilterbank(audio=self.normalize_audio(audio), sampling_rate=self.new_sr)
-        else:
-            return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
+            audio = self.normalize_audio(audio)
+        return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
