@@ -51,7 +51,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
                                     cache_dir=cache_dir_nancy,
-                                    lang="el",
+                                    lang="en",
                                     speaker_embedding=True,
                                     cut_silences=False,
                                     return_language_id=False,
@@ -59,7 +59,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_ljspeech(),
                                     cache_dir=cache_dir_lj,
-                                    lang="es",
+                                    lang="en",
                                     speaker_embedding=True,
                                     cut_silences=False,
                                     return_language_id=False,
