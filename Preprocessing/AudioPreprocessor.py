@@ -156,7 +156,6 @@ class AudioPreprocessor:
             else:
                 return torch.Tensor(audio)
 
-
     def audio_to_mel_spec_tensor(self, audio, normalize=True):
         if normalize:
             audio = self.normalize_audio(audio)

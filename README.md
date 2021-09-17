@@ -260,10 +260,12 @@ Here are a few points that were brought up by users:
   specified GPU is set as the only visible device, in order to avoid backend stuff running accidentally on different
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
-- I'm getting device side assert triggered errors - The amount of phonemes in the phoneme set used has to be specified
-  as idim in the instantiation of a model. If a phoneme index is passed to the model during runtime which is higher than
-  the amount specified as idim, this is the cryptic error that will occur. So if you make changes to the phoneme set,
-  remember to also change the models idim.
+- My program seems to freeze and do nothing after creating a dataset with speaker embeddings - There is a very weird
+  interference between the speaker embedding function from SpeechBrain and torchaudio's resample function that causes
+  this. I don't see a way to fix this, but a workaround is to simply restart the program. The dataset will be loaded
+  from disk now, so the speaker embedding function is not needed and will never be initialized. This issue is very
+  annoying when using a concatenation of multiple datasets. Just restart after every dataset is done for the first time,
+  if you encounter this issue. (Might be system dependent, happens on the IMS servers, but not on my home PC.)
 
 ---
 
