@@ -110,11 +110,14 @@ class TacotronDataset(Dataset):
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
+            if sr != ap.sr:
+                print(f"Inconsistent sampling rate in the Data! Excluding {path}")
+                continue
             try:
                 norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
             except ValueError:
                 continue
-            if min_len <= len(norm_wave) / sr <= max_len:
+            if min_len <= len(norm_wave) / 16000 <= max_len:
                 cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
                 cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
                 cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
