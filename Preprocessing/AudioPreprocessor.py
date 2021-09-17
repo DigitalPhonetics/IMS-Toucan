@@ -116,7 +116,9 @@ class AudioPreprocessor:
         audio = self.normalize_loudness(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_beginning_and_end(audio).numpy()
-        audio = resample(y=audio, orig_sr=self.sr, target_sr=self.new_sr, res_type="sinc_best")
+        if self.final_sr != self.sr:
+            audio = resample(y=audio, orig_sr=self.sr, target_sr=self.new_sr, res_type="sinc_best")
+            # if you really want to make it count, use kaiser_best, but it will take very long
         return audio
 
     def visualize_cleaning(self, unclean_audio):
