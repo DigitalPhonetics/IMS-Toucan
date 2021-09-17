@@ -79,6 +79,10 @@ class TacotronDataset(Dataset):
                                                 speaker_embedding_function.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(
                                                     0).detach().cpu()])
                     norm_waves.append(torch.Tensor(datapoint[-1]))
+                del speaker_embedding_function
+                # loading the speaker embedding function messes up something in torchaudios resample layer.
+                # So you possibly need to restart the program after every dataset creation if you are using
+                # multiple datasets together.
             else:
                 for datapoint in tqdm(self.datapoints):
                     tensored_datapoints.append([torch.Tensor(datapoint[0]),

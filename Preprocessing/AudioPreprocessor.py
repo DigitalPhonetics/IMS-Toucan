@@ -6,9 +6,9 @@ import numpy
 import numpy as np
 import pyloudnorm as pyln
 import torch
+from librosa import resample
 from torchaudio.transforms import MuLawDecoding
 from torchaudio.transforms import MuLawEncoding
-from torchaudio.transforms import Resample
 from torchaudio.transforms import Vad as VoiceActivityDetection
 
 
@@ -29,13 +29,12 @@ class AudioPreprocessor:
         self.n_fft = n_fft
         self.mel_buckets = melspec_buckets
         self.vad = VoiceActivityDetection(sample_rate=input_sr)
-        # ^^^^ This needs heavy tweaking if used, depends very much on the data
         self.mu_encode = MuLawEncoding()
         self.mu_decode = MuLawDecoding()
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
         if output_sr is not None and output_sr != input_sr:
-            self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)
+            # self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)  # switch to librosa to fix interference with speechbrain
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
@@ -54,7 +53,7 @@ class AudioPreprocessor:
         to. Apply mu-law decoding before
         saving or listening to the audio.
         """
-        return self.mu_encode(audio)
+        return self.mu_encode(torch.Tensor(audio))
 
     def cut_silence_from_beginning_and_end(self, audio):
         """
@@ -96,7 +95,8 @@ class AudioPreprocessor:
         """
         Compute log-Mel filterbank
         """
-        audio = audio.numpy()
+        if isinstance(audio, torch.Tensor):
+            audio = audio.numpy()
         # get amplitude spectrogram
         x_stft = librosa.stft(audio, n_fft=self.n_fft, hop_length=self.hop_length, win_length=None, window="hann", pad_mode="reflect")
         spc = np.abs(x_stft).T
@@ -115,10 +115,8 @@ class AudioPreprocessor:
         audio = self.to_mono(audio)
         audio = self.normalize_loudness(audio)
         if self.cut_silence:
-            audio = self.cut_silence_from_beginning_and_end(audio)
-        else:
-            audio = torch.Tensor(audio)
-        audio = self.resample(audio)
+            audio = self.cut_silence_from_beginning_and_end(audio).numpy()
+        audio = resample(y=audio, orig_sr=self.sr, target_sr=self.new_sr)
         return audio
 
     def visualize_cleaning(self, unclean_audio):
@@ -147,10 +145,10 @@ class AudioPreprocessor:
             if normalize:
                 return self.apply_mu_law(self.normalize_audio(audio))
             else:
-                return self.apply_mu_law(torch.Tensor(audio))
+                return self.apply_mu_law(audio)
         else:
             if normalize:
-                return self.normalize_audio(audio)
+                return torch.Tensor(self.normalize_audio(audio))
             else:
                 return torch.Tensor(audio)
 
@@ -158,6 +156,4 @@ class AudioPreprocessor:
         if normalize:
             return self.logmelfilterbank(audio=self.normalize_audio(audio), sampling_rate=self.new_sr)
         else:
-            if isinstance(audio, torch.Tensor):
-                return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
-            return self.logmelfilterbank(audio=torch.Tensor(audio), sampling_rate=self.sr)
+            return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
