@@ -53,7 +53,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=1,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.002,
+               lr=0.0005,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                freeze_embedding_until=8000)
