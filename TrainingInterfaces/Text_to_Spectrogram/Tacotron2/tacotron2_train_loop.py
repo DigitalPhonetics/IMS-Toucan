@@ -103,7 +103,9 @@ def train_loop(net,
                lr=0.001,
                path_to_checkpoint=None,
                fine_tune=False,
-               multi_ling=False):
+               multi_ling=False,
+               freeze_encoder_until=None,
+               freeze_decoder_until=None):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -119,9 +121,20 @@ def train_loop(net,
     :param epochs_per_save: how many epochs to train in between checkpoints
 
     Args:
+        freeze_decoder_until:
+        freeze_encoder_until:
         multi_ling: whether to use language IDs for language embeddings
     """
     net = net.to(device)
+    if (freeze_decoder_until is not None and freeze_decoder_until > 0) or (freeze_encoder_until is not None and freeze_encoder_until > 0):
+        for param in net.parameters():
+            param.requires_grad = True
+        if freeze_decoder_until is not None and freeze_decoder_until > 0:
+            for param in net.dec.parameters():
+                param.requires_grad = False
+        if freeze_encoder_until is not None and freeze_encoder_until > 0:
+            for param in net.enc.parameters():
+                param.requires_grad = False
     previous_error = 999999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
@@ -202,6 +215,16 @@ def train_loop(net,
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
             scaler.update()
+            if freeze_encoder_until is not None and freeze_encoder_until < step_counter:
+                for param in net.enc.parameters():
+                    param.requires_grad = True
+                freeze_encoder_until = None
+                print("Encoder-weights are now unfrozen, good luck!")
+            if freeze_decoder_until is not None and freeze_decoder_until < step_counter:
+                for param in net.dec.parameters():
+                    param.requires_grad = True
+                freeze_decoder_until = None
+                print("Decoder-weights are now unfrozen, good luck!")
         net.eval()
         loss_this_epoch = sum(train_losses_this_epoch) / len(train_losses_this_epoch)
         if previous_error + 0.01 < loss_this_epoch:

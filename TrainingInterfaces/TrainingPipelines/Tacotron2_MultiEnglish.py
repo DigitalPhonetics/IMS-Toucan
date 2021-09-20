@@ -32,6 +32,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     cache_dir_lj = os.path.join("Corpora", "multispeaker_lj")
     os.makedirs(cache_dir_lj, exist_ok=True)
 
+    cache_dir_libri = os.path.join("Corpora", "multispeaker_libri")
+    os.makedirs(cache_dir_libri, exist_ok=True)
+
     if model_dir is not None:
         save_dir = model_dir
     else:
@@ -65,11 +68,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                     return_language_id=False,
                                     device=device))
 
+    datasets.append(TacotronDataset(build_path_to_transcript_dict_libritts(),
+                                    cache_dir=cache_dir_libri,
+                                    lang="en",
+                                    speaker_embedding=True,
+                                    cut_silences=False,
+                                    return_language_id=False,
+                                    device=device))
+
     train_set = ConcatDataset(datasets)
 
     model = Tacotron2(spk_embed_dim=192,
                       language_embedding_amount=None,
-                      initialize_from_pretrained_model=True,
+                      initialize_encoder_from_pretrained_model=True,
+                      initialize_decoder_from_pretrained_model=False,
                       initialize_multispeaker_projection=False)
 
     print("Training model")
@@ -82,7 +94,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.0005,
+               lr=0.002,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               multi_ling=False)
+               multi_ling=False,
+               freeze_encoder_until=14000)

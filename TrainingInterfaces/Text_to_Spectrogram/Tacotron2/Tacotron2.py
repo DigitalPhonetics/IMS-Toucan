@@ -56,7 +56,7 @@ class Tacotron2(torch.nn.Module):
             use_residual=False,
             reduction_factor=1,
             spk_embed_dim=None,
-            spk_embed_integration_type="add",
+            spk_embed_integration_type="concat",
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
@@ -72,7 +72,8 @@ class Tacotron2(torch.nn.Module):
             freeze_embedding_until=None,  # pass None to not freeze the pretrained weights for the articulatory embedding function. (default 8000)
             init_type=None,
             initialize_from_pretrained_embedding_weights=False,
-            initialize_from_pretrained_model=False,
+            initialize_encoder_from_pretrained_model=False,
+            initialize_decoder_from_pretrained_model=False,
             initialize_multispeaker_projection=False,
             language_embedding_amount=None  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
             ):
@@ -172,11 +173,12 @@ class Tacotron2(torch.nn.Module):
             initialize(self, "xavier_uniform")  # doesn't go together well with forward attention
         if initialize_from_pretrained_embedding_weights:
             self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_512dim.pt", map_location='cpu')["embedding_weights"])
-        if initialize_from_pretrained_model:
+        if initialize_encoder_from_pretrained_model:
             self.enc.load_state_dict(torch.load("Models/PretrainedModelTaco/enc.pt", map_location='cpu'))
+        if initialize_decoder_from_pretrained_model:
             self.dec.load_state_dict(torch.load("Models/PretrainedModelTaco/dec.pt", map_location='cpu'))
-            if initialize_multispeaker_projection:
-                self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
+        if initialize_multispeaker_projection:
+            self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
 
     def forward(self,
                 text,

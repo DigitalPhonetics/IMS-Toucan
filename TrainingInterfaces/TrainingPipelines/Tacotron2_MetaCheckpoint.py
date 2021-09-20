@@ -124,8 +124,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     model = Tacotron2(spk_embed_dim=192,
                       language_embedding_amount=30,
-                      initialize_from_pretrained_model=True,
-                      initialize_multispeaker_projection=True)
+                      initialize_encoder_from_pretrained_model=True,
+                      initialize_decoder_from_pretrained_model=True,
+                      initialize_multispeaker_projection=False)
 
     print("Training model")
     train_loop(net=model,
@@ -133,11 +134,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                device=device,
                save_directory=save_dir,
                steps=100000,
-               batch_size=20,
+               batch_size=32,
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.0005,
+               lr=0.002,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               multi_ling=True)
+               multi_ling=True,
+               freeze_decoder_until=14000)

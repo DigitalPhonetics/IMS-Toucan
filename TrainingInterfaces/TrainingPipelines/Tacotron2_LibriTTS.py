@@ -42,7 +42,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 cut_silences=False,
                                 device=device)
 
-    model = Tacotron2(spk_embed_dim=192, initialize_from_pretrained_model=True)
+    model = Tacotron2(spk_embed_dim=192,
+                      language_embedding_amount=None,
+                      initialize_encoder_from_pretrained_model=True,
+                      initialize_decoder_from_pretrained_model=False,
+                      initialize_multispeaker_projection=False)
 
     print("Training model")
     train_loop(net=model,
