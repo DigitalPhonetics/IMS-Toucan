@@ -105,7 +105,7 @@ class Encoder(torch.nn.Module):
         # initialize
         self.apply(encoder_init)
 
-    def forward(self, xs, ilens=None, frozen_embedding=False):
+    def forward(self, xs, ilens=None):
         """
         Calculate forward propagation.
 
@@ -120,8 +120,6 @@ class Encoder(torch.nn.Module):
             LongTensor: Batch of lengths of each sequence (B,)
         """
         xs = self.embed(xs).transpose(1, 2)
-        if frozen_embedding:
-            xs = xs.detach()
         if self.convs is not None:
             for i in range(len(self.convs)):
                 if self.use_residual:

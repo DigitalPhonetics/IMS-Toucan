@@ -69,7 +69,6 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,
             input_layer_type="linear",
-            freeze_embedding_until=None,  # pass None to not freeze the pretrained weights for the articulatory embedding function. (default 8000)
             init_type=None,
             initialize_from_pretrained_embedding_weights=False,
             initialize_encoder_from_pretrained_model=False,
@@ -81,7 +80,6 @@ class Tacotron2(torch.nn.Module):
 
         # store hyperparameters
         self.use_dtw_loss = use_dtw_loss
-        self.freeze_embedding_step = freeze_embedding_until
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
@@ -186,14 +184,12 @@ class Tacotron2(torch.nn.Module):
                 speech,
                 speech_lengths,
                 speaker_embeddings=None,
-                step=None,
                 language_id=None):
         """
         Calculate forward propagation.
 
         Args:
             language_id: batch of lookup IDs for language embedding vectors
-            step: Indicator for when to unfreeze the weights of the embedding function
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -208,12 +204,6 @@ class Tacotron2(torch.nn.Module):
 
         # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
 
-        freeze_embedding = False
-        if step is not None:
-            if self.freeze_embedding_step is not None:
-                if self.freeze_embedding_step < step:
-                    freeze_embedding = True
-
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
         labels = F.pad(labels, [0, 1], "constant", 1.0)
@@ -224,7 +214,6 @@ class Tacotron2(torch.nn.Module):
                                                                 speech,
                                                                 speech_lengths,
                                                                 speaker_embeddings,
-                                                                frozen_embedding=freeze_embedding,
                                                                 language_id=language_id)
 
         # modify mod part of groundtruth
@@ -280,9 +269,8 @@ class Tacotron2(torch.nn.Module):
                  ys,
                  speech_lengths,
                  speaker_embeddings,
-                 frozen_embedding=False,
                  language_id=None):
-        hs, hlens = self.enc(text_tensors, ilens, frozen_embedding=frozen_embedding)
+        hs, hlens = self.enc(text_tensors, ilens)
         if self.language_embedding is not None and language_id is not None:
             language_embedding_vector = self.language_embedding(language_id.view(-1))
             hs = hs + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future

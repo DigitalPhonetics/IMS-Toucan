@@ -55,4 +55,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                lang="en",
                lr=0.002,
                path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune)
+               fine_tune=finetune,
+               freeze_embedding_until=8000)
