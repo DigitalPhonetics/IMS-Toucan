@@ -183,31 +183,27 @@ def train_loop(net,
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
                                          speaker_embeddings=None,
-                                         language_id=batch[4].to(device),
-                                         step=step_counter)
+                                         language_id=batch[4].to(device))
                     else:
                         train_loss = net(text=batch[0].to(device),
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
                                          speaker_embeddings=batch[4].to(device),
-                                         language_id=batch[5].to(device),
-                                         step=step_counter)
+                                         language_id=batch[5].to(device))
                 else:
                     if not use_speaker_embedding:
                         train_loss = net(text=batch[0].to(device),
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
-                                         speaker_embeddings=None,
-                                         step=step_counter)
+                                         speaker_embeddings=None)
                     else:
                         train_loss = net(text=batch[0].to(device),
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
-                                         speaker_embeddings=batch[4].to(device),
-                                         step=step_counter)
+                                         speaker_embeddings=batch[4].to(device))
 
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
