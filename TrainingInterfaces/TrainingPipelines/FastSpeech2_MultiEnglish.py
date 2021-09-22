@@ -39,11 +39,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_MultiEnglish")
+        save_dir = os.path.join("Models", "FastSpeech2_MultispeakerEnglish")
     os.makedirs(save_dir, exist_ok=True)
 
     acoustic_model = Tacotron2(spk_embed_dim=192)
-    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_MultiEnglish", "best.pt"), map_location='cpu')["model"])
+    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_MultispeakerEnglish", "best.pt"), map_location='cpu')["model"])
 
     datasets = list()
 

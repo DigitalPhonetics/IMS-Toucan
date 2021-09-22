@@ -1,36 +1,24 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJSpeech import run as fast_lj
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as fast_libri
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MultiEnglish import run as fast_multi
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Thorsten import run as fast_thorsten
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.Tacotron2_LJSpeech import run as taco_lj
-from TrainingInterfaces.TrainingPipelines.Tacotron2_LibriTTS import run as taco_libri
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MultiEnglish import run as taco_multi
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_thorsten
 
 pipeline_dict = {
-    "fast_thorsten"       : fast_thorsten,
-    "taco_thorsten"       : taco_thorsten,
+    "fast_nancy": fast_nancy,
+    "taco_nancy": taco_nancy,
 
-    "fast_libri"          : fast_libri,
-    "taco_libri"          : taco_libri,
-
-    "fast_lj"             : fast_lj,
-    "taco_lj"             : taco_lj,
-
-    "fast_nancy"          : fast_nancy,
-    "taco_nancy"          : taco_nancy,
-
-    "hifi_combined"       : hifigan_combined,
+    "hifi_combined": hifigan_combined,
 
     "taco_meta_checkpoint": meta_taco,
-    "taco_multi"          : taco_multi
-    }
+
+    "taco_multi": taco_multi,
+    "fast_multi": fast_multi
+}
 
 if __name__ == '__main__':
 
