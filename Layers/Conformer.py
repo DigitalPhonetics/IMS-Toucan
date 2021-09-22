@@ -47,11 +47,10 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, embedding_freeze_until=None):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False):
         super(Conformer, self).__init__()
 
         activation = Swish()
-        self.embedding_freeze_until = embedding_freeze_until
         self.conv_subsampling_factor = 1
 
         if isinstance(input_layer, torch.nn.Module):
@@ -85,7 +84,7 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
 
-    def forward(self, xs, masks, step=None):
+    def forward(self, xs, masks):
         """
         Encode input sequence.
 
@@ -102,9 +101,6 @@ class Conformer(torch.nn.Module):
 
         if self.embed is not None:
             xs = self.embed(xs)
-            if self.embedding_freeze_until is not None and step is not None:
-                if step < self.embedding_freeze_until:
-                    xs = xs.detach()
 
         xs = self.pos_enc(xs)
 

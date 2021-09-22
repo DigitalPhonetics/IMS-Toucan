@@ -4,8 +4,8 @@ import torch
 
 from InferenceInterfaces.LJSpeech_FastSpeech2 import LJSpeech_FastSpeech2
 from InferenceInterfaces.LJSpeech_Tacotron2 import LJSpeech_Tacotron2
-from InferenceInterfaces.LibriTTS_FastSpeech2 import LibriTTS_FastSpeech2
-from InferenceInterfaces.LibriTTS_Tacotron2 import LibriTTS_Tacotron2
+from InferenceInterfaces.MultiEnglish_FastSpeech2 import LibriTTS_FastSpeech2
+from InferenceInterfaces.MultiEnglish_Tacotron2 import LibriTTS_Tacotron2
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 from InferenceInterfaces.Thorsten_FastSpeech2 import Thorsten_FastSpeech2

@@ -11,14 +11,15 @@ from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANG
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class LJSpeech_FastSpeech2(torch.nn.Module):
+class MultiEnglish_FastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
-        self.speaker_embedding = None
+        self.speaker_embedding = speaker_embedding
         self.device = device
+        self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
-        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_LJSpeech", "best.pt")).to(torch.device(device))
+        self.phone2mel = FastSpeech2(spk_embed_dim=192, path_to_weights=os.path.join("Models", "FastSpeech2_MultiEnglish", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()

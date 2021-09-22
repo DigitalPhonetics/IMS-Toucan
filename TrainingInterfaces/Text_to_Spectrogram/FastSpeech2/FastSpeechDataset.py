@@ -28,7 +28,8 @@ class FastSpeechDataset(Dataset):
                  cut_silence=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
-                 rebuild_cache=False):
+                 rebuild_cache=False,
+                 return_language_id = False):
 
         self.speaker_embedding = speaker_embedding
 

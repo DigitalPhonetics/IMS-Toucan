@@ -11,14 +11,18 @@ from InferenceInterfaces.InferenceArchitectures.InferenceTacotron2 import Tacotr
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class Thorsten_Tacotron2(torch.nn.Module):
+class MultiEnglish_Tacotron2(torch.nn.Module):
 
     def __init__(self, device="cpu", speaker_embedding=None):
         super().__init__()
-        self.speaker_embedding = None
+        self.speaker_embedding = speaker_embedding
         self.device = device
-        self.text2phone = ArticulatoryCombinedTextFrontend(language="de", inference=True)
-        self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_Thorsten", "best.pt")).to(torch.device(device))
+        if isinstance(speaker_embedding, torch.Tensor):
+            self.speaker_embedding = speaker_embedding
+        else:
+            self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device)).squeeze(0).squeeze(0)
+        self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
+        self.phone2mel = Tacotron2(spk_embed_dim=192, path_to_weights=os.path.join("Models", "Tacotron2_MultiEnglish", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -84,3 +88,9 @@ class Thorsten_Tacotron2(torch.nn.Module):
         axes.yaxis.set_visible(False)
         plt.tight_layout()
         plt.show()
+
+    def save_pretrained_weights(self):
+        torch.save(self.phone2mel.enc.state_dict(), "Models/PretrainedModelTaco/enc.pt")
+        torch.save(self.phone2mel.dec.state_dict(), "Models/PretrainedModelTaco/dec.pt")
+        torch.save(self.phone2mel.projection.state_dict(), "Models/PretrainedModelTaco/projection.pt")
+

@@ -101,7 +101,9 @@ def train_loop(net,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False,
-               freeze_until=14000):
+               freeze_decoder_until=None,
+               freeze_encoder_until=None,
+               freeze_embedding_until=None):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -121,11 +123,15 @@ def train_loop(net,
         freeze_until: amount of steps to train the projection of a multi-speaker model on its own
     """
     net = net.to(device)
-    if freeze_until is not None and freeze_until > 0:
-        for param in net.parameters():
+    if freeze_decoder_until is not None and freeze_decoder_until > 0:
+        for param in net.dec.parameters():
             param.requires_grad = False
-        for param in net.projection.parameters():
-            param.requires_grad = True
+    if freeze_encoder_until is not None and freeze_encoder_until > 0:
+        for param in net.enc.parameters():
+            param.requires_grad = False
+    if freeze_embedding_until is not None and freeze_embedding_until > 0:
+        for param in net.enc.embed.parameters():
+            param.requires_grad = False
     if use_speaker_embedding:
         reference_speaker_embedding_for_plot = torch.Tensor(train_dataset[0][7]).to(device)
     else:
@@ -170,8 +176,7 @@ def train_loop(net,
                                      speech_lengths=batch[3].to(device),
                                      gold_durations=batch[4].to(device),
                                      gold_pitch=batch[5].to(device),
-                                     gold_energy=batch[6].to(device),
-                                     step=step_counter)
+                                     gold_energy=batch[6].to(device))
                 else:
                     train_loss = net(text_tensors=batch[0].to(device),
                                      text_lengths=batch[1].to(device),
@@ -180,8 +185,7 @@ def train_loop(net,
                                      gold_durations=batch[4].to(device),
                                      gold_pitch=batch[5].to(device),
                                      gold_energy=batch[6].to(device),
-                                     speaker_embeddings=batch[7].to(device),
-                                     step=step_counter)
+                                     speaker_embeddings=batch[7].to(device))
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
@@ -191,11 +195,21 @@ def train_loop(net,
             scaler.step(optimizer)
             scaler.update()
             scheduler.step()
-            if freeze_until is not None and freeze_until < step_counter:
-                for param in net.parameters():
+            if freeze_encoder_until is not None and freeze_encoder_until < step_counter:
+                for param in net.enc.parameters():
                     param.requires_grad = True
-                freeze_until = None
-                print("Weights are now unfrozen, good luck!")
+                freeze_encoder_until = None
+                print("Encoder-weights are now unfrozen, good luck!")
+            if freeze_decoder_until is not None and freeze_decoder_until < step_counter:
+                for param in net.dec.parameters():
+                    param.requires_grad = True
+                freeze_decoder_until = None
+                print("Decoder-weights are now unfrozen, good luck!")
+            if freeze_embedding_until is not None and freeze_embedding_until < step_counter:
+                for param in net.enc.embed.parameters():
+                    param.requires_grad = True
+                freeze_embedding_until = None
+                print("Embedding-weights are now unfrozen, good luck!")
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({
