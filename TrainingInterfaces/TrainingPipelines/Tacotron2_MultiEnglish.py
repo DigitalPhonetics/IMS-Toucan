@@ -69,7 +69,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     model = Tacotron2(spk_embed_dim=192,
                       language_embedding_amount=None,
-                      initialize_encoder_from_pretrained_model=True,
+                      initialize_from_pretrained_embedding_weights=True,
+                      initialize_encoder_from_pretrained_model=False,
                       initialize_decoder_from_pretrained_model=False,
                       initialize_multispeaker_projection=False)
 
@@ -87,4 +88,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                multi_ling=False,
-               freeze_encoder_until=14000)
+               freeze_embedding_until=3000)
