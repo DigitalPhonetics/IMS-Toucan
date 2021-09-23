@@ -77,9 +77,9 @@ class TacotronDataset(Dataset):
                     dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").to(device).eval()
                     # everything assumes 16kHz audio as input here
                     for datapoint in tqdm(self.datapoints):
-                        ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu()
-                        xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu()
-                        dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(datapoint[4]).to(device), 16000))
+                        ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(datapoint[4]).to(device)).flatten().detach().cpu()
+                        xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(datapoint[4]).to(device)).flatten().detach().cpu()
+                        dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(datapoint[4]), 16000).to(device)).flatten().detach().cpu()
                         combined_spemb = torch.cat([ecapa_spemb, xvector_spemb, dvector_spemb], dim=0)
 
                         tensored_datapoints.append([torch.Tensor(datapoint[0]),
@@ -124,9 +124,9 @@ class TacotronDataset(Dataset):
             combined_spemb = None
             tensored_datapoints = list()
             for index, datapoint in tqdm(enumerate(self.datapoints[0])):
-                ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).squeeze(0).squeeze(0).detach().cpu()
-                xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).squeeze(0).squeeze(0).detach().cpu()
-                dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(self.datapoints[1][index].unsqueeze()), 16000).to(device))
+                ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).flatten().detach().cpu()
+                xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).flatten().detach().cpu()
+                dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(self.datapoints[1][index].unsqueeze()), 16000).to(device)).flatten().detach().cpu()
                 combined_spemb = torch.cat([ecapa_spemb, xvector_spemb, dvector_spemb], dim=0)
 
                 tensored_datapoints.append([datapoint[0],
