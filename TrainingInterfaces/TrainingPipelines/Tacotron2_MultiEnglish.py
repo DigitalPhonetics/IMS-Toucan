@@ -26,9 +26,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     cache_dir_hifitts = os.path.join("Corpora", "multispeaker_nvidia_hifitts")
     os.makedirs(cache_dir_hifitts, exist_ok=True)
 
-    cache_dir_lj = os.path.join("Corpora", "multispeaker_lj")
-    os.makedirs(cache_dir_lj, exist_ok=True)
-
     cache_dir_libri = os.path.join("Corpora", "multispeaker_libri")
     os.makedirs(cache_dir_libri, exist_ok=True)
 
@@ -43,14 +40,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nvidia_hifitts(),
                                     cache_dir=cache_dir_hifitts,
-                                    lang="en",
-                                    speaker_embedding=True,
-                                    cut_silences=False,
-                                    return_language_id=False,
-                                    device=device))
-
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_ljspeech(),
-                                    cache_dir=cache_dir_lj,
                                     lang="en",
                                     speaker_embedding=True,
                                     cut_silences=False,
