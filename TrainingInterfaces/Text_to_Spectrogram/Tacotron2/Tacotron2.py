@@ -350,5 +350,11 @@ class Tacotron2(torch.nn.Module):
         """
         # concat hidden states with spk embeds and then apply projection
         speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+
+        print(f"hs {hs.shape}")
+        print(f"spemb {speaker_embeddings.shape}")
+        print(f"hs con spemb {torch.cat([hs, speaker_embeddings], dim=-1)}")
+
         hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
+
         return hs
