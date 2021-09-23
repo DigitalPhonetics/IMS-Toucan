@@ -2,6 +2,7 @@ import gc
 import json
 import os
 
+import numpy as np
 import soundfile as sf
 import torch
 import torchaudio
@@ -136,6 +137,8 @@ class FastSpeechDataset(Dataset):
                                                                   use_teacher_forcing=True,
                                                                   speaker_embeddings=None)[2],
                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    if np.count_nonzero(cached_duration.numpy() == 0) > 4:
+                        continue
                 else:
                     wav_tensor, sample_rate = torchaudio.load(path)
                     mel_tensor = wav2mel(wav_tensor, sample_rate)
@@ -145,6 +148,8 @@ class FastSpeechDataset(Dataset):
                                                                   use_teacher_forcing=True,
                                                                   speaker_embeddings=cached_speaker_embedding.to(device))[2],
                                          vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
+                    if np.count_nonzero(cached_duration.numpy() == 0) > 4:
+                        continue
                 cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                             input_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,

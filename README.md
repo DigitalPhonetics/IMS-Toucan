@@ -15,6 +15,10 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 
 ## Demonstration
 
+[Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
+produced by Tacotron 2 combined with HiFi-GAN, trained on 
+[Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) using this toolkit.
+
 [Here is some speech](https://drive.google.com/file/d/1mZ1LvTlY6pJ5ZQ4UXZ9jbzB651mufBrB/view?usp=sharing)
 produced by FastSpeech2 and MelGAN trained on [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)
 using this toolkit.
@@ -28,32 +32,44 @@ produced by a multi-speaker FastSpeech2 with MelGAN trained on
 [LibriTTS](https://research.google/tools/datasets/libri-tts/) using this toolkit. Fans of the videogame Portal may
 recognize who was used as the reference speaker for this utterance.
 
+[Interactive Demo of our entry to the Blizzard Challenge 2021.](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw) This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5 hours of Spanish.
+
 
 ---
 
 ## Installation
 
+#### Basic Requirements
+
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you can get by without GPU).
-Navigate to the directory you have cloned and run the command shown below. It is recommended to first create and
-activate
-a [pip virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/#creating-a-virtual-environment)
-.
+Navigate to the directory you have cloned. We are going to create and activate a
+[conda virtual environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
+to install the basic requirements into. After creating the environment, the command you need to use to activate the
+virtual environment is displayed. The commands below show everything you need to do.
 
 ```
-pip install -r requirements.txt 
+conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
+
+pip install --no-cache-dir -r requirements.txt
+
+pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
 ```
+
+#### Speaker Embedding
 
 If you want to use multi-speaker synthesis, you will need a speaker embedding function. The one assumed in the code
 is [dvector](https://github.com/yistLin/dvector), because it is incredibly easy to use and freely available. In the
 current version of the toolkit it is included by default and should require no further action.
 
-And finally you need to have espeak installed on your system, because it is used as backend for the phonemizer. If you
-replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is not,
-and you have the sufficient rights, you can install it by simply running
+#### espeak-ng
+
+And finally you need to have espeak-ng installed on your system, because it is used as backend for the phonemizer. If
+you replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is
+not, and you have the sufficient rights, you can install it by simply running
 
 ```
-apt-get install espeak
+apt-get install espeak-ng
 ```
 
 ## Creating a new Pipeline

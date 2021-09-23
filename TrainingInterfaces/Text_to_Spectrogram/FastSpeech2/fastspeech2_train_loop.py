@@ -106,7 +106,7 @@ def train_loop(net,
                epochs_per_save=5,
                use_speaker_embedding=False,
                lang="en",
-               lr=0.01,
+               lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False):
@@ -177,7 +177,8 @@ def train_loop(net,
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
             step_counter += 1
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
             scaler.update()
             scheduler.step()
