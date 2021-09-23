@@ -126,7 +126,7 @@ class TacotronDataset(Dataset):
             for index, datapoint in tqdm(enumerate(self.datapoints[0])):
                 ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).squeeze(0).squeeze(0).detach().cpu()
                 xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).squeeze(0).squeeze(0).detach().cpu()
-                dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(self.datapoints[1][index]).to(device), 16000))
+                dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(self.datapoints[1][index].to("cpu")).to(device), 16000))
                 combined_spemb = torch.cat([ecapa_spemb, xvector_spemb, dvector_spemb], dim=0)
 
                 tensored_datapoints.append([datapoint[0],
