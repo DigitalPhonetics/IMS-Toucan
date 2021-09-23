@@ -67,19 +67,31 @@ class TacotronDataset(Dataset):
             norm_waves = list()
             if self.speaker_embedding:
                 if speaker_embedding:
-                    speaker_embedding_function = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                                run_opts={"device": str(device)},
-                                                                                savedir="Models/speechbrain_speaker_embedding")
-                    # is trained on 16kHz audios and produces 192 dimensional vectors
-                for datapoint in tqdm(self.datapoints):
-                    tensored_datapoints.append([torch.Tensor(datapoint[0]),
-                                                torch.LongTensor(datapoint[1]),
-                                                torch.Tensor(datapoint[2]),
-                                                torch.LongTensor(datapoint[3]),
-                                                speaker_embedding_function.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(
-                                                    0).detach().cpu()])
-                    norm_waves.append(torch.Tensor(datapoint[-1]))
-                del speaker_embedding_function
+                    speaker_embedding_function_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                                      run_opts={"device": str(device)},
+                                                                                      savedir="Models/speechbrain_speaker_embedding_ecapa")
+                    speaker_embedding_function_xvector = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb",
+                                                                                        run_opts={"device": str(device)},
+                                                                                        savedir="Models/speechbrain_speaker_embedding_xvector")
+                    wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
+                    dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").to(device).eval()
+                    # everything assumes 16kHz audio as input here
+                    for datapoint in tqdm(self.datapoints):
+                        ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu()
+                        xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(datapoint[4]).to(device)).squeeze(0).squeeze(0).detach().cpu()
+                        dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(datapoint[4]).to(device), 16000))
+                        combined_spemb = torch.cat([ecapa_spemb, xvector_spemb, dvector_spemb], dim=0)
+
+                        tensored_datapoints.append([torch.Tensor(datapoint[0]),
+                                                    torch.LongTensor(datapoint[1]),
+                                                    torch.Tensor(datapoint[2]),
+                                                    torch.LongTensor(datapoint[3]),
+                                                    combined_spemb])
+                        norm_waves.append(torch.Tensor(datapoint[-1]))
+                    del speaker_embedding_function_ecapa
+                    del speaker_embedding_function_xvector
+                    del wav2mel
+                    del dvector
                 # loading the speaker embedding function messes up something in torchaudios resample layer.
                 # So you possibly need to restart the program after every dataset creation if you are using
                 # multiple datasets together.
@@ -97,6 +109,38 @@ class TacotronDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
+
+            ####################################### ONE TIME USE HACK; LOOK AWAY!
+
+            speaker_embedding_function_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                              run_opts={"device": str(device)},
+                                                                              savedir="Models/speechbrain_speaker_embedding_ecapa")
+            speaker_embedding_function_xvector = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb",
+                                                                                run_opts={"device": str(device)},
+                                                                                savedir="Models/speechbrain_speaker_embedding_xvector")
+            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
+            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").to(device).eval()
+            # everything assumes 16kHz audio as input here
+            combined_spemb = None
+            tensored_datapoints = list()
+            for index, datapoint in tqdm(enumerate(self.datapoints[0])):
+                ecapa_spemb = speaker_embedding_function_ecapa.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).squeeze(0).squeeze(0).detach().cpu()
+                xvector_spemb = speaker_embedding_function_xvector.encode_batch(torch.Tensor(self.datapoints[1][index]).to(device)).squeeze(0).squeeze(0).detach().cpu()
+                dvector_spemb = dvector.embed_utterance(wav2mel(torch.Tensor(self.datapoints[1][index]).to(device), 16000))
+                combined_spemb = torch.cat([ecapa_spemb, xvector_spemb, dvector_spemb], dim=0)
+
+                tensored_datapoints.append([datapoint[0],
+                                            datapoint[1],
+                                            datapoint[2],
+                                            datapoint[3],
+                                            combined_spemb])
+
+            print(combined_spemb.shape)
+
+            torch.save((tensored_datapoints, self.datapoints[1]), os.path.join(cache_dir, "taco_train_cache_fixed.pt"))
+
+            ########################################## HACK END
+
             if isinstance(self.datapoints, tuple):  # check for backwards compatibility
                 self.datapoints = self.datapoints[0]
         print("Prepared {} datapoints.".format(len(self.datapoints)))
