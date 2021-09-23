@@ -22,10 +22,10 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
                                        use_explicit_eos=False, inference=True)
         try:
             self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_LibriTTS", "best.pt"),
-                                         idim=166, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
+                                         idim=166, odim=80, spk_embed_dim=960, reduction_factor=1).to(torch.device(device))
         except RuntimeError:
             self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_LibriTTS", "best.pt"),
-                                         idim=166, odim=80, spk_embed_dim=256, reduction_factor=1, legacy_model=True).to(torch.device(device))
+                                         idim=166, odim=80, spk_embed_dim=960, reduction_factor=1, legacy_model=True).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
