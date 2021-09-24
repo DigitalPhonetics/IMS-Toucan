@@ -24,10 +24,8 @@ def plot_fastspeech_architecture():
 
 
 def plot_tacotron2_architecture():
-    text = torch.LongTensor([1, 2, 3, 4])
-    speech = torch.zeros(80, 50)
-    model = Tacotron2(idim=166, odim=80, spk_embed_dim=None)
-    out = model.inference(text=text, speech=speech, speaker_embeddings=None, use_teacher_forcing=False)
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=10)
+    out = model.inference(text=torch.LongTensor([1, 2, 3, 4]), speech=None, speaker_embeddings=torch.zeros(10), use_teacher_forcing=False)
     torchviz.make_dot(out, dict(model.named_parameters())).render("tacotron2_graph", format="png")
 
 
@@ -55,4 +53,5 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
+    plot_tacotron2_architecture()
     show_all_models_params()

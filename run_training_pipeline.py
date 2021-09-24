@@ -10,23 +10,25 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_Thorsten import run as fas
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.Tacotron2_LJSpeech import run as taco_LJSpeech
 from TrainingInterfaces.TrainingPipelines.Tacotron2_LibriTTS import run as taco_LibriTTS
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MultiEnglish import run as taco_multi
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_Nancy
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_Thorsten
 
 pipeline_dict = {
-    "fast_Thorsten"  : fast_Thorsten,
-    "taco_Thorsten"  : taco_Thorsten,
+    "fast_Thorsten": fast_Thorsten,
+    "taco_Thorsten": taco_Thorsten,
 
-    "fast_LibriTTS"  : fast_LibriTTS,
-    "taco_LibriTTS"  : taco_LibriTTS,
+    "fast_LibriTTS": fast_LibriTTS,
+    "taco_LibriTTS": taco_LibriTTS,
 
-    "fast_LJSpeech"  : fast_LJSpeech,
-    "taco_LJSpeech"  : taco_LJSpeech,
+    "fast_LJSpeech": fast_LJSpeech,
+    "taco_LJSpeech": taco_LJSpeech,
 
-    "fast_Nancy"     : fast_Nancy,
-    "taco_Nancy"     : taco_Nancy,
+    "fast_Nancy"   : fast_Nancy,
+    "taco_Nancy"   : taco_Nancy,
 
-    "hifi_combined"  : hifigan_combined,
+    "hifi_combined": hifigan_combined,
+    "taco_multi"   : taco_multi
     }
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 from InferenceInterfaces.Thorsten_FastSpeech2 import Thorsten_FastSpeech2
 from InferenceInterfaces.Thorsten_Tacotron2 import Thorsten_Tacotron2
+from InferenceInterfaces.MultiEnglish_Tacotron2 import MultiEnglish_Tacotron2
 
 tts_dict = {
     "fast_thorsten": Thorsten_FastSpeech2,
@@ -21,7 +22,9 @@ tts_dict = {
     "taco_thorsten": Thorsten_Tacotron2,
     "taco_lj"      : LJSpeech_Tacotron2,
     "taco_libri"   : LibriTTS_Tacotron2,
-    "taco_nancy"   : Nancy_Tacotron2
+    "taco_nancy"   : Nancy_Tacotron2,
+
+    "taco_multi"   : MultiEnglish_Tacotron2
     }
 
 if __name__ == '__main__':
