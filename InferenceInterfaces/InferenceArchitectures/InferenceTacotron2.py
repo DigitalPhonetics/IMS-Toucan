@@ -43,7 +43,6 @@ class Tacotron2(torch.nn.Module):
             use_residual=False,
             reduction_factor=1,
             spk_embed_dim=None,
-            spk_embed_integration_type="concat",
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
@@ -67,9 +66,6 @@ class Tacotron2(torch.nn.Module):
         self.reduction_factor = reduction_factor
         self.use_guided_attn_loss = use_guided_attn_loss
         self.loss_type = loss_type
-        if self.spk_embed_dim is not None:
-            self.spk_embed_integration_type = spk_embed_integration_type
-
         # define activation function for the final output
         if output_activation is None:
             self.output_activation_fn = None
@@ -96,15 +92,11 @@ class Tacotron2(torch.nn.Module):
                            dropout_rate=dropout_rate,
                            padding_idx=padding_idx, )
 
-        if spk_embed_dim is None:
-            dec_idim = eunits
-        elif spk_embed_integration_type == "concat":
-            dec_idim = eunits + spk_embed_dim
-        elif spk_embed_integration_type == "add":
-            dec_idim = eunits
-            self.projection = torch.nn.Linear(self.spk_embed_dim, eunits)
-        else:
-            raise ValueError(f"{spk_embed_integration_type} is not supported.")
+        if spk_embed_dim is not None:
+            self.projection = torch.nn.Sequential(torch.nn.Linear(eunits + spk_embed_dim, eunits),
+                                                  torch.nn.Tanh(),
+                                                  torch.nn.Linear(eunits, eunits))
+        dec_idim = eunits
 
         if atype == "location":
             att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
@@ -172,19 +164,11 @@ class Tacotron2(torch.nn.Module):
         else:
             return outs
 
+    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
+        # concat hidden states with spk embeds and then apply projection
+        speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
 
-    def _integrate_with_spk_embed(self, hs: torch.Tensor,
-                                  spembs: torch.Tensor):
-        if self.spk_embed_integration_type == "add":
-            # apply projection and then add to hidden states
-            spembs = self.projection(F.normalize(spembs))
-            hs = hs + spembs.unsqueeze(1)
-        elif self.spk_embed_integration_type == "concat":
-            # concat hidden states with spk embeds
-            spembs = F.normalize(spembs).unsqueeze(1).expand(-1, hs.size(1), -1)
-            hs = torch.cat([hs, spembs], dim=-1)
-        else:
-            raise NotImplementedError("support only add or concat.")
+        hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
 
         return hs
 
