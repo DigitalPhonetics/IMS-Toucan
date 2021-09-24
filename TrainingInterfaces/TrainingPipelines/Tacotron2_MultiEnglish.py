@@ -42,23 +42,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                     cache_dir=cache_dir_hifitts,
                                     lang="en",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=False,
                                     device=device))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_libritts(),
-                                    cache_dir=cache_dir_libri,
-                                    lang="en",
-                                    speaker_embedding=True,
-                                    cut_silences=False,
-                                    return_language_id=False,
-                                    device=device))
+    # datasets.append(TacotronDataset(build_path_to_transcript_dict_libritts(),
+    #                                cache_dir=cache_dir_libri,
+    #                                lang="en",
+    #                                speaker_embedding=True,
+    #                                cut_silences=True,
+    #                                return_language_id=False,
+    #                                device=device))
 
     train_set = ConcatDataset(datasets)
 
     model = Tacotron2(spk_embed_dim=960,
                       language_embedding_amount=None,
-                      initialize_from_pretrained_embedding_weights=True,
+                      initialize_from_pretrained_embedding_weights=False,
                       initialize_encoder_from_pretrained_model=False,
                       initialize_decoder_from_pretrained_model=False,
                       initialize_multispeaker_projection=False)
@@ -73,7 +73,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.0005,
+               lr=0.0001,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                multi_ling=False,
