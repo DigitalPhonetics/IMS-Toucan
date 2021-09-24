@@ -43,7 +43,6 @@ class Tacotron2(torch.nn.Module):
             use_residual=False,
             reduction_factor=1,
             spk_embed_dim=None,
-            spk_embed_integration_type="concat",
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
@@ -67,8 +66,6 @@ class Tacotron2(torch.nn.Module):
         self.reduction_factor = reduction_factor
         self.use_guided_attn_loss = use_guided_attn_loss
         self.loss_type = loss_type
-        if self.spk_embed_dim is not None:
-            self.spk_embed_integration_type = spk_embed_integration_type
 
         # define activation function for the final output
         if output_activation is None:
