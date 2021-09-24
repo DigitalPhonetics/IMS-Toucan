@@ -118,3 +118,116 @@ def build_path_to_transcript_dict_thorsten():
         if line.strip() != "":
             path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10el():
+    path_to_transcript = dict()
+    language = "greek"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10nl():
+    path_to_transcript = dict()
+    language = "dutch"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10fi():
+    path_to_transcript = dict()
+    language = "finnish"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10ru():
+    path_to_transcript = dict()
+    language = "russian"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10hu():
+    path_to_transcript = dict()
+    language = "hungarian"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10es():
+    path_to_transcript = dict()
+    language = "spanish"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_css10fr():
+    path_to_transcript = dict()
+    language = "french"
+    with open(f"/mount/resources/speech/corpora/CSS10/{language}/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_nvidia_hifitts():
+    path_to_transcript = dict()
+    transcripts = list()
+    root = "/mount/resources/speech/corpora/hi_fi_tts_v0"
+
+    import json
+
+    for jpath in [f"{root}/6097_manifest_clean_dev.json",
+                  f"{root}/6097_manifest_clean_test.json",
+                  f"{root}/6097_manifest_clean_train.json",
+                  f"{root}/9017_manifest_clean_dev.json",
+                  f"{root}/9017_manifest_clean_test.json",
+                  f"{root}/9017_manifest_clean_train.json",
+                  f"{root}/92_manifest_clean_dev.json",
+                  f"{root}/92_manifest_clean_test.json",
+                  f"{root}/92_manifest_clean_train.json"]:
+        with open(jpath, encoding='utf-8', mode='r') as jfile:
+            for line in jfile.read().split("\n"):
+                if line.strip() != "":
+                    transcripts.append(json.loads(line))
+
+    for transcript in transcripts:
+        path = transcript["audio_filepath"]
+        norm_text = transcript["text_normalized"]
+        path_to_transcript[f"{root}/{path}"] = norm_text
+
+    return path_to_transcript
