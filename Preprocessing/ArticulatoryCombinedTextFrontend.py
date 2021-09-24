@@ -21,10 +21,12 @@ class ArticulatoryCombinedTextFrontend:
                  use_lexical_stress=False,
                  silent=True,
                  allow_unknown=False,
-                 inference=False):
+                 inference=False,
+                 strip_silence=True):
         """
         Mostly preparing ID lookups
         """
+        self.strip_silence = strip_silence
         self.use_word_boundaries = use_word_boundaries
         self.allow_unknown = allow_unknown
         self.use_explicit_eos = use_explicit_eos
@@ -229,6 +231,8 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace(" ", "")
         else:
             phones = re.sub(r"\s+", " ", phones)
+        if self.strip_silence:
+            phones = phones.lstrip("~").rstrip("~")
         if self.inference:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
