@@ -175,7 +175,8 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # define criterions
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
-        self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
+        if self.use_dtw_loss:
+            self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
     def forward(self, text_tensors,
                 text_lengths,

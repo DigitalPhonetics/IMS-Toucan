@@ -10,8 +10,8 @@ from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from Preprocessing.TextFrontend import TextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.TextFrontend import TextFrontend
 
 
 class TacotronDataset(Dataset):
@@ -120,6 +120,10 @@ class TacotronDataset(Dataset):
         for path in tqdm(path_list):
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
+            dur_in_seconds = len(wave) / sr
+            if not (min_len <= dur_in_seconds <= max_len):
+                print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                continue
             if sr != ap.sr:
                 print(f"Inconsistent sampling rate in the Data! Excluding {path}")
                 continue
@@ -130,38 +134,39 @@ class TacotronDataset(Dataset):
             dur_in_seconds = len(norm_wave) / 16000
             if not (min_len <= dur_in_seconds <= max_len):
                 print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                continue
+            cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+            cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
+            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
+            cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
+            if speaker_embedding:
+                process_internal_dataset_chunk.append([cached_text,
+                                                       cached_text_len,
+                                                       cached_speech,
+                                                       cached_speech_len,
+                                                       norm_wave.numpy(),
+                                                       norm_wave.cpu().detach().numpy()])
             else:
-                cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
-                cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
-                cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
-                cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
-                if speaker_embedding:
-                    process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_len,
-                                                           cached_speech,
-                                                           cached_speech_len,
-                                                           norm_wave.numpy(),
-                                                           norm_wave.cpu().detach().numpy()])
-                else:
-                    process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_len,
-                                                           cached_speech,
-                                                           cached_speech_len,
-                                                           norm_wave.cpu().detach().numpy()])
+                process_internal_dataset_chunk.append([cached_text,
+                                                       cached_text_len,
+                                                       cached_speech,
+                                                       cached_speech_len,
+                                                       norm_wave.cpu().detach().numpy()])
+
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
         if not self.speaker_embedding:
             return self.datapoints[index][0], \
-                       self.datapoints[index][1], \
-                       self.datapoints[index][2], \
-                       self.datapoints[index][3]
+                   self.datapoints[index][1], \
+                   self.datapoints[index][2], \
+                   self.datapoints[index][3]
         else:
             return self.datapoints[index][0], \
-                       self.datapoints[index][1], \
-                       self.datapoints[index][2], \
-                       self.datapoints[index][3], \
-                       self.datapoints[index][4]
+                   self.datapoints[index][1], \
+                   self.datapoints[index][2], \
+                   self.datapoints[index][3], \
+                   self.datapoints[index][4]
 
     def __len__(self):
         return len(self.datapoints)
