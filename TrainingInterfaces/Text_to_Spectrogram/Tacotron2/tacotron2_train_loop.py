@@ -30,7 +30,9 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
     del tf
-    bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1), in_lens=torch.LongTensor([len(text)]), out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
+    bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
+                                          in_lens=torch.LongTensor([len(text)]),
+                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
     fig, ax = plt.subplots(nrows=2, ncols=1)
     plt.figure(figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
@@ -38,7 +40,8 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     ax[1].set_xlabel("Inputs")
     ax[0].set_ylabel("Outputs")
     ax[1].set_ylabel("Outputs")
-    ax[1].set_xticks(range(len(att[0])), labels=[phone for phone in phones])
+    ax[1].set_xticks(range(len(att[0])))
+    ax[1].set_xticklabels(labels=[phone for phone in phones])
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
     plt.tight_layout()
@@ -111,7 +114,6 @@ def train_loop(net,
     :param device: Device to put the loaded tensors on
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
-    :param gradient_accumulation: how many batches to average before stepping
     :param epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
