@@ -98,7 +98,6 @@ def binarize_attention_parallel(attn, in_lens, out_lens):
     return torch.from_numpy(attn_out).to(attn.device)
 
 
-@jit(nopython=True, parallel=True)
 def b_mas(b_attn_map, in_lens, out_lens, width=1):
     assert width == 1
     attn_out = np.zeros_like(b_attn_map)
@@ -108,7 +107,6 @@ def b_mas(b_attn_map, in_lens, out_lens, width=1):
     return attn_out
 
 
-@jit(nopython=True)
 def mas_width1(attn_map):
     """mas with hardcoded width=1"""
     # assumes mel x text
