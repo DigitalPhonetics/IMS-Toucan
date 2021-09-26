@@ -54,7 +54,6 @@ class ForwardSumLoss(nn.Module):
     def forward(self, attn_logprob, in_lens, out_lens):
         key_lens = in_lens
         query_lens = out_lens
-        attn_logprob = attn_logprob.unsqueeze(1)
         attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0), value=self.blank_logprob)
 
         total_loss = 0.0
@@ -153,6 +152,8 @@ class AlignmentLoss(nn.Module):
         self.bin_start_steps = bin_start_steps
 
     def forward(self, soft_attention, in_lens, out_lens, step):
+
+        soft_attention = soft_attention.unsqueeze(1)
         bin_weight = min(step / (self.bin_warmup_steps + self.bin_start_steps), 1.0)
 
         l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
