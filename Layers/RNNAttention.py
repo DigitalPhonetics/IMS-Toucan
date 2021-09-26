@@ -1332,7 +1332,7 @@ class AttForward(torch.nn.Module):
         :param float scaling: scaling parameter before applying softmax
         :param int last_attended_idx: index of the inputs of the last attended
         :param int backward_window: backward window size in attention constraint
-        :param int forward_window: forward window size in attetion constraint
+        :param int forward_window: forward window size in attention constraint
         :return: attention weighted encoder state (B, D_enc)
         :rtype: torch.Tensor
         :return: previous attention weights (B x T_max)

@@ -12,7 +12,7 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator impor
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
-
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
 
 class FastSpeechDataset(Dataset):
 
@@ -155,7 +155,14 @@ class FastSpeechDataset(Dataset):
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
+                # here we figure out whether the attention map makes any sense or whether it failed.
                 continue
+            # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
+            # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
+            attention_map_viterbi_path = binarize_attention_parallel(attn=attention_map.unsqueeze(0),
+                                                                     in_lens=torch.LongTensor([len(text)]),
+                                                                     out_lens=torch.LongTensor([len(melspec)]))
+            cached_duration = dc(attention_map_viterbi_path, vis=None)[0].cpu()
             cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                         input_lengths=norm_wave_length,
                                         feats_lengths=melspec_length,

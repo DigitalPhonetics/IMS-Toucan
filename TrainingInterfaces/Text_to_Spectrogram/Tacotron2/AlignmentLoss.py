@@ -80,21 +80,22 @@ class BinLoss(nn.Module):
         super().__init__()
 
     def forward(self, soft_attention, in_lens, out_lens):
-        hard_attention = self.binarize_attention_parallel(soft_attention, in_lens, out_lens)
+        hard_attention = binarize_attention_parallel(soft_attention, in_lens, out_lens)
         log_sum = torch.log(torch.clamp(soft_attention[hard_attention == 1], min=1e-12)).sum()
         return -log_sum / hard_attention.sum()
 
-    def binarize_attention_parallel(self, attn, in_lens, out_lens):
-        """
-        For training purposes only. Binarizes attention with MAS.
-        These will no longer receive a gradient.
-        Args:
-            attn: B x 1 x max_mel_len x max_text_len
-        """
-        with torch.no_grad():
-            attn_cpu = attn.data.cpu().numpy()
-            attn_out = b_mas(attn_cpu, in_lens.cpu().numpy(), out_lens.cpu().numpy(), width=1)
-        return torch.from_numpy(attn_out).to(attn.device)
+
+def binarize_attention_parallel(attn, in_lens, out_lens):
+    """
+    Binarizes attention with MAS.
+    These will no longer receive a gradient.
+    Args:
+        attn: B x 1 x max_mel_len x max_text_len
+    """
+    with torch.no_grad():
+        attn_cpu = attn.data.cpu().numpy()
+        attn_out = b_mas(attn_cpu, in_lens.cpu().numpy(), out_lens.cpu().numpy(), width=1)
+    return torch.from_numpy(attn_out).to(attn.device)
 
 
 @jit(nopython=True, parallel=True)
@@ -143,17 +144,17 @@ class AlignmentLoss(nn.Module):
     Combination according to paper with an added warmup phase directly in the loss
     """
 
-    def __init__(self, bin_warmup_steps=8000, bin_start_steps=3000):
+    def __init__(self, bin_warmup_steps=10000, bin_start_steps=12000):
         super().__init__()
         self.l_forward_func = ForwardSumLoss()
         self.l_bin_func = BinLoss()
         self.bin_warmup_steps = bin_warmup_steps
         self.bin_start_steps = bin_start_steps
 
-    def forward(self, attn_logprob, in_lens, out_lens, soft_attention, step):
+    def forward(self, soft_attention, in_lens, out_lens , step):
         bin_weight = min(step / (self.bin_warmup_steps + self.bin_start_steps), 1.0)
 
-        l_forward = self.l_forward_func(attn_logprob, in_lens, out_lens)
+        l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
         if self.bin_start_steps < step:
             l_bin = bin_weight * self.l_bin_func(soft_attention, in_lens, out_lens)
         else:
