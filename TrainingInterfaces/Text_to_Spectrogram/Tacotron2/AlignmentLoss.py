@@ -54,6 +54,8 @@ class ForwardSumLoss(nn.Module):
     def forward(self, attn_logprob, in_lens, out_lens):
         key_lens = in_lens
         query_lens = out_lens
+        attn_logprob = attn_logprob.unsqueeze(1)
+        print(attn_logprob.shape)
         attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0), value=self.blank_logprob)
 
         total_loss = 0.0
