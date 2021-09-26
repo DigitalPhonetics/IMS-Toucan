@@ -12,7 +12,8 @@ from tqdm import tqdm
 
 from Preprocessing.TextFrontend import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
-from Utility.utils import delete_old_checkpoints, get_most_recent_checkpoint
+from Utility.utils import delete_old_checkpoints
+from Utility.utils import get_most_recent_checkpoint
 
 
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
@@ -146,11 +147,18 @@ def train_loop(net,
         for batch in tqdm(train_loader):
             with autocast():
                 if not use_speaker_embedding:
-                    train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                     batch[3].to(device))
+                    train_loss = net(text=batch[0].to(device),
+                                     text_lengths=batch[1].to(device),
+                                     speech=batch[2].to(device),
+                                     speech_lengths=batch[3].to(device),
+                                     step=step_counter)
                 else:
-                    train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                     batch[3].to(device), batch[4].to(device))
+                    train_loss = net(text=batch[0].to(device),
+                                     text_lengths=batch[1].to(device),
+                                     speech=batch[2].to(device),
+                                     speech_lengths=batch[3].to(device),
+                                     step=step_counter,
+                                     speaker_embeddings=batch[4].to(device))
                 train_losses_this_epoch.append(float(train_loss))
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()

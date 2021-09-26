@@ -151,7 +151,7 @@ class AlignmentLoss(nn.Module):
         self.bin_warmup_steps = bin_warmup_steps
         self.bin_start_steps = bin_start_steps
 
-    def forward(self, soft_attention, in_lens, out_lens , step):
+    def forward(self, soft_attention, in_lens, out_lens, step):
         bin_weight = min(step / (self.bin_warmup_steps + self.bin_start_steps), 1.0)
 
         l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
