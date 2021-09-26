@@ -30,7 +30,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
     del tf
-    bin_att = binarize_attention_parallel(att.unsqueeze(1), in_lens=torch.LongTensor([len(text)]), out_lens=torch.LongTensor([len(att)]))
+    bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1), in_lens=torch.LongTensor([len(text)]), out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
     fig, ax = plt.subplots(nrows=2, ncols=1)
     plt.figure(figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
