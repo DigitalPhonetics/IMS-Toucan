@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from Layers.Attention import GuidedAttentionLoss
 from Layers.RNNAttention import AttForward
 from Layers.RNNAttention import AttForwardTA
-from Layers.RNNAttention import AttCovLoc
+from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
@@ -111,7 +111,7 @@ class Tacotron2(torch.nn.Module):
         dec_idim = eunits
 
         if atype == "location":
-            att = AttCovLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
+            att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
         elif atype == "forward":
             att = AttForward(dec_idim, dunits, adim, aconv_chans, aconv_filts)
             if self.cumulate_att_w:
