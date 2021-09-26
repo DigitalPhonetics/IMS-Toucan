@@ -11,6 +11,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import TextFrontend
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -29,11 +30,17 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
     model.train()
     del tf
-    plt.figure(figsize=(8, 4))
-    plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    plt.xlabel("Inputs")
-    plt.ylabel("Outputs")
-    plt.xticks(range(len(att[0])), labels=[phone for phone in phones])
+    bin_att = binarize_attention_parallel(att, in_lens=torch.LongTensor([len(text)]), out_lens=torch.LongTensor([len(att)]))
+    fig, ax = plt.subplots(nrows=2, ncols=1)
+    plt.figure(figsize=(8, 9))
+    ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1].imshow(bin_att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1].xlabel("Inputs")
+    ax[0].ylabel("Outputs")
+    ax[1].ylabel("Outputs")
+    ax[1].xticks(range(len(att[0])), labels=[phone for phone in phones])
+    ax[0].title("Soft-Attention")
+    ax[1].title("Hard-Attention")
     plt.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))

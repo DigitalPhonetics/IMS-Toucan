@@ -37,7 +37,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="location",
+            atype="forward_ta",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -215,10 +215,6 @@ class Tacotron2(torch.nn.Module):
         else:
             raise ValueError(f"unknown --loss-type {self.loss_type}")
 
-        print(f"l1 {l1_loss}")
-        print(f"mse {mse_loss}")
-        print(f"bce {bce_loss}")
-
         # calculate dtw loss
         if self.use_dtw_loss:
             dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
@@ -233,8 +229,6 @@ class Tacotron2(torch.nn.Module):
             attn_loss = self.attn_loss(att_ws, ilens, olens_in)
             loss = loss + attn_loss
 
-        print(f"attention loss {attn_loss}")
-
         # calculate alignment loss
         if self.use_alignment_loss:
             if self.reduction_factor > 1:
@@ -243,8 +237,6 @@ class Tacotron2(torch.nn.Module):
                 olens_in = olens
             align_loss = self.alignment_loss(att_ws, ilens, olens_in, step)
             loss = loss+align_loss
-
-        print(f"align loss {align_loss}")
 
         return loss
 

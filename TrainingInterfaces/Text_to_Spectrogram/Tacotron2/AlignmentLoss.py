@@ -144,9 +144,11 @@ class AlignmentLoss(nn.Module):
     Combination according to paper with an added warmup phase directly in the loss
     """
 
-    def __init__(self, bin_warmup_steps=10000, bin_start_steps=12000):
+    def __init__(self, bin_warmup_steps=5000, bin_start_steps=5000, include_forward_loss=False):
         super().__init__()
-        self.l_forward_func = ForwardSumLoss()
+        if include_forward_loss:
+            self.l_forward_func = ForwardSumLoss()
+        self.include_forward_loss = include_forward_loss
         self.l_bin_func = BinLoss()
         self.bin_warmup_steps = bin_warmup_steps
         self.bin_start_steps = bin_start_steps
@@ -156,7 +158,13 @@ class AlignmentLoss(nn.Module):
         soft_attention = soft_attention.unsqueeze(1)
         bin_weight = min(step / (self.bin_warmup_steps + self.bin_start_steps), 1.0)
 
-        l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
+        if self.include_forward_loss:
+            l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
+            # this is not the proper way to get log_probs, but the forward attention complicates things.
+            # Luckily the forward attention does about the same as CTC, so it's not too necessary to have this.
+        else:
+            l_forward = 0.0
+
         if self.bin_start_steps < step:
             l_bin = bin_weight * self.l_bin_func(soft_attention, in_lens, out_lens)
         else:
