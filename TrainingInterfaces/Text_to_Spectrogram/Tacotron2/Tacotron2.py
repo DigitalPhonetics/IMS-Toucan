@@ -11,10 +11,11 @@ from Layers.RNNAttention import AttForwardTA
 from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import AlignmentLoss
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import make_pad_mask
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import AlignmentLoss
+
 
 class Tacotron2(torch.nn.Module):
     """
@@ -66,7 +67,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,
             guided_attn_loss_lambda=0.2,
             use_dtw_loss=False,
-            use_alignment_loss = True):
+            use_alignment_loss=True):
         super().__init__()
 
         # store hyperparameters
@@ -107,9 +108,7 @@ class Tacotron2(torch.nn.Module):
                            padding_idx=padding_idx, )
 
         if spk_embed_dim is not None:
-            self.projection = torch.nn.Sequential(torch.nn.Linear(eunits + spk_embed_dim, eunits),
-                                                  torch.nn.Tanh(),
-                                                  torch.nn.Linear(eunits, eunits))
+            self.projection = torch.nn.Linear(eunits + spk_embed_dim, eunits)
         dec_idim = eunits
 
         if atype == "location":
@@ -159,7 +158,7 @@ class Tacotron2(torch.nn.Module):
                 speech,
                 speech_lengths,
                 step,
-                speaker_embeddings = None):
+                speaker_embeddings=None):
         """
         Calculate forward propagation.
 
@@ -236,7 +235,7 @@ class Tacotron2(torch.nn.Module):
             else:
                 olens_in = olens
             align_loss = self.alignment_loss(att_ws, ilens, olens_in, step)
-            loss = loss+align_loss
+            loss = loss + align_loss
 
         return loss
 
