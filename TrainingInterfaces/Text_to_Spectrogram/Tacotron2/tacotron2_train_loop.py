@@ -11,7 +11,9 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Utility.utils import delete_old_checkpoints, get_most_recent_checkpoint
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
+from Utility.utils import delete_old_checkpoints
+from Utility.utils import get_most_recent_checkpoint
 
 
 def plot_attention(model, lang, device, speaker_embedding, att_dir, step, language_id):
@@ -27,16 +29,28 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding, language_id=language_id)[2].to("cpu")
     model.train()
     del tf
-    plt.figure(figsize=(8, 4))
-    plt.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    plt.xlabel("Inputs")
-    plt.ylabel("Outputs")
-    plt.xticks(range(len(att[0])), labels=phones)
-    plt.tight_layout()
+    bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
+                                          in_lens=torch.LongTensor([len(text)]),
+                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
+    ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1].imshow(bin_att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1].set_xlabel("Inputs")
+    ax[0].xaxis.set_visible(False)
+    ax[0].set_ylabel("Outputs")
+    ax[1].set_ylabel("Outputs")
+    ax[1].set_xticks(range(len(att[0])))
+    ax[1].set_xticklabels(labels=[phone for phone in phones])
+    ax[0].set_title("Soft-Attention")
+    ax[1].set_title("Hard-Attention")
+    fig.tight_layout()
+    plt.rcParams['axes.titley'] = 1.0
+    plt.rcParams['axes.titlepad'] = -14
+    plt.subplots_adjust(hspace=0.0)
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
-    plt.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
-    plt.clf()
+    fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
+    fig.clf()
     plt.close()
 
 
@@ -106,7 +120,7 @@ def train_loop(net,
                multi_ling=False,
                freeze_encoder_until=None,
                freeze_decoder_until=None,
-               freeze_embedding_until = None):
+               freeze_embedding_until=None):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -182,6 +196,7 @@ def train_loop(net,
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
+                                         step=step_counter,
                                          speaker_embeddings=None,
                                          language_id=batch[4].to(device))
                     else:
@@ -189,6 +204,7 @@ def train_loop(net,
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
+                                         step=step_counter,
                                          speaker_embeddings=batch[4].to(device),
                                          language_id=batch[5].to(device))
                 else:
@@ -197,12 +213,14 @@ def train_loop(net,
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
+                                         step=step_counter,
                                          speaker_embeddings=None)
                     else:
                         train_loss = net(text=batch[0].to(device),
                                          text_lengths=batch[1].to(device),
                                          speech=batch[2].to(device),
                                          speech_lengths=batch[3].to(device),
+                                         step=step_counter,
                                          speaker_embeddings=batch[4].to(device))
 
                 train_losses_this_epoch.append(float(train_loss))
@@ -244,11 +262,11 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model": net.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "scaler": scaler.state_dict(),
+                    "model"       : net.state_dict(),
+                    "optimizer"   : optimizer.state_dict(),
+                    "scaler"      : scaler.state_dict(),
                     "step_counter": step_counter,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():
                     plot_attention(model=net,

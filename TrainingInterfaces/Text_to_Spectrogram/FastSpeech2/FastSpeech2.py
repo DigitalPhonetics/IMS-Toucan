@@ -136,9 +136,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # define additional projection for speaker embedding
         if self.spk_embed_dim is not None:
-            self.projection = torch.nn.Sequential(torch.nn.Linear(adim + spk_embed_dim, adim),
-                                                  torch.nn.Tanh(),
-                                                  torch.nn.Linear(adim, adim))
+            self.projection = torch.nn.Linear(adim + spk_embed_dim, adim)
 
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers, n_chans=duration_predictor_chans,

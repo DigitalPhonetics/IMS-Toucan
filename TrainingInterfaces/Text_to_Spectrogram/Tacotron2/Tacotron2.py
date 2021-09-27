@@ -11,6 +11,7 @@ from Layers.RNNAttention import AttForwardTA
 from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import AlignmentLoss
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import initialize
@@ -67,6 +68,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_lambda=1.0,  # weight of the attention loss
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,
+            use_alignment_loss=True,
             input_layer_type="linear",
             init_type=None,
             initialize_from_pretrained_embedding_weights=False,
@@ -74,11 +76,12 @@ class Tacotron2(torch.nn.Module):
             initialize_decoder_from_pretrained_model=False,
             initialize_multispeaker_projection=False,
             language_embedding_amount=None  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
-    ):
+            ):
         super().__init__()
 
         # store hyperparameters
         self.use_dtw_loss = use_dtw_loss
+        self.use_alignment_loss = use_alignment_loss
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
@@ -117,9 +120,7 @@ class Tacotron2(torch.nn.Module):
                            dropout_rate=dropout_rate)
 
         if spk_embed_dim is not None:
-            self.projection = torch.nn.Sequential(torch.nn.Linear(eunits + spk_embed_dim, eunits),
-                                                  torch.nn.Tanh(),
-                                                  torch.nn.Linear(eunits, eunits))
+            self.projection = torch.nn.Linear(eunits + spk_embed_dim, eunits)
         dec_idim = eunits
 
         if atype == "location":
@@ -160,6 +161,9 @@ class Tacotron2(torch.nn.Module):
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
+        if self.use_alignment_loss:
+            self.alignment_loss = AlignmentLoss()
+
         if init_type == "xavier_uniform":
             initialize(self, "xavier_uniform")  # doesn't go together well with forward attention
         if initialize_from_pretrained_embedding_weights:
@@ -176,12 +180,14 @@ class Tacotron2(torch.nn.Module):
                 text_lengths,
                 speech,
                 speech_lengths,
+                step,
                 speaker_embeddings=None,
                 language_id=None):
         """
         Calculate forward propagation.
 
         Args:
+            step: current number of update steps taken as indicator when to start binarizing
             language_id: batch of lookup IDs for language embedding vectors
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
@@ -229,30 +235,28 @@ class Tacotron2(torch.nn.Module):
         else:
             raise ValueError(f"unknown --loss-type {self.loss_type}")
 
+        # calculate dtw loss
         if self.use_dtw_loss:
-            print("Regular Loss: {}".format(loss))
             dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
-            # print("\n\n")
-            # import matplotlib.pyplot as plt
-            # import librosa.display as lbd
-            # fig, ax = plt.subplots(nrows=2, ncols=1)
-            # lbd.specshow(after_outs[0].transpose(0,1).detach().cpu().numpy(), ax=ax[0], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
-            # lbd.specshow(speech[0].transpose(0,1).cpu().numpy(), ax=ax[1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
-            # plt.show()
-            print("DTW Loss: {}".format(dtw_loss))
             loss += dtw_loss
 
         # calculate attention loss
         if self.use_guided_attn_loss:
-            # NOTE(kan-bayashi): length of output for auto-regressive
-            # input will be changed when r > 1
             if self.reduction_factor > 1:
-                speech_lengths_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
+                olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
-                speech_lengths_in = speech_lengths
-
-            attn_loss = self.attn_loss(att_ws, text_lengths, speech_lengths_in)
+                olens_in = speech_lengths
+            attn_loss = self.attn_loss(att_ws, text_lengths, olens_in)
             loss = loss + attn_loss
+
+        # calculate alignment loss
+        if self.use_alignment_loss:
+            if self.reduction_factor > 1:
+                olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
+            else:
+                olens_in = speech_lengths
+            align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
+            loss = loss + align_loss
 
         return loss
 
