@@ -93,9 +93,7 @@ class Tacotron2(torch.nn.Module):
                            padding_idx=padding_idx, )
 
         if spk_embed_dim is not None:
-            self.projection = torch.nn.Sequential(torch.nn.Linear(eunits + spk_embed_dim, eunits),
-                                                  torch.nn.Tanh(),
-                                                  torch.nn.Linear(eunits, eunits))
+            self.projection = torch.nn.Linear(eunits + spk_embed_dim, eunits)
         dec_idim = eunits
 
         if atype == "location":

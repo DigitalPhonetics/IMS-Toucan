@@ -70,9 +70,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, legacy_model=legacy_model)
         if self.spk_embed_dim is not None:
-            self.projection = torch.nn.Sequential(torch.nn.Linear(adim + spk_embed_dim, adim),
-                                                  torch.nn.Tanh(),
-                                                  torch.nn.Linear(adim, adim))
+            self.projection = torch.nn.Linear(adim + spk_embed_dim, adim)
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,

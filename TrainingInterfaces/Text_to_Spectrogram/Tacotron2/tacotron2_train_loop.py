@@ -101,7 +101,8 @@ def train_loop(net,
                lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=None,
-               fine_tune=False):
+               fine_tune=False,
+               collapse_margin=0.3):
     """
     :param steps: How many steps to train
     :param lr: The initial learning rate for the optimiser
@@ -116,6 +117,9 @@ def train_loop(net,
     :param save_directory: Where to save the checkpoints
     :param batch_size: How many elements should be loaded at once
     :param epochs_per_save: how many epochs to train in between checkpoints
+
+    Args:
+        collapse_margin: margin in which the loss may increase in one epoch without triggering the soft-reset
     """
     net = net.to(device)
     scaler = GradScaler()
@@ -181,7 +185,7 @@ def train_loop(net,
         with torch.no_grad():
             net.eval()
             loss_this_epoch = sum(train_losses_this_epoch) / len(train_losses_this_epoch)
-            if previous_error + 0.01 < loss_this_epoch:
+            if previous_error + collapse_margin < loss_this_epoch:
                 print("Model Collapse detected! \nPrevious Loss: {}\nNew Loss: {}".format(previous_error, loss_this_epoch))
                 print("Trying to reset to a stable state ...")
                 path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
