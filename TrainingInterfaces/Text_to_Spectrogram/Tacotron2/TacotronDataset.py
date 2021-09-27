@@ -21,7 +21,7 @@ class TacotronDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=10,
+                 loading_processes=6,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=False,
