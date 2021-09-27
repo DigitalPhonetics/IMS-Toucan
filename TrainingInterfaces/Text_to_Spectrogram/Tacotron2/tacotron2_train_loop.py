@@ -12,7 +12,6 @@ from tqdm import tqdm
 
 from Preprocessing.TextFrontend import TextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
-from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
@@ -99,27 +98,24 @@ def train_loop(net,
                use_speaker_embedding=False,
                lang="en",
                lr=0.001,
-               warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False,
                collapse_margin=0.3):
     """
-    :param steps: How many steps to train
-    :param lr: The initial learning rate for the optimiser
-    :param warmup_steps: how many warmup steps for the warmup scheduler
-    :param path_to_checkpoint: reloads a checkpoint to continue training from there
-    :param fine_tune: whether to load everything from a checkpoint, or only the model parameters
-    :param lang: language of the synthesis
-    :param use_speaker_embedding: whether to expect speaker embeddings
-    :param net: Model to train
-    :param train_dataset: Pytorch Dataset Object for train data
-    :param device: Device to put the loaded tensors on
-    :param save_directory: Where to save the checkpoints
-    :param batch_size: How many elements should be loaded at once
-    :param epochs_per_save: how many epochs to train in between checkpoints
-
     Args:
         collapse_margin: margin in which the loss may increase in one epoch without triggering the soft-reset
+        steps: How many steps to train
+        lr: The initial learning rate for the optimiser
+        path_to_checkpoint: reloads a checkpoint to continue training from there
+        fine_tune: whether to load everything from a checkpoint, or only the model parameters
+        lang: language of the synthesis
+        use_speaker_embedding: whether to expect speaker embeddings
+        net: Model to train
+        train_dataset: Pytorch Dataset Object for train data
+        device: Device to put the loaded tensors on
+        save_directory: Where to save the checkpoints
+        batch_size: How many elements should be loaded at once
+        epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
     scaler = GradScaler()
@@ -143,7 +139,6 @@ def train_loop(net,
     if fine_tune:
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
@@ -151,7 +146,6 @@ def train_loop(net,
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scaler.load_state_dict(check_dict["scaler"])
-            scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
     while True:
@@ -181,7 +175,6 @@ def train_loop(net,
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
             scaler.update()
-            scheduler.step()
         with torch.no_grad():
             net.eval()
             loss_this_epoch = sum(train_losses_this_epoch) / len(train_losses_this_epoch)
@@ -203,7 +196,6 @@ def train_loop(net,
                         "optimizer"   : optimizer.state_dict(),
                         "scaler"      : scaler.state_dict(),
                         "step_counter": step_counter,
-                        "scheduler"   : scheduler.state_dict()
                         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                     delete_old_checkpoints(save_directory, keep=5)
                     plot_attention(model=net,
