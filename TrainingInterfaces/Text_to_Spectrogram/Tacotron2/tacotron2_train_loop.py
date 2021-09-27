@@ -33,8 +33,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
                                           in_lens=torch.LongTensor([len(text)]),
                                           out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
-    fig, ax = plt.subplots(nrows=2, ncols=1)
-    plt.figure(figsize=(8, 9))
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     ax[1].imshow(bin_att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     ax[1].set_xlabel("Inputs")
@@ -44,12 +43,12 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     ax[1].set_xticklabels(labels=[phone for phone in phones])
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
-    plt.tight_layout()
+    fig.tight_layout()
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
-    plt.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
-    plt.clf()
-    plt.close()
+    fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
+    fig.clf()
+    fig.close()
 
 
 def collate_and_pad(batch):
