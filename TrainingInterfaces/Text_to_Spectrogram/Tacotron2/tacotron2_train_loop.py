@@ -120,25 +120,26 @@ def train_loop(net,
                multi_ling=False,
                freeze_encoder_until=None,
                freeze_decoder_until=None,
-               freeze_embedding_until=None):
+               freeze_embedding_until=None,
+               collapse_margin=0.3):
     """
-    :param steps: How many steps to train
-    :param lr: The initial learning rate for the optimiser
-    :param path_to_checkpoint: reloads a checkpoint to continue training from there
-    :param fine_tune: whether to load everything from a checkpoint, or only the model parameters
-    :param lang: language of the synthesis
-    :param use_speaker_embedding: whether to expect speaker embeddings
-    :param net: Model to train
-    :param train_dataset: Pytorch Dataset Object for train data
-    :param device: Device to put the loaded tensors on
-    :param save_directory: Where to save the checkpoints
-    :param batch_size: How many elements should be loaded at once
-    :param epochs_per_save: how many epochs to train in between checkpoints
-
     Args:
-        freeze_embedding_until:
-        freeze_decoder_until:
-        freeze_encoder_until:
+        collapse_margin: margin in which the loss may increase in one epoch without triggering the soft-reset
+        steps: How many steps to train
+        lr: The initial learning rate for the optimiser
+        path_to_checkpoint: reloads a checkpoint to continue training from there
+        fine_tune: whether to load everything from a checkpoint, or only the model parameters
+        lang: language of the synthesis
+        use_speaker_embedding: whether to expect speaker embeddings
+        net: Model to train
+        train_dataset: Pytorch Dataset Object for train data
+        device: Device to put the loaded tensors on
+        save_directory: Where to save the checkpoints
+        batch_size: How many elements should be loaded at once
+        epochs_per_save: how many epochs to train in between checkpoints
+        freeze_embedding_until: which step to unfreeze embedding function weights
+        freeze_decoder_until: which step to unfreeze decoder weights
+        freeze_encoder_until: which step to unfreeze encoder weights. Careful, this subsumes embedding weights
         multi_ling: whether to use language IDs for language embeddings
     """
     net = net.to(device)
@@ -248,7 +249,7 @@ def train_loop(net,
                 print("Embedding-weights are now unfrozen, good luck!")
         net.eval()
         loss_this_epoch = sum(train_losses_this_epoch) / len(train_losses_this_epoch)
-        if previous_error + 0.01 < loss_this_epoch:
+        if previous_error + collapse_margin < loss_this_epoch:
             print("Model Collapse detected! \nPrevious Loss: {}\nNew Loss: {}".format(previous_error, loss_this_epoch))
             print("Trying to reset to a stable state ...")
             path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)

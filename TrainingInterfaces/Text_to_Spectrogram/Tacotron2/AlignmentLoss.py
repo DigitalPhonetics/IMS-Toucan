@@ -144,7 +144,7 @@ class AlignmentLoss(nn.Module):
     Combination according to paper with an added warmup phase directly in the loss
     """
 
-    def __init__(self, bin_warmup_steps=5000, bin_start_steps=5000, include_forward_loss=False):
+    def __init__(self, bin_warmup_steps=10000, bin_start_steps=20000, include_forward_loss=False):
         super().__init__()
         if include_forward_loss:
             self.l_forward_func = ForwardSumLoss()
@@ -156,7 +156,7 @@ class AlignmentLoss(nn.Module):
     def forward(self, soft_attention, in_lens, out_lens, step):
 
         soft_attention = soft_attention.unsqueeze(1)
-        bin_weight = min(step / (self.bin_warmup_steps + self.bin_start_steps), 1.0)
+        bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 2, 0.5)
 
         if self.include_forward_loss:
             l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
