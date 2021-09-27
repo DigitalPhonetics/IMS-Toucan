@@ -45,9 +45,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
     fig.tight_layout()
-    plt.rcParams['axes.titley'] = 1.0
-    plt.rcParams['axes.titlepad'] = -14
-    plt.subplots_adjust(hspace=0.0)
+
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
