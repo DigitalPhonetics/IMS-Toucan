@@ -61,7 +61,7 @@ class Tacotron2(torch.nn.Module):
             zoneout_rate=0.1,
             use_masking=False,
             use_weighted_masking=True,
-            bce_pos_weight=5.0,
+            bce_pos_weight=10.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
             guided_attn_loss_sigma=0.4,
