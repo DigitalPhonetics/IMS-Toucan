@@ -38,7 +38,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="forward_ta",
+            atype="location",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -108,7 +108,10 @@ class Tacotron2(torch.nn.Module):
                            padding_idx=padding_idx, )
 
         if spk_embed_dim is not None:
-            self.projection = torch.nn.Linear(eunits + spk_embed_dim, eunits)
+            self.hs_emb_projection = torch.nn.Linear(eunits + 256, eunits)
+            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+                                                            torch.nn.Softsign())
         dec_idim = eunits
 
         if atype == "location":
@@ -327,7 +330,9 @@ class Tacotron2(torch.nn.Module):
             Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
 
         """
+        # project speaker embedding into smaller space that allows tuning
+        speaker_embeddings_projected = self.embedding_projection(speaker_embeddings)
         # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
