@@ -20,8 +20,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
         os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
         device = torch.device("cuda")
 
-    torch.manual_seed(13)
-    random.seed(13)
+    torch.manual_seed(131714)
+    random.seed(131714)
+    torch.random.manual_seed(131714)
 
     print("Preparing")
     if model_dir is not None:

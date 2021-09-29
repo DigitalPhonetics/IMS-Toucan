@@ -46,30 +46,58 @@ from numba import prange
 class ForwardSumLoss(nn.Module):
 
     def __init__(self, blank_logprob=-1):
+        """
+        The RAD-TTS Paper says the following about the blank_logprob:
+
+        In practice, setting the blank emission probability blank_logprob to be
+        roughly the value of the largest of the initial activations
+        significantly improves convergence rates. The reasoning behind
+        this is that it relaxes the monotonic constraint, allowing
+        the objective function to construct paths while optionally
+        skipping over some text tokens, notably ones that have not
+        been sufficiently trained on during early iterations. As training
+        proceeds, the probabilities of the skipped text token
+        increases, despite the existence of the blank tokens, allowing us
+        to extract clean monotonic alignments.
+
+        -1 is given as default, but maybe something smaller like -10 or -100 might work better in some cases
+        """
         super().__init__()
         self.log_softmax = nn.LogSoftmax(dim=3)
         self.ctc_loss = nn.CTCLoss(zero_infinity=True)
         self.blank_logprob = blank_logprob
 
-    def forward(self, attn_logprob, in_lens, out_lens):
-        key_lens = in_lens
-        query_lens = out_lens
-        attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0), value=self.blank_logprob)
+    def forward(self, attn_logprob, text_lens, spectrogram_lens):
+        """
+        Args:
+        attn_logprob: batch x 1 x max(mel_lens) x max(text_lens) batched tensor of attention log probabilities, padded to length of longest sequence in each dimension
+        text_lens: batch-D vector of length of each text sequence
+        mel_lens: batch-D vector of length of each mel sequence
+        """
+        # The CTC loss module assumes the existence of a blank token
+        # that can be optionally inserted anywhere in the sequence for
+        # a fixed probability.
+        # A row must be added to the attention matrix to account for this
+        attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0, 0, 0, 0, 0, 0, 0), value=self.blank_logprob)
 
         total_loss = 0.0
+
+        # for-loop over batch because of variable-length
+        # sequences
         for bid in range(attn_logprob.shape[0]):
-            target_seq = torch.arange(1, key_lens[bid] + 1).unsqueeze(0)
-            curr_logprob = attn_logprob_padded[bid].permute(1, 0, 2)[: query_lens[bid], :, : key_lens[bid] + 1]
+            # construct the target sequence. Every
+            # text token is mapped to a unique sequence number,
+            # thereby ensuring the monotonicity constraint
+            target_seq = torch.arange(1, text_lens[bid] + 1).unsqueeze(0)
+            curr_logprob = attn_logprob_padded[bid].permute(1, 0, 2)[: spectrogram_lens[bid], :, : text_lens[bid] + 1]
 
             curr_logprob = self.log_softmax(curr_logprob[None])[0]
-            loss = self.ctc_loss(
-                curr_logprob,
-                target_seq,
-                input_lengths=query_lens[bid: bid + 1],
-                target_lengths=key_lens[bid: bid + 1],
-                )
+            loss = self.ctc_loss(curr_logprob,
+                                 target_seq,
+                                 input_lengths=spectrogram_lens[bid: bid + 1],
+                                 target_lengths=text_lens[bid: bid + 1])
             total_loss += loss
-
+        # average cost over batch
         total_loss /= attn_logprob.shape[0]
         return total_loss
 
@@ -110,7 +138,9 @@ def b_mas(b_attn_map, in_lens, out_lens, width=1):
 
 @jit(nopython=True)
 def mas_width1(attn_map):
-    """mas with hardcoded width=1"""
+    """
+    mas with hardcoded width=1
+    """
     # assumes mel x text
     opt = np.zeros_like(attn_map)
     attn_map = np.log(attn_map)
@@ -144,7 +174,12 @@ class AlignmentLoss(nn.Module):
     Combination according to paper with an added warmup phase directly in the loss
     """
 
-    def __init__(self, bin_warmup_steps=10000, bin_start_steps=20000, include_forward_loss=False):
+    def __init__(self,
+                 bin_warmup_steps=20000,
+                 bin_start_steps=40000,
+                 forward_start_steps=3000,
+                 forward_warmup_steps=3000,
+                 include_forward_loss=True):
         super().__init__()
         if include_forward_loss:
             self.l_forward_func = ForwardSumLoss()
@@ -152,16 +187,19 @@ class AlignmentLoss(nn.Module):
         self.l_bin_func = BinLoss()
         self.bin_warmup_steps = bin_warmup_steps
         self.bin_start_steps = bin_start_steps
+        self.forward_start_steps = forward_start_steps
+        self.forward_warmup_steps = forward_warmup_steps
+        # in our implementation we need to give the diagonal prior objective some time before we start with the forward sum objective
 
     def forward(self, soft_attention, in_lens, out_lens, step):
 
         soft_attention = soft_attention.unsqueeze(1)
-        bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 2, 0.5)
 
-        if self.include_forward_loss:
-            l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
-            # this is not the proper way to get log_probs, but the forward attention complicates things.
-            # Luckily the forward attention does about the same as CTC, so it's not too necessary to have this.
+        bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 10, 0.1)
+        forward_weight = min(((step - self.forward_start_steps) / self.bin_warmup_steps) / 10, 0.1)
+
+        if self.include_forward_loss and self.forward_start_steps < step:
+            l_forward = forward_weight * self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
         else:
             l_forward = 0.0
 
