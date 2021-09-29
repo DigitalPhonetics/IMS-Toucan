@@ -46,6 +46,22 @@ from numba import prange
 class ForwardSumLoss(nn.Module):
 
     def __init__(self, blank_logprob=-1):
+        """
+        The RAD-TTS Paper says the following about the blank_logprob:
+
+        In practice, setting the blank emission probability blank_logprob to be
+        roughly the value of the largest of the initial activations
+        significantly improves convergence rates. The reasoning behind
+        this is that it relaxes the monotonic constraint, allowing
+        the objective function to construct paths while optionally
+        skipping over some text tokens, notably ones that have not
+        been sufficiently trained on during early iterations. As training
+        proceeds, the probabilities of the skipped text token
+        increases, despite the existence of the blank tokens, allowing us
+        to extract clean monotonic alignments.
+
+        -1 is given as default, but maybe something smaller like -10 or -100 might work better in some cases
+        """
         super().__init__()
         self.log_softmax = nn.LogSoftmax(dim=3)
         self.ctc_loss = nn.CTCLoss(zero_infinity=True)
