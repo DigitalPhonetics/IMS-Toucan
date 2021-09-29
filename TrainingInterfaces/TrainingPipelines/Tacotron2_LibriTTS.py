@@ -39,12 +39,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="en",
-                                min_len_in_seconds=1,
-                                max_len_in_seconds=10,
+                                min_len_in_seconds=3,
+                                max_len_in_seconds=12,
                                 speaker_embedding=True,
                                 cut_silences=True)
 
-    model = Tacotron2(idim=166, odim=80, spk_embed_dim=960, use_dtw_loss=False, use_alignment_loss=True, atype='location')
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=960, use_dtw_loss=False, use_alignment_loss=True)
 
     print("Training model")
     train_loop(net=model,
