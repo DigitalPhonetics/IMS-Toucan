@@ -43,7 +43,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                                 speaker_embedding=True,
                                 cut_silences=True)
 
-    model = Tacotron2(idim=166, odim=80, spk_embed_dim=960, use_dtw_loss=False)
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=960, use_dtw_loss=False, use_alignment_loss=True)
 
     print("Training model")
     train_loop(net=model,
@@ -55,6 +55,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.0001,
+               lr=0.0002,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune)

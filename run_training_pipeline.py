@@ -15,17 +15,17 @@ from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_Nan
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Thorsten import run as taco_Thorsten
 
 pipeline_dict = {
-    "fast_Thorsten": fast_Thorsten,
-    "taco_Thorsten": taco_Thorsten,
+    "fast_thorsten": fast_Thorsten,
+    "taco_thorsten": taco_Thorsten,
 
-    "fast_LibriTTS": fast_LibriTTS,
-    "taco_LibriTTS": taco_LibriTTS,
+    "fast_libri"   : fast_LibriTTS,
+    "taco_libri"   : taco_LibriTTS,
 
-    "fast_LJSpeech": fast_LJSpeech,
-    "taco_LJSpeech": taco_LJSpeech,
+    "fast_lj"      : fast_LJSpeech,
+    "taco_lj"      : taco_LJSpeech,
 
-    "fast_Nancy"   : fast_Nancy,
-    "taco_Nancy"   : taco_Nancy,
+    "fast_nancy"   : fast_Nancy,
+    "taco_nancy"   : taco_Nancy,
 
     "hifi_combined": hifigan_combined,
     "taco_multi"   : taco_multi
