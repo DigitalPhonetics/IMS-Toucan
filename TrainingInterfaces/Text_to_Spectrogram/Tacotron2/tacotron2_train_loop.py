@@ -123,10 +123,10 @@ def train_loop(net,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=8,
-                              pin_memory=False,
+                              num_workers=10,
+                              pin_memory=True,
                               shuffle=True,
-                              prefetch_factor=8,
+                              prefetch_factor=10,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     if use_speaker_embedding:
