@@ -212,4 +212,5 @@ def train_loop(net,
                 print("Train Loss:   {}".format(loss_this_epoch))
                 print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
                 print("Steps:        {}".format(step_counter))
+            torch.cuda.empty_cache()
             net.train()
