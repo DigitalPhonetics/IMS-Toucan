@@ -26,15 +26,15 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
     text = tf.string_to_tensor(sentence).long().squeeze(0).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu")
+    att = model.inference(text=text, speaker_embeddings=speaker_embedding)[2].to("cpu").detach().numpy()
     model.train()
     del tf
     bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
                                           in_lens=torch.LongTensor([len(text)]),
-                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
+                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0).detach().numpy()
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
-    ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    ax[1].imshow(bin_att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[0].imshow(att, interpolation='nearest', aspect='auto', origin="lower")
+    ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
     ax[1].set_xlabel("Inputs")
     ax[0].xaxis.set_visible(False)
     ax[0].set_ylabel("Outputs")
@@ -167,9 +167,10 @@ def train_loop(net,
                                      speech_lengths=batch[3].to(device),
                                      step=step_counter,
                                      speaker_embeddings=batch[4].to(device))
-                train_losses_this_epoch.append(float(train_loss))
+                train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
+            del train_loss
             step_counter += 1
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
