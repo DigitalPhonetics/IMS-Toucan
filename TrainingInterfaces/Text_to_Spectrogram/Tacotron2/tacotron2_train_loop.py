@@ -55,37 +55,17 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
 def collate_and_pad(batch):
     if len(batch[0]) == 4:
         # every entry in batch: [text, text_length, spec, spec_length]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1))
+        return (pad_sequence([datapoint[0].squeeze(0) for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[1] for datapoint in batch]),
+                pad_sequence([datapoint[1] for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[3] for datapoint in batch]))
     elif len(batch[0]) == 5:
         # every entry in batch: [text, text_length, spec, spec_length, speaker_embedding]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        speaker_embeddings = list()
-        for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-            speaker_embeddings.append(torch.Tensor(datapoint[4]))
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lens).squeeze(1),
-                pad_sequence(speechs, batch_first=True),
-                torch.stack(speech_lens).squeeze(1),
-                torch.stack(speaker_embeddings))
+        return (pad_sequence([datapoint[0].squeeze(0) for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[1] for datapoint in batch]),
+                pad_sequence([datapoint[1] for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[3] for datapoint in batch]),
+                torch.stack([datapoint[4] for datapoint in batch]))
 
 
 def train_loop(net,
@@ -193,11 +173,11 @@ def train_loop(net,
                 previous_error = loss_this_epoch
                 if epoch % epochs_per_save == 0:
                     torch.save({
-                        "model"       : net.state_dict(),
-                        "optimizer"   : optimizer.state_dict(),
-                        "scaler"      : scaler.state_dict(),
+                        "model": net.state_dict(),
+                        "optimizer": optimizer.state_dict(),
+                        "scaler": scaler.state_dict(),
                         "step_counter": step_counter,
-                        }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                     delete_old_checkpoints(save_directory, keep=5)
                     plot_attention(model=net,
                                    lang=lang,
