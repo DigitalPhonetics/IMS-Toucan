@@ -31,15 +31,16 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     del tf
     bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
                                           in_lens=torch.LongTensor([len(text)]),
-                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0)
+                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0).detach().numpy()
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    ax[1].imshow(bin_att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
     ax[1].set_xlabel("Inputs")
     ax[0].xaxis.set_visible(False)
     ax[0].set_ylabel("Outputs")
     ax[1].set_ylabel("Outputs")
     ax[1].set_xticks(range(len(att[0])))
+    del att
     ax[1].set_xticklabels(labels=[phone for phone in phones])
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
@@ -55,54 +56,36 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
 
 
 def collate_and_pad(batch):
-    # [text, text_length, spec, spec_length, (speaker_embedding), (language_id)]
-    texts = list()
-    text_lengths = list()
-    spectrograms = list()
-    spectrogram_lengths = list()
     if type(batch[0][-1]) is int:
-        language_ids = list()
         if len(batch[0]) == 6:
-            speaker_embeddings = list()
-        for datapoint in batch:
-            texts.append(datapoint[0])
-            text_lengths.append(datapoint[1])
-            spectrograms.append(datapoint[2])
-            spectrogram_lengths.append(datapoint[3])
-            if len(batch[0]) == 6:
-                speaker_embeddings.append(datapoint[4])
-            language_ids.append(torch.LongTensor(datapoint[5]))
-        if len(batch[0]) == 6:
-            return (pad_sequence(texts, batch_first=True),
-                    torch.stack(text_lengths).squeeze(1),
-                    pad_sequence(spectrograms, batch_first=True),
-                    torch.stack(spectrogram_lengths).squeeze(1),
-                    torch.stack(speaker_embeddings),
-                    torch.stack(language_ids).squeeze(1))
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lengths).squeeze(1),
-                pad_sequence(spectrograms, batch_first=True),
-                torch.stack(spectrogram_lengths).squeeze(1),
-                torch.stack(language_ids).squeeze(1))
-    if len(batch[0]) == 5:
-        speaker_embeddings = list()
-    for datapoint in batch:
-        texts.append(datapoint[0])
-        text_lengths.append(datapoint[1])
-        spectrograms.append(datapoint[2])
-        spectrogram_lengths.append(datapoint[3])
+            # text, text_len, speech, speech_len, speaker_emb, language_id
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+                    torch.stack([datapoint[4] for datapoint in batch]),
+                    torch.stack([torch.LongTensor(datapoint[5]) for datapoint in batch]).squeeze(1))
+        else:
+            # text, text_len, speech, speech_len, language_id
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+                    torch.stack([torch.LongTensor(datapoint[5]) for datapoint in batch]).squeeze(1))
+    else:
         if len(batch[0]) == 5:
-            speaker_embeddings.append(datapoint[4])
-    if len(batch[0]) == 5:
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lengths).squeeze(1),
-                pad_sequence(spectrograms, batch_first=True),
-                torch.stack(spectrogram_lengths).squeeze(1),
-                torch.stack(speaker_embeddings))
-    return (pad_sequence(texts, batch_first=True),
-            torch.stack(text_lengths).squeeze(1),
-            pad_sequence(spectrograms, batch_first=True),
-            torch.stack(spectrogram_lengths).squeeze(1))
+            # text, text_len, speech, speech_len, speaker_emb
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+                    torch.stack([datapoint[4] for datapoint in batch]))
+        else:
+            # text, text_len, speech, speech_len
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
 
 
 def train_loop(net,
@@ -224,9 +207,10 @@ def train_loop(net,
                                          step=step_counter,
                                          speaker_embeddings=batch[4].to(device))
 
-                train_losses_this_epoch.append(float(train_loss))
+                train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
+            del train_loss
             step_counter += 1
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
@@ -263,11 +247,11 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model"       : net.state_dict(),
-                    "optimizer"   : optimizer.state_dict(),
-                    "scaler"      : scaler.state_dict(),
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
                     "step_counter": step_counter,
-                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():
                     plot_attention(model=net,
@@ -284,4 +268,5 @@ def train_loop(net,
             print("Train Loss:   {}".format(loss_this_epoch))
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
             print("Steps:        {}".format(step_counter))
+        torch.cuda.empty_cache()
         net.train()
