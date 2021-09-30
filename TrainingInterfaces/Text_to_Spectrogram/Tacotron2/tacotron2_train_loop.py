@@ -56,15 +56,15 @@ def collate_and_pad(batch):
     if len(batch[0]) == 4:
         # every entry in batch: [text, text_length, spec, spec_length]
         return (pad_sequence([datapoint[0].squeeze(0) for datapoint in batch], batch_first=True),
-                torch.stack([datapoint[1] for datapoint in batch]),
+                torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                 pad_sequence([datapoint[1] for datapoint in batch], batch_first=True),
-                torch.stack([datapoint[3] for datapoint in batch]))
+                torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
     elif len(batch[0]) == 5:
         # every entry in batch: [text, text_length, spec, spec_length, speaker_embedding]
         return (pad_sequence([datapoint[0].squeeze(0) for datapoint in batch], batch_first=True),
-                torch.stack([datapoint[1] for datapoint in batch]),
+                torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                 pad_sequence([datapoint[1] for datapoint in batch], batch_first=True),
-                torch.stack([datapoint[3] for datapoint in batch]),
+                torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                 torch.stack([datapoint[4] for datapoint in batch]))
 
 
