@@ -34,18 +34,17 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step):
                                           out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0).detach().numpy()
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    del att
     ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
     ax[1].set_xlabel("Inputs")
     ax[0].xaxis.set_visible(False)
     ax[0].set_ylabel("Outputs")
     ax[1].set_ylabel("Outputs")
     ax[1].set_xticks(range(len(att[0])))
+    del att
     ax[1].set_xticklabels(labels=[phone for phone in phones])
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
     fig.tight_layout()
-
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
