@@ -50,42 +50,48 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
 
 
 def collate_and_pad(batch):
-    # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, (speaker_embedding)]
-    texts = list()
-    text_lengths = list()
-    spectrograms = list()
-    spectrogram_lengths = list()
-    durations = list()
-    pitch = list()
-    energy = list()
-    if len(batch[0]) == 8:
-        speaker_embeddings = list()
-    for datapoint in batch:
-        texts.append(datapoint[0])
-        text_lengths.append(datapoint[1])
-        spectrograms.append(datapoint[2])
-        spectrogram_lengths.append(datapoint[3])
-        durations.append(datapoint[4])
-        energy.append(datapoint[5])
-        pitch.append(datapoint[6])
+    if type(batch[0][-1]) is int:
+        if len(batch[0]) == 9:
+            # text, text_len, speech, speech_len, durations, energy, pitch, speaker_emb, language_id
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                    torch.stack([datapoint[7] for datapoint in batch]),
+                    torch.stack([torch.LongTensor(datapoint[8]) for datapoint in batch]).squeeze(1))
+        else:
+            # text, text_len, speech, speech_len, durations, energy, pitch, language_id
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                    torch.stack([torch.LongTensor(datapoint[7]) for datapoint in batch]).squeeze(1))
+    else:
         if len(batch[0]) == 8:
-            speaker_embeddings.append(datapoint[7])
-    if len(batch[0]) == 8:
-        return (pad_sequence(texts, batch_first=True),
-                torch.stack(text_lengths).squeeze(1),
-                pad_sequence(spectrograms, batch_first=True),
-                torch.stack(spectrogram_lengths).squeeze(1),
-                pad_sequence(durations, batch_first=True),
-                pad_sequence(pitch, batch_first=True),
-                pad_sequence(energy, batch_first=True),
-                torch.stack(speaker_embeddings))
-    return (pad_sequence(texts, batch_first=True),
-            torch.stack(text_lengths).squeeze(1),
-            pad_sequence(spectrograms, batch_first=True),
-            torch.stack(spectrogram_lengths).squeeze(1),
-            pad_sequence(durations, batch_first=True),
-            pad_sequence(pitch, batch_first=True),
-            pad_sequence(energy, batch_first=True))
+            # text, text_len, speech, speech_len, durations, energy, pitch, speaker_emb
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                    torch.stack([datapoint[7] for datapoint in batch]))
+        else:
+            # text, text_len, speech, speech_len, durations, energy, pitch
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1))
 
 
 def train_loop(net,
@@ -105,22 +111,24 @@ def train_loop(net,
                freeze_encoder_until=None,
                freeze_embedding_until=None):
     """
-    :param steps: How many steps to train
-    :param lr: The initial learning rate for the optimiser
-    :param warmup_steps: how many warmup steps for the warmup scheduler
-    :param path_to_checkpoint: reloads a checkpoint to continue training from there
-    :param fine_tune: whether to load everything from a checkpoint, or only the model parameters
-    :param lang: language of the synthesis
-    :param use_speaker_embedding: whether to expect speaker embeddings
-    :param net: Model to train
-    :param train_dataset: Pytorch Dataset Object for train data
-    :param device: Device to put the loaded tensors on
-    :param save_directory: Where to save the checkpoints
-    :param batch_size: How many elements should be loaded at once
-    :param epochs_per_save: how many epochs to train in between checkpoints
-
     Args:
-        freeze_until: amount of steps to train the projection of a multi-speaker model on its own
+        warmup_steps: how long the learning rate should increase before it reaches the specified value
+        steps: How many steps to train
+        lr: The initial learning rate for the optimiser
+        path_to_checkpoint: reloads a checkpoint to continue training from there
+        fine_tune: whether to load everything from a checkpoint, or only the model parameters
+        lang: language of the synthesis
+        use_speaker_embedding: whether to expect speaker embeddings
+        net: Model to train
+        train_dataset: Pytorch Dataset Object for train data
+        device: Device to put the loaded tensors on
+        save_directory: Where to save the checkpoints
+        batch_size: How many elements should be loaded at once
+        epochs_per_save: how many epochs to train in between checkpoints
+        freeze_embedding_until: which step to unfreeze embedding function weights
+        freeze_decoder_until: which step to unfreeze decoder weights
+        freeze_encoder_until: which step to unfreeze encoder weights. Careful, this subsumes embedding weights
+        multi_ling: whether to use language IDs for language embeddings
     """
     net = net.to(device)
     if freeze_decoder_until is not None and freeze_decoder_until > 0:
@@ -186,9 +194,10 @@ def train_loop(net,
                                      gold_pitch=batch[5].to(device),
                                      gold_energy=batch[6].to(device),
                                      speaker_embeddings=batch[7].to(device))
-                train_losses_this_epoch.append(float(train_loss))
+                train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
+            del train_loss
             step_counter += 1
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
@@ -213,12 +222,12 @@ def train_loop(net,
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
                 "step_counter": step_counter,
-                "scaler"      : scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                "scaler": scaler.state_dict(),
+                "scheduler": scheduler.state_dict(),
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             with torch.no_grad():
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
@@ -228,6 +237,7 @@ def train_loop(net,
                 return
         print("Epoch:        {}".format(epoch + 1))
         print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
+        torch.cuda.empty_cache()
         net.train()
