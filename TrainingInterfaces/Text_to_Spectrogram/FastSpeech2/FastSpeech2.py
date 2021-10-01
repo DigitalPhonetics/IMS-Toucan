@@ -135,8 +135,11 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False)
 
         # define additional projection for speaker embedding
-        if self.spk_embed_dim is not None:
-            self.projection = torch.nn.Linear(adim + spk_embed_dim, adim)
+        if spk_embed_dim is not None:
+            self.hs_emb_projection = torch.nn.Linear(adim + 256, adim)
+            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+                                                            torch.nn.Softsign())
 
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers, n_chans=duration_predictor_chans,
@@ -370,9 +373,11 @@ class FastSpeech2(torch.nn.Module, ABC):
             Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
 
         """
+        # project speaker embedding into smaller space that allows tuning
+        speaker_embeddings_projected = self.embedding_projection(speaker_embeddings)
         # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
 
     def _source_mask(self, ilens):

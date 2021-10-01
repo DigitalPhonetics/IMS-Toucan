@@ -93,9 +93,10 @@ class Tacotron2(torch.nn.Module):
                            padding_idx=padding_idx, )
 
         if spk_embed_dim is not None:
-            self.projection = torch.nn.Sequential(torch.nn.Linear(eunits + spk_embed_dim, eunits),
-                                                  torch.nn.Tanh(),
-                                                  torch.nn.Linear(eunits, eunits))
+            self.hs_emb_projection = torch.nn.Linear(eunits + 256, eunits)
+            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+                                                            torch.nn.Softsign())
         dec_idim = eunits
 
         if atype == "location":
@@ -165,11 +166,22 @@ class Tacotron2(torch.nn.Module):
             return outs
 
     def _integrate_with_spk_embed(self, hs, speaker_embeddings):
+        """
+        Integrate speaker embedding with hidden states.
+
+        Args:
+            hs (Tensor): Batch of hidden state sequences (B, Tmax, adim).
+            speaker_embeddings (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
+
+        Returns:
+            Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
+
+        """
+        # project speaker embedding into smaller space that allows tuning
+        speaker_embeddings_projected = self.embedding_projection(speaker_embeddings)
         # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-
-        hs = self.projection(torch.cat([hs, speaker_embeddings], dim=-1))
-
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
 
 
@@ -190,38 +202,6 @@ class Tacotron2Loss(torch.nn.Module):
             )
 
         self._register_load_state_dict_pre_hook(self._load_state_dict_pre_hook)
-
-    def forward(self, after_outs, before_outs, logits, ys, labels, olens):
-        # make mask and apply it
-        if self.use_masking:
-            masks = make_non_pad_mask(olens).unsqueeze(-1).to(ys.device)
-            ys = ys.masked_select(masks)
-            after_outs = after_outs.masked_select(masks)
-            before_outs = before_outs.masked_select(masks)
-            labels = labels.masked_select(masks[:, :, 0])
-            logits = logits.masked_select(masks[:, :, 0])
-
-        # calculate loss
-        l1_loss = self.l1_criterion(after_outs, ys) + self.l1_criterion(before_outs, ys)
-        mse_loss = self.mse_criterion(after_outs, ys) + self.mse_criterion(
-            before_outs, ys
-            )
-        bce_loss = self.bce_criterion(logits, labels)
-
-        # make weighted mask and apply it
-        if self.use_weighted_masking:
-            masks = make_non_pad_mask(olens).unsqueeze(-1).to(ys.device)
-            weights = masks.float() / masks.sum(dim=1, keepdim=True).float()
-            out_weights = weights.div(ys.size(0) * ys.size(2))
-            logit_weights = weights.div(ys.size(0))
-
-            # apply weight
-            l1_loss = l1_loss.mul(out_weights).masked_select(masks).sum()
-            mse_loss = mse_loss.mul(out_weights).masked_select(masks).sum()
-            bce_loss = (
-                bce_loss.mul(logit_weights.squeeze(-1)).masked_select(masks.squeeze(-1)).sum())
-
-        return l1_loss, mse_loss, bce_loss
 
     def _load_state_dict_pre_hook(
             self,
