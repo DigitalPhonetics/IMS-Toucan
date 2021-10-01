@@ -15,6 +15,7 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedT
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
+from Utility.utils import get_most_recent_checkpoint
 
 
 def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embedding_for_plot):
@@ -109,9 +110,11 @@ def train_loop(net,
                fine_tune=False,
                freeze_decoder_until=None,
                freeze_encoder_until=None,
-               freeze_embedding_until=None):
+               freeze_embedding_until=None,
+               resume = False):
     """
     Args:
+        resume: whether to resume from the most recent checkpoint
         warmup_steps: how long the learning rate should increase before it reaches the specified value
         steps: How many steps to train
         lr: The initial learning rate for the optimiser
@@ -162,6 +165,8 @@ def train_loop(net,
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
+    if resume:
+        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
@@ -235,7 +240,7 @@ def train_loop(net,
             if step_counter > steps:
                 # DONE
                 return
-        print("Epoch:        {}".format(epoch + 1))
+        print("Epoch:        {}".format(epoch))
         print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))

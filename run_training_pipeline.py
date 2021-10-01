@@ -1,6 +1,6 @@
 import argparse
 import sys
-
+import torch
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MultiEnglish import run as fast_multi
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
@@ -22,7 +22,7 @@ pipeline_dict = {
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='IMS Toucan - Call to Train')
+    parser = argparse.ArgumentParser(description='IMS Speech Synthesis Toolkit - Call to Train')
 
     parser.add_argument('pipeline',
                         choices=list(pipeline_dict.keys()),
@@ -38,14 +38,19 @@ if __name__ == '__main__':
                         help="Path to checkpoint to resume from.",
                         default=None)
 
+    parser.add_argument('--resume',
+                        action="store_true",
+                        help="Automatically load the highest checkpoint and continue from there.",
+                        default=False)
+
     parser.add_argument('--finetune',
                         action="store_true",
-                        help="Whether to fine-tune from the specified checkpoint or continue training from it.",
+                        help="Whether to fine-tune from the specified checkpoint.",
                         default=False)
 
     parser.add_argument('--model_save_dir',
                         type=str,
-                        help="Directory where the checkpoints should be saved to. A default should be specified in each individual pipeline.",
+                        help="Directory where the checkpoints should be saved to.",
                         default=None)
 
     args = parser.parse_args()
@@ -54,8 +59,11 @@ if __name__ == '__main__':
         print("Need to provide path to checkpoint to fine-tune from!")
         sys.exit()
 
-    if args.finetune and "hifi" in args.pipeline:
+    if args.finetune and "hifigan" in args.pipeline:
         print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
 
-    pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, finetune=args.finetune, model_dir=args.model_save_dir)
+    if "fast" in args.pipeline:
+        torch.multiprocessing.set_start_method('spawn', force=False)
+
+    pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, resume=args.resume, finetune=args.finetune, model_dir=args.model_save_dir)

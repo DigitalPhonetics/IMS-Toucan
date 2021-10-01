@@ -9,7 +9,7 @@ from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop impor
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -82,4 +82,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                multi_ling=False,
-               freeze_embedding_until=None)
+               freeze_embedding_until=None,
+               resume=resume)
