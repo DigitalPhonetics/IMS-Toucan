@@ -147,8 +147,8 @@ class Tacotron2(torch.nn.Module):
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
-            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                             alpha=guided_attn_loss_lambda * 10, )
+            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma * 0.5,
+                                                             alpha=guided_attn_loss_lambda * 20, )
             self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
                                                              alpha=guided_attn_loss_lambda, )
         if self.use_dtw_loss:
@@ -230,8 +230,9 @@ class Tacotron2(torch.nn.Module):
                 olens_in = olens.new([olen // self.reduction_factor for olen in olens])
             else:
                 olens_in = olens
-            if step < 400:
+            if step < 500:
                 attn_loss = self.guided_att_loss_start(att_ws, ilens, olens_in)
+                # build a prior in the attention map for the forward algorithm to take over
             else:
                 attn_loss = self.guided_att_loss_final(att_ws, ilens, olens_in)
             loss = loss + attn_loss
