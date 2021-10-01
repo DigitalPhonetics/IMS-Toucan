@@ -104,7 +104,7 @@ def train_loop(net,
                freeze_encoder_until=None,
                freeze_decoder_until=None,
                freeze_embedding_until=None,
-               collapse_margin=0.3,
+               collapse_margin=5.0,  # be wary of loss scheduling
                resume=False):
     """
     Args:

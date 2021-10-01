@@ -174,6 +174,8 @@ least a GPU ID).
 
 --resume_checkpoint <path to a checkpoint to load>
 
+--resume (if this is present, the furthest checkpoint available will be loaded automatically)
+
 --finetune (if this is present, the provided checkpoint will be fine-tuned on the data from this pipeline)
 
 --model_save_dir <path to a directory where the checkpoints should be saved>
