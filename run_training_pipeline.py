@@ -49,6 +49,11 @@ if __name__ == '__main__':
                         help="Path to checkpoint to resume from.",
                         default=None)
 
+    parser.add_argument('--resume',
+                        action="store_true",
+                        help="Automatically load the highest checkpoint and continue from there.",
+                        default=False)
+
     parser.add_argument('--finetune',
                         action="store_true",
                         help="Whether to fine-tune from the specified checkpoint.",
@@ -72,4 +77,4 @@ if __name__ == '__main__':
     if "fast" in args.pipeline:
         torch.multiprocessing.set_start_method('spawn', force=False)
 
-    pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, finetune=args.finetune, model_dir=args.model_save_dir)
+    pipeline_dict[args.pipeline](gpu_id=args.gpu_id, resume_checkpoint=args.resume_checkpoint, resume=args.resume, finetune=args.finetune, model_dir=args.model_save_dir)

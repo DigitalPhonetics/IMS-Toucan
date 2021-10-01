@@ -80,9 +80,11 @@ def train_loop(net,
                use_speaker_embedding=False,
                path_to_checkpoint=None,
                fine_tune=False,
-               collapse_margin=0.3):
+               collapse_margin=0.3,
+               resume = False):
     """
     Args:
+        resume: whether to resume from the most recent checkpoint
         collapse_margin: margin in which the loss may increase in one epoch without triggering the soft-reset
         steps: How many steps to train
         lr: The initial learning rate for the optimiser
@@ -119,6 +121,8 @@ def train_loop(net,
     if fine_tune:
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    if resume:
+        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
@@ -188,7 +192,7 @@ def train_loop(net,
                     if step_counter > steps:
                         # DONE
                         return
-                print("Epoch:        {}".format(epoch + 1))
+                print("Epoch:        {}".format(epoch))
                 print("Train Loss:   {}".format(loss_this_epoch))
                 print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
                 print("Steps:        {}".format(step_counter))
