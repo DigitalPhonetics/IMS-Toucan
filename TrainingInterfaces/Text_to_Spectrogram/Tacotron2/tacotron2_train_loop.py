@@ -80,8 +80,8 @@ def train_loop(net,
                use_speaker_embedding=False,
                path_to_checkpoint=None,
                fine_tune=False,
-               collapse_margin=0.3,
-               resume = False):
+               collapse_margin=5.0,  # be wary of loss scheduling
+               resume=False):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
