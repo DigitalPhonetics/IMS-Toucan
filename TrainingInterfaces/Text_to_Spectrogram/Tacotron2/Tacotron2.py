@@ -65,7 +65,7 @@ class Tacotron2(torch.nn.Module):
             loss_type="L1+L2",
             use_guided_attn_loss=True,
             guided_attn_loss_sigma=0.4,
-            guided_attn_loss_lambda=0.2,
+            guided_attn_loss_lambda=1.0,
             use_dtw_loss=False,
             use_alignment_loss=True):
         super().__init__()
@@ -147,8 +147,10 @@ class Tacotron2(torch.nn.Module):
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
-            self.attn_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                 alpha=guided_attn_loss_lambda, )
+            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                             alpha=guided_attn_loss_lambda * 10, )
+            self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                             alpha=guided_attn_loss_lambda, )
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
@@ -228,7 +230,10 @@ class Tacotron2(torch.nn.Module):
                 olens_in = olens.new([olen // self.reduction_factor for olen in olens])
             else:
                 olens_in = olens
-            attn_loss = self.attn_loss(att_ws, ilens, olens_in)
+            if step < 400:
+                attn_loss = self.guided_att_loss_start(att_ws, ilens, olens_in)
+            else:
+                attn_loss = self.guided_att_loss_final(att_ws, ilens, olens_in)
             loss = loss + attn_loss
 
         # calculate alignment loss
