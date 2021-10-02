@@ -17,7 +17,10 @@ class MultiEnglish_Tacotron2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = speaker_embedding
         self.device = device
-        self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
+        if isinstance(speaker_embedding, torch.Tensor):
+            self.speaker_embedding = speaker_embedding
+        else:
+            self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device)).squeeze(0).squeeze(0)
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False, inference=True)
         self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_MultispeakerEnglish", "best.pt"),
