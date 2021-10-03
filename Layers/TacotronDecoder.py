@@ -252,7 +252,8 @@ class Decoder(torch.nn.Module):
                  use_concate=True,
                  dropout_rate=0.5,
                  zoneout_rate=0.1,
-                 reduction_factor=1, ):
+                 reduction_factor=1,
+                 speaker_embedding_projection_size=None):
         """
         Initialize Tacotron2 decoder module.
 
@@ -288,6 +289,8 @@ class Decoder(torch.nn.Module):
         self.cumulate_att_w = cumulate_att_w
         self.use_concate = use_concate
         self.reduction_factor = reduction_factor
+        self.speaker_embedding_projection_size = speaker_embedding_projection_size
+
 
         # check attention type
         if isinstance(self.att, AttForwardTA):
@@ -307,10 +310,16 @@ class Decoder(torch.nn.Module):
 
         # define prenet
         if prenet_layers > 0:
-            self.prenet = Prenet(idim=odim,
-                                 n_layers=prenet_layers,
-                                 n_units=prenet_units,
-                                 dropout_rate=dropout_rate, )
+            if speaker_embedding_projection_size is not None:
+                self.prenet = Prenet(idim=odim + speaker_embedding_projection_size,
+                                     n_layers=prenet_layers,
+                                     n_units=prenet_units,
+                                     dropout_rate=dropout_rate, )
+            else:
+                self.prenet = Prenet(idim=odim,
+                                     n_layers=prenet_layers,
+                                     n_units=prenet_units,
+                                     dropout_rate=dropout_rate, )
         else:
             self.prenet = None
 
@@ -338,7 +347,7 @@ class Decoder(torch.nn.Module):
         init_hs = hs.new_zeros(hs.size(0), self.lstm[0].hidden_size)
         return init_hs
 
-    def forward(self, hs, hlens, ys):
+    def forward(self, hs, hlens, ys, speaker_embedding=None):
         """Calculate forward propagation.
 
         Args:
@@ -382,7 +391,10 @@ class Decoder(torch.nn.Module):
                 att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w, prev_out)
             else:
                 att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w)
-            prenet_out = self.prenet(prev_out) if self.prenet is not None else prev_out
+            if self.speaker_embedding_projection_size is not None:
+                prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
+            else:
+                prenet_out = self.prenet(prev_out) if self.prenet is not None else prev_out
             xs = torch.cat([att_c, prenet_out], dim=1)
             z_list[0], c_list[0] = self.lstm[0](xs, (z_list[0], c_list[0]))
             for i in range(1, len(self.lstm)):
@@ -426,7 +438,8 @@ class Decoder(torch.nn.Module):
                   maxlenratio=10.0,
                   use_att_constraint=False,
                   backward_window=None,
-                  forward_window=None, ):
+                  forward_window=None,
+                  speaker_embedding = None):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -505,7 +518,10 @@ class Decoder(torch.nn.Module):
                                         forward_window=forward_window, )
 
             att_ws += [att_w]
-            prenet_out = self.prenet(prev_out) if self.prenet is not None else prev_out
+            if self.speaker_embedding_projection_size is not None:
+                prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
+            else:
+                prenet_out = self.prenet(prev_out) if self.prenet is not None else prev_out
             xs = torch.cat([att_c, prenet_out], dim=1)
             z_list[0], c_list[0] = self.lstm[0](xs, (z_list[0], c_list[0]))
             for i in range(1, len(self.lstm)):
