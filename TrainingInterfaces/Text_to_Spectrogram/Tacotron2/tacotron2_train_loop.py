@@ -104,6 +104,10 @@ def train_loop(net,
     """
     net = net.to(device)
     scaler = GradScaler()
+
+    if use_cycle_consistency_for_speakerembedding:
+        batch_size=batch_size//2
+
     previous_error = 999999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
