@@ -10,6 +10,7 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
+import torch.nn.functional as F
 
 from Preprocessing.TextFrontend import TextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
@@ -119,7 +120,6 @@ def train_loop(net,
             speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                     run_opts={"device": str(device)},
                                                                     savedir="Models/speechbrain_speaker_embedding_ecapa")
-            similarity = torch.nn.CosineSimilarity()
     else:
         reference_speaker_embedding_for_att_plot = None
     step_counter = 0
@@ -169,7 +169,7 @@ def train_loop(net,
                         for index in range(len(batch[0])):
                             pred_spemb = speaker_embedding_func.modules.embedding_model(mels[index].unsqueeze(0),
                                                                                         torch.tensor(1.0).unsqueeze(0).float())
-                            distances.append(1 - similarity(pred_spemb.squeeze(), batch[4][index][:192].squeeze().to(device)))
+                            distances.append(1 - F.cosine_similarity(pred_spemb.squeeze(), batch[4][index][:192].squeeze().to(device), dim=0))
                         cycle_distance = sum(distances) / len(distances)
                         del distances
                         train_loss = train_loss + cycle_distance
