@@ -167,8 +167,10 @@ def train_loop(net,
                                                return_mels=True)
                         distances = list()
                         for index in range(len(batch[0])):
-                            pred_spemb = speaker_embedding_func.modules.embedding_model(mels[index], 1.0)
-                            gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2][index][:batch[3][index]], 1.0)
+                            pred_spemb = speaker_embedding_func.modules.embedding_model(feats=mels[index].unsqueeze(0),
+                                                                                        wav_lens=torch.tensor(1.0).unsqueeze(0))
+                            gold_spemb = speaker_embedding_func.modules.embedding_model(feats=batch[2][index][:batch[3][index]].unsqueeze(0),
+                                                                                        wav_lens=torch.tensor(1.0).unsqueeze(0))
                             distances.append(1 - similarity(pred_spemb, gold_spemb))
                         cycle_distance = sum(distances) / len(distances)
                         del distances
