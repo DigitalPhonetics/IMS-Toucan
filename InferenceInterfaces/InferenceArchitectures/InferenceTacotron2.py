@@ -169,7 +169,7 @@ class Tacotron2(torch.nn.Module):
                                                  use_att_constraint=use_att_constraint,
                                                  backward_window=backward_window,
                                                  forward_window=forward_window,
-                                                 speaker_embedding=projected_speaker_embedding)
+                                                 speaker_embedding=projected_speaker_embedding.squeeze())
         if return_atts:
             return att_ws
         else:
