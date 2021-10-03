@@ -8,7 +8,6 @@ from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
-from Utility.utils import make_non_pad_mask
 
 
 class Tacotron2(torch.nn.Module):
@@ -53,7 +52,8 @@ class Tacotron2(torch.nn.Module):
             use_guided_attn_loss=True,
             guided_attn_loss_sigma=0.4,
             guided_attn_loss_lambda=1.0,
-            use_dtw_loss=False):
+            use_dtw_loss=False,
+            speaker_embedding_projection_size=64):
         super().__init__()
 
         # store hyperparameters
@@ -93,10 +93,12 @@ class Tacotron2(torch.nn.Module):
                            padding_idx=padding_idx, )
 
         if spk_embed_dim is not None:
-            self.hs_emb_projection = torch.nn.Linear(eunits + 256, eunits)
+            self.encoder_speakerembedding_projection = torch.nn.Linear(eunits + speaker_embedding_projection_size, eunits)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
                                                             torch.nn.Softsign())
+        else:
+            speaker_embedding_projection_size = None
         dec_idim = eunits
 
         if atype == "location":
@@ -127,7 +129,8 @@ class Tacotron2(torch.nn.Module):
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
                            zoneout_rate=zoneout_rate,
-                           reduction_factor=reduction_factor, )
+                           reduction_factor=reduction_factor,
+                           speaker_embedding_projection_size=speaker_embedding_projection_size)
         self.taco2_loss = Tacotron2Loss(use_masking=use_masking,
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
@@ -151,15 +154,19 @@ class Tacotron2(torch.nn.Module):
         spemb = speaker_embedding
         h = self.enc.inference(text)
         if self.spk_embed_dim is not None:
-            hs, spembs = h.unsqueeze(0), spemb.unsqueeze(0)
+            projected_speaker_embedding = self.embedding_projection(speaker_embedding)
+            hs, spembs = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, spembs)[0]
+        else:
+            projected_speaker_embedding = None
         outs, probs, att_ws = self.dec.inference(h,
                                                  threshold=threshold,
                                                  minlenratio=minlenratio,
                                                  maxlenratio=maxlenratio,
                                                  use_att_constraint=use_att_constraint,
                                                  backward_window=backward_window,
-                                                 forward_window=forward_window, )
+                                                 forward_window=forward_window,
+                                                 speaker_embedding=projected_speaker_embedding.unsqueeze(0))
         if return_atts:
             return att_ws
         else:
@@ -177,11 +184,9 @@ class Tacotron2(torch.nn.Module):
             Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
 
         """
-        # project speaker embedding into smaller space that allows tuning
-        speaker_embeddings_projected = self.embedding_projection(speaker_embeddings)
         # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.encoder_speakerembedding_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
 
 
@@ -199,7 +204,7 @@ class Tacotron2Loss(torch.nn.Module):
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.bce_criterion = torch.nn.BCEWithLogitsLoss(
             reduction=reduction, pos_weight=torch.tensor(bce_pos_weight)
-            )
+        )
 
         self._register_load_state_dict_pre_hook(self._load_state_dict_pre_hook)
 
@@ -212,7 +217,7 @@ class Tacotron2Loss(torch.nn.Module):
             missing_keys,
             unexpected_keys,
             error_msgs,
-            ):
+    ):
         """Apply pre hook fucntion before loading state dict.
         From v.0.6.1 `bce_criterion.pos_weight` param is registered as a parameter but
         old models do not include it and as a result, it causes missing key error when

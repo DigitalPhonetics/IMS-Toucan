@@ -104,9 +104,9 @@ class FastSpeech2(torch.nn.Module, ABC):
                  initialize_from_pretrained_encoder=False,
                  initialize_from_pretrained_decoder=False,
                  initialize_multispeaker_projection=False,
-                 language_embedding_amount=None
+                 language_embedding_amount=None,
                  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
-                 ):
+                 speaker_embedding_projection_size=64):
         super().__init__()
 
         # store hyperparameters
@@ -136,9 +136,9 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # define additional projection for speaker embedding
         if spk_embed_dim is not None:
-            self.hs_emb_projection = torch.nn.Linear(adim + 256, adim)
+            self.hs_emb_projection = torch.nn.Linear(adim + speaker_embedding_projection_size, adim)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
                                                             torch.nn.Softsign())
 
         # define duration predictor

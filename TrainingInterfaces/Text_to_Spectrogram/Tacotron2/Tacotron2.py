@@ -75,8 +75,8 @@ class Tacotron2(torch.nn.Module):
             initialize_encoder_from_pretrained_model=False,
             initialize_decoder_from_pretrained_model=False,
             initialize_multispeaker_projection=False,
-            language_embedding_amount=None  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
-    ):
+            language_embedding_amount=None,  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
+            speaker_embedding_projection_size=64):
         super().__init__()
 
         # store hyperparameters
@@ -120,10 +120,12 @@ class Tacotron2(torch.nn.Module):
                            dropout_rate=dropout_rate)
 
         if spk_embed_dim is not None:
-            self.hs_emb_projection = torch.nn.Linear(eunits + 256, eunits)
+            self.encoder_speakerembedding_projection = torch.nn.Linear(eunits + speaker_embedding_projection_size, eunits)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
                                                             torch.nn.Softsign())
+        else:
+            speaker_embedding_projection_size = None
         dec_idim = eunits
 
         if atype == "location":
@@ -154,13 +156,15 @@ class Tacotron2(torch.nn.Module):
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
                            zoneout_rate=zoneout_rate,
-                           reduction_factor=reduction_factor)
+                           reduction_factor=reduction_factor,
+                           speaker_embedding_projection_size=speaker_embedding_projection_size)
+
         self.taco2_loss = Tacotron2Loss(use_masking=use_masking,
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
-            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma * 0.5,
-                                                             alpha=guided_attn_loss_lambda * 20, )
+            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                             alpha=guided_attn_loss_lambda * 10, )
             self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
                                                              alpha=guided_attn_loss_lambda, )
         if self.use_dtw_loss:
@@ -277,12 +281,13 @@ class Tacotron2(torch.nn.Module):
                  speaker_embeddings,
                  language_id=None):
         hs, hlens = self.enc(text_tensors, ilens)
+        projected_speaker_embeddings = self.embedding_projection(speaker_embeddings)
         if self.language_embedding is not None and language_id is not None:
             language_embedding_vector = self.language_embedding(language_id.view(-1))
             hs = hs + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
         if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
-        return self.dec(hs, hlens, ys)
+            hs = self._integrate_with_spk_embed(hs, projected_speaker_embeddings)
+        return self.dec(hs, hlens, ys, projected_speaker_embeddings)
 
     def inference(self,
                   text_tensor,
@@ -327,7 +332,7 @@ class Tacotron2(torch.nn.Module):
             speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
             speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
-            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings, language_id=language_id)
+            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings)
 
             return outs[0], None, att_ws[0]
 
@@ -337,15 +342,19 @@ class Tacotron2(torch.nn.Module):
             language_embedding_vector = self.language_embedding(language_id.view(-1))
             h = h + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
         if self.spk_embed_dim is not None:
-            hs, speaker_embeddings = h.unsqueeze(0), speaker_embedding.unsqueeze(0)
+            projected_speaker_embedding = self.embedding_projection(speaker_embedding)
+            hs, speaker_embeddings = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
+        else:
+            projected_speaker_embedding = None
         outs, probs, att_ws = self.dec.inference(h,
                                                  threshold=threshold,
                                                  minlenratio=minlenratio,
                                                  maxlenratio=maxlenratio,
                                                  use_att_constraint=use_att_constraint,
                                                  backward_window=backward_window,
-                                                 forward_window=forward_window, )
+                                                 forward_window=forward_window,
+                                                 speaker_embedding=projected_speaker_embedding.unsqueeze(0))
 
         return outs, probs, att_ws
 
@@ -361,9 +370,7 @@ class Tacotron2(torch.nn.Module):
             Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
 
         """
-        # project speaker embedding into smaller space that allows tuning
-        speaker_embeddings_projected = self.embedding_projection(speaker_embeddings)
         # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.encoder_speakerembedding_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
