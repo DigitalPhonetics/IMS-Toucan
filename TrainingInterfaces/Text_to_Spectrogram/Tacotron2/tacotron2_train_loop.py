@@ -4,6 +4,7 @@ import time
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
+from speechbrain.pretrained import EncoderClassifier
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -81,7 +82,8 @@ def train_loop(net,
                path_to_checkpoint=None,
                fine_tune=False,
                collapse_margin=5.0,  # be wary of loss scheduling
-               resume=False):
+               resume=False,
+               use_cycle_consistency_for_speakerembedding=False):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -113,13 +115,16 @@ def train_loop(net,
                               persistent_workers=True)
     if use_speaker_embedding:
         reference_speaker_embedding_for_att_plot = torch.Tensor(train_dataset[0][4]).to(device)
+        if use_cycle_consistency_for_speakerembedding:
+            speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                    run_opts={"device": str(device)},
+                                                                    savedir="Models/speechbrain_speaker_embedding_ecapa")
+            similarity = torch.nn.CosineSimilarity()
     else:
         reference_speaker_embedding_for_att_plot = None
     step_counter = 0
     epoch = 0
     net.train()
-    if fine_tune:
-        lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -145,12 +150,29 @@ def train_loop(net,
                                      speech_lengths=batch[3].to(device),
                                      step=step_counter)
                 else:
-                    train_loss = net(text=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     step=step_counter,
-                                     speaker_embeddings=batch[4].to(device))
+                    if not use_cycle_consistency_for_speakerembedding:
+                        train_loss = net(text=batch[0].to(device),
+                                         text_lengths=batch[1].to(device),
+                                         speech=batch[2].to(device),
+                                         speech_lengths=batch[3].to(device),
+                                         step=step_counter,
+                                         speaker_embeddings=batch[4].to(device))
+                    else:
+                        train_loss, mels = net(text=batch[0].to(device),
+                                               text_lengths=batch[1].to(device),
+                                               speech=batch[2].to(device),
+                                               speech_lengths=batch[3].to(device),
+                                               step=step_counter,
+                                               speaker_embeddings=batch[4].to(device),
+                                               return_mels=True)
+                        distances = list()
+                        for index in range(len(batch[0])):
+                            pred_spemb = speaker_embedding_func.modules.embedding_model(mels[index], 1.0)
+                            gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2][index][:batch[3][index]], 1.0)
+                            distances.append(1 - similarity(pred_spemb, gold_spemb))
+                        cycle_distance = sum(distances) / len(distances)
+                        del distances
+                        train_loss = train_loss + cycle_distance
                 train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()

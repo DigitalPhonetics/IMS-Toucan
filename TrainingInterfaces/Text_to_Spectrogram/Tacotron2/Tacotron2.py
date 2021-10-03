@@ -167,7 +167,8 @@ class Tacotron2(torch.nn.Module):
                 speech,
                 speech_lengths,
                 step,
-                speaker_embeddings=None):
+                speaker_embeddings=None,
+                return_mels = False):
         """
         Calculate forward propagation.
 
@@ -249,7 +250,8 @@ class Tacotron2(torch.nn.Module):
                 olens_in = olens
             align_loss = self.alignment_loss(att_ws, ilens, olens_in, step)
             loss = loss + align_loss
-
+        if return_mels:
+            return loss, after_outs
         return loss
 
     def _forward(self,
