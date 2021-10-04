@@ -9,6 +9,7 @@ from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
+from unsilence import Unsilence
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -121,6 +122,22 @@ class TacotronDataset(Dataset):
 
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
+            name = path.split(".")[:-1]
+            if len(name) == 1:
+                name = name[0]
+            else:
+                name = ".".join(name)
+            suffix = path.split(".")[-1]
+            try:
+                if not os.path.exists(name + "_unsilenced." + suffix):
+                    unsilence = Unsilence(path)
+                    unsilence.render_media(name + "_unsilenced." + suffix, silent_speed=12, silent_volume=0)
+                _path = name + "_unsilenced." + suffix
+            except OSError:
+                print("Insufficient rights to preprocess on disk. Continuing without silence removal")
+                _path = path
+            transcript = self.path_to_transcript_dict[_path]
+            wave, sr = sf.read(_path)
             transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(path)
             dur_in_seconds = len(wave) / sr
