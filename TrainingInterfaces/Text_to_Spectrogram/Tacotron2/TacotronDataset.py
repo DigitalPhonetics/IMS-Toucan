@@ -34,7 +34,7 @@ class TacotronDataset(Dataset):
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
         if remove_all_silences:
-            os.makedirs(cache_dir, exist_ok=True)
+            os.makedirs(os.path.join(cache_dir, "unsilenced_audios"), exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -135,7 +135,7 @@ class TacotronDataset(Dataset):
                     name = ".".join(name)
                 suffix = path.split(".")[-1]
                 try:
-                    _path = os.path.join(cache_dir, name + "_unsilenced." + suffix)
+                    _path = os.path.join(os.path.join(cache_dir, "unsilenced_audios"), name + "_unsilenced." + suffix)
                     if not os.path.exists(_path):
                         unsilence = Unsilence(path)
                         unsilence.detect_silence()

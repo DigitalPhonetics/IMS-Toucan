@@ -57,7 +57,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     return_language_id=False,
                                     min_len_in_seconds=3,
                                     max_len_in_seconds=12,
-                                    device=device))
+                                    device=device,
+                                    remove_all_silences=True))
 
     train_set = ConcatDataset(datasets)
 
