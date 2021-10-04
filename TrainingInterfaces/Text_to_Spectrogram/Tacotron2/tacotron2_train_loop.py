@@ -4,6 +4,8 @@ import time
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
+import torch.nn.functional as F
+from speechbrain.pretrained import EncoderClassifier
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -153,6 +155,9 @@ def train_loop(net,
         reference_language_id = None
     if use_speaker_embedding:
         reference_speaker_embedding_for_att_plot = torch.Tensor(train_dataset[0][4]).to(device)
+        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                run_opts={"device": str(device)},
+                                                                savedir="Models/speechbrain_speaker_embedding_ecapa")
     else:
         reference_speaker_embedding_for_att_plot = None
     step_counter = 0
@@ -188,13 +193,24 @@ def train_loop(net,
                                          speaker_embeddings=None,
                                          language_id=batch[4].to(device))
                     else:
-                        train_loss = net(text=batch[0].to(device),
-                                         text_lengths=batch[1].to(device),
-                                         speech=batch[2].to(device),
-                                         speech_lengths=batch[3].to(device),
-                                         step=step_counter,
-                                         speaker_embeddings=batch[4].to(device),
-                                         language_id=batch[5].to(device))
+                        train_loss, predicted_mels = net(text=batch[0].to(device),
+                                                         text_lengths=batch[1].to(device),
+                                                         speech=batch[2].to(device),
+                                                         speech_lengths=batch[3].to(device),
+                                                         step=step_counter,
+                                                         speaker_embeddings=batch[4].to(device),
+                                                         language_id=batch[5].to(device),
+                                                         return_mels=True)
+                        pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
+                                                                                    torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
+                        gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
+                                                                                    torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
+                        # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
+                        cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
+                        del pred_spemb
+                        del predicted_mels
+                        del gold_spemb
+                        train_loss = train_loss + cycle_distance * 5
                 else:
                     if not use_speaker_embedding:
                         train_loss = net(text=batch[0].to(device),
@@ -204,12 +220,23 @@ def train_loop(net,
                                          step=step_counter,
                                          speaker_embeddings=None)
                     else:
-                        train_loss = net(text=batch[0].to(device),
-                                         text_lengths=batch[1].to(device),
-                                         speech=batch[2].to(device),
-                                         speech_lengths=batch[3].to(device),
-                                         step=step_counter,
-                                         speaker_embeddings=batch[4].to(device))
+                        train_loss, predicted_mels = net(text=batch[0].to(device),
+                                                         text_lengths=batch[1].to(device),
+                                                         speech=batch[2].to(device),
+                                                         speech_lengths=batch[3].to(device),
+                                                         step=step_counter,
+                                                         speaker_embeddings=batch[4].to(device),
+                                                         return_mels=True)
+                        pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
+                                                                                    torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
+                        gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
+                                                                                    torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
+                        # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
+                        cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
+                        del pred_spemb
+                        del predicted_mels
+                        del gold_spemb
+                        train_loss = train_loss + cycle_distance * 5
 
                 train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
