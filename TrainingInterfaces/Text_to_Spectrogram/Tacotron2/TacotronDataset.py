@@ -34,7 +34,8 @@ class TacotronDataset(Dataset):
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
         if remove_all_silences:
-            os.makedirs(os.path.join(cache_dir, "unsilenced_audios"), exist_ok=True)
+            os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
+            os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -134,34 +135,66 @@ class TacotronDataset(Dataset):
                 else:
                     name = ".".join(name)
                 suffix = path.split(".")[-1]
-                _path = os.path.join(os.path.join(cache_dir, "unsilenced_audios"), name + "_unsilenced." + suffix)
-                if not os.path.exists(_path):
+                _norm_unsilenced_path = os.path.join(os.path.join(cache_dir, "normalized_unsilenced_audios"), name + "_unsilenced." + suffix)
+                _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + suffix)
+                if not os.path.exists(_norm_unsilenced_path):
+                    wave, sr = sf.read(path)
+                    dur_in_seconds = len(wave) / sr
+                    if not (min_len <= dur_in_seconds <= max_len):
+                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                        continue
+                    if sr != ap.sr:
+                        print(f"Inconsistent sampling rate in the Data! Excluding {_norm_unsilenced_path}")
+                        continue
                     try:
-                        unsilence = Unsilence(path)
-                        unsilence.detect_silence()
-                        unsilence.render_media(_path, silent_speed=12, silent_volume=0, audio_only=True)
+                        norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                    except ValueError:
+                        continue
+                    dur_in_seconds = len(norm_wave) / 16000
+                    if not (min_len <= dur_in_seconds <= max_len):
+                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                        continue
+                    sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=16000)
+                    try:
+                        unsilence = Unsilence(_norm_path)
+                        unsilence.detect_silence(silence_time_threshold=0.1, short_interval_threshold=0.1)
+                        unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
                     except Exception:
                         # this has to be way too broad unfortunately, because the author of unsilence raises a bare Exception if the audio is too short.
                         pass
+                try:
+                    norm_wave, sr = sf.read(_norm_unsilenced_path)
+                    dur_in_seconds = len(norm_wave) / sr
+                    if not (min_len <= dur_in_seconds <= max_len):
+                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                        continue
+                    if sr != ap.sr:
+                        print(f"Inconsistent sampling rate in the Data! Excluding {_norm_unsilenced_path}")
+                        continue
+                except RuntimeError:
+                    # not sure why this sometimes happens, but it is very rare, so it should be fine.
+                    continue
             else:
-                _path = path
+                wave, sr = sf.read(path)
+                dur_in_seconds = len(wave) / sr
+                if not (min_len <= dur_in_seconds <= max_len):
+                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                    continue
+                if sr != ap.sr:
+                    print(f"Inconsistent sampling rate in the Data! Excluding {path}")
+                    continue
+                try:
+                    norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                except ValueError:
+                    continue
+                dur_in_seconds = len(norm_wave) / 16000
+                if not (min_len <= dur_in_seconds <= max_len):
+                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                    continue
+                _norm_unsilenced_path = path
+
+            # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
-            wave, sr = sf.read(_path)
-            dur_in_seconds = len(wave) / sr
-            if not (min_len <= dur_in_seconds <= max_len):
-                print(f"Excluding {_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                continue
-            if sr != ap.sr:
-                print(f"Inconsistent sampling rate in the Data! Excluding {_path}")
-                continue
-            try:
-                norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
-            except ValueError:
-                continue
-            dur_in_seconds = len(norm_wave) / 16000
-            if not (min_len <= dur_in_seconds <= max_len):
-                print(f"Excluding {_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                continue
             cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
