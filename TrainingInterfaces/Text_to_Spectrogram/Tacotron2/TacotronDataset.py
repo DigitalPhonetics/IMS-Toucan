@@ -31,7 +31,7 @@ class TacotronDataset(Dataset):
                  device="cpu"):
         self.speaker_embedding = speaker_embedding
         if remove_all_silences:
-            os.makedirs(cache_dir, exist_ok=True)
+            os.makedirs(os.path.join(cache_dir, "unsilenced_audios"), exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -131,15 +131,15 @@ class TacotronDataset(Dataset):
                 else:
                     name = ".".join(name)
                 suffix = path.split(".")[-1]
-                try:
-                    _path = os.path.join(cache_dir, name + "_unsilenced." + suffix)
-                    if not os.path.exists(_path):
+                _path = os.path.join(os.path.join(cache_dir, "unsilenced_audios"), name + "_unsilenced." + suffix)
+                if not os.path.exists(_path):
+                    try:
                         unsilence = Unsilence(path)
                         unsilence.detect_silence()
                         unsilence.render_media(_path, silent_speed=12, silent_volume=0, audio_only=True)
-                except OSError:
-                    print("Insufficient rights to preprocess on disk. Continuing without silence removal")
-                    _path = path
+                    except Exception:
+                        # this has to be way too broad unfortunately, because the author of unsilence raises a bare Exception if the audio is too short.
+                        pass
             else:
                 _path = path
             transcript = self.path_to_transcript_dict[path]
