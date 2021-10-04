@@ -22,13 +22,16 @@ class TacotronDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=6,
+                 loading_processes=8,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
-                 cut_silences=False,
+                 cut_silences=True,
+                 remove_all_silences=True,
                  rebuild_cache=False,
                  device="cpu"):
         self.speaker_embedding = speaker_embedding
+        if remove_all_silences:
+            os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -50,7 +53,9 @@ class TacotronDataset(Dataset):
                                   lang,
                                   min_len_in_seconds,
                                   max_len_in_seconds,
-                                  cut_silences),
+                                  cut_silences,
+                                  remove_all_silences,
+                                  cache_dir),
                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -112,27 +117,30 @@ class TacotronDataset(Dataset):
                 self.datapoints = self.datapoints[0]
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
+    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, remove_all_silences, cache_dir):
         process_internal_dataset_chunk = list()
         tf = TextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
 
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
-            name = path.split(".")[:-1]
-            if len(name) == 1:
-                name = name[0]
+            if remove_all_silences:
+                name = path.split("/")[-1].split(".")[:-1]
+                if len(name) == 1:
+                    name = name[0]
+                else:
+                    name = ".".join(name)
+                suffix = path.split(".")[-1]
+                try:
+                    _path = os.path.join(cache_dir, name + "_unsilenced." + suffix)
+                    if not os.path.exists(_path):
+                        unsilence = Unsilence(path)
+                        unsilence.detect_silence()
+                        unsilence.render_media(_path, silent_speed=12, silent_volume=0)
+                except OSError:
+                    print("Insufficient rights to preprocess on disk. Continuing without silence removal")
+                    _path = path
             else:
-                name = ".".join(name)
-            suffix = path.split(".")[-1]
-            try:
-                if not os.path.exists(name + "_unsilenced." + suffix):
-                    unsilence = Unsilence(path)
-                    unsilence.detect_silence()
-                    unsilence.render_media(name + "_unsilenced." + suffix, silent_speed=12, silent_volume=0)
-                _path = name + "_unsilenced." + suffix
-            except OSError:
-                print("Insufficient rights to preprocess on disk. Continuing without silence removal")
                 _path = path
             transcript = self.path_to_transcript_dict[_path]
             wave, sr = sf.read(_path)
