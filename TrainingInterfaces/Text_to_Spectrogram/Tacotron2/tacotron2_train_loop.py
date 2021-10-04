@@ -166,6 +166,7 @@ def train_loop(net,
                                                          step=step_counter,
                                                          speaker_embeddings=batch[4].to(device),
                                                          return_mels=True)
+                        print(predicted_mels.shape)
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
                                                                                     torch.tensor([len(x) / len(predicted_mels[0][0]) for x in batch[3]]))
                         gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
