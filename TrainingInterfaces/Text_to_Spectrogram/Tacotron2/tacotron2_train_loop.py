@@ -4,13 +4,13 @@ import time
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
+import torch.nn.functional as F
 from speechbrain.pretrained import EncoderClassifier
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-import torch.nn.functional as F
 
 from Preprocessing.TextFrontend import TextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
@@ -105,9 +105,6 @@ def train_loop(net,
     net = net.to(device)
     scaler = GradScaler()
 
-    if use_cycle_consistency_for_speakerembedding:
-        batch_size=batch_size//2
-
     previous_error = 999999  # tacotron can collapse sometimes and requires soft-resets. This is to detect collapses.
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
@@ -162,20 +159,18 @@ def train_loop(net,
                                          step=step_counter,
                                          speaker_embeddings=batch[4].to(device))
                     else:
-                        train_loss, mels = net(text=batch[0].to(device),
-                                               text_lengths=batch[1].to(device),
-                                               speech=batch[2].to(device),
-                                               speech_lengths=batch[3].to(device),
-                                               step=step_counter,
-                                               speaker_embeddings=batch[4].to(device),
-                                               return_mels=True)
-                        distances = list()
-                        for index in range(len(batch[0])):
-                            pred_spemb = speaker_embedding_func.modules.embedding_model(mels[index].unsqueeze(0),
-                                                                                        torch.tensor(1.0).unsqueeze(0).float())
-                            distances.append(1 - F.cosine_similarity(pred_spemb.squeeze(), batch[4][index][:192].squeeze().to(device), dim=0))
-                        cycle_distance = sum(distances) / len(distances)
-                        del distances
+                        train_loss, predicted_mels = net(text=batch[0].to(device),
+                                                         text_lengths=batch[1].to(device),
+                                                         speech=batch[2].to(device),
+                                                         speech_lengths=batch[3].to(device),
+                                                         step=step_counter,
+                                                         speaker_embeddings=batch[4].to(device),
+                                                         return_mels=True)
+                        pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
+                                                                                    torch.tensor([len(x) / len(predicted_mels[0][0]) for x in batch[3]]))
+                        gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
+                                                                                    torch.tensor([len(x) / len(batch[2][0][0]) for x in batch[3]]))
+                        cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
                         train_loss = train_loss + cycle_distance
                 train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
@@ -203,11 +198,11 @@ def train_loop(net,
                 previous_error = loss_this_epoch
                 if epoch % epochs_per_save == 0:
                     torch.save({
-                        "model": net.state_dict(),
-                        "optimizer": optimizer.state_dict(),
-                        "scaler": scaler.state_dict(),
+                        "model"       : net.state_dict(),
+                        "optimizer"   : optimizer.state_dict(),
+                        "scaler"      : scaler.state_dict(),
                         "step_counter": step_counter,
-                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                        }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                     delete_old_checkpoints(save_directory, keep=5)
                     plot_attention(model=net,
                                    lang=lang,
