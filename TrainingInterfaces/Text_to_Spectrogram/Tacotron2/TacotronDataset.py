@@ -131,6 +131,7 @@ class TacotronDataset(Dataset):
             try:
                 if not os.path.exists(name + "_unsilenced." + suffix):
                     unsilence = Unsilence(path)
+                    unsilence.detect_silence()
                     unsilence.render_media(name + "_unsilenced." + suffix, silent_speed=12, silent_volume=0)
                 _path = name + "_unsilenced." + suffix
             except OSError:
