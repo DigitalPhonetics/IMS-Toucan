@@ -9,6 +9,7 @@ from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
+from unsilence import Unsilence
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import TextFrontend
@@ -118,14 +119,24 @@ class TacotronDataset(Dataset):
 
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
-            transcript = self.path_to_transcript_dict[path]
-            wave, sr = sf.read(path)
+            name = path.split(".")[:-1]
+            suffix = path.split(".")[-1]
+            try:
+                if not os.path.exists(name + "_unsilenced." + suffix):
+                    unsilence = Unsilence(path)
+                    unsilence.render_media(name + "_unsilenced." + suffix, silent_speed=12, silent_volume=0)
+                _path = name + "_unsilenced." + suffix
+            except OSError:
+                print("Insufficient rights to preprocess on disk. Continuing without silence removal")
+                _path = path
+            transcript = self.path_to_transcript_dict[_path]
+            wave, sr = sf.read(_path)
             dur_in_seconds = len(wave) / sr
             if not (min_len <= dur_in_seconds <= max_len):
-                print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                print(f"Excluding {_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             if sr != ap.sr:
-                print(f"Inconsistent sampling rate in the Data! Excluding {path}")
+                print(f"Inconsistent sampling rate in the Data! Excluding {_path}")
                 continue
             try:
                 norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
@@ -133,7 +144,7 @@ class TacotronDataset(Dataset):
                 continue
             dur_in_seconds = len(norm_wave) / 16000
             if not (min_len <= dur_in_seconds <= max_len):
-                print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                print(f"Excluding {_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
