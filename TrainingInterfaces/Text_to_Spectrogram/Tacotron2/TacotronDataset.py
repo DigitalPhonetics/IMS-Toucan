@@ -120,6 +120,10 @@ class TacotronDataset(Dataset):
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
             name = path.split(".")[:-1]
+            if len(name) == 1:
+                name = name[0]
+            else:
+                name = ".".join(name)
             suffix = path.split(".")[-1]
             try:
                 if not os.path.exists(name + "_unsilenced." + suffix):
