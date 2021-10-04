@@ -136,7 +136,7 @@ class TacotronDataset(Dataset):
                     name = ".".join(name)
                 suffix = path.split(".")[-1]
                 _norm_unsilenced_path = os.path.join(os.path.join(cache_dir, "normalized_unsilenced_audios"), name + "_unsilenced." + suffix)
-                _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + suffix)
+                _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + "." + suffix)
                 if not os.path.exists(_norm_unsilenced_path):
                     wave, sr = sf.read(path)
                     dur_in_seconds = len(wave) / sr
