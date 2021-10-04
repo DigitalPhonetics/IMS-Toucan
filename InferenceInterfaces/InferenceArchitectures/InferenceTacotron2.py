@@ -158,7 +158,7 @@ class Tacotron2(torch.nn.Module):
             hs, spembs = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, spembs)[0]
         else:
-            projected_speaker_embedding = None
+            spembs = None
         outs, probs, att_ws = self.dec.inference(h,
                                                  threshold=threshold,
                                                  minlenratio=minlenratio,
@@ -166,7 +166,7 @@ class Tacotron2(torch.nn.Module):
                                                  use_att_constraint=use_att_constraint,
                                                  backward_window=backward_window,
                                                  forward_window=forward_window,
-                                                 speaker_embedding=projected_speaker_embedding.unsqueeze(0))
+                                                 speaker_embedding=spembs)
         if return_atts:
             return att_ws
         else:

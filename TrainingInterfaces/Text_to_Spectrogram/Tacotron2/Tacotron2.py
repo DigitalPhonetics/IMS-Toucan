@@ -281,12 +281,14 @@ class Tacotron2(torch.nn.Module):
                  speaker_embeddings,
                  language_id=None):
         hs, hlens = self.enc(text_tensors, ilens)
-        projected_speaker_embeddings = self.embedding_projection(speaker_embeddings)
         if self.language_embedding is not None and language_id is not None:
             language_embedding_vector = self.language_embedding(language_id.view(-1))
             hs = hs + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
         if self.spk_embed_dim is not None:
+            projected_speaker_embeddings = self.embedding_projection(speaker_embeddings)
             hs = self._integrate_with_spk_embed(hs, projected_speaker_embeddings)
+        else:
+            projected_speaker_embeddings = None
         return self.dec(hs, hlens, ys, projected_speaker_embeddings)
 
     def inference(self,
@@ -346,7 +348,7 @@ class Tacotron2(torch.nn.Module):
             hs, speaker_embeddings = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
         else:
-            projected_speaker_embedding = None
+            speaker_embeddings = None
         outs, probs, att_ws = self.dec.inference(h,
                                                  threshold=threshold,
                                                  minlenratio=minlenratio,
@@ -354,7 +356,7 @@ class Tacotron2(torch.nn.Module):
                                                  use_att_constraint=use_att_constraint,
                                                  backward_window=backward_window,
                                                  forward_window=forward_window,
-                                                 speaker_embedding=projected_speaker_embedding.unsqueeze(0))
+                                                 speaker_embedding=speaker_embeddings)
 
         return outs, probs, att_ws
 
