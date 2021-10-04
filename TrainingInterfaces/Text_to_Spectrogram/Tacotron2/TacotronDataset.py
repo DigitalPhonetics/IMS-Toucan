@@ -136,13 +136,13 @@ class TacotronDataset(Dataset):
                     if not os.path.exists(_path):
                         unsilence = Unsilence(path)
                         unsilence.detect_silence()
-                        unsilence.render_media(_path, silent_speed=12, silent_volume=0)
+                        unsilence.render_media(_path, silent_speed=12, silent_volume=0, audio_only=True)
                 except OSError:
                     print("Insufficient rights to preprocess on disk. Continuing without silence removal")
                     _path = path
             else:
                 _path = path
-            transcript = self.path_to_transcript_dict[_path]
+            transcript = self.path_to_transcript_dict[path]
             wave, sr = sf.read(_path)
             dur_in_seconds = len(wave) / sr
             if not (min_len <= dur_in_seconds <= max_len):
