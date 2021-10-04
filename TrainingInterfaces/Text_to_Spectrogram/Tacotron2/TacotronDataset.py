@@ -25,13 +25,16 @@ class TacotronDataset(Dataset):
                  loading_processes=10,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
-                 cut_silences=False,
+                 cut_silences=True,
                  rebuild_cache=False,
                  return_language_id=False,
-                 device="cpu"):
+                 device="cpu",
+                 remove_all_silences=True):
         self.return_language_id = return_language_id
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
+        if remove_all_silences:
+            os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -53,7 +56,9 @@ class TacotronDataset(Dataset):
                                   lang,
                                   min_len_in_seconds,
                                   max_len_in_seconds,
-                                  cut_silences),
+                                  cut_silences,
+                                  remove_all_silences,
+                                  cache_dir),
                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -115,38 +120,39 @@ class TacotronDataset(Dataset):
                 self.datapoints = self.datapoints[0]
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences):
+    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, remove_all_silences, cache_dir):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
 
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         for path in tqdm(path_list):
-            name = path.split(".")[:-1]
-            if len(name) == 1:
-                name = name[0]
+            if remove_all_silences:
+                name = path.split("/")[-1].split(".")[:-1]
+                if len(name) == 1:
+                    name = name[0]
+                else:
+                    name = ".".join(name)
+                suffix = path.split(".")[-1]
+                try:
+                    _path = os.path.join(cache_dir, name + "_unsilenced." + suffix)
+                    if not os.path.exists(_path):
+                        unsilence = Unsilence(path)
+                        unsilence.detect_silence()
+                        unsilence.render_media(_path, silent_speed=12, silent_volume=0, audio_only=True)
+                except OSError:
+                    print("Insufficient rights to preprocess on disk. Continuing without silence removal")
+                    _path = path
             else:
-                name = ".".join(name)
-            suffix = path.split(".")[-1]
-            try:
-                if not os.path.exists(name + "_unsilenced." + suffix):
-                    unsilence = Unsilence(path)
-                    unsilence.detect_silence()
-                    unsilence.render_media(name + "_unsilenced." + suffix, silent_speed=12, silent_volume=0)
-                _path = name + "_unsilenced." + suffix
-            except OSError:
-                print("Insufficient rights to preprocess on disk. Continuing without silence removal")
                 _path = path
-            transcript = self.path_to_transcript_dict[_path]
-            wave, sr = sf.read(_path)
             transcript = self.path_to_transcript_dict[path]
-            wave, sr = sf.read(path)
+            wave, sr = sf.read(_path)
             dur_in_seconds = len(wave) / sr
             if not (min_len <= dur_in_seconds <= max_len):
-                print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                print(f"Excluding {_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             if sr != ap.sr:
-                print(f"Inconsistent sampling rate in the Data! Excluding {path}")
+                print(f"Inconsistent sampling rate in the Data! Excluding {_path}")
                 continue
             try:
                 norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
@@ -154,7 +160,7 @@ class TacotronDataset(Dataset):
                 continue
             dur_in_seconds = len(norm_wave) / 16000
             if not (min_len <= dur_in_seconds <= max_len):
-                print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                print(f"Excluding {_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
