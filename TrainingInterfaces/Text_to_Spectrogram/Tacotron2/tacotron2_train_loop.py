@@ -167,9 +167,9 @@ def train_loop(net,
                                                          speaker_embeddings=batch[4].to(device),
                                                          return_mels=True)
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
-                                                                                    torch.tensor([x.size(1) / len(predicted_mels[0]) for x in batch[3]]))
+                                                                                    torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
                         gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
-                                                                                    torch.tensor([x.size(1) / len(batch[2][0]) for x in batch[3]]))
+                                                                                    torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
                         print(F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1))
                         print(F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).shape)
                         cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
