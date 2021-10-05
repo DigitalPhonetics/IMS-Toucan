@@ -138,30 +138,27 @@ class TacotronDataset(Dataset):
                 _norm_unsilenced_path = os.path.join(os.path.join(cache_dir, "normalized_unsilenced_audios"), name + "_unsilenced." + suffix)
                 _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + "." + suffix)
                 if not os.path.exists(_norm_unsilenced_path):
-                    wave, sr = sf.read(path)
-                    dur_in_seconds = len(wave) / sr
-                    if not (min_len <= dur_in_seconds <= max_len):
-                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                        continue
-                    if sr != ap.sr:
-                        print(f"Inconsistent sampling rate in the Data! Excluding {_norm_unsilenced_path}")
-                        continue
-                    try:
-                        norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
-                    except ValueError:
-                        continue
-                    dur_in_seconds = len(norm_wave) / 16000
-                    if not (min_len <= dur_in_seconds <= max_len):
-                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                        continue
-                    sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=16000)
-                    try:
-                        unsilence = Unsilence(_norm_path)
-                        unsilence.detect_silence(silence_time_threshold=0.1, short_interval_threshold=0.1)
-                        unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
-                    except Exception:
-                        # this has to be way too broad unfortunately, because the author of unsilence raises a bare Exception if the audio is too short.
-                        pass
+                    if not os.path.exists(_norm_path):
+                        wave, sr = sf.read(path)
+                        dur_in_seconds = len(wave) / sr
+                        if not (min_len <= dur_in_seconds <= max_len):
+                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                            continue
+                        if sr != ap.sr:
+                            print(f"Inconsistent sampling rate in the Data! Excluding {_norm_unsilenced_path}")
+                            continue
+                        try:
+                            norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                        except ValueError:
+                            continue
+                        dur_in_seconds = len(norm_wave) / 16000
+                        if not (min_len <= dur_in_seconds <= max_len):
+                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                            continue
+                        sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=16000)
+                    unsilence = Unsilence(_norm_path)
+                    unsilence.detect_silence(silence_time_threshold=0.1, short_interval_threshold=0.1)
+                    unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
                 try:
                     norm_wave, sr = sf.read(_norm_unsilenced_path)
                     dur_in_seconds = len(norm_wave) / sr
