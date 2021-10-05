@@ -154,7 +154,7 @@ class TacotronDataset(Dataset):
                             continue
                         sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=16000)
                     unsilence = Unsilence(_norm_path)
-                    unsilence.detect_silence(silence_time_threshold=0.1, short_interval_threshold=0.06, stretch_time=0.05)
+                    unsilence.detect_silence(silence_time_threshold=0.5, short_interval_threshold=0.03, stretch_time=0.025)
                     unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
                 try:
                     norm_wave, sr = sf.read(_norm_unsilenced_path)
