@@ -25,11 +25,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir_hifitts = os.path.join("Corpora", "multispeaker_nvidia_hifitts")
-    os.makedirs(cache_dir_hifitts, exist_ok=True)
+    #cache_dir_hifitts = os.path.join("Corpora", "multispeaker_nvidia_hifitts")
+    #os.makedirs(cache_dir_hifitts, exist_ok=True)
 
-    cache_dir_lj = os.path.join("Corpora", "multispeaker_lj")
-    os.makedirs(cache_dir_lj, exist_ok=True)
+    #cache_dir_lj = os.path.join("Corpora", "multispeaker_lj")
+    #os.makedirs(cache_dir_lj, exist_ok=True)
 
     cache_dir_libri = os.path.join("Corpora", "multispeaker_libri")
     os.makedirs(cache_dir_libri, exist_ok=True)
@@ -45,21 +45,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
-                                      cache_dir=cache_dir_hifitts,
-                                      lang="en",
-                                      speaker_embedding=True,
-                                      return_language_id=False,
-                                      device=device,
-                                      acoustic_model=acoustic_model))
+    #datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
+    #                                  cache_dir=cache_dir_hifitts,
+    #                                  lang="en",
+    #                                  speaker_embedding=True,
+    #                                  return_language_id=False,
+    #                                  device=device,
+    #                                  acoustic_model=acoustic_model))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
-                                      cache_dir=cache_dir_lj,
-                                      lang="en",
-                                      speaker_embedding=True,
-                                      return_language_id=False,
-                                      device=device,
-                                      acoustic_model=acoustic_model))
+    #datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
+    #                                  cache_dir=cache_dir_lj,
+    #                                  lang="en",
+    #                                  speaker_embedding=True,
+    #                                  return_language_id=False,
+    #                                  device=device,
+    #                                  acoustic_model=acoustic_model))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_libritts(),
                                       cache_dir=cache_dir_libri,
@@ -72,7 +72,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_set = ConcatDataset(datasets)
     del acoustic_model
 
-    model = FastSpeech2(spk_embed_dim=960, initialize_from_pretrained_encoder=True)
+    model = FastSpeech2(spk_embed_dim=960)
 
     print("Training model")
     train_loop(net=model,
@@ -83,9 +83,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                batch_size=20,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.0001,
+               lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               freeze_encoder_until=22000,
+               freeze_encoder_until=None,
                resume=resume)

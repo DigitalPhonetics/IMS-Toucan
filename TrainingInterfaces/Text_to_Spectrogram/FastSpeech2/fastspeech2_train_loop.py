@@ -111,7 +111,7 @@ def train_loop(net,
                freeze_decoder_until=None,
                freeze_encoder_until=None,
                freeze_embedding_until=None,
-               resume = False):
+               resume=False):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
