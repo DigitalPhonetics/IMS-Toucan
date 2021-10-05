@@ -48,7 +48,7 @@ class FastSpeechDataset(Dataset):
                                 rebuild_cache=rebuild_cache)
             datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
             # we use the tacotron dataset as basis and augment it to contain the additional information we need for fastspeech.
-            if not isinstance(self.datapoints, tuple):  # check for backwards compatibility
+            if not isinstance(datapoints, tuple):  # check for backwards compatibility
                 TacotronDataset(path_to_transcript_dict=path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang=lang,
