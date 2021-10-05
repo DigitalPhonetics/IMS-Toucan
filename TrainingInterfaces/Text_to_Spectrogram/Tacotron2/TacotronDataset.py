@@ -144,9 +144,6 @@ class TacotronDataset(Dataset):
                         if not (min_len <= dur_in_seconds <= max_len):
                             print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                             continue
-                        if sr != ap.sr:
-                            print(f"Inconsistent sampling rate in the Data! Excluding {_norm_unsilenced_path}")
-                            continue
                         try:
                             norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
                         except ValueError:
