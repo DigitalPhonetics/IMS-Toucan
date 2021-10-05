@@ -164,7 +164,7 @@ class TacotronDataset(Dataset):
                         print(f"Inconsistent sample rate! {_norm_unsilenced_path}")
                         continue
                     norm_wave = ap_post.resample(torch.Tensor(wave))
-                    dur_in_seconds = len(norm_wave) / sr
+                    dur_in_seconds = len(norm_wave) / 16000
                     if not (min_len <= dur_in_seconds <= max_len):
                         print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                         continue
