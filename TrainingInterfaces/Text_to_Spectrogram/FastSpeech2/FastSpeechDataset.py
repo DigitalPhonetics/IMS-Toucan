@@ -126,7 +126,7 @@ class FastSpeechDataset(Dataset):
                               acoustic_model,
                               reduction_factor,
                               device,
-                              speaker_embedding):
+                              use_speaker_embedding):
         process_internal_dataset_chunk = list()
 
         acoustic_model = acoustic_model.to(device)
@@ -143,7 +143,7 @@ class FastSpeechDataset(Dataset):
             melspec = datapoint_list[index][2]
             melspec_length = datapoint_list[index][3]
 
-            if not speaker_embedding:
+            if not use_speaker_embedding:
                 attention_map = acoustic_model.inference(text_tensor=text.to(device),
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
