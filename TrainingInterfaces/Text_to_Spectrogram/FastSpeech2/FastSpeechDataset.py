@@ -23,7 +23,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=6,
+                 loading_processes=4,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
