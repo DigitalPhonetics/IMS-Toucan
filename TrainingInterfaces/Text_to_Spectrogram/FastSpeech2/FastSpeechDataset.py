@@ -161,6 +161,7 @@ class FastSpeechDataset(Dataset):
                 continue
             # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
+            print(attention_map.shape)
             attention_map_viterbi_path = binarize_attention_parallel(attn=attention_map,
                                                                      in_lens=torch.LongTensor([len(text)]),
                                                                      out_lens=torch.LongTensor([len(melspec)]))
