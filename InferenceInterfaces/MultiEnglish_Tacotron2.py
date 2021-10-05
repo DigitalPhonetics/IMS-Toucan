@@ -94,3 +94,11 @@ class MultiEnglish_Tacotron2(torch.nn.Module):
         torch.save(self.phone2mel.dec.state_dict(), "Models/PretrainedModelTaco/dec.pt")
         torch.save(self.phone2mel.projection.state_dict(), "Models/PretrainedModelTaco/projection.pt")
 
+    def save_embedding_table(self):
+        import json
+        phone_to_embedding = dict()
+        for phone in ['?', 'ɚ', 'p', 'u', 'ɹ', 'ɾ', 'ʔ', 'j', 'l', 'ɔ', 'v', 'm', '~', 'ᵻ', 'ɪ', 'ʒ', 'æ', 'n', 'z', 'ŋ', 'i', 'b', 'o', 'ɛ', 'e', 't', '!', 'ʊ', 'ð', 'd', 'θ',
+                         'ɑ', 'ɡ', 's', 'ɐ', 'k', 'w', 'ə', 'ʌ', 'ʃ', '.', 'a', 'ɜ', 'h', 'f']:
+            phone_to_embedding[phone] = self.phone2mel.enc.embed(torch.Tensor([self.text2phone.phone_to_vector[phone]])).detach().numpy().tolist()
+        with open("embedding_table_512dim.json", 'w', encoding="utf8") as fp:
+            json.dump(phone_to_embedding, fp)

@@ -43,7 +43,6 @@ def pretrain_512_dim():
 def pretrain_384_dim():
     with open("embedding_table_384dim.json", 'r', encoding="utf8") as fp:
         datapoints = json.load(fp)
-    datapoints.pop('̩')
 
     embedding = torch.nn.Sequential(torch.nn.Linear(66, 100),
                                     torch.nn.Tanh(),

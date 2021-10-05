@@ -39,7 +39,6 @@ def plot_embeddings(reduced_data, phoneme_list, title):
 if __name__ == '__main__':
     with open("embedding_table_512dim.json", 'r', encoding="utf8") as fp:
         datapoints = json.load(fp)
-    datapoints.pop('̩')
 
     key_list = list()  # no matter where you get it from, this needs to be a list of the phonemes you want to visualize as string
     embedding_list = list()  # in the same order as the phonemes in the list above, this list needs to be filled with their embedding vectors
@@ -58,16 +57,3 @@ if __name__ == '__main__':
 
     plot_embeddings(reduced_data_tsne, key_list, title="Trained Embeddings t-SNE")
     plot_embeddings(reduced_data_pca, key_list, title="Trained Embeddings PCA")
-
-    tf = ArticulatoryCombinedTextFrontend(language="en")
-    embedding_list = list()
-    for phone in key_list:
-        embedding_list.append(tf.phone_to_vector[phone])
-
-    embeddings_as_array = np.array(embedding_list)
-
-    reduced_data_tsne = tsne.fit_transform(embeddings_as_array)
-    reduced_data_pca = pca.fit_transform(embeddings_as_array)
-
-    plot_embeddings(reduced_data_tsne, key_list, title="Articulatory Features t-SNE")
-    plot_embeddings(reduced_data_pca, key_list, title="Articulatory Features PCA")
