@@ -114,7 +114,12 @@ class FastSpeechDataset(Dataset):
                                                 torch.Tensor(datapoint[6])])  # pitch
             self.datapoints = tensored_datapoints
             # save to cache
-            torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
+            if len(self.datapoints) > 0:
+                torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
+            else:
+                import sys
+                print("No datapoints were prepared! Exiting...")
+                sys.exit()
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
