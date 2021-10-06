@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from torch import multiprocessing
+
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MultiEnglish import run as fast_multi
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
@@ -9,7 +11,7 @@ from TrainingInterfaces.TrainingPipelines.Tacotron2_MultiEnglish import run as t
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 
 pipeline_dict = {
-    "fast_nancy": fast_nancy,
+    "fast_nancy"          : fast_nancy,
     "taco_nancy": taco_nancy,
 
     "hifi_combined": hifigan_combined,
@@ -62,6 +64,9 @@ if __name__ == '__main__':
     if args.finetune and "hifigan" in args.pipeline:
         print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
+
+    if "fast" in args.pipeline:
+        multiprocessing.set_start_method("spawn", force=False)
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
                                  resume_checkpoint=args.resume_checkpoint,
