@@ -59,6 +59,8 @@ class STFT(torch.nn.Module):
         else:
             window = None
 
+        print(input_wave)
+
         print("I will now stft")
         complex_output = torch_stft(input=input_wave,
                                     n_fft=self.n_fft,
