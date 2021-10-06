@@ -59,9 +59,6 @@ class STFT(torch.nn.Module):
         else:
             window = None
 
-        print(input_wave.squeeze().numpy().tolist())
-
-        print("I will now stft")
         complex_output = torch_stft(input=input_wave,
                                     n_fft=self.n_fft,
                                     win_length=self.win_length,
@@ -71,7 +68,6 @@ class STFT(torch.nn.Module):
                                     normalized=self.normalized,
                                     onesided=self.onesided,
                                     return_complex=True)
-        print("I have stftd")
         output = torch.view_as_real(complex_output)
         # output: (Batch, Freq, Frames, 2=real_imag)
         # -> (Batch, Frames, Freq, 2=real_imag)
