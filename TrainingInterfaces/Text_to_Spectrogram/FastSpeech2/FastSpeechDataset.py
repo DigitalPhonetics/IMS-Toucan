@@ -11,7 +11,7 @@ from tqdm import tqdm
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import mas_width1
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 
 
@@ -81,7 +81,9 @@ class FastSpeechDataset(Dataset):
                                                   acoustic_model,
                                                   reduction_factor,
                                                   device,
-                                                  speaker_embedding),
+                                                  speaker_embedding,
+                                                  cache_dir,
+                                                  index),
                                             daemon=True))
                 process_list[-1].start()
                 time.sleep(5)
@@ -131,9 +133,12 @@ class FastSpeechDataset(Dataset):
                               acoustic_model,
                               reduction_factor,
                               device,
-                              use_speaker_embedding):
+                              use_speaker_embedding,
+                              cache_dir,
+                              process_id):
         process_internal_dataset_chunk = list()
-
+        vis_dir = os.path.join(cache_dir, "duration_vis")
+        os.makedirs(vis_dir, exist_ok=True)
         acoustic_model = acoustic_model.to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio(reduction_factor=reduction_factor, fs=16000)
@@ -168,14 +173,14 @@ class FastSpeechDataset(Dataset):
             # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
 
-            print(f"candidate for viterbi {index} \n {attention_map.unsqueeze(0).unsqueeze(0).shape} \n {len(text)} \n {len(melspec)}")
+            print(f"candidate for viterbi {index} ")
+            attention_map_viterbi_path = mas_width1(attn=attention_map)
 
-            attention_map_viterbi_path = binarize_attention_parallel(attn=attention_map.unsqueeze(0).unsqueeze(0),
-                                                                     in_lens=torch.LongTensor([len(text)]),
-                                                                     out_lens=torch.LongTensor([len(melspec)]))
-            cached_duration = dc(attention_map_viterbi_path, vis=None)[0].cpu()
+            cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png"))[0].cpu()
 
             print(f"viterbi worked {index}")
+
+            print(cached_duration)
 
             cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                         input_lengths=norm_wave_length,
