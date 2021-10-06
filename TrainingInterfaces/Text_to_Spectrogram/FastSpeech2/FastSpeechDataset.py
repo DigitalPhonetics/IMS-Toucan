@@ -147,7 +147,7 @@ class FastSpeechDataset(Dataset):
 
         for index in tqdm(range(len(datapoint_list))):
 
-            norm_wave = norm_wave = torch.tensor(trim_zeros(norm_wave_list[index].numpy()))
+            norm_wave = torch.tensor(trim_zeros(norm_wave_list[index].numpy()))
             norm_wave_length = torch.LongTensor([len(norm_wave)])
 
             text = datapoint_list[index][0]
