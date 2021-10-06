@@ -149,6 +149,7 @@ class FastSpeechDataset(Dataset):
 
             norm_wave = norm_wave_list[index]
             print(norm_wave)
+            torch.tensor([1.0])
             print(norm_wave.shape)
             norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             norm_wave_length = torch.LongTensor([len(norm_wave)])
