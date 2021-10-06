@@ -166,7 +166,7 @@ class FastSpeechDataset(Dataset):
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
-                print(f"\n1  {attention_map.shape}")
+                print(f"\nregular shape  {attention_map.shape}")
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
 
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
@@ -177,7 +177,7 @@ class FastSpeechDataset(Dataset):
 
             attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
 
-            print(f"\n1  {attention_map_viterbi_path.shape}")
+            print(f"\nviterbi shape  {attention_map_viterbi_path.shape}")
 
             cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png"))[0].cpu()
 
