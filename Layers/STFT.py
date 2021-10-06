@@ -43,7 +43,6 @@ class STFT(torch.nn.Module):
         """
         bs = input_wave.size(0)
 
-        print(f"dim {input_wave.dim()}")
 
         if input_wave.dim() == 3:
             multi_channel = True
@@ -60,8 +59,8 @@ class STFT(torch.nn.Module):
         else:
             window = None
 
-        print("ok now I will stft for real")
-        complex_output = torch.stft(input=input_wave.squeeze(),
+        print("I will now stft")
+        complex_output = torch.stft(input=input_wave,
                                     n_fft=self.n_fft,
                                     win_length=self.win_length,
                                     hop_length=self.hop_length,
@@ -71,8 +70,7 @@ class STFT(torch.nn.Module):
                                     onesided=self.onesided,
                                     return_complex=True)
         print("I have stftd")
-        output = torch.view_as_real(complex_output).unsqueeze(1)
-        print("I am now viewing as real")
+        output = torch.view_as_real(complex_output)
         # output: (Batch, Freq, Frames, 2=real_imag)
         # -> (Batch, Frames, Freq, 2=real_imag)
         output = output.transpose(1, 2)
