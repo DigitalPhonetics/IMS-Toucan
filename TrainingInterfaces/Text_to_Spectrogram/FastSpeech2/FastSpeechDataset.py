@@ -174,7 +174,7 @@ class FastSpeechDataset(Dataset):
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
 
             print(f"candidate for viterbi {index} ")
-            attention_map_viterbi_path = mas_width1(attn=attention_map)
+            attention_map_viterbi_path = mas_width1(attention_map)
 
             cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png"))[0].cpu()
 
