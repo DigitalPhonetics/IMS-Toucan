@@ -1,17 +1,14 @@
 import os
-import time
 
 import numpy as np
 import torch
-from torch.multiprocessing import Manager
-from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import mas_width1
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 
 
@@ -29,7 +26,8 @@ class FastSpeechDataset(Dataset):
                  cut_silence=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
-                 rebuild_cache=False):
+                 rebuild_cache=False,
+                 return_language_id=False):
 
         self.speaker_embedding = speaker_embedding
 
@@ -62,31 +60,19 @@ class FastSpeechDataset(Dataset):
             dataset = datapoints[0]
             norm_waves = datapoints[1]
 
-            resource_manager = Manager()
             # build cache
             print("... building dataset cache ...")
-            self.datapoints = resource_manager.list()
-            # make processes
-            datapoint_splits = list()
-            norm_wave_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                datapoint_splits.append(dataset[i * len(dataset) // loading_processes:(i + 1) * len(dataset) // loading_processes])
-                norm_wave_splits.append(norm_waves[i * len(norm_waves) // loading_processes:(i + 1) * len(norm_waves) // loading_processes])
-            for index, _ in enumerate(datapoint_splits):
-                process_list.append(Process(target=self.cache_builder_process,
-                                            args=(datapoint_splits[index],
-                                                  norm_wave_splits[index],
-                                                  acoustic_model,
-                                                  reduction_factor,
-                                                  device,
-                                                  speaker_embedding),
-                                            daemon=True))
-                process_list[-1].start()
-                time.sleep(5)
-            for process in process_list:
-                process.join()
-            self.datapoints = list(self.datapoints)
+            self.datapoints = list()
+
+            self.cache_builder_process(dataset,
+                                       norm_waves,
+                                       acoustic_model,
+                                       reduction_factor,
+                                       device,
+                                       speaker_embedding,
+                                       cache_dir,
+                                       1)
+
             tensored_datapoints = list()
             # we had to turn all of the tensors to numpy arrays to avoid shared memory
             # issues. Now that the multi-processing is over, we can convert them back
@@ -113,7 +99,12 @@ class FastSpeechDataset(Dataset):
                                                 torch.Tensor(datapoint[6])])  # pitch
             self.datapoints = tensored_datapoints
             # save to cache
-            torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
+            if len(self.datapoints) > 0:
+                torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
+            else:
+                import sys
+                print("No datapoints were prepared! Exiting...")
+                sys.exit()
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
@@ -125,9 +116,12 @@ class FastSpeechDataset(Dataset):
                               acoustic_model,
                               reduction_factor,
                               device,
-                              use_speaker_embedding):
+                              use_speaker_embedding,
+                              cache_dir,
+                              process_id):
         process_internal_dataset_chunk = list()
-
+        vis_dir = os.path.join(cache_dir, "duration_vis")
+        os.makedirs(vis_dir, exist_ok=True)
         acoustic_model = acoustic_model.to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
         dio = Dio(reduction_factor=reduction_factor, fs=16000)
@@ -147,30 +141,32 @@ class FastSpeechDataset(Dataset):
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=None)[2]
-                cached_duration = dc(attention_map, vis=None)[0].cpu()
+                cached_duration = dc(attention_map, vis=None).cpu()
             else:
                 speaker_embedding = datapoint_list[index][4]
                 attention_map = acoustic_model.inference(text_tensor=text.to(device),
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
-                cached_duration = dc(attention_map, vis=None)[0].cpu()
+                cached_duration = dc(attention_map, vis=None).cpu()
+
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                 # here we figure out whether the attention map makes any sense or whether it failed.
                 continue
             # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
-            attention_map_viterbi_path = binarize_attention_parallel(attn=attention_map.unsqueeze(0).unsqueeze(0),
-                                                                     in_lens=torch.LongTensor([len(text)]),
-                                                                     out_lens=torch.LongTensor([len(melspec)]))
-            cached_duration = dc(attention_map_viterbi_path, vis=None)[0].cpu()
-            cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
-                                        input_lengths=norm_wave_length,
+
+            attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
+
+            cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png")).cpu()
+
+            cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
+                                        input_waves_lengths=norm_wave_length,
                                         feats_lengths=melspec_length,
                                         durations=cached_duration.unsqueeze(0),
                                         durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
-            cached_pitch = dio(input=norm_wave.unsqueeze(0),
-                               input_lengths=norm_wave_length,
+            cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
+                               input_waves_lengths=norm_wave_length,
                                feats_lengths=melspec_length,
                                durations=cached_duration.unsqueeze(0),
                                durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
