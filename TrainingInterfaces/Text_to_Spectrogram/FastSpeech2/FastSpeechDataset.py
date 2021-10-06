@@ -3,6 +3,7 @@ import time
 
 import numpy as np
 import torch
+from numpy import trim_zeros
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
@@ -146,7 +147,7 @@ class FastSpeechDataset(Dataset):
 
         for index in tqdm(range(len(datapoint_list))):
 
-            norm_wave = norm_wave_list[index]
+            norm_wave = norm_wave = torch.tensor(trim_zeros(norm_wave_list[index].numpy()))
             norm_wave_length = torch.LongTensor([len(norm_wave)])
 
             text = datapoint_list[index][0]

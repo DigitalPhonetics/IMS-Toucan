@@ -4,6 +4,7 @@ import time
 
 import soundfile as sf
 import torch
+from numpy import trim_zeros
 from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
@@ -194,6 +195,7 @@ class TacotronDataset(Dataset):
                     continue
                 _norm_unsilenced_path = path
 
+            norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
             cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
