@@ -40,7 +40,6 @@ class EnergyCalculator(torch.nn.Module):
         if input_waves_lengths is None:
             input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
-
         print(input_waves.shape)
         print(input_waves_lengths.shape)
         print(feats_lengths.shape)
@@ -50,6 +49,8 @@ class EnergyCalculator(torch.nn.Module):
         # Domain-conversion: e.g. Stft: time -> time-freq
         input_stft, energy_lengths = self.stft(input_waves, input_waves_lengths)
 
+        print("stft done")
+
         assert input_stft.dim() >= 4, input_stft.shape
         assert input_stft.shape[-1] == 2, input_stft.shape
 
@@ -58,15 +59,21 @@ class EnergyCalculator(torch.nn.Module):
         # sum over frequency (B, N, F) -> (B, N)
         energy = torch.sqrt(torch.clamp(input_power.sum(dim=2), min=1.0e-10))
 
+        print("power calculated")
+
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
             energy = [self._adjust_num_frames(e[:el].view(-1), fl) for e, el, fl in zip(energy, energy_lengths, feats_lengths)]
             energy_lengths = feats_lengths
 
+        print("amount of feats adjusted")
+
         # (Optional): Average by duration to calculate token-wise energy
         if self.use_token_averaged_energy:
             energy = [self._average_by_duration(e[:el].view(-1), d) for e, el, d in zip(energy, energy_lengths, durations)]
             energy_lengths = durations_lengths
+
+        print("token wise average done")
 
         # Padding
         if isinstance(energy, list):

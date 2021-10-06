@@ -238,7 +238,7 @@ def train_loop(net,
                         del pred_spemb
                         del predicted_mels
                         del gold_spemb
-                        train_loss = train_loss + cycle_distance * min(100, step_counter / 20)
+                        train_loss = train_loss + cycle_distance * min(200, step_counter / 20)
 
                 train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
