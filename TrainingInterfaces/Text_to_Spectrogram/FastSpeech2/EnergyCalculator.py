@@ -41,10 +41,9 @@ class EnergyCalculator(torch.nn.Module):
             input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
         print(input_waves.shape)
-        print(input_waves_lengths.shape)
-        print(feats_lengths.shape)
-        print(durations.shape)
-        print(durations_lengths.shape)
+        print(input_waves_lengths)
+
+        print("I will stft now")
 
         # Domain-conversion: e.g. Stft: time -> time-freq
         input_stft, energy_lengths = self.stft(input_waves, input_waves_lengths)

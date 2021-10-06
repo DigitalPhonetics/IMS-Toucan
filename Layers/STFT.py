@@ -32,20 +32,23 @@ class STFT(torch.nn.Module):
                 f"normalized={self.normalized}, "
                 f"onesided={self.onesided}")
 
-    def forward(self, input, ilens=None):
+    def forward(self, input_wave, ilens=None):
         """
         STFT forward function.
         Args:
-            input: (Batch, Nsamples) or (Batch, Nsample, Channels)
+            input_wave: (Batch, Nsamples) or (Batch, Nsample, Channels)
             ilens: (Batch)
         Returns:
             output: (Batch, Frames, Freq, 2) or (Batch, Frames, Channels, Freq, 2)
         """
-        bs = input.size(0)
-        if input.dim() == 3:
+        bs = input_wave.size(0)
+
+        print(f"dim {input_wave.dim()}")
+
+        if input_wave.dim() == 3:
             multi_channel = True
             # input: (Batch, Nsample, Channels) -> (Batch * Channels, Nsample)
-            input = input.transpose(1, 2).reshape(-1, input.size(1))
+            input_wave = input_wave.transpose(1, 2).reshape(-1, input_wave.size(1))
         else:
             multi_channel = False
 
@@ -53,11 +56,11 @@ class STFT(torch.nn.Module):
         # or (Batch, Channel, Freq, Frames, 2=real_imag)
         if self.window is not None:
             window_func = getattr(torch, f"{self.window}_window")
-            window = window_func(self.win_length, dtype=input.dtype, device=input.device)
+            window = window_func(self.win_length, dtype=input_wave.dtype, device=input_wave.device)
         else:
             window = None
         output = torch.view_as_real(
-            torch.stft(input, n_fft=self.n_fft, win_length=self.win_length, hop_length=self.hop_length, center=self.center, window=window,
+            torch.stft(input_wave, n_fft=self.n_fft, win_length=self.win_length, hop_length=self.hop_length, center=self.center, window=window,
                        normalized=self.normalized, onesided=self.onesided, return_complex=True))
         # output: (Batch, Freq, Frames, 2=real_imag)
         # -> (Batch, Frames, Freq, 2=real_imag)
