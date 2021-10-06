@@ -1,11 +1,8 @@
 import os
-import time
 
 import numpy as np
 import torch
 from numpy import trim_zeros
-from torch.multiprocessing import Manager
-from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -64,33 +61,19 @@ class FastSpeechDataset(Dataset):
             dataset = datapoints[0]
             norm_waves = datapoints[1]
 
-            resource_manager = Manager()
             # build cache
             print("... building dataset cache ...")
-            self.datapoints = resource_manager.list()
-            # make processes
-            datapoint_splits = list()
-            norm_wave_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                datapoint_splits.append(dataset[i * len(dataset) // loading_processes:(i + 1) * len(dataset) // loading_processes])
-                norm_wave_splits.append(norm_waves[i * len(norm_waves) // loading_processes:(i + 1) * len(norm_waves) // loading_processes])
-            for index, _ in enumerate(datapoint_splits):
-                process_list.append(Process(target=self.cache_builder_process,
-                                            args=(datapoint_splits[index],
-                                                  norm_wave_splits[index],
-                                                  acoustic_model,
-                                                  reduction_factor,
-                                                  device,
-                                                  speaker_embedding,
-                                                  cache_dir,
-                                                  index),
-                                            daemon=True))
-                process_list[-1].start()
-                time.sleep(5)
-            for process in process_list:
-                process.join()
-            self.datapoints = list(self.datapoints)
+            self.datapoints = list()
+
+            self.cache_builder_process(dataset,
+                                       norm_waves,
+                                       acoustic_model,
+                                       reduction_factor,
+                                       device,
+                                       speaker_embedding,
+                                       cache_dir,
+                                       1)
+
             tensored_datapoints = list()
             # we had to turn all of the tensors to numpy arrays to avoid shared memory
             # issues. Now that the multi-processing is over, we can convert them back
