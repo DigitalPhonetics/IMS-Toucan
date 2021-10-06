@@ -31,7 +31,5 @@ class DurationCalculator(torch.nn.Module):
             plt.close()
         # calculate duration from 2d attention weight
 
-        print("Before duration calculation")
         durations = torch.stack([att_ws.argmax(-1).eq(i).sum() for i in range(att_ws.shape[1])])
-        print("After duration calculation")
         return durations.view(-1) * self.reduction_factor

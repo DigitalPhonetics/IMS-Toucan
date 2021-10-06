@@ -158,7 +158,6 @@ class FastSpeechDataset(Dataset):
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=None)[2]
-                print(f"\n1  {attention_map.shape}")
                 cached_duration = dc(attention_map, vis=None).cpu()
             else:
                 speaker_embedding = datapoint_list[index][4]
@@ -166,7 +165,6 @@ class FastSpeechDataset(Dataset):
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
-                print(f"\nregular shape  {attention_map.shape}")
                 cached_duration = dc(attention_map, vis=None).cpu()
 
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
@@ -177,18 +175,15 @@ class FastSpeechDataset(Dataset):
 
             attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
 
-            print(f"\nviterbi shape  {attention_map_viterbi_path.shape}")
-
             cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png")).cpu()
 
-
-            print(cached_duration)
-
+            print("duration successfully calculated")
             cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
                                         input_lengths=norm_wave_length,
                                         feats_lengths=melspec_length,
                                         durations=cached_duration.unsqueeze(0),
                                         durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+            print("energy successfully calculated")
             cached_pitch = dio(input=norm_wave.unsqueeze(0),
                                input_lengths=norm_wave_length,
                                feats_lengths=melspec_length,
