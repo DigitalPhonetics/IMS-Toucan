@@ -148,8 +148,6 @@ class FastSpeechDataset(Dataset):
             melspec = datapoint_list[index][2]
             melspec_length = datapoint_list[index][3]
 
-            print(f"melspec len {melspec_length}")
-
             if not use_speaker_embedding:
                 attention_map = acoustic_model.inference(text_tensor=text.to(device),
                                                          speech_tensor=melspec.to(device),
@@ -163,13 +161,15 @@ class FastSpeechDataset(Dataset):
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
+
+            print(cached_duration)
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                 # here we figure out whether the attention map makes any sense or whether it failed.
                 continue
             # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
 
-            print(f"candidate for viterbi {index}")
+            print(f"candidate for viterbi {index} \n {attention_map.unsqueeze(0).unsqueeze(0).shape()} \n {len(text)} \n {len(melspec)}")
 
             attention_map_viterbi_path = binarize_attention_parallel(attn=attention_map.unsqueeze(0).unsqueeze(0),
                                                                      in_lens=torch.LongTensor([len(text)]),
