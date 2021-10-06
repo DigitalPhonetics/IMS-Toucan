@@ -3,6 +3,7 @@ Taken from ESPNet
 """
 
 import torch
+from torch.functional import stft as torch_stft
 from torch_complex.tensor import ComplexTensor
 
 from Utility.utils import make_pad_mask
@@ -43,7 +44,6 @@ class STFT(torch.nn.Module):
         """
         bs = input_wave.size(0)
 
-
         if input_wave.dim() == 3:
             multi_channel = True
             # input: (Batch, Nsample, Channels) -> (Batch * Channels, Nsample)
@@ -60,7 +60,7 @@ class STFT(torch.nn.Module):
             window = None
 
         print("I will now stft")
-        complex_output = torch.stft(input=input_wave,
+        complex_output = torch_stft(input=input_wave,
                                     n_fft=self.n_fft,
                                     win_length=self.win_length,
                                     hop_length=self.hop_length,
