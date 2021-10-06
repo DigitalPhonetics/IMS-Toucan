@@ -178,14 +178,14 @@ class FastSpeechDataset(Dataset):
             cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png")).cpu()
 
             print("duration successfully calculated")
-            cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
-                                        input_lengths=norm_wave_length,
+            cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
+                                        input_waves_lengths=norm_wave_length,
                                         feats_lengths=melspec_length,
                                         durations=cached_duration.unsqueeze(0),
                                         durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
             print("energy successfully calculated")
-            cached_pitch = dio(input=norm_wave.unsqueeze(0),
-                               input_lengths=norm_wave_length,
+            cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
+                               input_waves_lengths=norm_wave_length,
                                feats_lengths=melspec_length,
                                durations=cached_duration.unsqueeze(0),
                                durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
