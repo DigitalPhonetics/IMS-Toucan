@@ -158,6 +158,7 @@ class FastSpeechDataset(Dataset):
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=None)[2]
+                print(f"\n1  {attention_map.shape}")
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
             else:
                 speaker_embedding = datapoint_list[index][4]
@@ -165,6 +166,7 @@ class FastSpeechDataset(Dataset):
                                                          speech_tensor=melspec.to(device),
                                                          use_teacher_forcing=True,
                                                          speaker_embeddings=speaker_embedding.to(device))[2]
+                print(f"\n1  {attention_map.shape}")
                 cached_duration = dc(attention_map, vis=None)[0].cpu()
 
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
@@ -173,12 +175,12 @@ class FastSpeechDataset(Dataset):
             # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
 
-            print(f"candidate for viterbi {index} ")
             attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
+
+            print(f"\n1  {attention_map_viterbi_path.shape}")
 
             cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png"))[0].cpu()
 
-            print(f"viterbi worked {index}")
 
             print(cached_duration)
 
