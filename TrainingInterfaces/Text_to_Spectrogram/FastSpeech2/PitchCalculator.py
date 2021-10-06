@@ -42,14 +42,14 @@ class Dio(torch.nn.Module):
                     use_token_averaged_f0=self.use_token_averaged_f0, use_continuous_f0=self.use_continuous_f0, use_log_f0=self.use_log_f0,
                     reduction_factor=self.reduction_factor)
 
-    def forward(self, input, input_lengths=None, feats_lengths=None, durations=None,
+    def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
                 durations_lengths=None):
         # If not provided, we assume that the inputs have the same length
-        if input_lengths is None:
-            input_lengths = (input.new_ones(input.shape[0], dtype=torch.long) * input.shape[1])
+        if input_waves_lengths is None:
+            input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
         # F0 extraction
-        pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input, input_lengths)]
+        pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
 
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
@@ -60,7 +60,7 @@ class Dio(torch.nn.Module):
             pitch = [self._average_by_duration(p, d).view(-1) for p, d in zip(pitch, durations)]
             pitch_lengths = durations_lengths
         else:
-            pitch_lengths = input.new_tensor([len(p) for p in pitch], dtype=torch.long)
+            pitch_lengths = input_waves.new_tensor([len(p) for p in pitch], dtype=torch.long)
 
         # Padding
         pitch = pad_list(pitch, 0.0)
