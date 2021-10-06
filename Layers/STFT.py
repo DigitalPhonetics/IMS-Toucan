@@ -59,9 +59,12 @@ class STFT(torch.nn.Module):
             window = window_func(self.win_length, dtype=input_wave.dtype, device=input_wave.device)
         else:
             window = None
+
+        print("ok now I will stft for real")
         output = torch.view_as_real(
             torch.stft(input_wave, n_fft=self.n_fft, win_length=self.win_length, hop_length=self.hop_length, center=self.center, window=window,
                        normalized=self.normalized, onesided=self.onesided, return_complex=True))
+        print("I have stftd")
         # output: (Batch, Freq, Frames, 2=real_imag)
         # -> (Batch, Frames, Freq, 2=real_imag)
         output = output.transpose(1, 2)
