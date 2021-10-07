@@ -1,21 +1,15 @@
-import gc
-import json
 import os
 
 import numpy as np
-import soundfile as sf
 import torch
-import torchaudio
-from torch.multiprocessing import Manager
-from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.TextFrontend import TextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import mas_width1
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 
 
 class FastSpeechDataset(Dataset):
@@ -24,161 +18,175 @@ class FastSpeechDataset(Dataset):
                  path_to_transcript_dict,
                  acoustic_model,
                  cache_dir,
+                 lang,
                  speaker_embedding=False,
-                 loading_processes=5,
-                 lang="en",
+                 loading_processes=6,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False,
-                 path_blacklist=None  # because for some datasets, some of the alignments
-                 # simply fail because attention heads do weird things. Those need to be
-                 # found in the duration_vis folder and manually added to a list of samples
-                 # to be excluded from the dataset.
-                 ):
+                 return_language_id=False):
+
         self.speaker_embedding = speaker_embedding
-        if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.json")) or rebuild_cache:
-            if not os.path.isdir(os.path.join(cache_dir, "durations_visualization")):
-                os.makedirs(os.path.join(cache_dir, "durations_visualization"))
-            resource_manager = Manager()
-            self.path_to_transcript_dict = path_to_transcript_dict
-            key_list = list(self.path_to_transcript_dict.keys())
+
+        if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
+            if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
+                TacotronDataset(path_to_transcript_dict=path_to_transcript_dict,
+                                cache_dir=cache_dir,
+                                lang=lang,
+                                speaker_embedding=speaker_embedding,
+                                loading_processes=loading_processes,
+                                device=device,
+                                min_len_in_seconds=min_len_in_seconds,
+                                max_len_in_seconds=max_len_in_seconds,
+                                cut_silences=cut_silence,
+                                rebuild_cache=rebuild_cache)
+            datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
+            # we use the tacotron dataset as basis and augment it to contain the additional information we need for fastspeech.
+            if not isinstance(datapoints, tuple):  # check for backwards compatibility
+                TacotronDataset(path_to_transcript_dict=path_to_transcript_dict,
+                                cache_dir=cache_dir,
+                                lang=lang,
+                                speaker_embedding=speaker_embedding,
+                                loading_processes=loading_processes,
+                                device=device,
+                                min_len_in_seconds=min_len_in_seconds,
+                                max_len_in_seconds=max_len_in_seconds,
+                                cut_silences=cut_silence,
+                                rebuild_cache=True)
+                datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
+            dataset = datapoints[0]
+            norm_waves = datapoints[1]
+
             # build cache
             print("... building dataset cache ...")
-            self.datapoints = resource_manager.list()
-            # make processes
-            key_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                key_splits.append(key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
-            gc.disable()
-            for key_split in key_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(key_split,
-                                                                                     acoustic_model,
-                                                                                     speaker_embedding,
-                                                                                     lang,
-                                                                                     min_len_in_seconds,
-                                                                                     max_len_in_seconds,
-                                                                                     reduction_factor,
-                                                                                     device,
-                                                                                     cache_dir,
-                                                                                     cut_silence), daemon=True))
-                process_list[-1].start()
-            for process in process_list:
-                process.join()
-            gc.enable()
-            self.datapoints = list(self.datapoints)
-            # save to json so we can rebuild cache quickly
-            with open(os.path.join(cache_dir, "fast_train_cache.json"), 'w') as fp:
-                json.dump(self.datapoints, fp)
-        else:
-            # just load the datapoints
-            with open(os.path.join(cache_dir, "fast_train_cache.json"), 'r') as fp:
-                self.datapoints = json.load(fp)
+            self.datapoints = list()
 
-        if path_blacklist is not None:
-            bl = set(path_blacklist)
-            datapoints_with_durations_that_make_sense = list()
-            for el in self.datapoints:
-                if el[-1] not in bl:
-                    datapoints_with_durations_that_make_sense.append(el)
-            self.datapoints = datapoints_with_durations_that_make_sense
+            self.cache_builder_process(dataset,
+                                       norm_waves,
+                                       acoustic_model,
+                                       reduction_factor,
+                                       device,
+                                       speaker_embedding,
+                                       cache_dir,
+                                       1)
+
+            tensored_datapoints = list()
+            # we had to turn all of the tensors to numpy arrays to avoid shared memory
+            # issues. Now that the multi-processing is over, we can convert them back
+            # to tensors to save on conversions in the future.
+            print("Converting into convenient format...")
+            if self.speaker_embedding:
+                for datapoint in tqdm(self.datapoints):
+                    tensored_datapoints.append([datapoint[0],
+                                                datapoint[1],
+                                                datapoint[2],
+                                                datapoint[3],
+                                                torch.LongTensor(datapoint[4]),  # durations
+                                                torch.Tensor(datapoint[5]),  # energy
+                                                torch.Tensor(datapoint[6]),  # pitch
+                                                datapoint[7]])  # speaker embedding
+            else:
+                for datapoint in tqdm(self.datapoints):
+                    tensored_datapoints.append([datapoint[0],
+                                                datapoint[1],
+                                                datapoint[2],
+                                                datapoint[3],
+                                                torch.LongTensor(datapoint[4]),  # durations
+                                                torch.Tensor(datapoint[5]),  # energy
+                                                torch.Tensor(datapoint[6])])  # pitch
+            self.datapoints = tensored_datapoints
+            # save to cache
+            if len(self.datapoints) > 0:
+                torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
+            else:
+                import sys
+                print("No datapoints were prepared! Exiting...")
+                sys.exit()
+        else:
+            # just load the datapoints from cache
+            self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,
-                              path_list,
+                              datapoint_list,
+                              norm_wave_list,
                               acoustic_model,
-                              speaker_embedding,
-                              lang,
-                              min_len,
-                              max_len,
                               reduction_factor,
                               device,
+                              use_speaker_embedding,
                               cache_dir,
-                              cut_silence):
+                              process_id):
         process_internal_dataset_chunk = list()
-        tf = TextFrontend(language=lang,
-                          use_word_boundaries=False,
-                          use_explicit_eos=False)
-        _, sr = sf.read(path_list[0])
-        if speaker_embedding:
-            wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
-            dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").eval()
-        ap = AudioPreprocessor(input_sr=sr,
-                               output_sr=16000,
-                               melspec_buckets=80,
-                               hop_length=256,
-                               n_fft=1024,
-                               cut_silence=cut_silence)
+        vis_dir = os.path.join(cache_dir, "duration_vis")
+        os.makedirs(vis_dir, exist_ok=True)
         acoustic_model = acoustic_model.to(device)
         dc = DurationCalculator(reduction_factor=reduction_factor)
-        dio = Dio(reduction_factor=reduction_factor)
-        energy_calc = EnergyCalculator(reduction_factor=reduction_factor)
-        for path in tqdm(path_list):
-            transcript = self.path_to_transcript_dict[path]
-            with open(path, "rb") as audio_file:
-                wave, sr = sf.read(audio_file)
-            if min_len <= len(wave) / sr <= max_len:
-                norm_wave = ap.audio_to_wave_tensor(audio=wave, normalize=True, mulaw=False)
-                norm_wave_length = torch.LongTensor([len(norm_wave)])
-                melspec = ap.audio_to_mel_spec_tensor(norm_wave, normalize=False).transpose(0, 1)
-                melspec_length = torch.LongTensor([len(melspec)])
-                text = tf.string_to_tensor(transcript).long()
-                cached_text = tf.string_to_tensor(transcript).squeeze(0).numpy().tolist()
-                cached_text_len = len(cached_text)
-                cached_speech = ap.audio_to_mel_spec_tensor(wave).transpose(0, 1).numpy().tolist()
-                cached_speech_len = len(cached_speech)
-                if not speaker_embedding:
-                    os.path.join(cache_dir, "durations_visualization")
-                    cached_duration = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                  speech=melspec.to(device),
-                                                                  use_teacher_forcing=True,
-                                                                  speaker_embeddings=None)[2],
-                                         vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
-                    if np.count_nonzero(cached_duration.numpy() == 0) > 4:
-                        continue
-                else:
-                    wav_tensor, sample_rate = torchaudio.load(path)
-                    mel_tensor = wav2mel(wav_tensor, sample_rate)
-                    cached_speaker_embedding = dvector.embed_utterance(mel_tensor)
-                    cached_duration = dc(acoustic_model.inference(text=text.squeeze(0).to(device),
-                                                                  speech=melspec.to(device),
-                                                                  use_teacher_forcing=True,
-                                                                  speaker_embeddings=cached_speaker_embedding.to(device))[2],
-                                         vis=os.path.join(cache_dir, "durations_visualization", path.split("/")[-1].rstrip(".wav") + ".png"))[0].cpu()
-                    if np.count_nonzero(cached_duration.numpy() == 0) > 4:
-                        continue
-                cached_energy = energy_calc(input=norm_wave.unsqueeze(0),
-                                            input_lengths=norm_wave_length,
-                                            feats_lengths=melspec_length,
-                                            durations=cached_duration.unsqueeze(0),
-                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
-                cached_pitch = dio(input=norm_wave.unsqueeze(0),
-                                   input_lengths=norm_wave_length,
-                                   feats_lengths=melspec_length,
-                                   durations=cached_duration.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0)
-                if not self.speaker_embedding:
-                    process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_len,
-                                                           cached_speech,
-                                                           cached_speech_len,
-                                                           cached_duration.numpy().tolist(),
-                                                           cached_energy.numpy().tolist(),
-                                                           cached_pitch.numpy().tolist(),
-                                                           path])
-                else:
-                    process_internal_dataset_chunk.append([cached_text,
-                                                           cached_text_len,
-                                                           cached_speech,
-                                                           cached_speech_len,
-                                                           cached_duration.numpy().tolist(),
-                                                           cached_energy.numpy().tolist(),
-                                                           cached_pitch.numpy().tolist(),
-                                                           cached_speaker_embedding.detach().numpy().tolist(),
-                                                           path])
+        dio = Dio(reduction_factor=reduction_factor, fs=16000)
+        energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
+
+        for index in tqdm(range(len(datapoint_list))):
+
+            norm_wave = norm_wave_list[index]
+            norm_wave_length = torch.LongTensor([len(norm_wave)])
+
+            text = datapoint_list[index][0]
+            melspec = datapoint_list[index][2]
+            melspec_length = datapoint_list[index][3]
+
+            if not use_speaker_embedding:
+                attention_map = acoustic_model.inference(text_tensor=text.to(device),
+                                                         speech_tensor=melspec.to(device),
+                                                         use_teacher_forcing=True,
+                                                         speaker_embeddings=None)[2]
+                cached_duration = dc(attention_map, vis=None).cpu()
+            else:
+                speaker_embedding = datapoint_list[index][4]
+                attention_map = acoustic_model.inference(text_tensor=text.to(device),
+                                                         speech_tensor=melspec.to(device),
+                                                         use_teacher_forcing=True,
+                                                         speaker_embeddings=speaker_embedding.to(device))[2]
+                cached_duration = dc(attention_map, vis=None).cpu()
+
+            if np.count_nonzero(cached_duration.numpy() == 0) > 4:
+                # here we figure out whether the attention map makes any sense or whether it failed.
+                continue
+            # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
+            # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
+
+            attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
+
+            cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png")).cpu()
+
+            cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
+                                        input_waves_lengths=norm_wave_length,
+                                        feats_lengths=melspec_length,
+                                        durations=cached_duration.unsqueeze(0),
+                                        durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+            cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
+                               input_waves_lengths=norm_wave_length,
+                               feats_lengths=melspec_length,
+                               durations=cached_duration.unsqueeze(0),
+                               durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+            if not self.speaker_embedding:
+                process_internal_dataset_chunk.append([datapoint_list[index][0],
+                                                       datapoint_list[index][1],
+                                                       datapoint_list[index][2],
+                                                       datapoint_list[index][3],
+                                                       cached_duration.cpu().numpy(),
+                                                       cached_energy,
+                                                       cached_pitch])
+            else:
+                process_internal_dataset_chunk.append([datapoint_list[index][0],
+                                                       datapoint_list[index][1],
+                                                       datapoint_list[index][2],
+                                                       datapoint_list[index][3],
+                                                       cached_duration.cpu().numpy(),
+                                                       cached_energy,
+                                                       cached_pitch,
+                                                       datapoint_list[index][4]])
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):

@@ -1,4 +1,3 @@
-import os
 import random
 
 import torch
@@ -6,7 +5,7 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
+from Utility.path_to_transcript_dicts import *
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -19,32 +18,31 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
         device = torch.device("cuda")
 
-    torch.manual_seed(131714)  # tbh I just like this number
+    torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Nancy")
+    cache_dir_hifitts = os.path.join("Corpora", "multispeaker_nvidia_hifitts")
+    os.makedirs(cache_dir_hifitts, exist_ok=True)
+
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_Nancy")
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
+        save_dir = os.path.join("Models", "Tacotron2_MultispeakerEnglish")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
-
-    train_set = TacotronDataset(path_to_transcript_dict,
-                                cache_dir=cache_dir,
+    train_set = TacotronDataset(build_path_to_transcript_dict_nvidia_hifitts(),
+                                cache_dir=cache_dir_hifitts,
                                 lang="en",
-                                min_len_in_seconds=1,
-                                max_len_in_seconds=10,
-                                rebuild_cache=False,
-                                cut_silences=True)
+                                speaker_embedding=True,
+                                cut_silences=True,
+                                min_len_in_seconds=3,
+                                max_len_in_seconds=12,
+                                device=device)
 
-    model = Tacotron2(idim=166, odim=80, spk_embed_dim=None, use_dtw_loss=False, use_alignment_loss=True)
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=960)
 
     print("Training model")
     train_loop(net=model,
@@ -52,9 +50,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                device=device,
                save_directory=save_dir,
                steps=100000,
-               batch_size=84,  # this works for a 24GB GPU. For a smaller GPU, consider decreasing batchsize.
+               batch_size=64,
                epochs_per_save=1,
-               use_speaker_embedding=False,
+               use_speaker_embedding=True,
                lang="en",
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,

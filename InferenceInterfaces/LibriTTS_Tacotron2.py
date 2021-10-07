@@ -17,11 +17,14 @@ class LibriTTS_Tacotron2(torch.nn.Module):
         super().__init__()
         self.speaker_embedding = speaker_embedding
         self.device = device
-        self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device))
+        if isinstance(speaker_embedding, torch.Tensor):
+            self.speaker_embedding = speaker_embedding
+        else:
+            self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device)).squeeze(0).squeeze(0)
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False, inference=True)
         self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_LibriTTS", "best.pt"),
-                                   idim=166, odim=80, spk_embed_dim=256, reduction_factor=1).to(torch.device(device))
+                                   idim=166, odim=80, spk_embed_dim=960, reduction_factor=1).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -85,3 +88,14 @@ class LibriTTS_Tacotron2(torch.nn.Module):
         axes.yaxis.set_visible(False)
         plt.tight_layout()
         plt.show()
+
+    def save_embedding_table(self):
+        import json
+        phone_to_embedding = dict()
+        for phone in self.text2phone.ipa_to_vector:
+            if phone in ['?', 'ɚ', 'p', 'u', 'ɹ', 'ɾ', 'ʔ', 'j', 'l', 'ɔ', 'v', 'm', '~', 'ᵻ', 'ɪ', 'ʒ', 'æ', 'n', 'z', 'ŋ', 'i', 'b', 'o', 'ɛ', 'e', 't', '!', 'ʊ', 'ð', 'd', 'θ',
+                         'ɑ', 'ɡ', 's', 'ɐ', 'k', 'w', 'ə', 'ʌ', 'ʃ', '.', 'a', 'ɜ', 'h', 'f']:
+                print(phone)
+                phone_to_embedding[phone] = self.phone2mel.enc.embed(torch.LongTensor([self.text2phone.ipa_to_vector[phone]])).detach().numpy().tolist()
+        with open("embedding_table_512dim.json", 'w', encoding="utf8") as fp:
+            json.dump(phone_to_embedding, fp)

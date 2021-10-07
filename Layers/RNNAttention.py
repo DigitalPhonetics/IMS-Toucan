@@ -296,7 +296,7 @@ class AttLoc(torch.nn.Module):
                 backward_window=1,
                 forward_window=3, ):
         """
-        Calcualte AttLoc forward propagation.
+        Calculate AttLoc forward propagation.
 
         :param torch.Tensor enc_hs_pad: padded encoder hidden state (B x T_max x D_enc)
         :param list enc_hs_len: padded encoder hidden state length (B)
@@ -375,7 +375,7 @@ class AttCov(torch.nn.Module):
     :param int eprojs: # projection-units of encoder
     :param int dunits: # units of decoder
     :param int att_dim: attention dimension
-    :param bool han_mode: flag to swith on mode of hierarchical attention
+    :param bool han_mode: flag to switch on mode of hierarchical attention
         and not store pre_compute_enc_h
     """
 
@@ -1332,7 +1332,7 @@ class AttForward(torch.nn.Module):
         :param float scaling: scaling parameter before applying softmax
         :param int last_attended_idx: index of the inputs of the last attended
         :param int backward_window: backward window size in attention constraint
-        :param int forward_window: forward window size in attetion constraint
+        :param int forward_window: forward window size in attention constraint
         :return: attention weighted encoder state (B, D_enc)
         :rtype: torch.Tensor
         :return: previous attention weights (B x T_max)

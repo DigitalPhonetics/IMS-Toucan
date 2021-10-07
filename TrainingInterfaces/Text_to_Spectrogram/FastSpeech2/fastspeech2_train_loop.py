@@ -15,6 +15,7 @@ from Preprocessing.TextFrontend import TextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
+from Utility.utils import get_most_recent_checkpoint
 
 
 def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embedding_for_plot):
@@ -50,51 +51,25 @@ def plot_progress_spec(net, device, save_dir, step, lang, reference_speaker_embe
 
 
 def collate_and_pad(batch):
-    if len(batch[0]) == 7:
-        # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        durations = list()
-        pitch = list()
-        energy = list()
-        for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-            durations.append(torch.LongTensor(datapoint[4]))
-            energy.append(torch.Tensor(datapoint[5]))
-            pitch.append(torch.Tensor(datapoint[6]))
-        return (
-            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1),
-            pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True))
-    elif len(batch[0]) == 8:
-        # every entry in batch: [text, text_length, spec, spec_length, durations, energy, pitch, speaker_embedding]
-        texts = list()
-        text_lens = list()
-        speechs = list()
-        speech_lens = list()
-        durations = list()
-        pitch = list()
-        energy = list()
-        speaker_embeddings = list()
-        for datapoint in batch:
-            texts.append(torch.LongTensor(datapoint[0]).squeeze(0))
-            text_lens.append(torch.LongTensor([datapoint[1]]))
-            speechs.append(torch.Tensor(datapoint[2]))
-            speech_lens.append(torch.LongTensor([datapoint[3]]))
-            durations.append(torch.LongTensor(datapoint[4]))
-            energy.append(torch.Tensor(datapoint[5]))
-            pitch.append(torch.Tensor(datapoint[6]))
-            speaker_embeddings.append(torch.Tensor(datapoint[7]))
-        return (
-            pad_sequence(texts, batch_first=True), torch.stack(text_lens).squeeze(1), pad_sequence(speechs, batch_first=True),
-            torch.stack(speech_lens).squeeze(1),
-            pad_sequence(durations, batch_first=True), pad_sequence(pitch, batch_first=True), pad_sequence(energy, batch_first=True),
-            torch.stack(speaker_embeddings))
+    if len(batch[0]) == 8:
+        # text, text_len, speech, speech_len, durations, energy, pitch, speaker_emb
+        return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                torch.stack([datapoint[7] for datapoint in batch]))
+    else:
+        # text, text_len, speech, speech_len, durations, energy, pitch
+        return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                torch.stack([datapoint[6] for datapoint in batch]).squeeze(1))
 
 
 def train_loop(net,
@@ -109,22 +84,24 @@ def train_loop(net,
                lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=None,
-               fine_tune=False):
+               fine_tune=False,
+               resume = False):
     """
-    :param steps: How many steps to train
-    :param lr: The initial learning rate for the optimiser
-    :param warmup_steps: how many warmup steps for the warmup scheduler
-    :param path_to_checkpoint: reloads a checkpoint to continue training from there
-    :param fine_tune: whether to load everything from a checkpoint, or only the model parameters
-    :param lang: language of the synthesis
-    :param use_speaker_embedding: whether to expect speaker embeddings
-    :param net: Model to train
-    :param train_dataset: Pytorch Dataset Object for train data
-    :param device: Device to put the loaded tensors on
-    :param save_directory: Where to save the checkpoints
-    :param batch_size: How many elements should be loaded at once
-    :param gradient_accumulation: how many batches to average before stepping
-    :param epochs_per_save: how many epochs to train in between checkpoints
+    Args:
+        resume: whether to resume from the most recent checkpoint
+        warmup_steps: how long the learning rate should increase before it reaches the specified value
+        steps: How many steps to train
+        lr: The initial learning rate for the optimiser
+        path_to_checkpoint: reloads a checkpoint to continue training from there
+        fine_tune: whether to load everything from a checkpoint, or only the model parameters
+        lang: language of the synthesis
+        use_speaker_embedding: whether to expect speaker embeddings
+        net: Model to train
+        train_dataset: Pytorch Dataset Object for train data
+        device: Device to put the loaded tensors on
+        save_directory: Where to save the checkpoints
+        batch_size: How many elements should be loaded at once
+        epochs_per_save: how many epochs to train in between checkpoints
     """
     net = net.to(device)
     scaler = GradScaler()
@@ -149,6 +126,8 @@ def train_loop(net,
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     epoch = 0
+    if resume:
+        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
         # careful when restarting, plotting data will be overwritten!
         check_dict = torch.load(path_to_checkpoint, map_location=device)
@@ -173,9 +152,10 @@ def train_loop(net,
                     train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
                                      batch[3].to(device), batch[4].to(device), batch[5].to(device),
                                      batch[6].to(device), batch[7].to(device))
-                train_losses_this_epoch.append(float(train_loss))
+                train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
+            del train_loss
             step_counter += 1
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
@@ -198,8 +178,9 @@ def train_loop(net,
                 if step_counter > steps:
                     # DONE
                     return
-            print("Epoch:        {}".format(epoch + 1))
+            print("Epoch:        {}".format(epoch))
             print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60), 2))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
             print("Steps:        {}".format(step_counter))
+            torch.cuda.empty_cache()
             net.train()

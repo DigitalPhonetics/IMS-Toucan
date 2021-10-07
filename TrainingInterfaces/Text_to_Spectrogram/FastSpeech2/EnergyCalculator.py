@@ -34,14 +34,14 @@ class EnergyCalculator(torch.nn.Module):
         return dict(fs=self.fs, n_fft=self.n_fft, hop_length=self.hop_length, window=self.window, win_length=self.win_length, center=self.stft.center,
                     normalized=self.stft.normalized, use_token_averaged_energy=self.use_token_averaged_energy, reduction_factor=self.reduction_factor)
 
-    def forward(self, input, input_lengths=None, feats_lengths=None, durations=None,
+    def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
                 durations_lengths=None):
         # If not provide, we assume that the inputs have the same length
-        if input_lengths is None:
-            input_lengths = (input.new_ones(input.shape[0], dtype=torch.long) * input.shape[1])
+        if input_waves_lengths is None:
+            input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
         # Domain-conversion: e.g. Stft: time -> time-freq
-        input_stft, energy_lengths = self.stft(input, input_lengths)
+        input_stft, energy_lengths = self.stft(input_waves, input_waves_lengths)
 
         assert input_stft.dim() >= 4, input_stft.shape
         assert input_stft.shape[-1] == 2, input_stft.shape

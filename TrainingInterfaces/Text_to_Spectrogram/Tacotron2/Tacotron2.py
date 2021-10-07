@@ -11,6 +11,7 @@ from Layers.RNNAttention import AttForwardTA
 from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
 from Layers.TacotronEncoder import Encoder
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import AlignmentLoss
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import make_pad_mask
@@ -55,22 +56,24 @@ class Tacotron2(torch.nn.Module):
             use_residual=False,
             reduction_factor=1,
             spk_embed_dim=None,
-            spk_embed_integration_type="concat",
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
             use_masking=False,
             use_weighted_masking=True,
-            bce_pos_weight=5.0,
+            bce_pos_weight=10.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
             guided_attn_loss_sigma=0.4,
-            guided_attn_loss_lambda=0.2,
-            use_dtw_loss=False):
+            guided_attn_loss_lambda=1.0,
+            use_dtw_loss=False,
+            use_alignment_loss=True,
+            speaker_embedding_projection_size=64):
         super().__init__()
 
         # store hyperparameters
         self.use_dtw_loss = use_dtw_loss
+        self.use_alignment_loss = use_alignment_loss
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
@@ -79,8 +82,6 @@ class Tacotron2(torch.nn.Module):
         self.reduction_factor = reduction_factor
         self.use_guided_attn_loss = use_guided_attn_loss
         self.loss_type = loss_type
-        if self.spk_embed_dim is not None:
-            self.spk_embed_integration_type = spk_embed_integration_type
 
         # define activation function for the final output
         if output_activation is None:
@@ -107,15 +108,14 @@ class Tacotron2(torch.nn.Module):
                            dropout_rate=dropout_rate,
                            padding_idx=padding_idx, )
 
-        if spk_embed_dim is None:
-            dec_idim = eunits
-        elif spk_embed_integration_type == "concat":
-            dec_idim = eunits + spk_embed_dim
-        elif spk_embed_integration_type == "add":
-            dec_idim = eunits
-            self.projection = torch.nn.Linear(self.spk_embed_dim, eunits)
+        if spk_embed_dim is not None:
+            self.encoder_speakerembedding_projection = torch.nn.Linear(eunits + speaker_embedding_projection_size, eunits)
+            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
+                                                            torch.nn.Softsign())
         else:
-            raise ValueError(f"{spk_embed_integration_type} is not supported.")
+            speaker_embedding_projection_size = None
+        dec_idim = eunits
 
         if atype == "location":
             att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
@@ -145,26 +145,35 @@ class Tacotron2(torch.nn.Module):
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
                            zoneout_rate=zoneout_rate,
-                           reduction_factor=reduction_factor, )
+                           reduction_factor=reduction_factor,
+                           speaker_embedding_projection_size=speaker_embedding_projection_size)
         self.taco2_loss = Tacotron2Loss(use_masking=use_masking,
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
-            self.attn_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                 alpha=guided_attn_loss_lambda, )
+            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                             alpha=guided_attn_loss_lambda * 10, )
+            self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                             alpha=guided_attn_loss_lambda, )
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
+        if self.use_alignment_loss:
+            self.alignment_loss = AlignmentLoss()
+
     def forward(self,
-                text: torch.Tensor,
-                text_lengths: torch.Tensor,
-                speech: torch.Tensor,
-                speech_lengths: torch.Tensor,
-                speaker_embeddings: torch.Tensor = None, ):
+                text,
+                text_lengths,
+                speech,
+                speech_lengths,
+                step,
+                speaker_embeddings=None,
+                return_mels = False):
         """
         Calculate forward propagation.
 
         Args:
+            step: current number of update steps taken as indicator when to start binarizing
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -215,42 +224,50 @@ class Tacotron2(torch.nn.Module):
         else:
             raise ValueError(f"unknown --loss-type {self.loss_type}")
 
+        # calculate dtw loss
         if self.use_dtw_loss:
-            print("Regular Loss: {}".format(loss))
             dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
-            # print("\n\n")
-            # import matplotlib.pyplot as plt
-            # import librosa.display as lbd
-            # fig, ax = plt.subplots(nrows=2, ncols=1)
-            # lbd.specshow(after_outs[0].transpose(0,1).detach().cpu().numpy(), ax=ax[0], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
-            # lbd.specshow(speech[0].transpose(0,1).cpu().numpy(), ax=ax[1], sr=16000, cmap='GnBu', y_axis='mel', x_axis='time', hop_length=256)
-            # plt.show()
-            print("DTW Loss: {}".format(dtw_loss))
             loss += dtw_loss
 
         # calculate attention loss
         if self.use_guided_attn_loss:
-            # NOTE(kan-bayashi): length of output for auto-regressive
-            # input will be changed when r > 1
             if self.reduction_factor > 1:
                 olens_in = olens.new([olen // self.reduction_factor for olen in olens])
             else:
                 olens_in = olens
-            attn_loss = self.attn_loss(att_ws, ilens, olens_in)
+            if step < 500:
+                attn_loss = self.guided_att_loss_start(att_ws, ilens, olens_in)
+                # build a prior in the attention map for the forward algorithm to take over
+            else:
+                attn_loss = self.guided_att_loss_final(att_ws, ilens, olens_in)
             loss = loss + attn_loss
 
+        # calculate alignment loss
+        if self.use_alignment_loss:
+            if self.reduction_factor > 1:
+                olens_in = olens.new([olen // self.reduction_factor for olen in olens])
+            else:
+                olens_in = olens
+            align_loss = self.alignment_loss(att_ws, ilens, olens_in, step)
+            loss = loss + align_loss
+        if return_mels:
+            return loss, after_outs
         return loss
 
     def _forward(self,
-                 xs: torch.Tensor,
-                 ilens: torch.Tensor,
-                 ys: torch.Tensor,
-                 olens: torch.Tensor,
-                 speaker_embeddings: torch.Tensor, ):
+                 xs,
+                 ilens,
+                 ys,
+                 olens,
+                 speaker_embeddings):
         hs, hlens = self.enc(xs, ilens)
+        if speaker_embeddings is not None:
+            projected_speaker_embeddings = self.embedding_projection(speaker_embeddings)
+        else:
+            projected_speaker_embeddings = None
         if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
-        return self.dec(hs, hlens, ys)
+            hs = self._integrate_with_spk_embed(hs, projected_speaker_embeddings)
+        return self.dec(hs, hlens, ys, projected_speaker_embeddings)
 
     def inference(self,
                   text: torch.Tensor,
@@ -305,40 +322,35 @@ class Tacotron2(torch.nn.Module):
         # inference
         h = self.enc.inference(x)
         if self.spk_embed_dim is not None:
-            hs, speaker_embeddings = h.unsqueeze(0), speaker_embedding.unsqueeze(0)
+            projected_speaker_embedding = self.embedding_projection(speaker_embedding)
+            hs, speaker_embeddings = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
+        else:
+            speaker_embeddings = None
         outs, probs, att_ws = self.dec.inference(h,
                                                  threshold=threshold,
                                                  minlenratio=minlenratio,
                                                  maxlenratio=maxlenratio,
                                                  use_att_constraint=use_att_constraint,
                                                  backward_window=backward_window,
-                                                 forward_window=forward_window, )
+                                                 forward_window=forward_window,
+                                                 speaker_embedding=speaker_embeddings)
 
         return outs, probs, att_ws
 
-    def _integrate_with_spk_embed(self, hs: torch.Tensor,
-                                  speaker_embeddings: torch.Tensor):
+    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
         """
         Integrate speaker embedding with hidden states.
 
         Args:
-            hs (Tensor): Batch of hidden state sequences (B, Tmax, eunits).
+            hs (Tensor): Batch of hidden state sequences (B, Tmax, adim).
             speaker_embeddings (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
-            Tensor: Batch of integrated hidden state sequences (B, Tmax, eunits) if
-                integration_type is "add" else (B, Tmax, eunits + spk_embed_dim).
-        """
-        if self.spk_embed_integration_type == "add":
-            # apply projection and then add to hidden states
-            speaker_embeddings = self.projection(F.normalize(speaker_embeddings))
-            hs = hs + speaker_embeddings.unsqueeze(1)
-        elif self.spk_embed_integration_type == "concat":
-            # concat hidden states with spk embeds
-            speaker_embeddings = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-            hs = torch.cat([hs, speaker_embeddings], dim=-1)
-        else:
-            raise NotImplementedError("support only add or concat.")
+            Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
 
+        """
+        # concat hidden states with spk embeds and then apply projection
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.encoder_speakerembedding_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs

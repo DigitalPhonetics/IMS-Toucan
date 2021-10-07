@@ -9,7 +9,7 @@ from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop impor
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_libritts as build_path_to_transcript_dict
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -19,8 +19,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
         os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
         device = torch.device("cuda")
 
-    torch.manual_seed(13)
-    random.seed(13)
+    torch.manual_seed(131714)
+    random.seed(131714)
+    torch.random.manual_seed(131714)
 
     print("Preparing")
     cache_dir = os.path.join("Corpora", "LibriTTS")
@@ -38,12 +39,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="en",
-                                min_len_in_seconds=1,
-                                max_len_in_seconds=10,
+                                min_len_in_seconds=3,
+                                max_len_in_seconds=12,
                                 speaker_embedding=True,
-                                cut_silences=True)
+                                cut_silences=True,
+                                device=device)
 
-    model = Tacotron2(idim=166, odim=80, spk_embed_dim=256, use_dtw_loss=False)
+    model = Tacotron2(idim=166, odim=80, spk_embed_dim=960, use_dtw_loss=False, use_alignment_loss=True)
 
     print("Training model")
     train_loop(net=model,
@@ -51,11 +53,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
                device=device,
                save_directory=save_dir,
                steps=100000,
-               batch_size=84,  # this works for a 24GB GPU. For a smaller GPU, consider decreasing batchsize.
+               batch_size=64,  # this works for a 24GB GPU. For a smaller GPU, consider decreasing batchsize.
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.002,
-               warmup_steps=10000,
+               lr=0.001,
                path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune)
+               fine_tune=finetune,
+               resume=resume)
