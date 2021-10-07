@@ -112,7 +112,7 @@ class HiFiGANGenerator(torch.nn.Module):
             c = self.upsamples[i](c)
             cs = 0.0  # initialize
             for j in range(self.num_blocks):
-                cs += self.blocks[i * self.num_blocks + j](c)
+                cs = cs + self.blocks[i * self.num_blocks + j](c)
             c = cs / self.num_blocks
         c = self.output_conv(c)
 
@@ -261,17 +261,17 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
         if t % self.period != 0:
             n_pad = self.period - (t % self.period)
             x = F.pad(x, (0, n_pad), "reflect")
-            t += n_pad
+            t = t + n_pad
         x = x.view(b, c, t // self.period, self.period)
 
         # forward conv
         outs = []
         for layer in self.convs:
             x = layer(x)
-            outs += [x]
+            outs = outs + [x]
         x = self.output_conv(x)
         x = torch.flatten(x, 1, -1)
-        outs += [x]
+        outs = outs + [x]
 
         return outs
 
@@ -339,7 +339,7 @@ class HiFiGANMultiPeriodDiscriminator(torch.nn.Module):
         """
         outs = []
         for f in self.discriminators:
-            outs += [f(x)]
+            outs = outs + [f(x)]
 
         return outs
 
@@ -455,7 +455,7 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
         outs = []
         for f in self.layers:
             x = f(x)
-            outs += [x]
+            outs = outs + [x]
 
         return outs
 
@@ -546,7 +546,7 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
         """
         outs = []
         for f in self.discriminators:
-            outs += [f(x)]
+            outs = outs + [f(x)]
             x = self.pooling(x)
 
         return outs

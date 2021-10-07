@@ -38,7 +38,7 @@ class GeneratorAdversarialLoss(torch.nn.Module):
             for i, outputs_ in enumerate(outputs):
                 if isinstance(outputs_, (tuple, list)):
                     outputs_ = outputs_[-1]
-                adv_loss += self.criterion(outputs_)
+                adv_loss = adv_loss + self.criterion(outputs_)
             if self.average_by_discriminators:
                 adv_loss /= i + 1
         else:
@@ -89,8 +89,8 @@ class DiscriminatorAdversarialLoss(torch.nn.Module):
                 if isinstance(outputs_hat_, (tuple, list)):
                     outputs_hat_ = outputs_hat_[-1]
                     outputs_ = outputs_[-1]
-                real_loss += self.real_criterion(outputs_)
-                fake_loss += self.fake_criterion(outputs_hat_)
+                real_loss = real_loss + self.real_criterion(outputs_)
+                fake_loss = fake_loss + self.fake_criterion(outputs_hat_)
             if self.average_by_discriminators:
                 fake_loss /= i + 1
                 real_loss /= i + 1

@@ -96,7 +96,7 @@ class ForwardSumLoss(nn.Module):
                                  target_seq,
                                  input_lengths=spectrogram_lens[bid: bid + 1],
                                  target_lengths=text_lens[bid: bid + 1])
-            total_loss += loss
+            total_loss = total_loss + loss
         # average cost over batch
         total_loss /= attn_logprob.shape[0]
         return total_loss

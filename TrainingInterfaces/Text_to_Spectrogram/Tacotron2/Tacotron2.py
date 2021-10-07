@@ -250,7 +250,7 @@ class Tacotron2(torch.nn.Module):
         # calculate dtw loss
         if self.use_dtw_loss:
             dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
-            loss += dtw_loss
+            loss = loss + dtw_loss
             losses["dtw"] = dtw_loss.item()
 
         # calculate attention loss

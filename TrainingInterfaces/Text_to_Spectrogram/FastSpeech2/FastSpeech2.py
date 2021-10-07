@@ -247,7 +247,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             # print("Regular Loss: {}".format(loss))
             dtw_loss = self.dtw_criterion(after_outs, gold_speech).mean() / 2000.0  # division to balance orders of magnitude
             # print("DTW Loss: {}".format(dtw_loss))
-            loss += dtw_loss
+            loss = loss + dtw_loss
 
         return loss
 

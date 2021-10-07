@@ -69,7 +69,7 @@ class HiFiGANGenerator(torch.nn.Module):
             c = self.upsamples[i](c)
             cs = 0.0  # initialize
             for j in range(self.num_blocks):
-                cs += self.blocks[i * self.num_blocks + j](c)
+                cs = cs + self.blocks[i * self.num_blocks + j](c)
             c = cs / self.num_blocks
         c = self.output_conv(c)
         return c.squeeze(0).squeeze(0)

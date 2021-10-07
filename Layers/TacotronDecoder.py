@@ -376,8 +376,8 @@ class Decoder(torch.nn.Module):
         c_list = [self._zero_state(hs)]
         z_list = [self._zero_state(hs)]
         for _ in range(1, len(self.lstm)):
-            c_list += [self._zero_state(hs)]
-            z_list += [self._zero_state(hs)]
+            c_list = c_list + [self._zero_state(hs)]
+            z_list = z_list + [self._zero_state(hs)]
         prev_out = hs.new_zeros(hs.size(0), self.odim)
 
         # initialize attention
@@ -400,9 +400,9 @@ class Decoder(torch.nn.Module):
             for i in range(1, len(self.lstm)):
                 z_list[i], c_list[i] = self.lstm[i](z_list[i - 1], (z_list[i], c_list[i]))
             zcs = (torch.cat([z_list[-1], att_c], dim=1) if self.use_concate else z_list[-1])
-            outs += [self.feat_out(zcs).view(hs.size(0), self.odim, -1)]
-            logits += [self.prob_out(zcs)]
-            att_ws += [att_w]
+            outs = outs + [self.feat_out(zcs).view(hs.size(0), self.odim, -1)]
+            logits = logits + [self.prob_out(zcs)]
+            att_ws = att_ws + [att_w]
             prev_out = y  # teacher forcing
             if self.cumulate_att_w and prev_att_w is not None:
                 prev_att_w = prev_att_w + att_w  # Note: error when use +=
@@ -477,8 +477,8 @@ class Decoder(torch.nn.Module):
         c_list = [self._zero_state(hs)]
         z_list = [self._zero_state(hs)]
         for _ in range(1, len(self.lstm)):
-            c_list += [self._zero_state(hs)]
-            z_list += [self._zero_state(hs)]
+            c_list = c_list + [self._zero_state(hs)]
+            z_list = z_list + [self._zero_state(hs)]
         prev_out = hs.new_zeros(1, self.odim)
 
         # initialize attention
@@ -496,7 +496,7 @@ class Decoder(torch.nn.Module):
         outs, att_ws, probs = [], [], []
         while True:
             # updated index
-            idx += self.reduction_factor
+            idx = idx + self.reduction_factor
 
             # decoder calculation
             if self.use_att_extra_inputs:
@@ -517,7 +517,7 @@ class Decoder(torch.nn.Module):
                                         backward_window=backward_window,
                                         forward_window=forward_window, )
 
-            att_ws += [att_w]
+            att_ws = att_ws + [att_w]
             if self.speaker_embedding_projection_size is not None:
                 prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
             else:
@@ -527,8 +527,8 @@ class Decoder(torch.nn.Module):
             for i in range(1, len(self.lstm)):
                 z_list[i], c_list[i] = self.lstm[i](z_list[i - 1], (z_list[i], c_list[i]))
             zcs = (torch.cat([z_list[-1], att_c], dim=1) if self.use_concate else z_list[-1])
-            outs += [self.feat_out(zcs).view(1, self.odim, -1)]  # [(1, odim, r), ...]
-            probs += [torch.sigmoid(self.prob_out(zcs))[0]]  # [(r), ...]
+            outs = outs + [self.feat_out(zcs).view(1, self.odim, -1)]  # [(1, odim, r), ...]
+            probs = probs + [torch.sigmoid(self.prob_out(zcs))[0]]  # [(r), ...]
             if self.output_activation_fn is not None:
                 prev_out = self.output_activation_fn(outs[-1][:, :, -1])  # (1, odim)
             else:
@@ -585,8 +585,8 @@ class Decoder(torch.nn.Module):
         c_list = [self._zero_state(hs)]
         z_list = [self._zero_state(hs)]
         for _ in range(1, len(self.lstm)):
-            c_list += [self._zero_state(hs)]
-            z_list += [self._zero_state(hs)]
+            c_list = c_list + [self._zero_state(hs)]
+            z_list = z_list + [self._zero_state(hs)]
         prev_out = hs.new_zeros(hs.size(0), self.odim)
 
         # initialize attention
@@ -600,7 +600,7 @@ class Decoder(torch.nn.Module):
                 att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w, prev_out)
             else:
                 att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w)
-            att_ws += [att_w]
+            att_ws = att_ws + [att_w]
             prenet_out = self.prenet(prev_out) if self.prenet is not None else prev_out
             xs = torch.cat([att_c, prenet_out], dim=1)
             z_list[0], c_list[0] = self.lstm[0](xs, (z_list[0], c_list[0]))

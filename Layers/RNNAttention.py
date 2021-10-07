@@ -453,7 +453,7 @@ class AttCov(torch.nn.Module):
             self.mask = to_device(enc_hs_pad, make_pad_mask(enc_hs_len))
         e.masked_fill_(self.mask, -float("inf"))
         w = F.softmax(scaling * e, dim=1)
-        att_prev_list += [w]
+        att_prev_list = att_prev_list + [w]
 
         # weighted sum over flames
         # utt x hdim
@@ -789,7 +789,7 @@ class AttCovLoc(torch.nn.Module):
             self.mask = to_device(enc_hs_pad, make_pad_mask(enc_hs_len))
         e.masked_fill_(self.mask, -float("inf"))
         w = F.softmax(scaling * e, dim=1)
-        att_prev_list += [w]
+        att_prev_list = att_prev_list + [w]
 
         # weighted sum over flames
         # utt x hdim
@@ -888,12 +888,12 @@ class AttMultiHeadDot(torch.nn.Module):
             if self.mask is None:
                 self.mask = to_device(enc_hs_pad, make_pad_mask(enc_hs_len))
             e.masked_fill_(self.mask, -float("inf"))
-            w += [F.softmax(self.scaling * e, dim=1)]
+            w = w + [F.softmax(self.scaling * e, dim=1)]
 
             # weighted sum over flames
             # utt x hdim
             # NOTE use bmm instead of sum(*)
-            c += [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
+            c = c + [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
 
         # concat all of c
         c = self.mlp_o(torch.cat(c, dim=1))
@@ -994,12 +994,12 @@ class AttMultiHeadAdd(torch.nn.Module):
             if self.mask is None:
                 self.mask = to_device(enc_hs_pad, make_pad_mask(enc_hs_len))
             e.masked_fill_(self.mask, -float("inf"))
-            w += [F.softmax(self.scaling * e, dim=1)]
+            w = w + [F.softmax(self.scaling * e, dim=1)]
 
             # weighted sum over flames
             # utt x hdim
             # NOTE use bmm instead of sum(*)
-            c += [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
+            c = c + [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
 
         # concat all of c
         c = self.mlp_o(torch.cat(c, dim=1))
@@ -1111,7 +1111,7 @@ class AttMultiHeadLoc(torch.nn.Module):
             for _ in range(self.aheads):
                 # if no bias, 0 0-pad goes 0
                 mask = 1.0 - make_pad_mask(enc_hs_len).float()
-                att_prev += [to_device(enc_hs_pad, mask / mask.new(enc_hs_len).unsqueeze(-1))]
+                att_prev = att_prev + [to_device(enc_hs_pad, mask / mask.new(enc_hs_len).unsqueeze(-1))]
 
         c = []
         w = []
@@ -1127,12 +1127,12 @@ class AttMultiHeadLoc(torch.nn.Module):
             if self.mask is None:
                 self.mask = to_device(enc_hs_pad, make_pad_mask(enc_hs_len))
             e.masked_fill_(self.mask, -float("inf"))
-            w += [F.softmax(scaling * e, dim=1)]
+            w = w + [F.softmax(scaling * e, dim=1)]
 
             # weighted sum over flames
             # utt x hdim
             # NOTE use bmm instead of sum(*)
-            c += [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
+            c = c + [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
 
         # concat all of c
         c = self.mlp_o(torch.cat(c, dim=1))
@@ -1248,7 +1248,7 @@ class AttMultiHeadMultiResLoc(torch.nn.Module):
             for _ in range(self.aheads):
                 # if no bias, 0 0-pad goes 0
                 mask = 1.0 - make_pad_mask(enc_hs_len).float()
-                att_prev += [to_device(enc_hs_pad, mask / mask.new(enc_hs_len).unsqueeze(-1))]
+                att_prev = att_prev + [to_device(enc_hs_pad, mask / mask.new(enc_hs_len).unsqueeze(-1))]
 
         c = []
         w = []
@@ -1263,12 +1263,12 @@ class AttMultiHeadMultiResLoc(torch.nn.Module):
             if self.mask is None:
                 self.mask = to_device(enc_hs_pad, make_pad_mask(enc_hs_len))
             e.masked_fill_(self.mask, -float("inf"))
-            w += [F.softmax(self.scaling * e, dim=1)]
+            w = w + [F.softmax(self.scaling * e, dim=1)]
 
             # weighted sum over flames
             # utt x hdim
             # NOTE use bmm instead of sum(*)
-            c += [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
+            c = c + [torch.sum(self.pre_compute_v[h] * w[h].view(batch, self.h_length, 1), dim=1)]
 
         # concat all of c
         c = self.mlp_o(torch.cat(c, dim=1))
@@ -1648,7 +1648,7 @@ def att_to_numpy(att_ws, att):
         att_ws_sorted_by_head = []
         for h in range(n_heads):
             att_ws_head = torch.stack([aw[h] for aw in att_ws], dim=1)
-            att_ws_sorted_by_head += [att_ws_head]
+            att_ws_sorted_by_head = att_ws_sorted_by_head + [att_ws_head]
         att_ws = torch.stack(att_ws_sorted_by_head, dim=1).cpu().numpy()
     else:
         # att_ws => list of attentions
