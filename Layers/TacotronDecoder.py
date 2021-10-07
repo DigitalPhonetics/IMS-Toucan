@@ -283,7 +283,7 @@ class Decoder(torch.nn.Module):
         self.idim = idim
         self.odim = odim
 
-        self.loc_att = loc_att
+        self.location_att = loc_att
         self.forward_att = forward_att
 
         self.output_activation_fn = output_activation_fn
