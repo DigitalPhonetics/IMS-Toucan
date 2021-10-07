@@ -314,7 +314,7 @@ def train_loop(net,
             print("Epoch:        {}".format(epoch))
             print("Total Loss:   {}".format(loss_this_epoch))
             for loss_type in cumulative_loss_dict:
-                print(f"\t {loss_type}: {cumulative_loss_dict[loss_type] / len(cumulative_loss_dict[loss_type])}")
+                print(f"\t {loss_type}: {sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type])}")
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
             print("Steps:        {}".format(step_counter))
         torch.cuda.empty_cache()
