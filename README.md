@@ -59,11 +59,15 @@ pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f ht
 
 #### Speaker Embedding
 
-If you want to use multi-speaker synthesis, you will need a speaker embedding function. IMS Toucan recently switched
-from using [dvector](https://github.com/yistLin/dvector) to
-[Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb). In the current version of the
-toolkit no further action should be required. When you are using it for the first time, it requires an internet
-connection to download the pretrained models though.
+If you want to use multi-speaker synthesis, you will need a speaker embedding function. IMS Toucan uses three such 
+functions as an ensemble.
+
+- [dvector](https://github.com/yistLin/dvector) 
+- [Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb)
+- [Speechbrain's X-Vector](https://huggingface.co/speechbrain/spkrec-xvect-voxceleb)
+
+In the current version of the toolkit no further action should be required. When you are using multispeaker for the 
+first time, it requires an internet connection to download the pretrained models though.
 
 #### espeak-ng
 
