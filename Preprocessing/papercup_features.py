@@ -444,6 +444,13 @@ ipa_to_phonemefeats = {
         'consonant_place' : 'palatal',
         'consonant_manner': 'fricative'
         },
+    'ɟ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'palatal',
+        'consonant_manner': 'plosive'
+        },
     }
 
 feat_types = set()
