@@ -61,7 +61,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_english,
                                     lang="en",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -69,7 +69,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_greek,
                                     lang="el",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -77,7 +77,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_spanish,
                                     lang="es",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -85,7 +85,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_finnish,
                                     lang="fi",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -93,7 +93,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_russian,
                                     lang="ru",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -101,7 +101,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_hungarian,
                                     lang="hu",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -109,7 +109,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_dutch,
                                     lang="nl",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
@@ -117,16 +117,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_french,
                                     lang="fr",
                                     speaker_embedding=True,
-                                    cut_silences=False,
+                                    cut_silences=True,
                                     return_language_id=True,
                                     device=device))
 
     train_set = ConcatDataset(datasets)
 
-    model = Tacotron2(spk_embed_dim=192,
+    model = Tacotron2(spk_embed_dim=960,
                       language_embedding_amount=30,
-                      initialize_encoder_from_pretrained_model=True,
-                      initialize_decoder_from_pretrained_model=True,
+                      initialize_encoder_from_pretrained_model=False,
+                      initialize_decoder_from_pretrained_model=False,
                       initialize_multispeaker_projection=False)
 
     print("Training model")
@@ -139,9 +139,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                epochs_per_save=1,
                use_speaker_embedding=True,
                lang="en",
-               lr=0.0001,
+               lr=0.001,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                multi_ling=True,
-               freeze_decoder_until=14000,
                resume=resume)
