@@ -19,8 +19,7 @@ class DurationCalculator(torch.nn.Module):
         Convert attention weight to durations.
         """
         duration = self._calculate_duration(att_ws, vis=vis)
-        focus_rate = self._calculate_focus_rate(att_ws)
-        return duration, focus_rate
+        return duration
 
     @staticmethod
     def _calculate_focus_rate(att_ws):
