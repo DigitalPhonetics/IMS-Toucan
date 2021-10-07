@@ -57,10 +57,10 @@ def collate_and_pad(batch):
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
                     pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[7] for datapoint in batch]),
                     torch.stack([torch.LongTensor(datapoint[8]) for datapoint in batch]).squeeze(1))
         else:
@@ -68,10 +68,10 @@ def collate_and_pad(batch):
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
                     pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
                     torch.stack([torch.LongTensor(datapoint[7]) for datapoint in batch]).squeeze(1))
     else:
         if len(batch[0]) == 8:
@@ -79,20 +79,20 @@ def collate_and_pad(batch):
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
                     pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[7] for datapoint in batch]))
         else:
             # text, text_len, speech, speech_len, durations, energy, pitch
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-                    pad_sequence([datapoint[3] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
                     pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[6] for datapoint in batch]).squeeze(1))
+                    pad_sequence([datapoint[6] for datapoint in batch], batch_first=True))
 
 
 def train_loop(net,
