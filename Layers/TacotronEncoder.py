@@ -152,5 +152,7 @@ class Encoder(torch.nn.Module):
         """
         xs = x.unsqueeze(0)
         ilens = torch.tensor([x.size(0)])
+        if language_embedding is not None:
+            language_embedding = language_embedding.unsqueeze(0)
 
-        return self.forward(xs, ilens, language_embedding=language_embedding.unsqueeze(0))[0][0]
+        return self.forward(xs, ilens, language_embedding=language_embedding)[0][0]

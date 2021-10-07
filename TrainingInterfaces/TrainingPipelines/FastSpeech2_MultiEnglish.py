@@ -42,7 +42,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     acoustic_model = Tacotron2(spk_embed_dim=960)
     acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_MultispeakerEnglish", "best.pt")
-    acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
 
     datasets = list()
 
