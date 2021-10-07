@@ -401,7 +401,35 @@ ipa_to_phonemefeats = {
         'vowel_frontness'  : 'back',
         'vowel_openness'   : 'open',
         'vowel_roundedness': 'unrounded'
-        }
+        },
+    'c': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'unvoiced',
+        'consonant_place' : 'palatal',
+        'consonant_manner': 'plosive'
+        },
+    'ɲ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'palatal',
+        'consonant_manner': 'nasal'
+        },
+    'ɣ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'velar',
+        'consonant_manner': 'fricative'
+        },
+    'ʎ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'palatal',
+        'consonant_manner': 'lateral-approximant'
+        },
     }
 
 feat_types = set()
