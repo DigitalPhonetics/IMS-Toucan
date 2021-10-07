@@ -24,7 +24,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="forward_ta",
+            atype="location",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,

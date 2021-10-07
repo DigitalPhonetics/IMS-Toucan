@@ -39,7 +39,7 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="forward_ta",
+            atype="location",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -192,7 +192,8 @@ class Tacotron2(torch.nn.Module):
                 step,
                 speaker_embeddings=None,
                 language_id=None,
-                return_mels=False):
+                return_mels=False,
+                return_loss_dict=False):
         """
         Calculate forward propagation.
 
@@ -212,6 +213,8 @@ class Tacotron2(torch.nn.Module):
         """
 
         # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
+
+        losses = dict()
 
         # make labels for stop prediction
         labels = make_pad_mask(speech_lengths - 1).to(speech.device, speech.dtype)
@@ -238,10 +241,9 @@ class Tacotron2(torch.nn.Module):
         l1_loss, mse_loss, bce_loss = self.taco2_loss(after_outs, before_outs, logits, speech, labels, speech_lengths)
         if self.loss_type == "L1+L2":
             loss = l1_loss + mse_loss + bce_loss
-        elif self.loss_type == "L1":
-            loss = l1_loss + bce_loss
-        elif self.loss_type == "L2":
-            loss = mse_loss + bce_loss
+            losses["l1"] = l1_loss.item()
+            losses["mse"] = mse_loss.item()
+            losses["bce"] = bce_loss.item()
         else:
             raise ValueError(f"unknown --loss-type {self.loss_type}")
 
@@ -249,6 +251,7 @@ class Tacotron2(torch.nn.Module):
         if self.use_dtw_loss:
             dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
             loss += dtw_loss
+            losses["dtw"]= dtw_loss.item()
 
         # calculate attention loss
         if self.use_guided_attn_loss:
@@ -261,6 +264,7 @@ class Tacotron2(torch.nn.Module):
                 # build a prior in the attention map for the forward algorithm to take over
             else:
                 attn_loss = self.guided_att_loss_final(att_ws, text_lengths, olens_in)
+            losses["prior"] = attn_loss.item()
             loss = loss + attn_loss
 
         # calculate alignment loss
@@ -270,10 +274,15 @@ class Tacotron2(torch.nn.Module):
             else:
                 olens_in = speech_lengths
             align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
+            losses["align"] = align_loss.item()
             loss = loss + align_loss
 
         if return_mels:
+            if return_loss_dict:
+                return loss, after_outs, losses
             return loss, after_outs
+        if return_loss_dict:
+            return loss, losses
         return loss
 
     def _forward(self,

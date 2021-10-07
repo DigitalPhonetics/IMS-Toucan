@@ -33,7 +33,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_MultispeakerEnglish")
+        save_dir = os.path.join("Models", "Tacotron2_MultispeakerEnglishLocationAttention")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -62,12 +62,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     train_set = ConcatDataset(datasets)
 
-    model = Tacotron2(spk_embed_dim=960,
-                      language_embedding_amount=None,
-                      initialize_from_pretrained_embedding_weights=False,
-                      initialize_encoder_from_pretrained_model=False,
-                      initialize_decoder_from_pretrained_model=False,
-                      initialize_multispeaker_projection=False)
+    model = Tacotron2(spk_embed_dim=960)
 
     print("Training model")
     train_loop(net=model,

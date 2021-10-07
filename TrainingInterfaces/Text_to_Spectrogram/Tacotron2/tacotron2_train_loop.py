@@ -178,6 +178,7 @@ def train_loop(net,
             scaler.load_state_dict(check_dict["scaler"])
     start_time = time.time()
     while True:
+        cumulative_loss_dict = dict()
         epoch += 1
         optimizer.zero_grad()
         train_losses_this_epoch = list()
@@ -185,22 +186,24 @@ def train_loop(net,
             with autocast():
                 if multi_ling:
                     if not use_speaker_embedding:
-                        train_loss = net(text=batch[0].to(device),
-                                         text_lengths=batch[1].to(device),
-                                         speech=batch[2].to(device),
-                                         speech_lengths=batch[3].to(device),
-                                         step=step_counter,
-                                         speaker_embeddings=None,
-                                         language_id=batch[4].to(device))
+                        train_loss, loss_dict = net(text=batch[0].to(device),
+                                                    text_lengths=batch[1].to(device),
+                                                    speech=batch[2].to(device),
+                                                    speech_lengths=batch[3].to(device),
+                                                    step=step_counter,
+                                                    speaker_embeddings=None,
+                                                    language_id=batch[4].to(device),
+                                                    return_loss_dict=True)
                     else:
-                        train_loss, predicted_mels = net(text=batch[0].to(device),
-                                                         text_lengths=batch[1].to(device),
-                                                         speech=batch[2].to(device),
-                                                         speech_lengths=batch[3].to(device),
-                                                         step=step_counter,
-                                                         speaker_embeddings=batch[4].to(device),
-                                                         language_id=batch[5].to(device),
-                                                         return_mels=True)
+                        train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
+                                                                    text_lengths=batch[1].to(device),
+                                                                    speech=batch[2].to(device),
+                                                                    speech_lengths=batch[3].to(device),
+                                                                    step=step_counter,
+                                                                    speaker_embeddings=batch[4].to(device),
+                                                                    language_id=batch[5].to(device),
+                                                                    return_mels=True,
+                                                                    return_loss_dict=True)
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
                                                                                     torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
                         gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
@@ -212,23 +215,27 @@ def train_loop(net,
                         del pred_spemb
                         del predicted_mels
                         del gold_spemb
-                        train_loss = train_loss + cycle_distance * 5
+                        cycle_loss = cycle_distance * min(200, step_counter / 40)
+                        loss_dict["cycle"] = cycle_loss
+                        train_loss = train_loss + cycle_loss
                 else:
                     if not use_speaker_embedding:
-                        train_loss = net(text=batch[0].to(device),
-                                         text_lengths=batch[1].to(device),
-                                         speech=batch[2].to(device),
-                                         speech_lengths=batch[3].to(device),
-                                         step=step_counter,
-                                         speaker_embeddings=None)
+                        train_loss, loss_dict = net(text=batch[0].to(device),
+                                                    text_lengths=batch[1].to(device),
+                                                    speech=batch[2].to(device),
+                                                    speech_lengths=batch[3].to(device),
+                                                    step=step_counter,
+                                                    speaker_embeddings=None,
+                                                    return_loss_dict=True)
                     else:
-                        train_loss, predicted_mels = net(text=batch[0].to(device),
-                                                         text_lengths=batch[1].to(device),
-                                                         speech=batch[2].to(device),
-                                                         speech_lengths=batch[3].to(device),
-                                                         step=step_counter,
-                                                         speaker_embeddings=batch[4].to(device),
-                                                         return_mels=True)
+                        train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
+                                                                    text_lengths=batch[1].to(device),
+                                                                    speech=batch[2].to(device),
+                                                                    speech_lengths=batch[3].to(device),
+                                                                    step=step_counter,
+                                                                    speaker_embeddings=batch[4].to(device),
+                                                                    return_mels=True,
+                                                                    return_loss_dict=True)
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
                                                                                     torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
                         gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
@@ -238,9 +245,16 @@ def train_loop(net,
                         del pred_spemb
                         del predicted_mels
                         del gold_spemb
-                        train_loss = train_loss + cycle_distance * min(200, step_counter / 20)
+                        cycle_loss = cycle_distance * min(200, step_counter / 40)
+                        loss_dict["cycle"] = cycle_loss
+                        train_loss = train_loss + cycle_loss
 
                 train_losses_this_epoch.append(train_loss.item())
+                for loss_type in loss_dict:
+                    if loss_type not in cumulative_loss_dict.keys():
+                        cumulative_loss_dict[loss_type] = list()
+                    cumulative_loss_dict[loss_type].append(loss_dict[loss_type])
+
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
@@ -298,7 +312,9 @@ def train_loop(net,
                     # DONE
                     return
             print("Epoch:        {}".format(epoch))
-            print("Train Loss:   {}".format(loss_this_epoch))
+            print("Total Loss:   {}".format(loss_this_epoch))
+            for loss_type in cumulative_loss_dict:
+                print(f"\t {loss_type}: {cumulative_loss_dict[loss_type] / len(cumulative_loss_dict[loss_type])}")
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
             print("Steps:        {}".format(step_counter))
         torch.cuda.empty_cache()
