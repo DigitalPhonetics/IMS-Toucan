@@ -251,7 +251,7 @@ class Tacotron2(torch.nn.Module):
         if self.use_dtw_loss:
             dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
             loss += dtw_loss
-            losses["dtw"]= dtw_loss.item()
+            losses["dtw"] = dtw_loss.item()
 
         # calculate attention loss
         if self.use_guided_attn_loss:
@@ -274,8 +274,9 @@ class Tacotron2(torch.nn.Module):
             else:
                 olens_in = speech_lengths
             align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
-            losses["align"] = align_loss.item()
-            loss = loss + align_loss
+            if align_loss != 0.0:
+                losses["align"] = align_loss.item()
+                loss = loss + align_loss
 
         if return_mels:
             if return_loss_dict:
