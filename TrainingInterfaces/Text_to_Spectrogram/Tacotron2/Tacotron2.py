@@ -6,7 +6,6 @@ import torch
 import torch.nn.functional as F
 
 from Layers.Attention import GuidedAttentionLoss
-from Layers.RNNAttention import AttForward
 from Layers.RNNAttention import AttForwardTA
 from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
@@ -62,7 +61,7 @@ class Tacotron2(torch.nn.Module):
             zoneout_rate=0.1,
             use_masking=False,
             use_weighted_masking=True,
-            bce_pos_weight=10.0,
+            bce_pos_weight=20.0,
             loss_type="L1+L2",
             use_guided_attn_loss=True,
             guided_attn_loss_lambda=1.0,  # weight of the attention loss
@@ -128,21 +127,14 @@ class Tacotron2(torch.nn.Module):
             speaker_embedding_projection_size = None
         dec_idim = eunits
 
-        if atype == "location":
-            att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
-        elif atype == "forward":
-            att = AttForward(dec_idim, dunits, adim, aconv_chans, aconv_filts)
-            if self.cumulate_att_w:
-                self.cumulate_att_w = False
-        elif atype == "forward_ta":
-            att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
-            if self.cumulate_att_w:
-                self.cumulate_att_w = False
-        else:
-            raise NotImplementedError("Support only location or forward")
+        loc_att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
+
+        forward_att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
+
         self.dec = Decoder(idim=dec_idim,
                            odim=odim,
-                           att=att,
+                           loc_att=loc_att,
+                           forward_att=forward_att,
                            dlayers=dlayers,
                            dunits=dunits,
                            prenet_layers=prenet_layers,
@@ -151,7 +143,6 @@ class Tacotron2(torch.nn.Module):
                            postnet_chans=postnet_chans,
                            postnet_filts=postnet_filts,
                            output_activation_fn=self.output_activation_fn,
-                           cumulate_att_w=self.cumulate_att_w,
                            use_batch_norm=use_batch_norm,
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,

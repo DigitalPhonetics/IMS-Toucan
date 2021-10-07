@@ -6,8 +6,6 @@
 import torch
 import torch.nn.functional as F
 
-from Layers.RNNAttention import AttForwardTA
-
 
 def decoder_init(m):
     if isinstance(m, torch.nn.Conv1d):
@@ -238,7 +236,8 @@ class Decoder(torch.nn.Module):
     def __init__(self,
                  idim,
                  odim,
-                 att,
+                 loc_att,
+                 forward_att,
                  dlayers=2,
                  dunits=1024,
                  prenet_layers=2,
@@ -247,7 +246,6 @@ class Decoder(torch.nn.Module):
                  postnet_chans=512,
                  postnet_filts=5,
                  output_activation_fn=None,
-                 cumulate_att_w=True,
                  use_batch_norm=True,
                  use_concate=True,
                  dropout_rate=0.5,
@@ -284,19 +282,14 @@ class Decoder(torch.nn.Module):
         # store the hyperparameters
         self.idim = idim
         self.odim = odim
-        self.att = att
+
+        self.loc_att = loc_att
+        self.forward_att = forward_att
+
         self.output_activation_fn = output_activation_fn
-        self.cumulate_att_w = cumulate_att_w
         self.use_concate = use_concate
         self.reduction_factor = reduction_factor
         self.speaker_embedding_projection_size = speaker_embedding_projection_size
-
-
-        # check attention type
-        if isinstance(self.att, AttForwardTA):
-            self.use_att_extra_inputs = True
-        else:
-            self.use_att_extra_inputs = False
 
         # define lstm network
         prenet_units = prenet_units if prenet_layers != 0 else odim
@@ -381,16 +374,18 @@ class Decoder(torch.nn.Module):
         prev_out = hs.new_zeros(hs.size(0), self.odim)
 
         # initialize attention
-        prev_att_w = None
-        self.att.reset()
+        prev_att_w_forward = None
+        prev_att_w_location = None
+        self.forward_att.reset()
+        self.location_att.reset()
 
         # loop for an output sequence
         outs, logits, att_ws = [], [], []
         for y in ys.transpose(0, 1):
-            if self.use_att_extra_inputs:
-                att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w, prev_out)
-            else:
-                att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w)
+            att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out)
+            att_c_location, att_w_location = self.location_att(hs, hlens, z_list[0], prev_att_w_location)
+            att_c = att_c_location + att_c_forward
+            att_w = att_w_location + att_w_forward
             if self.speaker_embedding_projection_size is not None:
                 prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
             else:
@@ -404,10 +399,11 @@ class Decoder(torch.nn.Module):
             logits = logits + [self.prob_out(zcs)]
             att_ws = att_ws + [att_w]
             prev_out = y  # teacher forcing
-            if self.cumulate_att_w and prev_att_w is not None:
-                prev_att_w = prev_att_w + att_w  # Note: error when use +=
+            if prev_att_w_location is not None:
+                prev_att_w_location = prev_att_w_location + att_w_location  # Note: error when use +=
             else:
-                prev_att_w = att_w
+                prev_att_w_location = att_w_location
+            prev_att_w_forward = att_w_forward
 
         logits = torch.cat(logits, dim=1)  # (B, Lmax)
         before_outs = torch.cat(outs, dim=2)  # (B, odim, Lmax)
@@ -439,7 +435,7 @@ class Decoder(torch.nn.Module):
                   use_att_constraint=False,
                   backward_window=None,
                   forward_window=None,
-                  speaker_embedding = None):
+                  speaker_embedding=None):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -482,8 +478,10 @@ class Decoder(torch.nn.Module):
         prev_out = hs.new_zeros(1, self.odim)
 
         # initialize attention
-        prev_att_w = None
-        self.att.reset()
+        prev_att_w_forward = None
+        prev_att_w_location = None
+        self.forward_att.reset()
+        self.location_att.reset()
 
         # setup for attention constraint
         if use_att_constraint:
@@ -499,23 +497,18 @@ class Decoder(torch.nn.Module):
             idx = idx + self.reduction_factor
 
             # decoder calculation
-            if self.use_att_extra_inputs:
-                att_c, att_w = self.att(hs,
-                                        ilens,
-                                        z_list[0],
-                                        prev_att_w,
-                                        prev_out,
-                                        last_attended_idx=last_attended_idx,
-                                        backward_window=backward_window,
-                                        forward_window=forward_window, )
-            else:
-                att_c, att_w = self.att(hs,
-                                        ilens,
-                                        z_list[0],
-                                        prev_att_w,
-                                        last_attended_idx=last_attended_idx,
-                                        backward_window=backward_window,
-                                        forward_window=forward_window, )
+
+            att_c_forward, att_w_forward = self.forward_att(hs, ilens, z_list[0], prev_att_w_forward, prev_out,
+                                                            last_attended_idx=last_attended_idx,
+                                                            backward_window=backward_window,
+                                                            forward_window=forward_window)
+            att_c_location, att_w_location = self.location_att(hs, ilens, z_list[0], prev_att_w_location,
+                                                               last_attended_idx=last_attended_idx,
+                                                               backward_window=backward_window,
+                                                               forward_window=forward_window)
+
+            att_c = att_c_location + att_c_forward
+            att_w = att_w_location + att_w_forward
 
             att_ws = att_ws + [att_w]
             if self.speaker_embedding_projection_size is not None:
@@ -533,10 +526,11 @@ class Decoder(torch.nn.Module):
                 prev_out = self.output_activation_fn(outs[-1][:, :, -1])  # (1, odim)
             else:
                 prev_out = outs[-1][:, :, -1]  # (1, odim)
-            if self.cumulate_att_w and prev_att_w is not None:
-                prev_att_w = prev_att_w + att_w  # Note: error when use +=
+            if prev_att_w_location is not None:
+                prev_att_w_location = prev_att_w_location + att_w_location  # Note: error when use +=
             else:
-                prev_att_w = att_w
+                prev_att_w_location = att_w_location
+            prev_att_w_forward = att_w_forward
             if use_att_constraint:
                 last_attended_idx = int(att_w.argmax())
 
@@ -557,61 +551,3 @@ class Decoder(torch.nn.Module):
             outs = self.output_activation_fn(outs)
 
         return outs, probs, att_ws
-
-    def calculate_all_attentions(self, hs, hlens, ys):
-        """
-        Calculate all of the attention weights.
-
-        Args:
-            hs (Tensor): Batch of the sequences of padded hidden states (B, Tmax, idim).
-            hlens (LongTensor): Batch of lengths of each input batch (B,).
-            ys (Tensor):
-                Batch of the sequences of padded target features (B, Lmax, odim).
-
-        Returns:
-            numpy.ndarray: Batch of attention weights (B, Lmax, Tmax).
-
-        Note:
-            This computation is performed in teacher-forcing manner.
-        """
-        # thin out frames (B, Lmax, odim) ->  (B, Lmax/r, odim)
-        if self.reduction_factor > 1:
-            ys = ys[:, self.reduction_factor - 1:: self.reduction_factor]
-
-        # length list should be list of int
-        hlens = list(map(int, hlens))
-
-        # initialize hidden states of decoder
-        c_list = [self._zero_state(hs)]
-        z_list = [self._zero_state(hs)]
-        for _ in range(1, len(self.lstm)):
-            c_list = c_list + [self._zero_state(hs)]
-            z_list = z_list + [self._zero_state(hs)]
-        prev_out = hs.new_zeros(hs.size(0), self.odim)
-
-        # initialize attention
-        prev_att_w = None
-        self.att.reset()
-
-        # loop for an output sequence
-        att_ws = []
-        for y in ys.transpose(0, 1):
-            if self.use_att_extra_inputs:
-                att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w, prev_out)
-            else:
-                att_c, att_w = self.att(hs, hlens, z_list[0], prev_att_w)
-            att_ws = att_ws + [att_w]
-            prenet_out = self.prenet(prev_out) if self.prenet is not None else prev_out
-            xs = torch.cat([att_c, prenet_out], dim=1)
-            z_list[0], c_list[0] = self.lstm[0](xs, (z_list[0], c_list[0]))
-            for i in range(1, len(self.lstm)):
-                z_list[i], c_list[i] = self.lstm[i](z_list[i - 1], (z_list[i], c_list[i]))
-            prev_out = y  # teacher forcing
-            if self.cumulate_att_w and prev_att_w is not None:
-                prev_att_w = prev_att_w + att_w  # Note: error when use +=
-            else:
-                prev_att_w = att_w
-
-        att_ws = torch.stack(att_ws, dim=1)  # (B, Lmax, Tmax)
-
-        return att_ws
