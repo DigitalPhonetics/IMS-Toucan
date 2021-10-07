@@ -17,6 +17,7 @@ class FastSpeechDataset(Dataset):
     def __init__(self,
                  path_to_transcript_dict,
                  acoustic_model,
+                 acoustic_checkpoint_path,
                  cache_dir,
                  lang,
                  speaker_embedding=False,
@@ -64,6 +65,8 @@ class FastSpeechDataset(Dataset):
             print("... building dataset cache ...")
             self.datapoints = list()
 
+            acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
+
             self.cache_builder_process(dataset,
                                        norm_waves,
                                        acoustic_model,
@@ -109,6 +112,7 @@ class FastSpeechDataset(Dataset):
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
+        del acoustic_model
 
     def cache_builder_process(self,
                               datapoint_list,

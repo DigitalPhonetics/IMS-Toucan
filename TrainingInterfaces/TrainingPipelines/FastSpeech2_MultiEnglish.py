@@ -41,11 +41,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(save_dir, exist_ok=True)
 
     acoustic_model = Tacotron2(spk_embed_dim=960)
-    acoustic_model.load_state_dict(torch.load(os.path.join("Models", "Tacotron2_MultispeakerEnglish", "best.pt"), map_location='cpu')["model"])
+    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_MultispeakerEnglish", "best.pt")
+    acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
 
     datasets = list()
 
-    #datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
+    # datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
     #                                  cache_dir=cache_dir_hifitts,
     #                                  lang="en",
     #                                  speaker_embedding=True,
@@ -67,7 +68,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       speaker_embedding=True,
                                       return_language_id=False,
                                       device=device,
-                                      acoustic_model=acoustic_model))
+                                      acoustic_model=acoustic_model,
+                                      acoustic_checkpoint_path=acoustic_checkpoint_path))
 
     train_set = ConcatDataset(datasets)
     del acoustic_model
