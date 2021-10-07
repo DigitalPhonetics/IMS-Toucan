@@ -61,9 +61,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_english,
                                     lang="en",
                                     speaker_embedding=True,
+                                    loading_processes=30,  # run this on a lonely server at night
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,  # needs to be long enough for the speaker embedding to make sense
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -71,9 +72,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_greek,
                                     lang="el",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -81,9 +83,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_spanish,
                                     lang="es",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -91,9 +94,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_finnish,
                                     lang="fi",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -101,9 +105,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_russian,
                                     lang="ru",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -111,9 +116,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_hungarian,
                                     lang="hu",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -121,9 +127,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_dutch,
                                     lang="nl",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 
@@ -131,9 +138,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cache_dir=cache_dir_french,
                                     lang="fr",
                                     speaker_embedding=True,
+                                    loading_processes=30,
                                     cut_silences=True,
                                     return_language_id=True,
-                                    min_len_in_seconds=3,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13,
                                     device=device))
 

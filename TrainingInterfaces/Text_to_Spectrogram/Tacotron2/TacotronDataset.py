@@ -1,6 +1,5 @@
 import os
 import random
-import time
 
 import soundfile as sf
 import torch
@@ -23,14 +22,15 @@ class TacotronDataset(Dataset):
                  cache_dir,
                  lang,
                  speaker_embedding=False,
-                 loading_processes=20,
+                 loading_processes=8,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
                  rebuild_cache=False,
                  return_language_id=False,
                  device="cpu",
-                 remove_all_silences=True):
+                 remove_all_silences=True,
+                 verbose=False):
         self.return_language_id = return_language_id
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
@@ -60,10 +60,10 @@ class TacotronDataset(Dataset):
                                   max_len_in_seconds,
                                   cut_silences,
                                   remove_all_silences,
-                                  cache_dir),
+                                  cache_dir,
+                                  verbose),
                             daemon=True))
                 process_list[-1].start()
-                time.sleep(5)
             for process in process_list:
                 process.join()
             self.datapoints = list(self.datapoints)
@@ -122,7 +122,16 @@ class TacotronDataset(Dataset):
                 self.datapoints = self.datapoints[0]
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
-    def cache_builder_process(self, path_list, speaker_embedding, lang, min_len, max_len, cut_silences, remove_all_silences, cache_dir):
+    def cache_builder_process(self,
+                              path_list,
+                              speaker_embedding,
+                              lang,
+                              min_len,
+                              max_len,
+                              cut_silences,
+                              remove_all_silences,
+                              cache_dir,
+                              verbose):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
@@ -147,7 +156,8 @@ class TacotronDataset(Dataset):
                         wave, sr = sf.read(path)
                         dur_in_seconds = len(wave) / sr
                         if not (min_len <= dur_in_seconds <= max_len):
-                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                            if verbose:
+                                print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                             continue
                         try:
                             norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
@@ -155,7 +165,8 @@ class TacotronDataset(Dataset):
                             continue
                         dur_in_seconds = len(norm_wave) / 16000
                         if not (min_len <= dur_in_seconds <= max_len):
-                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                            if verbose:
+                                print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                             continue
                         sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=sr)
                     unsilence = Unsilence(_norm_path)
@@ -171,7 +182,8 @@ class TacotronDataset(Dataset):
                     norm_wave = ap_post.resample(torch.Tensor(wave))
                     dur_in_seconds = len(norm_wave) / 16000
                     if not (min_len <= dur_in_seconds <= max_len):
-                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                        if verbose:
+                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                         continue
                 except RuntimeError:
                     # not sure why this sometimes happens, but it is very rare, so it should be fine.
@@ -180,7 +192,8 @@ class TacotronDataset(Dataset):
                 wave, sr = sf.read(path)
                 dur_in_seconds = len(wave) / sr
                 if not (min_len <= dur_in_seconds <= max_len):
-                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                    if verbose:
+                        print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                     continue
                 if sr != ap.sr:
                     print(f"Inconsistent sampling rate in the Data! Excluding {path}")
@@ -191,7 +204,8 @@ class TacotronDataset(Dataset):
                     continue
                 dur_in_seconds = len(norm_wave) / 16000
                 if not (min_len <= dur_in_seconds <= max_len):
-                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                    if verbose:
+                        print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                     continue
                 _norm_unsilenced_path = path
 
