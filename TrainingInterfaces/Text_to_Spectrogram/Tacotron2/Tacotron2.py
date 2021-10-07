@@ -101,7 +101,7 @@ class Tacotron2(torch.nn.Module):
 
         self.language_embedding = None
         if language_embedding_amount is not None:
-            self.language_embedding = torch.nn.Embedding(language_embedding_amount, eunits)
+            self.language_embedding = torch.nn.Embedding(language_embedding_amount, embed_dim)
 
         # set padding idx
         self.padding_idx = torch.zeros(idim)
@@ -293,10 +293,11 @@ class Tacotron2(torch.nn.Module):
                  speech_lengths,
                  speaker_embeddings,
                  language_id=None):
-        hs, hlens = self.enc(text_tensors, ilens)
-        if self.language_embedding is not None and language_id is not None:
+        if language_id is not None:
             language_embedding_vector = self.language_embedding(language_id.view(-1))
-            hs = hs + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
+            hs, hlens = self.enc(text_tensors, ilens, language_embedding=language_embedding_vector)
+        else:
+            hs, hlens = self.enc(text_tensors, ilens)
         if self.spk_embed_dim is not None:
             projected_speaker_embeddings = self.embedding_projection(speaker_embeddings)
             hs = self._integrate_with_spk_embed(hs, projected_speaker_embeddings)
@@ -352,10 +353,12 @@ class Tacotron2(torch.nn.Module):
             return outs[0], None, att_ws[0]
 
         # inference
-        h = self.enc.inference(text_tensor)
-        if self.language_embedding is not None and language_id is not None:
+        if language_id is not None:
             language_embedding_vector = self.language_embedding(language_id.view(-1))
-            h = h + language_embedding_vector.unsqueeze(1)  # might want to move this into the encoder right after the embed in the future
+            h = self.enc.inference(text_tensor, language_embedding=language_embedding_vector)
+        else:
+            h = self.enc.inference(text_tensor)
+
         if self.spk_embed_dim is not None:
             projected_speaker_embedding = self.embedding_projection(speaker_embedding)
             hs, speaker_embeddings = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)

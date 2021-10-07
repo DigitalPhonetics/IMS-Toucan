@@ -105,7 +105,7 @@ class Encoder(torch.nn.Module):
         # initialize
         self.apply(encoder_init)
 
-    def forward(self, xs, ilens=None):
+    def forward(self, xs, ilens=None, language_embedding=None):
         """
         Calculate forward propagation.
 
@@ -120,6 +120,8 @@ class Encoder(torch.nn.Module):
             LongTensor: Batch of lengths of each sequence (B,)
         """
         xs = self.embed(xs).transpose(1, 2)
+        if language_embedding is not None:
+            xs = xs + language_embedding
         if self.convs is not None:
             for i in range(len(self.convs)):
                 if self.use_residual:
@@ -137,7 +139,7 @@ class Encoder(torch.nn.Module):
 
         return xs, hlens
 
-    def inference(self, x):
+    def inference(self, x, language_embedding=None):
         """
         Inference.
 
@@ -151,4 +153,4 @@ class Encoder(torch.nn.Module):
         xs = x.unsqueeze(0)
         ilens = torch.tensor([x.size(0)])
 
-        return self.forward(xs, ilens)[0][0]
+        return self.forward(xs, ilens, language_embedding=language_embedding.unsqueeze(0))[0][0]
