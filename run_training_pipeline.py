@@ -9,16 +9,16 @@ from TrainingInterfaces.TrainingPipelines.Tacotron2_MultiEnglish import run as t
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 
 pipeline_dict = {
-    "fast_nancy"          : fast_nancy,
-    "taco_nancy"          : taco_nancy,
+    "fast_nancy": fast_nancy,
+    "taco_nancy": taco_nancy,
 
-    "hifi_combined"       : hifigan_combined,
+    "hifi_combined": hifigan_combined,
 
-    "taco_meta_checkpoint": meta_taco,
+    "taco_meta": meta_taco,
 
-    "taco_multi"          : taco_multi,
-    "fast_multi"          : fast_multi
-    }
+    "taco_multi": taco_multi,
+    "fast_multi": fast_multi
+}
 
 if __name__ == '__main__':
 

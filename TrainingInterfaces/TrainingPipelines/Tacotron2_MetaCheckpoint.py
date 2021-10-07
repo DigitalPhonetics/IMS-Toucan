@@ -63,6 +63,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
@@ -71,6 +73,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10es(),
@@ -79,6 +83,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fi(),
@@ -87,6 +93,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10ru(),
@@ -95,6 +103,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10hu(),
@@ -103,6 +113,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10nl(),
@@ -111,6 +123,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fr(),
@@ -119,6 +133,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=True,
+                                    min_len_in_seconds=3,
+                                    max_len_in_seconds=13,
                                     device=device))
 
     train_set = ConcatDataset(datasets)
