@@ -430,6 +430,20 @@ ipa_to_phonemefeats = {
         'consonant_place' : 'palatal',
         'consonant_manner': 'lateral-approximant'
         },
+    'β': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'bilabial',
+        'consonant_manner': 'fricative'
+        },
+    'ʝ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'palatal',
+        'consonant_manner': 'fricative'
+        },
     }
 
 feat_types = set()
