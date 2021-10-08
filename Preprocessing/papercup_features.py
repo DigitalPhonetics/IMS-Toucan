@@ -451,6 +451,13 @@ ipa_to_phonemefeats = {
         'consonant_place' : 'palatal',
         'consonant_manner': 'stop'
         },
+    'q': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'unvoiced',
+        'consonant_place' : 'uvular',
+        'consonant_manner': 'stop'
+        },
     }
 
 feat_types = set()
