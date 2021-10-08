@@ -71,6 +71,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  transformer_dec_attn_dropout_rate=0.2,
                  duration_predictor_dropout_rate=0.2,
                  postnet_dropout_rate=0.5,
+                 speaker_embedding_projection_size=64
                  ):
         super().__init__()
         self.idim = idim
@@ -99,10 +100,11 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_enc_kernel_size)
         if spk_embed_dim is not None:
-            self.hs_emb_projection = torch.nn.Linear(adim + 256, adim)
-            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
-                                                            torch.nn.Softsign())
+            if spk_embed_dim is not None:
+                self.hs_emb_projection = torch.nn.Linear(adim + speaker_embedding_projection_size, adim)
+                # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+                self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
+                                                                torch.nn.Softsign())
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
