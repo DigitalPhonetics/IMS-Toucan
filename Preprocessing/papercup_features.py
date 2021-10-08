@@ -76,7 +76,7 @@ ipa_to_phonemefeats = {
         'vowel_consonant'  : 'vowel',
         'VUV'              : 'voiced',
         'vowel_frontness'  : 'central',
-        'vowel_openness'   : 'closed',
+        'vowel_openness'   : 'close',
         'vowel_roundedness': 'unrounded',
         },
     'ŋ': {
@@ -407,7 +407,7 @@ ipa_to_phonemefeats = {
         'vowel_consonant' : 'consonant',
         'VUV'             : 'unvoiced',
         'consonant_place' : 'palatal',
-        'consonant_manner': 'plosive'
+        'consonant_manner': 'stop'
         },
     'ɲ': {
         'symbol_type'     : 'phoneme',
@@ -449,7 +449,7 @@ ipa_to_phonemefeats = {
         'vowel_consonant' : 'consonant',
         'VUV'             : 'voiced',
         'consonant_place' : 'palatal',
-        'consonant_manner': 'plosive'
+        'consonant_manner': 'stop'
         },
     }
 
@@ -525,9 +525,15 @@ value_to_index = {
 phone_to_vector = dict()
 for ipa in ipa_to_phonemefeats:
     if len(ipa) == 1:
-        phone_to_vector[ipa] = [0] * sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])
+        phone_to_vector[ipa] = [0] * (sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]) + 1)
+        # + 1 for backward compatibility
         for feat in ipa_to_phonemefeats[ipa]:
             if ipa_to_phonemefeats[ipa][feat] in value_to_index:
                 phone_to_vector[ipa][value_to_index[ipa_to_phonemefeats[ipa][feat]]] = 1
 
 print(phone_to_vector)
+
+for feat in feat_to_val_set:
+    for value in feat_to_val_set[feat]:
+        if value not in value_to_index:
+            print(value)
