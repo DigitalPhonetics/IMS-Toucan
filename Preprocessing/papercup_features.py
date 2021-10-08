@@ -458,6 +458,42 @@ ipa_to_phonemefeats = {
         'consonant_place' : 'uvular',
         'consonant_manner': 'stop'
         },
+    'ɕ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'unvoiced',
+        'consonant_place' : 'alveolopalatal',
+        'consonant_manner': 'fricative'
+        },
+    'ʲ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'palatal',
+        'consonant_manner': 'approximant'
+        },
+    'ɭ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'palatal',  # should be retroflex, but palatal should be close enough
+        'consonant_manner': 'lateral-approximant'
+        },
+    'ɵ': {
+        'symbol_type'      : 'phoneme',
+        'vowel_consonant'  : 'vowel',
+        'VUV'              : 'voiced',
+        'vowel_frontness'  : 'central',
+        'vowel_openness'   : 'open-mid',
+        'vowel_roundedness': 'rounded'
+        },
+    'ʑ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'alveolopalatal',
+        'consonant_manner': 'fricative'
+        },
     }
 
 feat_types = set()
@@ -526,14 +562,14 @@ value_to_index = {
     "voiced"             : 37,
     "questionmark"       : 38,
     "exclamationmark"    : 39,
-    "fullstop"           : 40
+    "fullstop"           : 40,
+    "alveolopalatal"     : 41
     }
 
 phone_to_vector = dict()
 for ipa in ipa_to_phonemefeats:
     if len(ipa) == 1:
-        phone_to_vector[ipa] = [0] * (sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]) + 1)
-        # + 1 for backward compatibility
+        phone_to_vector[ipa] = [0] * sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])
         for feat in ipa_to_phonemefeats[ipa]:
             if ipa_to_phonemefeats[ipa][feat] in value_to_index:
                 phone_to_vector[ipa][value_to_index[ipa_to_phonemefeats[ipa][feat]]] = 1
@@ -544,3 +580,5 @@ for feat in feat_to_val_set:
     for value in feat_to_val_set[feat]:
         if value not in value_to_index:
             print(value)
+
+print(f"{sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])} should be 42")
