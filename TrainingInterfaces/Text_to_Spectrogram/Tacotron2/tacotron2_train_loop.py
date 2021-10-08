@@ -216,7 +216,7 @@ def train_loop(net,
                         del predicted_mels
                         del gold_spemb
                         cycle_loss = cycle_distance * min(200, step_counter / 40)
-                        loss_dict["cycle"] = cycle_loss
+                        loss_dict["cycle"] = cycle_loss.item()
                         train_loss = train_loss + cycle_loss
                 else:
                     if not use_speaker_embedding:
@@ -246,7 +246,7 @@ def train_loop(net,
                         del predicted_mels
                         del gold_spemb
                         cycle_loss = cycle_distance * min(200, step_counter / 40)
-                        loss_dict["cycle"] = cycle_loss
+                        loss_dict["cycle"] = cycle_loss.item()
                         train_loss = train_loss + cycle_loss
 
                 train_losses_this_epoch.append(train_loss.item())
