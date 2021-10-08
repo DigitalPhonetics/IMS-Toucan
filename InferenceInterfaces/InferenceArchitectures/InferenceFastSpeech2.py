@@ -49,7 +49,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  init_type="kaiming_uniform",
                  init_enc_alpha=1.0, init_dec_alpha=1.0, use_masking=False,
                  use_weighted_masking=True, lang='en',
-                 legacy_model=False):
+                 legacy_model=False,
+                 speaker_embedding_projection_size=64):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -70,9 +71,9 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, legacy_model=legacy_model)
         if spk_embed_dim is not None:
-            self.hs_emb_projection = torch.nn.Linear(adim + 256, adim)
+            self.hs_emb_projection = torch.nn.Linear(adim + speaker_embedding_projection_size, adim)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, 256),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
                                                             torch.nn.Softsign())
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
