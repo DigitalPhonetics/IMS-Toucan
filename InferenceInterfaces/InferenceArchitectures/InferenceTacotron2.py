@@ -2,7 +2,6 @@ import torch
 import torch.nn.functional as F
 
 from Layers.Attention import GuidedAttentionLoss
-from Layers.RNNAttention import AttForward
 from Layers.RNNAttention import AttForwardTA
 from Layers.RNNAttention import AttLoc
 from Layers.TacotronDecoder import Decoder
@@ -24,7 +23,6 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            atype="location",
             adim=512,
             aconv_chans=32,
             aconv_filts=15,
@@ -101,21 +99,14 @@ class Tacotron2(torch.nn.Module):
             speaker_embedding_projection_size = None
         dec_idim = eunits
 
-        if atype == "location":
-            att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
-        elif atype == "forward":
-            att = AttForward(dec_idim, dunits, adim, aconv_chans, aconv_filts)
-            if self.cumulate_att_w:
-                self.cumulate_att_w = False
-        elif atype == "forward_ta":
-            att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
-            if self.cumulate_att_w:
-                self.cumulate_att_w = False
-        else:
-            raise NotImplementedError("Support only location or forward")
+        loc_att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
+
+        forward_att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
+
         self.dec = Decoder(idim=dec_idim,
                            odim=odim,
-                           att=att,
+                           loc_att=loc_att,
+                           forward_att=forward_att,
                            dlayers=dlayers,
                            dunits=dunits,
                            prenet_layers=prenet_layers,
@@ -124,7 +115,6 @@ class Tacotron2(torch.nn.Module):
                            postnet_chans=postnet_chans,
                            postnet_filts=postnet_filts,
                            output_activation_fn=self.output_activation_fn,
-                           cumulate_att_w=self.cumulate_att_w,
                            use_batch_norm=use_batch_norm,
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
@@ -204,7 +194,7 @@ class Tacotron2Loss(torch.nn.Module):
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.bce_criterion = torch.nn.BCEWithLogitsLoss(
             reduction=reduction, pos_weight=torch.tensor(bce_pos_weight)
-        )
+            )
 
         self._register_load_state_dict_pre_hook(self._load_state_dict_pre_hook)
 
@@ -217,7 +207,7 @@ class Tacotron2Loss(torch.nn.Module):
             missing_keys,
             unexpected_keys,
             error_msgs,
-    ):
+            ):
         """Apply pre hook fucntion before loading state dict.
         From v.0.6.1 `bce_criterion.pos_weight` param is registered as a parameter but
         old models do not include it and as a result, it causes missing key error when
