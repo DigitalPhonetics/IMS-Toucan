@@ -206,7 +206,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                 gold_durations,
                 gold_pitch,
                 gold_energy,
-                speaker_embeddings=None):
+                speaker_embeddings=None,
+                return_mels=False):
         """
         Calculate forward propagation.
 
@@ -249,6 +250,8 @@ class FastSpeech2(torch.nn.Module, ABC):
             # print("DTW Loss: {}".format(dtw_loss))
             loss = loss + dtw_loss
 
+        if return_mels:
+            return loss, after_outs
         return loss
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,

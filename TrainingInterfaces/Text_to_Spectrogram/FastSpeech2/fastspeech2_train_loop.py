@@ -5,6 +5,9 @@ import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
+import torch.multiprocessing
+import torch.nn.functional as F
+from speechbrain.pretrained import EncoderClassifier
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -144,7 +147,10 @@ def train_loop(net,
         for param in net.enc.embed.parameters():
             param.requires_grad = False
     if use_speaker_embedding:
-        reference_speaker_embedding_for_plot = torch.Tensor(train_dataset[0][7]).to(device)
+        reference_speaker_embedding_for_plot = torch.Tensor(train_dataset[0][4]).to(device)
+        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                run_opts={"device": str(device)},
+                                                                savedir="Models/speechbrain_speaker_embedding_ecapa")
     else:
         reference_speaker_embedding_for_plot = None
     torch.multiprocessing.set_sharing_strategy('file_system')
@@ -183,23 +189,38 @@ def train_loop(net,
         for batch in tqdm(train_loader):
             with autocast():
                 if not use_speaker_embedding:
-                    train_loss = net(text_tensors=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     gold_speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     gold_durations=batch[4].to(device),
-                                     gold_pitch=batch[5].to(device),
-                                     gold_energy=batch[6].to(device))
+                    train_loss, predicted_mels = net(text_tensors=batch[0].to(device),
+                                                     text_lengths=batch[1].to(device),
+                                                     gold_speech=batch[2].to(device),
+                                                     speech_lengths=batch[3].to(device),
+                                                     gold_durations=batch[4].to(device),
+                                                     gold_pitch=batch[5].to(device),
+                                                     gold_energy=batch[6].to(device),
+                                                     return_mels=True)
                 else:
-                    train_loss = net(text_tensors=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     gold_speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     gold_durations=batch[4].to(device),
-                                     gold_pitch=batch[5].to(device),
-                                     gold_energy=batch[6].to(device),
-                                     speaker_embeddings=batch[7].to(device))
+                    train_loss, predicted_mels = net(text_tensors=batch[0].to(device),
+                                                     text_lengths=batch[1].to(device),
+                                                     gold_speech=batch[2].to(device),
+                                                     speech_lengths=batch[3].to(device),
+                                                     gold_durations=batch[4].to(device),
+                                                     gold_pitch=batch[5].to(device),
+                                                     gold_energy=batch[6].to(device),
+                                                     speaker_embeddings=batch[7].to(device),
+                                                     return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
+                pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
+                                                                            torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
+                gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
+                                                                            torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
+                # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
+                cosine_cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
+                pairwise_cycle_distance = F.pairwise_distance(pred_spemb.squeeze(), gold_spemb.squeeze()).mean()
+                cycle_distance = cosine_cycle_distance + pairwise_cycle_distance
+                del pred_spemb
+                del predicted_mels
+                del gold_spemb
+                cycle_loss = cycle_distance * min(2000, step_counter / 10)
+                train_loss = train_loss + cycle_loss
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
@@ -227,12 +248,12 @@ def train_loop(net,
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({
-                "model": net.state_dict(),
-                "optimizer": optimizer.state_dict(),
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
                 "step_counter": step_counter,
-                "scaler": scaler.state_dict(),
-                "scheduler": scheduler.state_dict(),
-            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                "scaler"      : scaler.state_dict(),
+                "scheduler"   : scheduler.state_dict(),
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             with torch.no_grad():
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang,
