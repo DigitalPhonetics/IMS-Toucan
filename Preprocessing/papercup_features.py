@@ -501,6 +501,13 @@ ipa_to_phonemefeats = {
         'consonant_place' : 'labiodental',
         'consonant_manner': 'approximant'
         },
+    'ʁ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'uvular',
+        'consonant_manner': 'fricative'
+        },
     }
 
 feat_types = set()
