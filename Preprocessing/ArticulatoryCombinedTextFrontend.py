@@ -109,7 +109,7 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr":
             self.clean_lang = None
-            self.g2p_lang = "fr"
+            self.g2p_lang = "fr-fr"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a French Text-Frontend")
