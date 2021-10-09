@@ -494,6 +494,13 @@ ipa_to_phonemefeats = {
         'consonant_place' : 'alveolopalatal',
         'consonant_manner': 'fricative'
         },
+    'ʋ': {
+        'symbol_type'     : 'phoneme',
+        'vowel_consonant' : 'consonant',
+        'VUV'             : 'voiced',
+        'consonant_place' : 'labiodental',
+        'consonant_manner': 'approximant'
+        },
     }
 
 feat_types = set()
