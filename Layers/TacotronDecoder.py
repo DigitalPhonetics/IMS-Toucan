@@ -517,7 +517,7 @@ class Decoder(torch.nn.Module):
 
             att_ws = att_ws + [att_w]
             att_ws_location = att_ws_location + [att_w_location]
-            att_ws_forward = att_ws_forward + [att_ws_forward]
+            att_ws_forward = att_ws_forward + [att_w_forward]
             if self.speaker_embedding_projection_size is not None:
                 prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
             else:
