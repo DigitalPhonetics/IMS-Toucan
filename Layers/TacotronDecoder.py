@@ -380,12 +380,12 @@ class Decoder(torch.nn.Module):
         self.location_att.reset()
 
         # loop for an output sequence
-        outs, logits, att_ws = [], [], []
+        outs, logits, att_ws, att_ws_loc = [], [], [], []
         for y in ys.transpose(0, 1):
             att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out)
             att_c_location, att_w_location = self.location_att(hs, hlens, z_list[0], prev_att_w_location)
-            att_c = att_c_location + att_c_forward
-            att_w = att_w_location + att_w_forward
+            att_c = (att_c_location + att_c_forward) / 2
+            att_w = (att_w_location + att_w_forward) / 2
             if self.speaker_embedding_projection_size is not None:
                 prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
             else:
@@ -398,6 +398,7 @@ class Decoder(torch.nn.Module):
             outs = outs + [self.feat_out(zcs).view(hs.size(0), self.odim, -1)]
             logits = logits + [self.prob_out(zcs)]
             att_ws = att_ws + [att_w]
+            att_ws_loc = att_ws_loc + [att_w_location]
             prev_out = y  # teacher forcing
             if prev_att_w_location is not None:
                 prev_att_w_location = prev_att_w_location + att_w_location  # Note: error when use +=
@@ -425,7 +426,7 @@ class Decoder(torch.nn.Module):
             before_outs = self.output_activation_fn(before_outs)
             after_outs = self.output_activation_fn(after_outs)
 
-        return after_outs, before_outs, logits, att_ws
+        return after_outs, before_outs, logits, att_ws, att_ws_loc
 
     def inference(self,
                   h,

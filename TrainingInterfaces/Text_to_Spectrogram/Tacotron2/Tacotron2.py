@@ -155,7 +155,7 @@ class Tacotron2(torch.nn.Module):
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
             self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                             alpha=guided_attn_loss_lambda * 10, )
+                                                             alpha=guided_attn_loss_lambda * 15, )
             self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
                                                              alpha=guided_attn_loss_lambda, )
         if self.use_dtw_loss:
@@ -212,12 +212,12 @@ class Tacotron2(torch.nn.Module):
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws = self._forward(text,
-                                                                text_lengths,
-                                                                speech,
-                                                                speech_lengths,
-                                                                speaker_embeddings,
-                                                                language_id=language_id)
+        after_outs, before_outs, logits, att_ws, att_ws_loc = self._forward(text,
+                                                                            text_lengths,
+                                                                            speech,
+                                                                            speech_lengths,
+                                                                            speaker_embeddings,
+                                                                            language_id=language_id)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -264,7 +264,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
+            align_loss = self.alignment_loss(att_ws_loc, text_lengths, olens_in, step)
             if align_loss != 0.0:
                 losses["align"] = align_loss.item()
                 loss = loss + align_loss
