@@ -28,24 +28,36 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     text = tf.string_to_tensor(sentence).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    att = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding, language_id=language_id)[2].to("cpu")
+    _, _, att, att_loc, att_for = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding, language_id=language_id, return_atts=True).to("cpu")
     model.train()
     del tf
     bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
                                           in_lens=torch.LongTensor([len(text)]),
                                           out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0).detach().numpy()
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
-    ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
-    ax[1].set_xlabel("Inputs")
-    ax[0].xaxis.set_visible(False)
-    ax[0].set_ylabel("Outputs")
-    ax[1].set_ylabel("Outputs")
-    ax[1].set_xticks(range(len(att[0])))
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(16, 9))
+    ax[0][0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1][0].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
+
+    ax[0][1].imshow(att_loc.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[1][1].imshow(att_for.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+
+    ax[1][0].set_xlabel("Inputs")
+    ax[1][1].set_xlabel("Inputs")
+    ax[0][0].xaxis.set_visible(False)
+    ax[0][1].xaxis.set_visible(False)
+    ax[0][0].set_ylabel("Outputs")
+    ax[1][0].set_ylabel("Outputs")
+    ax[1][0].set_xticks(range(len(att[0])))
+    ax[1][1].set_xticks(range(len(att[0])))
     del att
-    ax[1].set_xticklabels(labels=[phone for phone in phones])
-    ax[0].set_title("Soft-Attention")
-    ax[1].set_title("Hard-Attention")
+    del att_loc
+    del att_for
+    ax[1][0].set_xticklabels(labels=[phone for phone in phones])
+    ax[1][1].set_xticklabels(labels=[phone for phone in phones])
+    ax[0][0].set_title("Soft-Combined-Attention")
+    ax[1][0].set_title("Hard-Combined-Attention")
+    ax[0][1].set_title("Location-Attention")
+    ax[1][1].set_title("Forward-Attention")
     fig.tight_layout()
     plt.rcParams['axes.titley'] = 1.0
     plt.rcParams['axes.titlepad'] = -14
@@ -294,11 +306,11 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model": net.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "scaler": scaler.state_dict(),
+                    "model"       : net.state_dict(),
+                    "optimizer"   : optimizer.state_dict(),
+                    "scaler"      : scaler.state_dict(),
                     "step_counter": step_counter,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():
                     plot_attention(model=net,

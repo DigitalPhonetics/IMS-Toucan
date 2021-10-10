@@ -212,12 +212,12 @@ class Tacotron2(torch.nn.Module):
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws, att_ws_loc = self._forward(text,
-                                                                            text_lengths,
-                                                                            speech,
-                                                                            speech_lengths,
-                                                                            speaker_embeddings,
-                                                                            language_id=language_id)
+        after_outs, before_outs, logits, att_ws, att_ws_loc, att_ws_for = self._forward(text,
+                                                                                        text_lengths,
+                                                                                        speech,
+                                                                                        speech_lengths,
+                                                                                        speaker_embeddings,
+                                                                                        language_id=language_id)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -250,7 +250,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            if step < 500:
+            if step < 1200:
                 attn_loss = self.guided_att_loss_start(att_ws, text_lengths, olens_in)
                 # build a prior in the attention map for the forward algorithm to take over
             else:
@@ -307,7 +307,8 @@ class Tacotron2(torch.nn.Module):
                   backward_window=1,
                   forward_window=3,
                   use_teacher_forcing=False,
-                  language_id=None):
+                  language_id=None,
+                  return_atts=False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -339,7 +340,7 @@ class Tacotron2(torch.nn.Module):
             speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
             speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
-            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings)
+            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings, return_atts=return_atts)
 
             return outs[0], None, att_ws[0]
 
@@ -356,16 +357,26 @@ class Tacotron2(torch.nn.Module):
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
         else:
             speaker_embeddings = None
-        outs, probs, att_ws = self.dec.inference(h,
-                                                 threshold=threshold,
-                                                 minlenratio=minlenratio,
-                                                 maxlenratio=maxlenratio,
-                                                 use_att_constraint=use_att_constraint,
-                                                 backward_window=backward_window,
-                                                 forward_window=forward_window,
-                                                 speaker_embedding=speaker_embeddings)
+        if return_atts:
+            return self.dec.inference(h,
+                                      threshold=threshold,
+                                      minlenratio=minlenratio,
+                                      maxlenratio=maxlenratio,
+                                      use_att_constraint=use_att_constraint,
+                                      backward_window=backward_window,
+                                      forward_window=forward_window,
+                                      speaker_embedding=speaker_embeddings,
+                                      return_atts=return_atts)
 
-        return outs, probs, att_ws
+        return self.dec.inference(h,
+                                  threshold=threshold,
+                                  minlenratio=minlenratio,
+                                  maxlenratio=maxlenratio,
+                                  use_att_constraint=use_att_constraint,
+                                  backward_window=backward_window,
+                                  forward_window=forward_window,
+                                  speaker_embedding=speaker_embeddings,
+                                  return_atts=return_atts)
 
     def _integrate_with_spk_embed(self, hs, speaker_embeddings):
         """

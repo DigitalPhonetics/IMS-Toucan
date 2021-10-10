@@ -380,7 +380,7 @@ class Decoder(torch.nn.Module):
         self.location_att.reset()
 
         # loop for an output sequence
-        outs, logits, att_ws, att_ws_loc = [], [], [], []
+        outs, logits, att_ws, att_ws_loc, att_ws_for = [], [], [], [], []
         for y in ys.transpose(0, 1):
             att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out)
             att_c_location, att_w_location = self.location_att(hs, hlens, z_list[0], prev_att_w_location)
@@ -399,6 +399,7 @@ class Decoder(torch.nn.Module):
             logits = logits + [self.prob_out(zcs)]
             att_ws = att_ws + [att_w]
             att_ws_loc = att_ws_loc + [att_w_location]
+            att_ws_for = att_ws_for + [att_w_forward]
             prev_out = y  # teacher forcing
             if prev_att_w_location is not None:
                 prev_att_w_location = prev_att_w_location + att_w_location  # Note: error when use +=
@@ -410,6 +411,7 @@ class Decoder(torch.nn.Module):
         before_outs = torch.cat(outs, dim=2)  # (B, odim, Lmax)
         att_ws = torch.stack(att_ws, dim=1)  # (B, Lmax, Tmax)
         att_ws_loc = torch.stack(att_ws_loc, dim=1)  # (B, Lmax, Tmax)
+        att_ws_for = torch.stack(att_ws_for, dim=1)  # (B, Lmax, Tmax)
 
         if self.reduction_factor > 1:
             before_outs = before_outs.view(before_outs.size(0), self.odim, -1)  # (B, odim, Lmax)
@@ -427,7 +429,7 @@ class Decoder(torch.nn.Module):
             before_outs = self.output_activation_fn(before_outs)
             after_outs = self.output_activation_fn(after_outs)
 
-        return after_outs, before_outs, logits, att_ws, att_ws_loc
+        return after_outs, before_outs, logits, att_ws, att_ws_loc, att_ws_for
 
     def inference(self,
                   h,
@@ -437,7 +439,8 @@ class Decoder(torch.nn.Module):
                   use_att_constraint=False,
                   backward_window=None,
                   forward_window=None,
-                  speaker_embedding=None):
+                  speaker_embedding=None,
+                  return_atts=False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -493,7 +496,7 @@ class Decoder(torch.nn.Module):
 
         # loop for an output sequence
         idx = 0
-        outs, att_ws, probs = [], [], []
+        outs, att_ws, probs, att_ws_location, att_ws_forward = [], [], [], [], []
         while True:
             # updated index
             idx = idx + self.reduction_factor
@@ -513,6 +516,8 @@ class Decoder(torch.nn.Module):
             att_w = att_w_location + att_w_forward
 
             att_ws = att_ws + [att_w]
+            att_ws_location = att_ws_location + [att_w_location]
+            att_ws_forward = att_ws_forward + [att_ws_forward]
             if self.speaker_embedding_projection_size is not None:
                 prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
             else:
@@ -547,9 +552,13 @@ class Decoder(torch.nn.Module):
                 outs = outs.transpose(2, 1).squeeze(0)  # (L, odim)
                 probs = torch.cat(probs, dim=0)
                 att_ws = torch.cat(att_ws, dim=0)
+                att_ws_forward = torch.cat(att_ws_forward, dim=0)
+                att_ws_location = torch.cat(att_ws_location, dim=0)
                 break
 
         if self.output_activation_fn is not None:
             outs = self.output_activation_fn(outs)
 
+        if return_atts:
+            return outs, probs, att_ws, att_ws_location, att_ws_forward
         return outs, probs, att_ws
