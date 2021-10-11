@@ -46,6 +46,10 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     ax[1][1].set_xlabel("Inputs")
     ax[0][0].xaxis.set_visible(False)
     ax[0][1].xaxis.set_visible(False)
+
+    ax[1][1].yaxis.set_visible(False)
+    ax[0][1].yaxis.set_visible(False)
+
     ax[0][0].set_ylabel("Outputs")
     ax[1][0].set_ylabel("Outputs")
     ax[1][0].set_xticks(range(len(att[0])))
@@ -60,9 +64,7 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     ax[0][1].set_title("Location-Attention")
     ax[1][1].set_title("Forward-Attention")
     fig.tight_layout()
-    plt.rcParams['axes.titley'] = 1.0
-    plt.rcParams['axes.titlepad'] = -14
-    plt.subplots_adjust(hspace=0.0)
+
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
