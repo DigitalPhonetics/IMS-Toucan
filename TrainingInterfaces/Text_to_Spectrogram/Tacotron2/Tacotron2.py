@@ -248,7 +248,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            attn_loss_weight = min(1.0, 60.0 / max((step / 300.0), 1.0))
+            attn_loss_weight = min(1.0, 20.0 / max((step / 300.0), 1.0))
             attn_loss = self.guided_att_loss(att_ws, text_lengths, olens_in)
             losses["prior"] = attn_loss.item()
             loss = loss + (attn_loss * attn_loss_weight)
