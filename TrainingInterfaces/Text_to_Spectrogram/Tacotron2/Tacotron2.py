@@ -154,10 +154,8 @@ class Tacotron2(torch.nn.Module):
                                         use_weighted_masking=use_weighted_masking,
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
-            self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                             alpha=guided_attn_loss_lambda * 20)
-            self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                             alpha=guided_attn_loss_lambda)
+            self.guided_att_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
+                                                       alpha=guided_attn_loss_lambda)
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
@@ -250,13 +248,10 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            if step < 1400:
-                attn_loss = self.guided_att_loss_start(att_ws, text_lengths, olens_in)
-                # build a prior in the attention map for the forward algorithm to take over
-            else:
-                attn_loss = self.guided_att_loss_final(att_ws, text_lengths, olens_in)
+            attn_loss_weight = min(1.0, 60.0 / step)
+            attn_loss = self.guided_att_loss_final(att_ws, text_lengths, olens_in)
             losses["prior"] = attn_loss.item()
-            loss = loss + attn_loss
+            loss = loss + (attn_loss * attn_loss_weight)
 
         # calculate alignment loss
         if self.use_alignment_loss:
@@ -264,7 +259,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
+            align_loss = self.alignment_loss(att_ws_loc, text_lengths, olens_in, step)
             if align_loss != 0.0:
                 losses["align"] = align_loss.item()
                 loss = loss + align_loss
