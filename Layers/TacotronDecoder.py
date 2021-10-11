@@ -384,8 +384,8 @@ class Decoder(torch.nn.Module):
         for y in ys.transpose(0, 1):
             att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out)
             att_c_location, att_w_location = self.location_att(hs, hlens, z_list[0], prev_att_w_location)
-            att_c = (att_c_location + att_c_forward) / 2
-            att_w = (att_w_location + att_w_forward) / 2
+            att_c = att_c_location
+            att_w = att_w_location
             if self.speaker_embedding_projection_size is not None:
                 prenet_out = self.prenet(torch.cat([prev_out, speaker_embedding], dim=-1)) if self.prenet is not None else prev_out
             else:
