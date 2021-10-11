@@ -250,7 +250,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            if step < 1200:
+            if step < 1400:
                 attn_loss = self.guided_att_loss_start(att_ws, text_lengths, olens_in)
                 # build a prior in the attention map for the forward algorithm to take over
             else:
@@ -264,7 +264,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            align_loss = self.alignment_loss(att_ws_loc, text_lengths, olens_in, step)
+            align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
             if align_loss != 0.0:
                 losses["align"] = align_loss.item()
                 loss = loss + align_loss
