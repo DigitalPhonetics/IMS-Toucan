@@ -28,7 +28,8 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     text = tf.string_to_tensor(sentence).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
-    _, _, att, att_loc, att_for = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding, language_id=language_id, return_atts=True).to("cpu")
+    _, _, att, att_loc, att_for = model.inference(text_tensor=text, speaker_embeddings=speaker_embedding, language_id=language_id, return_atts=True)
+    att, att_loc, att_for = att.to("cpu"), att_loc.to("cpu"), att_for.to("cpu")
     model.train()
     del tf
     bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
