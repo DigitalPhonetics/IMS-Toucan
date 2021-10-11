@@ -155,9 +155,9 @@ class Tacotron2(torch.nn.Module):
                                         bce_pos_weight=bce_pos_weight, )
         if self.use_guided_attn_loss:
             self.guided_att_loss_start = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                             alpha=guided_attn_loss_lambda * 1, )
+                                                             alpha=guided_attn_loss_lambda * 20)
             self.guided_att_loss_final = GuidedAttentionLoss(sigma=guided_attn_loss_sigma,
-                                                             alpha=guided_attn_loss_lambda, )
+                                                             alpha=guided_attn_loss_lambda)
         if self.use_dtw_loss:
             self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
