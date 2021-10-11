@@ -77,10 +77,10 @@ class TacotronDataset(Dataset):
                 if speaker_embedding:
                     speaker_embedding_function_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                                       run_opts={"device": str(device)},
-                                                                                      savedir="Models/speechbrain_speaker_embedding_ecapa")
+                                                                                      savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
                     speaker_embedding_function_xvector = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb",
                                                                                         run_opts={"device": str(device)},
-                                                                                        savedir="Models/speechbrain_speaker_embedding_xvector")
+                                                                                        savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_xvector")
                     wav2mel = torch.jit.load("Models/SpeakerEmbedding/wav2mel.pt")
                     dvector = torch.jit.load("Models/SpeakerEmbedding/dvector-step250000.pt").to(device).eval()
                     # everything assumes 16kHz audio as input here

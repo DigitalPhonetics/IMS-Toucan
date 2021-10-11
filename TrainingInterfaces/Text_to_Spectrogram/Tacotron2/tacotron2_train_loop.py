@@ -172,7 +172,7 @@ def train_loop(net,
         reference_speaker_embedding_for_att_plot = torch.Tensor(train_dataset[0][4]).to(device)
         speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                 run_opts={"device": str(device)},
-                                                                savedir="Models/speechbrain_speaker_embedding_ecapa")
+                                                                savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
     else:
         reference_speaker_embedding_for_att_plot = None
     step_counter = 0

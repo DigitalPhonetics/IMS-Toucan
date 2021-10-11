@@ -9,11 +9,11 @@ from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 
 tts_dict = {
-    "fast_multi"   : MultiEnglish_FastSpeech2,
-    "fast_nancy"   : Nancy_FastSpeech2,
+    "fast_multi": MultiEnglish_FastSpeech2,
+    "fast_nancy": Nancy_FastSpeech2,
 
-    "taco_multi"   : MultiEnglish_Tacotron2,
-    "taco_nancy"   : Nancy_Tacotron2
+    "taco_multi": MultiEnglish_Tacotron2,
+    "taco_nancy": Nancy_Tacotron2
     }
 
 if __name__ == '__main__':
