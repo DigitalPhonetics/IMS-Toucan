@@ -43,7 +43,7 @@ class Tacotron2(torch.nn.Module):
             aconv_filts=15,
             cumulate_att_w=True,
             dlayers=2,
-            dunits=512,  # actual units are doubled, just for the concat attention we can't divide safely, so we rather double
+            dunits=1024,
             prenet_layers=2,
             prenet_units=256,  # default in the paper is 256, but can cause over-reliance on teacher forcing, so 64 sometimes recommended
             postnet_layers=5,
@@ -135,7 +135,7 @@ class Tacotron2(torch.nn.Module):
                            loc_att=loc_att,
                            forward_att=forward_att,
                            dlayers=dlayers,
-                           dunits=dunits * 2,
+                           dunits=dunits,
                            prenet_layers=prenet_layers,
                            prenet_units=prenet_units,
                            postnet_layers=postnet_layers,
@@ -247,7 +247,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            attn_loss_weight = min(1.0, 20.0 / max((step / 300.0), 1.0))
+            attn_loss_weight = min(1.0, 10.0 / max((step / 300.0), 1.0))
             attn_loss = self.guided_att_loss(att_ws, text_lengths, olens_in)
             losses["prior"] = attn_loss.item()
             loss = loss + (attn_loss * attn_loss_weight)

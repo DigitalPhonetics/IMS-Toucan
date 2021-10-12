@@ -258,7 +258,7 @@ class AttLoc(torch.nn.Module):
     :param int att_dim: attention dimension
     :param int aconv_chans: # channels of attention convolution
     :param int aconv_filts: filter size of attention convolution
-    :param bool han_mode: flag to swith on mode of hierarchical attention
+    :param bool han_mode: flag to switch on mode of hierarchical attention
         and not store pre_compute_enc_h
     """
 
