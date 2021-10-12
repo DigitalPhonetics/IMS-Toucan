@@ -279,7 +279,7 @@ class Tacotron2(torch.nn.Module):
                  speaker_embeddings,
                  language_id=None):
         if language_id is not None:
-            language_embedding_vector = self.language_embedding(language_id.view(-1))
+            language_embedding_vector = self.language_embedding(language_id)
             hs, hlens = self.enc(text_tensors, ilens, language_embedding=language_embedding_vector)
         else:
             hs, hlens = self.enc(text_tensors, ilens)
