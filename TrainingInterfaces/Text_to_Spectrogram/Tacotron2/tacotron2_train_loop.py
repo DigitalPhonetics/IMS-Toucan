@@ -225,7 +225,7 @@ def train_loop(net,
                                                                     speech_lengths=batch[3].to(device),
                                                                     step=step_counter,
                                                                     speaker_embeddings=batch[4].to(device),
-                                                                    priot=batch[5].to(device),
+                                                                    prior=batch[5].to(device),
                                                                     language_id=batch[6].to(device),
                                                                     return_mels=True,
                                                                     return_loss_dict=True)
