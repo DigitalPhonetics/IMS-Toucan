@@ -272,7 +272,7 @@ def train_loop(net,
                         del pred_spemb
                         del predicted_mels
                         del gold_spemb
-                        cycle_loss = cycle_distance * min(200, step_counter / 200)
+                        cycle_loss = cycle_distance * min(100, step_counter / 1200)
                         loss_dict["cycle"] = cycle_loss.item()
                         train_loss = train_loss + cycle_loss
 
