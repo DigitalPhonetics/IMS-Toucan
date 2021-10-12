@@ -73,6 +73,8 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
 
 
 def collate_and_pad(batch):
+    max_text = max([datapoint[1] for datapoint in batch])
+    max_spec = max([datapoint[3] for datapoint in batch])
     if type(batch[0][-1]) is int:
         if len(batch[0]) == 7:
             # text, text_len, speech, speech_len, speaker_emb, prior, language_id
@@ -81,7 +83,7 @@ def collate_and_pad(batch):
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
-                    pad_sequence([datapoint[5].transpose(0, 1) for datapoint in batch], batch_first=True),
+                    torch.stack([F.pad(datapoint[5], [max_text - datapoint[1], max_spec - datapoint[3]]) for datapoint in batch], batch_first=True),
                     torch.stack([torch.LongTensor([datapoint[6]]) for datapoint in batch]).squeeze(1))
         else:
             # text, text_len, speech, speech_len, prior, language_id
@@ -89,7 +91,7 @@ def collate_and_pad(batch):
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    pad_sequence([datapoint[4].transpose(0, 1) for datapoint in batch], batch_first=True),
+                    torch.stack([F.pad(datapoint[4], [max_text - datapoint[1], max_spec - datapoint[3]]) for datapoint in batch], batch_first=True),
                     torch.stack([torch.LongTensor([datapoint[5]]) for datapoint in batch]).squeeze(1))
     else:
         if len(batch[0]) == 6:
@@ -99,7 +101,7 @@ def collate_and_pad(batch):
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
-                    pad_sequence([datapoint[5].transpose(0, 1) for datapoint in batch], batch_first=True),
+                    torch.stack([F.pad(datapoint[5], [max_text - datapoint[1], max_spec - datapoint[3]]) for datapoint in batch], batch_first=True),
                     )
         else:
             # text, text_len, speech, speech_len, prior
@@ -107,7 +109,7 @@ def collate_and_pad(batch):
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    pad_sequence([datapoint[4].transpose(0, 1) for datapoint in batch], batch_first=True),
+                    torch.stack([F.pad(datapoint[4], [max_text - datapoint[1], max_spec - datapoint[3]]) for datapoint in batch], batch_first=True),
                     )
 
 
