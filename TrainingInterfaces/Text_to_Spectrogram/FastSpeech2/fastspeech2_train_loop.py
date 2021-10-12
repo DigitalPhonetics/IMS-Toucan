@@ -136,6 +136,8 @@ def train_loop(net,
         freeze_encoder_until: which step to unfreeze encoder weights. Careful, this subsumes embedding weights
         multi_ling: whether to use language IDs for language embeddings
     """
+    torch.backends.cudnn.benchmark = True  # potentially problematic because our batches are not always of the same size
+
     net = net.to(device)
     if freeze_decoder_until is not None and freeze_decoder_until > 0:
         for param in net.dec.parameters():
