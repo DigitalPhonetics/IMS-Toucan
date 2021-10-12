@@ -7,16 +7,8 @@ from numba import prange
 
 
 # Implementation by:
-# Lee, K. (2021). Comprehensive-Transformer-TTS (Version 0.1.1) [Computer software]. https://doi.org/10.5281/zenodo.5526991
-
-# @misc{Lee_ComprehensiveTransformerTTS_2021,
-# author = {Lee, Keon},
-# doi = {10.5281/zenodo.5526991},
-# month = {9},
-# title = {{Comprehensive-Transformer-TTS}},
-# url = {https://github.com/keonlee9420/Comprehensive-Transformer-TTS},
-# year = {2021}
-# }
+# https://github.com/NVIDIA/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/FastPitch/fastpitch/alignment.py
+# https://github.com/NVIDIA/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/FastPitch/fastpitch/attn_loss_function.py
 
 
 # Concept by:
