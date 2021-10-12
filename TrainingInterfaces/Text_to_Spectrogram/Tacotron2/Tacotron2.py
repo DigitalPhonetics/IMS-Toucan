@@ -38,12 +38,12 @@ class Tacotron2(torch.nn.Module):
             econv_layers=3,
             econv_chans=512,
             econv_filts=5,
-            adim=256,
+            adim=512,
             aconv_chans=32,
             aconv_filts=15,
             cumulate_att_w=True,
             dlayers=2,
-            dunits=1024,
+            dunits=512,  # actual units are doubled, just for the concat attention we can't divide safely, so we rather double
             prenet_layers=2,
             prenet_units=256,  # default in the paper is 256, but can cause over-reliance on teacher forcing, so 64 sometimes recommended
             postnet_layers=5,
@@ -135,7 +135,7 @@ class Tacotron2(torch.nn.Module):
                            loc_att=loc_att,
                            forward_att=forward_att,
                            dlayers=dlayers,
-                           dunits=dunits,
+                           dunits=dunits * 2,
                            prenet_layers=prenet_layers,
                            prenet_units=prenet_units,
                            postnet_layers=postnet_layers,
