@@ -114,6 +114,17 @@ class TacotronDataset(Dataset):
                     norm_waves.append(torch.Tensor(datapoint[-1]))
 
             self.datapoints = tensored_datapoints
+
+            pop_indexes = list()
+            for index, el in enumerate(self.datapoints):
+                try:
+                    if len(el[0][0]) != 66:
+                        pop_indexes.append(index)
+                except TypeError:
+                    pop_indexes.append(index)
+            for pop_index in pop_indexes:
+                self.datapoints.pop(pop_index)
+
             # save to cache
             torch.save((self.datapoints, norm_waves), os.path.join(cache_dir, "taco_train_cache.pt"))
         else:
@@ -122,6 +133,16 @@ class TacotronDataset(Dataset):
 
             if isinstance(self.datapoints, tuple):  # check for backwards compatibility
                 self.datapoints = self.datapoints[0]
+
+            pop_indexes = list()
+            for index, el in enumerate(self.datapoints):
+                try:
+                    if len(el[0][0]) != 66:
+                        pop_indexes.append(index)
+                except TypeError:
+                    pop_indexes.append(index)
+            for pop_index in pop_indexes:
+                self.datapoints.pop(pop_index)
 
         if not os.path.exists(os.path.join(cache_dir, "cached_priors.pt")) or rebuild_cache:
             self.priors = list()
