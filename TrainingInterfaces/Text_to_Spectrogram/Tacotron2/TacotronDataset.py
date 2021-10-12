@@ -123,9 +123,14 @@ class TacotronDataset(Dataset):
             if isinstance(self.datapoints, tuple):  # check for backwards compatibility
                 self.datapoints = self.datapoints[0]
 
-        self.priors = list()
-        for datapoint in tqdm(self.datapoints):
-            self.priors.append(beta_binomial_prior_distribution(datapoint[1], datapoint[3], scaling=1.0))
+        if not os.path.exists(os.path.join(cache_dir, "cached_priors.pt")) or rebuild_cache:
+            self.priors = list()
+            for datapoint in tqdm(self.datapoints):
+                self.priors.append(beta_binomial_prior_distribution(datapoint[1], datapoint[3], scaling=1.0))
+            torch.save(self.priors, os.path.join(cache_dir, "cached_priors.pt"))
+        else:
+            self.priors = torch.load(os.path.join(cache_dir, "cached_priors.pt"), map_location='cpu')
+
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,
