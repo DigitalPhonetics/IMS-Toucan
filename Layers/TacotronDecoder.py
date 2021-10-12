@@ -411,7 +411,7 @@ class Decoder(torch.nn.Module):
         before_outs = torch.cat(outs, dim=2)  # (B, odim, Lmax)
         att_ws = torch.stack(att_ws, dim=1)  # (B, Lmax, Tmax)
         if prior is not None:
-            att_ws = att_ws * prior
+            att_ws = att_ws @ prior
         att_ws_loc = torch.stack(att_ws_loc, dim=1)  # (B, Lmax, Tmax)
         att_ws_for = torch.stack(att_ws_for, dim=1)  # (B, Lmax, Tmax)
 
