@@ -169,8 +169,8 @@ class AlignmentLoss(nn.Module):
     def __init__(self,
                  bin_warmup_steps=10000,
                  bin_start_steps=40000,
-                 forward_start_steps=2000,
-                 forward_warmup_steps=200,
+                 forward_start_steps=5000,
+                 forward_warmup_steps=500,
                  include_forward_loss=True):
         super().__init__()
         if include_forward_loss:
