@@ -81,7 +81,7 @@ def collate_and_pad(batch):
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
-                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[5].transpose(0, 1) for datapoint in batch], batch_first=True),
                     torch.stack([torch.LongTensor([datapoint[6]]) for datapoint in batch]).squeeze(1))
         else:
             # text, text_len, speech, speech_len, prior, language_id
@@ -89,21 +89,17 @@ def collate_and_pad(batch):
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[4].transpose(0, 1) for datapoint in batch], batch_first=True),
                     torch.stack([torch.LongTensor([datapoint[5]]) for datapoint in batch]).squeeze(1))
     else:
         if len(batch[0]) == 6:
             # text, text_len, speech, speech_len, speaker_emb, prior
-            for el in batch:
-                print(el[0].shape)
-                print(el[2].shape)
-                print(el[5].shape)
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
-                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[5].transpose(0, 1) for datapoint in batch], batch_first=True),
                     )
         else:
             # text, text_len, speech, speech_len, prior
@@ -111,7 +107,7 @@ def collate_and_pad(batch):
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    pad_sequence([datapoint[4].transpose(0, 1) for datapoint in batch], batch_first=True),
                     )
 
 
