@@ -120,6 +120,7 @@ class Encoder(torch.nn.Module):
             LongTensor: Batch of lengths of each sequence (B,)
         """
         xs = self.embed(xs)
+        print(xs.shape)
         if language_embedding is not None:
             xs = xs + language_embedding
         xs = xs.transpose(1, 2)
