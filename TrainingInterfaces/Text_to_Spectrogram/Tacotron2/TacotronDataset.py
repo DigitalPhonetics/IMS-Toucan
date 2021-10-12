@@ -131,10 +131,6 @@ class TacotronDataset(Dataset):
         else:
             self.priors = torch.load(os.path.join(cache_dir, "cached_priors.pt"), map_location='cpu')
 
-        for el in self.datapoints:
-            if len(el[0][0][0]) != 66:
-                print(cache_dir)
-
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,
