@@ -75,8 +75,6 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
 def collate_and_pad(batch):
     max_text = max([datapoint[1] for datapoint in batch])
     max_spec = max([datapoint[3] for datapoint in batch])
-    for datapoint in batch:
-        print(f"{datapoint[5].shape} -> {F.pad(datapoint[5], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]).shape}")
     if type(batch[0][-1]) is int:
         if len(batch[0]) == 7:
             # text, text_len, speech, speech_len, speaker_emb, prior, language_id
