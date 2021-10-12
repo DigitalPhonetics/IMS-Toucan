@@ -179,6 +179,7 @@ class Tacotron2(torch.nn.Module):
                 speech_lengths,
                 step,
                 speaker_embeddings=None,
+                prior=None,
                 language_id=None,
                 return_mels=False,
                 return_loss_dict=False):
@@ -214,6 +215,7 @@ class Tacotron2(torch.nn.Module):
                                                                                         speech,
                                                                                         speech_lengths,
                                                                                         speaker_embeddings,
+                                                                                        prior=prior,
                                                                                         language_id=language_id)
 
         # modify mod part of groundtruth
@@ -258,7 +260,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            align_loss = self.alignment_loss(att_ws_loc, text_lengths, olens_in, step)
+            align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
             if align_loss != 0.0:
                 losses["align"] = align_loss.item()
                 loss = loss + align_loss
@@ -277,6 +279,7 @@ class Tacotron2(torch.nn.Module):
                  ys,
                  speech_lengths,
                  speaker_embeddings,
+                 prior=None,
                  language_id=None):
         if language_id is not None:
             language_embedding_vector = self.language_embedding(language_id)
@@ -288,7 +291,7 @@ class Tacotron2(torch.nn.Module):
             hs = self._integrate_with_spk_embed(hs, projected_speaker_embeddings)
         else:
             projected_speaker_embeddings = None
-        return self.dec(hs, hlens, ys, projected_speaker_embeddings)
+        return self.dec(hs, hlens, ys, projected_speaker_embeddings, prior=prior)
 
     def inference(self,
                   text_tensor,

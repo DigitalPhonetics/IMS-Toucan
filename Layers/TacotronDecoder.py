@@ -340,7 +340,7 @@ class Decoder(torch.nn.Module):
         init_hs = hs.new_zeros(hs.size(0), self.lstm[0].hidden_size)
         return init_hs
 
-    def forward(self, hs, hlens, ys, speaker_embedding=None):
+    def forward(self, hs, hlens, ys, speaker_embedding=None, prior=None):
         """Calculate forward propagation.
 
         Args:
@@ -410,6 +410,8 @@ class Decoder(torch.nn.Module):
         logits = torch.cat(logits, dim=1)  # (B, Lmax)
         before_outs = torch.cat(outs, dim=2)  # (B, odim, Lmax)
         att_ws = torch.stack(att_ws, dim=1)  # (B, Lmax, Tmax)
+        if prior is not None:
+            att_ws = att_ws * prior
         att_ws_loc = torch.stack(att_ws_loc, dim=1)  # (B, Lmax, Tmax)
         att_ws_for = torch.stack(att_ws_for, dim=1)  # (B, Lmax, Tmax)
 

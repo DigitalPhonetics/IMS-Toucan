@@ -74,35 +74,41 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
 
 def collate_and_pad(batch):
     if type(batch[0][-1]) is int:
-        if len(batch[0]) == 6:
-            # text, text_len, speech, speech_len, speaker_emb, language_id
+        if len(batch[0]) == 7:
+            # text, text_len, speech, speech_len, speaker_emb, prior, language_id
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
+                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    torch.stack([torch.LongTensor([datapoint[6]]) for datapoint in batch]).squeeze(1))
+        else:
+            # text, text_len, speech, speech_len, prior, language_id
+            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
                     torch.stack([torch.LongTensor([datapoint[5]]) for datapoint in batch]).squeeze(1))
-        else:
-            # text, text_len, speech, speech_len, language_id
-            return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-                    pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    torch.stack([torch.LongTensor([datapoint[4]]) for datapoint in batch]).squeeze(1))
     else:
-        if len(batch[0]) == 5:
-            # text, text_len, speech, speech_len, speaker_emb
+        if len(batch[0]) == 6:
+            # text, text_len, speech, speech_len, speaker_emb, prior
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    torch.stack([datapoint[4] for datapoint in batch]))
+                    torch.stack([datapoint[4] for datapoint in batch]),
+                    pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+                    )
         else:
-            # text, text_len, speech, speech_len
+            # text, text_len, speech, speech_len, prior
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
+                    torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+                    pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+                    )
 
 
 def train_loop(net,
@@ -207,7 +213,8 @@ def train_loop(net,
                                                     speech_lengths=batch[3].to(device),
                                                     step=step_counter,
                                                     speaker_embeddings=None,
-                                                    language_id=batch[4].to(device),
+                                                    prior=batch[4].to(device),
+                                                    language_id=batch[5].to(device),
                                                     return_loss_dict=True)
                     else:
                         train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
@@ -216,7 +223,8 @@ def train_loop(net,
                                                                     speech_lengths=batch[3].to(device),
                                                                     step=step_counter,
                                                                     speaker_embeddings=batch[4].to(device),
-                                                                    language_id=batch[5].to(device),
+                                                                    priot=batch[5].to(device),
+                                                                    language_id=batch[6].to(device),
                                                                     return_mels=True,
                                                                     return_loss_dict=True)
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
@@ -239,6 +247,7 @@ def train_loop(net,
                                                     text_lengths=batch[1].to(device),
                                                     speech=batch[2].to(device),
                                                     speech_lengths=batch[3].to(device),
+                                                    prior=batch[4].to(device),
                                                     step=step_counter,
                                                     speaker_embeddings=None,
                                                     return_loss_dict=True)
@@ -249,6 +258,7 @@ def train_loop(net,
                                                                     speech_lengths=batch[3].to(device),
                                                                     step=step_counter,
                                                                     speaker_embeddings=batch[4].to(device),
+                                                                    prior=batch[5].to(device),
                                                                     return_mels=True,
                                                                     return_loss_dict=True)
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
@@ -309,11 +319,11 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model"       : net.state_dict(),
-                    "optimizer"   : optimizer.state_dict(),
-                    "scaler"      : scaler.state_dict(),
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
                     "step_counter": step_counter,
-                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():
                     plot_attention(model=net,

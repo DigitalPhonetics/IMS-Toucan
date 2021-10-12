@@ -1,9 +1,11 @@
 import os
 import random
 
+import numpy as np
 import soundfile as sf
 import torch
 from numpy import trim_zeros
+from scipy.stats import betabinom
 from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
@@ -120,6 +122,10 @@ class TacotronDataset(Dataset):
 
             if isinstance(self.datapoints, tuple):  # check for backwards compatibility
                 self.datapoints = self.datapoints[0]
+
+        self.priors = list()
+        for datapoint in tqdm(self.datapoints):
+            self.priors.append(beta_binomial_prior_distribution(datapoint[1], datapoint[3], scaling=1.0))
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def cache_builder_process(self,
@@ -238,6 +244,7 @@ class TacotronDataset(Dataset):
                        self.datapoints[index][1], \
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
+                       self.priors[index], \
                        self.language_id
             else:
                 return self.datapoints[index][0], \
@@ -245,19 +252,33 @@ class TacotronDataset(Dataset):
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
                        self.datapoints[index][4], \
+                       self.priors[index], \
                        self.language_id
         else:
             if not self.speaker_embedding:
                 return self.datapoints[index][0], \
                        self.datapoints[index][1], \
                        self.datapoints[index][2], \
-                       self.datapoints[index][3]
+                       self.datapoints[index][3], \
+                       self.priors[index]
             else:
                 return self.datapoints[index][0], \
                        self.datapoints[index][1], \
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
-                       self.datapoints[index][4]
+                       self.datapoints[index][4], \
+                       self.priors[index]
 
     def __len__(self):
         return len(self.datapoints)
+
+
+def beta_binomial_prior_distribution(phoneme_count, mel_count, scaling=1.0):
+    x = np.arange(0, phoneme_count)
+    mel_text_probs = []
+    for i in range(1, mel_count + 1):
+        a, b = scaling * i, scaling * (mel_count + 1 - i)
+        rv = betabinom(phoneme_count, a, b)
+        mel_i_prob = rv.pmf(x)
+        mel_text_probs.append(mel_i_prob)
+    return torch.tensor(np.array(mel_text_probs))
