@@ -294,7 +294,8 @@ class AttLoc(torch.nn.Module):
                 scaling=2.0,
                 last_attended_idx=None,
                 backward_window=1,
-                forward_window=3, ):
+                forward_window=3,
+                prior=None):
         """
         Calcualte AttLoc forward propagation.
 
@@ -357,6 +358,10 @@ class AttLoc(torch.nn.Module):
             e = _apply_attention_constraint(e, last_attended_idx, backward_window, forward_window)
 
         w = F.softmax(scaling * e, dim=1)
+
+        print(f"weight: {w.view(batch, self.h_length, 1).shape}")
+        if prior is not None:
+            print(f"prior: {prior.view(batch, self.h_length, 1).shape}")
 
         # weighted sum over flames
         # utt x hdim
