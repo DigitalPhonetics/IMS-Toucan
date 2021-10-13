@@ -359,13 +359,14 @@ class AttLoc(torch.nn.Module):
 
         w = F.softmax(scaling * e, dim=1)
 
-        print(f"weight: {w.view(batch, self.h_length, 1).shape}")
         if prior is not None:
-            print(f"prior: {prior.view(batch, self.h_length, 1).shape}")
+            posterior_mask = prior.view(batch, self.h_length, 1) * w.view(batch, self.h_length, 1)
+        else:
+            posterior_mask = w.view(batch, self.h_length, 1)
 
         # weighted sum over flames
         # utt x hdim
-        c = torch.sum(self.enc_h * w.view(batch, self.h_length, 1), dim=1)
+        c = torch.sum(self.enc_h * posterior_mask, dim=1)
 
         return c, w
 
@@ -562,7 +563,7 @@ class AttLoc2D(torch.nn.Module):
         # utt x frame x att_dim -> utt x frame
         e = self.gvec(
             torch.tanh(att_conv + self.pre_compute_enc_h + dec_z_tiled)
-            ).squeeze(2)
+        ).squeeze(2)
 
         # NOTE consider zero padding when compute w.
         if self.mask is None:
@@ -1448,7 +1449,7 @@ class AttForwardTA(torch.nn.Module):
                 last_attended_idx=None,
                 backward_window=1,
                 forward_window=3,
-                ):
+                prior=None):
         """
         Calculate AttForwardTA forward propagation.
 
@@ -1516,10 +1517,15 @@ class AttForwardTA(torch.nn.Module):
         # NOTE: clamp is needed to avoid nan gradient
         w = F.normalize(torch.clamp(w, 1e-6), p=1, dim=1)
 
+        if prior is not None:
+            posterior_mask = prior.view(batch, self.h_length, 1) * w.view(batch, self.h_length, 1)
+        else:
+            posterior_mask = w.view(batch, self.h_length, 1)
+
         # weighted sum over flames
         # utt x hdim
         # NOTE use bmm instead of sum(*)
-        c = torch.sum(self.enc_h * w.view(batch, self.h_length, 1), dim=1)
+        c = torch.sum(self.enc_h * posterior_mask, dim=1)
 
         # update transition agent prob
         self.trans_agent_prob = torch.sigmoid(self.mlp_ta(torch.cat([c, out_prev, dec_z], dim=1)))
@@ -1581,7 +1587,7 @@ def att_for(args, num_att=1, han_mode=False):
     else:
         raise ValueError(
             "Number of encoders needs to be more than one. {}".format(num_encs)
-            )
+        )
     return att_list
 
 

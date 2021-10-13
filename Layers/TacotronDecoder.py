@@ -383,7 +383,7 @@ class Decoder(torch.nn.Module):
         outs, logits, att_ws, att_ws_loc, att_ws_for = [], [], [], [], []
         for index, y in enumerate(ys.transpose(0, 1)):
             prior_slice = prior.transpose(0, 1)[index]
-            att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out)
+            att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out, prior=prior_slice)
             att_c_location, att_w_location = self.location_att(hs, hlens, z_list[0], prev_att_w_location, prior=prior_slice)
             att_c = att_c_location + att_c_forward
             att_w = att_w_location + att_w_forward
@@ -411,8 +411,6 @@ class Decoder(torch.nn.Module):
         logits = torch.cat(logits, dim=1)  # (B, Lmax)
         before_outs = torch.cat(outs, dim=2)  # (B, odim, Lmax)
         att_ws = torch.stack(att_ws, dim=1)  # (B, Lmax, Tmax)
-        if prior is not None:
-            att_ws = att_ws * prior
         att_ws_loc = torch.stack(att_ws_loc, dim=1)  # (B, Lmax, Tmax)
         att_ws_for = torch.stack(att_ws_for, dim=1)  # (B, Lmax, Tmax)
 
