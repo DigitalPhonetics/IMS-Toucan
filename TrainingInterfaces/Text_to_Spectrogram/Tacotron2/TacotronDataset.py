@@ -134,7 +134,7 @@ class TacotronDataset(Dataset):
             if isinstance(self.datapoints, tuple):  # check for backwards compatibility
                 self.datapoints = self.datapoints[0]
 
-            for el in tqdm(self.datapoints):
+            for el in self.datapoints:
                 try:
                     if len(el[0][0]) != 66:
                         print(f"Inconsistency in text tensors in {cache_dir}!")
@@ -149,7 +149,7 @@ class TacotronDataset(Dataset):
         else:
             self.priors = torch.load(os.path.join(cache_dir, "cached_priors.pt"), map_location='cpu')
 
-        print(f"Prepared {len(self.datapoints)} datapoints and accompanying {len(self.priors)} priors.")
+        print(f"Prepared {len(self.datapoints)} datapoints and accompanying {len(self.priors)} priors in {cache_dir}.")
 
     def cache_builder_process(self,
                               path_list,
