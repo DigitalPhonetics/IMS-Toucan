@@ -368,6 +368,8 @@ class AttLoc(torch.nn.Module):
         # utt x hdim
         c = torch.sum(self.enc_h * posterior_mask, dim=1)
 
+        if prior is not None:
+            w = w * prior
         return c, w
 
 
@@ -1530,6 +1532,8 @@ class AttForwardTA(torch.nn.Module):
         # update transition agent prob
         self.trans_agent_prob = torch.sigmoid(self.mlp_ta(torch.cat([c, out_prev, dec_z], dim=1)))
 
+        if prior is not None:
+            w = w * prior
         return c, w
 
 
