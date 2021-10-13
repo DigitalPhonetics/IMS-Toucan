@@ -360,16 +360,12 @@ class AttLoc(torch.nn.Module):
         w = F.softmax(scaling * e, dim=1)
 
         if prior is not None:
-            posterior_mask = prior.view(batch, self.h_length, 1) * w.view(batch, self.h_length, 1)
-        else:
-            posterior_mask = w.view(batch, self.h_length, 1)
+            w = w * prior  # calculate posterior mask
 
         # weighted sum over flames
         # utt x hdim
-        c = torch.sum(self.enc_h * posterior_mask, dim=1)
+        c = torch.sum(self.enc_h * w.view(batch, self.h_length, 1), dim=1)
 
-        if prior is not None:
-            w = w * prior
         return c, w
 
 
@@ -1520,20 +1516,16 @@ class AttForwardTA(torch.nn.Module):
         w = F.normalize(torch.clamp(w, 1e-6), p=1, dim=1)
 
         if prior is not None:
-            posterior_mask = prior.view(batch, self.h_length, 1) * w.view(batch, self.h_length, 1)
-        else:
-            posterior_mask = w.view(batch, self.h_length, 1)
+            w = w * prior  # calculate posterior mask
 
         # weighted sum over flames
         # utt x hdim
-        # NOTE use bmm instead of sum(*)
-        c = torch.sum(self.enc_h * posterior_mask, dim=1)
+        # NOTE: use bmm instead of sum(*)
+        c = torch.sum(self.enc_h * w.view(batch, self.h_length, 1), dim=1)
 
         # update transition agent prob
         self.trans_agent_prob = torch.sigmoid(self.mlp_ta(torch.cat([c, out_prev, dec_z], dim=1)))
 
-        if prior is not None:
-            w = w * prior
         return c, w
 
 
