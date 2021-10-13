@@ -33,7 +33,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_MultispeakerEnglishCombinedForwardPosteriorHighAttnLoss")
+        save_dir = os.path.join("Models", "Tacotron2_MultispeakerLessAggressive")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
