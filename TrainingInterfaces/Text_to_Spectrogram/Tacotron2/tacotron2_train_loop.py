@@ -130,7 +130,8 @@ def train_loop(net,
                freeze_decoder_until=None,
                freeze_embedding_until=None,
                collapse_margin=5.0,  # be wary of loss scheduling
-               resume=False):
+               resume=False,
+               cycle_loss_start_steps=8000):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -207,18 +208,8 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                if multi_ling:
-                    if not use_speaker_embedding:
-                        train_loss, loss_dict = net(text=batch[0].to(device),
-                                                    text_lengths=batch[1].to(device),
-                                                    speech=batch[2].to(device),
-                                                    speech_lengths=batch[3].to(device),
-                                                    step=step_counter,
-                                                    speaker_embeddings=None,
-                                                    prior=batch[4].to(device),
-                                                    language_id=batch[5].to(device),
-                                                    return_loss_dict=True)
-                    else:
+                if use_speaker_embedding:
+                    if multi_ling:
                         train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
                                                                     text_lengths=batch[1].to(device),
                                                                     speech=batch[2].to(device),
@@ -229,6 +220,18 @@ def train_loop(net,
                                                                     language_id=batch[6].to(device),
                                                                     return_mels=True,
                                                                     return_loss_dict=True)
+
+                    else:
+                        train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
+                                                                    text_lengths=batch[1].to(device),
+                                                                    speech=batch[2].to(device),
+                                                                    speech_lengths=batch[3].to(device),
+                                                                    step=step_counter,
+                                                                    speaker_embeddings=batch[4].to(device),
+                                                                    prior=batch[5].to(device),
+                                                                    return_mels=True,
+                                                                    return_loss_dict=True)
+                    if step_counter > cycle_loss_start_steps:
                         pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
                                                                                     torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
                         gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
@@ -240,11 +243,21 @@ def train_loop(net,
                         del pred_spemb
                         del predicted_mels
                         del gold_spemb
-                        cycle_loss = cycle_distance * min(200, step_counter / 1200)
+                        cycle_loss = cycle_distance * min(100, step_counter - cycle_loss_start_steps / 1200)
                         loss_dict["cycle"] = cycle_loss.item()
                         train_loss = train_loss + cycle_loss
                 else:
-                    if not use_speaker_embedding:
+                    if multi_ling:
+                        train_loss, loss_dict = net(text=batch[0].to(device),
+                                                    text_lengths=batch[1].to(device),
+                                                    speech=batch[2].to(device),
+                                                    speech_lengths=batch[3].to(device),
+                                                    step=step_counter,
+                                                    speaker_embeddings=None,
+                                                    prior=batch[4].to(device),
+                                                    language_id=batch[5].to(device),
+                                                    return_loss_dict=True)
+                    else:
                         train_loss, loss_dict = net(text=batch[0].to(device),
                                                     text_lengths=batch[1].to(device),
                                                     speech=batch[2].to(device),
@@ -253,28 +266,6 @@ def train_loop(net,
                                                     step=step_counter,
                                                     speaker_embeddings=None,
                                                     return_loss_dict=True)
-                    else:
-                        train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
-                                                                    text_lengths=batch[1].to(device),
-                                                                    speech=batch[2].to(device),
-                                                                    speech_lengths=batch[3].to(device),
-                                                                    step=step_counter,
-                                                                    speaker_embeddings=batch[4].to(device),
-                                                                    prior=batch[5].to(device),
-                                                                    return_mels=True,
-                                                                    return_loss_dict=True)
-                        pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
-                                                                                    torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
-                        gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
-                                                                                    torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
-                        # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
-                        cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
-                        del pred_spemb
-                        del predicted_mels
-                        del gold_spemb
-                        cycle_loss = cycle_distance * min(100, step_counter / 1200)
-                        loss_dict["cycle"] = cycle_loss.item()
-                        train_loss = train_loss + cycle_loss
 
                 train_losses_this_epoch.append(train_loss.item())
                 for loss_type in loss_dict:
