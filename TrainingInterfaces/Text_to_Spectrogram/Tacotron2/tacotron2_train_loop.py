@@ -73,45 +73,58 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
 
 
 def collate_and_pad(batch):
-    # commented lines are for the use of a prior. Increase LID index if prior is used.
-    # max_text = max([datapoint[1] for datapoint in batch])
-    # max_spec = max([datapoint[3] for datapoint in batch])
+    max_text = max([datapoint[1] for datapoint in batch])
+    max_spec = max([datapoint[3] for datapoint in batch])
     if type(batch[0][-1]) is int:
         if len(batch[0]) == 7:
             # text, text_len, speech, speech_len, speaker_emb, prior, language_id
+            if batch[0][5] is not None:
+                prior = torch.stack([F.pad(datapoint[5], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch])
+            else:
+                prior = None
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
-                    # torch.stack([F.pad(datapoint[5], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch]),
-                    torch.stack([torch.LongTensor([datapoint[5]]) for datapoint in batch]).squeeze(1))
+                    prior,
+                    torch.stack([torch.LongTensor([datapoint[6]]) for datapoint in batch]).squeeze(1))
         else:
             # text, text_len, speech, speech_len, prior, language_id
+            if batch[0][4] is not None:
+                prior = torch.stack([F.pad(datapoint[4], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch])
+            else:
+                prior = None
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    # torch.stack([F.pad(datapoint[4], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch]),
-                    torch.stack([torch.LongTensor([datapoint[4]]) for datapoint in batch]).squeeze(1))
+                    prior,
+                    torch.stack([torch.LongTensor([datapoint[5]]) for datapoint in batch]).squeeze(1))
     else:
         if len(batch[0]) == 6:
             # text, text_len, speech, speech_len, speaker_emb, prior
+            if batch[0][5] is not None:
+                prior = torch.stack([F.pad(datapoint[5], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch])
+            else:
+                prior = None
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
                     torch.stack([datapoint[4] for datapoint in batch]),
-                    # torch.stack([F.pad(datapoint[5], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch]),
-                    )
+                    prior)
         else:
             # text, text_len, speech, speech_len, prior
+            if batch[0][4] is not None:
+                prior = torch.stack([F.pad(datapoint[4], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch])
+            else:
+                prior = None
             return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
                     pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
                     torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-                    # torch.stack([F.pad(datapoint[4], [0, max_text - datapoint[1], 0, max_spec - datapoint[3]]) for datapoint in batch]),
-                    )
+                    prior)
 
 
 def train_loop(net,
@@ -217,11 +230,8 @@ def train_loop(net,
                                                                     speech_lengths=batch[3].to(device),
                                                                     step=step_counter,
                                                                     speaker_embeddings=batch[4].to(device),
-                                                                    # prior=batch[5].to(device),
-                                                                    # prior is removed again as it seemed to do more harm than good. Code infrastructure is
-                                                                    # still there though, in case you want to try it. Just increase the index of the language
-                                                                    # ID by 1.
-                                                                    language_id=batch[5].to(device),
+                                                                    prior=batch[5].to(device) if batch[5] is not None else None,
+                                                                    language_id=batch[6].to(device),
                                                                     return_mels=True,
                                                                     return_loss_dict=True)
 
@@ -232,7 +242,7 @@ def train_loop(net,
                                                                     speech_lengths=batch[3].to(device),
                                                                     step=step_counter,
                                                                     speaker_embeddings=batch[4].to(device),
-                                                                    # prior=batch[5].to(device),
+                                                                    prior=batch[5].to(device) if batch[5] is not None else None,
                                                                     return_mels=True,
                                                                     return_loss_dict=True)
                     if step_counter > cycle_loss_start_steps:
@@ -258,15 +268,15 @@ def train_loop(net,
                                                     speech_lengths=batch[3].to(device),
                                                     step=step_counter,
                                                     speaker_embeddings=None,
-                                                    # prior=batch[4].to(device),
-                                                    language_id=batch[4].to(device),
+                                                    prior=batch[4].to(device) if batch[4] is not None else None,
+                                                    language_id=batch[5].to(device),
                                                     return_loss_dict=True)
                     else:
                         train_loss, loss_dict = net(text=batch[0].to(device),
                                                     text_lengths=batch[1].to(device),
                                                     speech=batch[2].to(device),
                                                     speech_lengths=batch[3].to(device),
-                                                    # prior=batch[4].to(device),
+                                                    prior=batch[4].to(device) if batch[4] is not None else None,
                                                     step=step_counter,
                                                     speaker_embeddings=None,
                                                     return_loss_dict=True)
@@ -316,11 +326,11 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model": net.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "scaler": scaler.state_dict(),
+                    "model"       : net.state_dict(),
+                    "optimizer"   : optimizer.state_dict(),
+                    "scaler"      : scaler.state_dict(),
                     "step_counter": step_counter,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():
                     plot_attention(model=net,

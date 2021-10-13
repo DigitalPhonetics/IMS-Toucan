@@ -34,6 +34,7 @@ class TacotronDataset(Dataset):
                  remove_all_silences=True,
                  verbose=False,
                  include_priors=False):
+        self.include_priors = include_priors
         self.return_language_id = return_language_id
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
@@ -270,7 +271,7 @@ class TacotronDataset(Dataset):
                        self.datapoints[index][1], \
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
-                       self.priors[index], \
+                       self.priors[index] if self.include_priors else None, \
                        self.language_id
             else:
                 return self.datapoints[index][0], \
@@ -278,7 +279,7 @@ class TacotronDataset(Dataset):
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
                        self.datapoints[index][4], \
-                       self.priors[index], \
+                       self.priors[index] if self.include_priors else None, \
                        self.language_id
         else:
             if not self.speaker_embedding:
@@ -286,14 +287,14 @@ class TacotronDataset(Dataset):
                        self.datapoints[index][1], \
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
-                       self.priors[index]
+                       self.priors[index] if self.include_priors else None
             else:
                 return self.datapoints[index][0], \
                        self.datapoints[index][1], \
                        self.datapoints[index][2], \
                        self.datapoints[index][3], \
                        self.datapoints[index][4], \
-                       self.priors[index]
+                       self.priors[index] if self.include_priors else None
 
     def __len__(self):
         return len(self.datapoints)
