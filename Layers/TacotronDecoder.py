@@ -382,7 +382,7 @@ class Decoder(torch.nn.Module):
         # loop for an output sequence
         outs, logits, att_ws, att_ws_loc, att_ws_for = [], [], [], [], []
         for index, y in enumerate(ys.transpose(0, 1)):
-            prior_slice = prior.transpose(0, 1)[index]
+            prior_slice = prior.transpose(0, 1)[index].float()
             att_c_forward, att_w_forward = self.forward_att(hs, hlens, z_list[0], prev_att_w_forward, prev_out, prior=prior_slice)
             att_c_location, att_w_location = self.location_att(hs, hlens, z_list[0], prev_att_w_location, prior=prior_slice)
             att_c = att_c_location + att_c_forward
