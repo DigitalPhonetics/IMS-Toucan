@@ -32,7 +32,8 @@ class TacotronDataset(Dataset):
                  return_language_id=False,
                  device="cpu",
                  remove_all_silences=True,
-                 verbose=False):
+                 verbose=False,
+                 include_priors=False):
         self.return_language_id = return_language_id
         self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         self.speaker_embedding = speaker_embedding
@@ -140,16 +141,18 @@ class TacotronDataset(Dataset):
                         print(f"Inconsistency in text tensors in {cache_dir}!")
                 except TypeError:
                     print(f"Inconsistency in text tensors in {cache_dir}!")
+        if include_priors:
+            if not os.path.exists(os.path.join(cache_dir, "cached_priors.pt")) or rebuild_cache:
+                self.priors = list()
+                for datapoint in tqdm(self.datapoints):
+                    self.priors.append(beta_binomial_prior_distribution(datapoint[1], datapoint[3], scaling=1.0))
+                torch.save(self.priors, os.path.join(cache_dir, "cached_priors.pt"))
+            else:
+                self.priors = torch.load(os.path.join(cache_dir, "cached_priors.pt"), map_location='cpu')
 
-        if not os.path.exists(os.path.join(cache_dir, "cached_priors.pt")) or rebuild_cache:
-            self.priors = list()
-            for datapoint in tqdm(self.datapoints):
-                self.priors.append(beta_binomial_prior_distribution(datapoint[1], datapoint[3], scaling=1.0))
-            torch.save(self.priors, os.path.join(cache_dir, "cached_priors.pt"))
+            print(f"Prepared {len(self.datapoints)} datapoints and accompanying {len(self.priors)} priors in {cache_dir}.")
         else:
-            self.priors = torch.load(os.path.join(cache_dir, "cached_priors.pt"), map_location='cpu')
-
-        print(f"Prepared {len(self.datapoints)} datapoints and accompanying {len(self.priors)} priors in {cache_dir}.")
+            print(f"Prepared {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
                               path_list,
