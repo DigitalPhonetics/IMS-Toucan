@@ -48,6 +48,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         duration = len(x) / sr
         if 10 > duration > 5 and path not in used_samples:
             used_samples.add(path)
+            total_len += duration
 
     print(f"Collected {total_len / 60.0} minutes worth of samples.")
 
