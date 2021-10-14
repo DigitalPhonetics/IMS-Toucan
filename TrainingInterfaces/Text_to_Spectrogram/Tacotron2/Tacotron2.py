@@ -49,6 +49,7 @@ class Tacotron2(torch.nn.Module):
             postnet_layers=5,
             postnet_chans=512,
             postnet_filts=5,
+            attention_type="location",
             output_activation=None,
             use_batch_norm=True,
             use_concate=True,
@@ -126,14 +127,16 @@ class Tacotron2(torch.nn.Module):
             speaker_embedding_projection_size = None
         dec_idim = eunits
 
-        loc_att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
-
-        forward_att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
+        if attention_type == "location":
+            att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
+        elif attention_type == "forward":
+            att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
+        else:
+            raise ValueError(f"unknown attention_type: {attention_type}")
 
         self.dec = Decoder(idim=dec_idim,
                            odim=odim,
-                           loc_att=loc_att,
-                           forward_att=forward_att,
+                           att=att,
                            dlayers=dlayers,
                            dunits=dunits,
                            prenet_layers=prenet_layers,
@@ -210,13 +213,13 @@ class Tacotron2(torch.nn.Module):
         labels = F.pad(labels, [0, 1], "constant", 1.0)
 
         # calculate tacotron2 outputs
-        after_outs, before_outs, logits, att_ws, att_ws_loc, att_ws_for = self._forward(text,
-                                                                                        text_lengths,
-                                                                                        speech,
-                                                                                        speech_lengths,
-                                                                                        speaker_embeddings,
-                                                                                        prior=prior,
-                                                                                        language_id=language_id)
+        after_outs, before_outs, logits, att_ws = self._forward(text,
+                                                                text_lengths,
+                                                                speech,
+                                                                speech_lengths,
+                                                                speaker_embeddings,
+                                                                prior=prior,
+                                                                language_id=language_id)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -235,7 +238,7 @@ class Tacotron2(torch.nn.Module):
             losses["mse"] = mse_loss.item()
             losses["bce"] = bce_loss.item()
         else:
-            raise ValueError(f"unknown --loss-type {self.loss_type}")
+            raise ValueError(f"unknown loss-type {self.loss_type}")
 
         # calculate dtw loss
         if self.use_dtw_loss:
@@ -249,11 +252,8 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            attn_loss_weight_loc = max(1.0, 25.0 / max((step / 200.0), 1.0))
-            attn_loss_weight_for = max(1.0, 5.0 / max((step / 400.0), 1.0))
-            attn_loss_loc = self.guided_att_loss(att_ws_loc, text_lengths, olens_in) * attn_loss_weight_loc
-            attn_loss_for = self.guided_att_loss(att_ws_for, text_lengths, olens_in) * attn_loss_weight_for
-            attn_loss = attn_loss_loc + attn_loss_for
+            attn_loss_weight = max(1.0, 25.0 / max((step / 200.0), 1.0))
+            attn_loss = self.guided_att_loss(att_ws, text_lengths, olens_in) * attn_loss_weight
             losses["diag"] = attn_loss.item()
             loss = loss + attn_loss
 
@@ -263,9 +263,7 @@ class Tacotron2(torch.nn.Module):
                 olens_in = speech_lengths.new([olen // self.reduction_factor for olen in speech_lengths])
             else:
                 olens_in = speech_lengths
-            align_loss_loc = self.alignment_loss(att_ws_loc, text_lengths, olens_in, step)
-            align_loss_for = self.alignment_loss(att_ws_for, text_lengths, olens_in, step)
-            align_loss = align_loss_loc + align_loss_for
+            align_loss = self.alignment_loss(att_ws, text_lengths, olens_in, step)
             if align_loss != 0.0:
                 losses["align"] = align_loss.item()
                 loss = loss + align_loss
@@ -309,8 +307,7 @@ class Tacotron2(torch.nn.Module):
                   backward_window=1,
                   forward_window=3,
                   use_teacher_forcing=False,
-                  language_id=None,
-                  return_atts=False):
+                  language_id=None):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -342,7 +339,7 @@ class Tacotron2(torch.nn.Module):
             speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
             speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
-            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings, return_atts=return_atts)
+            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings)
 
             return outs[0], None, att_ws[0]
 
@@ -359,16 +356,6 @@ class Tacotron2(torch.nn.Module):
             h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
         else:
             speaker_embeddings = None
-        if return_atts:
-            return self.dec.inference(h,
-                                      threshold=threshold,
-                                      minlenratio=minlenratio,
-                                      maxlenratio=maxlenratio,
-                                      use_att_constraint=use_att_constraint,
-                                      backward_window=backward_window,
-                                      forward_window=forward_window,
-                                      speaker_embedding=speaker_embeddings,
-                                      return_atts=return_atts)
 
         return self.dec.inference(h,
                                   threshold=threshold,
@@ -377,8 +364,7 @@ class Tacotron2(torch.nn.Module):
                                   use_att_constraint=use_att_constraint,
                                   backward_window=backward_window,
                                   forward_window=forward_window,
-                                  speaker_embedding=speaker_embeddings,
-                                  return_atts=return_atts)
+                                  speaker_embedding=speaker_embeddings)
 
     def _integrate_with_spk_embed(self, hs, speaker_embeddings):
         """
