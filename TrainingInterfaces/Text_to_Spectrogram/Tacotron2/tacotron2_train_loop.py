@@ -47,8 +47,8 @@ def plot_attention(model, lang, device, speaker_embedding, att_dir, step, langua
     ax[1].set_xticks(range(len(att[0])))
     del att
     ax[1].set_xticklabels(labels=[phone for phone in phones])
-    ax[0].set_title("Soft-Combined-Attention")
-    ax[1].set_title("Hard-Combined-Attention")
+    ax[0].set_title("Soft-Attention")
+    ax[1].set_title("Hard-Attention")
     fig.tight_layout()
 
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):

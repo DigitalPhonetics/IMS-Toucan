@@ -24,41 +24,41 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    # cache_dir_hifitts = os.path.join("Corpora", "multispeaker_nvidia_hifitts")
-    # os.makedirs(cache_dir_hifitts, exist_ok=True)
+    cache_dir_hifitts = os.path.join("Corpora", "multispeaker_nvidia_hifitts")
+    os.makedirs(cache_dir_hifitts, exist_ok=True)
 
-    cache_dir_libri = os.path.join("Corpora", "multispeaker_libri")
-    os.makedirs(cache_dir_libri, exist_ok=True)
+    # cache_dir_libri = os.path.join("Corpora", "multispeaker_libri")
+    # os.makedirs(cache_dir_libri, exist_ok=True)
 
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_MultispeakerLocationNoPriors")
+        save_dir = os.path.join("Models", "Tacotron2_Multispeaker")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
     datasets = list()
 
-    # datasets.append(TacotronDataset(build_path_to_transcript_dict_nvidia_hifitts(),
-    #                                cache_dir=cache_dir_hifitts,
-    #                                lang="en",
-    #                                speaker_embedding=True,
-    #                                cut_silences=True,
-    #                                return_language_id=False,
-    #                                min_len_in_seconds=3,
-    #                                max_len_in_seconds=12,
-    #                                device=device))
-
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_libritts(),
-                                    cache_dir=cache_dir_libri,
+    datasets.append(TacotronDataset(build_path_to_transcript_dict_nvidia_hifitts(),
+                                    cache_dir=cache_dir_hifitts,
                                     lang="en",
                                     speaker_embedding=True,
                                     cut_silences=True,
                                     return_language_id=False,
                                     min_len_in_seconds=3,
                                     max_len_in_seconds=12,
-                                    device=device,
-                                    remove_all_silences=True))
+                                    device=device))
+
+    # datasets.append(TacotronDataset(build_path_to_transcript_dict_libritts(),
+    #                                cache_dir=cache_dir_libri,
+    #                                lang="en",
+    #                                speaker_embedding=True,
+    #                                cut_silences=True,
+    #                                return_language_id=False,
+    #                                min_len_in_seconds=3,
+    #                                max_len_in_seconds=12,
+    #                                device=device,
+    #                                remove_all_silences=True))
 
     train_set = ConcatDataset(datasets)
 

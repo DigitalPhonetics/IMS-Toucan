@@ -43,7 +43,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
     file_lists.append(get_file_list_css10es())
     file_lists.append(get_file_list_css10fi())
     file_lists.append(get_file_list_css10fr())
-    file_lists.append(get_file_list_css10ge())
+    file_lists.append(get_file_list_css10de())
     file_lists.append(get_file_list_css10gr())
     file_lists.append(get_file_list_css10hu())
     file_lists.append(get_file_list_css10jp())

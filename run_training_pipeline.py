@@ -7,6 +7,8 @@ from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MultiEnglish import run as taco_multi
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
+from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
+from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
 
 pipeline_dict = {
     "fast_nancy": fast_nancy,
@@ -17,7 +19,10 @@ pipeline_dict = {
     "taco_meta": meta_taco,
 
     "taco_multi": taco_multi,
-    "fast_multi": fast_multi
+    "fast_multi": fast_multi,
+
+    "taco_same": taco_same,
+    "taco_dif": taco_dif
 }
 
 if __name__ == '__main__':

@@ -81,7 +81,7 @@ def get_file_list_ljspeech():
     return file_list
 
 
-def get_file_list_css10ge():
+def get_file_list_css10de():
     file_list = list()
     language = "german"
     for book in os.listdir(os.path.join("/mount/resources/speech/corpora/CSS10", language)):

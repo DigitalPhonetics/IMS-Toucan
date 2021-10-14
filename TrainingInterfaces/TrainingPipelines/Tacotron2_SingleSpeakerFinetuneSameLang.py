@@ -1,12 +1,14 @@
 import os
 import random
 
+import soundfile
 import torch
 
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
+from Utility.file_lists import get_file_list_ljspeech
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_ljspeech as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -24,24 +26,41 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Nancy")
+    cache_dir = os.path.join("Corpora", "LJSpeech_low_res")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_Nancy")
+        save_dir = os.path.join("Models", "Tacotron2_SameLangFinetune")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
+    path_to_transcript_dict_ = build_path_to_transcript_dict()
+    path_to_transcript_dict = dict()
+
+    paths = get_file_list_ljspeech()
+    used_samples = set()
+    total_len = 0.0
+    while total_len < 30.0 * 60.0:
+        path = random.choice(paths)
+        x, sr = soundfile.read(path)
+        duration = len(x) / sr
+        if 10 > duration > 5 and path not in used_samples:
+            used_samples.add(path)
+
+    print(f"Collected {total_len / 60.0} minutes worth of samples.")
+
+    for key in path_to_transcript_dict_:
+        if key in used_samples:
+            path_to_transcript_dict[key] = path_to_transcript_dict_[key]
 
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
                                 lang="en",
                                 device=device)
 
-    model = Tacotron2(initialize_from_pretrained_embedding_weights=False)
+    model = Tacotron2()
 
     print("Training model")
     train_loop(net=model,
@@ -54,7 +73,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                use_speaker_embedding=False,
                lang="en",
                lr=0.001,
-               path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune,
-               freeze_embedding_until=None,
+               path_to_checkpoint="Models/Tacotron2_Nancy/best.pt",
+               fine_tune=True,
                resume=resume)
