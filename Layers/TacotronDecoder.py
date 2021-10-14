@@ -6,7 +6,6 @@ import torch
 import torch.nn.functional as F
 
 from Layers.RNNAttention import AttForwardTA
-from Layers.TacotronDecoder import Decoder
 
 
 def decoder_init(m):
