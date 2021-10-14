@@ -79,7 +79,7 @@ def train_loop(net,
                fine_tune=False,
                collapse_margin=5.0,  # be wary of loss scheduling
                resume=False,
-               cycle_loss_start_steps=20000):
+               cycle_loss_start_steps=1000):
     """
     Args:
         cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start
@@ -156,7 +156,7 @@ def train_loop(net,
                     del pred_spemb
                     del predicted_mels
                     del gold_spemb
-                    cycle_loss = cycle_distance * min(100, step_counter - cycle_loss_start_steps / 1200)
+                    cycle_loss = cycle_distance * min(100, step_counter - cycle_loss_start_steps / 100)
                     loss_dict["cycle"] = cycle_loss.item()
                     train_loss = train_loss + cycle_loss
 

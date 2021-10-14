@@ -69,7 +69,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                save_directory=save_dir,
                steps=100000,
                batch_size=32,
-               epochs_per_save=1,
+               epochs_per_save=20,
                lang="en",
                lr=0.001,
                path_to_checkpoint="Models/Tacotron2_Nancy/best.pt",
