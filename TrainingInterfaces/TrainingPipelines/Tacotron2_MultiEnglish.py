@@ -33,7 +33,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_MultispeakerAligner")
+        save_dir = os.path.join("Models", "Tacotron2_MultispeakerLocationNewPriors")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -58,7 +58,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     min_len_in_seconds=3,
                                     max_len_in_seconds=12,
                                     device=device,
-                                    remove_all_silences=True))
+                                    remove_all_silences=True,
+                                    include_priors=True))
 
     train_set = ConcatDataset(datasets)
 
