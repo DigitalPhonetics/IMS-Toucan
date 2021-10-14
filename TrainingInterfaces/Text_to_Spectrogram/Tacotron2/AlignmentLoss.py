@@ -169,8 +169,7 @@ class AlignmentLoss(nn.Module):
     def __init__(self,
                  bin_warmup_steps=10000,
                  bin_start_steps=60000,
-                 forward_start_steps=500,
-                 forward_warmup_steps=500,
+                 forward_start_steps=10000,
                  include_forward_loss=True):
         super().__init__()
         if include_forward_loss:
@@ -180,18 +179,15 @@ class AlignmentLoss(nn.Module):
         self.bin_warmup_steps = bin_warmup_steps
         self.bin_start_steps = bin_start_steps
         self.forward_start_steps = forward_start_steps
-        self.forward_warmup_steps = forward_warmup_steps
-        # in our implementation we need to give the diagonal prior objective some time before we start with the forward sum objective
 
     def forward(self, soft_attention, in_lens, out_lens, step):
 
         soft_attention = soft_attention.unsqueeze(1)
 
         bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 100, 0.01)
-        forward_weight = min(((step - self.forward_start_steps) / self.forward_start_steps) / 10, 0.01)
 
         if self.include_forward_loss and self.forward_start_steps < step:
-            l_forward = forward_weight * self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
+            l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens)
         else:
             l_forward = 0.0
 
