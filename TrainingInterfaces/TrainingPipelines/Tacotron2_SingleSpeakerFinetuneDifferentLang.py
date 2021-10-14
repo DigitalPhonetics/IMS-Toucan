@@ -58,7 +58,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
-                                lang="en",
+                                lang="de",
                                 device=device)
 
     model = Tacotron2()
@@ -72,7 +72,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                batch_size=32,
                epochs_per_save=1,
                use_speaker_embedding=False,
-               lang="en",
+               lang="de",
                lr=0.001,
                path_to_checkpoint="Models/Tacotron2_Nancy/best.pt",
                fine_tune=True,
