@@ -29,7 +29,6 @@ class TacotronDataset(Dataset):
                  verbose=False,
                  include_priors=False):
         self.include_priors = include_priors
-        self.language_id = ArticulatoryCombinedTextFrontend(language=lang).language_id
         if remove_all_silences:
             os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
             os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
