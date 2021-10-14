@@ -27,6 +27,7 @@ class Tacotron2(torch.nn.Module):
             aconv_chans=32,
             aconv_filts=15,
             cumulate_att_w=True,
+            attention_type="location",
             dlayers=2,
             dunits=1024,
             prenet_layers=2,
@@ -99,14 +100,16 @@ class Tacotron2(torch.nn.Module):
             speaker_embedding_projection_size = None
         dec_idim = eunits
 
-        loc_att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
-
-        forward_att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
+        if attention_type == "location":
+            att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)
+        elif attention_type == "forward":
+            att = AttForwardTA(dec_idim, dunits, adim, aconv_chans, aconv_filts, odim)
+        else:
+            raise ValueError(f"unknown attention_type: {attention_type}")
 
         self.dec = Decoder(idim=dec_idim,
                            odim=odim,
-                           loc_att=loc_att,
-                           forward_att=forward_att,
+                           att=att,
                            dlayers=dlayers,
                            dunits=dunits,
                            prenet_layers=prenet_layers,
@@ -194,7 +197,7 @@ class Tacotron2Loss(torch.nn.Module):
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.bce_criterion = torch.nn.BCEWithLogitsLoss(
             reduction=reduction, pos_weight=torch.tensor(bce_pos_weight)
-            )
+        )
 
         self._register_load_state_dict_pre_hook(self._load_state_dict_pre_hook)
 
@@ -207,7 +210,7 @@ class Tacotron2Loss(torch.nn.Module):
             missing_keys,
             unexpected_keys,
             error_msgs,
-            ):
+    ):
         """Apply pre hook fucntion before loading state dict.
         From v.0.6.1 `bce_criterion.pos_weight` param is registered as a parameter but
         old models do not include it and as a result, it causes missing key error when
