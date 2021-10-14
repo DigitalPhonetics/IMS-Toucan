@@ -1,7 +1,6 @@
 from abc import ABC
 
 import torch
-import torch.nn.functional as F
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
@@ -60,8 +59,6 @@ class FastSpeech2(torch.nn.Module, ABC):
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
                  stop_gradient_from_pitch_predictor=True,
-                 # pretrained spk emb
-                 spk_embed_dim=None,
                  # training related
                  transformer_enc_dropout_rate=0.2,
                  transformer_enc_positional_dropout_rate=0.2,
@@ -70,9 +67,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  transformer_dec_positional_dropout_rate=0.2,
                  transformer_dec_attn_dropout_rate=0.2,
                  duration_predictor_dropout_rate=0.2,
-                 postnet_dropout_rate=0.5,
-                 speaker_embedding_projection_size=64
-                 ):
+                 postnet_dropout_rate=0.5):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -80,7 +75,6 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
         self.use_scaled_pos_enc = use_scaled_pos_enc
-        self.spk_embed_dim = spk_embed_dim
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                     torch.nn.Tanh(),
                                     torch.nn.Linear(100, adim))
@@ -99,12 +93,6 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_enc_kernel_size)
-        if spk_embed_dim is not None:
-            if spk_embed_dim is not None:
-                self.hs_emb_projection = torch.nn.Linear(adim + speaker_embedding_projection_size, adim)
-                # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-                self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
-                                                                torch.nn.Softsign())
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
@@ -151,14 +139,19 @@ class FastSpeech2(torch.nn.Module, ABC):
                                dropout_rate=postnet_dropout_rate)
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["model"])
 
-    def _forward(self, xs, ilens, ys=None, olens=None,
+    def _forward(self,
+                 xs,
+                 ilens,
+                 ys=None,
+                 olens=None,
                  ds=None,
-                 ps=None, es=None, speaker_embeddings=None,
-                 is_inference=False, alpha=1.0):
+                 ps=None,
+                 es=None,
+                 is_inference=False,
+                 alpha=1.0):
         x_masks = self._source_mask(ilens)
         hs, _ = self.encoder(xs, x_masks)
-        if self.spk_embed_dim is not None:
-            hs = self._integrate_with_spk_embed(hs, speaker_embeddings)
+
         d_masks = make_pad_mask(ilens).to(xs.device)
         if self.stop_gradient_from_pitch_predictor:
             p_outs = self.pitch_predictor(hs.detach(), d_masks.unsqueeze(-1))
@@ -193,31 +186,21 @@ class FastSpeech2(torch.nn.Module, ABC):
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
         return before_outs, after_outs, d_outs, p_outs, e_outs
 
-    def forward(self, text, speaker_embedding=None, alpha=1.0, return_duration_pitch_energy=False):
+    def forward(self, text, alpha=1.0, return_duration_pitch_energy=False):
         self.eval()
         x = text
         ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
         xs = x.unsqueeze(0)
-        if speaker_embedding is not None:
-            speaker_embedding = speaker_embedding.unsqueeze(0)
+
         before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
                                                                                                ilens,
                                                                                                None,
-                                                                                               speaker_embeddings=speaker_embedding,
                                                                                                is_inference=True,
                                                                                                alpha=alpha)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
-
-    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
-        # project speaker embedding into smaller space that allows tuning
-        speaker_embeddings_projected = self.embedding_projection(speaker_embeddings)
-        # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
-        return hs
 
     def _source_mask(self, ilens):
         x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)

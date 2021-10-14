@@ -60,98 +60,70 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
                                     cache_dir=cache_dir_english,
                                     lang="en",
-                                    speaker_embedding=True,
                                     loading_processes=20,  # run this on a lonely server at night
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,  # needs to be long enough for the speaker embedding to make sense
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
                                     cache_dir=cache_dir_greek,
                                     lang="el",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10es(),
                                     cache_dir=cache_dir_spanish,
                                     lang="es",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fi(),
                                     cache_dir=cache_dir_finnish,
                                     lang="fi",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10ru(),
                                     cache_dir=cache_dir_russian,
                                     lang="ru",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10hu(),
                                     cache_dir=cache_dir_hungarian,
                                     lang="hu",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10nl(),
                                     cache_dir=cache_dir_dutch,
                                     lang="nl",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fr(),
                                     cache_dir=cache_dir_french,
                                     lang="fr",
-                                    speaker_embedding=True,
                                     loading_processes=20,
                                     cut_silences=True,
-                                    return_language_id=True,
                                     min_len_in_seconds=2,
-                                    max_len_in_seconds=13,
-                                    device=device))
+                                    max_len_in_seconds=13))
 
     train_set = ConcatDataset(datasets)
 
-    model = Tacotron2(spk_embed_dim=960,
-                      language_embedding_amount=30,
-                      initialize_encoder_from_pretrained_model=False,
-                      initialize_decoder_from_pretrained_model=False,
-                      initialize_multispeaker_projection=False)
+    model = Tacotron2()
 
     print("Training model")
     train_loop(net=model,
@@ -161,10 +133,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                steps=100000,
                batch_size=24,
                epochs_per_save=1,
-               use_speaker_embedding=True,
                lang="en",
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               multi_ling=True,
                resume=resume)

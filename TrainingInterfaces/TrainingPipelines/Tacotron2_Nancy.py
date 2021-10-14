@@ -38,10 +38,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     train_set = TacotronDataset(path_to_transcript_dict,
                                 cache_dir=cache_dir,
-                                lang="en",
-                                device=device)
+                                lang="en")
 
-    model = Tacotron2(initialize_from_pretrained_embedding_weights=False)
+    model = Tacotron2()
 
     print("Training model")
     train_loop(net=model,
@@ -51,10 +50,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                steps=100000,
                batch_size=32,
                epochs_per_save=1,
-               use_speaker_embedding=False,
                lang="en",
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               freeze_embedding_until=None,
                resume=resume)

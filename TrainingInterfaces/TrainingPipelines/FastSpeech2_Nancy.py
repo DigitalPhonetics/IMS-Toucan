@@ -57,7 +57,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                save_directory=save_dir,
                steps=300000,
                batch_size=20,
-               use_speaker_embedding=False,
                lang="en",
                lr=0.0001,
                warmup_steps=14000,

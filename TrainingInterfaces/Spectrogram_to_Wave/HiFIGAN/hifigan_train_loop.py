@@ -111,14 +111,14 @@ def train_loop(generator,
 
         if epoch % epochs_per_save == 0:
             torch.save({
-                "generator"              : g.state_dict(),
-                "discriminator"          : d.state_dict(),
-                "generator_optimizer"    : optimizer_g.state_dict(),
+                "generator": g.state_dict(),
+                "discriminator": d.state_dict(),
+                "generator_optimizer": optimizer_g.state_dict(),
                 "discriminator_optimizer": optimizer_d.state_dict(),
-                "generator_scheduler"    : scheduler_g.state_dict(),
+                "generator_scheduler": scheduler_g.state_dict(),
                 "discriminator_scheduler": scheduler_d.state_dict(),
-                "step_counter"           : step_counter
-                }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+                "step_counter": step_counter
+            }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(model_save_dir, keep=5)
             if step_counter > steps:
                 # DONE

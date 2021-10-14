@@ -13,9 +13,8 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedT
 
 class Nancy_FastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", speaker_embedding=None):
+    def __init__(self, device="cpu"):
         super().__init__()
-        self.speaker_embedding = None
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Nancy", "best.pt")).to(torch.device(device))
@@ -27,7 +26,7 @@ class Nancy_FastSpeech2(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
-            mel, durations, pitch, energy = self.phone2mel(phones, speaker_embedding=self.speaker_embedding, return_duration_pitch_energy=True)
+            mel, durations, pitch, energy = self.phone2mel(phones, return_duration_pitch_energy=True)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:

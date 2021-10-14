@@ -13,9 +13,8 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedT
 
 class Nancy_Tacotron2(torch.nn.Module):
 
-    def __init__(self, device="cpu", speaker_embedding=None):
+    def __init__(self, device="cpu"):
         super().__init__()
-        self.speaker_embedding = None
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", inference=True)
         self.phone2mel = Tacotron2(path_to_weights=os.path.join("Models", "Tacotron2_Nancy", "best.pt")).to(torch.device(device))
@@ -27,7 +26,7 @@ class Nancy_Tacotron2(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
-            mel = self.phone2mel(phones, speaker_embedding=self.speaker_embedding).transpose(0, 1)
+            mel = self.phone2mel(phones).transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:
             fig, ax = plt.subplots(nrows=2, ncols=1)
@@ -74,7 +73,7 @@ class Nancy_Tacotron2(torch.nn.Module):
 
     def plot_attention(self, sentence):
         sentence_tensor = self.text2phone.string_to_tensor(sentence).to(torch.device(self.device))
-        att = self.phone2mel(text=sentence_tensor, speaker_embedding=self.speaker_embedding, return_atts=True)
+        att = self.phone2mel(text=sentence_tensor, return_atts=True)
         fig, axes = plt.subplots(nrows=1, ncols=1)
         axes.imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
         axes.set_title("{}".format(sentence))

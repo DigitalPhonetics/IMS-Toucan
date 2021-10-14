@@ -13,7 +13,6 @@ from Layers.TacotronEncoder import Encoder
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import AlignmentLoss
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Loss import Tacotron2Loss
 from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
-from Utility.utils import initialize
 from Utility.utils import make_pad_mask
 
 
@@ -55,7 +54,6 @@ class Tacotron2(torch.nn.Module):
             use_concate=True,
             use_residual=False,
             reduction_factor=1,
-            spk_embed_dim=None,
             # training related
             dropout_rate=0.5,
             zoneout_rate=0.1,
@@ -68,14 +66,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,
             use_alignment_loss=True,
-            input_layer_type="linear",
-            init_type=None,
-            initialize_from_pretrained_embedding_weights=False,
-            initialize_encoder_from_pretrained_model=False,
-            initialize_decoder_from_pretrained_model=False,
-            initialize_multispeaker_projection=False,
-            language_embedding_amount=None,  # pass None to not use language embeddings (training single-language models without meta-checkpoint) (default 30)
-            speaker_embedding_projection_size=64):
+            input_layer_type="linear"):
         super().__init__()
 
         # store hyperparameters
@@ -84,7 +75,6 @@ class Tacotron2(torch.nn.Module):
         self.idim = idim
         self.odim = odim
         self.eos = idim - 1
-        self.spk_embed_dim = spk_embed_dim
         self.cumulate_att_w = cumulate_att_w
         self.reduction_factor = reduction_factor
         self.use_guided_attn_loss = use_guided_attn_loss
@@ -97,10 +87,6 @@ class Tacotron2(torch.nn.Module):
             self.output_activation_fn = getattr(F, output_activation)
         else:
             raise ValueError(f"there is no such activation function. " f"({output_activation})")
-
-        self.language_embedding = None
-        if language_embedding_amount is not None:
-            self.language_embedding = torch.nn.Embedding(language_embedding_amount, embed_dim)
 
         # set padding idx
         self.padding_idx = torch.zeros(idim)
@@ -118,13 +104,6 @@ class Tacotron2(torch.nn.Module):
                            use_residual=use_residual,
                            dropout_rate=dropout_rate)
 
-        if spk_embed_dim is not None:
-            self.encoder_speakerembedding_projection = torch.nn.Linear(eunits + speaker_embedding_projection_size, eunits)
-            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(spk_embed_dim, speaker_embedding_projection_size),
-                                                            torch.nn.Softsign())
-        else:
-            speaker_embedding_projection_size = None
         dec_idim = eunits
 
         if attention_type == "location":
@@ -149,8 +128,7 @@ class Tacotron2(torch.nn.Module):
                            use_concate=use_concate,
                            dropout_rate=dropout_rate,
                            zoneout_rate=zoneout_rate,
-                           reduction_factor=reduction_factor,
-                           speaker_embedding_projection_size=speaker_embedding_projection_size)
+                           reduction_factor=reduction_factor)
 
         self.taco2_loss = Tacotron2Loss(use_masking=use_masking,
                                         use_weighted_masking=use_weighted_masking,
@@ -164,26 +142,12 @@ class Tacotron2(torch.nn.Module):
         if self.use_alignment_loss:
             self.alignment_loss = AlignmentLoss()
 
-        if init_type == "xavier_uniform":
-            initialize(self, "xavier_uniform")  # doesn't go together well with forward attention
-        if initialize_from_pretrained_embedding_weights:
-            self.enc.embed.load_state_dict(torch.load("Preprocessing/embedding_pretrained_weights_combined_512dim.pt", map_location='cpu')["embedding_weights"])
-        if initialize_encoder_from_pretrained_model:
-            self.enc.load_state_dict(torch.load("Models/PretrainedModelTaco/enc.pt", map_location='cpu'))
-        if initialize_decoder_from_pretrained_model:
-            self.dec.load_state_dict(torch.load("Models/PretrainedModelTaco/dec.pt", map_location='cpu'))
-        if initialize_multispeaker_projection:
-            self.projection.load_state_dict(torch.load("Models/PretrainedModelTaco/projection.pt", map_location='cpu'))
-
     def forward(self,
                 text,
                 text_lengths,
                 speech,
                 speech_lengths,
                 step,
-                speaker_embeddings=None,
-                prior=None,
-                language_id=None,
                 return_mels=False,
                 return_loss_dict=False):
         """
@@ -191,12 +155,10 @@ class Tacotron2(torch.nn.Module):
 
         Args:
             step: current number of update steps taken as indicator when to start binarizing
-            language_id: batch of lookup IDs for language embedding vectors
             text (LongTensor): Batch of padded character ids (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input batch (B,).
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
             speech_lengths (LongTensor): Batch of the lengths of each target (B,).
-            speaker_embeddings (Tensor, optional): Batch of speaker embeddings (B, spk_embed_dim).
 
         Returns:
             Tensor: Loss scalar value.
@@ -216,10 +178,7 @@ class Tacotron2(torch.nn.Module):
         after_outs, before_outs, logits, att_ws = self._forward(text,
                                                                 text_lengths,
                                                                 speech,
-                                                                speech_lengths,
-                                                                speaker_embeddings,
-                                                                prior=prior,
-                                                                language_id=language_id)
+                                                                speech_lengths)
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -280,42 +239,26 @@ class Tacotron2(torch.nn.Module):
                  text_tensors,
                  ilens,
                  ys,
-                 speech_lengths,
-                 speaker_embeddings,
-                 prior=None,
-                 language_id=None):
-        if language_id is not None:
-            language_embedding_vector = self.language_embedding(language_id)
-            hs, hlens = self.enc(text_tensors, ilens, language_embedding=language_embedding_vector)
-        else:
-            hs, hlens = self.enc(text_tensors, ilens)
-        if self.spk_embed_dim is not None:
-            projected_speaker_embeddings = self.embedding_projection(speaker_embeddings)
-            hs = self._integrate_with_spk_embed(hs, projected_speaker_embeddings)
-        else:
-            projected_speaker_embeddings = None
-        return self.dec(hs, hlens, ys, projected_speaker_embeddings, prior=prior)
+                 speech_lengths):
+        hs, hlens = self.enc(text_tensors, ilens)
+        return self.dec(hs, hlens, ys)
 
     def inference(self,
                   text_tensor,
                   speech_tensor=None,
-                  speaker_embeddings=None,
                   threshold=0.5,
                   minlenratio=0.0,
                   maxlenratio=10.0,
                   use_att_constraint=False,
                   backward_window=1,
                   forward_window=3,
-                  use_teacher_forcing=False,
-                  language_id=None):
+                  use_teacher_forcing=False):
         """
         Generate the sequence of features given the sequences of characters.
 
         Args:
-            language_id: lookup ID for language embedding vectors
             text_tensor (LongTensor): Input sequence of characters (T,).
             speech_tensor (Tensor, optional): Feature sequence to extract style (N, idim).
-            speaker_embeddings (Tensor, optional): Speaker embedding vector (spk_embed_dim,).
             threshold (float, optional): Threshold in inference.
             minlenratio (float, optional): Minimum length ratio in inference.
             maxlenratio (float, optional): Maximum length ratio in inference.
@@ -329,33 +272,20 @@ class Tacotron2(torch.nn.Module):
             Tensor: Output sequence of stop probabilities (L,).
             Tensor: Attention weights (L, T).
         """
-        speaker_embedding = speaker_embeddings
 
         # inference with teacher forcing
         if use_teacher_forcing:
             assert speech_tensor is not None, "speech must be provided with teacher forcing."
 
             text_tensors, speech_tensors = text_tensor.unsqueeze(0), speech_tensor.unsqueeze(0)
-            speaker_embeddings = None if speaker_embedding is None else speaker_embedding.unsqueeze(0)
             ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
             speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
-            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths, speaker_embeddings)
+            outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths)
 
             return outs[0], None, att_ws[0]
 
         # inference
-        if language_id is not None:
-            language_embedding_vector = self.language_embedding(language_id.view(-1))
-            h = self.enc.inference(text_tensor, language_embedding=language_embedding_vector)
-        else:
-            h = self.enc.inference(text_tensor)
-
-        if self.spk_embed_dim is not None:
-            projected_speaker_embedding = self.embedding_projection(speaker_embedding)
-            hs, speaker_embeddings = h.unsqueeze(0), projected_speaker_embedding.unsqueeze(0)
-            h = self._integrate_with_spk_embed(hs, speaker_embeddings)[0]
-        else:
-            speaker_embeddings = None
+        h = self.enc.inference(text_tensor)
 
         return self.dec.inference(h,
                                   threshold=threshold,
@@ -363,22 +293,4 @@ class Tacotron2(torch.nn.Module):
                                   maxlenratio=maxlenratio,
                                   use_att_constraint=use_att_constraint,
                                   backward_window=backward_window,
-                                  forward_window=forward_window,
-                                  speaker_embedding=speaker_embeddings)
-
-    def _integrate_with_spk_embed(self, hs, speaker_embeddings):
-        """
-        Integrate speaker embedding with hidden states.
-
-        Args:
-            hs (Tensor): Batch of hidden state sequences (B, Tmax, adim).
-            speaker_embeddings (Tensor): Batch of speaker embeddings (B, spk_embed_dim).
-
-        Returns:
-            Tensor: Batch of integrated hidden state sequences (B, Tmax, adim).
-
-        """
-        # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(speaker_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.encoder_speakerembedding_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
-        return hs
+                                  forward_window=forward_window)

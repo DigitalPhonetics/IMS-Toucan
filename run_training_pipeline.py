@@ -1,11 +1,9 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MultiEnglish import run as fast_multi
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco
-from TrainingInterfaces.TrainingPipelines.Tacotron2_MultiEnglish import run as taco_multi
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
@@ -17,9 +15,6 @@ pipeline_dict = {
     "hifi_combined": hifigan_combined,
 
     "taco_meta": meta_taco,
-
-    "taco_multi": taco_multi,
-    "fast_multi": fast_multi,
 
     "taco_same": taco_same,
     "taco_dif": taco_dif

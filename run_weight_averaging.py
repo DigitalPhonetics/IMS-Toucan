@@ -25,20 +25,6 @@ def load_net_fast(path):
     return net
 
 
-def load_net_taco_multi(path):
-    check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Tacotron2(spk_embed_dim=960)
-    net.load_state_dict(check_dict["model"])
-    return net
-
-
-def load_net_fast_multi(path):
-    check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = FastSpeech2(spk_embed_dim=960)
-    net.load_state_dict(check_dict["model"])
-    return net
-
-
 def load_net_hifigan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = HiFiGANGenerator()
@@ -104,17 +90,11 @@ def make_best_in_all(n=3):
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
         elif "Tacotron2" in model_dir:
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-            if "LibriTTS" in model_dir or "Multi" in model_dir:
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_taco_multi)
-            else:
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_taco)
+            averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_taco)
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir))
         elif "FastSpeech2" in model_dir:
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-            if "LibriTTS" in model_dir or "Multi" in model_dir:
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast_multi)
-            else:
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
+            averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir))
 
 
@@ -125,10 +105,8 @@ def count_parameters(net):
 def show_all_models_params():
     from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-    model = Tacotron2()
-    print("Number of (trainable) Parameters in Tacotron2: {}".format(count_parameters(model)))
-    model = FastSpeech2()
-    print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(model)))
+    print("Number of (trainable) Parameters in Tacotron2: {}".format(count_parameters(Tacotron2())))
+    print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(FastSpeech2())))
 
 
 if __name__ == '__main__':

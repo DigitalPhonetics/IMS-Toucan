@@ -59,14 +59,13 @@ pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f ht
 
 #### Speaker Embedding
 
-If you want to use multi-speaker synthesis, you will need a speaker embedding function. IMS Toucan uses three such 
-functions as an ensemble.
+As [NVIDIA has shown](https://arxiv.org/pdf/2110.05798.pdf), you get better results by fine-tuning a pretrained model on
+a new speaker, rather than training a multispeaker model. We have thus dropped support for zero-shot multispeaker models
+using speaker embeddings. However we still
+use [Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb) for a cycle consistency loss to
+make adapting to new speakers a bit faster.
 
-- [dvector](https://github.com/yistLin/dvector) 
-- [Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb)
-- [Speechbrain's X-Vector](https://huggingface.co/speechbrain/spkrec-xvect-voxceleb)
-
-In the current version of the toolkit no further action should be required. When you are using multispeaker for the 
+In the current version of the toolkit no further action should be required. When you are using multispeaker for the
 first time, it requires an internet connection to download the pretrained models though.
 
 #### espeak-ng
@@ -117,9 +116,8 @@ corresponding audios as the values.
 
 Then go to the directory
 *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Tacotron 2 in its name.
-If your dataset is single-speaker, choose any that is not LibriTTS. If your dataset is multi-speaker, choose the one for
-LibriTTS as your template. We will use this copy as reference and only make the necessary changes to use the new
-dataset. Import the function you have just written as
+We will use this copy as reference and only make the necessary changes to use the new dataset. Import the function you
+have just written as
 *build_path_to_transcript_dict*. Since the data will be processed a considerable amount, a cache will be built and saved
 as file for quick and easy restarts. So find the variable
 *cache_dir* and adapt it to your needs. The same goes for the variable
@@ -212,7 +210,7 @@ slightly, so you should do this and then use the
 
 To build a new
 *InferenceInterface*, which you can then use for super simple inference, we're going to use an existing one as template
-again. If you use multi-speaker, take the LibriTTS ones as template, otherwise take any other one. Make a copy of the
+again. Make a copy of the
 *InferenceInterface*. Change the name of the class in the copy and change the paths to the models to use the trained
 models of your choice. Instantiate the model with the same hyperparameters that you used when you created it in the
 corresponding training pipeline. The last thing to check is the language that you supply to the text frontend. Make sure
@@ -266,12 +264,6 @@ Here are a few points that were brought up by users:
   specified GPU is set as the only visible device, in order to avoid backend stuff running accidentally on different
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
-- My program seems to freeze and do nothing after creating a dataset with speaker embeddings - There is a very weird
-  interference between the speaker embedding function from SpeechBrain and torchaudio's resample function that causes
-  this. I don't see a way to fix this, but a workaround is to simply restart the program. The dataset will be loaded
-  from disk now, so the speaker embedding function is not needed and will never be initialized. This issue is very
-  annoying when using a concatenation of multiple datasets. Just restart after every dataset is done for the first time,
-  if you encounter this issue. (Might be system dependent, happens on the IMS servers, but not on my home PC.)
 
 ---
 
@@ -279,10 +271,8 @@ Here are a few points that were brought up by users:
 
 | Dataset                                                                              | Language | Single or Multi | TransformerTTS | Tacotron 2 | FastSpeech 2 | 
 | -------------------------------------------------------------------------------------|----------|-----------------|:--------------:|:---------:|:-----------:|
-| [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)              | German   | Single Speaker | ✅              | ✅        |✅           |
 | [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅              | ✅        |✅           |
 | [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) | English  | Single Speaker | ✅              | ✅        |✅           |
-| [LibriTTS](https://research.google/tools/datasets/libri-tts/)                        | English  | Multi Speaker  | ✅              | ✅        |✅           |
 
 ---
 

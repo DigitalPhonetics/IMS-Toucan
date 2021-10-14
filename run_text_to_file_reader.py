@@ -1,22 +1,19 @@
 import os
 
 import torch
-from InferenceInterfaces.MultiEnglish_FastSpeech2 import MultiEnglish_FastSpeech2
-from InferenceInterfaces.MultiEnglish_Tacotron2 import MultiEnglish_Tacotron2
+
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 
 tts_dict = {
-    "fast_libri": MultiEnglish_FastSpeech2,
     "fast_nancy": Nancy_FastSpeech2,
 
-    "taco_libri": MultiEnglish_Tacotron2,
     "taco_nancy": Nancy_Tacotron2
 }
 
 
-def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding=None):
-    tts = tts_dict[model_id](device=device, speaker_embedding=speaker_embedding)
+def read_texts(model_id, sentence, filename, device="cpu"):
+    tts = tts_dict[model_id](device=device)
     if type(sentence) == str:
         sentence = [sentence]
     tts.read_to_file(text_list=sentence, file_location=filename)
@@ -24,11 +21,11 @@ def read_texts(model_id, sentence, filename, device="cpu", speaker_embedding=Non
 
 
 def save_weights(model_id):
-    tts_dict[model_id](device="cpu", speaker_embedding="default_speaker_embedding.pt").save_pretrained_weights()
+    tts_dict[model_id](device="cpu").save_pretrained_weights()
 
 
 def read_harvard_sentences(model_id, device):
-    tts = tts_dict[model_id](device=device, speaker_embedding="default_speaker_embedding.pt")
+    tts = tts_dict[model_id](device=device)
 
     with open("Utility/test_sentences_combined_3.txt", "r", encoding="utf8") as f:
         sents = f.read().split("\n")
@@ -54,26 +51,12 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="fast_libri",
-               sentence=["Hello world, I am a synthesis voice."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/fast_libri.wav")
-
     read_texts(model_id="fast_nancy",
                sentence=["Hello world, I am a synthesis voice."],
                device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
                filename="audios/fast_nancy.wav")
-
-    read_texts(model_id="taco_libri",
-               sentence=["Hello world, I am a synthesis voice."],
-               device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
-               filename="audios/fast_libri.wav")
 
     read_texts(model_id="taco_nancy",
                sentence=["Hello world, I am a synthesis voice."],
                device=exec_device,
-               speaker_embedding="default_speaker_embedding.pt",
                filename="audios/fast_nancy.wav")
