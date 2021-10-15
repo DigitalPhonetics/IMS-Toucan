@@ -18,6 +18,7 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
+@torch.no_grad()
 def plot_attention(model, lang, device, att_dir, step):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
@@ -25,6 +26,20 @@ def plot_attention(model, lang, device, att_dir, step):
         sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
         sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
+    elif lang == "el":
+        sentence = "Αυτή είναι μια σύνθετη πρόταση, έχει ακόμη και παύση!"
+    elif lang == "es":
+        sentence = "Esta es una oración compleja, ¡incluso tiene una pausa!"
+    elif lang == "fi":
+        sentence = "Tämä on monimutkainen lause, sillä on jopa tauko!"
+    elif lang == "ru":
+        sentence = "Это сложное предложение, в нем даже есть пауза!"
+    elif lang == "hu":
+        sentence = "Ez egy összetett mondat, még szünet is van benne!"
+    elif lang == "nl":
+        sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
+    elif lang == "fr":
+        sentence = "C'est une phrase complexe, elle a même une pause !"
     text = tf.string_to_tensor(sentence).to(device)
     phones = tf.get_phone_string(sentence)
     model.eval()
@@ -38,10 +53,8 @@ def plot_attention(model, lang, device, att_dir, step):
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
-
     ax[1].set_xlabel("Inputs")
     ax[0].xaxis.set_visible(False)
-
     ax[0].set_ylabel("Outputs")
     ax[1].set_ylabel("Outputs")
     ax[1].set_xticks(range(len(att[0])))
@@ -50,7 +63,6 @@ def plot_attention(model, lang, device, att_dir, step):
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
     fig.tight_layout()
-
     if not os.path.exists(os.path.join(att_dir, "attention_plots")):
         os.makedirs(os.path.join(att_dir, "attention_plots"))
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
@@ -79,7 +91,7 @@ def train_loop(net,
                fine_tune=False,
                collapse_margin=5.0,  # be wary of loss scheduling
                resume=False,
-               cycle_loss_start_steps=1000):
+               cycle_loss_start_steps=2000):
     """
     Args:
         cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start
@@ -114,7 +126,6 @@ def train_loop(net,
 
     step_counter = 0
     epoch = 0
-    net.train()
     if fine_tune:
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
@@ -132,6 +143,7 @@ def train_loop(net,
     while True:
         cumulative_loss_dict = dict()
         epoch += 1
+        net.train()
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
@@ -156,7 +168,7 @@ def train_loop(net,
                     del pred_spemb
                     del predicted_mels
                     del gold_spemb
-                    cycle_loss = cycle_distance * min(100, step_counter - cycle_loss_start_steps / 100)
+                    cycle_loss = cycle_distance * min(1.0, (step_counter - cycle_loss_start_steps) / 100000)
                     loss_dict["cycle"] = cycle_loss.item()
                     train_loss = train_loss + cycle_loss
 
@@ -167,6 +179,7 @@ def train_loop(net,
                     cumulative_loss_dict[loss_type].append(loss_dict[loss_type])
 
             optimizer.zero_grad()
+            speaker_embedding_func.modules.embedding_model.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
@@ -211,5 +224,4 @@ def train_loop(net,
                 print(f"    {loss_type}: {round(sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type]), 3)}")
             print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
             print("Steps:        {}".format(step_counter))
-        torch.cuda.empty_cache()
         net.train()

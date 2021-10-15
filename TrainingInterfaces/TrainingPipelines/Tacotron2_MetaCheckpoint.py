@@ -1,7 +1,6 @@
 import random
 
 import torch
-from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
@@ -23,46 +22,78 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     random.seed(131714)
     torch.random.manual_seed(131714)
 
+    model_save_dirs = list()
+    languages = list()
+
     print("Preparing")
-    cache_dir_english = os.path.join("Corpora", "multiling_English")
-    os.makedirs(cache_dir_english, exist_ok=True)
+    cache_dir_english_nancy = os.path.join("Corpora", "meta_English_nancy")
+    model_save_dirs.append(os.path.join("Models", "meta_English_nancy"))
+    os.makedirs(cache_dir_english_nancy, exist_ok=True)
+    languages.append("en")
 
-    cache_dir_greek = os.path.join("Corpora", "multiling_Greek")
+    cache_dir_english_lj = os.path.join("Corpora", "meta_English_lj")
+    model_save_dirs.append(os.path.join("Models", "meta_English_lj"))
+    os.makedirs(cache_dir_english_lj, exist_ok=True)
+    languages.append("en")
+
+    cache_dir_greek = os.path.join("Corpora", "meta_Greek")
+    model_save_dirs.append(os.path.join("Models", "meta_Greek"))
     os.makedirs(cache_dir_greek, exist_ok=True)
+    languages.append("el")
 
-    cache_dir_spanish = os.path.join("Corpora", "multiling_Spanish")
+    cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
+    model_save_dirs.append(os.path.join("Models", "meta_Spanish"))
     os.makedirs(cache_dir_spanish, exist_ok=True)
+    languages.append("es")
 
-    cache_dir_finnish = os.path.join("Corpora", "multiling_Finnish")
+    cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
+    model_save_dirs.append(os.path.join("Models", "meta_Finnish"))
     os.makedirs(cache_dir_finnish, exist_ok=True)
+    languages.append("fi")
 
-    cache_dir_russian = os.path.join("Corpora", "multiling_Russian")
+    cache_dir_russian = os.path.join("Corpora", "meta_Russian")
+    model_save_dirs.append(os.path.join("Models", "meta_Russian"))
     os.makedirs(cache_dir_russian, exist_ok=True)
+    languages.append("ru")
 
-    cache_dir_hungarian = os.path.join("Corpora", "multiling_Hungarian")
+    cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
+    model_save_dirs.append(os.path.join("Models", "meta_Hungarian"))
     os.makedirs(cache_dir_hungarian, exist_ok=True)
+    languages.append("hu")
 
-    cache_dir_dutch = os.path.join("Corpora", "multiling_Dutch")
+    cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
+    model_save_dirs.append(os.path.join("Models", "meta_Dutch"))
     os.makedirs(cache_dir_dutch, exist_ok=True)
+    languages.append("nl")
 
-    cache_dir_french = os.path.join("Corpora", "multiling_French")
+    cache_dir_french = os.path.join("Corpora", "meta_French")
+    model_save_dirs.append(os.path.join("Models", "meta_French"))
     os.makedirs(cache_dir_french, exist_ok=True)
+    languages.append("fr")
 
-    if model_dir is not None:
-        save_dir = model_dir
-    else:
-        save_dir = os.path.join("Models", "Tacotron2_MetaCheckpoint")
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+    for meta_save_dir in model_save_dirs:
+        os.makedirs(meta_save_dir, exist_ok=True)
+
+    meta_save_dir = os.path.join("Models", "Tacotron2_MetaCheckpoint")
+    if not os.path.exists(meta_save_dir):
+        os.makedirs(meta_save_dir)
 
     datasets = list()
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
-                                    cache_dir=cache_dir_english,
+                                    cache_dir=cache_dir_english_nancy,
                                     lang="en",
                                     loading_processes=20,  # run this on a lonely server at night
                                     cut_silences=True,
                                     min_len_in_seconds=2,  # needs to be long enough for the speaker embedding to make sense
+                                    max_len_in_seconds=13))
+
+    datasets.append(TacotronDataset(build_path_to_transcript_dict_ljspeech(),
+                                    cache_dir=cache_dir_english_lj,
+                                    lang="en",
+                                    loading_processes=20,
+                                    cut_silences=True,
+                                    min_len_in_seconds=2,
                                     max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
@@ -121,20 +152,52 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     min_len_in_seconds=2,
                                     max_len_in_seconds=13))
 
-    train_set = ConcatDataset(datasets)
+    # store models for each language in order to average them into a meta checkpoint later
+    individual_models = list()
+    for _ in datasets:
+        individual_models.append(Tacotron2())
 
-    model = Tacotron2()
+    # make sure all models train with the same initialization
+    torch.save({'model': Tacotron2().state_dict()}, meta_save_dir + "/best.pt")
 
-    print("Training model")
-    train_loop(net=model,
-               train_dataset=train_set,
-               device=device,
-               save_directory=save_dir,
-               steps=100000,
-               batch_size=24,
-               epochs_per_save=1,
-               lang="en",
-               lr=0.001,
-               path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune,
-               resume=resume)
+    for iteration in range(10):
+        for index, train_set in enumerate(datasets):
+            print(f"Training on {model_save_dirs[index]}")
+            train_loop(net=individual_models[index],
+                       train_dataset=train_set,
+                       device=device,
+                       save_directory=model_save_dirs[index] + f"_iteration_{iteration}",
+                       steps=5000,
+                       batch_size=32,
+                       epochs_per_save=1,
+                       lang=languages[index],
+                       lr=0.001,
+                       path_to_checkpoint=meta_save_dir + "/best.pt",
+                       fine_tune=True,
+                       resume=resume)
+        meta_model = average_models(individual_models)
+        torch.save({'model': meta_model.state_dict()}, meta_save_dir + "/best.pt")
+
+
+def average_models(models):
+    checkpoints_weights = {}
+    model = None
+    for index, model in enumerate(models):
+        checkpoints_weights[index] = dict(model.named_parameters())
+    params = model.named_parameters()
+    dict_params = dict(params)
+    checkpoint_amount = len(checkpoints_weights)
+    print("averaging...")
+    for name in dict_params.keys():
+        custom_params = None
+        for _, checkpoint_parameters in checkpoints_weights.items():
+            if custom_params is None:
+                custom_params = checkpoint_parameters[name].data
+            else:
+                custom_params += checkpoint_parameters[name].data
+        dict_params[name].data.copy_(custom_params / checkpoint_amount)
+    model_dict = model.state_dict()
+    model_dict.update(dict_params)
+    model.load_state_dict(model_dict)
+    model.eval()
+    return model
