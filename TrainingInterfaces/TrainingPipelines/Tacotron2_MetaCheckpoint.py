@@ -24,28 +24,34 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir_english = os.path.join("Corpora", "multiling_English")
+    cache_dir_english = os.path.join("Corpora", "meta_English_nancy")
     os.makedirs(cache_dir_english, exist_ok=True)
 
-    cache_dir_greek = os.path.join("Corpora", "multiling_Greek")
+    cache_dir_english = os.path.join("Corpora", "meta_English_lj")
+    os.makedirs(cache_dir_english, exist_ok=True)
+
+    cache_dir_english = os.path.join("Corpora", "meta_English_hifi")
+    os.makedirs(cache_dir_english, exist_ok=True)
+
+    cache_dir_greek = os.path.join("Corpora", "meta_Greek")
     os.makedirs(cache_dir_greek, exist_ok=True)
 
-    cache_dir_spanish = os.path.join("Corpora", "multiling_Spanish")
+    cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
     os.makedirs(cache_dir_spanish, exist_ok=True)
 
-    cache_dir_finnish = os.path.join("Corpora", "multiling_Finnish")
+    cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
     os.makedirs(cache_dir_finnish, exist_ok=True)
 
-    cache_dir_russian = os.path.join("Corpora", "multiling_Russian")
+    cache_dir_russian = os.path.join("Corpora", "meta_Russian")
     os.makedirs(cache_dir_russian, exist_ok=True)
 
-    cache_dir_hungarian = os.path.join("Corpora", "multiling_Hungarian")
+    cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
     os.makedirs(cache_dir_hungarian, exist_ok=True)
 
-    cache_dir_dutch = os.path.join("Corpora", "multiling_Dutch")
+    cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
     os.makedirs(cache_dir_dutch, exist_ok=True)
 
-    cache_dir_french = os.path.join("Corpora", "multiling_French")
+    cache_dir_french = os.path.join("Corpora", "meta_French")
     os.makedirs(cache_dir_french, exist_ok=True)
 
     if model_dir is not None:
