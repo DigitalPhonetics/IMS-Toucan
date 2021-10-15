@@ -83,7 +83,8 @@ class TacotronDataset(Dataset):
                         pop_indexes.append(index)
                 except TypeError:
                     pop_indexes.append(index)
-            for pop_index in pop_indexes:
+            for pop_index in sorted(pop_indexes, reverse=True):
+                print(f"There seems to be a problem in the transcriptions. Deleting datapoint {pop_index}.")
                 self.datapoints.pop(pop_index)
 
             # save to cache
@@ -192,6 +193,13 @@ class TacotronDataset(Dataset):
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
             cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+            try:
+                if len(cached_text[0]) != 66:
+                    print(f"There seems to be a problem with the following transcription: {transcript}")
+                    continue
+            except TypeError:
+                print(f"There seems to be a problem with the following transcription: {transcript}")
+                continue
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
             cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
