@@ -122,6 +122,9 @@ class TacotronDataset(Dataset):
             ap_post = None
 
         for path in tqdm(path_list):
+            if self.path_to_transcript_dict[path].strip() == "":
+                continue
+
             if remove_all_silences:
                 name = path.split("/")[-1].split(".")[:-1]
                 if len(name) == 1:
