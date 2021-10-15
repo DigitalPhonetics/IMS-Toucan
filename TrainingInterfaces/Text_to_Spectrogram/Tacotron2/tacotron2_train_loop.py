@@ -167,7 +167,7 @@ def train_loop(net,
                     cumulative_loss_dict[loss_type].append(loss_dict[loss_type])
 
             optimizer.zero_grad()
-            speaker_embedding_func.zero_grad()
+            speaker_embedding_func.modules.embedding_model.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
