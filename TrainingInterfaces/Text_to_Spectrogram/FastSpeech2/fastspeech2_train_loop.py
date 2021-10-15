@@ -113,7 +113,6 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    net.train()
     if fine_tune:
         lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
@@ -132,6 +131,7 @@ def train_loop(net,
             scaler.load_state_dict(check_dict["scaler"])
     start_time = time.time()
     while True:
+        net.train()
         epoch += 1
         optimizer.zero_grad()
         train_losses_this_epoch = list()
@@ -159,7 +159,7 @@ def train_loop(net,
                     del pred_spemb
                     del predicted_mels
                     del gold_spemb
-                    cycle_loss = cycle_distance * min(1, (step_counter - cycle_loss_start_steps) / 1000)
+                    cycle_loss = cycle_distance * min(1.0, (step_counter - cycle_loss_start_steps) / 100000)
                     train_loss = train_loss + cycle_loss
 
             optimizer.zero_grad()
@@ -192,5 +192,4 @@ def train_loop(net,
         print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
-        torch.cuda.empty_cache()
         net.train()
