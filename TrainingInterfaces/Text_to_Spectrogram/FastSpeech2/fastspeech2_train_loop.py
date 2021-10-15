@@ -76,9 +76,11 @@ def train_loop(net,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False,
-               resume=False):
+               resume=False,
+               cycle_loss_start_steps=1000):
     """
     Args:
+        cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start
         resume: whether to resume from the most recent checkpoint
         warmup_steps: how long the learning rate should increase before it reaches the specified value
         steps: How many steps to train
@@ -145,20 +147,23 @@ def train_loop(net,
                                                  return_mels=True)
 
                 train_losses_this_epoch.append(train_loss.item())
-                pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
-                                                                            torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
-                gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
-                                                                            torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
-                # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
-                cosine_cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
-                pairwise_cycle_distance = F.pairwise_distance(pred_spemb.squeeze(), gold_spemb.squeeze()).mean()
-                cycle_distance = cosine_cycle_distance + pairwise_cycle_distance
-                del pred_spemb
-                del predicted_mels
-                del gold_spemb
-                cycle_loss = cycle_distance * min(2000, step_counter / 10)
-                train_loss = train_loss + cycle_loss
+                if step_counter > cycle_loss_start_steps:
+                    pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
+                                                                                torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
+                    gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
+                                                                                torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
+                    # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
+                    cosine_cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
+                    pairwise_cycle_distance = F.pairwise_distance(pred_spemb.squeeze(), gold_spemb.squeeze()).mean()
+                    cycle_distance = cosine_cycle_distance + pairwise_cycle_distance
+                    del pred_spemb
+                    del predicted_mels
+                    del gold_spemb
+                    cycle_loss = cycle_distance * min(1, step_counter - cycle_loss_start_steps / 1000)
+                    train_loss = train_loss + cycle_loss
+
             optimizer.zero_grad()
+            speaker_embedding_func.modules.embedding_model.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
