@@ -162,7 +162,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
             os.makedirs(instance_save_dir, exist_ok=True)
             batchsize = 64
-            epochs_per_save = max(round(100 / (len(train_set) // batchsize)), 1)  # just to balance the amount of checkpoints
+            batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
+            epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
                                             "net"               : individual_models[index],
@@ -175,8 +176,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "lang"              : languages[index],
                                             "lr"                : 0.001,
                                             "path_to_checkpoint": meta_save_dir + "/best.pt",
-                                            "fine_tune"         : True,
-                                            "resume": initial_resume
+                                            "fine_tune"         : not initial_resume,
+                                            "resume"            : initial_resume
                                             }))
             initial_resume = False
             processes[-1].start()

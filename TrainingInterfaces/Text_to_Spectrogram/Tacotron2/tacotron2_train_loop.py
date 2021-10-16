@@ -217,6 +217,12 @@ def train_loop(net,
                                    att_dir=save_directory,
                                    step=step_counter)
                 if step_counter > steps:
+                    print("Epoch:        {}".format(epoch))
+                    print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
+                    for loss_type in cumulative_loss_dict:
+                        print(f"    {loss_type}: {round(sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type]), 3)}")
+                    print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
+                    print("Steps:        {}".format(step_counter))
                     # DONE
                     return
             print("Epoch:        {}".format(epoch))
