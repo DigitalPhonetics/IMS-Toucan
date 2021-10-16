@@ -146,8 +146,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     for _ in datasets:
         individual_models.append(Tacotron2())
 
-    # make sure all models train with the same initialization
-    torch.save({'model': Tacotron2().state_dict()}, meta_save_dir + "/best.pt")
+    if not resume:
+        # make sure all models train with the same initialization
+        torch.save({'model': Tacotron2().state_dict()}, meta_save_dir + "/best.pt")
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     gpus_usable = ["4", "5", "6", "7", "8"]
