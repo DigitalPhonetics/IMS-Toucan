@@ -21,51 +21,51 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     print("Preparing")
     cache_dir_english_nancy = os.path.join("Corpora", "meta_English_nancy")
-    model_save_dirs.append(os.path.join("Models", "meta_English_nancy"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_English_nancy"))
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
     languages.append("en")
 
     cache_dir_english_lj = os.path.join("Corpora", "meta_English_lj")
-    model_save_dirs.append(os.path.join("Models", "meta_English_lj"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_English_lj"))
     os.makedirs(cache_dir_english_lj, exist_ok=True)
     languages.append("en")
 
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
-    model_save_dirs.append(os.path.join("Models", "meta_Greek"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_Greek"))
     os.makedirs(cache_dir_greek, exist_ok=True)
     languages.append("el")
 
     cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
-    model_save_dirs.append(os.path.join("Models", "meta_Spanish"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_Spanish"))
     os.makedirs(cache_dir_spanish, exist_ok=True)
     languages.append("es")
 
     cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
-    model_save_dirs.append(os.path.join("Models", "meta_Finnish"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_Finnish"))
     os.makedirs(cache_dir_finnish, exist_ok=True)
     languages.append("fi")
 
     cache_dir_russian = os.path.join("Corpora", "meta_Russian")
-    model_save_dirs.append(os.path.join("Models", "meta_Russian"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_Russian"))
     os.makedirs(cache_dir_russian, exist_ok=True)
     languages.append("ru")
 
     cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
-    model_save_dirs.append(os.path.join("Models", "meta_Hungarian"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_Hungarian"))
     os.makedirs(cache_dir_hungarian, exist_ok=True)
     languages.append("hu")
 
     cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
-    model_save_dirs.append(os.path.join("Models", "meta_Dutch"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_Dutch"))
     os.makedirs(cache_dir_dutch, exist_ok=True)
     languages.append("nl")
 
     cache_dir_french = os.path.join("Corpora", "meta_French")
-    model_save_dirs.append(os.path.join("Models", "meta_French"))
+    model_save_dirs.append(os.path.join("Models", "Meta", "meta_French"))
     os.makedirs(cache_dir_french, exist_ok=True)
     languages.append("fr")
 
-    meta_save_dir = os.path.join("Models", "Tacotron2_MetaCheckpoint")
+    meta_save_dir = os.path.join("Models", "Meta", "Tacotron2_MetaCheckpoint")
     os.makedirs(meta_save_dir, exist_ok=True)
 
     datasets = list()
