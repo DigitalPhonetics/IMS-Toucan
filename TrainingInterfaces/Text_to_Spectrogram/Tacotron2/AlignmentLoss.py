@@ -37,7 +37,7 @@ from numba import prange
 
 class ForwardSumLoss(nn.Module):
 
-    def __init__(self, blank_logprob=-10):
+    def __init__(self, blank_logprob=-20):
         """
         The RAD-TTS Paper says the following about the blank_logprob:
 
@@ -192,13 +192,12 @@ class AlignmentLoss(nn.Module):
     def forward(self, soft_attention, in_lens, out_lens, step):
 
         soft_attention = soft_attention.unsqueeze(1)
-        print(soft_attention.shape)
-        print(soft_attention.requires_grad)
 
         bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 100, 0.01)
 
         if self.include_forward_loss and self.forward_start_steps < step:
             l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens) * self.forward_loss_weight
+            print(l_forward.requires_grad)
         else:
             l_forward = 0.0
 
