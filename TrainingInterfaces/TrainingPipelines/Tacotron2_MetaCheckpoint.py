@@ -71,12 +71,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(cache_dir_french, exist_ok=True)
     languages.append("fr")
 
-    for meta_save_dir in model_save_dirs:
-        os.makedirs(meta_save_dir, exist_ok=True)
-
     meta_save_dir = os.path.join("Models", "Tacotron2_MetaCheckpoint")
-    if not os.path.exists(meta_save_dir):
-        os.makedirs(meta_save_dir)
+    os.makedirs(meta_save_dir, exist_ok=True)
 
     datasets = list()
 
@@ -85,7 +81,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     lang="en",
                                     loading_processes=20,  # run this on a lonely server at night
                                     cut_silences=True,
-                                    min_len_in_seconds=2,  # needs to be long enough for the speaker embedding to make sense
+                                    min_len_in_seconds=2,  # needs to be long enough for the speaker embedding in the cycle objective to make sense
                                     max_len_in_seconds=13))
 
     datasets.append(TacotronDataset(build_path_to_transcript_dict_ljspeech(),
@@ -162,11 +158,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     for iteration in range(10):
         for index, train_set in enumerate(datasets):
-            print(f"Training on {model_save_dirs[index]}")
+            instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
+            os.makedirs(instance_save_dir, exist_ok=True)
+            print(f"Training on {instance_save_dir}")
             train_loop(net=individual_models[index],
                        train_dataset=train_set,
                        device=device,
-                       save_directory=model_save_dirs[index] + f"_iteration_{iteration}",
+                       save_directory=instance_save_dir,
                        steps=5000,
                        batch_size=32,
                        epochs_per_save=1,
