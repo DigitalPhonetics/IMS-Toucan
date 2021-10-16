@@ -37,7 +37,7 @@ from numba import prange
 
 class ForwardSumLoss(nn.Module):
 
-    def __init__(self, blank_logprob=-4):
+    def __init__(self, blank_logprob=-10):
         """
         The RAD-TTS Paper says the following about the blank_logprob:
 
@@ -52,7 +52,9 @@ class ForwardSumLoss(nn.Module):
         increases, despite the existence of the blank tokens, allowing us
         to extract clean monotonic alignments.
 
-        -1 is given as default, but maybe something smaller like -10 or -100 might work better in some cases
+        -1 is given as default in the paper, but I find that the largest
+        initial activations are more around -3 and there is large variance,
+        so I decided to go for -10.
         """
         super().__init__()
         self.log_softmax = nn.LogSoftmax(dim=3)
@@ -172,7 +174,7 @@ class AlignmentLoss(nn.Module):
     def __init__(self,
                  bin_warmup_steps=10000,
                  bin_start_steps=60000,
-                 forward_start_steps=500,
+                 forward_start_steps=1,
                  include_forward_loss=True,
                  forward_loss_weight=0.01):
         super().__init__()
