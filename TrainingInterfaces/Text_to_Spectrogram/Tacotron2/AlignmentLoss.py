@@ -72,7 +72,7 @@ class ForwardSumLoss(nn.Module):
         # A row must be added to the attention matrix to account for this
         attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0, 0, 0, 0, 0, 0, 0), value=self.blank_logprob)
 
-        print(max(attn_logprob))
+        print(torch.max(attn_logprob))
 
         total_loss = 0.0
 
