@@ -9,15 +9,6 @@ from Utility.path_to_transcript_dicts import *
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
-    # if gpu_id == "cpu":
-    #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    #     device = torch.device("cpu")
-
-    # else:
-    #     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    #     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
-    #     device = torch.device("cuda")
-
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
@@ -160,7 +151,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     gpus_usable = ["4", "5", "6", "7", "8"]
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(gpus_usable))
-    gpus_available = range(len(gpus_usable))
+    gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
 
     for iteration in range(10):
@@ -174,8 +165,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                                                "train_dataset"     : train_set,
                                                                "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
                                                                "save_directory"    : instance_save_dir,
-                                                               "steps"             : 1,  # TODO 5000
-                                                               "batch_size"        : 70,  # TODO 64
+                                                               "steps"             : 5000,
+                                                               "batch_size"        : 64,
                                                                "epochs_per_save"   : 1,
                                                                "lang"              : languages[index],
                                                                "lr"                : 0.001,

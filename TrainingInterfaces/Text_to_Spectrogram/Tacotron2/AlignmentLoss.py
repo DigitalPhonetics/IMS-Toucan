@@ -73,7 +73,7 @@ class ForwardSumLoss(nn.Module):
         attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0, 0, 0, 0, 0, 0, 0), value=self.blank_logprob)
 
         # uncomment for figuring out the largest initial activation
-        print(torch.max(attn_logprob))
+        # print(torch.max(attn_logprob))
 
         total_loss = 0.0
 
@@ -172,7 +172,7 @@ class AlignmentLoss(nn.Module):
     def __init__(self,
                  bin_warmup_steps=10000,
                  bin_start_steps=60000,
-                 forward_start_steps=1,
+                 forward_start_steps=500,
                  include_forward_loss=True):
         super().__init__()
         if include_forward_loss:
