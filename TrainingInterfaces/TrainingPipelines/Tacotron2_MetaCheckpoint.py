@@ -180,7 +180,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "path_to_checkpoint"    : meta_save_dir + "/best.pt",
                                             "fine_tune"             : not initial_resume,
                                             "resume"                : initial_resume,
-                                            "cycle_loss_start_steps": 6000  # not used here, only for final adaptation
+                                            "cycle_loss_start_steps": None  # not used here, only for final adaptation
                                             }))
             processes[-1].start()
             print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
