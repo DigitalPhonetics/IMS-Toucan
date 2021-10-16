@@ -2,7 +2,6 @@ import random
 
 import torch
 import torch.multiprocessing
-from speechbrain.pretrained import EncoderClassifier
 from torch import multiprocessing as mp
 
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
@@ -142,8 +141,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     min_len_in_seconds=2,
                                     max_len_in_seconds=13))
 
-    # unfortunately we have to use spawn in order to recycle our speaker embedding function
-    mp.set_start_method("spawn")
 
     # store models for each language in order to average them into a meta checkpoint later
     resource_manager = mp.Manager()
@@ -161,13 +158,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
     initial_resume = resume
-
-    speaker_embedding_functions_per_gpu = list()
-    for gpu in gpus_available:
-        # don't keep loading them over and over again
-        speaker_embedding_functions_per_gpu.append(EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                                  run_opts={"device": torch.device(f"cuda:{gpu}")},
-                                                                                  savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa"))
 
     for iteration in range(10):
         processes = list()
@@ -190,8 +180,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "lr"                        : 0.001,
                                             "path_to_checkpoint"        : meta_save_dir + "/best.pt",
                                             "fine_tune"                 : not initial_resume,
-                                            "resume"                    : initial_resume,
-                                            "speaker_embedding_function": speaker_embedding_functions_per_gpu[gpus_available[-1]]
+                                            "resume": initial_resume
                                             }))
             initial_resume = False
             processes[-1].start()
