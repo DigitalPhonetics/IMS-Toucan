@@ -141,7 +141,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     min_len_in_seconds=2,
                                     max_len_in_seconds=13))
 
-
     # store models for each language in order to average them into a meta checkpoint later
     resource_manager = mp.Manager()
     individual_models = resource_manager.list()
@@ -169,20 +168,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
-                                            "net"                       : individual_models[index],
-                                            "train_dataset"             : train_set,
-                                            "device"                    : torch.device(f"cuda:{gpus_available[-1]}"),
-                                            "save_directory"            : instance_save_dir,
-                                            "steps"                     : 5000,
-                                            "batch_size"                : batchsize,
-                                            "epochs_per_save"           : epochs_per_save,
-                                            "lang"                      : languages[index],
-                                            "lr"                        : 0.001,
-                                            "path_to_checkpoint"        : meta_save_dir + "/best.pt",
-                                            "fine_tune"                 : not initial_resume,
-                                            "resume": initial_resume
+                                            "net"               : individual_models[index],
+                                            "train_dataset"     : train_set,
+                                            "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
+                                            "save_directory"    : instance_save_dir,
+                                            "steps"             : 5000,
+                                            "batch_size"        : batchsize,
+                                            "epochs_per_save"   : epochs_per_save,
+                                            "lang"              : languages[index],
+                                            "lr"                : 0.001,
+                                            "path_to_checkpoint": meta_save_dir + "/best.pt",
+                                            "fine_tune"         : not initial_resume,
+                                            "resume"            : initial_resume
                                             }))
-            initial_resume = False
             processes[-1].start()
             print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
             gpus_in_use.append(gpus_available.pop())
@@ -196,6 +194,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             print("Waiting for the remainders to finish...")
             process.join()
             gpus_available.append(gpus_in_use.pop(0))
+
+        initial_resume = False
 
         meta_model = average_models(individual_models)
         torch.save({'model': meta_model.state_dict()}, meta_save_dir + "/best.pt")
