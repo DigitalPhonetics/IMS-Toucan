@@ -37,7 +37,7 @@ from numba import prange
 
 class ForwardSumLoss(nn.Module):
 
-    def __init__(self, blank_logprob=-1):
+    def __init__(self, blank_logprob=-4):
         """
         The RAD-TTS Paper says the following about the blank_logprob:
 
@@ -72,6 +72,7 @@ class ForwardSumLoss(nn.Module):
         # A row must be added to the attention matrix to account for this
         attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0, 0, 0, 0, 0, 0, 0), value=self.blank_logprob)
 
+        # uncomment for figuring out the largest initial activation
         print(torch.max(attn_logprob))
 
         total_loss = 0.0

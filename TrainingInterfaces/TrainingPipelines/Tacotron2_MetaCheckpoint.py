@@ -158,7 +158,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.save({'model': Tacotron2().state_dict()}, meta_save_dir + "/best.pt")
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpus_available = [4, 5, 6, 7, 8]
+    gpus_usable = ["4", "5", "6", "7", "8"]
+    os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(gpus_usable))
+    gpus_available = range(len(gpus_usable))
     gpus_in_use = []
 
     for iteration in range(10):
@@ -172,8 +174,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                                                "train_dataset"     : train_set,
                                                                "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
                                                                "save_directory"    : instance_save_dir,
-                                                               "steps"             : 1,
-                                                               "batch_size"        : 64,
+                                                               "steps"             : 1,  # TODO 5000
+                                                               "batch_size"        : 70,  # TODO 64
                                                                "epochs_per_save"   : 1,
                                                                "lang"              : languages[index],
                                                                "lr"                : 0.001,
