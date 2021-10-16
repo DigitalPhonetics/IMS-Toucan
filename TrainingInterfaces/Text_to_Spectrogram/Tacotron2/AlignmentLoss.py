@@ -64,9 +64,11 @@ class ForwardSumLoss(nn.Module):
     def forward(self, attn_logprob, text_lens, spectrogram_lens):
         """
         Args:
-        attn_logprob: batch x 1 x max(mel_lens) x max(text_lens) batched tensor of attention log probabilities, padded to length of longest sequence in each dimension
-        text_lens: batch-D vector of length of each text sequence
-        mel_lens: batch-D vector of length of each mel sequence
+            attn_logprob: batch x 1 x max(mel_lens) x max(text_lens) batched
+            tensor of attention log probabilities, padded to length of longest
+            sequence in each dimension
+            text_lens: batch-D vector of length of each text sequence
+            spectrogram_lens: batch-D vector of length of each mel sequence
         """
         # The CTC loss module assumes the existence of a blank token
         # that can be optionally inserted anywhere in the sequence for
@@ -190,6 +192,8 @@ class AlignmentLoss(nn.Module):
     def forward(self, soft_attention, in_lens, out_lens, step):
 
         soft_attention = soft_attention.unsqueeze(1)
+        print(soft_attention.shape)
+        print(soft_attention.requires_grad)
 
         bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 100, 0.01)
 
