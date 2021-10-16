@@ -72,6 +72,8 @@ class ForwardSumLoss(nn.Module):
         # A row must be added to the attention matrix to account for this
         attn_logprob_padded = F.pad(input=attn_logprob, pad=(1, 0, 0, 0, 0, 0, 0, 0), value=self.blank_logprob)
 
+        print(max(attn_logprob))
+
         total_loss = 0.0
 
         # for-loop over batch because of variable-length
@@ -90,7 +92,7 @@ class ForwardSumLoss(nn.Module):
                                  target_lengths=text_lens[bid: bid + 1])
             total_loss = total_loss + loss
         # average cost over batch
-        total_loss /= attn_logprob.shape[0]
+        total_loss = total_loss / attn_logprob.shape[0]
         return total_loss
 
 
@@ -169,7 +171,7 @@ class AlignmentLoss(nn.Module):
     def __init__(self,
                  bin_warmup_steps=10000,
                  bin_start_steps=60000,
-                 forward_start_steps=4000,
+                 forward_start_steps=1,
                  include_forward_loss=True):
         super().__init__()
         if include_forward_loss:

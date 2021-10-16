@@ -82,11 +82,11 @@ def train_loop(net,
                train_dataset,
                device,
                save_directory,
-               batch_size=22,
-               steps=100000,
-               epochs_per_save=2,
-               lang="en",
-               lr=0.001,
+               batch_size,
+               steps,
+               epochs_per_save,
+               lang,
+               lr,
                path_to_checkpoint=None,
                fine_tune=False,
                collapse_margin=5.0,  # be wary of loss scheduling
@@ -161,7 +161,7 @@ def train_loop(net,
                                                                                 torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
                     gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
                                                                                 torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
-                    # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
+                    # we have to calculate the speaker embedding from our own melspec because we project into a slightly different melspec space
                     cosine_cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
                     pairwise_cycle_distance = F.pairwise_distance(pred_spemb.squeeze(), gold_spemb.squeeze()).mean()
                     cycle_distance = cosine_cycle_distance + pairwise_cycle_distance
@@ -203,11 +203,12 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model": net.state_dict(),
-                    "optimizer": optimizer.state_dict(),
-                    "scaler": scaler.state_dict(),
+                    "model"       : net.state_dict(),
+                    "optimizer"   : optimizer.state_dict(),
+                    "scaler"      : scaler.state_dict(),
                     "step_counter": step_counter,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    },
+                    os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():
                     plot_attention(model=net,

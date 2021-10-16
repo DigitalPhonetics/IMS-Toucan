@@ -9,14 +9,14 @@ from Utility.path_to_transcript_dicts import *
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
-    if gpu_id == "cpu":
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
-        device = torch.device("cpu")
+    # if gpu_id == "cpu":
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    #     device = torch.device("cpu")
 
-    else:
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
-        device = torch.device("cuda")
+    # else:
+    #     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    #     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
+    #     device = torch.device("cuda")
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -149,30 +149,52 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     max_len_in_seconds=13))
 
     # store models for each language in order to average them into a meta checkpoint later
-    individual_models = list()
+    resource_manager = torch.multiprocessing.Manager()
+    individual_models = resource_manager.list()
     for _ in datasets:
         individual_models.append(Tacotron2())
 
     # make sure all models train with the same initialization
     torch.save({'model': Tacotron2().state_dict()}, meta_save_dir + "/best.pt")
 
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    gpus_available = [4, 5, 6, 7, 8]
+    gpus_in_use = []
+
     for iteration in range(10):
+        processes = list()
         for index, train_set in enumerate(datasets):
             instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
             os.makedirs(instance_save_dir, exist_ok=True)
-            print(f"Training on {instance_save_dir}")
-            train_loop(net=individual_models[index],
-                       train_dataset=train_set,
-                       device=device,
-                       save_directory=instance_save_dir,
-                       steps=5000,
-                       batch_size=32,
-                       epochs_per_save=1,
-                       lang=languages[index],
-                       lr=0.001,
-                       path_to_checkpoint=meta_save_dir + "/best.pt",
-                       fine_tune=True,
-                       resume=resume)
+            processes.append(torch.multiprocessing.Process(target=train_loop,
+                                                           kwargs={
+                                                               "net"               : individual_models[index],
+                                                               "train_dataset"     : train_set,
+                                                               "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
+                                                               "save_directory"    : instance_save_dir,
+                                                               "steps"             : 1,
+                                                               "batch_size"        : 64,
+                                                               "epochs_per_save"   : 1,
+                                                               "lang"              : languages[index],
+                                                               "lr"                : 0.001,
+                                                               "path_to_checkpoint": meta_save_dir + "/best.pt",
+                                                               "fine_tune"         : True,
+                                                               "resume"            : resume
+                                                               }))
+            processes[-1].start()
+            print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
+            gpus_in_use.append(gpus_available.pop())
+            while len(gpus_available) == 0:
+                print("All GPUs available should be filled now. Waiting for one process to finish to start the next one.")
+                processes[0].join()
+                processes.pop(0)
+                gpus_available.append(gpus_in_use.pop(0))
+
+        for process in processes:
+            print("Waiting for the remainders to finish...")
+            process.join()
+            gpus_available.append(gpus_in_use.pop(0))
+
         meta_model = average_models(individual_models)
         torch.save({'model': meta_model.state_dict()}, meta_save_dir + "/best.pt")
 
@@ -185,7 +207,7 @@ def average_models(models):
     params = model.named_parameters()
     dict_params = dict(params)
     checkpoint_amount = len(checkpoints_weights)
-    print("averaging...")
+    print("\n\naveraging...\n\n")
     for name in dict_params.keys():
         custom_params = None
         for _, checkpoint_parameters in checkpoints_weights.items():
