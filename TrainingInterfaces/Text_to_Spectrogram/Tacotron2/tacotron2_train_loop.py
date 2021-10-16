@@ -91,7 +91,8 @@ def train_loop(net,
                fine_tune=False,
                collapse_margin=5.0,  # be wary of loss scheduling
                resume=False,
-               cycle_loss_start_steps=2000):
+               cycle_loss_start_steps=2000,
+               speaker_embedding_function=None):
     """
     Args:
         cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start
@@ -114,16 +115,16 @@ def train_loop(net,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=2,
+                              num_workers=1,
                               pin_memory=True,
                               shuffle=True,
-                              prefetch_factor=32,
+                              prefetch_factor=64,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-    speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                            run_opts={"device": str(device)},
-                                                            savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
-
+    if speaker_embedding_function is None:
+        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                run_opts={"device": str(device)},
+                                                                savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
     step_counter = 0
     epoch = 0
     if fine_tune:

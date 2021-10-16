@@ -1,6 +1,8 @@
 import random
 
 import torch
+import torch.multiprocessing
+from speechbrain.pretrained import EncoderClassifier
 from torch import multiprocessing as mp
 
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
@@ -157,6 +159,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     gpus_in_use = []
     initial_resume = resume
 
+    speaker_embedding_functions_per_gpu = list()
+    for gpu in gpus_available:
+        # don't keep loading them over and over again
+        speaker_embedding_functions_per_gpu.append(EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                                  run_opts={"device": torch.device(f"cuda:{gpu}")},
+                                                                                  savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa"))
+
     for iteration in range(10):
         processes = list()
         for index, train_set in enumerate(datasets):
@@ -167,18 +176,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
-                                            "net"               : individual_models[index],
-                                            "train_dataset"     : train_set,
-                                            "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
-                                            "save_directory"    : instance_save_dir,
-                                            "steps"             : 5000,
-                                            "batch_size"        : batchsize,
-                                            "epochs_per_save"   : epochs_per_save,
-                                            "lang"              : languages[index],
-                                            "lr"                : 0.001,
-                                            "path_to_checkpoint": meta_save_dir + "/best.pt",
-                                            "fine_tune"         : not initial_resume,
-                                            "resume"            : initial_resume
+                                            "net"                       : individual_models[index],
+                                            "train_dataset"             : train_set,
+                                            "device"                    : torch.device(f"cuda:{gpus_available[-1]}"),
+                                            "save_directory"            : instance_save_dir,
+                                            "steps"                     : 5000,
+                                            "batch_size"                : batchsize,
+                                            "epochs_per_save"           : epochs_per_save,
+                                            "lang"                      : languages[index],
+                                            "lr"                        : 0.001,
+                                            "path_to_checkpoint"        : meta_save_dir + "/best.pt",
+                                            "fine_tune"                 : not initial_resume,
+                                            "resume"                    : initial_resume,
+                                            "speaker_embedding_function": speaker_embedding_functions_per_gpu[gpus_available[-1]]
                                             }))
             initial_resume = False
             processes[-1].start()
