@@ -142,6 +142,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     min_len_in_seconds=2,
                                     max_len_in_seconds=13))
 
+    # unfortunately we have to use spawn in order to recycle our speaker embedding function
+    mp.set_start_method("spawn")
+
     # store models for each language in order to average them into a meta checkpoint later
     resource_manager = mp.Manager()
     individual_models = resource_manager.list()
