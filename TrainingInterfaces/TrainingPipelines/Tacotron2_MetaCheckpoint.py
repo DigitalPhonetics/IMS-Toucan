@@ -1,6 +1,7 @@
 import random
 
 import torch
+from torch import multiprocessing as mp
 
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
@@ -140,7 +141,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     max_len_in_seconds=13))
 
     # store models for each language in order to average them into a meta checkpoint later
-    resource_manager = torch.multiprocessing.Manager()
+    resource_manager = mp.Manager()
     individual_models = resource_manager.list()
     for _ in datasets:
         individual_models.append(Tacotron2())
@@ -159,21 +160,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         for index, train_set in enumerate(datasets):
             instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
             os.makedirs(instance_save_dir, exist_ok=True)
-            processes.append(torch.multiprocessing.Process(target=train_loop,
-                                                           kwargs={
-                                                               "net"               : individual_models[index],
-                                                               "train_dataset"     : train_set,
-                                                               "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
-                                                               "save_directory"    : instance_save_dir,
-                                                               "steps"             : 5000,
-                                                               "batch_size"        : 64,
-                                                               "epochs_per_save"   : 1,
-                                                               "lang"              : languages[index],
-                                                               "lr"                : 0.001,
-                                                               "path_to_checkpoint": meta_save_dir + "/best.pt",
-                                                               "fine_tune"         : True,
-                                                               "resume"            : resume
-                                                               }))
+            batchsize = 64
+            epochs_per_save = max(round(100 / (len(train_set) // batchsize)), 1)  # just to balance the amount of checkpoints
+            processes.append(mp.Process(target=train_loop,
+                                        kwargs={
+                                            "net"               : individual_models[index],
+                                            "train_dataset"     : train_set,
+                                            "device"            : torch.device(f"cuda:{gpus_available[-1]}"),
+                                            "save_directory"    : instance_save_dir,
+                                            "steps"             : 5000,
+                                            "batch_size"        : batchsize,
+                                            "epochs_per_save"   : epochs_per_save,
+                                            "lang"              : languages[index],
+                                            "lr"                : 0.001,
+                                            "path_to_checkpoint": meta_save_dir + "/best.pt",
+                                            "fine_tune"         : True,
+                                            "resume"            : resume
+                                            }))
             processes[-1].start()
             print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
             gpus_in_use.append(gpus_available.pop())
