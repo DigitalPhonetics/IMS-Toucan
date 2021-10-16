@@ -154,6 +154,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(gpus_usable))
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
+    initial_resume = resume
 
     for iteration in range(10):
         processes = list()
@@ -175,8 +176,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "lr"                : 0.001,
                                             "path_to_checkpoint": meta_save_dir + "/best.pt",
                                             "fine_tune"         : True,
-                                            "resume"            : resume
+                                            "resume": initial_resume
                                             }))
+            initial_resume = False
             processes[-1].start()
             print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
             gpus_in_use.append(gpus_available.pop())
