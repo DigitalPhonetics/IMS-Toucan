@@ -54,5 +54,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               resume=resume,
-               cycle_loss_start_steps=200)
+               resume=resume)

@@ -74,4 +74,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                lr=0.001,
                path_to_checkpoint="Models/Tacotron2_Nancy/best.pt",
                fine_tune=True,
-               resume=resume)
+               resume=resume,
+               cycle_loss_start_steps=2000)

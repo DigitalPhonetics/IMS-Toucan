@@ -152,7 +152,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         torch.save({'model': Tacotron2(use_alignment_loss=False).state_dict()}, meta_save_dir + "/best.pt")
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpus_usable = ["4", "5", "6", "7", "8"]
+    gpus_usable = ["7", "8"]
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(gpus_usable))
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
@@ -163,7 +163,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         for index, train_set in enumerate(datasets):
             instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
             os.makedirs(instance_save_dir, exist_ok=True)
-            batchsize = 84
+            batchsize = 24
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
             epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             processes.append(mp.Process(target=train_loop,
@@ -172,7 +172,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "train_dataset"         : train_set,
                                             "device"                : torch.device(f"cuda:{gpus_available[-1]}"),
                                             "save_directory"        : instance_save_dir,
-                                            "steps"                 : 5000,
+                                            "steps"                 : 3000,
                                             "batch_size"            : batchsize,
                                             "epochs_per_save"       : epochs_per_save,
                                             "lang"                  : languages[index],
