@@ -186,7 +186,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             processes.pop(0)
             gpus_available.append(gpus_in_use.pop(0))
 
+    print("Waiting for the remainders to finish...")
     for process in processes:
-        print("Waiting for the remainders to finish...")
         process.join()
         gpus_available.append(gpus_in_use.pop(0))

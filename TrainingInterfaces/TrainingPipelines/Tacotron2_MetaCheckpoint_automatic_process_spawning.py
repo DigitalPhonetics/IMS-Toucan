@@ -17,7 +17,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     model_save_dirs = list()
     languages = list()
-    individual_models = list()
     datasets = list()
 
     print("Preparing")
@@ -25,55 +24,46 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_English_nancy"))
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
     languages.append("en")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_english_lj = os.path.join("Corpora", "meta_English_lj")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_English_lj"))
     os.makedirs(cache_dir_english_lj, exist_ok=True)
     languages.append("en")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_Greek"))
     os.makedirs(cache_dir_greek, exist_ok=True)
     languages.append("el")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_Spanish"))
     os.makedirs(cache_dir_spanish, exist_ok=True)
     languages.append("es")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_Finnish"))
     os.makedirs(cache_dir_finnish, exist_ok=True)
     languages.append("fi")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_russian = os.path.join("Corpora", "meta_Russian")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_Russian"))
     os.makedirs(cache_dir_russian, exist_ok=True)
     languages.append("ru")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_Hungarian"))
     os.makedirs(cache_dir_hungarian, exist_ok=True)
     languages.append("hu")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_Dutch"))
     os.makedirs(cache_dir_dutch, exist_ok=True)
     languages.append("nl")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     cache_dir_french = os.path.join("Corpora", "meta_French")
     model_save_dirs.append(os.path.join("Models", "Meta_multi", "meta_French"))
     os.makedirs(cache_dir_french, exist_ok=True)
     languages.append("fr")
-    individual_models.append(Tacotron2(use_alignment_loss=False))
 
     meta_save_dir = os.path.join("Models", "Meta_multi", "Tacotron2_MetaCheckpoint")
     os.makedirs(meta_save_dir, exist_ok=True)
@@ -163,15 +153,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     for iteration in range(10):
         processes = list()
+        individual_models = list()
         for index, train_set in enumerate(datasets):
             instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
             os.makedirs(instance_save_dir, exist_ok=True)
             batchsize = 24
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
             epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
+            individual_models.append(Tacotron2(use_alignment_loss=False))
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
-                                            "net"                   : individual_models[index],
+                                            "net"                   : individual_models[-1],
                                             "train_dataset"         : train_set,
                                             "device"                : torch.device(f"cuda:{gpus_available[-1]}"),
                                             "save_directory"        : instance_save_dir,
@@ -195,8 +187,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                 processes.pop(0)
                 gpus_available.append(gpus_in_use.pop(0))
 
+        print("Waiting for the remainders to finish...")
         for process in processes:
-            print("Waiting for the remainders to finish...")
             process.join()
             gpus_available.append(gpus_in_use.pop(0))
 
