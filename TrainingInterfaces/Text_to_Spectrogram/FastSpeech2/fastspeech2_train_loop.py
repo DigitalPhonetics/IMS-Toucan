@@ -113,8 +113,6 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    if fine_tune:
-        lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()

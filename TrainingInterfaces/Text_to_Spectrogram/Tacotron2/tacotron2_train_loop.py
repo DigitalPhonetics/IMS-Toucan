@@ -132,8 +132,6 @@ def train_loop(net,
         cycle_loss_start_steps = 0
     step_counter = 0
     epoch = 0
-    if fine_tune:
-        lr = lr * 0.01
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     scaler = GradScaler()
     if resume:
@@ -202,10 +200,10 @@ def train_loop(net,
             path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
             check_dict = torch.load(path_to_checkpoint, map_location=device)
             net.load_state_dict(check_dict["model"])
-            if not fine_tune:
-                optimizer.load_state_dict(check_dict["optimizer"])
-                step_counter = check_dict["step_counter"]
-                scaler.load_state_dict(check_dict["scaler"])
+            # the rest is assuming that there was at least one successful checkpoint, otherwise the finetuning flag is lost
+            optimizer.load_state_dict(check_dict["optimizer"])
+            step_counter = check_dict["step_counter"]
+            scaler.load_state_dict(check_dict["scaler"])
         else:
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
