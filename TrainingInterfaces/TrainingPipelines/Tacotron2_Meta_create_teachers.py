@@ -148,7 +148,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     max_len_in_seconds=13))
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpus_usable = ["0", "1", "2", "3"]
+    gpus_usable = ["0", "1", "3"]
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(gpus_usable))
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
