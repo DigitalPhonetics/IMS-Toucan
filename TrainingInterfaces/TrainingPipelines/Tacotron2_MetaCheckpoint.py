@@ -19,51 +19,51 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     print("Preparing")
     cache_dir_english_nancy = os.path.join("Corpora", "meta_English_nancy")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_English_nancy"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_English_nancy"))
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
     languages.append("en")
 
     cache_dir_english_lj = os.path.join("Corpora", "meta_English_lj")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_English_lj"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_English_lj"))
     os.makedirs(cache_dir_english_lj, exist_ok=True)
     languages.append("en")
 
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_Greek"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_Greek"))
     os.makedirs(cache_dir_greek, exist_ok=True)
     languages.append("el")
 
     cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_Spanish"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_Spanish"))
     os.makedirs(cache_dir_spanish, exist_ok=True)
     languages.append("es")
 
     cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_Finnish"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_Finnish"))
     os.makedirs(cache_dir_finnish, exist_ok=True)
     languages.append("fi")
 
     cache_dir_russian = os.path.join("Corpora", "meta_Russian")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_Russian"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_Russian"))
     os.makedirs(cache_dir_russian, exist_ok=True)
     languages.append("ru")
 
     cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_Hungarian"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_Hungarian"))
     os.makedirs(cache_dir_hungarian, exist_ok=True)
     languages.append("hu")
 
     cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_Dutch"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_Dutch"))
     os.makedirs(cache_dir_dutch, exist_ok=True)
     languages.append("nl")
 
     cache_dir_french = os.path.join("Corpora", "meta_French")
-    model_save_dirs.append(os.path.join("Models", "Meta_Waldweihe", "meta_French"))
+    model_save_dirs.append(os.path.join("Models", "Meta_single", "meta_French"))
     os.makedirs(cache_dir_french, exist_ok=True)
     languages.append("fr")
 
-    meta_save_dir = os.path.join("Models", "Meta_Waldweihe", "Tacotron2_MetaCheckpoint")
+    meta_save_dir = os.path.join("Models", "Meta_single", "Tacotron2_MetaCheckpoint")
     os.makedirs(meta_save_dir, exist_ok=True)
 
     datasets = list()
@@ -141,8 +141,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     max_len_in_seconds=13))
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpu = ["7"]
-    os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu)
+    os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
 
     index = 5
 
@@ -153,7 +152,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
     train_loop(net=Tacotron2(use_alignment_loss=False),
                train_dataset=datasets[index],
-               device=torch.device(f"cuda:{gpu}"),
+               device=torch.device("cuda"),
                save_directory=instance_save_dir,
                steps=3000,
                batch_size=batchsize,
