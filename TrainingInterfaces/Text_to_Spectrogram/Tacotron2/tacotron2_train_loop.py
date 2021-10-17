@@ -114,10 +114,10 @@ def train_loop(net,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=1,
+                              num_workers=8,
                               pin_memory=True,
                               shuffle=True,
-                              prefetch_factor=64,
+                              prefetch_factor=16,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
