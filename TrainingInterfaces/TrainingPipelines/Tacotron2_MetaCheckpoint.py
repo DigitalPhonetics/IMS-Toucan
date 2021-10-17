@@ -141,12 +141,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     max_len_in_seconds=13))
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpu = ["8"]
+    gpu = ["7"]
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu)
 
-    index = 0
+    index = 5
 
-    instance_save_dir = model_save_dirs[index] + f"_iteration_{index}"
+    instance_save_dir = model_save_dirs[index] + f"_iteration_{0}"
     os.makedirs(instance_save_dir, exist_ok=True)
     batchsize = 24
     batches_per_epoch = max((len(datasets[index]) // batchsize), 1)  # max with one to avoid zero division
