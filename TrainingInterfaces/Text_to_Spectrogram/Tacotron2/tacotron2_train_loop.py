@@ -91,9 +91,11 @@ def train_loop(net,
                fine_tune=False,
                collapse_margin=5.0,  # be wary of loss scheduling
                resume=False,
-               cycle_loss_start_steps=None):
+               cycle_loss_start_steps=None,
+               silent=False):
     """
     Args:
+        silent: whether to print things, which can be problematic in multiprocessing when all processes print over each other
         cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start
         resume: whether to resume from the most recent checkpoint
         collapse_margin: margin in which the loss may increase in one epoch without triggering the soft-reset
@@ -195,7 +197,7 @@ def train_loop(net,
         net.eval()
         loss_this_epoch = sum(train_losses_this_epoch) / len(train_losses_this_epoch)
         if previous_error + collapse_margin < loss_this_epoch:
-            print("Model Collapse detected! \nPrevious Loss: {}\nNew Loss: {}".format(previous_error, loss_this_epoch))
+            print(f"Model Collapse detected in {lang}! \nPrevious Loss: {previous_error}\nNew Loss: {loss_this_epoch}")
             print("Trying to reset to a stable state ...")
             path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
             check_dict = torch.load(path_to_checkpoint, map_location=device)
@@ -222,18 +224,20 @@ def train_loop(net,
                                    att_dir=save_directory,
                                    step=step_counter)
                 if step_counter > steps:
-                    print("Epoch:        {}".format(epoch))
-                    print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
-                    for loss_type in cumulative_loss_dict:
-                        print(f"    {loss_type}: {round(sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type]), 3)}")
-                    print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
-                    print("Steps:        {}".format(step_counter))
+                    if not silent:
+                        print("Epoch:        {}".format(epoch))
+                        print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
+                        for loss_type in cumulative_loss_dict:
+                            print(f"    {loss_type}: {round(sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type]), 3)}")
+                        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
+                        print("Steps:        {}".format(step_counter))
                     # DONE
                     return
-            print("Epoch:        {}".format(epoch))
-            print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
-            for loss_type in cumulative_loss_dict:
-                print(f"    {loss_type}: {round(sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type]), 3)}")
-            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
-            print("Steps:        {}".format(step_counter))
+            if not silent:
+                print("Epoch:        {}".format(epoch))
+                print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
+                for loss_type in cumulative_loss_dict:
+                    print(f"    {loss_type}: {round(sum(cumulative_loss_dict[loss_type]) / len(cumulative_loss_dict[loss_type]), 3)}")
+                print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
+                print("Steps:        {}".format(step_counter))
         net.train()
