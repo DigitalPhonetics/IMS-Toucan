@@ -212,7 +212,7 @@ class GuidedAttentionLoss(torch.nn.Module):
         https://arxiv.org/abs/1710.08969
     """
 
-    def __init__(self, sigma=0.4, alpha=1.0, reset_always=True):
+    def __init__(self, sigma=0.4, alpha=1.0):
         """
         Initialize guided attention loss module.
 
@@ -225,7 +225,6 @@ class GuidedAttentionLoss(torch.nn.Module):
         super(GuidedAttentionLoss, self).__init__()
         self.sigma = sigma
         self.alpha = alpha
-        self.reset_always = reset_always
         self.guided_attn_masks = None
         self.masks = None
 
@@ -246,18 +245,16 @@ class GuidedAttentionLoss(torch.nn.Module):
             Tensor: Guided attention loss value.
         """
         print("1")
-        if self.guided_attn_masks is None:
-            self.guided_attn_masks = self._make_guided_attention_masks(ilens, olens).to(att_ws.device)
+        self._reset_masks()
+        self.guided_attn_masks = self._make_guided_attention_masks(ilens, olens).to(att_ws.device)
         print("2")
-        if self.masks is None:
-            self.masks = self._make_masks(ilens, olens).to(att_ws.device)
+        self.masks = self._make_masks(ilens, olens).to(att_ws.device)
         print("3")
         losses = self.guided_attn_masks * att_ws
         print("4")
         loss = torch.mean(losses.masked_select(self.masks))
         print("5")
-        if self.reset_always:
-            self._reset_masks()
+        self._reset_masks()
         print("6")
         return self.alpha * loss
 

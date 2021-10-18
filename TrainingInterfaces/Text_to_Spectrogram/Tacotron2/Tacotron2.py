@@ -204,7 +204,6 @@ class Tacotron2(torch.nn.Module):
             loss = loss + dtw_loss
             losses["dtw"] = dtw_loss.item()
 
-        print("Now I am here")
         # calculate attention loss
         if self.use_guided_attn_loss:
             if self.reduction_factor > 1:
@@ -212,10 +211,9 @@ class Tacotron2(torch.nn.Module):
             else:
                 olens_in = speech_lengths
             attn_loss_weight = max(1.0, 10.0 / max((step / 200.0), 1.0))
-            attn_loss = self.guided_att_loss(att_ws, text_lengths, olens_in) * attn_loss_weight  # TODO investigate
+            attn_loss = self.guided_att_loss(att_ws, text_lengths, olens_in) * attn_loss_weight
             losses["diag"] = attn_loss.item()
             loss = loss + attn_loss
-        print("and now I am not.")
 
         # calculate alignment loss
         if self.use_alignment_loss:
