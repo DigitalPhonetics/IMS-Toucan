@@ -159,7 +159,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             batchsize = 24
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
             epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
-            individual_models.append(Tacotron2(use_alignment_loss=False))
+            individual_models.append(Tacotron2(use_alignment_loss=False, use_guided_attn_loss=False))
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
                                             "net"                   : individual_models[-1],
