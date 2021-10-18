@@ -257,7 +257,6 @@ class GuidedAttentionLoss(torch.nn.Module):
         max_ilen = max(ilens)
         max_olen = max(olens)
         guided_attn_masks = torch.zeros((n_batches, max_olen, max_ilen), device=ilens.device)
-        print("1.4")
         for idx, (ilen, olen) in enumerate(zip(ilens, olens)):
             guided_attn_masks[idx, :olen, :ilen] = self._make_guided_attention_mask(ilen, olen, self.sigma)
         return guided_attn_masks
@@ -267,8 +266,7 @@ class GuidedAttentionLoss(torch.nn.Module):
         """
         Make guided attention mask.
         """
-        grid_x, grid_y = torch.meshgrid(torch.arange(olen), torch.arange(ilen))
-        grid_x, grid_y = grid_x.float().to(olen.device), grid_y.float().to(ilen.device)
+        grid_x, grid_y = torch.meshgrid(torch.arange(olen, device=olen.device).float(), torch.arange(ilen, device=ilen.device).float())
         return 1.0 - torch.exp(-((grid_y / ilen - grid_x / olen) ** 2) / (2 * (sigma ** 2)))
 
     @staticmethod
