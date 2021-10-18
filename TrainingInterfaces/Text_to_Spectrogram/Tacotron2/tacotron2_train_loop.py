@@ -161,18 +161,13 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                try:
-                    train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
-                                                                text_lengths=batch[1].to(device),
-                                                                speech=batch[2].to(device),
-                                                                speech_lengths=batch[3].to(device),
-                                                                step=step_counter,
-                                                                return_mels=True,
-                                                                return_loss_dict=True)
-                except Exception:
-                    import traceback
-                    print(traceback.format_exc())
-                print("made it past the forward pass")
+                train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
+                                                            text_lengths=batch[1].to(device),
+                                                            speech=batch[2].to(device),
+                                                            speech_lengths=batch[3].to(device),
+                                                            step=step_counter,
+                                                            return_mels=True,
+                                                            return_loss_dict=True)
 
                 if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
@@ -222,11 +217,11 @@ def train_loop(net,
             previous_error = loss_this_epoch
             if epoch % epochs_per_save == 0:
                 torch.save({
-                    "model"       : net.state_dict(),
-                    "optimizer"   : optimizer.state_dict(),
-                    "scaler"      : scaler.state_dict(),
+                    "model": net.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "scaler": scaler.state_dict(),
                     "step_counter": step_counter,
-                    },
+                },
                     os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
                 with torch.no_grad():

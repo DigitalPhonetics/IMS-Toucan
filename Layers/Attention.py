@@ -245,14 +245,20 @@ class GuidedAttentionLoss(torch.nn.Module):
         Returns:
             Tensor: Guided attention loss value.
         """
+        print("1")
         if self.guided_attn_masks is None:
             self.guided_attn_masks = self._make_guided_attention_masks(ilens, olens).to(att_ws.device)
+        print("2")
         if self.masks is None:
             self.masks = self._make_masks(ilens, olens).to(att_ws.device)
+        print("3")
         losses = self.guided_attn_masks * att_ws
+        print("4")
         loss = torch.mean(losses.masked_select(self.masks))
+        print("5")
         if self.reset_always:
             self._reset_masks()
+        print("6")
         return self.alpha * loss
 
     def _make_guided_attention_masks(self, ilens, olens):
