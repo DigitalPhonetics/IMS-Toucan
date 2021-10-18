@@ -18,7 +18,6 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
-@torch.no_grad()
 def plot_attention(model, lang, device, att_dir, step):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""

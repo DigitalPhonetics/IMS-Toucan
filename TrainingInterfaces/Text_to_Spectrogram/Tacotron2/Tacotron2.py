@@ -277,8 +277,8 @@ class Tacotron2(torch.nn.Module):
             assert speech_tensor is not None, "speech must be provided with teacher forcing."
 
             text_tensors, speech_tensors = text_tensor.unsqueeze(0), speech_tensor.unsqueeze(0)
-            ilens = text_tensor.new_tensor([text_tensors.size(1)]).long()
-            speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)]).long()
+            ilens = text_tensor.new_tensor([text_tensors.size(1)], device=text_tensor.device).long()
+            speech_lengths = speech_tensor.new_tensor([speech_tensors.size(1)], device=text_tensor.device).long()
             outs, _, _, att_ws = self._forward(text_tensors, ilens, speech_tensors, speech_lengths)
 
             return outs[0], None, att_ws[0]
