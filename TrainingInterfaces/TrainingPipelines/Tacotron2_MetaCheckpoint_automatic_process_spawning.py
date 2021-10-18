@@ -149,7 +149,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(gpus_usable))
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
-    initial_resume = resume
 
     for iteration in range(10):
         processes = list()
@@ -173,8 +172,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "lang"                  : languages[index],
                                             "lr"                    : 0.001,
                                             "path_to_checkpoint"    : meta_save_dir + "/best.pt",
-                                            "fine_tune"             : not initial_resume,
-                                            "resume"                : initial_resume,
+                                            "fine_tune"             : not resume,
+                                            "resume"                : resume,
                                             "cycle_loss_start_steps": None,  # not used here, only for final adaptation
                                             "silent"                : True
                                             }))

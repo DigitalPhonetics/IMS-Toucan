@@ -135,7 +135,13 @@ def train_loop(net,
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     scaler = GradScaler()
     if resume:
-        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
+        previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
+        if previous_checkpoint is not None:
+            path_to_checkpoint = previous_checkpoint
+            fine_tune = False
+        else:
+            fine_tune = True
+
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         net.load_state_dict(check_dict["model"])
@@ -143,6 +149,9 @@ def train_loop(net,
             optimizer.load_state_dict(check_dict["optimizer"])
             step_counter = check_dict["step_counter"]
             scaler.load_state_dict(check_dict["scaler"])
+            if step_counter > steps:
+                print("Desired steps already reached in loaded checkpoint.")
+                return
     start_time = time.time()
     while True:
         cumulative_loss_dict = dict()

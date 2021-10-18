@@ -39,9 +39,8 @@ def get_most_recent_checkpoint(checkpoint_dir):
         if el.endswith(".pt") and el != "best.pt":
             checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
     if len(checkpoint_list) == 0:
-        print("No previous checkpoints found, cannot reload. \nExiting ...")
-        import sys
-        sys.exit()
+        print("No previous checkpoints found, cannot reload.")
+        return None
     checkpoint_list.sort(reverse=True)
     print("Reloading checkpoint_{}.pt".format(checkpoint_list[0]))
     return os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(checkpoint_list[0]))
