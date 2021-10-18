@@ -152,9 +152,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
 
-    processes = list()
-    individual_models = list()
     for iteration in range(10):
+
+        processes = list()
+        individual_models = list()
+        torch.cuda.empty_cache()
+
         if iteration == 0:
             # make sure all models train with the same initialization
             torch.save({'model': Tacotron2(use_alignment_loss=False).state_dict()}, meta_save_dir + f"/meta_{iteration}it.pt")
@@ -165,6 +168,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             batchsize = 24
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
             epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
+            epochs_per_save = 1  # overwritten for debugging
             individual_models.append(Tacotron2(use_alignment_loss=False))
             processes.append(mp.Process(target=train_loop,
                                         kwargs={

@@ -115,7 +115,7 @@ class ArticulatoryCombinedTextFrontend:
             papercup_features = self.phone_to_vector_papercup[phone]
             self.phone_to_vector[phone] = papercup_features + panphon_features[0]
 
-    def string_to_tensor(self, text, view=False):
+    def string_to_tensor(self, text, view=False, device="cpu"):
         """
         Fixes unicode errors, expands some abbreviations,
         turns graphemes into phonemes and then vectorizes
@@ -131,7 +131,7 @@ class ArticulatoryCombinedTextFrontend:
                 phones_vector.append(self.phone_to_vector[char])
             except KeyError:
                 print("unknown phoneme: {}".format(char))
-        return torch.Tensor(phones_vector)
+        return torch.Tensor(phones_vector, device=device)
 
     def get_phone_string(self, text, include_eos_symbol=True):
         # clean unicode errors, expand abbreviations, handle emojis etc.

@@ -19,6 +19,7 @@ from Utility.utils import get_most_recent_checkpoint
 
 
 def plot_attention(model, lang, device, att_dir, step):
+    print("att plot")
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -40,15 +41,18 @@ def plot_attention(model, lang, device, att_dir, step):
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
     text = tf.string_to_tensor(sentence).to(device)
+    print("tensor created")
     phones = tf.get_phone_string(sentence)
     model.eval()
     _, _, att = model.inference(text_tensor=text)
+    print("inference done")
     att = att.to("cpu")
     model.train()
     del tf
     bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
                                           in_lens=torch.LongTensor([len(text)]),
                                           out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0).detach().numpy()
+    print("binarized")
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
@@ -67,6 +71,7 @@ def plot_attention(model, lang, device, att_dir, step):
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
     fig.clf()
     plt.close()
+    print(plotted)
 
 
 def collate_and_pad(batch):
@@ -238,12 +243,6 @@ def train_loop(net,
                         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
                         print("Steps:        {}".format(step_counter))
                     # DONE
-                    net = net.to("cpu")
-                    del train_loader
-                    del optimizer
-                    del scaler
-                    torch.cuda.empty_cache()
-                    time.sleep(5)
                     return
             if not silent:
                 print("Epoch:        {}".format(epoch))
