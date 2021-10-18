@@ -5,6 +5,7 @@ import torch.multiprocessing
 from torch import multiprocessing as mp
 
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import get_most_recent_checkpoint
@@ -70,7 +71,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     meta_save_dir = os.path.join(base_dir, "Tacotron2_MetaCheckpoint")
     os.makedirs(meta_save_dir, exist_ok=True)
 
-    """
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
                                     cache_dir=cache_dir_english_nancy,
                                     lang="en",
@@ -142,7 +142,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cut_silences=True,
                                     min_len_in_seconds=2,
                                     max_len_in_seconds=13))
-    """
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     gpus_usable = ["0", "1", "2", "3"]
