@@ -71,7 +71,7 @@ def plot_attention(model, lang, device, att_dir, step):
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
     fig.clf()
     plt.close()
-    print(plotted)
+    print("plotted")
 
 
 def collate_and_pad(batch):
