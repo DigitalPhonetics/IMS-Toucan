@@ -160,7 +160,11 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
-            print("1")
+            print("BATCH SUPPOSEDLY LOADED")
+            print(batch[0])
+            print(batch[1])
+            print(batch[2])
+            print(batch[3])
             with autocast():
                 train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
                                                             text_lengths=batch[1].to(device),
@@ -169,7 +173,6 @@ def train_loop(net,
                                                             step=step_counter,
                                                             return_mels=True,
                                                             return_loss_dict=True)
-                print("2")
 
                 if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
@@ -192,7 +195,6 @@ def train_loop(net,
                     if loss_type not in cumulative_loss_dict.keys():
                         cumulative_loss_dict[loss_type] = list()
                     cumulative_loss_dict[loss_type].append(loss_dict[loss_type])
-                print("3")
 
             optimizer.zero_grad()
             if speaker_embedding_func is not None:
