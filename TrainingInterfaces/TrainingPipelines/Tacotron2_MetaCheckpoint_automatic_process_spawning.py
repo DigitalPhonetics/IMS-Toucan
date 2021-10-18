@@ -160,7 +160,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         list_of_checkpoints_for_averaging = list()
         for model_dir in os.listdir(base_dir):
             if model_dir.split("_")[-1] == f"{iteration - 1}":
-                list_of_checkpoints_for_averaging.append(get_most_recent_checkpoint(os.path.join(base_dir, model_dir)))
+                list_of_checkpoints_for_averaging.append(get_most_recent_checkpoint(os.path.join(base_dir, model_dir), verbose=False))
         torch.save({'model': average_checkpoints(list_of_checkpoints_for_averaging, load_net_taco).state_dict()}, meta_save_dir + f"/meta_{iteration}it.pt")
 
     processes = list()
@@ -198,13 +198,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             processes.pop(0)
             gpus_available.append(gpus_in_use.pop(0))
 
-        print("Waiting for the remainders to finish...")
-        for process in processes:
-            process.join()
-            gpus_available.append(gpus_in_use.pop(0))
+    print("Waiting for the remainders to finish...")
+    for process in processes:
+        process.join()
+        gpus_available.append(gpus_in_use.pop(0))
 
-        meta_model = average_models(individual_models)
-        torch.save({'model': meta_model.state_dict()}, meta_save_dir + f"/meta_{iteration + 1}it.pt")
+    meta_model = average_models(individual_models)
+    torch.save({'model': meta_model.state_dict()}, meta_save_dir + f"/meta_{iteration + 1}it.pt")
 
 
 def average_models(models):

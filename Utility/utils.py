@@ -33,7 +33,7 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
             os.remove(os.path.join(old_checkpoint))
 
 
-def get_most_recent_checkpoint(checkpoint_dir):
+def get_most_recent_checkpoint(checkpoint_dir, verbose=True):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
         if el.endswith(".pt") and el != "best.pt":
@@ -42,7 +42,8 @@ def get_most_recent_checkpoint(checkpoint_dir):
         print("No previous checkpoints found, cannot reload.")
         return None
     checkpoint_list.sort(reverse=True)
-    print("Reloading checkpoint_{}.pt".format(checkpoint_list[0]))
+    if verbose:
+        print("Reloading checkpoint_{}.pt".format(checkpoint_list[0]))
     return os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(checkpoint_list[0]))
 
 
