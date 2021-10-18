@@ -257,11 +257,8 @@ class GuidedAttentionLoss(torch.nn.Module):
         max_ilen = max(ilens)
         max_olen = max(olens)
         guided_attn_masks = torch.zeros((n_batches, max_olen, max_ilen), device=ilens.device)
-        print("silent crash location 1")
         for idx, (ilen, olen) in enumerate(zip(ilens, olens)):
-            print("silent crash location 2")
             guided_attn_masks[idx, :olen, :ilen] = self._make_guided_attention_mask(ilen, olen, self.sigma)
-            print("silent crash location 3")
         return guided_attn_masks
 
     @staticmethod
@@ -270,7 +267,6 @@ class GuidedAttentionLoss(torch.nn.Module):
         Make guided attention mask.
         """
         grid_x, grid_y = torch.meshgrid(torch.arange(olen, device=olen.device).float(), torch.arange(ilen, device=ilen.device).float())
-        print("silent crash location 2.5")
         return 1.0 - torch.exp(-((grid_y / ilen - grid_x / olen) ** 2) / (2 * (sigma ** 2)))
 
     @staticmethod
@@ -287,8 +283,11 @@ class GuidedAttentionLoss(torch.nn.Module):
                     dtype=torch.uint8 in PyTorch 1.2-
                     dtype=torch.bool in PyTorch 1.2+ (including 1.2)
         """
-        in_masks = make_non_pad_mask(ilens)  # (B, T_in)
-        out_masks = make_non_pad_mask(olens)  # (B, T_out)
+        print("hello")
+        in_masks = make_non_pad_mask(ilens, device=ilens.device)  # (B, T_in)
+        print("why")
+        out_masks = make_non_pad_mask(olens, device=olens.device)  # (B, T_out)
+        print("pls")
         return out_masks.unsqueeze(-1) & in_masks.unsqueeze(-2)  # (B, T_out, T_in)
 
 
