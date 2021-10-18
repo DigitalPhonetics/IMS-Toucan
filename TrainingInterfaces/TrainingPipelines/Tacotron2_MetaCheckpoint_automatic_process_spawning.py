@@ -8,7 +8,6 @@ from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
-from Utility.utils import get_most_recent_checkpoint
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -71,47 +70,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     meta_save_dir = os.path.join(base_dir, "Tacotron2_MetaCheckpoint")
     os.makedirs(meta_save_dir, exist_ok=True)
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
-
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
-
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
-
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
-
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
-
-    """
     datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
                                     cache_dir=cache_dir_english_nancy,
                                     lang="en",
@@ -183,7 +141,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     cut_silences=True,
                                     min_len_in_seconds=2,
                                     max_len_in_seconds=13))
-    """
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     gpus_usable = ["0", "1", "2", "3"]
@@ -191,62 +148,53 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     gpus_available = list(range(len(gpus_usable)))
     gpus_in_use = []
 
-    # ============ manually set iteration for convenience ===========
-    iteration = 1
-    # =============== remember to keep this updated =================
-
-    if iteration == 0:
-        # make sure all models train with the same initialization
-        torch.save({'model': Tacotron2(use_alignment_loss=False).state_dict()}, meta_save_dir + f"/meta_{iteration}it.pt")
-    else:
-        list_of_checkpoints_for_averaging = list()
-        for model_dir in os.listdir(base_dir):
-            if model_dir.split("_")[-1] == f"{iteration - 1}":
-                list_of_checkpoints_for_averaging.append(get_most_recent_checkpoint(os.path.join(base_dir, model_dir), verbose=False))
-        torch.save({'model': average_checkpoints(list_of_checkpoints_for_averaging, load_net_taco).state_dict()}, meta_save_dir + f"/meta_{iteration}it.pt")
-
     processes = list()
     individual_models = list()
-    for index, train_set in enumerate(datasets):
-        instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
-        os.makedirs(instance_save_dir, exist_ok=True)
-        batchsize = 24
-        batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
-        epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
-        individual_models.append(Tacotron2(use_alignment_loss=False))
-        processes.append(mp.Process(target=train_loop,
-                                    kwargs={
-                                        "net": individual_models[-1],
-                                        "train_dataset": train_set,
-                                        "device": torch.device(f"cuda:{gpus_available[-1]}"),
-                                        "save_directory": instance_save_dir,
-                                        "steps": 3000,
-                                        "batch_size": batchsize,
-                                        "epochs_per_save": epochs_per_save,
-                                        "lang": languages[index],
-                                        "lr": 0.001,
-                                        "path_to_checkpoint": meta_save_dir + f"/meta_{iteration}it.pt",
-                                        "fine_tune": not resume,
-                                        "resume": resume,
-                                        "cycle_loss_start_steps": None,  # not used here, only for final adaptation
-                                        "silent": True
-                                    }))
-        processes[-1].start()
-        print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
-        gpus_in_use.append(gpus_available.pop())
-        while len(gpus_available) == 0:
-            print("All GPUs available should be filled now. Waiting for one process to finish to start the next one.")
-            processes[0].join()
-            processes.pop(0)
+    for iteration in range(10):
+        if iteration == 0:
+            # make sure all models train with the same initialization
+            torch.save({'model': Tacotron2(use_alignment_loss=False).state_dict()}, meta_save_dir + f"/meta_{iteration}it.pt")
+
+        for index, train_set in enumerate(datasets):
+            instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
+            os.makedirs(instance_save_dir, exist_ok=True)
+            batchsize = 24
+            batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
+            epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
+            individual_models.append(Tacotron2(use_alignment_loss=False))
+            processes.append(mp.Process(target=train_loop,
+                                        kwargs={
+                                            "net": individual_models[-1],
+                                            "train_dataset": train_set,
+                                            "device": torch.device(f"cuda:{gpus_available[-1]}"),
+                                            "save_directory": instance_save_dir,
+                                            "steps": 3000,
+                                            "batch_size": batchsize,
+                                            "epochs_per_save": epochs_per_save,
+                                            "lang": languages[index],
+                                            "lr": 0.001,
+                                            "path_to_checkpoint": meta_save_dir + f"/meta_{iteration}it.pt",
+                                            "fine_tune": not resume,
+                                            "resume": resume,
+                                            "cycle_loss_start_steps": None,  # not used here, only for final adaptation
+                                            "silent": True
+                                        }))
+            processes[-1].start()
+            print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
+            gpus_in_use.append(gpus_available.pop())
+            while len(gpus_available) == 0:
+                print("All GPUs available should be filled now. Waiting for one process to finish to start the next one.")
+                processes[0].join()
+                processes.pop(0)
+                gpus_available.append(gpus_in_use.pop(0))
+
+        print("Waiting for the remainders to finish...")
+        for process in processes:
+            process.join()
             gpus_available.append(gpus_in_use.pop(0))
 
-    print("Waiting for the remainders to finish...")
-    for process in processes:
-        process.join()
-        gpus_available.append(gpus_in_use.pop(0))
-
-    meta_model = average_models(individual_models)
-    torch.save({'model': meta_model.state_dict()}, meta_save_dir + f"/meta_{iteration + 1}it.pt")
+        meta_model = average_models(individual_models)
+        torch.save({'model': meta_model.state_dict()}, meta_save_dir + f"/meta_{iteration + 1}it.pt")
 
 
 def average_models(models):

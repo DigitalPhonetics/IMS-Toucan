@@ -283,11 +283,8 @@ class GuidedAttentionLoss(torch.nn.Module):
                     dtype=torch.uint8 in PyTorch 1.2-
                     dtype=torch.bool in PyTorch 1.2+ (including 1.2)
         """
-        print("hello")
         in_masks = make_non_pad_mask(ilens, device=ilens.device)  # (B, T_in)
-        print("why")
         out_masks = make_non_pad_mask(olens, device=olens.device)  # (B, T_out)
-        print("pls")
         return out_masks.unsqueeze(-1) & in_masks.unsqueeze(-2)  # (B, T_out, T_in)
 
 
