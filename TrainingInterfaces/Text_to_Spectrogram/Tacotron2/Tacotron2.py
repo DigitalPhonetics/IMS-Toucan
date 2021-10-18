@@ -167,7 +167,7 @@ class Tacotron2(torch.nn.Module):
         """
 
         # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
-
+        print("Trying hard")
         losses = dict()
 
         # make labels for stop prediction
@@ -179,6 +179,7 @@ class Tacotron2(torch.nn.Module):
                                                                 text_lengths,
                                                                 speech,
                                                                 speech_lengths)
+        print("Should be over the hill now tbh")
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
