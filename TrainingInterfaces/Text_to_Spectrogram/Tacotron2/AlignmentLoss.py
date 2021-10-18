@@ -37,7 +37,7 @@ from numba import prange
 
 class ForwardSumLoss(nn.Module):
 
-    def __init__(self, blank_logprob=-20):
+    def __init__(self, blank_logprob=-10):
         """
         The RAD-TTS Paper says the following about the blank_logprob:
 
@@ -178,7 +178,7 @@ class AlignmentLoss(nn.Module):
                  bin_start_steps=60000,
                  forward_start_steps=10000,
                  include_forward_loss=False,  # something doesn't work right, causes stalling, disabled until figured out.
-                 forward_loss_weight=0.1):
+                 forward_loss_weight=0.01):
         super().__init__()
         if include_forward_loss:
             self.l_forward_func = ForwardSumLoss()

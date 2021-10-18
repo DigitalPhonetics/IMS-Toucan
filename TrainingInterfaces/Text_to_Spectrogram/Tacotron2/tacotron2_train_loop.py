@@ -169,8 +169,10 @@ def train_loop(net,
                                                                 step=step_counter,
                                                                 return_mels=True,
                                                                 return_loss_dict=True)
-                except Exception as e:
-                    print(e)
+                except Exception:
+                    import traceback
+                    print(traceback.format_exc())
+                print("made it past the forward pass")
 
                 if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
