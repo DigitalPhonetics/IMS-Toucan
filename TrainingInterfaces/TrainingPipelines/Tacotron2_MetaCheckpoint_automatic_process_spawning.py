@@ -191,8 +191,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             process.join()
             gpus_available.append(gpus_in_use.pop(0))
 
-        initial_resume = False
-
         meta_model = average_models(individual_models)
         torch.save({'model': meta_model.state_dict()}, meta_save_dir + "/best.pt")
 
