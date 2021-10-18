@@ -160,6 +160,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     else:
         list_of_checkpoints_for_averaging = list()
         for model_dir in os.listdir(base_dir):
+            print(model_dir)
             if model_dir.split("_")[0] == iteration - 1:
                 list_of_checkpoints_for_averaging.append(get_most_recent_checkpoint(os.path.join(base_dir, model_dir)))
                 print(list_of_checkpoints_for_averaging[-1])
