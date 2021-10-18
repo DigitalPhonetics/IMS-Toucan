@@ -2,6 +2,7 @@ import os
 import time
 
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.multiprocessing
 import torch.nn.functional as F
@@ -13,13 +14,11 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import binarize_attention_parallel
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
 def plot_attention(model, lang, device, att_dir, step):
-    print("att plot")
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -41,18 +40,13 @@ def plot_attention(model, lang, device, att_dir, step):
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
     text = tf.string_to_tensor(sentence).to(device)
-    print("tensor created")
     phones = tf.get_phone_string(sentence)
     model.eval()
     _, _, att = model.inference(text_tensor=text)
-    print("inference done")
     att = att.to("cpu")
     model.train()
     del tf
-    bin_att = binarize_attention_parallel(att.unsqueeze(0).unsqueeze(1),
-                                          in_lens=torch.LongTensor([len(text)]),
-                                          out_lens=torch.LongTensor([len(att)])).squeeze(0).squeeze(0).detach().numpy()
-    print("binarized")
+    bin_att = mas(att.data.numpy())
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
     ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
@@ -71,7 +65,32 @@ def plot_attention(model, lang, device, att_dir, step):
     fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), str(step) + ".png"))
     fig.clf()
     plt.close()
-    print("plotted")
+
+
+def mas(attn_map):
+    # assumes mel x text
+    opt = np.zeros_like(attn_map)
+    attn_map = np.log(attn_map)
+    attn_map[0, 1:] = -np.inf
+    log_p = np.zeros_like(attn_map)
+    log_p[0, :] = attn_map[0, :]
+    prev_ind = np.zeros_like(attn_map, dtype=np.int64)
+    for i in range(1, attn_map.shape[0]):
+        for j in range(attn_map.shape[1]):  # for each text dim
+            prev_log = log_p[i - 1, j]
+            prev_j = j
+            if j - 1 >= 0 and log_p[i - 1, j - 1] >= log_p[i - 1, j]:
+                prev_log = log_p[i - 1, j - 1]
+                prev_j = j - 1
+            log_p[i, j] = attn_map[i, j] + prev_log
+            prev_ind[i, j] = prev_j
+    # now backtrack
+    curr_text_idx = attn_map.shape[1] - 1
+    for i in range(attn_map.shape[0] - 1, -1, -1):
+        opt[i, curr_text_idx] = 1
+        curr_text_idx = prev_ind[i, curr_text_idx]
+    opt[0, curr_text_idx] = 1
+    return opt
 
 
 def collate_and_pad(batch):
