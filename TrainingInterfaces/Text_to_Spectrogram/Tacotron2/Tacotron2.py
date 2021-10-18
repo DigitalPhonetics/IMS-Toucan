@@ -167,7 +167,6 @@ class Tacotron2(torch.nn.Module):
         """
 
         # For the articulatory frontend, EOS is already added as last of the sequence in preprocessing
-        print("Trying hard")
         losses = dict()
 
         # make labels for stop prediction
@@ -179,7 +178,6 @@ class Tacotron2(torch.nn.Module):
                                                                 text_lengths,
                                                                 speech,
                                                                 speech_lengths)
-        print("Should be over the hill now tbh")
 
         # modify mod part of groundtruth
         if self.reduction_factor > 1:
@@ -190,6 +188,8 @@ class Tacotron2(torch.nn.Module):
             labels = labels[:, :max_out]
             labels = torch.scatter(labels, 1, (speech_lengths - 1).unsqueeze(1), 1.0)  # see #3388
 
+        print("made it here")
+
         # calculate taco2 loss
         l1_loss, mse_loss, bce_loss = self.taco2_loss(after_outs, before_outs, logits, speech, labels, speech_lengths)
         if self.loss_type == "L1+L2":
@@ -199,6 +199,8 @@ class Tacotron2(torch.nn.Module):
             losses["bce"] = bce_loss.item()
         else:
             raise ValueError(f"unknown loss-type {self.loss_type}")
+
+        print("even here")
 
         # calculate dtw loss
         if self.use_dtw_loss:
@@ -217,6 +219,8 @@ class Tacotron2(torch.nn.Module):
             losses["diag"] = attn_loss.item()
             loss = loss + attn_loss
 
+        print("now here")
+
         # calculate alignment loss
         if self.use_alignment_loss:
             if self.reduction_factor > 1:
@@ -230,6 +234,7 @@ class Tacotron2(torch.nn.Module):
 
         if return_mels:
             if return_loss_dict:
+                print("where exactly does it break")
                 return loss, after_outs, losses
             return loss, after_outs
         if return_loss_dict:
