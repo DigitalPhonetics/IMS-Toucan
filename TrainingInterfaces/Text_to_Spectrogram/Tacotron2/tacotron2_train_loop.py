@@ -160,11 +160,7 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
-            print("BATCH SUPPOSEDLY LOADED")
-            print(batch[0])
-            print(batch[1])
-            print(batch[2])
-            print(batch[3])
+            print(net)
             with autocast():
                 train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
                                                             text_lengths=batch[1].to(device),
