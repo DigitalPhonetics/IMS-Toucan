@@ -11,6 +11,10 @@ from Utility.path_to_transcript_dicts import *
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
+    # =================
+    verbose = False
+    # =================
+
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
@@ -180,15 +184,18 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "silent": True
                                         }))
             processes[-1].start()
-            print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
+            if verbose:
+                print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
             gpus_in_use.append(gpus_available.pop())
             while len(gpus_available) == 0:
-                print("All GPUs available should be filled now. Waiting for one process to finish to start the next one.")
+                if verbose:
+                    print("All GPUs available should be filled now. Waiting for one process to finish to start the next one.")
                 processes[0].join()
                 processes.pop(0)
                 gpus_available.append(gpus_in_use.pop(0))
 
-        print("Waiting for the remainders to finish...")
+        if verbose:
+            print("Waiting for the remainders to finish...")
         for process in processes:
             process.join()
             gpus_available.append(gpus_in_use.pop(0))
@@ -220,38 +227,3 @@ def average_models(models):
     model.load_state_dict(model_dict)
     model.eval()
     return model
-
-
-def average_checkpoints(list_of_checkpoint_paths, load_func):
-    if list_of_checkpoint_paths is None:
-        return None
-    checkpoints_weights = {}
-    model = None
-    for path_to_checkpoint in list_of_checkpoint_paths:
-        print("loading model {}".format(path_to_checkpoint))
-        model = load_func(path=path_to_checkpoint)
-        checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
-    params = model.named_parameters()
-    dict_params = dict(params)
-    checkpoint_amount = len(checkpoints_weights)
-    print("averaging...")
-    for name in dict_params.keys():
-        custom_params = None
-        for _, checkpoint_parameters in checkpoints_weights.items():
-            if custom_params is None:
-                custom_params = checkpoint_parameters[name].data
-            else:
-                custom_params += checkpoint_parameters[name].data
-        dict_params[name].data.copy_(custom_params / checkpoint_amount)
-    model_dict = model.state_dict()
-    model_dict.update(dict_params)
-    model.load_state_dict(model_dict)
-    model.eval()
-    return model
-
-
-def load_net_taco(path):
-    check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = Tacotron2()
-    net.load_state_dict(check_dict["model"])
-    return net

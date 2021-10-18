@@ -239,6 +239,12 @@ def train_loop(net,
                         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
                         print("Steps:        {}".format(step_counter))
                     # DONE
+                    net = net.to("cpu")
+                    del train_loader
+                    del optimizer
+                    del scaler
+                    torch.cuda.empty_cache()
+                    time.sleep(5)
                     return
             if not silent:
                 print("Epoch:        {}".format(epoch))
