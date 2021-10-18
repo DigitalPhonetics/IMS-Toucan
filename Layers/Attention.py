@@ -256,7 +256,7 @@ class GuidedAttentionLoss(torch.nn.Module):
         n_batches = len(ilens)
         max_ilen = max(ilens)
         max_olen = max(olens)
-        print(f"nbatches {n_batches} max olen {max_olen} max ilen {max_ilen}")
+        print(f"{type(ilens)}")
         guided_attn_masks = torch.zeros([n_batches, max_olen, max_ilen])
         print("1.4")
         for idx, (ilen, olen) in enumerate(zip(ilens, olens)):
