@@ -161,13 +161,16 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
-                                                            text_lengths=batch[1].to(device),
-                                                            speech=batch[2].to(device),
-                                                            speech_lengths=batch[3].to(device),
-                                                            step=step_counter,
-                                                            return_mels=True,
-                                                            return_loss_dict=True)
+                try:
+                    train_loss, predicted_mels, loss_dict = net(text=batch[0].to(device),
+                                                                text_lengths=batch[1].to(device),
+                                                                speech=batch[2].to(device),
+                                                                speech_lengths=batch[3].to(device),
+                                                                step=step_counter,
+                                                                return_mels=True,
+                                                                return_loss_dict=True)
+                except Exception as e:
+                    print(e)
 
                 if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
