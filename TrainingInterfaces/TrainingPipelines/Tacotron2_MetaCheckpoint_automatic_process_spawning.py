@@ -147,9 +147,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                     max_len_in_seconds=13))
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpus_usable = ["4", "5", "6", "7", "8", "5", "6", "7", "8"]
+    gpus_usable = ["4", "5", "6", "7", "8"]
     os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(list(set(gpus_usable))))
-    gpus_available = list(range(len(set(gpus_usable))))
+    gpus_available = ["0", "1", "1", "2", "2", "3", "3", "4", "4"]  # list(range(len(gpus_usable)))
+    # on the large GPUs we can train two models simultaneously, utilization is only at ~30% mostly
     gpus_in_use = []
 
     for iteration in range(10):
@@ -171,21 +172,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             individual_models.append(Tacotron2(use_alignment_loss=False))
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
-                                            "net"                   : individual_models[-1],
-                                            "train_dataset"         : train_set,
-                                            "device"                : torch.device(f"cuda:{gpus_available[-1]}"),
-                                            "save_directory"        : instance_save_dir,
-                                            "steps"                 : 6000,
-                                            "batch_size"            : batchsize,
-                                            "epochs_per_save"       : epochs_per_save,
-                                            "lang"                  : languages[index],
-                                            "lr"                    : 0.001,
-                                            "path_to_checkpoint"    : meta_save_dir + f"/meta_{iteration}it.pt",
-                                            "fine_tune"             : not resume,
-                                            "resume"                : resume,
+                                            "net": individual_models[-1],
+                                            "train_dataset": train_set,
+                                            "device": torch.device(f"cuda:{gpus_available[-1]}"),
+                                            "save_directory": instance_save_dir,
+                                            "steps": 6000,
+                                            "batch_size": batchsize,
+                                            "epochs_per_save": epochs_per_save,
+                                            "lang": languages[index],
+                                            "lr": 0.001,
+                                            "path_to_checkpoint": meta_save_dir + f"/meta_{iteration}it.pt",
+                                            "fine_tune": not resume,
+                                            "resume": resume,
                                             "cycle_loss_start_steps": None,  # not used here, only for final adaptation
-                                            "silent"                : True
-                                            }))
+                                            "silent": True
+                                        }))
             processes[-1].start()
             if verbose:
                 print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
