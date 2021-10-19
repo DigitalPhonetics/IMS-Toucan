@@ -64,7 +64,7 @@ class Tacotron2(torch.nn.Module):
             use_guided_attn_loss=True,
             guided_attn_loss_lambda=1.0,  # weight of the attention loss
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
-            use_dtw_loss=False,
+            use_dtw_loss=False,  # really cool concept, but requires tons and tons of GPU-memory
             use_alignment_loss=True,
             input_layer_type="linear"):
         super().__init__()
