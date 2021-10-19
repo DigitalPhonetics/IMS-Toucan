@@ -200,10 +200,12 @@ class Tacotron2(torch.nn.Module):
 
         # calculate dtw loss
         if self.use_dtw_loss:
-            dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
-            # loss = loss + dtw_loss
-            print(dtw_loss.item())
-            losses["dtw"] = dtw_loss.item()
+            if len(speech[0]) < 1024:
+                # max block size supported by cuda. have to skip this batch
+                dtw_loss = self.dtw_criterion(after_outs, speech).mean() / 2000.0  # division to balance orders of magnitude
+                # loss = loss + dtw_loss
+                print(dtw_loss.item())
+                losses["dtw"] = dtw_loss.item()
 
         # calculate attention loss
         if self.use_guided_attn_loss:
