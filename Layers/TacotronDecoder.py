@@ -248,6 +248,7 @@ class Decoder(torch.nn.Module):
                  use_batch_norm=True,
                  use_concate=True,
                  dropout_rate=0.5,
+                 dropout_rate_prenet=0.7,
                  zoneout_rate=0.1,
                  reduction_factor=1):
         """
@@ -306,7 +307,7 @@ class Decoder(torch.nn.Module):
             self.prenet = Prenet(idim=odim,
                                  n_layers=prenet_layers,
                                  n_units=prenet_units,
-                                 dropout_rate=dropout_rate, )
+                                 dropout_rate=dropout_rate_prenet, )
         else:
             self.prenet = None
 
