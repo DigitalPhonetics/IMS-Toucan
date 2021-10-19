@@ -1,26 +1,28 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_automatic_process_spawning import run as meta_taco_auto
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Meta_create_teachers import run as create_teachers
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco_auto
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
+from TrainingInterfaces.TrainingPipelines.create_teachers import run as create_teachers
 
 pipeline_dict = {
-    "fast_nancy"     : fast_nancy,
-    "taco_nancy"     : taco_nancy,
+    "fast_nancy": fast_nancy,
+    "taco_nancy": taco_nancy,
 
-    "hifi_combined"  : hifigan_combined,
+    "hifi_combined": hifigan_combined,
 
-    "taco_meta_auto" : meta_taco_auto,
+    "taco_meta_auto": meta_taco_auto,
     "create_teachers": create_teachers,
+    "meta_fast": meta_fast,
 
-    "taco_same"      : taco_same,
-    "taco_dif"       : taco_dif
-    }
+    "taco_same": taco_same,
+    "taco_dif": taco_dif
+}
 
 if __name__ == '__main__':
 

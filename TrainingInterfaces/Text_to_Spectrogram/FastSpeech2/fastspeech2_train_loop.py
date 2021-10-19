@@ -97,10 +97,13 @@ def train_loop(net,
 
     """
     net = net.to(device)
-
-    speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                            run_opts={"device": str(device)},
-                                                            savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+    if cycle_loss_start_steps is not None:
+        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                run_opts={"device": str(device)},
+                                                                savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+    else:
+        speaker_embedding_func = None
+        cycle_loss_start_steps = 0
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -145,7 +148,7 @@ def train_loop(net,
                                                  return_mels=True)
 
                 train_losses_this_epoch.append(train_loss.item())
-                if step_counter > cycle_loss_start_steps:
+                if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
                                                                                 torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
                     gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),

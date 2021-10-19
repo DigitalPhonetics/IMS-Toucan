@@ -56,6 +56,7 @@ class FastSpeechDataset(Dataset):
             # build cache
             print("... building dataset cache ...")
             self.datapoints = list()
+            self.pop_ids = list()
 
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
 
@@ -66,6 +67,14 @@ class FastSpeechDataset(Dataset):
                                        device,
                                        cache_dir,
                                        1)
+
+            print(f"Removing the following IDs to get a cleaner Tacotron Dataset: {self.pop_ids}")
+            while len(self.pop_ids) > 0:
+                pop_id = self.pop_ids.pop()
+                dataset.pop(pop_id)
+                norm_waves.pop(pop_id)
+            os.rename("taco_train_cache.pt", "taco_train_cache_unclean.pt")
+            torch.save((dataset, norm_waves), os.path.join(cache_dir, "taco_train_cache.pt"))
 
             tensored_datapoints = list()
             # we had to turn all of the tensors to numpy arrays to avoid shared memory
@@ -126,6 +135,7 @@ class FastSpeechDataset(Dataset):
 
             if np.count_nonzero(cached_duration.numpy() == 0) > 4:
                 # here we figure out whether the attention map makes any sense or whether it failed.
+                self.pop_ids.append(index)
                 continue
             # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
             # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
