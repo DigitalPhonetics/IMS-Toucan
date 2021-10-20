@@ -176,7 +176,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         Calculate forward propagation.
 
         Args:
-            step: indicator when to start updating the embedding
+            return_mels: whether to return the predicted spectrogram
             text_tensors (LongTensor): Batch of padded text vectors (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input (B,).
             gold_speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -196,6 +196,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy,
                                                                         is_inference=False)
+
+        print("_forward successful")
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
@@ -225,7 +227,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
-        d_masks = make_pad_mask(text_lens).to(text_tensors.device)
+        d_masks = make_pad_mask(text_lens, device=text_tensors.device)
 
         if self.stop_gradient_from_pitch_predictor:
             pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
@@ -336,7 +338,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             Tensor: Mask tensor for self-attention.
 
         """
-        x_masks = make_non_pad_mask(ilens).to(ilens.device)
+        x_masks = make_non_pad_mask(ilens, device=ilens.device)
         return x_masks.unsqueeze(-2)
 
     def _reset_parameters(self, init_type, init_enc_alpha, init_dec_alpha):

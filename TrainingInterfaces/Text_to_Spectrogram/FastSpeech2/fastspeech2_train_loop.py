@@ -161,6 +161,8 @@ def train_loop(net,
                                                  gold_energy=batch[6].to(device),
                                                  return_mels=True)
 
+                print("forward pass successfull")
+
                 train_losses_this_epoch.append(train_loss.item())
                 if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
@@ -178,7 +180,8 @@ def train_loop(net,
                     train_loss = train_loss + cycle_loss
 
             optimizer.zero_grad()
-            speaker_embedding_func.modules.embedding_model.zero_grad()
+            if speaker_embedding_func is not None:
+                speaker_embedding_func.modules.embedding_model.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
