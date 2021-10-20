@@ -102,7 +102,7 @@ class RelPositionalEncoding(torch.nn.Module):
         pe_positive = torch.zeros(x.size(1), self.d_model, device=x.device)
         pe_negative = torch.zeros(x.size(1), self.d_model, device=x.device)
         position = torch.arange(0, x.size(1), dtype=torch.float32, device=x.device).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32) * -(math.log(10000.0) / self.d_model))
+        div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32, device=x.device) * -(math.log(10000.0) / self.d_model))
         pe_positive[:, 0::2] = torch.sin(position * div_term)
         pe_positive[:, 1::2] = torch.cos(position * div_term)
         pe_negative[:, 0::2] = torch.sin(-1 * position * div_term)
