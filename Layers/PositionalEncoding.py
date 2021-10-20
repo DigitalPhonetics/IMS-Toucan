@@ -99,10 +99,19 @@ class RelPositionalEncoding(torch.nn.Module):
         # Suppose `i` means to the position of query vecotr and `j` means the
         # position of key vector. We use position relative positions when keys
         # are to the left (i>j) and negative relative positions otherwise (i<j).
+
+        print("extending positional encoding")
+
         pe_positive = torch.zeros(x.size(1), self.d_model, device=x.device)
         pe_negative = torch.zeros(x.size(1), self.d_model, device=x.device)
+
+        print("created zeros")
+
         position = torch.arange(0, x.size(1), dtype=torch.float32, device=x.device).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32, device=x.device) * -(math.log(10000.0) / self.d_model))
+
+        print("positionified")
+
         pe_positive[:, 0::2] = torch.sin(position * div_term)
         pe_positive[:, 1::2] = torch.cos(position * div_term)
         pe_negative[:, 0::2] = torch.sin(-1 * position * div_term)
