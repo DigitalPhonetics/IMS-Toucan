@@ -160,7 +160,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         for index, train_set in enumerate(datasets):
             instance_save_dir = model_save_dirs[index] + f"_iteration_{iteration}"
             os.makedirs(instance_save_dir, exist_ok=True)
-            batchsize = 24
+            batchsize = 32
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
             epochs_per_save = max(round(400 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             individual_models.append(FastSpeech2())
@@ -170,7 +170,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "train_dataset": train_set,
                                             "device": torch.device(f"cuda:{gpus_available[-1]}"),
                                             "save_directory": instance_save_dir,
-                                            "steps": 10000,
+                                            "steps": 20000,
                                             "batch_size": batchsize,
                                             "epochs_per_save": epochs_per_save,
                                             "lang": languages[index],
