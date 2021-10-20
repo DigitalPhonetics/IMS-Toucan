@@ -131,7 +131,7 @@ class RelPositionalEncoding(torch.nn.Module):
         pe = torch.cat([pe_positive, pe_negative], dim=1)
         print("god I wish I could use a debugger for this")
 
-        self.pe = pe.to(device=x.device, dtype=x.dtype)
+        self.pe = pe.to(dtype=x.dtype)
 
     def forward(self, x):
         """
