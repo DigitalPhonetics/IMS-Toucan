@@ -73,7 +73,7 @@ class FastSpeechDataset(Dataset):
                 pop_id = self.pop_ids.pop()
                 dataset.pop(pop_id)
                 norm_waves.pop(pop_id)
-            os.rename("taco_train_cache.pt", "taco_train_cache_unclean.pt")
+            os.rename(os.path.join(cache_dir, "taco_train_cache.pt"), os.path.join(cache_dir, "taco_train_cache_unclean.pt"))
             torch.save((dataset, norm_waves), os.path.join(cache_dir, "taco_train_cache.pt"))
 
             tensored_datapoints = list()
