@@ -117,12 +117,20 @@ class RelPositionalEncoding(torch.nn.Module):
         pe_negative[:, 0::2] = torch.sin(-1 * position * div_term)
         pe_negative[:, 1::2] = torch.cos(-1 * position * div_term)
 
+        print("idk why it would fail here")
+
         # Reserve the order of positive indices and concat both positive and
         # negative indices. This is used to support the shifting trick
         # as in https://arxiv.org/abs/1901.02860
         pe_positive = torch.flip(pe_positive, [0]).unsqueeze(0)
+        print("or here")
+
         pe_negative = pe_negative[1:].unsqueeze(0)
+        print("also not here")
+
         pe = torch.cat([pe_positive, pe_negative], dim=1)
+        print("god I wish I could use a debugger for this")
+
         self.pe = pe.to(device=x.device, dtype=x.dtype)
 
     def forward(self, x):
@@ -134,8 +142,10 @@ class RelPositionalEncoding(torch.nn.Module):
             torch.Tensor: Encoded tensor (batch, time, `*`).
         """
         self.extend_pe(x)
+        print("this is terrible")
         x = x * self.xscale
         pos_emb = self.pe[:, self.pe.size(1) // 2 - x.size(1) + 1: self.pe.size(1) // 2 + x.size(1), ]
+        print("whyyyy tho")
         return self.dropout(x), self.dropout(pos_emb)
 
 
