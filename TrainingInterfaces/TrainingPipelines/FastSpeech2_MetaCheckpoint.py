@@ -147,7 +147,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     # on the large GPUs we can train two models simultaneously, utilization is only at ~30% mostly
     gpus_in_use = []
 
-    for iteration in range(10):
+    for iteration in range(100):
 
         processes = list()
         individual_models = list()
@@ -162,7 +162,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             os.makedirs(instance_save_dir, exist_ok=True)
             batchsize = 32
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
-            epochs_per_save = max(round(400 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
+            epochs_per_save = max(round(500 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             individual_models.append(FastSpeech2())
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
@@ -170,7 +170,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                             "train_dataset": train_set,
                                             "device": torch.device(f"cuda:{gpus_available[-1]}"),
                                             "save_directory": instance_save_dir,
-                                            "steps": 20000,
+                                            "steps": iteration * 500 + 500,  # to make the latent spaces stay closer together initially
                                             "batch_size": batchsize,
                                             "epochs_per_save": epochs_per_save,
                                             "lang": languages[index],

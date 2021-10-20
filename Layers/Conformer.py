@@ -102,7 +102,11 @@ class Conformer(torch.nn.Module):
         if self.embed is not None:
             xs = self.embed(xs)
 
+        print("embedded")
+
         xs = self.pos_enc(xs)
+
+        print("position encoded")
 
         xs, masks = self.encoders(xs, masks)
         if isinstance(xs, tuple):

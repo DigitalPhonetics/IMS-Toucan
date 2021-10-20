@@ -226,6 +226,9 @@ class FastSpeech2(torch.nn.Module, ABC):
                  is_inference=False, alpha=1.0):
         # forward encoder
         text_masks = self._source_mask(text_lens)
+
+        print("masked")
+
         encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
 
         print("encoded")
