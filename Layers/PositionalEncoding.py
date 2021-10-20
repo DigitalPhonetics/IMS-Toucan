@@ -130,7 +130,9 @@ class RelPositionalEncoding(torch.nn.Module):
         Returns:
             torch.Tensor: Encoded tensor (batch, time, `*`).
         """
+        print("AAAA")
         self.extend_pe(x)
+        print("BBBB")
         x = x * self.xscale
         pos_emb = self.pe[:, self.pe.size(1) // 2 - x.size(1) + 1: self.pe.size(1) // 2 + x.size(1), ]
         return self.dropout(x), self.dropout(pos_emb)
