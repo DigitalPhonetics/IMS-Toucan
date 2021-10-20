@@ -102,8 +102,8 @@ class RelPositionalEncoding(torch.nn.Module):
 
         print("extending positional encoding")
 
-        pe_positive = torch.zeros(x.size(1), self.d_model, device=x.device)
-        pe_negative = torch.zeros(x.size(1), self.d_model, device=x.device)
+        pe_positive = torch.zeros(x.size(1), self.d_model, device=x.device, dtype=x.dtype)
+        pe_negative = torch.zeros(x.size(1), self.d_model, device=x.device, dtype=x.dtype)
 
         print("created zeros")
 
@@ -131,7 +131,7 @@ class RelPositionalEncoding(torch.nn.Module):
         pe = torch.cat([pe_positive, pe_negative], dim=1)
         print("god I wish I could use a debugger for this")
 
-        self.pe = pe.to(dtype=x.dtype)
+        self.pe = pe
 
     def forward(self, x):
         """
