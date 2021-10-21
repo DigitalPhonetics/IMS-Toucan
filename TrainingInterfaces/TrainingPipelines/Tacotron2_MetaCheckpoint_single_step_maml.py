@@ -168,6 +168,7 @@ def train_loop(net,
         else:
             raise RuntimeError(f"No checkpoint found that can be resumed from in {save_directory}")
     step_counter = 0
+    train_losses_total = list()
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         net.load_state_dict(check_dict["model"])
@@ -185,7 +186,6 @@ def train_loop(net,
     for step in tqdm(range(step_counter, steps)):
         net.train()
         optimizer.zero_grad()
-        train_losses_this_epoch = list()
         batches = []
         for index in range(len(train_iters)):
             # we get one batch for each task (i.e. language in this case)
@@ -210,6 +210,7 @@ def train_loop(net,
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
         train_loss = sum(train_losses)
+        train_losses_total.append(train_loss.item())
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
@@ -222,7 +223,8 @@ def train_loop(net,
             # Enough steps for some insights
             # ==============================
             net.eval()
-            print(f"Total Loss: {round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3)}")
+            print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
+            train_losses_total = list()
             torch.save({"model": net.state_dict(),
                         "optimizer": optimizer.state_dict(),
                         "scaler": grad_scaler.state_dict(),
