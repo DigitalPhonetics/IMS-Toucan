@@ -1,22 +1,24 @@
-import copy
 import random
 
+import librosa.display as lbd
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 import torch.multiprocessing
-from numba import jit
+import torch.multiprocessing
+import torch.multiprocessing
+import torch.multiprocessing
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
-from torch.multiprocessing import Process
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from Utility.path_to_transcript_dicts import *
+from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
@@ -30,88 +32,80 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    base_dir = os.path.join("Models", "Singe_Step_LAML_Tacotron2")
+    base_dir = os.path.join("Models", "Singe_Step_LAML_FastSpeech2")
 
     print("Preparing")
     cache_dir_english_nancy = os.path.join("Corpora", "meta_English_nancy")
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
-                                    cache_dir=cache_dir_english_nancy,
-                                    lang="en",
-                                    loading_processes=20,  # run this on a lonely server at night for the first time
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_English_nancy/best.pt",
+                                      cache_dir=cache_dir_english_nancy,
+                                      device=torch.device("cuda"),
+                                      lang="en"))
 
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
     os.makedirs(cache_dir_greek, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10el(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_Greek/best.pt",
+                                      cache_dir=cache_dir_greek,
+                                      device=torch.device("cuda"),
+                                      lang="el"))
 
     cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
     os.makedirs(cache_dir_spanish, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10es(),
-                                    cache_dir=cache_dir_spanish,
-                                    lang="es",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10es(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_Spanish/best.pt",
+                                      cache_dir=cache_dir_spanish,
+                                      device=torch.device("cuda"),
+                                      lang="es"))
 
     cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
     os.makedirs(cache_dir_finnish, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fi(),
-                                    cache_dir=cache_dir_finnish,
-                                    lang="fi",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fi(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_Finnish/best.pt",
+                                      cache_dir=cache_dir_finnish,
+                                      device=torch.device("cuda"),
+                                      lang="fi"))
 
     cache_dir_russian = os.path.join("Corpora", "meta_Russian")
     os.makedirs(cache_dir_russian, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10ru(),
-                                    cache_dir=cache_dir_russian,
-                                    lang="ru",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10ru(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_Russian/best.pt",
+                                      cache_dir=cache_dir_russian,
+                                      device=torch.device("cuda"),
+                                      lang="ru"))
 
     cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
     os.makedirs(cache_dir_hungarian, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10hu(),
-                                    cache_dir=cache_dir_hungarian,
-                                    lang="hu",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10hu(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_Hungarian/best.pt",
+                                      cache_dir=cache_dir_hungarian,
+                                      device=torch.device("cuda"),
+                                      lang="hu"))
 
     cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
     os.makedirs(cache_dir_dutch, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10nl(),
-                                    cache_dir=cache_dir_dutch,
-                                    lang="nl",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10nl(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_Dutch/best.pt",
+                                      cache_dir=cache_dir_dutch,
+                                      device=torch.device("cuda"),
+                                      lang="nl"))
 
     cache_dir_french = os.path.join("Corpora", "meta_French")
     os.makedirs(cache_dir_french, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fr(),
-                                    cache_dir=cache_dir_french,
-                                    lang="fr",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fr(),
+                                      Tacotron2(),
+                                      acoustic_checkpoint_path="Models/Tacotron2_French/best.pt",
+                                      cache_dir=cache_dir_french,
+                                      device=torch.device("cuda"),
+                                      lang="fr"))
 
     if model_dir is not None:
         meta_save_dir = model_dir
@@ -203,13 +197,14 @@ def train_loop(net,
                 # we sum the loss for each task, as we would do for the
                 # second order regular MAML, but we do it only over one
                 # step (i.e. iterations of inner loop = 1)
-                train_losses.append(net(text=batch[0].to(device),
+                train_losses.append(net(text_tensors=batch[0].to(device),
                                         text_lengths=batch[1].to(device),
-                                        speech=batch[2].to(device),
+                                        gold_speech=batch[2].to(device),
                                         speech_lengths=batch[3].to(device),
-                                        step=step,
-                                        return_mels=False,
-                                        return_loss_dict=False))
+                                        gold_durations=batch[4].to(device),
+                                        gold_pitch=batch[5].to(device),
+                                        gold_energy=batch[6].to(device),
+                                        return_mels=False))
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
         train_loss = sum(train_losses)
@@ -234,18 +229,16 @@ def train_loop(net,
                         "step_counter": step},
                        os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
-            net_for_eval = Tacotron2()
-            net_for_eval.load_state_dict(copy.deepcopy(net.state_dict()))
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
-                Process(target=plot_attention,
-                        kwargs={"model": net_for_eval,
-                                "lang": lang,
-                                "att_dir": save_directory,
-                                "step": step}).start()
+                plot_progress_spec(net=net,
+                                   device=device,
+                                   lang=lang,
+                                   att_dir=save_directory,
+                                   step=step)
 
 
 @torch.no_grad()
-def plot_attention(model, lang, att_dir, step):
+def plot_progress_spec(net, device, save_dir, step, lang):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -266,59 +259,37 @@ def plot_attention(model, lang, att_dir, step):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
-    text = tf.string_to_tensor(sentence)
-    phones = tf.get_phone_string(sentence)
-    _, _, att = model.inference(text_tensor=text)
-    bin_att = mas(att.data.numpy())
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
-    ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
-    ax[1].imshow(bin_att, interpolation='nearest', aspect='auto', origin="lower")
-    ax[1].set_xlabel("Inputs")
-    ax[0].xaxis.set_visible(False)
-    ax[0].set_ylabel("Outputs")
-    ax[1].set_ylabel("Outputs")
-    ax[1].set_xticks(range(len(att[0])))
-    ax[1].set_xticklabels(labels=[phone for phone in phones])
-    ax[0].set_title("Soft-Attention")
-    ax[1].set_title("Hard-Attention")
-    fig.tight_layout()
-    if not os.path.exists(os.path.join(att_dir, "attention_plots")):
-        os.makedirs(os.path.join(att_dir, "attention_plots"))
-    fig.savefig(os.path.join(os.path.join(att_dir, "attention_plots"), f"{step}_{lang}.png"))
-    fig.clf()
+    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
+    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True)
+    spec = spec.transpose(0, 1).to("cpu").numpy()
+    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+    if not os.path.exists(os.path.join(save_dir, "spec")):
+        os.makedirs(os.path.join(save_dir, "spec"))
+    fig, ax = plt.subplots(nrows=1, ncols=1)
+    lbd.specshow(spec,
+                 ax=ax,
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax.yaxis.set_visible(False)
+    ax.set_xticks(duration_splits, minor=True)
+    ax.xaxis.grid(True, which='minor')
+    ax.set_xticks(label_positions, minor=False)
+    ax.set_xticklabels(tf.get_phone_string(sentence))
+    ax.set_title(sentence)
+    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
+    plt.clf()
     plt.close()
 
 
-@jit(nopython=True)
-def mas(attn_map):
-    # assumes mel x text
-    opt = np.zeros_like(attn_map)
-    attn_map = np.log(attn_map)
-    attn_map[0, 1:] = -np.inf
-    log_p = np.zeros_like(attn_map)
-    log_p[0, :] = attn_map[0, :]
-    prev_ind = np.zeros_like(attn_map, dtype=np.int64)
-    for i in range(1, attn_map.shape[0]):
-        for j in range(attn_map.shape[1]):  # for each text dim
-            prev_log = log_p[i - 1, j]
-            prev_j = j
-            if j - 1 >= 0 and log_p[i - 1, j - 1] >= log_p[i - 1, j]:
-                prev_log = log_p[i - 1, j - 1]
-                prev_j = j - 1
-            log_p[i, j] = attn_map[i, j] + prev_log
-            prev_ind[i, j] = prev_j
-    # now backtrack
-    curr_text_idx = attn_map.shape[1] - 1
-    for i in range(attn_map.shape[0] - 1, -1, -1):
-        opt[i, curr_text_idx] = 1
-        curr_text_idx = prev_ind[i, curr_text_idx]
-    opt[0, curr_text_idx] = 1
-    return opt
-
-
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len
+    # text, text_len, speech, speech_len, durations, energy, pitch
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
+            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True))

@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.multiprocessing
 import torch.nn.functional as F
+from numba import jit
 from speechbrain.pretrained import EncoderClassifier
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
@@ -67,6 +68,7 @@ def plot_attention(model, lang, device, att_dir, step):
     plt.close()
 
 
+@jit(nopython=True)
 def mas(attn_map):
     # assumes mel x text
     opt = np.zeros_like(attn_map)

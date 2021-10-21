@@ -1,7 +1,8 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_first_order_maml import run as meta_fast_fo
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_single_step_maml import run as meta_fast_ss
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_maml import run as meta_taco_fo
@@ -22,7 +23,8 @@ pipeline_dict = {
 
     "create_teachers": create_teachers,
 
-    "fast_meta": meta_fast,
+    "fast_meta_ss": meta_fast_ss,
+    "fast_meta_fo": meta_fast_fo,
 
     "taco_same": taco_same,
     "taco_dif": taco_dif
