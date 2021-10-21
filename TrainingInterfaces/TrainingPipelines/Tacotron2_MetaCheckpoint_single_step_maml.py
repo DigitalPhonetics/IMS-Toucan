@@ -1,12 +1,13 @@
+import copy
 import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.multiprocessing
-import torch.multiprocessing
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
+from torch.multiprocessing import Process
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
@@ -231,16 +232,23 @@ def train_loop(net,
                         "step_counter": step},
                        os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
+            net_for_eval = copy.deepcopy(net)
+            net_for_eval = net_for_eval.cpu()
+            processes = list()
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
-                plot_attention(model=net,
-                               lang=lang,
-                               device=device,
-                               att_dir=save_directory,
-                               step=step)
+                processes.append(Process(target=plot_attention,
+                                         kwargs={"model": net_for_eval,
+                                                 "lang": lang,
+                                                 "att_dir": save_directory,
+                                                 "step": step}))
+                processes[-1].start()
+            for process in processes:
+                process.join()
+            del net_for_eval
 
 
 @torch.no_grad()
-def plot_attention(model, lang, device, att_dir, step):
+def plot_attention(model, lang, att_dir, step):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -261,13 +269,9 @@ def plot_attention(model, lang, device, att_dir, step):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
-    text = tf.string_to_tensor(sentence).to(device)
+    text = tf.string_to_tensor(sentence)
     phones = tf.get_phone_string(sentence)
-    model.eval()
     _, _, att = model.inference(text_tensor=text)
-    att = att.to("cpu")
-    model.train()
-    del tf
     bin_att = mas(att.data.numpy())
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
     ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
@@ -277,7 +281,6 @@ def plot_attention(model, lang, device, att_dir, step):
     ax[0].set_ylabel("Outputs")
     ax[1].set_ylabel("Outputs")
     ax[1].set_xticks(range(len(att[0])))
-    del att
     ax[1].set_xticklabels(labels=[phone for phone in phones])
     ax[0].set_title("Soft-Attention")
     ax[1].set_title("Hard-Attention")
