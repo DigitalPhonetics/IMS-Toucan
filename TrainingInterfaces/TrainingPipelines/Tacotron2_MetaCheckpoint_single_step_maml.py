@@ -182,7 +182,7 @@ def train_loop(net,
     # =============================
     # Actual train loop starts here
     # =============================
-    for step in tqdm(range(start=step_counter, stop=steps)):
+    for step in tqdm(range(step_counter, steps)):
         net.train()
         optimizer.zero_grad()
         train_losses_this_epoch = list()
@@ -194,21 +194,22 @@ def train_loop(net,
             except StopIteration:
                 train_iters[index] = iter(datasets[index])
                 batches.append(next(train_iters[index]))
-        train_loss = 0.0
+        train_losses = list()
         for batch in batches:
             with autocast():
                 # we sum the loss for each task, as we would do for the
                 # second order regular MAML, but we do it only over one
                 # step (i.e. iterations of inner loop = 1)
-                train_loss += net(text=batch[0].to(device),
-                                  text_lengths=batch[1].to(device),
-                                  speech=batch[2].to(device),
-                                  speech_lengths=batch[3].to(device),
-                                  step=step,
-                                  return_mels=False,
-                                  return_loss_dict=False)
+                train_losses.append(net(text=batch[0].to(device),
+                                        text_lengths=batch[1].to(device),
+                                        speech=batch[2].to(device),
+                                        speech_lengths=batch[3].to(device),
+                                        step=step,
+                                        return_mels=False,
+                                        return_loss_dict=False))
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
+        train_loss = sum(train_losses)
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
