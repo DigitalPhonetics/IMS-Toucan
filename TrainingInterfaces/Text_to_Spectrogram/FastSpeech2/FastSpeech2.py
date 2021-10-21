@@ -192,12 +192,10 @@ class FastSpeech2(torch.nn.Module, ABC):
         """
         # Texts include EOS token from the teacher model already in this version
 
-
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy,
                                                                         is_inference=False)
-
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
@@ -225,9 +223,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-
         encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
-
 
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_tensors.device)
@@ -237,12 +233,10 @@ class FastSpeech2(torch.nn.Module, ABC):
         else:
             pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
 
-
         if self.stop_gradient_from_energy_predictor:
             energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
         else:
             energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
-
 
         if is_inference:
             d_outs = self.duration_predictor.inference(encoded_texts, d_masks)  # (B, Tmax)
@@ -254,13 +248,11 @@ class FastSpeech2(torch.nn.Module, ABC):
         else:
             d_outs = self.duration_predictor(encoded_texts, d_masks)
 
-
             # use groundtruth in training
             p_embs = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             e_embs = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + e_embs + p_embs
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
-
 
         # forward decoder
         if speech_lens is not None and not is_inference:
