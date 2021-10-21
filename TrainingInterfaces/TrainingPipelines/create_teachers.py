@@ -162,21 +162,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
         processes.append(mp.Process(target=train_loop,
                                     kwargs={
-                                        "net"                   : Tacotron2(use_alignment_loss=False),
-                                        "train_dataset"         : train_set,
-                                        "device"                : torch.device(f"cuda:{gpus_available[-1]}"),
-                                        "save_directory"        : instance_save_dir,
-                                        "steps"                 : 30000,
-                                        "batch_size"            : batchsize,
-                                        "epochs_per_save"       : epochs_per_save,
-                                        "lang"                  : languages[index],
-                                        "lr"                    : 0.001,
-                                        "path_to_checkpoint"    : None,
-                                        "fine_tune"             : False,
-                                        "resume"                : resume,
+                                        "net": Tacotron2(use_alignment_loss=False),
+                                        "train_dataset": train_set,
+                                        "device": torch.device(f"cuda:{gpus_available[-1]}"),
+                                        "save_directory": instance_save_dir,
+                                        "steps": 30000,
+                                        "batch_size": batchsize,
+                                        "epochs_per_save": epochs_per_save,
+                                        "lang": languages[index],
+                                        "lr": 0.001,
+                                        "path_to_checkpoint": None,
+                                        "fine_tune": False,
+                                        "resume": resume,
                                         "cycle_loss_start_steps": None,  # not used here, only for final adaptation
-                                        "silent"                : True
-                                        }))
+                                        "silent": True
+                                    }))
         processes[-1].start()
         print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
         gpus_in_use.append(gpus_available.pop())
