@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.multiprocessing
+from numba import jit
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.multiprocessing import Process
@@ -115,7 +116,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
-        meta_save_dir = os.path.join(base_dir, "Tacotron2_MetaCheckpoint")
+        meta_save_dir = base_dir
     os.makedirs(meta_save_dir, exist_ok=True)
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -195,19 +196,7 @@ def train_loop(net,
             except StopIteration:
                 train_iters[index] = iter(datasets[index])
                 batches.append(next(train_iters[index]))
-        train_losses = list()
-        for batch in batches:
-            with autocast():
-                # we sum the loss for each task, as we would do for the
-                # second order regular MAML, but we do it only over one
-                # step (i.e. iterations of inner loop = 1)
-                train_losses.append(net(text=batch[0].to(device),
-                                        text_lengths=batch[1].to(device),
-                                        speech=batch[2].to(device),
-                                        speech_lengths=batch[3].to(device),
-                                        step=step,
-                                        return_mels=False,
-                                        return_loss_dict=False))
+        train_losses = accumulate_loss_over_tasks(net, batches, step, device)
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
         train_loss = sum(train_losses)
@@ -245,6 +234,24 @@ def train_loop(net,
             for process in processes:
                 process.join()
             del net_for_eval
+
+
+@jit(parallel=True, nopython=True)
+def accumulate_loss_over_tasks(net, batches, step, device):
+    train_losses = list()
+    for batch in batches:
+        with autocast():
+            # we sum the loss for each task, as we would do for the
+            # second order regular MAML, but we do it only over one
+            # step (i.e. iterations of inner loop = 1)
+            train_losses.append(net(text=batch[0].to(device),
+                                    text_lengths=batch[1].to(device),
+                                    speech=batch[2].to(device),
+                                    speech_lengths=batch[3].to(device),
+                                    step=step,
+                                    return_mels=False,
+                                    return_loss_dict=False))
+    return train_losses
 
 
 @torch.no_grad()
