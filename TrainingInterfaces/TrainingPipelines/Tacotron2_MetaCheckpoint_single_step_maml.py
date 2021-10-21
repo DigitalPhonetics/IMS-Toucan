@@ -235,17 +235,12 @@ def train_loop(net,
             delete_old_checkpoints(save_directory, keep=5)
             net_for_eval = Tacotron2()
             net_for_eval.load_state_dict(copy.deepcopy(net.state_dict()))
-            processes = list()
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
-                processes.append(Process(target=plot_attention,
-                                         kwargs={"model": net_for_eval,
-                                                 "lang": lang,
-                                                 "att_dir": save_directory,
-                                                 "step": step}))
-                processes[-1].start()
-            for process in processes:
-                process.join()
-            del net_for_eval
+                Process(target=plot_attention,
+                        kwargs={"model": net_for_eval,
+                                "lang": lang,
+                                "att_dir": save_directory,
+                                "step": step}).start()
 
 
 @torch.no_grad()
