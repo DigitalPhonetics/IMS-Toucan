@@ -4,7 +4,8 @@ import sys
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco_auto
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_maml import run as meta_taco_fo
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_single_step_maml import run as meta_taco_ss
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
@@ -16,9 +17,12 @@ pipeline_dict = {
 
     "hifi_combined": hifigan_combined,
 
-    "taco_meta_auto": meta_taco_auto,
+    "taco_meta_ss": meta_taco_ss,
+    "taco_meta_fo": meta_taco_fo,
+
     "create_teachers": create_teachers,
-    "meta_fast": meta_fast,
+
+    "fast_meta": meta_fast,
 
     "taco_same": taco_same,
     "taco_dif": taco_dif

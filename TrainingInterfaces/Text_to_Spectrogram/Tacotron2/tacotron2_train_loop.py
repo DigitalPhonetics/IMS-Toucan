@@ -94,7 +94,7 @@ def mas(attn_map):
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, prior
+    # text, text_len, speech, speech_len
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
