@@ -123,7 +123,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_loop(net=Tacotron2(use_alignment_loss=False),
                device=torch.device("cuda"),
                datasets=datasets,
-               batch_size=24,
+               batch_size=10,
                save_directory=meta_save_dir,
                steps=100000,
                steps_per_checkpoint=1000,
