@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.multiprocessing
-from numba import jit
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.multiprocessing import Process
@@ -194,9 +193,22 @@ def train_loop(net,
             try:
                 batches.append(next(train_iters[index]))
             except StopIteration:
+                print("Done with one dataset, reloading iterator")
                 train_iters[index] = iter(datasets[index])
                 batches.append(next(train_iters[index]))
-        train_losses = accumulate_loss_over_tasks(net, batches, step, device)
+        train_losses = list()
+        for batch in batches:
+            with autocast():
+                # we sum the loss for each task, as we would do for the
+                # second order regular MAML, but we do it only over one
+                # step (i.e. iterations of inner loop = 1)
+                train_losses.append(net(text=batch[0].to(device),
+                                        text_lengths=batch[1].to(device),
+                                        speech=batch[2].to(device),
+                                        speech_lengths=batch[3].to(device),
+                                        step=step,
+                                        return_mels=False,
+                                        return_loss_dict=False))
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
         train_loss = sum(train_losses)
@@ -234,24 +246,6 @@ def train_loop(net,
             for process in processes:
                 process.join()
             del net_for_eval
-
-
-@jit(parallel=True, nopython=True)
-def accumulate_loss_over_tasks(net, batches, step, device):
-    train_losses = list()
-    for batch in batches:
-        with autocast():
-            # we sum the loss for each task, as we would do for the
-            # second order regular MAML, but we do it only over one
-            # step (i.e. iterations of inner loop = 1)
-            train_losses.append(net(text=batch[0].to(device),
-                                    text_lengths=batch[1].to(device),
-                                    speech=batch[2].to(device),
-                                    speech_lengths=batch[3].to(device),
-                                    step=step,
-                                    return_mels=False,
-                                    return_loss_dict=False))
-    return train_losses
 
 
 @torch.no_grad()
