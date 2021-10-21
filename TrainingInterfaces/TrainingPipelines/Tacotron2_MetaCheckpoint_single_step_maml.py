@@ -232,8 +232,8 @@ def train_loop(net,
                         "step_counter": step},
                        os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
-            net_for_eval = copy.deepcopy(net)
-            net_for_eval = net_for_eval.cpu()
+            net_for_eval = Tacotron2()
+            net_for_eval.load_state_dict(copy.deepcopy(net.state_dict()))
             processes = list()
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
                 processes.append(Process(target=plot_attention,
