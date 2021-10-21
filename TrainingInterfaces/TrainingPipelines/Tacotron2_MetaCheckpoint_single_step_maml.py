@@ -186,16 +186,16 @@ def train_loop(net,
     # =============================
     for step in tqdm(range(step_counter, steps)):
         net.train()
-        optimizer.zero_grad()
         batches = []
-        for index in range(len(train_iters)):
+        for index in range(len(datasets)):
             # we get one batch for each task (i.e. language in this case)
             try:
-                batches.append(next(train_iters[index]))
+                batch = next(train_iters[index])
+                batches.append(batch)
             except StopIteration:
-                print("Done with one dataset, reloading iterator")
                 train_iters[index] = iter(datasets[index])
-                batches.append(next(train_iters[index]))
+                batch = next(train_iters[index])
+                batches.append(batch)
         train_losses = list()
         for batch in batches:
             with autocast():
