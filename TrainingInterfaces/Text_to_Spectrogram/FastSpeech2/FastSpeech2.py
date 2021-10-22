@@ -226,7 +226,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
-        d_masks = make_pad_mask(text_lens, device=text_tensors.device)
+        d_masks = make_pad_mask(text_lens, device=text_lens.device)
 
         if self.stop_gradient_from_pitch_predictor:
             pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
