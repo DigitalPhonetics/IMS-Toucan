@@ -48,7 +48,7 @@ class Tacotron2(torch.nn.Module):
             postnet_layers=5,
             postnet_chans=512,
             postnet_filts=5,
-            attention_type="location",
+            attention_type="forward",
             output_activation=None,
             use_batch_norm=True,
             use_concate=True,
@@ -65,7 +65,7 @@ class Tacotron2(torch.nn.Module):
             guided_attn_loss_lambda=1.0,  # weight of the attention loss
             guided_attn_loss_sigma=0.4,  # deviation from the main diagonal that is allowed
             use_dtw_loss=False,  # really cool concept, but requires tons and tons of GPU-memory
-            use_alignment_loss=True,
+            use_alignment_loss=False,
             input_layer_type="linear"):
         super().__init__()
 
