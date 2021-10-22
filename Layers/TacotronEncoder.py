@@ -105,7 +105,7 @@ class Encoder(torch.nn.Module):
         # initialize
         self.apply(encoder_init)
 
-    def forward(self, xs, ilens=None):
+    def forward(self, xs, ilens=None, return_text_embed=False):
         """
         Calculate forward propagation.
 
@@ -120,6 +120,7 @@ class Encoder(torch.nn.Module):
             LongTensor: Batch of lengths of each sequence (B,)
         """
         xs = self.embed(xs).transpose(1, 2)
+        embedded = xs.clone()
         if self.convs is not None:
             for i in range(len(self.convs)):
                 if self.use_residual:
@@ -135,9 +136,11 @@ class Encoder(torch.nn.Module):
         xs, _ = self.blstm(xs)  # (B, Tmax, C)
         xs, hlens = pad_packed_sequence(xs, batch_first=True)
 
+        if return_text_embed:
+            return xs, hlens, embedded
         return xs, hlens
 
-    def inference(self, x):
+    def inference(self, x, return_text_embed=False):
         """
         Inference.
 
@@ -150,4 +153,8 @@ class Encoder(torch.nn.Module):
         """
         xs = x.unsqueeze(0)
         ilens = torch.tensor([x.size(0)])
-        return self.forward(xs, ilens)[0][0]
+        if return_text_embed:
+            h, _, emb = self.forward(xs, ilens, return_text_embed=return_text_embed)[0]
+            return h, emb
+
+        return self.forward(xs, ilens, return_text_embed=return_text_embed)[0][0]

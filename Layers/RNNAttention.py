@@ -87,10 +87,9 @@ class AttLoc(torch.nn.Module):
                 scaling=2.0,
                 last_attended_idx=None,
                 backward_window=1,
-                forward_window=3,
-                prior=None):
+                forward_window=3):
         """
-        Calcualte AttLoc forward propagation.
+        Calculate AttLoc forward propagation.
 
         :param torch.Tensor enc_hs_pad: padded encoder hidden state (B x T_max x D_enc)
         :param list enc_hs_len: padded encoder hidden state length (B)
@@ -150,9 +149,6 @@ class AttLoc(torch.nn.Module):
         if last_attended_idx is not None:
             e = _apply_attention_constraint(e, last_attended_idx, backward_window, forward_window)
 
-        if prior is not None:
-            e = e * prior
-
         w = F.softmax(scaling * e, dim=1)
 
         # weighted sum over flames
@@ -208,8 +204,7 @@ class AttForwardTA(torch.nn.Module):
                 scaling=1.0,
                 last_attended_idx=None,
                 backward_window=1,
-                forward_window=3,
-                prior=None):
+                forward_window=3):
         """
         Calculate AttForwardTA forward propagation.
 
@@ -268,9 +263,6 @@ class AttForwardTA(torch.nn.Module):
         # apply monotonic attention constraint (mainly for TTS)
         if last_attended_idx is not None:
             e = _apply_attention_constraint(e, last_attended_idx, backward_window, forward_window)
-
-        if prior is not None:
-            e = e * prior
 
         w = F.softmax(scaling * e, dim=1)
 
