@@ -93,40 +93,28 @@ class RelPositionalEncoding(torch.nn.Module):
             # self.pe contains both positive and negative parts
             # the length of self.pe is 2 * input_len - 1
             if self.pe.size(1) >= x.size(1) * 2 - 1:
-                print("a")
                 if self.pe.dtype != x.dtype or self.pe.device != x.device:
-                    print("b")
                     self.pe = self.pe.to(dtype=x.dtype, device=x.device)
                 return
         # Suppose `i` means to the position of query vecotr and `j` means the
         # position of key vector. We use position relative positions when keys
         # are to the left (i>j) and negative relative positions otherwise (i<j).
-        print("c")
         pe_positive = torch.zeros(x.size(1), self.d_model, device=x.device)
-        print("d")
         pe_negative = torch.zeros(x.size(1), self.d_model, device=x.device)
-        print("e")
         position = torch.arange(0, x.size(1), dtype=torch.float32, device=x.device).unsqueeze(1)
-        print("f")
         div_term = torch.exp(torch.arange(0, self.d_model, 2, dtype=torch.float32, device=x.device) * -(math.log(10000.0) / self.d_model))
-        print("g")
         pe_positive[:, 0::2] = torch.sin(position * div_term)
         pe_positive[:, 1::2] = torch.cos(position * div_term)
         pe_negative[:, 0::2] = torch.sin(-1 * position * div_term)
         pe_negative[:, 1::2] = torch.cos(-1 * position * div_term)
-        print("h")
 
         # Reserve the order of positive indices and concat both positive and
         # negative indices. This is used to support the shifting trick
         # as in https://arxiv.org/abs/1901.02860
         pe_positive = torch.flip(pe_positive, [0]).unsqueeze(0)
-        print("i")
         pe_negative = pe_negative[1:].unsqueeze(0)
-        print("j")
         pe = torch.cat([pe_positive, pe_negative], dim=1)
-        print("k")
         self.pe = pe.to(dtype=x.dtype)
-        print("l")
 
     def forward(self, x):
         """
@@ -136,9 +124,7 @@ class RelPositionalEncoding(torch.nn.Module):
         Returns:
             torch.Tensor: Encoded tensor (batch, time, `*`).
         """
-        print("A")
-        self.extend_pe(x)  # TODO investigate crash here when multiprocessed
-        print("B")
+        self.extend_pe(x)
         x = x * self.xscale
         pos_emb = self.pe[:, self.pe.size(1) // 2 - x.size(1) + 1: self.pe.size(1) // 2 + x.size(1), ]
         return self.dropout(x), self.dropout(pos_emb)

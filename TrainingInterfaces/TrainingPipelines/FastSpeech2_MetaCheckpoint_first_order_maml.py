@@ -2,7 +2,6 @@ import random
 
 import torch
 import torch.multiprocessing
-from torch import multiprocessing as mp
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
@@ -141,17 +140,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       lang="fr"))
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    gpus_usable = ["4", "5", "6", "7", "8"]
-    os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(",".join(list(set(gpus_usable))))
-    gpus_available = list(range(len(gpus_usable)))
-    # on the large GPUs we can train two models simultaneously, utilization is only at ~30% mostly
-    gpus_in_use = []
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"  # fastspeech is fast enough that we don't have to multiprocess everything
 
     for iteration in range(100):
 
-        processes = list()
         individual_models = list()
-        torch.cuda.empty_cache()
 
         if iteration == 0:
             # make sure all models train with the same initialization
@@ -164,39 +157,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             batches_per_epoch = max((len(train_set) // batchsize), 1)  # max with one to avoid zero division
             epochs_per_save = max(round(500 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
             individual_models.append(FastSpeech2())
-            processes.append(mp.Process(target=train_loop,
-                                        kwargs={
-                                            "net": individual_models[-1],
-                                            "train_dataset": train_set,
-                                            "device": torch.device(f"cuda:{gpus_available[-1]}"),
-                                            "save_directory": instance_save_dir,
-                                            "steps": iteration * 500 + 500,  # to make the latent spaces stay closer together initially
-                                            "batch_size": batchsize,
-                                            "epochs_per_save": epochs_per_save,
-                                            "lang": languages[index],
-                                            "lr": 0.001,
-                                            "path_to_checkpoint": meta_save_dir + f"/meta_{iteration}it.pt",
-                                            "fine_tune": not resume,
-                                            "resume": resume,
-                                            "cycle_loss_start_steps": None  # not used here, only for final adaptation
-                                        }))
-            processes[-1].start()
-            if verbose:
-                print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")
-            gpus_in_use.append(gpus_available.pop())
-            while len(gpus_available) == 0:
-                if verbose:
-                    print("All GPUs available should be filled now. Waiting for one process to finish to start the next one.")
-                processes[0].join()
-                processes.pop(0)
-                gpus_available.append(gpus_in_use.pop(0))
-
-        if verbose:
-            print("Waiting for the remainders to finish...")
-        for process in processes:
-            process.join()
-            gpus_available.append(gpus_in_use.pop(0))
-
+            train_loop(net=individual_models[-1],
+                       train_dataset=train_set,
+                       device=torch.device("cuda"),
+                       save_directory=instance_save_dir,
+                       steps=iteration * 500 + 500,  # to make the latent spaces stay closer together initially
+                       batch_size=batchsize,
+                       epochs_per_save=epochs_per_save,
+                       lang=languages[index],
+                       lr=0.001,
+                       path_to_checkpoint=meta_save_dir + f"/meta_{iteration}it.pt",
+                       fine_tune=not resume,
+                       resume=resume,
+                       cycle_loss_start_steps=None  # not used here, only for final adaptation
+                       )
         meta_model = average_models(individual_models)
         torch.save({'model': meta_model.state_dict()}, meta_save_dir + f"/meta_{iteration + 1}it.pt")
 
