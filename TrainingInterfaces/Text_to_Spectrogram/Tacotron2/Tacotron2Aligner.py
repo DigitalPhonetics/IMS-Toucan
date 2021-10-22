@@ -113,7 +113,7 @@ class Tacotron2(torch.nn.Module):
         else:
             raise ValueError(f"unknown attention_type: {attention_type}")
 
-        self.alignment = AttLoc(embed_dim, odim, 512, 16, 12)
+        self.alignment = AttLoc(embed_dim, odim, odim, 12, 8)
         self.alignment_loss = AlignmentLoss(bin_warmup_steps=10000, bin_start_steps=50000, forward_start_steps=500, forward_loss_weight=1.0, include_forward_loss=True)
         self.alignment_prior_loss = GuidedAttentionLoss(sigma=guided_attn_loss_sigma, alpha=guided_attn_loss_lambda)
 
@@ -260,7 +260,7 @@ class Tacotron2(torch.nn.Module):
         prev_att_w = None
         self.alignment.reset()
         for y in ys.transpose(0, 1):
-            att_c, att_w = self.alignment(embedded_text.transpose(1, 2), ilens, y, prev_att_w)
+            att_c, att_w = self.alignment(embedded_text.transpose(1, 2), ilens.long(), y, prev_att_w)
             att_ws = att_ws + [att_w]
             if prev_att_w is not None:
                 prev_att_w = prev_att_w + att_w
@@ -336,7 +336,7 @@ class Tacotron2(torch.nn.Module):
         prev_att_w = None
         self.alignment.reset()
         for y in outs.transpose(0, 1):
-            att_c, att_w = self.alignment(embedded_text.transpose(1, 2), ilens, y, prev_att_w)
+            att_c, att_w = self.alignment(embedded_text.transpose(1, 2), ilens.long(), y, prev_att_w)
             att_ws = att_ws + [att_w]
             if prev_att_w is not None:
                 prev_att_w = prev_att_w + att_w
