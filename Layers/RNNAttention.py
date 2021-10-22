@@ -112,8 +112,8 @@ class AttLoc(torch.nn.Module):
             self.enc_h = enc_hs_pad  # utt x frame x hdim
             self.h_length = self.enc_h.size(1)
             # utt x frame x att_dim
+            print(self.enc_h.shape)
             self.pre_compute_enc_h = self.mlp_enc(self.enc_h)
-
         if dec_z is None:
             dec_z = enc_hs_pad.new_zeros(batch, self.dunits)
         else:
