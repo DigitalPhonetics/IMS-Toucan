@@ -122,7 +122,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
 
-    train_loop(net=Tacotron2(use_alignment_loss=False),
+    train_loop(net=Tacotron2(),
                device=torch.device("cuda"),
                datasets=datasets,
                batch_size=10,
@@ -194,7 +194,7 @@ def train_loop(net,
                 batch = next(train_iters[index])
                 batches.append(batch)
             except StopIteration:
-                train_iters[index] = iter(datasets[index])
+                train_iters[index] = iter(train_loaders[index])
                 batch = next(train_iters[index])
                 batches.append(batch)
         train_losses = list()

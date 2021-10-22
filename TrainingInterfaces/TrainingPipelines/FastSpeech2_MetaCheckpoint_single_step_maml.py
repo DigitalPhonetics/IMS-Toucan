@@ -188,7 +188,7 @@ def train_loop(net,
                 batch = next(train_iters[index])
                 batches.append(batch)
             except StopIteration:
-                train_iters[index] = iter(datasets[index])
+                train_iters[index] = iter(train_loaders[index])
                 batch = next(train_iters[index])
                 batches.append(batch)
         train_losses = list()
