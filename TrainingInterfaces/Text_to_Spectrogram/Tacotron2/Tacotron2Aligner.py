@@ -260,7 +260,7 @@ class Tacotron2(torch.nn.Module):
         prev_att_w = None
         self.alignment.reset()
         for y in ys.transpose(0, 1):
-            att_c, att_w = self.aligner(embedded_text, ilens, y, prev_att_w)
+            att_c, att_w = self.alignment(embedded_text, ilens, y, prev_att_w)
             att_ws = att_ws + [att_w]
             if prev_att_w is not None:
                 prev_att_w = prev_att_w + att_w
