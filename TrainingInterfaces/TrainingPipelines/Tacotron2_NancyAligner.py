@@ -3,9 +3,9 @@ import random
 
 import torch
 
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2Aligner import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2aligner_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
 
 
@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "Tacotron2_Nancy_Aligner")
+        save_dir = os.path.join("Models", "Tacotron2_Nancy_Aligner_Align_Loss")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -40,7 +40,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                 cache_dir=cache_dir,
                                 lang="en")
 
-    model = Tacotron2()
+    model = Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0, use_alignment_loss=True)
 
     print("Training model")
     train_loop(net=model,

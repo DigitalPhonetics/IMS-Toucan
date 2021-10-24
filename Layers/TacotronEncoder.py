@@ -128,7 +128,9 @@ class Encoder(torch.nn.Module):
                 else:
                     xs = self.convs[i](xs)
         if self.blstm is None:
-            return xs.transpose(1, 2)
+            if return_text_embed:
+                return xs.transpose(1, 2), ilens, embedded
+            return xs.transpose(1, 2), ilens
         if not isinstance(ilens, torch.Tensor):
             ilens = torch.tensor(ilens)
         xs = pack_padded_sequence(xs.transpose(1, 2), ilens.cpu(), batch_first=True, enforce_sorted=False)

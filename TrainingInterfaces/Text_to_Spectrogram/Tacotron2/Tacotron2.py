@@ -104,7 +104,10 @@ class Tacotron2(torch.nn.Module):
                            use_residual=use_residual,
                            dropout_rate=dropout_rate)
 
-        dec_idim = eunits
+        if elayers==0:
+            dec_idim = embed_dim
+        else:
+            dec_idim = eunits
 
         if attention_type == "location":
             att = AttLoc(dec_idim, dunits, adim, aconv_chans, aconv_filts)

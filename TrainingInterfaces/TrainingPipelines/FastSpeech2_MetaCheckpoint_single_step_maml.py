@@ -35,11 +35,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     base_dir = os.path.join("Models", "Singe_Step_LAML_FastSpeech2")
 
     print("Preparing")
-    cache_dir_english_nancy = os.path.join("Corpora", "meta_English_nancy")
+    cache_dir_english_nancy = os.path.join("Corpora", "Nancy")
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
                                       Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_English_nancy/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Nancy/best.pt",
                                       cache_dir=cache_dir_english_nancy,
                                       device=torch.device("cuda"),
                                       lang="en"))
