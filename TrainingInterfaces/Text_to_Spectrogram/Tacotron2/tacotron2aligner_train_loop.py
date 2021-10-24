@@ -42,11 +42,11 @@ def plot_attention(model, lang, device, att_dir, step):
     phones = tf.get_phone_string(sentence)
     model.eval()
     _, _, att, align_att = model.inference(text_tensor=text, return_align_att=True)
-    att = att.to("cpu")
+    att, align_att = att.to("cpu").detach(), align_att.to("cpu").detach()
     model.train()
     del tf
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(8, 9))
-    ax[0].imshow(att.detach().numpy(), interpolation='nearest', aspect='auto', origin="lower")
+    ax[0].imshow(att.numpy(), interpolation='nearest', aspect='auto', origin="lower")
     ax[1].imshow(align_att, interpolation='nearest', aspect='auto', origin="lower")
     ax[1].set_xlabel("Inputs")
     ax[0].xaxis.set_visible(False)
@@ -148,6 +148,7 @@ def train_loop(net,
                 print("Desired steps already reached in loaded checkpoint.")
                 return
     start_time = time.time()
+
     while True:
         cumulative_loss_dict = dict()
         epoch += 1

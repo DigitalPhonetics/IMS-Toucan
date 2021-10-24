@@ -154,7 +154,7 @@ class Encoder(torch.nn.Module):
         xs = x.unsqueeze(0)
         ilens = torch.tensor([x.size(0)])
         if return_text_embed:
-            h, _, emb = self.forward(xs, ilens, return_text_embed=return_text_embed)[0]
-            return h, emb
+            h, _, emb = self.forward(xs, ilens, return_text_embed=return_text_embed)
+            return h[0], emb
 
         return self.forward(xs, ilens, return_text_embed=return_text_embed)[0][0]

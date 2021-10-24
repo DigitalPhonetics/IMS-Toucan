@@ -17,3 +17,4 @@ pretrained_models/
 playground2.py
 playground3.py
 *.json
+.tmp/

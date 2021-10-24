@@ -119,9 +119,9 @@ class AttLoc(torch.nn.Module):
             dec_z = dec_z.view(batch, self.dunits)
 
         # initialize attention weight with uniform dist.
-        if att_prev is None:
+        if att_prev is None:  
             # if no bias, 0 0-pad goes 0
-            att_prev = 1.0 - make_pad_mask(enc_hs_len).to(device=dec_z.device, dtype=dec_z.dtype)
+            att_prev = 1.0 - make_pad_mask(enc_hs_len, device=dec_z.device).to(dtype=dec_z.dtype)
             att_prev = att_prev / att_prev.new(enc_hs_len).unsqueeze(-1)
 
         # att_prev: utt x frame -> utt x 1 x 1 x frame

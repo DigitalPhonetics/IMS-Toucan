@@ -257,16 +257,17 @@ class Tacotron2(torch.nn.Module):
         hs, hlens, embedded_text = self.enc(text_tensors, ilens, return_text_embed=return_alignments)
         after_outs, before_outs, logits, att_ws = self.dec(hs, hlens, ys)
 
+        align_ws = []
         prev_att_w = None
         self.alignment.reset()
         for y in ys.transpose(0, 1):
-            att_c, att_w = self.alignment(embedded_text.transpose(1, 2), ilens.long(), y, prev_att_w)
-            att_ws = att_ws + [att_w]
+            _, align_w = self.alignment(embedded_text.transpose(1, 2), list(map(int, hlens)), y, prev_att_w)
+            align_ws = align_ws + [align_w]
             if prev_att_w is not None:
-                prev_att_w = prev_att_w + att_w
+                prev_att_w = prev_att_w + align_w 
             else:
-                prev_att_w = att_w
-        alignments = torch.stack(att_ws, dim=1)
+                prev_att_w = align_w
+        alignments = torch.stack(align_ws, dim=1)
 
         if return_alignments:
             return after_outs, before_outs, logits, att_ws, alignments
@@ -333,14 +334,15 @@ class Tacotron2(torch.nn.Module):
         if not return_align_att:
             return outs, probs, att_ws
 
+        align_ws = []
         prev_att_w = None
         self.alignment.reset()
-        for y in outs.transpose(0, 1):
-            att_c, att_w = self.alignment(embedded_text.transpose(1, 2), ilens.long(), y, prev_att_w)
-            att_ws = att_ws + [att_w]
+        for y in outs.unsqueeze(0).transpose(0, 1):
+            _, align_w = self.alignment(embedded_text.transpose(1, 2), list(map(int, torch.Tensor([len(text_tensor)]))), y, prev_att_w)
+            align_ws = align_ws + [align_w]
             if prev_att_w is not None:
-                prev_att_w = prev_att_w + att_w
+                prev_att_w = prev_att_w + align_w
             else:
-                prev_att_w = att_w
-        alignments = torch.stack(att_ws, dim=1)
+                prev_att_w = align_w
+        alignments = torch.stack(align_ws, dim=1)
         return outs, probs, att_ws, alignments
