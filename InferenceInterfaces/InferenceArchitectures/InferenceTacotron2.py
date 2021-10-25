@@ -27,7 +27,7 @@ class Tacotron2(torch.nn.Module):
             aconv_chans=32,
             aconv_filts=15,
             cumulate_att_w=True,
-            attention_type="location",
+            attention_type="forward",
             dlayers=2,
             dunits=1024,
             prenet_layers=2,

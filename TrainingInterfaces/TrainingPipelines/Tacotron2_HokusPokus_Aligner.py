@@ -52,6 +52,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                epochs_per_save=1,
                lang="de",
                lr=0.001,
-               path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune,
+               path_to_checkpoint="Models/Tacotron2_Nancy_Aligner/best.pt",
+               fine_tune=True,
                resume=resume)
