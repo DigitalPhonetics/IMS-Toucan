@@ -11,7 +11,7 @@ from InferenceInterfaces.InferenceArchitectures.InferenceTacotron2 import Tacotr
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class Nancy_Tacotron2(torch.nn.Module):
+class HokusPokus_Tacotron2(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()

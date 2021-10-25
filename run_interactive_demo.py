@@ -3,14 +3,18 @@ import warnings
 
 import torch
 
+from InferenceInterfaces.HokusPokus_FastSpeech2 import HokusPokus_FastSpeech2
+from InferenceInterfaces.HokusPokus_Tacotron2 import HokusPokus_Tacotron2
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 
 tts_dict = {
     "fast_nancy": Nancy_FastSpeech2,
+    "fast_hokus": HokusPokus_FastSpeech2,
 
-    "taco_nancy": Nancy_Tacotron2
-}
+    "taco_nancy": Nancy_Tacotron2,
+    "taco_hokus": HokusPokus_Tacotron2
+    }
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning)

@@ -11,7 +11,7 @@ from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANG
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class Nancy_FastSpeech2(torch.nn.Module):
+class HokusPokus_FastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()
