@@ -10,13 +10,12 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import mas_width1
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
-
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 
 class FastSpeechDataset(Dataset):
 
     def __init__(self,
                  path_to_transcript_dict,
-                 acoustic_model,
                  acoustic_checkpoint_path,
                  cache_dir,
                  lang,
@@ -58,15 +57,71 @@ class FastSpeechDataset(Dataset):
             self.datapoints = list()
             self.pop_ids = list()
 
-            acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
+            try:
+                acoustic_model=Tacotron2()
+                acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
+            except RuntimeError:
+                acoustic_model = Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0)
+                acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
+            
+            
+            # ==========================================
+            # actual creation of datapoints starts here
+            # ==========================================
 
-            self.cache_builder_process(dataset,
-                                       norm_waves,
-                                       acoustic_model,
-                                       reduction_factor,
-                                       device,
-                                       cache_dir,
-                                       1)
+            vis_dir = os.path.join(cache_dir, "duration_vis")
+            os.makedirs(vis_dir, exist_ok=True)
+            acoustic_model = acoustic_model.to(device)
+            dc = DurationCalculator(reduction_factor=reduction_factor)
+            dio = Dio(reduction_factor=reduction_factor, fs=16000)
+            energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
+
+            for index in tqdm(range(len(dataset))):
+
+                norm_wave = norm_waves[index]
+                norm_wave_length = torch.LongTensor([len(norm_wave)])
+
+                text = dataset[index][0]
+                melspec = dataset[index][2]
+                melspec_length = dataset[index][3]
+
+                attention_map = acoustic_model.inference(text_tensor=text.to(device),
+                                                        speech_tensor=melspec.to(device),
+                                                        use_teacher_forcing=True)[2]
+                cached_duration = dc(attention_map, vis=None).cpu()
+
+                if np.count_nonzero(cached_duration.numpy() == 0) > 4:
+                    # here we figure out whether the attention map makes any sense or whether it failed.
+                    self.pop_ids.append(index)
+                    continue
+                # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
+                # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
+
+                attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
+
+                cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{index}.png")).cpu()
+
+                cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
+                                            input_waves_lengths=norm_wave_length,
+                                            feats_lengths=melspec_length,
+                                            durations=cached_duration.unsqueeze(0),
+                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+                cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
+                                input_waves_lengths=norm_wave_length,
+                                feats_lengths=melspec_length,
+                                durations=cached_duration.unsqueeze(0),
+                                durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+                self.datapoints.append([dataset[index][0],
+                                                    dataset[index][1],
+                                                    dataset[index][2],
+                                                    dataset[index][3],
+                                                    cached_duration.cpu().numpy(),
+                                                    cached_energy,
+                                                    cached_pitch])
+
+            # =============================
+            # done with datapoint creation
+            # =============================
 
             print(f"Removing the following IDs to get a cleaner Tacotron Dataset: {self.pop_ids}")
             while len(self.pop_ids) > 0:
@@ -103,66 +158,7 @@ class FastSpeechDataset(Dataset):
         print("Prepared {} datapoints.".format(len(self.datapoints)))
         del acoustic_model
 
-    def cache_builder_process(self,
-                              datapoint_list,
-                              norm_wave_list,
-                              acoustic_model,
-                              reduction_factor,
-                              device,
-                              cache_dir,
-                              process_id):
-        process_internal_dataset_chunk = list()
-        vis_dir = os.path.join(cache_dir, "duration_vis")
-        os.makedirs(vis_dir, exist_ok=True)
-        acoustic_model = acoustic_model.to(device)
-        dc = DurationCalculator(reduction_factor=reduction_factor)
-        dio = Dio(reduction_factor=reduction_factor, fs=16000)
-        energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
 
-        for index in tqdm(range(len(datapoint_list))):
-
-            norm_wave = norm_wave_list[index]
-            norm_wave_length = torch.LongTensor([len(norm_wave)])
-
-            text = datapoint_list[index][0]
-            melspec = datapoint_list[index][2]
-            melspec_length = datapoint_list[index][3]
-
-            attention_map = acoustic_model.inference(text_tensor=text.to(device),
-                                                     speech_tensor=melspec.to(device),
-                                                     use_teacher_forcing=True)[2]
-            cached_duration = dc(attention_map, vis=None).cpu()
-
-            if np.count_nonzero(cached_duration.numpy() == 0) > 4:
-                # here we figure out whether the attention map makes any sense or whether it failed.
-                self.pop_ids.append(index)
-                continue
-            # if it didn't fail, we can use viterbi to refine the path and then calculate the durations again.
-            # not the most efficient method, but it is the safest I can think of and I like safety over speed here.
-
-            attention_map_viterbi_path = torch.from_numpy(mas_width1(attention_map.detach().cpu().numpy()))
-
-            cached_duration = dc(attention_map_viterbi_path, vis=os.path.join(vis_dir, f"{process_id}_{index}.png")).cpu()
-
-            cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
-                                        input_waves_lengths=norm_wave_length,
-                                        feats_lengths=melspec_length,
-                                        durations=cached_duration.unsqueeze(0),
-                                        durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
-            cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
-                               input_waves_lengths=norm_wave_length,
-                               feats_lengths=melspec_length,
-                               durations=cached_duration.unsqueeze(0),
-                               durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
-            process_internal_dataset_chunk.append([datapoint_list[index][0],
-                                                   datapoint_list[index][1],
-                                                   datapoint_list[index][2],
-                                                   datapoint_list[index][3],
-                                                   cached_duration.cpu().numpy(),
-                                                   cached_energy,
-                                                   cached_pitch])
-
-        self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \

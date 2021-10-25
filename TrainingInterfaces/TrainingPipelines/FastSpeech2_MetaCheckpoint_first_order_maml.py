@@ -19,6 +19,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     random.seed(131714)
     torch.random.manual_seed(131714)
 
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"  # fastspeech is fast enough that we don't have to multiprocess everything
+
+
     model_save_dirs = list()
     languages = list()
     datasets = list()
@@ -77,70 +81,53 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_English_nancy/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Nancy_Aligner/best.pt",
                                       cache_dir=cache_dir_english_nancy,
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_English_lj/best.pt",
-                                      cache_dir=cache_dir_english_lj,
-                                      device=torch.device("cuda"),
-                                      lang="en"))
-
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10el(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Greek/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Greek_Aligner/best.pt",
                                       cache_dir=cache_dir_greek,
                                       device=torch.device("cuda"),
                                       lang="el"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10es(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Spanish/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Spanish_Aligner/best.pt",
                                       cache_dir=cache_dir_spanish,
                                       device=torch.device("cuda"),
                                       lang="es"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fi(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Finnish/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Finnish_Aligner/best.pt",
                                       cache_dir=cache_dir_finnish,
                                       device=torch.device("cuda"),
                                       lang="fi"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10ru(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Russian/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Russian_Aligner/best.pt",
                                       cache_dir=cache_dir_russian,
                                       device=torch.device("cuda"),
                                       lang="ru"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10hu(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Hungarian/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Hungarian_Aligner/best.pt",
                                       cache_dir=cache_dir_hungarian,
                                       device=torch.device("cuda"),
                                       lang="hu"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10nl(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Dutch/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_Dutch_Aligner/best.pt",
                                       cache_dir=cache_dir_dutch,
                                       device=torch.device("cuda"),
                                       lang="nl"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fr(),
-                                      Tacotron2(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_French/best.pt",
+                                      acoustic_checkpoint_path="Models/Tacotron2_French_Aligner/best.pt",
                                       cache_dir=cache_dir_french,
                                       device=torch.device("cuda"),
                                       lang="fr"))
 
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"  # fastspeech is fast enough that we don't have to multiprocess everything
 
     for iteration in range(100):
 
