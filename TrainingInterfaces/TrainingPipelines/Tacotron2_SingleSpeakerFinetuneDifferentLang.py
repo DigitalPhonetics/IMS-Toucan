@@ -76,4 +76,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                path_to_checkpoint="Models/Singe_Step_LAML_Tacotron2/best.pt",
                fine_tune=True,
                resume=resume,
-               cycle_loss_start_steps=6000)
+               cycle_loss_start_steps=None)

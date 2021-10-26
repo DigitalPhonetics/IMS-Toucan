@@ -1,41 +1,41 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_HokusPokus import run as fast_hokus
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_first_order_maml import run as meta_fast_fo
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_single_step_maml import run as meta_fast_ss
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
+from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus import run as taco_hokus
+from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus_Aligner import run as hokus_align
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_maml import run as meta_taco_fo
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_single_step_maml import run as meta_taco_ss
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
-from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus import run as taco_hokus
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
 from TrainingInterfaces.TrainingPipelines.create_teachers import run as create_teachers
-from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus_Aligner import run as hokus_align
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_HokusPokus import run as fast_hokus
 
 pipeline_dict = {
-    "fast_nancy": fast_nancy,
-    "taco_nancy": taco_nancy,
+    "fast_nancy"     : fast_nancy,
+    "taco_nancy"     : taco_nancy,
 
-    "hifi_combined": hifigan_combined,
+    "hifi_combined"  : hifigan_combined,
 
-    "taco_meta_ss": meta_taco_ss,
-    "taco_meta_fo": meta_taco_fo,
+    "taco_meta_ss"   : meta_taco_ss,
+    "taco_meta_fo"   : meta_taco_fo,
 
     "create_teachers": create_teachers,
 
-    "fast_meta_ss": meta_fast_ss,
-    "fast_meta_fo": meta_fast_fo,
+    "fast_meta_ss"   : meta_fast_ss,
+    "fast_meta_fo"   : meta_fast_fo,
 
-    "taco_same": taco_same,
-    "taco_dif": taco_dif,
-    
-    "taco_hokus": taco_hokus,
-    "fast_hokus": fast_hokus,
-    "align_hokus": hokus_align
-}
+    "taco_same"      : taco_same,
+    "taco_dif"       : taco_dif,
+
+    "taco_hokus"     : taco_hokus,
+    "fast_hokus"     : fast_hokus,
+    "align_hokus"    : hokus_align
+    }
 
 if __name__ == '__main__':
 

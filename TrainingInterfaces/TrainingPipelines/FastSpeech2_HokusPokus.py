@@ -6,7 +6,6 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de as build_path_to_transcript_dict
 
 
@@ -55,7 +54,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                steps=300000,
                batch_size=20,
                lang="en",
-               lr=0.0001,
+               lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,

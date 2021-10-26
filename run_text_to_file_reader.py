@@ -9,7 +9,7 @@ tts_dict = {
     "fast_nancy": Nancy_FastSpeech2,
 
     "taco_nancy": Nancy_Tacotron2
-}
+    }
 
 
 def read_texts(model_id, sentence, filename, device="cpu"):

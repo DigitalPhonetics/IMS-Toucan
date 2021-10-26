@@ -160,7 +160,7 @@ class Tacotron2Loss(torch.nn.Module):
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.bce_criterion = torch.nn.BCEWithLogitsLoss(
             reduction=reduction, pos_weight=torch.tensor(bce_pos_weight)
-        )
+            )
 
         self._register_load_state_dict_pre_hook(self._load_state_dict_pre_hook)
 
@@ -173,7 +173,7 @@ class Tacotron2Loss(torch.nn.Module):
             missing_keys,
             unexpected_keys,
             error_msgs,
-    ):
+            ):
         """Apply pre hook fucntion before loading state dict.
         From v.0.6.1 `bce_criterion.pos_weight` param is registered as a parameter but
         old models do not include it and as a result, it causes missing key error when

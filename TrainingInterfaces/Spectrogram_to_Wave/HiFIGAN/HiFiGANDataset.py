@@ -66,7 +66,8 @@ class HiFiGANDataset(Dataset):
         audio_start = random.randint(0, max_audio_start)
         segment = torch.Tensor(self.waves[index][audio_start: audio_start + self.samples_per_segment])
         resampled_segment = self.melspec_ap.resample(segment)
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0,
+                                                                                                                                                            1)
         return segment, melspec
 
     def __len__(self):

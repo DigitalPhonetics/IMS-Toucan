@@ -104,7 +104,7 @@ class Tacotron2(torch.nn.Module):
                            use_residual=use_residual,
                            dropout_rate=dropout_rate)
 
-        if elayers==0:
+        if elayers == 0:
             dec_idim = embed_dim
         else:
             dec_idim = eunits

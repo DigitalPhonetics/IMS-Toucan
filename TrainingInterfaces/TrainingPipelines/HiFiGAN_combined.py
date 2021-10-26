@@ -10,7 +10,7 @@ from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.hifigan_train_loop import tr
 from Utility.file_lists import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, resume,  model_dir):
+def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -33,24 +33,24 @@ def run(gpu_id, resume_checkpoint, finetune, resume,  model_dir):
         os.makedirs(model_save_dir)
 
     file_lists = list()
-    #file_lists.append(get_file_list_elizabeth())
-    #file_lists.append(get_file_list_libritts())
-    #file_lists.append(get_file_list_thorsten())
-    #file_lists.append(get_file_list_eva())
-    #file_lists.append(get_file_list_ljspeech())
-    #file_lists.append(get_file_list_css10ch())
-    #file_lists.append(get_file_list_css10du())
-    #file_lists.append(get_file_list_css10es())
-    #file_lists.append(get_file_list_css10fi())
-    #file_lists.append(get_file_list_css10fr())
-    #file_lists.append(get_file_list_css10de())
+    # file_lists.append(get_file_list_elizabeth())
+    # file_lists.append(get_file_list_libritts())
+    # file_lists.append(get_file_list_thorsten())
+    # file_lists.append(get_file_list_eva())
+    # file_lists.append(get_file_list_ljspeech())
+    # file_lists.append(get_file_list_css10ch())
+    # file_lists.append(get_file_list_css10du())
+    # file_lists.append(get_file_list_css10es())
+    # file_lists.append(get_file_list_css10fi())
+    # file_lists.append(get_file_list_css10fr())
+    # file_lists.append(get_file_list_css10de())
     file_lists.append(get_file_list_css10gr())
-    #file_lists.append(get_file_list_css10hu())
-    #file_lists.append(get_file_list_css10jp())
-    #file_lists.append(get_file_list_css10ru())
-    #file_lists.append(get_file_list_hokuspokus())
-    #file_lists.append(get_file_list_karlsson())
-    #file_lists.append(get_file_list_nancy())
+    # file_lists.append(get_file_list_css10hu())
+    # file_lists.append(get_file_list_css10jp())
+    # file_lists.append(get_file_list_css10ru())
+    # file_lists.append(get_file_list_hokuspokus())
+    # file_lists.append(get_file_list_karlsson())
+    # file_lists.append(get_file_list_nancy())
 
     datasets = list()
 

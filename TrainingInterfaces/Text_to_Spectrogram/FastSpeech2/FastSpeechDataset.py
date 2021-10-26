@@ -9,8 +9,9 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator impor
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import mas_width1
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
+
 
 class FastSpeechDataset(Dataset):
 
@@ -58,13 +59,12 @@ class FastSpeechDataset(Dataset):
             self.pop_ids = list()
 
             try:
-                acoustic_model=Tacotron2()
+                acoustic_model = Tacotron2()
                 acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
             except RuntimeError:
                 acoustic_model = Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0)
                 acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
-            
-            
+
             # ==========================================
             # actual creation of datapoints starts here
             # ==========================================
@@ -86,8 +86,8 @@ class FastSpeechDataset(Dataset):
                 melspec_length = dataset[index][3]
 
                 attention_map = acoustic_model.inference(text_tensor=text.to(device),
-                                                        speech_tensor=melspec.to(device),
-                                                        use_teacher_forcing=True)[2]
+                                                         speech_tensor=melspec.to(device),
+                                                         use_teacher_forcing=True)[2]
                 cached_duration = dc(attention_map, vis=None).cpu()
 
                 if np.count_nonzero(cached_duration.numpy() == 0) > 4:
@@ -107,17 +107,17 @@ class FastSpeechDataset(Dataset):
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
                 cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
-                                input_waves_lengths=norm_wave_length,
-                                feats_lengths=melspec_length,
-                                durations=cached_duration.unsqueeze(0),
-                                durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+                                   input_waves_lengths=norm_wave_length,
+                                   feats_lengths=melspec_length,
+                                   durations=cached_duration.unsqueeze(0),
+                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
                 self.datapoints.append([dataset[index][0],
-                                                    dataset[index][1],
-                                                    dataset[index][2],
-                                                    dataset[index][3],
-                                                    cached_duration.cpu().numpy(),
-                                                    cached_energy,
-                                                    cached_pitch])
+                                        dataset[index][1],
+                                        dataset[index][2],
+                                        dataset[index][3],
+                                        cached_duration.cpu().numpy(),
+                                        cached_energy,
+                                        cached_pitch])
 
             # =============================
             # done with datapoint creation
@@ -156,8 +156,6 @@ class FastSpeechDataset(Dataset):
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
-
-
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \
