@@ -10,11 +10,9 @@ Models
 *.wav
 audios/notes.txt
 audios/
-playground.py
-playground2.py
+*playground*
 apex/
 pretrained_models/
-playground2.py
-playground3.py
 *.json
 .tmp/
+.vscode/

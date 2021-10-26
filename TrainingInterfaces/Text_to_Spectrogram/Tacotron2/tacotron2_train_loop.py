@@ -178,6 +178,7 @@ def train_loop(net,
                 print("Desired steps already reached in loaded checkpoint.")
                 return
     start_time = time.time()
+
     while True:
         cumulative_loss_dict = dict()
         epoch += 1
@@ -200,13 +201,11 @@ def train_loop(net,
                     gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
                                                                                 torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
                     # we have to calculate the speaker embedding from our own melspec because we project into a slightly different melspec space
-                    cosine_cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
-                    pairwise_cycle_distance = F.pairwise_distance(pred_spemb.squeeze(), gold_spemb.squeeze()).mean()
-                    cycle_distance = cosine_cycle_distance + pairwise_cycle_distance
+                    cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
                     del pred_spemb
                     del predicted_mels
                     del gold_spemb
-                    cycle_loss = cycle_distance * min(1.0, (step_counter - cycle_loss_start_steps) / 100000)
+                    cycle_loss = cycle_distance * min(1.0, (step_counter - cycle_loss_start_steps) / 500)
                     loss_dict["cycle"] = cycle_loss.item()
                     train_loss = train_loss + cycle_loss
 

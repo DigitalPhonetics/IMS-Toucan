@@ -40,7 +40,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                 cache_dir=cache_dir,
                                 lang="de")
 
-    model = Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0)
+    model = Tacotron2(use_alignment_loss=True, elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0, bce_pos_weight=40.0)
 
     print("Training model")
     train_loop(net=model,
@@ -52,6 +52,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                epochs_per_save=1,
                lang="de",
                lr=0.001,
-               path_to_checkpoint="Models/Tacotron2_Nancy_Aligner/best.pt",
+               path_to_checkpoint=save_dir+"/best.pt",
                fine_tune=True,
                resume=resume)

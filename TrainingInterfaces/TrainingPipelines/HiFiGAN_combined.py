@@ -10,7 +10,7 @@ from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.hifigan_train_loop import tr
 from Utility.file_lists import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir):
+def run(gpu_id, resume_checkpoint, finetune, resume,  model_dir):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -60,13 +60,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir):
 
     generator = HiFiGANGenerator()
     generator.reset_parameters()
-    multi_scale_discriminator = HiFiGANMultiScaleMultiPeriodDiscriminator()
+    discriminator = HiFiGANMultiScaleMultiPeriodDiscriminator()
 
     print("Training model")
-    train_loop(batch_size=16,
-               steps=2000000,
+    train_loop(batch_size=32,
+               steps=2500000,
                generator=generator,
-               discriminator=multi_scale_discriminator,
+               discriminator=discriminator,
                train_dataset=train_set,
                device=device,
                epochs_per_save=1,

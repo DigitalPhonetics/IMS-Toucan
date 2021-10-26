@@ -156,7 +156,6 @@ class FastSpeechDataset(Dataset):
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
         print("Prepared {} datapoints.".format(len(self.datapoints)))
-        del acoustic_model
 
 
 

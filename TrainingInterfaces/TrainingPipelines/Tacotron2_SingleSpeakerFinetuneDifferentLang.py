@@ -44,11 +44,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     total_len = 0.0
     while total_len < 30.0 * 60.0:
         path = random.choice(paths)
-        x, sr = soundfile.read(path)
-        duration = len(x) / sr
-        if 10 > duration > 5 and path not in used_samples:
-            used_samples.add(path)
-            total_len += duration
+        if "meisterfloh" in path:  # in that book she uses the nicest microphone
+            x, sr = soundfile.read(path)
+            duration = len(x) / sr
+            if 10 > duration > 5 and path not in used_samples:
+                used_samples.add(path)
+                total_len += duration
 
     print(f"Collected {total_len / 60.0} minutes worth of samples.")
 
@@ -67,7 +68,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=6000,
+               steps=8000,
                batch_size=32,
                epochs_per_save=20,
                lang="de",
@@ -75,4 +76,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                path_to_checkpoint="Models/Singe_Step_LAML_Tacotron2/best.pt",
                fine_tune=True,
                resume=resume,
-               cycle_loss_start_steps=2000)
+               cycle_loss_start_steps=6000)

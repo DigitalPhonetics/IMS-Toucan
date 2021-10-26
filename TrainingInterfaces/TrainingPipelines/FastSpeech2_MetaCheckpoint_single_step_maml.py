@@ -12,7 +12,7 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -108,10 +108,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         meta_save_dir = base_dir
     os.makedirs(meta_save_dir, exist_ok=True)
 
-    train_loop(net=Tacotron2(use_alignment_loss=False),
+    train_loop(net=FastSpeech2(),
                device=torch.device("cuda"),
                datasets=datasets,
-               batch_size=10,
+               batch_size=20,
                save_directory=meta_save_dir,
                steps=100000,
                steps_per_checkpoint=1000,
@@ -225,7 +225,7 @@ def train_loop(net,
                 plot_progress_spec(net=net,
                                    device=device,
                                    lang=lang,
-                                   att_dir=save_directory,
+                                   save_dir=save_directory,
                                    step=step)
 
 
@@ -271,7 +271,7 @@ def plot_progress_spec(net, device, save_dir, step, lang):
     ax.set_xticks(label_positions, minor=False)
     ax.set_xticklabels(tf.get_phone_string(sentence))
     ax.set_title(sentence)
-    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
+    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png"))
     plt.clf()
     plt.close()
 
