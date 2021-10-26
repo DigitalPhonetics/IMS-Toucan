@@ -25,13 +25,11 @@ class TacotronDataset(Dataset):
                  max_len_in_seconds=20,
                  cut_silences=True,
                  rebuild_cache=False,
-                 remove_all_silences=True,
                  verbose=False,
                  include_priors=False):
         self.include_priors = include_priors
-        if remove_all_silences:
-            os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
-            os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
+        os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
+        os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -53,7 +51,6 @@ class TacotronDataset(Dataset):
                                   min_len_in_seconds,
                                   max_len_in_seconds,
                                   cut_silences,
-                                  remove_all_silences,
                                   cache_dir,
                                   verbose),
                             daemon=True))
@@ -109,88 +106,64 @@ class TacotronDataset(Dataset):
                               min_len,
                               max_len,
                               cut_silences,
-                              remove_all_silences,
                               cache_dir,
                               verbose):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
-        if remove_all_silences:
-            ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
-            # the unsilence tool unfortunately writes files with a sample rate that we cannot control, so we need special cases
-            ap_post = None
+        ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
+        # the unsilence tool unfortunately writes files with a sample rate that we cannot control, so we need special cases
+        ap_post = None
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
                 continue
 
-            if remove_all_silences:
-                name = path.split("/")[-1].split(".")[:-1]
-                if len(name) == 1:
-                    name = name[0]
-                else:
-                    name = ".".join(name)
-                suffix = path.split(".")[-1]
-                _norm_unsilenced_path = os.path.join(os.path.join(cache_dir, "normalized_unsilenced_audios"), name + "_unsilenced." + suffix)
-                _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + "." + suffix)
-                if not os.path.exists(_norm_unsilenced_path):
-                    if not os.path.exists(_norm_path):
-                        wave, sr = sf.read(path)
-                        dur_in_seconds = len(wave) / sr
-                        if not (min_len <= dur_in_seconds <= max_len):
-                            if verbose:
-                                print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+            name = path.split("/")[-1].split(".")[:-1]
+            if len(name) == 1:
+                name = name[0]
+            else:
+                name = ".".join(name)
+            suffix = path.split(".")[-1]
+            _norm_unsilenced_path = os.path.join(os.path.join(cache_dir, "normalized_unsilenced_audios"), name + "_unsilenced." + suffix)
+            _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + "." + suffix)
+            if not os.path.exists(_norm_unsilenced_path):
+                if not os.path.exists(_norm_path):
+                    wave, sr = sf.read(path)
+                    dur_in_seconds = len(wave) / sr
+                    if not (min_len <= dur_in_seconds <= max_len):
+                        if verbose:
+                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                             continue
-                        try:
-                            norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
-                        except ValueError:
-                            continue
-                        dur_in_seconds = len(norm_wave) / 16000
-                        if not (min_len <= dur_in_seconds <= max_len):
-                            if verbose:
-                                print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                            continue
-                        sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=sr)
-                    unsilence = Unsilence(_norm_path)
-                    unsilence.detect_silence(silence_time_threshold=0.5, short_interval_threshold=0.03, stretch_time=0.025)
-                    unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
-                try:
-                    wave, sr = sf.read(_norm_unsilenced_path)
-                    if ap_post is None:
-                        ap_post = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
-                    if sr != ap_post.sr:
-                        print(f"Inconsistent sample rate! {_norm_unsilenced_path}")
+                    try:
+                        norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                    except ValueError:
                         continue
-                    norm_wave = ap_post.resample(torch.Tensor(wave))
                     dur_in_seconds = len(norm_wave) / 16000
                     if not (min_len <= dur_in_seconds <= max_len):
                         if verbose:
                             print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                         continue
-                except RuntimeError:
-                    # not sure why this sometimes happens, but it is very rare, so it should be fine.
+                    sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=sr)
+                unsilence = Unsilence(_norm_path)
+                unsilence.detect_silence(silence_time_threshold=0.1, short_interval_threshold=0.03, stretch_time=0.025)
+                unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
+            try:
+                wave, sr = sf.read(_norm_unsilenced_path)
+                if ap_post is None:
+                    ap_post = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
+                if sr != ap_post.sr:
+                    print(f"Inconsistent sample rate! {_norm_unsilenced_path}")
                     continue
-            else:
-                wave, sr = sf.read(path)
-                dur_in_seconds = len(wave) / sr
-                if not (min_len <= dur_in_seconds <= max_len):
-                    if verbose:
-                        print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                    continue
-                if sr != ap.sr:
-                    print(f"Inconsistent sampling rate in the Data! Excluding {path}")
-                    continue
-                try:
-                    norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
-                except ValueError:
-                    continue
+                norm_wave = ap_post.resample(torch.Tensor(wave))
                 dur_in_seconds = len(norm_wave) / 16000
                 if not (min_len <= dur_in_seconds <= max_len):
                     if verbose:
-                        print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                     continue
-                _norm_unsilenced_path = path
+            except RuntimeError:
+                # not sure why this sometimes happens, but it is very rare, so it should be fine.
+                continue
 
             norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             # raw audio preprocessing is done
@@ -204,7 +177,7 @@ class TacotronDataset(Dataset):
                 print(f"There seems to be a problem with the following transcription: {transcript}")
                 continue
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
-            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False).transpose(0, 1).cpu().numpy()
+            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_text_len,

@@ -156,7 +156,11 @@ class AudioPreprocessor:
             else:
                 return torch.Tensor(audio)
 
-    def audio_to_mel_spec_tensor(self, audio, normalize=True):
+    def audio_to_mel_spec_tensor(self, audio, normalize=True, explicit_sampling_rate=None):
+        if explicit_sampling_rate is None:
+            if normalize:
+                audio = self.normalize_audio(audio)
+            return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
         if normalize:
             audio = self.normalize_audio(audio)
-        return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
+        return self.logmelfilterbank(audio=audio, sampling_rate=explicit_sampling_rate)
