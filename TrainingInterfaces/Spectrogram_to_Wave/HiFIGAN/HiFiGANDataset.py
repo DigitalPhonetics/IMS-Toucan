@@ -16,7 +16,7 @@ class HiFiGANDataset(Dataset):
                  list_of_paths,
                  desired_samplingrate=48000,
                  loading_processes=20):
-        self.samples_per_segment = 8192 * (desired_samplingrate / 16000)
+        self.samples_per_segment = round(8192 * (desired_samplingrate / 16000))
         _, sr = sf.read(list_of_paths[0])
         #  ^ this is the reason why we must create individual
         # datasets and then concat them. If we just did all
