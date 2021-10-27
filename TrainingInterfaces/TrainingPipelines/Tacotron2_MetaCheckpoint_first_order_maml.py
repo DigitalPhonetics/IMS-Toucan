@@ -172,21 +172,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
             individual_models.append(Tacotron2(use_alignment_loss=False))
             processes.append(mp.Process(target=train_loop,
                                         kwargs={
-                                            "net": individual_models[-1],
-                                            "train_dataset": train_set,
-                                            "device": torch.device(f"cuda:{gpus_available[-1]}"),
-                                            "save_directory": instance_save_dir,
-                                            "steps": iteration * 500 + 500,  # to make the latent spaces stay closer together initially
-                                            "batch_size": batchsize,
-                                            "epochs_per_save": epochs_per_save,
-                                            "lang": languages[index],
-                                            "lr": 0.001,
-                                            "path_to_checkpoint": meta_save_dir + f"/meta_{iteration}it.pt",
-                                            "fine_tune": not resume,
-                                            "resume": resume,
+                                            "net"                   : individual_models[-1],
+                                            "train_dataset"         : train_set,
+                                            "device"                : torch.device(f"cuda:{gpus_available[-1]}"),
+                                            "save_directory"        : instance_save_dir,
+                                            "steps"                 : iteration * 500 + 500,  # to make the latent spaces stay closer together initially
+                                            "batch_size"            : batchsize,
+                                            "epochs_per_save"       : epochs_per_save,
+                                            "lang"                  : languages[index],
+                                            "lr"                    : 0.001,
+                                            "path_to_checkpoint"    : meta_save_dir + f"/meta_{iteration}it.pt",
+                                            "fine_tune"             : not resume,
+                                            "resume"                : resume,
                                             "cycle_loss_start_steps": None,  # not used here, only for final adaptation
-                                            "silent": True
-                                        }))
+                                            "silent"                : True
+                                            }))
             processes[-1].start()
             if verbose:
                 print(f"Starting {instance_save_dir} on cuda:{gpus_available[-1]}")

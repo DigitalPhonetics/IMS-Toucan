@@ -167,7 +167,7 @@ class AudioPreprocessor:
         if explicit_sampling_rate is None:
             if normalize:
                 audio = self.normalize_audio(audio)
-                self.logmelfilterbank(audio=audio, sampling_rate=self.final_sr)
+                return self.logmelfilterbank(audio=audio, sampling_rate=self.final_sr)
             return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
         if normalize:
             audio = self.normalize_audio(audio)

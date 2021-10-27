@@ -6,7 +6,6 @@ import torch.multiprocessing
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from Utility.path_to_transcript_dicts import *
 
 
@@ -21,7 +20,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"  # fastspeech is fast enough that we don't have to multiprocess everything
-
 
     model_save_dirs = list()
     languages = list()
@@ -127,7 +125,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       cache_dir=cache_dir_french,
                                       device=torch.device("cuda"),
                                       lang="fr"))
-
 
     for iteration in range(100):
 

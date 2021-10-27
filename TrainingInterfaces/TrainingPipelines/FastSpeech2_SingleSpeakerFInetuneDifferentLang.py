@@ -1,12 +1,15 @@
 import os
 import random
 
+import soundfile
 import torch
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
+from Utility.file_lists import get_file_list_css10de
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -24,19 +27,38 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Nancy")
+    cache_dir = os.path.join("Corpora", "HokusPokus")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_Nancy")
+        save_dir = os.path.join("Models", "FastSpeech2_HokusPokus")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    path_to_transcript_dict = build_path_to_transcript_dict()
+    path_to_transcript_dict_ = build_path_to_transcript_dict()
+    path_to_transcript_dict = dict()
 
-    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_Nancy_Aligner", "best.pt")
+    paths = get_file_list_css10de()
+    used_samples = set()
+    total_len = 0.0
+    while total_len < 30.0 * 60.0:
+        path = random.choice(paths)
+        if "meisterfloh" in path:  # in that book she uses the nicest microphone
+            x, sr = soundfile.read(path)
+            duration = len(x) / sr
+            if 10 > duration > 5 and path not in used_samples:
+                used_samples.add(path)
+                total_len += duration
+
+    print(f"Collected {total_len / 60.0} minutes worth of samples.")
+
+    for key in path_to_transcript_dict_:
+        if key in used_samples:
+            path_to_transcript_dict[key] = path_to_transcript_dict_[key]
+
+    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_HokusPokus_Aligner", "best.pt")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
@@ -52,11 +74,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                device=device,
                save_directory=save_dir,
                steps=300000,
-               batch_size=40,
+               batch_size=20,
                lang="en",
                lr=0.001,
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               resume=resume,
-               cycle_loss_start_steps=None)
+               resume=resume)

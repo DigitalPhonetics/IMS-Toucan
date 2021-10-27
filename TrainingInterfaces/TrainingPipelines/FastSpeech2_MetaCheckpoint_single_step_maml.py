@@ -12,11 +12,11 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -215,11 +215,13 @@ def train_loop(net,
             net.eval()
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             train_losses_total = list()
-            torch.save({"model": net.state_dict(),
-                        "optimizer": optimizer.state_dict(),
-                        "scaler": grad_scaler.state_dict(),
-                        "step_counter": step},
-                       os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
+            torch.save({
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
+                "scaler"      : grad_scaler.state_dict(),
+                "step_counter": step
+                },
+                os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
                 plot_progress_spec(net=net,

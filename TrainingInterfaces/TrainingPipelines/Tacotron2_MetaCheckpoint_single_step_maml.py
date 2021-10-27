@@ -228,20 +228,24 @@ def train_loop(net,
             net.eval()
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             train_losses_total = list()
-            torch.save({"model": net.state_dict(),
-                        "optimizer": optimizer.state_dict(),
-                        "scaler": grad_scaler.state_dict(),
-                        "step_counter": step},
-                       os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
+            torch.save({
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
+                "scaler"      : grad_scaler.state_dict(),
+                "step_counter": step
+                },
+                os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             net_for_eval = Tacotron2()
             net_for_eval.load_state_dict(copy.deepcopy(net.state_dict()))
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
                 Process(target=plot_attention,
-                        kwargs={"model": net_for_eval,
-                                "lang": lang,
-                                "att_dir": save_directory,
-                                "step": step}).start()
+                        kwargs={
+                            "model"  : net_for_eval,
+                            "lang"   : lang,
+                            "att_dir": save_directory,
+                            "step"   : step
+                            }).start()
 
 
 @torch.no_grad()
