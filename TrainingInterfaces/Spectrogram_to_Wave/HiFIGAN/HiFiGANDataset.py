@@ -15,8 +15,11 @@ class HiFiGANDataset(Dataset):
     def __init__(self,
                  list_of_paths,
                  desired_samplingrate=48000,
+                 samples_per_segment = 24567, # = 8192 * 3, as I used 8192 for 16kHz previously
                  loading_processes=20):
-        self.samples_per_segment = round(8192 * (desired_samplingrate / 16000))
+        self.samples_per_segment = samples_per_segment
+        # hop length of spec loss must be same as the product of the upscale factors
+        # samples per segment must be a multiple of hop length of spec loss
         _, sr = sf.read(list_of_paths[0])
         #  ^ this is the reason why we must create individual
         # datasets and then concat them. If we just did all
@@ -25,7 +28,6 @@ class HiFiGANDataset(Dataset):
         self.desired_samplingrate = desired_samplingrate
         self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=desired_samplingrate, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         self.melspec_ap = AudioPreprocessor(input_sr=desired_samplingrate, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
-        # hop length must be same as the product of the upscale factors
         resource_manager = Manager()
         self.list_of_eligible_wave_paths = resource_manager.list()
         # make processes
@@ -65,9 +67,8 @@ class HiFiGANDataset(Dataset):
         max_audio_start = len(self.waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
         segment = torch.Tensor(self.waves[index][audio_start: audio_start + self.samples_per_segment])
-        resampled_segment = self.melspec_ap.resample(segment)
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0,
-                                                                                                                                                            1)
+        resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):

@@ -7,7 +7,6 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
 from Utility.file_lists import get_file_list_css10de
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de as build_path_to_transcript_dict
 
@@ -27,11 +26,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "HokusPokus")
+    cache_dir = os.path.join("Corpora", "Hokuspokus_low_res")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_HokusPokus")
+        save_dir = os.path.join("Models", "FastSpeech2_DiffLangLangFinetune")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -63,7 +62,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
                                   acoustic_checkpoint_path=acoustic_checkpoint_path,
-                                  lang="en",
+                                  lang="de",
                                   device=device)
 
     model = FastSpeech2()
@@ -73,11 +72,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=30000,
                batch_size=20,
-               lang="en",
+               lang="de",
                lr=0.001,
                warmup_steps=14000,
-               path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune,
+               path_to_checkpoint="Models/Singe_Step_LAML_FastSpeech2/best.pt",
+               fine_tune=True,
                resume=resume)

@@ -63,6 +63,9 @@ def train_loop(generator,
         epoch += 1
         discriminator_losses = list()
         generator_losses = list()
+        mel_losses = list()
+        feat_match_losses = list()
+        adversarial_losses = list()
 
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
@@ -81,10 +84,13 @@ def train_loop(generator,
             adversarial_loss = generator_adv_criterion(d_outs)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 45 + adversarial_loss * 1 + feature_matching_loss * 2
+            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 4.0 + feature_matching_loss * 2.0
             optimizer_g.zero_grad()
             generator_total_loss.backward()
-            generator_losses.append(float(generator_total_loss))
+            generator_losses.append(generator_total_loss.item())
+            mel_losses.append(mel_loss.item() * 30.0)
+            feat_match_losses.append(feature_matching_loss.item() * 2.0)
+            adversarial_losses.append(adversarial_loss.item() * 4.0)
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
             scheduler_g.step()
@@ -99,7 +105,7 @@ def train_loop(generator,
             discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
             optimizer_d.zero_grad()
             discriminator_loss.backward()
-            discriminator_losses.append(float(discriminator_loss))
+            discriminator_losses.append(discriminator_loss.item())
             torch.nn.utils.clip_grad_norm_(d.parameters(), 10.0)
             optimizer_d.step()
             scheduler_d.step()
@@ -125,7 +131,10 @@ def train_loop(generator,
                 return
 
         print("Epoch:              {}".format(epoch + 1))
-        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60), 2))
+        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
-        print("Generator Loss:     {}".format(sum(generator_losses) / len(generator_losses)))
-        print("Discriminator Loss: {}".format(sum(discriminator_losses) / len(discriminator_losses)))
+        print("Generator Loss:     {}".format(round(sum(generator_losses) / len(generator_losses), 3)))
+        print("    Mel Loss:       {}".format(round(sum(mel_losses) / len(mel_losses), 3)))
+        print("    FeatMatch Loss: {}".format(round(sum(feat_match_losses) / len(feat_match_losses), 3)))
+        print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
+        print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))

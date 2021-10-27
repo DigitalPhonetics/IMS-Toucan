@@ -12,6 +12,7 @@ from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_m
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_single_step_maml import run as meta_taco_ss
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_SingleSpeakerFinetuneDifferentLang import run as fast_dif
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
 from TrainingInterfaces.TrainingPipelines.create_teachers import run as create_teachers
 
@@ -31,6 +32,7 @@ pipeline_dict = {
 
     "taco_same"      : taco_same,
     "taco_dif"       : taco_dif,
+    "fast_dif"       : fast_dif,
 
     "taco_hokus"     : taco_hokus,
     "fast_hokus"     : fast_hokus,
