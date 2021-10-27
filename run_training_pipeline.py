@@ -1,43 +1,54 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Eva import run as fast_eva
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_HokusPokus import run as fast_hokus
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as fast_karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_first_order_maml import run as meta_fast_fo
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_single_step_maml import run as meta_fast_ss
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_SingleSpeakerFinetuneDifferentLang import run as fast_dif
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Eva import run as taco_eva
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Eva_Aligner import run as align_eva
 from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus import run as taco_hokus
-from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus_Aligner import run as hokus_align
+from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus_Aligner import run as align_hokus
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Karlsson import run as taco_karlsson
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Karlsson_Aligner import run as align_karlsson
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_maml import run as meta_taco_fo
 from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_single_step_maml import run as meta_taco_ss
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneDifferentLang import run as taco_dif
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_SingleSpeakerFinetuneDifferentLang import run as fast_dif
-from TrainingInterfaces.TrainingPipelines.Tacotron2_SingleSpeakerFinetuneSameLang import run as taco_same
 from TrainingInterfaces.TrainingPipelines.create_teachers import run as create_teachers
 
 pipeline_dict = {
-    "fast_nancy"     : fast_nancy,
-    "taco_nancy"     : taco_nancy,
+    "fast_nancy": fast_nancy,
+    "taco_nancy": taco_nancy,
 
-    "hifi_combined"  : hifigan_combined,
+    "taco_meta_ss": meta_taco_ss,
+    "taco_meta_fo": meta_taco_fo,
 
-    "taco_meta_ss"   : meta_taco_ss,
-    "taco_meta_fo"   : meta_taco_fo,
+    "fast_meta_ss": meta_fast_ss,
+    "fast_meta_fo": meta_fast_fo,
+
+    "taco_dif": taco_dif,
+    "fast_dif": fast_dif,
+
+    "taco_hokus": taco_hokus,
+    "fast_hokus": fast_hokus,
+    "align_hokus": align_hokus,
+
+    "taco_eva": taco_eva,
+    "fast_eva": fast_eva,
+    "align_eva": align_eva,
+
+    "taco_karlsson": taco_karlsson,
+    "fast_karlsson": fast_karlsson,
+    "align_karlsson": align_karlsson,
 
     "create_teachers": create_teachers,
-
-    "fast_meta_ss"   : meta_fast_ss,
-    "fast_meta_fo"   : meta_fast_fo,
-
-    "taco_same"      : taco_same,
-    "taco_dif"       : taco_dif,
-    "fast_dif"       : fast_dif,
-
-    "taco_hokus"     : taco_hokus,
-    "fast_hokus"     : fast_hokus,
-    "align_hokus"    : hokus_align
-    }
+    "hifi_combined": hifigan_combined,
+}
 
 if __name__ == '__main__':
 

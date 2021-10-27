@@ -2,7 +2,10 @@ import os
 
 
 def build_path_to_transcript_dict_karlsson():
-    root = "/mount/resources/speech/corpora/MAILabs_german_single_speaker_karlsson"
+    """
+    https://arxiv.org/abs/2106.06309
+    """
+    root = "/mount/resources/speech/corpora/Karlson"
     path_to_transcript = dict()
     for el in os.listdir(root):
         if os.path.isdir(os.path.join(root, el)):
@@ -18,7 +21,10 @@ def build_path_to_transcript_dict_karlsson():
 
 
 def build_path_to_transcript_dict_eva():
-    root = "/mount/resources/speech/corpora/MAILabs_german_single_speaker_eva"
+    """
+    https://arxiv.org/abs/2106.06309
+    """
+    root = "/mount/resources/speech/corpora/Eva_K"
     path_to_transcript = dict()
     for el in os.listdir(root):
         if os.path.isdir(os.path.join(root, el)):

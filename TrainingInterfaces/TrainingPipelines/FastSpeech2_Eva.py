@@ -6,7 +6,7 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de as build_path_to_transcript_dict
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_eva as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -24,11 +24,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "HokusPokus")
+    cache_dir = os.path.join("Corpora", "Eva")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_HokusPokus")
+        save_dir = os.path.join("Models", "FastSpeech2_Eva")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_HokusPokus_Aligner", "best.pt")
+    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_Eva_Aligner", "best.pt")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,

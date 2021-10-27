@@ -3,10 +3,10 @@ import random
 
 import torch
 
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de as build_path_to_transcript_dict
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
+from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_eva as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -24,11 +24,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "HokusPokus")
+    cache_dir = os.path.join("Corpora", "Eva")
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_HokusPokus")
+        save_dir = os.path.join("Models", "Tacotron2_Eva")
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
     if not os.path.exists(save_dir):
@@ -36,26 +36,22 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_HokusPokus_Aligner", "best.pt")
+    train_set = TacotronDataset(path_to_transcript_dict,
+                                cache_dir=cache_dir,
+                                lang="de")
 
-    train_set = FastSpeechDataset(path_to_transcript_dict,
-                                  cache_dir=cache_dir,
-                                  acoustic_checkpoint_path=acoustic_checkpoint_path,
-                                  lang="de",
-                                  device=device)
-
-    model = FastSpeech2()
+    model = Tacotron2()
 
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
+               steps=100000,
                batch_size=20,
+               epochs_per_save=1,
                lang="de",
                lr=0.001,
-               warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume)

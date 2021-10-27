@@ -2,7 +2,7 @@ import os
 
 
 def get_file_list_karlsson():
-    root = "/mount/resources/speech/corpora/MAILabs_german_single_speaker_karlsson"
+    root = "/mount/resources/speech/corpora/Karlsson"
     file_list = list()
     for el in os.listdir(root):
         if os.path.isdir(os.path.join(root, el)):
@@ -17,7 +17,7 @@ def get_file_list_karlsson():
 
 
 def get_file_list_eva():
-    root = "/mount/resources/speech/corpora/MAILabs_german_single_speaker_eva"
+    root = "/mount/resources/speech/corpora/Eva_K"
     file_list = list()
     for el in os.listdir(root):
         if os.path.isdir(os.path.join(root, el)):
