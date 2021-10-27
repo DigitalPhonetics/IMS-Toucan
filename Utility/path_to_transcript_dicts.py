@@ -13,7 +13,7 @@ def build_path_to_transcript_dict_karlsson():
                 lookup = file.read()
             for line in lookup.split("\n"):
                 if line.strip() != "":
-                    norm_transcript = line.split("|")[2]
+                    norm_transcript = line.split("|")[1]
                     wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
                     if os.path.exists(wav_path):
                         path_to_transcript[wav_path] = norm_transcript
@@ -32,7 +32,7 @@ def build_path_to_transcript_dict_eva():
                 lookup = file.read()
             for line in lookup.split("\n"):
                 if line.strip() != "":
-                    norm_transcript = line.split("|")[2]
+                    norm_transcript = line.split("|")[1]
                     wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
                     if os.path.exists(wav_path):
                         path_to_transcript[wav_path] = norm_transcript
