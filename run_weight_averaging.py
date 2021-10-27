@@ -17,7 +17,7 @@ def load_net_taco(path):
         net = Tacotron2()
         net.load_state_dict(check_dict["model"])
     except RuntimeError:
-        net = Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0)
+        net = Tacotron2(elayers=0, econv_layers=0, adim=512, embed_dim=512, prenet_layers=0, postnet_layers=0)
         net.load_state_dict(check_dict["model"])
 
     return net
@@ -112,7 +112,7 @@ def show_all_models_params():
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
     print("Number of (trainable) Parameters in Tacotron2: {}".format(count_parameters(Tacotron2())))
     print("Number of (trainable) Parameters in Tacotron2 aligner config: {}".format(
-        count_parameters(Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0))))
+        count_parameters(Tacotron2(elayers=0, econv_layers=0, adim=512, embed_dim=512, prenet_layers=0, postnet_layers=0))))
     print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(FastSpeech2())))
 
 

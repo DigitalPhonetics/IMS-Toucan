@@ -175,8 +175,8 @@ class AlignmentLoss(nn.Module):
 
     def __init__(self,
                  bin_warmup_steps=10000,
-                 bin_start_steps=30000,
-                 forward_start_steps=1500,
+                 bin_start_steps=10000,
+                 forward_start_steps=5000,
                  include_forward_loss=True,
                  forward_loss_weight=0.001):
         super().__init__()
@@ -193,7 +193,7 @@ class AlignmentLoss(nn.Module):
 
         soft_attention = soft_attention.unsqueeze(1)
 
-        bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 100, 0.01)
+        bin_weight = min(((step - self.bin_start_steps) / self.bin_warmup_steps) / 1000, 0.001)
 
         if self.include_forward_loss and self.forward_start_steps < step:
             l_forward = self.l_forward_func(torch.log(soft_attention), in_lens, out_lens) * self.forward_loss_weight
