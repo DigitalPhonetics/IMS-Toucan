@@ -7,8 +7,8 @@ import torch
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
-from Utility.file_lists import get_file_list_css10de
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_css10de as build_path_to_transcript_dict
+from Utility.file_lists import get_file_list_karlsson
+from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_karlsson as build_path_to_transcript_dict
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
@@ -26,7 +26,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    cache_dir = os.path.join("Corpora", "Hokuspokus_low_res")
+    cache_dir = os.path.join("Corpora", "Karlsson_low_res")
     if model_dir is not None:
         save_dir = model_dir
     else:
@@ -39,17 +39,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     path_to_transcript_dict_ = build_path_to_transcript_dict()
     path_to_transcript_dict = dict()
 
-    paths = get_file_list_css10de()
+    paths = get_file_list_karlsson()
     used_samples = set()
     total_len = 0.0
     while total_len < 30.0 * 60.0:
         path = random.choice(paths)
-        if "meisterfloh" in path:  # in that book she uses the nicest microphone
-            x, sr = soundfile.read(path)
-            duration = len(x) / sr
-            if 10 > duration > 5 and path not in used_samples:
-                used_samples.add(path)
-                total_len += duration
+        x, sr = soundfile.read(path)
+        duration = len(x) / sr
+        if 10 > duration > 5 and path not in used_samples:
+            used_samples.add(path)
+            total_len += duration
 
     print(f"Collected {total_len / 60.0} minutes worth of samples.")
 
