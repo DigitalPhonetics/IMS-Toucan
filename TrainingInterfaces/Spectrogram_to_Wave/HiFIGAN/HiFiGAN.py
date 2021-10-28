@@ -6,29 +6,28 @@
 
 
 import copy
-
+import torch.jit as jit
 import torch
 import torch.nn.functional as F
 
 from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 
 
-class HiFiGANGenerator(torch.nn.Module):
+class HiFiGANGenerator(jit.ScriptModule):
 
     def __init__(self,
                  in_channels=80,
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(7, 7, 4, 4),
-                 upsample_kernel_sizes=(16, 16, 8, 8),
+                 upsample_scales=(8, 6, 4, 4),
+                 upsample_kernel_sizes=(16, 12, 8, 8),
                  resblock_kernel_sizes=(3, 7, 11),
                  resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],
                  use_additional_convs=True,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1},
-                 use_weight_norm=True, ):
+                 nonlinear_activation_params={"negative_slope": 0.1} ):
         """
         Initialize HiFiGANGenerator module.
         
@@ -91,12 +90,12 @@ class HiFiGANGenerator(torch.nn.Module):
                             padding=(kernel_size - 1) // 2, ), torch.nn.Tanh(), )
 
         # apply weight norm
-        if use_weight_norm:
-            self.apply_weight_norm()
+        self.apply_weight_norm()
 
         # reset parameters
         self.reset_parameters()
 
+    @jit.script_method
     def forward(self, c):
         """
         Calculate forward propagation.
@@ -108,12 +107,55 @@ class HiFiGANGenerator(torch.nn.Module):
             Tensor: Output tensor (B, out_channels, T).
         """
         c = self.input_conv(c)
-        for i in range(self.num_upsamples):
-            c = self.upsamples[i](c)
-            cs = 0.0  # initialize
-            for j in range(self.num_blocks):
-                cs = cs + self.blocks[i * self.num_blocks + j](c)
-            c = cs / self.num_blocks
+
+        # i goes from 0 to 3
+        # j goes from 0 to 2
+        # cannot be loop so it can be compiled by jit
+
+        i = 0
+        c = self.upsamples[i](c)
+        cs = 0.0  # initialize
+        j = 0
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 1
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 2
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        c = cs / self.num_blocks
+
+        i = 1
+        c = self.upsamples[i](c)
+        cs = 0.0  # initialize
+        j = 0
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 1
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 2
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        c = cs / self.num_blocks
+
+        i = 2
+        c = self.upsamples[i](c)
+        cs = 0.0  # initialize
+        j = 0
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 1
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 2
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        c = cs / self.num_blocks
+
+        i = 3
+        c = self.upsamples[i](c)
+        cs = 0.0  # initialize
+        j = 0
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 1
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        j = 2
+        cs = cs + self.blocks[i * self.num_blocks + j](c)
+        c = cs / self.num_blocks
+
         c = self.output_conv(c)
 
         return c
