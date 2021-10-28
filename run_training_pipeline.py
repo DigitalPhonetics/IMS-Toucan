@@ -1,23 +1,24 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_first_order_maml import run as meta_fast_fo
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Eva_Aligner import run as align_eva
+from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus_Aligner import run as align_hokus
+from TrainingInterfaces.TrainingPipelines.Tacotron2_Karlsson_Aligner import run as align_karlsson
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_maml import run as meta_taco_fo
+
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Eva import run as fast_eva
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_HokusPokus import run as fast_hokus
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as fast_karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LowRes import run as fast_dif
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_first_order_maml import run as meta_fast_fo
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_single_step_maml import run as meta_fast_ss
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast_ss
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Eva import run as taco_eva
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Eva_Aligner import run as align_eva
 from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus import run as taco_hokus
-from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus_Aligner import run as align_hokus
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Karlsson import run as taco_karlsson
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Karlsson_Aligner import run as align_karlsson
 from TrainingInterfaces.TrainingPipelines.Tacotron2_LowRes import run as taco_dif
-from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_first_order_maml import run as meta_taco_fo
-from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint_single_step_maml import run as meta_taco_ss
+from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco_ss
 from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
 from TrainingInterfaces.TrainingPipelines.create_teachers import run as create_teachers
 

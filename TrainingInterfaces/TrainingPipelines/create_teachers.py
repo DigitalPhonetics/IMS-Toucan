@@ -140,8 +140,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         epochs_per_save = max(round(100 / batches_per_epoch), 1)  # just to balance the amount of checkpoints
         processes.append(mp.Process(target=train_loop,
                                     kwargs={
-                                        "net"                   : Tacotron2(use_alignment_loss=True, elayers=0, econv_layers=0, adim=512, embed_dim=512,
-                                                                            prenet_layers=1, postnet_layers=1, bce_pos_weight=40.0),
+                                        "net"                   : Tacotron2(),
                                         "train_dataset"         : train_set,
                                         "device"                : torch.device(f"cuda:{gpus_available[-1]}"),
                                         "save_directory"        : instance_save_dir,
