@@ -23,34 +23,29 @@ class HiFiGANDataset(Dataset):
         self.desired_samplingrate = desired_samplingrate
         self.melspec_ap = AudioPreprocessor(input_sr=desired_samplingrate, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
 
-        if not os.path.exists(os.path.join(cache_dir, "waves.pt")):
-            # hop length of spec loss must be same as the product of the upscale factors
-            # samples per segment must be a multiple of hop length of spec loss
-            _, self._orig_sr = sf.read(list_of_paths[0])
-            #  ^ this is the reason why we must create individual
-            # datasets and then concat them. If we just did all
-            # datasets at once, there could be multiple sampling
-            # rates.
-            resource_manager = Manager()
-            self.waves = resource_manager.list()
-            # make processes
-            path_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
-            for path_split in path_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(path_split,), daemon=True))
-                process_list[-1].start()
-            for process in process_list:
-                process.join()
-            numpy_waves = list(self.waves)
-            self.waves = list()
-            for wave in numpy_waves:
-                self.waves.append(torch.tensor(wave))
-            torch.save(self.waves, os.path.join(cache_dir, "waves.pt"))
-        else:
-            self.waves = torch.load(os.path.join(cache_dir, "waves.pt"), map_location='cpu')
-
+        # hop length of spec loss must be same as the product of the upscale factors
+        # samples per segment must be a multiple of hop length of spec loss
+        _, self._orig_sr = sf.read(list_of_paths[0])
+        #  ^ this is the reason why we must create individual
+        # datasets and then concat them. If we just did all
+        # datasets at once, there could be multiple sampling
+        # rates.
+        resource_manager = Manager()
+        self.waves = resource_manager.list()
+        # make processes
+        path_splits = list()
+        process_list = list()
+        for i in range(loading_processes):
+            path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
+        for path_split in path_splits:
+            process_list.append(Process(target=self.cache_builder_process, args=(path_split,), daemon=True))
+            process_list[-1].start()
+        for process in process_list:
+            process.join()
+        numpy_waves = list(self.waves)
+        self.waves = list()
+        for wave in numpy_waves:
+            self.waves.append(torch.tensor(wave))
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):

@@ -6,14 +6,13 @@
 
 
 import copy
-import torch.jit as jit
 import torch
 import torch.nn.functional as F
 
 from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 
 
-class HiFiGANGenerator(jit.ScriptModule):
+class HiFiGANGenerator(torch.nn.Module):
 
     def __init__(self,
                  in_channels=80,
@@ -95,7 +94,7 @@ class HiFiGANGenerator(jit.ScriptModule):
         # reset parameters
         self.reset_parameters()
 
-    @jit.script_method
+
     def forward(self, c):
         """
         Calculate forward propagation.
@@ -107,55 +106,12 @@ class HiFiGANGenerator(jit.ScriptModule):
             Tensor: Output tensor (B, out_channels, T).
         """
         c = self.input_conv(c)
-
-        # i goes from 0 to 3
-        # j goes from 0 to 2
-        # cannot be loop so it can be compiled by jit
-
-        i = 0
-        c = self.upsamples[i](c)
-        cs = 0.0  # initialize
-        j = 0
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 1
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 2
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        c = cs / self.num_blocks
-
-        i = 1
-        c = self.upsamples[i](c)
-        cs = 0.0  # initialize
-        j = 0
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 1
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 2
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        c = cs / self.num_blocks
-
-        i = 2
-        c = self.upsamples[i](c)
-        cs = 0.0  # initialize
-        j = 0
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 1
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 2
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        c = cs / self.num_blocks
-
-        i = 3
-        c = self.upsamples[i](c)
-        cs = 0.0  # initialize
-        j = 0
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 1
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        j = 2
-        cs = cs + self.blocks[i * self.num_blocks + j](c)
-        c = cs / self.num_blocks
-
+        for i in range(self.num_upsamples):
+            c = self.upsamples[i](c)
+            cs = 0.0  # initialize
+            for j in range(self.num_blocks):
+                cs += self.blocks[i * self.num_blocks + j](c)
+            c = cs / self.num_blocks
         c = self.output_conv(c)
 
         return c
