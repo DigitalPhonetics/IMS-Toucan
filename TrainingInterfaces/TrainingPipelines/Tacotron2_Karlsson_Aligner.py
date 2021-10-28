@@ -40,7 +40,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                 cache_dir=cache_dir,
                                 lang="de")
 
-    model = Tacotron2(use_alignment_loss=True, elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0, bce_pos_weight=40.0)
+    model = Tacotron2(use_alignment_loss=True, elayers=0, econv_layers=0, adim=512, embed_dim=512, prenet_layers=1, postnet_layers=1, bce_pos_weight=40.0)
 
     print("Training model")
     train_loop(net=model,

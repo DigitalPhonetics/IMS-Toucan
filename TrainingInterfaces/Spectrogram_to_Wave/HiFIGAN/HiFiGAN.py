@@ -20,7 +20,7 @@ class HiFiGANGenerator(torch.nn.Module):
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(7, 7, 5, 3),
+                 upsample_scales=(7, 7, 4, 4),
                  upsample_kernel_sizes=(16, 16, 8, 8),
                  resblock_kernel_sizes=(3, 7, 11),
                  resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],

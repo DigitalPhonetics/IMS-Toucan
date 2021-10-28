@@ -62,7 +62,7 @@ class FastSpeechDataset(Dataset):
                 acoustic_model = Tacotron2()
                 acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
             except RuntimeError:
-                acoustic_model = Tacotron2(elayers=0, econv_layers=0, adim=256, embed_dim=256, prenet_layers=0, postnet_layers=0)
+                acoustic_model = Tacotron2(elayers=0, econv_layers=0, adim=512, embed_dim=512, prenet_layers=1, postnet_layers=1)
                 acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["model"])
 
             # ==========================================
