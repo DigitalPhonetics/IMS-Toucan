@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_Karlsson_Aligner", "best.pt")
+    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_Karlsson", "best.pt")
 
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,

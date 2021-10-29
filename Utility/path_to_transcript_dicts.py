@@ -5,7 +5,7 @@ def build_path_to_transcript_dict_karlsson():
     """
     https://arxiv.org/abs/2106.06309
     """
-    root = "/mount/resources/speech/corpora/Karlson"
+    root = "/mount/resources/speech/corpora/Karlsson"
     path_to_transcript = dict()
     for el in os.listdir(root):
         if os.path.isdir(os.path.join(root, el)):

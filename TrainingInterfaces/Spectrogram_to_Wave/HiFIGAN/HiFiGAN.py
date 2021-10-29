@@ -6,7 +6,6 @@
 
 
 import copy
-
 import torch
 import torch.nn.functional as F
 
@@ -20,15 +19,14 @@ class HiFiGANGenerator(torch.nn.Module):
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(7, 7, 4, 4),
-                 upsample_kernel_sizes=(16, 16, 8, 8),
+                 upsample_scales=(8, 6, 4, 4),
+                 upsample_kernel_sizes=(16, 12, 8, 8),
                  resblock_kernel_sizes=(3, 7, 11),
                  resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],
                  use_additional_convs=True,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1},
-                 use_weight_norm=True, ):
+                 nonlinear_activation_params={"negative_slope": 0.1} ):
         """
         Initialize HiFiGANGenerator module.
         
@@ -91,11 +89,11 @@ class HiFiGANGenerator(torch.nn.Module):
                             padding=(kernel_size - 1) // 2, ), torch.nn.Tanh(), )
 
         # apply weight norm
-        if use_weight_norm:
-            self.apply_weight_norm()
+        self.apply_weight_norm()
 
         # reset parameters
         self.reset_parameters()
+
 
     def forward(self, c):
         """
@@ -112,7 +110,7 @@ class HiFiGANGenerator(torch.nn.Module):
             c = self.upsamples[i](c)
             cs = 0.0  # initialize
             for j in range(self.num_blocks):
-                cs = cs + self.blocks[i * self.num_blocks + j](c)
+                cs += self.blocks[i * self.num_blocks + j](c)
             c = cs / self.num_blocks
         c = self.output_conv(c)
 

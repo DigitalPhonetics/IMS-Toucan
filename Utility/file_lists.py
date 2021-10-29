@@ -200,3 +200,32 @@ def get_file_list_thorsten():
         if line.strip() != "":
             file_list.append("/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav")
     return file_list
+
+
+def get_file_list_nvidia_hifitts():
+    path_to_transcript = dict()
+    transcripts = list()
+    root = "/mount/resources/speech/corpora/hi_fi_tts_v0"
+
+    import json
+
+    for jpath in [f"{root}/6097_manifest_clean_dev.json",
+                  f"{root}/6097_manifest_clean_test.json",
+                  f"{root}/6097_manifest_clean_train.json",
+                  f"{root}/9017_manifest_clean_dev.json",
+                  f"{root}/9017_manifest_clean_test.json",
+                  f"{root}/9017_manifest_clean_train.json",
+                  f"{root}/92_manifest_clean_dev.json",
+                  f"{root}/92_manifest_clean_test.json",
+                  f"{root}/92_manifest_clean_train.json"]:
+        with open(jpath, encoding='utf-8', mode='r') as jfile:
+            for line in jfile.read().split("\n"):
+                if line.strip() != "":
+                    transcripts.append(json.loads(line))
+
+    for transcript in transcripts:
+        path = transcript["audio_filepath"]
+        norm_text = transcript["text_normalized"]
+        path_to_transcript[f"{root}/{path}"] = norm_text
+
+    return list(path_to_transcript.keys())

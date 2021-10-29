@@ -1,12 +1,12 @@
 import random
 from multiprocessing import Manager
 from multiprocessing import Process
-
+import librosa
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
+import os
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 
@@ -14,22 +14,24 @@ class HiFiGANDataset(Dataset):
 
     def __init__(self,
                  list_of_paths,
+                 cache_dir,
                  desired_samplingrate=48000,
-                 samples_per_segment = 24567, # = 8192 * 3, as I used 8192 for 16kHz previously
-                 loading_processes=20):
+                 samples_per_segment =24576, # = 8192 * 3, as I used 8192 for 16kHz previously
+                 loading_processes=40):
+        os.makedirs(cache_dir, exist_ok=True)
         self.samples_per_segment = samples_per_segment
+        self.desired_samplingrate = desired_samplingrate
+        self.melspec_ap = AudioPreprocessor(input_sr=desired_samplingrate, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
+
         # hop length of spec loss must be same as the product of the upscale factors
         # samples per segment must be a multiple of hop length of spec loss
-        _, sr = sf.read(list_of_paths[0])
+        _, self._orig_sr = sf.read(list_of_paths[0])
         #  ^ this is the reason why we must create individual
         # datasets and then concat them. If we just did all
         # datasets at once, there could be multiple sampling
         # rates.
-        self.desired_samplingrate = desired_samplingrate
-        self.preprocess_ap = AudioPreprocessor(input_sr=sr, output_sr=desired_samplingrate, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
-        self.melspec_ap = AudioPreprocessor(input_sr=desired_samplingrate, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         resource_manager = Manager()
-        self.list_of_eligible_wave_paths = resource_manager.list()
+        self.waves = resource_manager.list()
         # make processes
         path_splits = list()
         process_list = list()
@@ -40,12 +42,10 @@ class HiFiGANDataset(Dataset):
             process_list[-1].start()
         for process in process_list:
             process.join()
-        self.list_of_eligible_wave_paths = list(self.list_of_eligible_wave_paths)
+        numpy_waves = list(self.waves)
         self.waves = list()
-        for path in tqdm(self.list_of_eligible_wave_paths):
-            with open(path, "rb") as audio_file:
-                wave_orig, _ = sf.read(audio_file)
-            self.waves.append(self.preprocess_ap.audio_to_wave_tensor(wave_orig, normalize=True, mulaw=False))
+        for wave in numpy_waves:
+            self.waves.append(torch.tensor(wave))
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):
@@ -54,7 +54,8 @@ class HiFiGANDataset(Dataset):
                 wave, sr = sf.read(audio_file)
             if (len(wave) / sr) > ((self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
-                self.list_of_eligible_wave_paths.append(path)
+                self.waves.append(librosa.resample(y=wave, orig_sr=self._orig_sr, target_sr=self.desired_samplingrate))
+
 
     def __getitem__(self, index):
         """
@@ -72,4 +73,4 @@ class HiFiGANDataset(Dataset):
         return segment, melspec
 
     def __len__(self):
-        return len(self.list_of_eligible_wave_paths)
+        return len(self.waves)

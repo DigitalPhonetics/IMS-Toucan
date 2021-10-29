@@ -43,8 +43,14 @@ def train_loop(generator,
     optimizer_d = torch.optim.Adam(d.parameters(), betas=(0.5, 0.9), lr=2.0e-4, weight_decay=0.0)
     scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
 
-    train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=False, drop_last=True, prefetch_factor=4,
-                              persistent_workers=False)
+    train_loader = DataLoader(dataset=train_dataset,
+                              batch_size=batch_size, 
+                              shuffle=True,
+                              num_workers=16, 
+                              pin_memory=True, 
+                              drop_last=True,
+                              prefetch_factor=8,
+                              persistent_workers=True)
 
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
@@ -79,10 +85,8 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
-            print(f"\n\nPredicted Wave Shape {pred_wave.shape}")
-            print(f"Gold Wave Shape {gold_wave.shape}\n\n")
             d_outs = d(pred_wave)
-            d_gold_outs = d(gold_wave)
+            d_gold_outs = d(gold_wave).detach()
             adversarial_loss = generator_adv_criterion(d_outs)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
