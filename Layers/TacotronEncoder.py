@@ -29,7 +29,7 @@ class Encoder(torch.nn.Module):
 
     def __init__(self,
                  idim,
-                 input_layer="embed",
+                 input_layer="linear",
                  embed_dim=512,
                  elayers=1,
                  eunits=512,
