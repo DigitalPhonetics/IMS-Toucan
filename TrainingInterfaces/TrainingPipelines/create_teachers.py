@@ -4,9 +4,9 @@ import torch
 import torch.multiprocessing
 from torch import multiprocessing as mp
 
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 
 
@@ -61,69 +61,69 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(cache_dir_french, exist_ok=True)
     languages.append("fr")
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
-                                    cache_dir=cache_dir_english,
-                                    lang="en",
-                                    loading_processes=20,  # run this on a lonely server at night
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,  # needs to be long enough for the speaker embedding in the cycle objective to make sense
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_nancy(),
+                                   cache_dir=cache_dir_english,
+                                   lang="en",
+                                   loading_processes=20,  # run this on a lonely server at night
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,  # needs to be long enough for the speaker embedding in the cycle objective to make sense
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10el(),
+                                   cache_dir=cache_dir_greek,
+                                   lang="el",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10es(),
-                                    cache_dir=cache_dir_spanish,
-                                    lang="es",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10es(),
+                                   cache_dir=cache_dir_spanish,
+                                   lang="es",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fi(),
-                                    cache_dir=cache_dir_finnish,
-                                    lang="fi",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fi(),
+                                   cache_dir=cache_dir_finnish,
+                                   lang="fi",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10ru(),
-                                    cache_dir=cache_dir_russian,
-                                    lang="ru",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10ru(),
+                                   cache_dir=cache_dir_russian,
+                                   lang="ru",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10hu(),
-                                    cache_dir=cache_dir_hungarian,
-                                    lang="hu",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10hu(),
+                                   cache_dir=cache_dir_hungarian,
+                                   lang="hu",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10nl(),
-                                    cache_dir=cache_dir_dutch,
-                                    lang="nl",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10nl(),
+                                   cache_dir=cache_dir_dutch,
+                                   lang="nl",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fr(),
-                                    cache_dir=cache_dir_french,
-                                    lang="fr",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fr(),
+                                   cache_dir=cache_dir_french,
+                                   lang="fr",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     gpus_usable = ["4,5,6,7"]

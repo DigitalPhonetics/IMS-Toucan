@@ -2,15 +2,15 @@ import os
 
 import numpy as np
 import torch
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignmentLoss import mas_width1
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.AlignmentLoss import mas_width1
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
 
 
 class FastSpeechDataset(Dataset):
@@ -30,25 +30,25 @@ class FastSpeechDataset(Dataset):
 
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
-                TacotronDataset(path_to_transcript_dict=path_to_transcript_dict,
-                                cache_dir=cache_dir,
-                                lang=lang,
-                                loading_processes=loading_processes,
-                                min_len_in_seconds=min_len_in_seconds,
-                                max_len_in_seconds=max_len_in_seconds,
-                                cut_silences=cut_silence,
-                                rebuild_cache=rebuild_cache)
+                AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
+                               cache_dir=cache_dir,
+                               lang=lang,
+                               loading_processes=loading_processes,
+                               min_len_in_seconds=min_len_in_seconds,
+                               max_len_in_seconds=max_len_in_seconds,
+                               cut_silences=cut_silence,
+                               rebuild_cache=rebuild_cache)
             datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
             # we use the tacotron dataset as basis and augment it to contain the additional information we need for fastspeech.
             if not isinstance(datapoints, tuple):  # check for backwards compatibility
-                TacotronDataset(path_to_transcript_dict=path_to_transcript_dict,
-                                cache_dir=cache_dir,
-                                lang=lang,
-                                loading_processes=loading_processes,
-                                min_len_in_seconds=min_len_in_seconds,
-                                max_len_in_seconds=max_len_in_seconds,
-                                cut_silences=cut_silence,
-                                rebuild_cache=True)
+                AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
+                               cache_dir=cache_dir,
+                               lang=lang,
+                               loading_processes=loading_processes,
+                               min_len_in_seconds=min_len_in_seconds,
+                               max_len_in_seconds=max_len_in_seconds,
+                               cut_silences=cut_silence,
+                               rebuild_cache=True)
                 datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
             dataset = datapoints[0]
             norm_waves = datapoints[1]

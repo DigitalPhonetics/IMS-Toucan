@@ -14,7 +14,7 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedT
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 
-class TacotronDataset(Dataset):
+class AlignerDataset(Dataset):
 
     def __init__(self,
                  path_to_transcript_dict,

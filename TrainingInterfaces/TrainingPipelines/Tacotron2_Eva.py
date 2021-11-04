@@ -3,9 +3,9 @@ import random
 
 import torch
 
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.tacotron2_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_eva as build_path_to_transcript_dict
 
 
@@ -36,9 +36,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    train_set = TacotronDataset(path_to_transcript_dict,
-                                cache_dir=cache_dir,
-                                lang="de")
+    train_set = AlignerDataset(path_to_transcript_dict,
+                               cache_dir=cache_dir,
+                               lang="de")
 
     model = Tacotron2()
 

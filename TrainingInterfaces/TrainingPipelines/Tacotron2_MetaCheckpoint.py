@@ -14,8 +14,8 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.TacotronDataset import TacotronDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Tacotron2
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -35,83 +35,83 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     print("Preparing")
     cache_dir_english_nancy = os.path.join("Corpora", "Nancy")
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_nancy(),
-                                    cache_dir=cache_dir_english_nancy,
-                                    lang="en",
-                                    loading_processes=20,  # run this on a lonely server at night for the first time
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_nancy(),
+                                   cache_dir=cache_dir_english_nancy,
+                                   lang="en",
+                                   loading_processes=20,  # run this on a lonely server at night for the first time
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
     os.makedirs(cache_dir_greek, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10el(),
+                                   cache_dir=cache_dir_greek,
+                                   lang="el",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
     os.makedirs(cache_dir_spanish, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10es(),
-                                    cache_dir=cache_dir_spanish,
-                                    lang="es",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10es(),
+                                   cache_dir=cache_dir_spanish,
+                                   lang="es",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
     os.makedirs(cache_dir_finnish, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fi(),
-                                    cache_dir=cache_dir_finnish,
-                                    lang="fi",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fi(),
+                                   cache_dir=cache_dir_finnish,
+                                   lang="fi",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_russian = os.path.join("Corpora", "meta_Russian")
     os.makedirs(cache_dir_russian, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10ru(),
-                                    cache_dir=cache_dir_russian,
-                                    lang="ru",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10ru(),
+                                   cache_dir=cache_dir_russian,
+                                   lang="ru",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
     os.makedirs(cache_dir_hungarian, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10hu(),
-                                    cache_dir=cache_dir_hungarian,
-                                    lang="hu",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10hu(),
+                                   cache_dir=cache_dir_hungarian,
+                                   lang="hu",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
     os.makedirs(cache_dir_dutch, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10nl(),
-                                    cache_dir=cache_dir_dutch,
-                                    lang="nl",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10nl(),
+                                   cache_dir=cache_dir_dutch,
+                                   lang="nl",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     cache_dir_french = os.path.join("Corpora", "meta_French")
     os.makedirs(cache_dir_french, exist_ok=True)
-    datasets.append(TacotronDataset(build_path_to_transcript_dict_css10fr(),
-                                    cache_dir=cache_dir_french,
-                                    lang="fr",
-                                    loading_processes=20,
-                                    cut_silences=True,
-                                    min_len_in_seconds=2,
-                                    max_len_in_seconds=13))
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fr(),
+                                   cache_dir=cache_dir_french,
+                                   lang="fr",
+                                   loading_processes=20,
+                                   cut_silences=True,
+                                   min_len_in_seconds=2,
+                                   max_len_in_seconds=13))
 
     if model_dir is not None:
         meta_save_dir = model_dir

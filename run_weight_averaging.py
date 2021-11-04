@@ -7,8 +7,8 @@ import os
 import torch
 
 from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANGenerator
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Tacotron2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
 
 
 def load_net_taco(path):
@@ -103,7 +103,7 @@ def count_parameters(net):
 
 
 def show_all_models_params():
-    from TrainingInterfaces.Text_to_Spectrogram.Tacotron2.Tacotron2 import Tacotron2
+    from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Tacotron2
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
     print("Number of (trainable) Parameters in Tacotron2: {}".format(count_parameters(Tacotron2())))
     print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(FastSpeech2())))
