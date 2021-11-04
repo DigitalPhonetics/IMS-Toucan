@@ -3,6 +3,8 @@ import random
 
 import torch
 
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -36,8 +38,22 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_Karlsson", "best.pt")
+    if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")):
+        print("Training aligner")
+        train_aligner(train_dataset=AlignerDataset(path_to_transcript_dict,
+                                                   cache_dir=cache_dir,
+                                                   lang="de"),
+                      device=device,
+                      save_directory=os.path.join(save_dir, "aligner"),
+                      steps=100000,
+                      batch_size=32,
+                      path_to_checkpoint=resume_checkpoint,
+                      fine_tune=finetune,
+                      resume=resume)
 
+    acoustic_checkpoint_path = os.path.join(save_dir, "aligner", "aligner.pt")
+
+    print("Preparing Dataset")
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
                                   acoustic_checkpoint_path=acoustic_checkpoint_path,

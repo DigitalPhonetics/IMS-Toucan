@@ -3,14 +3,14 @@ import time
 
 import torch
 import torch.multiprocessing
-import torch.nn.functional as F
 from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data.dataloader import DataLoader
+from tqdm import tqdm
 
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner, TTSModel
-from Utility.utils import delete_old_checkpoints
+from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from Utility.utils import get_most_recent_checkpoint
 
 
@@ -27,7 +27,6 @@ def train_loop(train_dataset,
                save_directory,
                batch_size,
                steps,
-               epochs_per_save,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False):
@@ -53,12 +52,11 @@ def train_loop(train_dataset,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
+    tf = ArticulatoryCombinedTextFrontend(language="en")
+
     asr_model = Aligner(n_mels=80,
                         num_symbols=144)
-    tts_model = TTSModel(n_mels=80,
-                         num_symbols=+ 1)
     optim_asr = Adam(asr_model.parameters(), lr=1e-4)
-    optim_tts = Adam(tts_model.parameters(), lr=1e-4)
 
     ctc_loss = CTCLoss()
 
@@ -75,7 +73,6 @@ def train_loop(train_dataset,
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         asr_model.load_state_dict(check_dict["asr_model"])
-        tts_model.load_state_dict(check_dict["tts_model"])
         if not fine_tune:
             optim_asr.load_state_dict(check_dict["optimizer"])
             step_counter = check_dict["step_counter"]
@@ -87,54 +84,45 @@ def train_loop(train_dataset,
     while True:
         loss_sum = list()
 
-        tts_model.train()
         asr_model.train()
-        for batch in train_loader:
-            tokens, mel, tokens_len, mel_len = to_device(batch, device)
+        for batch in tqdm(train_loader):
+            tokens_as_vectors = batch[0]
+            tokens_len = batch[1].to(device)
+            mel = batch[2].to(device)
+            mel_len = batch[3].to(device)
 
-            pred = asr_model(mel)
-            pred_tts = tts_model(pred.softmax(-1)[:, :, :])
+            tokens = list()
+            for vector in tokens_as_vectors:
+                for phone in tf.phone_to_vector:
+                    if vector == tf.phone_to_vector[phone]:
+                        tokens.append(tf.phone_to_id[phone])
+                        # this is terribly inefficient, but it's good enough for testing for now.
+            tokens = torch.LongTensor(tokens)
 
-            pred = pred.transpose(0, 1).log_softmax(2)
-            loss_ctc = ctc_loss(pred, tokens, mel_len, tokens_len)
+            pred = asr_model(mel).transpose(0, 1).log_softmax(2)
 
-            loss = torch.nn.functional.l1_loss(pred_tts, mel)
-
-            factor = 1.
-            if step_counter > 2000:
-                factor = 0.
-            loss = loss + factor * loss_ctc
+            loss = ctc_loss(pred, tokens, mel_len, tokens_len)
 
             optim_asr.zero_grad()
-            optim_tts.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(asr_model.parameters(), 1.0)
-            torch.nn.utils.clip_grad_norm_(tts_model.parameters(), 1.0)
             optim_asr.step()
-            optim_tts.step()
+
+            step_counter += 1
 
             loss_sum.append(loss.item())
 
-        tts_model.eval()
         asr_model.eval()
         loss_this_epoch = sum(loss_sum) / len(loss_sum)
-        if epoch % epochs_per_save == 0:
-            torch.save({
-                "asr_model": asr_model.state_dict(),
-                "tts_model": tts_model.state_dict(),
-                "optimizer": optim_asr.state_dict(),
-                "step_counter": step_counter,
-            },
-                os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-            delete_old_checkpoints(save_directory, keep=5)
-            if step_counter > steps:
-                print("Epoch:        {}".format(epoch))
-                print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
-                print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
-                print("Steps:        {}".format(step_counter))
-                # DONE
-                return
+        torch.save({
+            "asr_model": asr_model.state_dict(),
+            "optimizer": optim_asr.state_dict(),
+            "step_counter": step_counter,
+        },
+            os.path.join(save_directory, "aligner.pt".format(step_counter)))
         print("Epoch:        {}".format(epoch))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
+        if step_counter > steps:
+            return

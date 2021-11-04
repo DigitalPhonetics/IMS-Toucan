@@ -595,3 +595,519 @@ def generate_feature_table():
     # print(f"{sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])} should be 42")
 
     return phone_to_vector
+
+
+if __name__ == '__main__':
+    ipa_to_phonemefeats = {
+        '~': {'symbol_type': 'silence'},
+        '#': {'symbol_type': 'end of sentence'},
+        '?': {'symbol_type': 'questionmark'},
+        '!': {'symbol_type': 'exclamationmark'},
+        '.': {'symbol_type': 'fullstop'},
+        'ɜ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'unrounded',
+        },
+        'ɫ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'lateral-approximant',
+        },
+        'ə': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'mid',
+            'vowel_roundedness': 'unrounded',
+        },
+        'ɚ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'mid',
+            'vowel_roundedness': 'unrounded',
+        },
+        'a': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'open',
+            'vowel_roundedness': 'unrounded',
+        },
+        'ð': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'dental',
+            'consonant_manner': 'fricative'
+        },
+        'ɛ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'unrounded',
+        },
+        'ɪ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front_central',
+            'vowel_openness': 'close_close-mid',
+            'vowel_roundedness': 'unrounded',
+        },
+        'ᵻ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'close',
+            'vowel_roundedness': 'unrounded',
+        },
+        'ŋ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'nasal'
+        },
+        'ɔ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'rounded',
+        },
+        'ɒ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'open',
+            'vowel_roundedness': 'rounded',
+        },
+        'ɾ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'tap'
+        },
+        'ʃ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'postalveolar',
+            'consonant_manner': 'fricative'
+        },
+        'θ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'dental',
+            'consonant_manner': 'fricative'
+        },
+        'ʊ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central_back',
+            'vowel_openness': 'close_close-mid',
+            'vowel_roundedness': 'unrounded'
+        },
+        'ʌ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'unrounded'
+        },
+        'ʒ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'postalveolar',
+            'consonant_manner': 'fricative'
+        },
+        'æ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'open-mid_open',
+            'vowel_roundedness': 'unrounded'
+        },
+        'b': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'bilabial',
+            'consonant_manner': 'stop'
+        },
+        'ʔ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'glottal',
+            'consonant_manner': 'stop'
+        },
+        'd': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'stop'
+        },
+        'e': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'close-mid',
+            'vowel_roundedness': 'unrounded'
+        },
+        'f': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'labiodental',
+            'consonant_manner': 'fricative'
+        },
+        'g': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'stop'
+        },
+        'h': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'glottal',
+            'consonant_manner': 'fricative'
+        },
+        'i': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'close',
+            'vowel_roundedness': 'unrounded'
+        },
+        'j': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'approximant'
+        },
+        'k': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'stop'
+        },
+        'l': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'lateral-approximant'
+        },
+        'm': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'bilabial',
+            'consonant_manner': 'nasal'
+        },
+        'n': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'nasal'
+        },
+        'ɳ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'nasal'
+        },
+        'o': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'close-mid',
+            'vowel_roundedness': 'rounded'
+        },
+        'p': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'bilabial',
+            'consonant_manner': 'stop'
+        },
+        'ɡ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'stop'
+        },
+        'ɹ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'approximant'
+        },
+        'r': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'trill'
+        },
+        's': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'fricative'
+        },
+        't': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'stop'
+        },
+        'u': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'close',
+            'vowel_roundedness': 'rounded',
+        },
+        'v': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'labiodental',
+            'consonant_manner': 'fricative'
+        },
+        'w': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'labial-velar',
+            'consonant_manner': 'approximant'
+        },
+        'x': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'fricative'
+        },
+        'z': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'fricative'
+        },
+        'ʀ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'uvular',
+            'consonant_manner': 'trill'
+        },
+        'ø': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'close-mid',
+            'vowel_roundedness': 'rounded'
+        },
+        'ç': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'fricative'
+        },
+        'ɐ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'open',
+            'vowel_roundedness': 'unrounded'
+        },
+        'œ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'rounded'
+        },
+        'y': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front',
+            'vowel_openness': 'close',
+            'vowel_roundedness': 'rounded'
+        },
+        'ʏ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'front_central',
+            'vowel_openness': 'close_close-mid',
+            'vowel_roundedness': 'rounded'
+        },
+        'ɑ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'open',
+            'vowel_roundedness': 'unrounded'
+        },
+        'c': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'stop'
+        },
+        'ɲ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'nasal'
+        },
+        'ɣ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'fricative'
+        },
+        'ʎ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'lateral-approximant'
+        },
+        'β': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'bilabial',
+            'consonant_manner': 'fricative'
+        },
+        'ʝ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'fricative'
+        },
+        'ɟ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'stop'
+        },
+        'q': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'uvular',
+            'consonant_manner': 'stop'
+        },
+        'ɕ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'alveolopalatal',
+            'consonant_manner': 'fricative'
+        },
+        'ʲ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',
+            'consonant_manner': 'approximant'
+        },
+        'ɭ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',  # should be retroflex, but palatal should be close enough
+            'consonant_manner': 'lateral-approximant'
+        },
+        'ɵ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'rounded'
+        },
+        'ʑ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'alveolopalatal',
+            'consonant_manner': 'fricative'
+        },
+        'ʋ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'labiodental',
+            'consonant_manner': 'approximant'
+        },
+        'ʁ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'uvular',
+            'consonant_manner': 'fricative'
+        },
+    }
+
+    count = 0
+    print("{")
+    for key in ipa_to_phonemefeats:
+        print(f"'{key}' : {count},")
+        count += 1
+    print("}")

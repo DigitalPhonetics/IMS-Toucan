@@ -30,7 +30,7 @@ class AlignerDataset(Dataset):
         self.include_priors = include_priors
         os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
         os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
-        if not os.path.exists(os.path.join(cache_dir, "taco_train_cache.pt")) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
@@ -85,10 +85,10 @@ class AlignerDataset(Dataset):
                 self.datapoints.pop(pop_index)
 
             # save to cache
-            torch.save((self.datapoints, norm_waves), os.path.join(cache_dir, "taco_train_cache.pt"))
+            torch.save((self.datapoints, norm_waves), os.path.join(cache_dir, "aligner_train_cache.pt"))
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "taco_train_cache.pt"), map_location='cpu')
+            self.datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             self.datapoints = self.datapoints[0]  # don't need the waves here
 
             for el in self.datapoints:
@@ -109,7 +109,7 @@ class AlignerDataset(Dataset):
                               cache_dir,
                               verbose):
         process_internal_dataset_chunk = list()
-        tf = ArticulatoryCombinedTextFrontend(language=lang)
+        tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         # the unsilence tool unfortunately writes files with a sample rate that we cannot control, so we need special cases
