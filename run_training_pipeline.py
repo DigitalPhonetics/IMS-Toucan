@@ -8,34 +8,14 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_LowRes import run as fast_
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Eva import run as taco_eva
-from TrainingInterfaces.TrainingPipelines.Tacotron2_HokusPokus import run as taco_hokus
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Karlsson import run as taco_karlsson
-from TrainingInterfaces.TrainingPipelines.Tacotron2_LowRes import run as taco_dif
-from TrainingInterfaces.TrainingPipelines.Tacotron2_MetaCheckpoint import run as meta_taco
-from TrainingInterfaces.TrainingPipelines.Tacotron2_Nancy import run as taco_nancy
-from TrainingInterfaces.TrainingPipelines.create_teachers import run as create_teachers
 
 pipeline_dict = {
     "fast_nancy"     : fast_nancy,
-    "taco_nancy"     : taco_nancy,
-
-    "taco_meta"      : meta_taco,
     "fast_meta"      : meta_fast,
-
-    "taco_dif"       : taco_dif,
     "fast_dif"       : fast_dif,
-
-    "taco_hokus"     : taco_hokus,
     "fast_hokus"     : fast_hokus,
-
-    "taco_eva"       : taco_eva,
     "fast_eva"       : fast_eva,
-
-    "taco_karlsson": taco_karlsson,
     "fast_karlsson": fast_karlsson,
-
-    "create_teachers": create_teachers,
     "hifi_combined": hifigan_combined,
 }
 
