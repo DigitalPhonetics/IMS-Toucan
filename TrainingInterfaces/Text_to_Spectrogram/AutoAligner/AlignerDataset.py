@@ -20,7 +20,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=8,
+                 loading_processes=20,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
@@ -28,6 +28,7 @@ class AlignerDataset(Dataset):
                  verbose=False,
                  include_priors=False):
         self.include_priors = include_priors
+        self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
         os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -111,60 +112,28 @@ class AlignerDataset(Dataset):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         _, sr = sf.read(path_list[0])
-        ap = AudioPreprocessor(input_sr=sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
         # the unsilence tool unfortunately writes files with a sample rate that we cannot control, so we need special cases
-        ap_post = None
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
                 continue
 
-            name = path.split("/")[-1].split(".")[:-1]
-            if len(name) == 1:
-                name = name[0]
-            else:
-                name = ".".join(name)
-            suffix = path.split(".")[-1]
-            _norm_unsilenced_path = os.path.join(os.path.join(cache_dir, "normalized_unsilenced_audios"), name + "_unsilenced." + suffix)
-            _norm_path = os.path.join(os.path.join(cache_dir, "normalized_audios"), name + "." + suffix)
-            if not os.path.exists(_norm_unsilenced_path):
-                if not os.path.exists(_norm_path):
-                    wave, sr = sf.read(path)
-                    dur_in_seconds = len(wave) / sr
-                    if not (min_len <= dur_in_seconds <= max_len):
-                        if verbose:
-                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                            continue
-                    try:
-                        norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
-                    except ValueError:
-                        continue
-                    dur_in_seconds = len(norm_wave) / 16000
-                    if not (min_len <= dur_in_seconds <= max_len):
-                        if verbose:
-                            print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                        continue
-                    sf.write(file=_norm_path, data=norm_wave.detach().numpy(), samplerate=sr)
-                unsilence = Unsilence(_norm_path)
-                unsilence.detect_silence(silence_time_threshold=0.1, short_interval_threshold=0.03, stretch_time=0.025)
-                unsilence.render_media(_norm_unsilenced_path, silent_speed=12, silent_volume=0, audio_only=True)
-            try:
-                wave, sr = sf.read(_norm_unsilenced_path)
-                if ap_post is None:
-                    ap_post = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
-                if sr != ap_post.sr:
-                    print(f"Inconsistent sample rate! {_norm_unsilenced_path}")
-                    continue
-                norm_wave = ap_post.resample(torch.Tensor(wave))
-                dur_in_seconds = len(norm_wave) / 16000
-                if not (min_len <= dur_in_seconds <= max_len):
-                    if verbose:
-                        print(f"Excluding {_norm_unsilenced_path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                    continue
-            except RuntimeError:
-                # not sure why this sometimes happens, but it is very rare, so it should be fine.
+            wave, sr = sf.read(path)
+            dur_in_seconds = len(wave) / sr
+            if not (min_len <= dur_in_seconds <= max_len):
+                if verbose:
+                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
-
+            try:
+                norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            except ValueError:
+                continue
+            dur_in_seconds = len(norm_wave) / 16000
+            if not (min_len <= dur_in_seconds <= max_len):
+                if verbose:
+                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
+                continue
             norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
@@ -187,7 +156,15 @@ class AlignerDataset(Dataset):
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
-        return self.datapoints[index][0], \
+        text_vector = self.datapoints[index][0]
+        tokens = list()
+        for vector in text_vector:
+            for phone in self.tf.phone_to_vector:
+                if vector.numpy().tolist() == self.tf.phone_to_vector[phone]:
+                    tokens.append(self.tf.phone_to_id[phone])
+                    # this is terribly inefficient, but it's good enough for testing for now.
+        tokens = torch.LongTensor(tokens)
+        return tokens, \
                self.datapoints[index][1], \
                self.datapoints[index][2], \
                self.datapoints[index][3]

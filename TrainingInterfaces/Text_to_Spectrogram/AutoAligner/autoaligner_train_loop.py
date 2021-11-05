@@ -52,10 +52,12 @@ def train_loop(train_dataset,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
+    
+
     tf = ArticulatoryCombinedTextFrontend(language="en")
 
     asr_model = Aligner(n_mels=80,
-                        num_symbols=144)
+                        num_symbols=144).to(device)
     optim_asr = Adam(asr_model.parameters(), lr=1e-4)
 
     ctc_loss = CTCLoss()
@@ -86,18 +88,10 @@ def train_loop(train_dataset,
 
         asr_model.train()
         for batch in tqdm(train_loader):
-            tokens_as_vectors = batch[0]
+            tokens = batch[0].to(device)
             tokens_len = batch[1].to(device)
             mel = batch[2].to(device)
             mel_len = batch[3].to(device)
-
-            tokens = list()
-            for vector in tokens_as_vectors:
-                for phone in tf.phone_to_vector:
-                    if vector == tf.phone_to_vector[phone]:
-                        tokens.append(tf.phone_to_id[phone])
-                        # this is terribly inefficient, but it's good enough for testing for now.
-            tokens = torch.LongTensor(tokens)
 
             pred = asr_model(mel).transpose(0, 1).log_softmax(2)
 
@@ -120,6 +114,7 @@ def train_loop(train_dataset,
             "step_counter": step_counter,
         },
             os.path.join(save_directory, "aligner.pt".format(step_counter)))
+        asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=True , train=True)
         print("Epoch:        {}".format(epoch))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))

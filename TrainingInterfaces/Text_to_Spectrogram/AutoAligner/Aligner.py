@@ -4,7 +4,9 @@ taken and adapted from https://github.com/as-ideas/DeepForcedAligner
 
 import numpy as np
 import torch
+import os
 import torch.multiprocessing
+import matplotlib.pyplot as plt
 import torch.nn as nn
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import dijkstra
@@ -62,19 +64,41 @@ class Aligner(torch.nn.Module):
         x = self.lin(x)
         return x
 
-    def inference(self, mel, tokens):
-        tokens_final = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra
-        for vector in tokens:
-            for phone in self.tf.phone_to_vector:
-                if vector == self.tf.phone_to_vector[phone]:
-                    tokens_final.append(self.tf.phone_to_id[phone])
-                    # this is terribly inefficient, but it's good enough for testing for now.
-        tokens = torch.LongTensor(tokens_final)
+    def inference(self, mel, tokens, save_img_for_debug = False, train=False):
+        
+        if not train:
+            tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra
+            for vector in tokens:
+                for phone in self.tf.phone_to_vector:
+                    if vector.cpu().detach().numpy().tolist() == self.tf.phone_to_vector[phone]:
+                        tokens_indexed.append(self.tf.phone_to_id[phone])
+                        # this is terribly inefficient, but it's good enough for testing for now.
+            tokens = tokens_indexed
+        else:
+            tokens = tokens.cpu().detach().numpy()
 
-        pred = self(mel)
+        pred = self(mel.unsqueeze(0)).squeeze().cpu().detach().numpy()
         pred_max = pred[:, tokens]
         path_probs = 1. - pred_max
         adj_matrix = to_adj_matrix(path_probs)
+
+        if save_img_for_debug:
+            phones = list()
+            for index in tokens:
+                for phone in self.tf.phone_to_id:
+                    if self.tf.phone_to_id[phone] == index:
+                        phones.append(phone)
+            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+            ax.imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
+            ax.set_xlabel("Inputs")
+            ax.set_ylabel("Outputs")
+            ax.set_xticks(range(len(pred_max[0])))
+            ax.set_xticklabels(labels=phones)
+            ax.set_title("Path-Probabilities")
+            fig.savefig("debug_aligner.png")
+            fig.clf()
+            plt.close()
+
         dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
                                                  directed=True,
                                                  indices=0,
@@ -85,6 +109,8 @@ class Aligner(torch.nn.Module):
             path.append(pr_index)
             pr_index = predecessors[pr_index]
         path.reverse()
+
+        
 
         # append first and last node
         path = [0] + path + [dist_matrix.size - 1]
