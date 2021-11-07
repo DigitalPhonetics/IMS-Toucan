@@ -242,6 +242,7 @@ class ArticulatoryCombinedTextFrontend:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
+        phones = re.sub("~+", "~", phones)
         return phones
 
 

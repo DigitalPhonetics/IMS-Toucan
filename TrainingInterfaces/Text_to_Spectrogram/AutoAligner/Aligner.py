@@ -1,7 +1,8 @@
 """
 taken and adapted from https://github.com/as-ideas/DeepForcedAligner
 """
-
+from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pad_packed_sequence
 import numpy as np
 import torch
 import os
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import dijkstra
+from speechbrain.pretrained import EncoderClassifier
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
@@ -38,8 +40,9 @@ class Aligner(torch.nn.Module):
     def __init__(self,
                  n_mels,
                  num_symbols,
-                 lstm_dim=256,
-                 conv_dim=256):
+                 lstm_dim=512,
+                 conv_dim=256,
+                 device="cpu"):
         super().__init__()
         self.convs = nn.ModuleList([
             BatchNormConv(n_mels, conv_dim, 3),
@@ -53,15 +56,33 @@ class Aligner(torch.nn.Module):
             BatchNormConv(conv_dim, conv_dim, 3),
             nn.Dropout(p=0.5),
         ])
-        self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
-        self.lin = torch.nn.Linear(2 * lstm_dim, num_symbols)
+        self.rnn = torch.nn.LSTM(conv_dim +192, lstm_dim, batch_first=True, bidirectional=True)
+        self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
+        self.speaker_embedder = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                run_opts={"device": str(device)},
+                                                                savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
 
-    def forward(self, x):
+    def forward(self, x, lens=None):
+        if lens is not None:
+            speaker_embedding = self.speaker_embedder.modules.embedding_model(x, torch.tensor([l / len(x[0]) for l in lens])).detach()
+        else:
+            speaker_embedding = self.speaker_embedder.modules.embedding_model(x, torch.tensor(1.0).unsqueeze(0)).detach()
+     
+
         for conv in self.convs:
             x = conv(x)
+
+        x = torch.cat((x, speaker_embedding.expand(-1, len(x[0]), -1)), dim=2)
+
+        if lens is not None:
+            x = pack_padded_sequence(x, lens)
         x, _ = self.rnn(x)
-        x = self.lin(x)
+        if lens is not None:
+            x, _ = pad_packed_sequence(x)
+
+        x = self.proj(x)
+
         return x
 
     def inference(self, mel, tokens, save_img_for_debug = False, train=False):
@@ -73,7 +94,7 @@ class Aligner(torch.nn.Module):
                     if vector.cpu().detach().numpy().tolist() == self.tf.phone_to_vector[phone]:
                         tokens_indexed.append(self.tf.phone_to_id[phone])
                         # this is terribly inefficient, but it's good enough for testing for now.
-            tokens = tokens_indexed
+            tokens = torch.LongTensor(tokens_indexed).numpy()
         else:
             tokens = tokens.cpu().detach().numpy()
 
@@ -82,22 +103,7 @@ class Aligner(torch.nn.Module):
         path_probs = 1. - pred_max
         adj_matrix = to_adj_matrix(path_probs)
 
-        if save_img_for_debug:
-            phones = list()
-            for index in tokens:
-                for phone in self.tf.phone_to_id:
-                    if self.tf.phone_to_id[phone] == index:
-                        phones.append(phone)
-            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
-            ax.imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
-            ax.set_xlabel("Inputs")
-            ax.set_ylabel("Outputs")
-            ax.set_xticks(range(len(pred_max[0])))
-            ax.set_xticklabels(labels=phones)
-            ax.set_title("Path-Probabilities")
-            fig.savefig("debug_aligner.png")
-            fig.clf()
-            plt.close()
+        
 
         dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
                                                  directed=True,
@@ -109,8 +115,6 @@ class Aligner(torch.nn.Module):
             path.append(pr_index)
             pr_index = predecessors[pr_index]
         path.reverse()
-
-        
 
         # append first and last node
         path = [0] + path + [dist_matrix.size - 1]
@@ -125,6 +129,30 @@ class Aligner(torch.nn.Module):
 
         for j in mel_text.values():
             durations[j] += 1
+
+        if save_img_for_debug:
+            path_plot = np.zeros_like(pred_max)
+            for i in mel_text:
+                path_plot[i][mel_text[i]] = 1.0
+            phones = list()
+            for index in tokens:
+                for phone in self.tf.phone_to_id:
+                    if self.tf.phone_to_id[phone] == index:
+                        phones.append(phone)
+            fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
+            ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
+            ax[1].imshow(path_plot, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
+            ax[0].set_ylabel("Mel-Frames")
+            ax[1].set_ylabel("Mel-Frames")
+            ax[0].xaxis.set_visible(False)
+            ax[1].set_xticks(range(len(pred_max[0])))
+            ax[1].set_xticklabels(labels=phones)
+            ax[0].set_title("Path Probabilities")
+            ax[1].set_title("Dijkstra Path")
+            plt.tight_layout()
+            fig.savefig("debug_aligner.png")
+            fig.clf()
+            plt.close()
 
         return durations
 

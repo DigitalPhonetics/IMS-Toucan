@@ -55,7 +55,7 @@ class FastSpeechDataset(Dataset):
             self.datapoints = list()
             self.pop_ids = list()
 
-            acoustic_model = Aligner(n_mels=80, num_symbols=144)
+            acoustic_model = Aligner(n_mels=80, num_symbols=144, device=device)
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
 
             # ==========================================
@@ -75,7 +75,7 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
-                cached_duration = torch.LongTensor(acoustic_model.inference(mel=melspec, tokens=text))
+                cached_duration = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device), tokens=text.to(device)))
                 for index in range(len(cached_duration)):
                     i = len(cached_duration) - (index + 1)
                     if cached_duration[i] == 0:

@@ -40,7 +40,6 @@ def train_loop(train_dataset,
         device: Device to put the loaded tensors on
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
-        epochs_per_save: how many epochs to train in between checkpoints
     """
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
@@ -57,15 +56,15 @@ def train_loop(train_dataset,
     tf = ArticulatoryCombinedTextFrontend(language="en")
 
     asr_model = Aligner(n_mels=80,
-                        num_symbols=144).to(device)
-    optim_asr = Adam(asr_model.parameters(), lr=1e-4)
+                        num_symbols=145, device=device).to(device)
+    optim_asr = Adam(asr_model.parameters(), lr=0.0001)
 
-    ctc_loss = CTCLoss()
+    ctc_loss = CTCLoss(blank=144, zero_infinity=True)
 
     step_counter = 0
     epoch = 0
     if resume:
-        previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
+        previous_checkpoint = os.path.join(save_directory, "aligner.pt")
         if previous_checkpoint is not None:
             path_to_checkpoint = previous_checkpoint
             fine_tune = False
@@ -93,7 +92,7 @@ def train_loop(train_dataset,
             mel = batch[2].to(device)
             mel_len = batch[3].to(device)
 
-            pred = asr_model(mel).transpose(0, 1).log_softmax(2)
+            pred = asr_model(mel, mel_len).transpose(0, 1).log_softmax(2)
 
             loss = ctc_loss(pred, tokens, mel_len, tokens_len)
 
@@ -113,11 +112,11 @@ def train_loop(train_dataset,
             "optimizer": optim_asr.state_dict(),
             "step_counter": step_counter,
         },
-            os.path.join(save_directory, "aligner.pt".format(step_counter)))
-        asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=True , train=True)
+            os.path.join(save_directory, "aligner.pt"))
         print("Epoch:        {}".format(epoch))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
+        asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=True , train=True)  # for testing
         if step_counter > steps:
             return
