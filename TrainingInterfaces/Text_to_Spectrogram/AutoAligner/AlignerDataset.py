@@ -137,7 +137,11 @@ class AlignerDataset(Dataset):
             norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
-            cached_text = tf.string_to_tensor(transcript).squeeze(0).cpu().numpy()
+            try:
+                cached_text = tf.string_to_tensor(transcript, handle_missing=False).squeeze(0).cpu().numpy()
+            except KeyError:
+                tf.string_to_tensor(transcript, handle_missing=True).squeeze(0).cpu().numpy()
+                continue  # we skip sentences with unknown symbols
             try:
                 if len(cached_text[0]) != 66:
                     print(f"There seems to be a problem with the following transcription: {transcript}")

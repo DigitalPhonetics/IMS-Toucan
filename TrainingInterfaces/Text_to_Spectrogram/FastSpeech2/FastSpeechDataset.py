@@ -5,6 +5,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
@@ -36,7 +37,7 @@ class FastSpeechDataset(Dataset):
                                cut_silences=cut_silence,
                                rebuild_cache=rebuild_cache)
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-            # we use the tacotron dataset as basis and augment it to contain the additional information we need for fastspeech.
+            # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             if not isinstance(datapoints, tuple):  # check for backwards compatibility
                 AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
                                cache_dir=cache_dir,
@@ -55,7 +56,7 @@ class FastSpeechDataset(Dataset):
             self.datapoints = list()
             self.pop_ids = list()
 
-            acoustic_model = Aligner(n_mels=80, num_symbols=144, device=device)
+            acoustic_model = Aligner(n_mels=80, num_symbols=144)
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
 
             # ==========================================
@@ -65,6 +66,10 @@ class FastSpeechDataset(Dataset):
             acoustic_model = acoustic_model.to(device)
             dio = Dio(reduction_factor=reduction_factor, fs=16000)
             energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
+            dc = DurationCalculator(reduction_factor=reduction_factor)
+            vis_dir = os.path.join(cache_dir, "duration_vis")
+            os.makedirs(vis_dir, exist_ok=True)
+
 
             for index in tqdm(range(len(dataset))):
 
@@ -75,11 +80,9 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
-                cached_duration = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device), tokens=text.to(device)))
-                for index in range(len(cached_duration)):
-                    i = len(cached_duration) - (index + 1)
-                    if cached_duration[i] == 0:
-                        text = torch.cat([text[0:i], text[i + 1:]])  # remove zero length symbols from the text
+                alignment_path = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device), tokens=text.to(device)))
+                cached_duration = dc(alignment_path, vis=os.path.join(os.path.join(vis_dir, f"{index}.png"), f"{index}.png")).cpu()
+
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
@@ -91,8 +94,8 @@ class FastSpeechDataset(Dataset):
                                    feats_lengths=melspec_length,
                                    durations=cached_duration.unsqueeze(0),
                                    durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
-                self.datapoints.append([text,
-                                        len(text),
+                self.datapoints.append([dataset[index][0],
+                                        dataset[index][1],
                                         dataset[index][2],
                                         dataset[index][3],
                                         cached_duration.cpu().numpy(),

@@ -56,7 +56,7 @@ def train_loop(train_dataset,
     tf = ArticulatoryCombinedTextFrontend(language="en")
 
     asr_model = Aligner(n_mels=80,
-                        num_symbols=145, device=device).to(device)
+                        num_symbols=145).to(device)
     optim_asr = Adam(asr_model.parameters(), lr=0.0001)
 
     ctc_loss = CTCLoss(blank=144, zero_infinity=True)

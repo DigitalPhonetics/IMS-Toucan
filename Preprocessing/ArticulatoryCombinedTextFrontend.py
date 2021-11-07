@@ -191,7 +191,7 @@ class ArticulatoryCombinedTextFrontend:
             'ʁ': 72,
         }  # for the states of the ctc loss and dijkstra in the aligner
 
-    def string_to_tensor(self, text, view=False, device="cpu"):
+    def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True):
         """
         Fixes unicode errors, expands some abbreviations,
         turns graphemes into phonemes and then vectorizes
@@ -203,10 +203,14 @@ class ArticulatoryCombinedTextFrontend:
         phones_vector = list()
         # turn into numeric vectors
         for char in phones:
-            try:
-                phones_vector.append(self.phone_to_vector[char])
-            except KeyError:
-                print("unknown phoneme: {}".format(char))
+            if handle_missing:
+                try:
+                    phones_vector.append(self.phone_to_vector[char])
+                except KeyError:
+                    print("unknown phoneme: {}".format(char))
+            else:
+                phones_vector.append(self.phone_to_vector[char])  # leave error handling to elsewhere
+
         return torch.Tensor(phones_vector, device=device)
 
     def get_phone_string(self, text, include_eos_symbol=True):
@@ -222,7 +226,7 @@ class ArticulatoryCombinedTextFrontend:
                                       strip=True,
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~/',
                                       with_stress=self.use_stress).replace(";", ",").replace("/", " ").replace("—", "") \
-            .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
+            .replace(":", ",").replace('"', ",").replace("-", ",").replace("...", ",").replace("-", ",").replace("\n", " ") \
             .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "").replace("̃", "")
         # less than 1 wide characters hidden here
         phones = re.sub("~+", "~", phones)

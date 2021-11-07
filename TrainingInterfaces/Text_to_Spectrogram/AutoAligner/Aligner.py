@@ -12,7 +12,12 @@ import torch.nn as nn
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import dijkstra
 from speechbrain.pretrained import EncoderClassifier
-
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from numba import jit
+from numba import prange
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
@@ -41,8 +46,7 @@ class Aligner(torch.nn.Module):
                  n_mels,
                  num_symbols,
                  lstm_dim=512,
-                 conv_dim=256,
-                 device="cpu"):
+                 conv_dim=512):
         super().__init__()
         self.convs = nn.ModuleList([
             BatchNormConv(n_mels, conv_dim, 3),
@@ -51,41 +55,27 @@ class Aligner(torch.nn.Module):
             nn.Dropout(p=0.5),
             BatchNormConv(conv_dim, conv_dim, 3),
             nn.Dropout(p=0.5),
-            BatchNormConv(conv_dim, conv_dim, 3),
-            nn.Dropout(p=0.5),
-            BatchNormConv(conv_dim, conv_dim, 3),
-            nn.Dropout(p=0.5),
         ])
-        self.rnn = torch.nn.LSTM(conv_dim +192, lstm_dim, batch_first=True, bidirectional=True)
+        self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
-        self.speaker_embedder = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                run_opts={"device": str(device)},
-                                                                savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+       
 
     def forward(self, x, lens=None):
-        if lens is not None:
-            speaker_embedding = self.speaker_embedder.modules.embedding_model(x, torch.tensor([l / len(x[0]) for l in lens])).detach()
-        else:
-            speaker_embedding = self.speaker_embedder.modules.embedding_model(x, torch.tensor(1.0).unsqueeze(0)).detach()
-     
-
         for conv in self.convs:
             x = conv(x)
 
-        x = torch.cat((x, speaker_embedding.expand(-1, len(x[0]), -1)), dim=2)
-
         if lens is not None:
-            x = pack_padded_sequence(x, lens)
+            x = pack_padded_sequence(x, lens.cpu(), batch_first=True, enforce_sorted=False)
         x, _ = self.rnn(x)
         if lens is not None:
-            x, _ = pad_packed_sequence(x)
+            x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.proj(x)
 
         return x
 
-    def inference(self, mel, tokens, save_img_for_debug = False, train=False):
+    def inference(self, mel, tokens, save_img_for_debug = False, train=False, pathfinding="MAS"):
         
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra
@@ -103,58 +93,131 @@ class Aligner(torch.nn.Module):
         path_probs = 1. - pred_max
         adj_matrix = to_adj_matrix(path_probs)
 
-        
+        if pathfinding == "MAS":
+            
+            alignment_matrix = binarize_alignment(pred_max)
 
-        dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
-                                                 directed=True,
-                                                 indices=0,
-                                                 return_predecessors=True)
-        path = []
-        pr_index = predecessors[-1]
-        while pr_index != 0:
-            path.append(pr_index)
-            pr_index = predecessors[pr_index]
-        path.reverse()
+            if save_img_for_debug:
+                phones = list()
+                for index in tokens:
+                    for phone in self.tf.phone_to_id:
+                        if self.tf.phone_to_id[phone] == index:
+                            phones.append(phone)
+                fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
+                
+                ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
+                ax[2].imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
+                
+                ax[0].set_ylabel("Mel-Frames")
+                ax[1].set_ylabel("Mel-Frames")
+                
+                ax[0].set_xticks(range(len(pred_max[0])))
+                ax[0].set_xticklabels(labels=phones)
 
-        # append first and last node
-        path = [0] + path + [dist_matrix.size - 1]
-        cols = path_probs.shape[1]
-        mel_text = {}
-        durations = np.zeros(tokens.shape[0], dtype=np.int32)
+                ax[1].set_xticks(range(len(pred_max[0])))
+                ax[1].set_xticklabels(labels=phones)
 
-        # collect indices (mel, text) along the path
-        for node_index in path:
-            i, j = from_node_index(node_index, cols)
-            mel_text[i] = j
+                ax[0].set_title("Path Probabilities")
+                ax[1].set_title("MAS Path")
 
-        for j in mel_text.values():
-            durations[j] += 1
+                plt.tight_layout()
+                fig.savefig("debug_aligner.png")
+                fig.clf()
+                plt.close()
 
-        if save_img_for_debug:
+            return alignment_matrix
+
+        elif pathfinding == "dijkstra":
+
+            dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
+                                                    directed=True,
+                                                    indices=0,
+                                                    return_predecessors=True)
+            path = []
+            pr_index = predecessors[-1]
+            while pr_index != 0:
+                path.append(pr_index)
+                pr_index = predecessors[pr_index]
+            path.reverse()
+
+            # append first and last node
+            path = [0] + path + [dist_matrix.size - 1]
+            cols = path_probs.shape[1]
+            mel_text = {}
+
+            # collect indices (mel, text) along the path
+            for node_index in path:
+                i, j = from_node_index(node_index, cols)
+                mel_text[i] = j
+
             path_plot = np.zeros_like(pred_max)
             for i in mel_text:
                 path_plot[i][mel_text[i]] = 1.0
-            phones = list()
-            for index in tokens:
-                for phone in self.tf.phone_to_id:
-                    if self.tf.phone_to_id[phone] == index:
-                        phones.append(phone)
-            fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
-            ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
-            ax[1].imshow(path_plot, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
-            ax[0].set_ylabel("Mel-Frames")
-            ax[1].set_ylabel("Mel-Frames")
-            ax[0].xaxis.set_visible(False)
-            ax[1].set_xticks(range(len(pred_max[0])))
-            ax[1].set_xticklabels(labels=phones)
-            ax[0].set_title("Path Probabilities")
-            ax[1].set_title("Dijkstra Path")
-            plt.tight_layout()
-            fig.savefig("debug_aligner.png")
-            fig.clf()
-            plt.close()
 
-        return durations
+            if save_img_for_debug:
+                
+                phones = list()
+                for index in tokens:
+                    for phone in self.tf.phone_to_id:
+                        if self.tf.phone_to_id[phone] == index:
+                            phones.append(phone)
+                fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
+                
+                ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
+                ax[1].imshow(path_plot, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
+                
+                ax[0].set_ylabel("Mel-Frames")
+                ax[1].set_ylabel("Mel-Frames")
+                
+                ax[0].set_xticks(range(len(pred_max[0])))
+                ax[0].set_xticklabels(labels=phones)
+
+                ax[1].set_xticks(range(len(pred_max[0])))
+                ax[1].set_xticklabels(labels=phones)
+
+                ax[0].set_title("Path Probabilities")
+                ax[1].set_title("Dijkstra Path")
+
+                plt.tight_layout()
+                fig.savefig("debug_aligner.png")
+                fig.clf()
+                plt.close()
+
+            return path_plot
+
+def binarize_alignment(alignment_prob):
+    """
+    # Implementation by:
+    # https://github.com/NVIDIA/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/FastPitch/fastpitch/alignment.py
+    # https://github.com/NVIDIA/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/FastPitch/fastpitch/attn_loss_function.py
+
+    Binarizes alignment with MAS.
+    """
+    # assumes mel x text
+    opt = np.zeros_like(alignment_prob)
+    alignment_prob = alignment_prob + (np.abs(alignment_prob).max()+1.0)  # make all numbers positive and add an offset to avoid log of 0 later
+    alignment_prob * alignment_prob * (1.0 / alignment_prob.max()) # normalize to (0,  1]
+    attn_map = np.log(alignment_prob)
+    attn_map[0, 1:] = -np.inf
+    log_p = np.zeros_like(attn_map)
+    log_p[0, :] = attn_map[0, :]
+    prev_ind = np.zeros_like(attn_map, dtype=np.int64)
+    for i in range(1, attn_map.shape[0]):
+        for j in range(attn_map.shape[1]):  # for each text dim
+            prev_log = log_p[i - 1, j]
+            prev_j = j
+            if j - 1 >= 0 and log_p[i - 1, j - 1] >= log_p[i - 1, j]:
+                prev_log = log_p[i - 1, j - 1]
+                prev_j = j - 1
+            log_p[i, j] = attn_map[i, j] + prev_log
+            prev_ind[i, j] = prev_j
+    # now backtrack
+    curr_text_idx = attn_map.shape[1] - 1
+    for i in range(attn_map.shape[0] - 1, -1, -1):
+        opt[i, curr_text_idx] = 1
+        curr_text_idx = prev_ind[i, curr_text_idx]
+    opt[0, curr_text_idx] = 1
+    return opt
 
 
 def to_node_index(i, j, cols):
