@@ -1,6 +1,7 @@
 import os
 import time
 
+import auraloss
 import torch
 import torch.multiprocessing
 from torch.optim.lr_scheduler import MultiStepLR
@@ -22,7 +23,8 @@ def train_loop(generator,
                epochs_per_save=1,
                path_to_checkpoint=None,
                batch_size=32,
-               steps=2500000):
+               steps=2500000,
+               use_signal_processing_losses=False):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -34,6 +36,15 @@ def train_loop(generator,
     discriminator_adv_criterion = DiscriminatorAdversarialLoss().to(device)
     generator_adv_criterion = GeneratorAdversarialLoss().to(device)
 
+    signal_processing_losses = list()
+    if use_signal_processing_losses:
+        signal_processing_losses.append(auraloss.time.SNRLoss())
+        signal_processing_losses.append(auraloss.time.SISDRLoss())
+        signal_processing_losses.append(auraloss.freq.RandomResolutionSTFTLoss())
+        signal_processing_losses.append(auraloss.freq.SumAndDifferenceSTFTLoss())
+        signal_processing_losses.append(auraloss.perceptual.SumAndDifference())
+        signal_processing_losses.append(auraloss.perceptual.FIRFilter())
+
     g = generator.to(device)
     d = discriminator.to(device)
     g.train()
@@ -44,10 +55,10 @@ def train_loop(generator,
     scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
 
     train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=batch_size, 
+                              batch_size=batch_size,
                               shuffle=True,
-                              num_workers=16, 
-                              pin_memory=True, 
+                              num_workers=16,
+                              pin_memory=True,
                               drop_last=True,
                               prefetch_factor=8,
                               persistent_workers=True)
@@ -72,6 +83,7 @@ def train_loop(generator,
         mel_losses = list()
         feat_match_losses = list()
         adversarial_losses = list()
+        signal_processing_losses = list()
 
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
@@ -85,12 +97,17 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
+            signal_loss = 0.0
+            if use_signal_processing_losses:
+                for sl in signal_processing_losses:
+                    signal_loss += sl(pred_wave, gold_wave)
+                signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave).detach()
             adversarial_loss = generator_adv_criterion(d_outs)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 4.0 + feature_matching_loss * 2.0
+            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 4.0 + feature_matching_loss * 2.0 + signal_loss
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
@@ -123,14 +140,14 @@ def train_loop(generator,
 
         if epoch % epochs_per_save == 0:
             torch.save({
-                "generator"              : g.state_dict(),
-                "discriminator"          : d.state_dict(),
-                "generator_optimizer"    : optimizer_g.state_dict(),
+                "generator": g.state_dict(),
+                "discriminator": d.state_dict(),
+                "generator_optimizer": optimizer_g.state_dict(),
                 "discriminator_optimizer": optimizer_d.state_dict(),
-                "generator_scheduler"    : scheduler_g.state_dict(),
+                "generator_scheduler": scheduler_g.state_dict(),
                 "discriminator_scheduler": scheduler_d.state_dict(),
-                "step_counter"           : step_counter
-                }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+                "step_counter": step_counter
+            }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(model_save_dir, keep=5)
             if step_counter > steps:
                 # DONE
@@ -141,6 +158,8 @@ def train_loop(generator,
         print("Steps:              {}".format(step_counter))
         print("Generator Loss:     {}".format(round(sum(generator_losses) / len(generator_losses), 3)))
         print("    Mel Loss:       {}".format(round(sum(mel_losses) / len(mel_losses), 3)))
+        if use_signal_processing_losses:
+            print("    SigProc Loss:   {}".format(round(sum(signal_processing_losses) / len(signal_processing_losses), 3)))
         print("    FeatMatch Loss: {}".format(round(sum(feat_match_losses) / len(feat_match_losses), 3)))
         print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
         print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
