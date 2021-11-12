@@ -45,7 +45,7 @@ class HiFiGANDataset(Dataset):
         numpy_waves = list(self.waves)
         self.waves = list()
         for wave in numpy_waves:
-            self.waves.append(torch.tensor(wave))
+            self.waves.append(torch.Tensor(wave))
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):
@@ -67,9 +67,9 @@ class HiFiGANDataset(Dataset):
         """
         max_audio_start = len(self.waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
-        segment = torch.Tensor(self.waves[index][audio_start: audio_start + self.samples_per_segment])
+        segment = self.waves[index][audio_start: audio_start + self.samples_per_segment]
         resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(), explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):

@@ -103,7 +103,7 @@ def train_loop(generator,
                     signal_loss += sl(pred_wave, gold_wave)
                 signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
-            d_gold_outs = d(gold_wave).detach()
+            d_gold_outs = d(gold_wave)
             adversarial_loss = generator_adv_criterion(d_outs)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
