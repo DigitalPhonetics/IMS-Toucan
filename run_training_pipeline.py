@@ -2,7 +2,6 @@ import argparse
 import sys
 
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Eva import run as fast_eva
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_HokusPokus import run as fast_hokus
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as fast_karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LowRes import run as fast_dif
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
@@ -14,7 +13,6 @@ pipeline_dict = {
     "fast_nancy"     : fast_nancy,
     "fast_meta"      : meta_fast,
     "fast_dif"       : fast_dif,
-    "fast_hokus"     : fast_hokus,
     "fast_eva"       : fast_eva,
     "fast_karlsson": fast_karlsson,
     "hifi_combined": hifigan_combined,

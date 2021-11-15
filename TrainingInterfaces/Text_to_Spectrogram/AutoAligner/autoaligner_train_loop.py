@@ -29,7 +29,8 @@ def train_loop(train_dataset,
                steps,
                path_to_checkpoint=None,
                fine_tune=False,
-               resume=False):
+               resume=False,
+               debug_img_path = None):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -55,8 +56,7 @@ def train_loop(train_dataset,
 
     tf = ArticulatoryCombinedTextFrontend(language="en")
 
-    asr_model = Aligner(n_mels=80,
-                        num_symbols=145).to(device)
+    asr_model = Aligner().to(device)
     optim_asr = Adam(asr_model.parameters(), lr=0.0001)
 
     ctc_loss = CTCLoss(blank=144, zero_infinity=True)
@@ -65,12 +65,9 @@ def train_loop(train_dataset,
     epoch = 0
     if resume:
         previous_checkpoint = os.path.join(save_directory, "aligner.pt")
-        if previous_checkpoint is not None:
-            path_to_checkpoint = previous_checkpoint
-            fine_tune = False
-        else:
-            fine_tune = True
-
+        path_to_checkpoint = previous_checkpoint
+        fine_tune = False
+        
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         asr_model.load_state_dict(check_dict["asr_model"])
@@ -117,6 +114,6 @@ def train_loop(train_dataset,
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
-        asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=True , train=True)  # for testing
+        asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=debug_img_path , train=True)  # for testing
         if step_counter > steps:
             return

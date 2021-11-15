@@ -91,7 +91,7 @@ def train_loop(net,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False,
-               cycle_loss_start_steps=1000):
+               cycle_loss_start_steps=None):
     """
     Args:
         cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start

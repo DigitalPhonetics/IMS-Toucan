@@ -43,8 +43,8 @@ class BatchNormConv(nn.Module):
 class Aligner(torch.nn.Module):
 
     def __init__(self,
-                 n_mels,
-                 num_symbols,
+                 n_mels=80,
+                 num_symbols=145,
                  lstm_dim=512,
                  conv_dim=512):
         super().__init__()
@@ -75,7 +75,7 @@ class Aligner(torch.nn.Module):
 
         return x
 
-    def inference(self, mel, tokens, save_img_for_debug = False, train=False, pathfinding="MAS"):
+    def inference(self, mel, tokens, save_img_for_debug = None, train=False, pathfinding="MAS"):
         
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra
@@ -97,7 +97,7 @@ class Aligner(torch.nn.Module):
             
             alignment_matrix = binarize_alignment(pred_max)
 
-            if save_img_for_debug:
+            if save_img_for_debug is not None:
                 phones = list()
                 for index in tokens:
                     for phone in self.tf.phone_to_id:
@@ -106,7 +106,7 @@ class Aligner(torch.nn.Module):
                 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
                 
                 ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
-                ax[2].imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
+                ax[1].imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
                 
                 ax[0].set_ylabel("Mel-Frames")
                 ax[1].set_ylabel("Mel-Frames")
@@ -121,7 +121,7 @@ class Aligner(torch.nn.Module):
                 ax[1].set_title("MAS Path")
 
                 plt.tight_layout()
-                fig.savefig("debug_aligner.png")
+                fig.savefig(save_img_for_debug)
                 fig.clf()
                 plt.close()
 
@@ -154,7 +154,7 @@ class Aligner(torch.nn.Module):
             for i in mel_text:
                 path_plot[i][mel_text[i]] = 1.0
 
-            if save_img_for_debug:
+            if save_img_for_debug is not None:
                 
                 phones = list()
                 for index in tokens:
@@ -179,7 +179,7 @@ class Aligner(torch.nn.Module):
                 ax[1].set_title("Dijkstra Path")
 
                 plt.tight_layout()
-                fig.savefig("debug_aligner.png")
+                fig.savefig(save_img_for_debug)
                 fig.clf()
                 plt.close()
 

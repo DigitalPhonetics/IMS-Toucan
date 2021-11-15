@@ -13,7 +13,9 @@ class ArticulatoryCombinedTextFrontend:
 
     def __init__(self,
                  language,
-                 use_word_boundaries=False,
+                 use_word_boundaries=False,  # goes together well with 
+                 # parallel models and a aligner. Doesn't go together 
+                 # well with autoregressive models.
                  use_explicit_eos=True,
                  use_prosody=False,  # unfortunately the non-segmental
                  # nature of prosodic markers mixed with the sequential
@@ -246,7 +248,10 @@ class ArticulatoryCombinedTextFrontend:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
+        
+        phones = "~"+phones
         phones = re.sub("~+", "~", phones)
+        
         return phones
 
 

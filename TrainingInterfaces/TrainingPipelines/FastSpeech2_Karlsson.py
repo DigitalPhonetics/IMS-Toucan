@@ -44,10 +44,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                                    lang="de"),
                       device=device,
                       save_directory=os.path.join(save_dir, "aligner"),
-                      steps=100000,
+                      steps=10000,
                       batch_size=32,
-                      path_to_checkpoint=resume_checkpoint,
-                      fine_tune=finetune,
+                      path_to_checkpoint="Models/Aligner/aligner.pt",
+                      fine_tune=True,
                       resume=resume)
 
     acoustic_checkpoint_path = os.path.join(save_dir, "aligner", "aligner.pt")
@@ -66,8 +66,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
-               batch_size=20,
+               steps=500000,
+               batch_size=32,
                lang="de",
                lr=0.001,
                warmup_steps=14000,
