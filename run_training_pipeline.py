@@ -32,12 +32,12 @@ pipeline_dict = {
     "taco_eva"       : taco_eva,
     "fast_eva"       : fast_eva,
 
-    "taco_karlsson": taco_karlsson,
-    "fast_karlsson": fast_karlsson,
+    "taco_karlsson"  : taco_karlsson,
+    "fast_karlsson"  : fast_karlsson,
 
     "create_teachers": create_teachers,
-    "hifi_combined": hifigan_combined,
-}
+    "hifi_combined"  : hifigan_combined,
+    }
 
 if __name__ == '__main__':
 
