@@ -168,7 +168,7 @@ class Tacotron2(torch.nn.Module):
                 speech_lengths,
                 step,
                 speaker_embeddings=None,
-                return_mels = False):
+                return_mels=False):
         """
         Calculate forward propagation.
 

@@ -4,6 +4,7 @@ This is a Pytorch Implementation
 of [Soft-DTW: a Differentiable Loss Function for Time-Series](https://arxiv.org/abs/1703.01541).
 
 Code taken from:
+
 ```
 @misc{lee2021soft_dtw_loss,
   author = {Lee, Keon},

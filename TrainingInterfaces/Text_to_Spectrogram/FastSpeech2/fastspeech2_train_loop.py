@@ -85,7 +85,7 @@ def train_loop(net,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False,
-               resume = False):
+               resume=False):
     """
     Args:
         resume: whether to resume from the most recent checkpoint

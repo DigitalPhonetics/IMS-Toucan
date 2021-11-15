@@ -20,7 +20,8 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
         if isinstance(speaker_embedding, torch.Tensor):
             self.speaker_embedding = speaker_embedding
         else:
-            self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(torch.device(device)).squeeze(0).squeeze(0)
+            self.speaker_embedding = torch.load(os.path.join("Models", "SpeakerEmbedding", speaker_embedding), map_location='cpu').to(
+                torch.device(device)).squeeze(0).squeeze(0)
 
         self.text2phone = TextFrontend(language="en", use_word_boundaries=False,
                                        use_explicit_eos=False, inference=True)
@@ -71,7 +72,7 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
         :param file_location: The path and name of the file it should be saved to
         """
         wav = None
-        silence = torch.zeros([8000])
+        silence = torch.zeros([24000])
         for text in text_list:
             if text.strip() != "":
                 if not silent:
@@ -82,15 +83,15 @@ class LibriTTS_FastSpeech2(torch.nn.Module):
                 else:
                     wav = torch.cat((wav, self(text).cpu()), 0)
                     wav = torch.cat((wav, silence), 0)
-        soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=16000)
+        soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=48000)
 
     def read_aloud(self, text, view=False, blocking=False):
         if text.strip() == "":
             return
         wav = self(text, view).cpu()
-        wav = torch.cat((wav, torch.zeros([8000])), 0)
+        wav = torch.cat((wav, torch.zeros([24000])), 0)
         if not blocking:
-            sounddevice.play(wav.numpy(), samplerate=16000)
+            sounddevice.play(wav.numpy(), samplerate=48000)
         else:
-            sounddevice.play(torch.cat((wav, torch.zeros([12000])), 0).numpy(), samplerate=16000)
+            sounddevice.play(torch.cat((wav, torch.zeros([12000])), 0).numpy(), samplerate=48000)
             sounddevice.wait()

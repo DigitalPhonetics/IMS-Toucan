@@ -359,7 +359,6 @@ class FastSpeech2(torch.nn.Module, ABC):
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
 
-
     def _integrate_with_spk_embed(self, hs, speaker_embeddings):
         """
         Integrate speaker embedding with hidden states.

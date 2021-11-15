@@ -6,11 +6,11 @@ from InferenceInterfaces.LJSpeech_FastSpeech2 import LJSpeech_FastSpeech2
 from InferenceInterfaces.LJSpeech_Tacotron2 import LJSpeech_Tacotron2
 from InferenceInterfaces.LibriTTS_FastSpeech2 import LibriTTS_FastSpeech2
 from InferenceInterfaces.LibriTTS_Tacotron2 import LibriTTS_Tacotron2
+from InferenceInterfaces.MultiEnglish_Tacotron2 import MultiEnglish_Tacotron2
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 from InferenceInterfaces.Thorsten_FastSpeech2 import Thorsten_FastSpeech2
 from InferenceInterfaces.Thorsten_Tacotron2 import Thorsten_Tacotron2
-from InferenceInterfaces.MultiEnglish_Tacotron2 import MultiEnglish_Tacotron2
 
 tts_dict = {
     "fast_thorsten": Thorsten_FastSpeech2,
@@ -23,7 +23,7 @@ tts_dict = {
     "taco_libri"   : LibriTTS_Tacotron2,
     "taco_nancy"   : Nancy_Tacotron2,
 
-    "taco_multi"  : MultiEnglish_Tacotron2
+    "taco_multi"   : MultiEnglish_Tacotron2
     }
 
 
@@ -60,4 +60,4 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_harvard_sentences(model_id="taco_nancy", device=exec_device)
+    read_harvard_sentences(model_id="fast_lj", device=exec_device)

@@ -291,7 +291,6 @@ class Decoder(torch.nn.Module):
         self.reduction_factor = reduction_factor
         self.speaker_embedding_projection_size = speaker_embedding_projection_size
 
-
         # check attention type
         if isinstance(self.att, AttForwardTA):
             self.use_att_extra_inputs = True
@@ -439,7 +438,7 @@ class Decoder(torch.nn.Module):
                   use_att_constraint=False,
                   backward_window=None,
                   forward_window=None,
-                  speaker_embedding = None):
+                  speaker_embedding=None):
         """
         Generate the sequence of features given the sequences of characters.
 

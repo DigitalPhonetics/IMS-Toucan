@@ -18,6 +18,7 @@ def cumsum_durations(durations):
             centers.append((out[index] + out[index + 1]) / 2)
     return out, centers
 
+
 def get_most_recent_checkpoint(checkpoint_dir):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
@@ -30,6 +31,7 @@ def get_most_recent_checkpoint(checkpoint_dir):
     checkpoint_list.sort(reverse=True)
     print("Reloading checkpoint_{}.pt".format(checkpoint_list[0]))
     return os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(checkpoint_list[0]))
+
 
 def delete_old_checkpoints(checkpoint_dir, keep=5):
     checkpoint_list = list()

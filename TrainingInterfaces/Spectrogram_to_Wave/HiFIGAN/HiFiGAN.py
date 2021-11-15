@@ -20,15 +20,14 @@ class HiFiGANGenerator(torch.nn.Module):
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(8, 8, 2, 2),
-                 upsample_kernal_sizes=(16, 16, 4, 4),
+                 upsample_scales=(8, 6, 4, 4),
+                 upsample_kernel_sizes=(16, 12, 8, 8),
                  resblock_kernel_sizes=(3, 7, 11),
                  resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],
                  use_additional_convs=True,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1},
-                 use_weight_norm=True, ):
+                 nonlinear_activation_params={"negative_slope": 0.1}):
         """
         Initialize HiFiGANGenerator module.
         
@@ -38,7 +37,7 @@ class HiFiGANGenerator(torch.nn.Module):
             channels (int): Number of hidden representation channels.
             kernel_size (int): Kernel size of initial and final conv layer.
             upsample_scales (list): List of upsampling scales.
-            upsample_kernal_sizes (list): List of kernal sizes for upsampling layers.
+            upsample_kernel_sizes (list): List of kernal sizes for upsampling layers.
             resblock_kernal_sizes (list): List of kernal sizes for residual blocks.
             resblock_dilations (list): List of dilation list for residual blocks.
             use_additional_convs (bool): Whether to use additional conv layers in residual blocks.
@@ -52,11 +51,11 @@ class HiFiGANGenerator(torch.nn.Module):
 
         # check hyperparameters are valid
         assert kernel_size % 2 == 1, "Kernel size must be odd number."
-        assert len(upsample_scales) == len(upsample_kernal_sizes)
+        assert len(upsample_scales) == len(upsample_kernel_sizes)
         assert len(resblock_dilations) == len(resblock_kernel_sizes)
 
         # define modules
-        self.num_upsamples = len(upsample_kernal_sizes)
+        self.num_upsamples = len(upsample_kernel_sizes)
         self.num_blocks = len(resblock_kernel_sizes)
         self.input_conv = torch.nn.Conv1d(in_channels,
                                           channels,
@@ -65,13 +64,13 @@ class HiFiGANGenerator(torch.nn.Module):
                                           padding=(kernel_size - 1) // 2, )
         self.upsamples = torch.nn.ModuleList()
         self.blocks = torch.nn.ModuleList()
-        for i in range(len(upsample_kernal_sizes)):
+        for i in range(len(upsample_kernel_sizes)):
             self.upsamples += [torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
                                                    torch.nn.ConvTranspose1d(channels // (2 ** i),
                                                                             channels // (2 ** (i + 1)),
-                                                                            upsample_kernal_sizes[i],
+                                                                            upsample_kernel_sizes[i],
                                                                             upsample_scales[i],
-                                                                            padding=(upsample_kernal_sizes[i] - upsample_scales[i]) // 2, ), )]
+                                                                            padding=(upsample_kernel_sizes[i] - upsample_scales[i]) // 2, ), )]
             for j in range(len(resblock_kernel_sizes)):
                 self.blocks += [ResidualBlock(kernel_size=resblock_kernel_sizes[j],
                                               channels=channels // (2 ** (i + 1)),
@@ -91,8 +90,7 @@ class HiFiGANGenerator(torch.nn.Module):
                             padding=(kernel_size - 1) // 2, ), torch.nn.Tanh(), )
 
         # apply weight norm
-        if use_weight_norm:
-            self.apply_weight_norm()
+        self.apply_weight_norm()
 
         # reset parameters
         self.reset_parameters()
@@ -261,17 +259,17 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
         if t % self.period != 0:
             n_pad = self.period - (t % self.period)
             x = F.pad(x, (0, n_pad), "reflect")
-            t += n_pad
+            t = t + n_pad
         x = x.view(b, c, t // self.period, self.period)
 
         # forward conv
         outs = []
         for layer in self.convs:
             x = layer(x)
-            outs += [x]
+            outs = outs + [x]
         x = self.output_conv(x)
         x = torch.flatten(x, 1, -1)
-        outs += [x]
+        outs = outs + [x]
 
         return outs
 
@@ -339,7 +337,7 @@ class HiFiGANMultiPeriodDiscriminator(torch.nn.Module):
         """
         outs = []
         for f in self.discriminators:
-            outs += [f(x)]
+            outs = outs + [f(x)]
 
         return outs
 
@@ -455,7 +453,7 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
         outs = []
         for f in self.layers:
             x = f(x)
-            outs += [x]
+            outs = outs + [x]
 
         return outs
 
@@ -546,7 +544,7 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
         """
         outs = []
         for f in self.discriminators:
-            outs += [f(x)]
+            outs = outs + [f(x)]
             x = self.pooling(x)
 
         return outs

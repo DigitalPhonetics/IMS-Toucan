@@ -17,19 +17,19 @@ pipeline_dict = {
     "fast_thorsten": fast_Thorsten,
     "taco_thorsten": taco_Thorsten,
 
-    "fast_libri": fast_LibriTTS,
-    "taco_libri": taco_LibriTTS,
+    "fast_libri"   : fast_LibriTTS,
+    "taco_libri"   : taco_LibriTTS,
 
-    "fast_lj": fast_LJSpeech,
-    "taco_lj": taco_LJSpeech,
+    "fast_lj"      : fast_LJSpeech,
+    "taco_lj"      : taco_LJSpeech,
 
-    "fast_nancy": fast_Nancy,
-    "taco_nancy": taco_Nancy,
+    "fast_nancy"   : fast_Nancy,
+    "taco_nancy"   : taco_Nancy,
 
     "hifi_combined": hifigan_combined,
-    "taco_multi": taco_multi,
-    "taco_cycle": taco_cycle
-}
+    "taco_multi"   : taco_multi,
+    "taco_cycle"   : taco_cycle
+    }
 
 if __name__ == '__main__':
 

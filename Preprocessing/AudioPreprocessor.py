@@ -29,7 +29,6 @@ class AudioPreprocessor:
         self.n_fft = n_fft
         self.mel_buckets = melspec_buckets
         self.vad = VoiceActivityDetection(sample_rate=input_sr)
-        # ^^^^ This needs heavy tweaking if used, depends very much on the data
         self.mu_encode = MuLawEncoding()
         self.mu_decode = MuLawDecoding()
         self.meter = pyln.Meter(input_sr)
@@ -54,7 +53,10 @@ class AudioPreprocessor:
         to. Apply mu-law decoding before
         saving or listening to the audio.
         """
-        return self.mu_encode(audio)
+        if isinstance(audio, torch.Tensor):
+            return self.mu_encode(audio)
+        else:
+            return self.mu_encode(torch.Tensor(audio))
 
     def cut_silence_from_beginning_and_end(self, audio):
         """
@@ -96,7 +98,8 @@ class AudioPreprocessor:
         """
         Compute log-Mel filterbank
         """
-        audio = audio.numpy()
+        if isinstance(audio, torch.Tensor):
+            audio = audio.numpy()
         # get amplitude spectrogram
         x_stft = librosa.stft(audio, n_fft=self.n_fft, hop_length=self.hop_length, win_length=None, window="hann", pad_mode="reflect")
         spc = np.abs(x_stft).T
@@ -143,21 +146,29 @@ class AudioPreprocessor:
         plt.show()
 
     def audio_to_wave_tensor(self, audio, normalize=True, mulaw=False):
+        if normalize:
+            audio = self.normalize_audio(audio)
         if mulaw:
-            if normalize:
-                return self.apply_mu_law(self.normalize_audio(audio))
-            else:
-                return self.apply_mu_law(torch.Tensor(audio))
+            return self.apply_mu_law(audio)
         else:
-            if normalize:
-                return self.normalize_audio(audio)
+            if isinstance(audio, torch.Tensor):
+                return audio
             else:
                 return torch.Tensor(audio)
 
-    def audio_to_mel_spec_tensor(self, audio, normalize=True):
+    def audio_to_mel_spec_tensor(self, audio, normalize=True, explicit_sampling_rate=None):
+        """
+        explicit_sampling_rate is for when
+        normalization has already been applied
+        and that included resampling. No way
+        to detect the current sr of the incoming
+        audio
+        """
+        if explicit_sampling_rate is None:
+            if normalize:
+                audio = self.normalize_audio(audio)
+                return self.logmelfilterbank(audio=audio, sampling_rate=self.final_sr)
+            return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
         if normalize:
-            return self.logmelfilterbank(audio=self.normalize_audio(audio), sampling_rate=self.new_sr)
-        else:
-            if isinstance(audio, torch.Tensor):
-                return self.logmelfilterbank(audio=audio, sampling_rate=self.sr)
-            return self.logmelfilterbank(audio=torch.Tensor(audio), sampling_rate=self.sr)
+            audio = self.normalize_audio(audio)
+        return self.logmelfilterbank(audio=audio, sampling_rate=explicit_sampling_rate)
