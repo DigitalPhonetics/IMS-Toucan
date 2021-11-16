@@ -35,21 +35,29 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    base_dir = os.path.join("Models", "Singe_Step_LAML_FastSpeech2")
+    base_dir = os.path.join("Models", "MetaCheckpoint")
 
     print("Preparing")
     cache_dir_english_nancy = os.path.join("Corpora", "Nancy")
     os.makedirs(cache_dir_english_nancy, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Nancy_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_english_nancy,
                                       device=torch.device("cuda"),
                                       lang="en"))
 
+    cache_dir_german_karlsson = os.path.join("Corpora", "Karlsson")
+    os.makedirs(cache_dir_german_karlsson, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_karlsson(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_german_karlsson,
+                                      device=torch.device("cuda"),
+                                      lang="de"))
+
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
     os.makedirs(cache_dir_greek, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10el(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Greek_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_greek,
                                       device=torch.device("cuda"),
                                       lang="el"))
@@ -57,7 +65,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
     os.makedirs(cache_dir_spanish, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10es(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Spanish_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_spanish,
                                       device=torch.device("cuda"),
                                       lang="es"))
@@ -65,7 +73,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
     os.makedirs(cache_dir_finnish, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fi(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Finnish_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_finnish,
                                       device=torch.device("cuda"),
                                       lang="fi"))
@@ -73,7 +81,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     cache_dir_russian = os.path.join("Corpora", "meta_Russian")
     os.makedirs(cache_dir_russian, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10ru(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Russian_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_russian,
                                       device=torch.device("cuda"),
                                       lang="ru"))
@@ -81,7 +89,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
     os.makedirs(cache_dir_hungarian, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10hu(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Hungarian_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_hungarian,
                                       device=torch.device("cuda"),
                                       lang="hu"))
@@ -89,7 +97,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
     os.makedirs(cache_dir_dutch, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10nl(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_Dutch_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_dutch,
                                       device=torch.device("cuda"),
                                       lang="nl"))
@@ -97,7 +105,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     cache_dir_french = os.path.join("Corpora", "meta_French")
     os.makedirs(cache_dir_french, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fr(),
-                                      acoustic_checkpoint_path="Models/Tacotron2_French_Aligner/best.pt",
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
                                       cache_dir=cache_dir_french,
                                       device=torch.device("cuda"),
                                       lang="fr"))

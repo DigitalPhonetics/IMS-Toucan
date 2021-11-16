@@ -71,6 +71,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                lang="de",
                lr=0.001,
                warmup_steps=14000,
-               path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune,
+               path_to_checkpoint=resume_checkpoint,  # path_to_checkpoint="Models/MetaCheckpoint/fastspeech2.pt",
+               fine_tune=finetune,  # fine_tune=True,
                resume=resume)

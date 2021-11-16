@@ -29,15 +29,28 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         save_dir = model_dir
     else:
         save_dir = os.path.join("Models", "FastSpeech2_Eva")
-    if not os.path.exists(cache_dir):
-        os.makedirs(cache_dir)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
+    os.makedirs(cache_dir, exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(os.path.join(save_dir, "aligner"), exist_ok=True)
 
     path_to_transcript_dict = build_path_to_transcript_dict()
 
-    acoustic_checkpoint_path = os.path.join("Models", "Tacotron2_Eva", "best.pt")
+    if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")):
+        print("Training aligner")
+        train_aligner(train_dataset=AlignerDataset(path_to_transcript_dict,
+                                                   cache_dir=cache_dir,
+                                                   lang="de"),
+                      device=device,
+                      save_directory=os.path.join(save_dir, "aligner"),
+                      steps=10000,
+                      batch_size=32,
+                      path_to_checkpoint="Models/Aligner/aligner.pt",
+                      fine_tune=True,
+                      resume=resume)
 
+    acoustic_checkpoint_path = os.path.join(save_dir, "aligner", "aligner.pt")
+
+    print("Preparing Dataset")
     train_set = FastSpeechDataset(path_to_transcript_dict,
                                   cache_dir=cache_dir,
                                   acoustic_checkpoint_path=acoustic_checkpoint_path,
