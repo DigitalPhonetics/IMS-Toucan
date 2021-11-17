@@ -21,7 +21,6 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
   bottom of the readme for a bibtex entry.
-- Plenty of new features for low-resource and multi-linguality coming soon
 
 ## Demonstration
 
