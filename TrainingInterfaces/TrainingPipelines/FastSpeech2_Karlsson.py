@@ -69,7 +69,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                steps=500000,
                batch_size=32,
                lang="de",
-               lr=0.001,
+               lr=0.0001,
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,  # path_to_checkpoint="Models/MetaCheckpoint/fastspeech2.pt",
                fine_tune=finetune,  # fine_tune=True,

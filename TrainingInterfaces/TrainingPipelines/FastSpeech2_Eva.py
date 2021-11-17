@@ -2,7 +2,8 @@ import os
 import random
 
 import torch
-
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -64,8 +65,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=300000,
-               batch_size=20,
+               steps=500000,
+               batch_size=32,
                lang="de",
                lr=0.0001,
                warmup_steps=14000,

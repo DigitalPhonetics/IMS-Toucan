@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from Utility.utils import get_most_recent_checkpoint
 
 
 def collate_and_pad(batch):
@@ -52,17 +51,12 @@ def train_loop(train_dataset,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
-    
-
-    tf = ArticulatoryCombinedTextFrontend(language="en")
-
     asr_model = Aligner().to(device)
     optim_asr = Adam(asr_model.parameters(), lr=0.0001)
 
     ctc_loss = CTCLoss(blank=144, zero_infinity=True)
 
     step_counter = 0
-    epoch = 0
     if resume:
         previous_checkpoint = os.path.join(save_directory, "aligner.pt")
         path_to_checkpoint = previous_checkpoint
@@ -110,7 +104,6 @@ def train_loop(train_dataset,
             "step_counter": step_counter,
         },
             os.path.join(save_directory, "aligner.pt"))
-        print("Epoch:        {}".format(epoch))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
