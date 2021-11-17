@@ -44,10 +44,10 @@ def train_loop(generator,
     scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
 
     train_loader = DataLoader(dataset=train_dataset,
-                              batch_size=batch_size, 
+                              batch_size=batch_size,
                               shuffle=True,
-                              num_workers=16, 
-                              pin_memory=True, 
+                              num_workers=16,
+                              pin_memory=True,
                               drop_last=True,
                               prefetch_factor=8,
                               persistent_workers=True)

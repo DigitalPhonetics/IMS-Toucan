@@ -1,23 +1,16 @@
 """
 taken and adapted from https://github.com/as-ideas/DeepForcedAligner
 """
-from torch.nn.utils.rnn import pack_padded_sequence
-from torch.nn.utils.rnn import pad_packed_sequence
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import os
 import torch.multiprocessing
-import matplotlib.pyplot as plt
 import torch.nn as nn
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import dijkstra
-from speechbrain.pretrained import EncoderClassifier
-import numpy as np
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from numba import jit
-from numba import prange
+from torch.nn.utils.rnn import pack_padded_sequence
+from torch.nn.utils.rnn import pad_packed_sequence
+
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
 
@@ -55,11 +48,10 @@ class Aligner(torch.nn.Module):
             nn.Dropout(p=0.5),
             BatchNormConv(conv_dim, conv_dim, 3),
             nn.Dropout(p=0.5),
-        ])
+            ])
         self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
-       
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -75,8 +67,8 @@ class Aligner(torch.nn.Module):
 
         return x
 
-    def inference(self, mel, tokens, save_img_for_debug = None, train=False, pathfinding="MAS"):
-        
+    def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS"):
+
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra
             for vector in tokens:
@@ -94,7 +86,7 @@ class Aligner(torch.nn.Module):
         adj_matrix = to_adj_matrix(path_probs)
 
         if pathfinding == "MAS":
-            
+
             alignment_matrix = binarize_alignment(pred_max)
 
             if save_img_for_debug is not None:
@@ -104,13 +96,13 @@ class Aligner(torch.nn.Module):
                         if self.tf.phone_to_id[phone] == index:
                             phones.append(phone)
                 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
-                
+
                 ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
                 ax[1].imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
-                
+
                 ax[0].set_ylabel("Mel-Frames")
                 ax[1].set_ylabel("Mel-Frames")
-                
+
                 ax[0].set_xticks(range(len(pred_max[0])))
                 ax[0].set_xticklabels(labels=phones)
 
@@ -130,9 +122,9 @@ class Aligner(torch.nn.Module):
         elif pathfinding == "dijkstra":
 
             dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
-                                                    directed=True,
-                                                    indices=0,
-                                                    return_predecessors=True)
+                                                     directed=True,
+                                                     indices=0,
+                                                     return_predecessors=True)
             path = []
             pr_index = predecessors[-1]
             while pr_index != 0:
@@ -155,20 +147,20 @@ class Aligner(torch.nn.Module):
                 path_plot[i][mel_text[i]] = 1.0
 
             if save_img_for_debug is not None:
-                
+
                 phones = list()
                 for index in tokens:
                     for phone in self.tf.phone_to_id:
                         if self.tf.phone_to_id[phone] == index:
                             phones.append(phone)
                 fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
-                
+
                 ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
                 ax[1].imshow(path_plot, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
-                
+
                 ax[0].set_ylabel("Mel-Frames")
                 ax[1].set_ylabel("Mel-Frames")
-                
+
                 ax[0].set_xticks(range(len(pred_max[0])))
                 ax[0].set_xticklabels(labels=phones)
 
@@ -185,6 +177,7 @@ class Aligner(torch.nn.Module):
 
             return path_plot
 
+
 def binarize_alignment(alignment_prob):
     """
     # Implementation by:
@@ -195,8 +188,8 @@ def binarize_alignment(alignment_prob):
     """
     # assumes mel x text
     opt = np.zeros_like(alignment_prob)
-    alignment_prob = alignment_prob + (np.abs(alignment_prob).max()+1.0)  # make all numbers positive and add an offset to avoid log of 0 later
-    alignment_prob * alignment_prob * (1.0 / alignment_prob.max()) # normalize to (0,  1]
+    alignment_prob = alignment_prob + (np.abs(alignment_prob).max() + 1.0)  # make all numbers positive and add an offset to avoid log of 0 later
+    alignment_prob * alignment_prob * (1.0 / alignment_prob.max())  # normalize to (0,  1]
     attn_map = np.log(alignment_prob)
     attn_map[0, 1:] = -np.inf
     log_p = np.zeros_like(attn_map)

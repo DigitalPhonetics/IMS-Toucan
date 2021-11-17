@@ -14,21 +14,21 @@ from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from InferenceInterfaces.Nancy_Tacotron2 import Nancy_Tacotron2
 
 tts_dict = {
-    "fast_nancy": Nancy_FastSpeech2,
-    "fast_hokus": HokusPokus_FastSpeech2,
+    "fast_nancy"   : Nancy_FastSpeech2,
+    "fast_hokus"   : HokusPokus_FastSpeech2,
 
-    "taco_nancy": Nancy_Tacotron2,
-    "taco_hokus": HokusPokus_Tacotron2,
+    "taco_nancy"   : Nancy_Tacotron2,
+    "taco_hokus"   : HokusPokus_Tacotron2,
 
-    "taco_low": taco_low,
-    "fast_low": fast_low,
+    "taco_low"     : taco_low,
+    "fast_low"     : fast_low,
 
-    "taco_eva": Eva_Tacotron2,
-    "fast_eva": Eva_FastSpeech2,
+    "taco_eva"     : Eva_Tacotron2,
+    "fast_eva"     : Eva_FastSpeech2,
 
     "taco_karlsson": Karlsson_Tacotron2,
     "fast_karlsson": Karlsson_FastSpeech2,
-}
+    }
 
 
 def read_texts(model_id, sentence, filename, device="cpu"):
@@ -91,7 +91,8 @@ if __name__ == '__main__':
                filename="audios/1_4.wav")
 
     read_texts(model_id="fast_karlsson",
-               sentence=["Nun erwärmte die Sonne die Luft mit ihren freundlichen Strahlen, und schon nach wenigen Augenblicken zog der Wanderer seinen Mantel aus."],
+               sentence=[
+                   "Nun erwärmte die Sonne die Luft mit ihren freundlichen Strahlen, und schon nach wenigen Augenblicken zog der Wanderer seinen Mantel aus."],
                device=exec_device,
                filename="audios/1_5.wav")
 
@@ -122,7 +123,8 @@ if __name__ == '__main__':
                filename="audios/2_4.wav")
 
     read_texts(model_id="fast_low",
-               sentence=["Nun erwärmte die Sonne die Luft mit ihren freundlichen Strahlen, und schon nach wenigen Augenblicken zog der Wanderer seinen Mantel aus."],
+               sentence=[
+                   "Nun erwärmte die Sonne die Luft mit ihren freundlichen Strahlen, und schon nach wenigen Augenblicken zog der Wanderer seinen Mantel aus."],
                device=exec_device,
                filename="audios/2_5.wav")
 

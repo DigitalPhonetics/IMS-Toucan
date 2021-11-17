@@ -191,7 +191,7 @@ class ArticulatoryCombinedTextFrontend:
             'ʑ': 70,
             'ʋ': 71,
             'ʁ': 72,
-        }  # for the states of the ctc loss and dijkstra in the aligner
+            }  # for the states of the ctc loss and dijkstra in the aligner
 
     def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True):
         """
@@ -248,10 +248,10 @@ class ArticulatoryCombinedTextFrontend:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
-        
-        phones = "~"+phones
+
+        phones = "~" + phones
         phones = re.sub("~+", "~", phones)
-        
+
         return phones
 
 

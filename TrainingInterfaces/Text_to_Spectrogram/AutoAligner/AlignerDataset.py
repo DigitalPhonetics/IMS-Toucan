@@ -8,7 +8,6 @@ from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
-from unsilence import Unsilence
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor

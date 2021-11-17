@@ -5,8 +5,8 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 
@@ -70,9 +70,7 @@ class FastSpeechDataset(Dataset):
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
 
-
             for index in tqdm(range(len(dataset))):
-
                 norm_wave = norm_waves[index]
                 norm_wave_length = torch.LongTensor([len(norm_wave)])
 
@@ -81,10 +79,9 @@ class FastSpeechDataset(Dataset):
                 melspec_length = dataset[index][3]
 
                 alignment_path = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device),
-                 tokens=text.to(device),
-                  save_img_for_debug=os.path.join(vis_dir, f"{index}.png")))
+                                                                           tokens=text.to(device),
+                                                                           save_img_for_debug=os.path.join(vis_dir, f"{index}.png")))
                 cached_duration = dc(alignment_path, vis=None).cpu()
-
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
@@ -107,7 +104,6 @@ class FastSpeechDataset(Dataset):
             # =============================
             # done with datapoint creation
             # =============================
-
 
             tensored_datapoints = list()
             # we had to turn all of the tensors to numpy arrays to avoid shared memory

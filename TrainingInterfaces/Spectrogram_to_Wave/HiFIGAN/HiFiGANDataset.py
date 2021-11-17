@@ -1,12 +1,14 @@
+import os
 import random
 from multiprocessing import Manager
 from multiprocessing import Process
+
 import librosa
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import os
+
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 
@@ -16,7 +18,7 @@ class HiFiGANDataset(Dataset):
                  list_of_paths,
                  cache_dir,
                  desired_samplingrate=48000,
-                 samples_per_segment =24576, # = 8192 * 3, as I used 8192 for 16kHz previously
+                 samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
                  loading_processes=40):
         os.makedirs(cache_dir, exist_ok=True)
         self.samples_per_segment = samples_per_segment
@@ -56,7 +58,6 @@ class HiFiGANDataset(Dataset):
                 # catch files that are too short to apply meaningful signal processing
                 self.waves.append(librosa.resample(y=wave, orig_sr=self._orig_sr, target_sr=self.desired_samplingrate))
 
-
     def __getitem__(self, index):
         """
         load the audio from the path and clean it.
@@ -69,7 +70,8 @@ class HiFiGANDataset(Dataset):
         audio_start = random.randint(0, max_audio_start)
         segment = torch.Tensor(self.waves[index][audio_start: audio_start + self.samples_per_segment])
         resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment, explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[:-1].transpose(0,
+                                                                                                                                                            1)
         return segment, melspec
 
     def __len__(self):

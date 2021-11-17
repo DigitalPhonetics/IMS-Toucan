@@ -13,6 +13,46 @@ which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan
 For a version of the toolkit that includes TransformerTTS instead of Tacotron 2 and MelGAN instead of HiFiGAN, check out
 the TransformerTTS and MelGAN branch. They are separated to keep the code clean, simple and minimal.
 
+---
+
+## Contents
+
+- [New Features](#new-features)
+- [Demonstration](#demonstration)
+- [Installation](#installation)
+  + [Basic Requirements](#basic-requirements)
+  + [Speaker Embedding](#speaker-embedding)
+  + [espeak-ng](#espeak-ng)
+- [Creating a new Pipeline](#creating-a-new-pipeline)
+  * [Build a HiFi-GAN Pipeline](#build-a-hifi-gan-pipeline)
+  * [Build a FastSpeech 2 Pipeline](#build-a-fastspeech-2-pipeline)
+- [Training a Model](#training-a-model)
+- [Creating a new InferenceInterface](#creating-a-new-inferenceinterface)
+- [Using a trained Model for Inference](#using-a-trained-model-for-inference)
+- [FAQ](#faq)
+- [Citation](#citation)
+
+---
+
+## New Features
+
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 48kHz waveforms.
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
+  bottom of the readme for a bibtex entry.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
+  multilingual data.
+- We provide a checkpoint trained with [model agnostic meta learning](https://arxiv.org/abs/1703.03400) from which you
+  should be able to fine-tune a model with very little data in almost any language.
+- We now use a small self-contained Aligner that is trained with CTC, inspired by
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner). This allows us to get rid of the dependence on
+  autoregressive models. Tacotron 2 is thus now also no longer in this branch, but still present in other branches,
+  similar to TransformerTTS.
+
+---
+
 ## Demonstration
 
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
@@ -78,14 +118,15 @@ not, and you have the sufficient rights, you can install it by simply running
 apt-get install espeak-ng
 ```
 
+---
+
 ## Creating a new Pipeline
 
 To create a new pipeline to train a HiFiGAN vocoder, you only need a set of audio files. To create a new pipeline for a
-Tacotron 2 you need audio files and corresponding text labels. To create a new pipeline for a FastSpeech 2, you need
-audio files, corresponding text labels, and an already trained Tacotron 2 model to estimate the duration information
-that FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
+FastSpeech 2, you need audio files, corresponding text labels, and an already trained Aligner model to estimate the
+duration information that FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
 
-#### Build a HiFiGAN Pipeline
+### Build a HiFi-GAN Pipeline
 
 In the directory called
 *Utility* there is a file called
@@ -106,7 +147,7 @@ Now you need to add your newly created pipeline to the pipeline dictionary in th
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And just like that
 you're done.
 
-#### Build a Tacotron 2 Pipeline
+### Build a FastSpeech 2 Pipeline
 
 In the directory called
 *Utility* there is a file called
@@ -115,15 +156,20 @@ absolute paths to each of the audio files in your dataset as strings as the keys
 corresponding audios as the values.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Tacotron 2 in its name.
-We will use this copy as reference and only make the necessary changes to use the new dataset. Import the function you
-have just written as
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has FastSpeech 2 in its
+name. We will use this copy as reference and only make the necessary changes to use the new dataset. Import the function
+you have just written as
 *build_path_to_transcript_dict*. Since the data will be processed a considerable amount, a cache will be built and saved
 as file for quick and easy restarts. So find the variable
 *cache_dir* and adapt it to your needs. The same goes for the variable
 *save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
 the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
 different directory.
+
+In your new pipeline file, look out for the line in which the
+*acoustic_model* is loaded. Change the path to the checkpoint of an Aligner model. It can either be the one that is
+supplied with the toolkit in the download script, or one that you trained yourself. In the example pipelines, the one
+that we provide is finetuned to the dataset it is applied to before it is used to extract durations.
 
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
 *Preprocessing/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the language of
@@ -134,28 +180,16 @@ matches your data.
 
 Now navigate to the implementation of the
 *train_loop* that is called in the pipeline. In this file, find the function called
-*plot_attention*. This function will produce attention plots during training, which is the most important way to monitor
-the progress of the training. In there, you may need to add an example sentence for the language of the data you are
-using. It should all be pretty clear from looking at it.
+*plot_progress_spec*. This function will produce spectrogram plots during training, which is the most important way to
+monitor the progress of the training. In there, you may need to add an example sentence for the language of the data you
+are using. It should all be pretty clear from looking at it.
 
 Once this is done, we are almost done, now we just need to make it available to the
 *run_training_pipeline.py* file in the top level. In said file, import the
 *run* function from the pipeline you just created and give it a speaking name. Now in the
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And that's it.
 
-#### Build a FastSpeech 2 Pipeline
-
-Most of this is exactly analogous to building a Tacotron 2 pipeline. So to keep this brief, this section will only
-mention the additional things you have to do.
-
-In your new pipeline file, look out for the line in which the
-*acoustic_model* is loaded. Change the path to the checkpoint of a Tacotron 2 model that you trained on the same dataset
-previously. This is used to estimate phoneme-durations based on knowledge-distillation.
-
-Everything else is exactly like creating a Tacotron 2 pipeline, except that in the training_loop, instead of attentions
-plots, spectrograms are plotted to visualize training progress. So there you may need to add a sentence if you are using
-a new language in the function called
-*plot_progress_spec*.
+---
 
 ## Training a Model
 
@@ -193,18 +227,25 @@ should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
-after 100,000 update steps have been made by default for Tacotron 2, 300,000 for FastSpeech 2, and after 500,000 steps
-for HiFiGAN. Depending on the machine and configuration you are using this will take between 2 and 4 days, so verify
-that everything works on small tests before running the big thing. If you want to stop earlier, just kill the process,
-since everything is daemonic all the child-processes should die with it.
+after 500,000 for FastSpeech 2, and after 2,500,000 steps for HiFiGAN. Depending on the machine and configuration you
+are using this will take multiple days, so verify that everything works on small tests before running the big thing. If
+you want to stop earlier, just kill the process, since everything is daemonic all the child-processes should die with
+it. In case there are some ghost-processes left behind, you can use the following command to find them and kill them
+manually.
+
+```
+fuser -v /dev/nvidia*
+```
 
 After training is complete, it is recommended to run
 *run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it
 will automatically load any models you produced with one pipeline, average their parameters to get a slightly more
 robust model and save the result as
 *best.pt* in the same directory where all the corresponding checkpoints lie. This also compresses the file size
-slightly, so you should do this and then use the
+significantly, so you should do this and then use the
 *best.pt* model for inference.
+
+---
 
 ## Creating a new InferenceInterface
 
@@ -225,10 +266,12 @@ directory, the
 *InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works
 standalone.
 
+---
+
 ## Using a trained Model for Inference
 
 An
-*InferenceInterface* contains 2 useful methods. They are
+*InferenceInterface* contains two useful methods. They are
 *read_to_file* and
 *read_aloud*.
 
@@ -242,11 +285,6 @@ An
   wave it created from that spectrogram. So all the representations can be seen, text to phoneme, phoneme to spectrogram
   and finally spectrogram to wave.
 
-- Additionally, Tacotron 2
-  *InferenceInterfaces* offer a method called
-  *plot_attention*. This will take a string, synthesize it and show a plot of the attention matrix, which can be useful
-  to gain insights.
-
 Those methods are used in demo code in the toolkit. In
 *run_interactive_demo.py* and
 *run_text_to_file_reader.py*, you can import
@@ -255,6 +293,8 @@ sense. In the interactive demo, you can just call the python script, then type i
 immediately listen to your synthesis saying whatever you put in next (be wary of out of memory errors for too long
 inputs). In the text reader demo script you have to call the function that wraps around the
 *InferenceInterface* and supply the shorthand of your choice. It should be pretty clear from looking at it.
+
+---
 
 ## FAQ
 
@@ -267,17 +307,21 @@ Here are a few points that were brought up by users:
 
 ---
 
-## Example Pipelines available
-
-| Dataset                                                                              | Language | Single or Multi | TransformerTTS | Tacotron 2 | FastSpeech 2 | 
-| -------------------------------------------------------------------------------------|----------|-----------------|:--------------:|:---------:|:-----------:|
-| [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅              | ✅        |✅           |
-| [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) | English  | Single Speaker | ✅              | ✅        |✅           |
-
----
-
 This toolkit has been written by Florian Lux (except for the pytorch modules taken
 from [ESPnet](https://github.com/espnet/espnet) and
 [ParallelWaveGAN](https://github.com/kan-bayashi/ParallelWaveGAN), as mentioned above), so if you come across problems
 or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
 cool with it. Thank you for reading.
+
+## Citation
+
+```
+@inproceedings{lux2021toucan,
+  title={{The IMS Toucan system for the Blizzard Challenge 2021}},
+  author={Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
+  year={2021},
+  booktitle={Proc. Blizzard Challenge Workshop},
+  volume={2021},
+  publisher={{Speech Synthesis SIG}}
+}
+```

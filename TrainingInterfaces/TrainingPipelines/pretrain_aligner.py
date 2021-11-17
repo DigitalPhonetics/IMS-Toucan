@@ -1,4 +1,3 @@
-import os
 import random
 
 import torch
@@ -6,10 +5,6 @@ from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
-from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_karlsson as build_path_to_transcript_dict
 from Utility.path_to_transcript_dicts import *
 
 
@@ -28,10 +23,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    
-    
-    
-    
+
     languages = list()
     datasets = list()
 
@@ -72,51 +64,50 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     languages.append("de")
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_nancy(),
-                                    cache_dir=cache_dir_english,
-                                    lang="en"))
+                                   cache_dir=cache_dir_english,
+                                   lang="en"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10el(),
-                                    cache_dir=cache_dir_greek,
-                                    lang="el"))
+                                   cache_dir=cache_dir_greek,
+                                   lang="el"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10es(),
-                                    cache_dir=cache_dir_spanish,
-                                    lang="es"))
+                                   cache_dir=cache_dir_spanish,
+                                   lang="es"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fi(),
-                                    cache_dir=cache_dir_finnish,
-                                    lang="fi"))
+                                   cache_dir=cache_dir_finnish,
+                                   lang="fi"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10ru(),
-                                    cache_dir=cache_dir_russian,
-                                    lang="ru"))
+                                   cache_dir=cache_dir_russian,
+                                   lang="ru"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10hu(),
-                                    cache_dir=cache_dir_hungarian,
-                                    lang="hu"))
+                                   cache_dir=cache_dir_hungarian,
+                                   lang="hu"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10nl(),
-                                    cache_dir=cache_dir_dutch,
-                                    lang="nl"))
+                                   cache_dir=cache_dir_dutch,
+                                   lang="nl"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fr(),
-                                    cache_dir=cache_dir_french,
-                                    lang="fr"))
+                                   cache_dir=cache_dir_french,
+                                   lang="fr"))
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_karlsson(),
-                                    cache_dir=cache_dir_german,
-                                    lang="de"))
+                                   cache_dir=cache_dir_german,
+                                   lang="de"))
 
     train_set = ConcatDataset(datasets)
     save_dir = os.path.join("Models", "Aligner")
     os.makedirs(save_dir, exist_ok=True)
 
-
     train_aligner(train_dataset=train_set,
-                      device=device,
-                      save_directory=save_dir,
-                      steps=500000,
-                      batch_size=32,
-                      path_to_checkpoint=resume_checkpoint,
-                      fine_tune=finetune,
-                      resume=resume)
+                  device=device,
+                  save_directory=save_dir,
+                  steps=500000,
+                  batch_size=32,
+                  path_to_checkpoint=resume_checkpoint,
+                  fine_tune=finetune,
+                  resume=resume)
