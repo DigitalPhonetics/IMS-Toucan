@@ -16,7 +16,7 @@ class Eva_FastSpeech2(torch.nn.Module):
     def __init__(self, device="cpu"):
         super().__init__()
         self.device = device
-        self.text2phone = ArticulatoryCombinedTextFrontend(language="de", inference=True)
+        self.text2phone = ArticulatoryCombinedTextFrontend(language="de", add_silence_to_end=True)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Eva", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.phone2mel.eval()

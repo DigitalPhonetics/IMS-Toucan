@@ -25,7 +25,7 @@ class ArticulatoryCombinedTextFrontend:
                  use_lexical_stress=False,
                  silent=True,
                  allow_unknown=False,
-                 inference=False,
+                 add_silence_to_end=True,
                  strip_silence=True):
         """
         Mostly preparing ID lookups
@@ -36,7 +36,7 @@ class ArticulatoryCombinedTextFrontend:
         self.use_explicit_eos = use_explicit_eos
         self.use_prosody = use_prosody
         self.use_stress = use_lexical_stress
-        self.inference = inference
+        self.add_silence_to_end = add_silence_to_end
         self.feature_table = panphon.FeatureTable()
 
         if language == "en":
@@ -243,8 +243,8 @@ class ArticulatoryCombinedTextFrontend:
             phones = re.sub(" ", "~", phones)
         if self.strip_silence:
             phones = phones.lstrip("~").rstrip("~")
-        if self.inference:
-            phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
+        if self.add_silence_to_end:
+            phones += "~"  # adding a silence in the end during add_silence_to_end produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
 
