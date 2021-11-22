@@ -10,6 +10,7 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import dijkstra
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
+from torch.nn import CTCLoss
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
@@ -48,10 +49,15 @@ class Aligner(torch.nn.Module):
             nn.Dropout(p=0.5),
             BatchNormConv(conv_dim, conv_dim, 3),
             nn.Dropout(p=0.5),
+            BatchNormConv(conv_dim, conv_dim, 3),
+            nn.Dropout(p=0.5),
+            BatchNormConv(conv_dim, conv_dim, 3),
+            nn.Dropout(p=0.5),
             ])
         self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
+        self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -67,10 +73,10 @@ class Aligner(torch.nn.Module):
 
         return x
 
-    def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS"):
+    def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
 
         if not train:
-            tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra
+            tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
                 for phone in self.tf.phone_to_vector:
                     if vector.cpu().detach().numpy().tolist() == self.tf.phone_to_vector[phone]:
@@ -80,7 +86,10 @@ class Aligner(torch.nn.Module):
         else:
             tokens = tokens.cpu().detach().numpy()
 
-        pred = self(mel.unsqueeze(0)).squeeze().cpu().detach().numpy()
+        pred = self(mel.unsqueeze(0))
+        if return_ctc:
+            ctc_loss = self.ctc_loss(pred.transpose(0, 1).log_softmax(2), torch.LongTensor(tokens), torch.LongTensor([len(pred[0])]),  torch.LongTensor([len(tokens)])).item()
+        pred = pred.squeeze().cpu().detach().numpy()
         pred_max = pred[:, tokens]
         path_probs = 1. - pred_max
         adj_matrix = to_adj_matrix(path_probs)
@@ -117,6 +126,8 @@ class Aligner(torch.nn.Module):
                 fig.clf()
                 plt.close()
 
+            if return_ctc:
+                return alignment_matrix, ctc_loss
             return alignment_matrix
 
         elif pathfinding == "dijkstra":
@@ -175,6 +186,8 @@ class Aligner(torch.nn.Module):
                 fig.clf()
                 plt.close()
 
+            if return_ctc:
+                return path_plot, ctc_loss
             return path_plot
 
 

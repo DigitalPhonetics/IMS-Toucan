@@ -100,8 +100,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    lang="de"))
 
     train_set = ConcatDataset(datasets)
-    save_dir = os.path.join("Models", "Aligner")
+    save_dir = os.path.join("Models", "AutoEncoderAligner")
     os.makedirs(save_dir, exist_ok=True)
+    save_dir_aligner = save_dir+"/aligner"
+    os.makedirs(save_dir_aligner, exist_ok=True)
 
     train_aligner(train_dataset=train_set,
                   device=device,
@@ -110,4 +112,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                   batch_size=32,
                   path_to_checkpoint=resume_checkpoint,
                   fine_tune=finetune,
+                  debug_img_path=save_dir_aligner,
                   resume=resume)

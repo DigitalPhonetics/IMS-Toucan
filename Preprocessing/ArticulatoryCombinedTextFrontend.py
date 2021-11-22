@@ -37,7 +37,6 @@ class ArticulatoryCombinedTextFrontend:
         self.use_prosody = use_prosody
         self.use_stress = use_lexical_stress
         self.inference = inference
-        self.inference = inference
         self.feature_table = panphon.FeatureTable()
 
         if language == "en":

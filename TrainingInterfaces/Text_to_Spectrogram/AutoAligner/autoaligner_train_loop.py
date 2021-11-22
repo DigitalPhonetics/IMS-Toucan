@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.TinyTTS import TinyTTS
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 
 
@@ -53,6 +53,10 @@ def train_loop(train_dataset,
     asr_model = Aligner().to(device)
     optim_asr = Adam(asr_model.parameters(), lr=0.0001)
 
+    tiny_tts = TinyTTS().to(device)
+    optim_tts = Adam(tiny_tts.parameters(), lr=0.0001)
+
+
     ctc_loss = CTCLoss(blank=144, zero_infinity=True)
 
     step_counter = 0
@@ -76,20 +80,26 @@ def train_loop(train_dataset,
         loss_sum = list()
 
         asr_model.train()
+        tiny_tts.train()
         for batch in tqdm(train_loader):
             tokens = batch[0].to(device)
             tokens_len = batch[1].to(device)
             mel = batch[2].to(device)
             mel_len = batch[3].to(device)
 
-            pred = asr_model(mel, mel_len).transpose(0, 1).log_softmax(2)
+            pred = asr_model(mel, mel_len)
 
-            loss = ctc_loss(pred, tokens, mel_len, tokens_len)
+            loss = ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
+
+            loss = loss + tiny_tts(x=pred, lens=mel_len, ys=mel)
 
             optim_asr.zero_grad()
+            optim_tts.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(asr_model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(tiny_tts.parameters(), 1.0)
             optim_asr.step()
+            optim_tts.step()
 
             step_counter += 1
 
@@ -106,6 +116,7 @@ def train_loop(train_dataset,
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
-        asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=debug_img_path, train=True)  # for testing
+        if debug_img_path is not None:
+            asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=debug_img_path+"/"+str(step_counter)+".png", train=True)  # for testing
         if step_counter > steps:
             return

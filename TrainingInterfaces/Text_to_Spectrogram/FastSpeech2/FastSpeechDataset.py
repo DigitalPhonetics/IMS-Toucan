@@ -3,7 +3,7 @@ import os
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
+import statistics
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
@@ -54,7 +54,8 @@ class FastSpeechDataset(Dataset):
             # build cache
             print("... building dataset cache ...")
             self.datapoints = list()
-            self.pop_ids = list()
+            self.ctc_losses = list()
+
 
             acoustic_model = Aligner()
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
@@ -78,9 +79,10 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
-                alignment_path = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device),
+                alignment_path, ctc_loss = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device),
                                                                            tokens=text.to(device),
-                                                                           save_img_for_debug=os.path.join(vis_dir, f"{index}.png")))
+                                                                           save_img_for_debug=os.path.join(vis_dir, f"{index}.png"),
+                                                                           return_ctc=True))
                 cached_duration = dc(alignment_path, vis=None).cpu()
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
@@ -100,15 +102,22 @@ class FastSpeechDataset(Dataset):
                                         cached_duration.cpu().numpy(),
                                         cached_energy,
                                         cached_pitch])
+                self.ctc_losses.append(ctc_loss)
 
             # =============================
             # done with datapoint creation
             # =============================
 
+            # now we can filter out some bad datapoints based on the CTC scores we collected
+            mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
+            std_dev = statistics.stdev(self.ctc_losses)
+            threshold = mean_ctc+std_dev
+            for index in range(len(self.ctc_losses), 0, -1):
+                if self.ctc_losses[index] > index:
+                    self.datapoints.pop(index)
+                    print(f"Removing datapoint {index}, because the CTC loss indicates there's something wrong with it. Maybe the label is partially incorrect.")
+
             tensored_datapoints = list()
-            # we had to turn all of the tensors to numpy arrays to avoid shared memory
-            # issues. Now that the multi-processing is over, we can convert them back
-            # to tensors to save on conversions in the future.
             print("Converting into convenient format...")
             for datapoint in tqdm(self.datapoints):
                 tensored_datapoints.append([datapoint[0],
