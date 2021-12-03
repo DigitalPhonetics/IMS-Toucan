@@ -35,8 +35,8 @@ class EnergyCalculator(torch.nn.Module):
                     normalized=self.stft.normalized, use_token_averaged_energy=self.use_token_averaged_energy, reduction_factor=self.reduction_factor)
 
     def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
-                durations_lengths=None):
-        # If not provide, we assume that the inputs have the same length
+                durations_lengths=None, norm_by_average=True):
+        # If not provided, we assume that the inputs have the same length
         if input_waves_lengths is None:
             input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
@@ -66,6 +66,9 @@ class EnergyCalculator(torch.nn.Module):
             energy = pad_list(energy, 0.0)
 
         # Return with the shape (B, T, 1)
+        if norm_by_average:
+            average = energy[energy != 0.0].mean()
+            energy = energy / average
         return energy.unsqueeze(-1), energy_lengths
 
     def _average_by_duration(self, x, d):

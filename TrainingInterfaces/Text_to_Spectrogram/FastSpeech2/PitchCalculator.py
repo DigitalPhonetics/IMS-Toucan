@@ -43,7 +43,7 @@ class Dio(torch.nn.Module):
                     reduction_factor=self.reduction_factor)
 
     def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
-                durations_lengths=None):
+                durations_lengths=None, norm_by_average=True):
         # If not provided, we assume that the inputs have the same length
         if input_waves_lengths is None:
             input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
@@ -66,6 +66,9 @@ class Dio(torch.nn.Module):
         pitch = pad_list(pitch, 0.0)
 
         # Return with the shape (B, T, 1)
+        if norm_by_average:
+            average = pitch[pitch != 0.0].mean()
+            pitch = pitch / average
         return pitch.unsqueeze(-1), pitch_lengths
 
     def _calculate_f0(self, input):
