@@ -67,7 +67,7 @@ class Dio(torch.nn.Module):
 
         # Return with the shape (B, T, 1)
         if norm_by_average:
-            average = pitch[pitch != 0.0].mean()
+            average = pitch[0][pitch[0] != 0.0].mean()
             pitch = pitch / average
         return pitch.unsqueeze(-1), pitch_lengths
 
