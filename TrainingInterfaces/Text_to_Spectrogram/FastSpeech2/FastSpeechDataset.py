@@ -79,11 +79,12 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
-                alignment_path, ctc_loss = torch.LongTensor(acoustic_model.inference(mel=melspec.to(device),
+                alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
                                                                            tokens=text.to(device),
                                                                            save_img_for_debug=os.path.join(vis_dir, f"{index}.png"),
-                                                                           return_ctc=True))
-                cached_duration = dc(alignment_path, vis=None).cpu()
+                                                                           return_ctc=True)
+
+                cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
@@ -111,11 +112,11 @@ class FastSpeechDataset(Dataset):
             # now we can filter out some bad datapoints based on the CTC scores we collected
             mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
             std_dev = statistics.stdev(self.ctc_losses)
-            threshold = mean_ctc+std_dev
+            threshold = max(mean_ctc+std_dev, 0.2)  # this 0.2 needs to be tuned, in case the aligner is tuned on the data for more steps. For 10k steps of aligner tuning this seems to work ok. So if the data is super clean, no samples are excluded. And if the data has some outliers, they should be thrown out according to this threshold.
             for index in range(len(self.ctc_losses), 0, -1):
-                if self.ctc_losses[index] > index:
-                    self.datapoints.pop(index)
-                    print(f"Removing datapoint {index}, because the CTC loss indicates there's something wrong with it. Maybe the label is partially incorrect.")
+                if self.ctc_losses[index-1] > threshold:
+                    self.datapoints.pop(index-1)
+                    print(f"Removing datapoint {index-1}, because the CTC loss indicates there's something wrong with it. Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index-1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             tensored_datapoints = list()
             print("Converting into convenient format...")

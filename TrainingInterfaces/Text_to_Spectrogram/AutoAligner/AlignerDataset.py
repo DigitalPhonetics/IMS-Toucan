@@ -28,8 +28,6 @@ class AlignerDataset(Dataset):
                  include_priors=False):
         self.include_priors = include_priors
         self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
-        os.makedirs(os.path.join(cache_dir, "normalized_audios"), exist_ok=True)
-        os.makedirs(os.path.join(cache_dir, "normalized_unsilenced_audios"), exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
