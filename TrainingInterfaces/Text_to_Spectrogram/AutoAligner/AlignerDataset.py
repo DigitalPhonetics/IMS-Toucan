@@ -110,7 +110,6 @@ class AlignerDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
-        # the unsilence tool unfortunately writes files with a sample rate that we cannot control, so we need special cases
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":

@@ -16,3 +16,4 @@ pretrained_models/
 *.json
 .tmp/
 .vscode/
+split/

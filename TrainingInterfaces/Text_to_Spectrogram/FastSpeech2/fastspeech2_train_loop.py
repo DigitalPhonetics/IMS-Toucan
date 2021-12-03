@@ -157,8 +157,8 @@ def train_loop(net,
                                                  gold_speech=batch[2].to(device),
                                                  speech_lengths=batch[3].to(device),
                                                  gold_durations=batch[4].to(device),
-                                                 gold_pitch=batch[5].to(device),
-                                                 gold_energy=batch[6].to(device),
+                                                 gold_pitch=batch[6].to(device),  # mind the change of order here!
+                                                 gold_energy=batch[5].to(device),
                                                  return_mels=True)
 
                 train_losses_this_epoch.append(train_loss.item())
@@ -190,12 +190,12 @@ def train_loop(net,
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
                 "step_counter": step_counter,
-                "scaler"      : scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                "scaler": scaler.state_dict(),
+                "scheduler": scheduler.state_dict(),
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             with torch.no_grad():
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang)
