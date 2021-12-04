@@ -146,12 +146,12 @@ def train_loop(net,
             with autocast():
                 if not use_speaker_embedding:
                     train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                     batch[3].to(device), batch[4].to(device), batch[5].to(device),
-                                     batch[6].to(device))
+                                     batch[3].to(device), batch[4].to(device), batch[6].to(device),
+                                     batch[5].to(device))
                 else:
                     train_loss = net(batch[0].to(device), batch[1].to(device), batch[2].to(device),
-                                     batch[3].to(device), batch[4].to(device), batch[5].to(device),
-                                     batch[6].to(device), batch[7].to(device))
+                                     batch[3].to(device), batch[4].to(device), batch[6].to(device),
+                                     batch[5].to(device), batch[7].to(device))
                 train_losses_this_epoch.append(train_loss.item())
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
