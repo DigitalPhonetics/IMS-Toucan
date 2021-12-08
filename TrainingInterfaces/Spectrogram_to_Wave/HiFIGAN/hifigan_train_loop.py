@@ -12,6 +12,7 @@ from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.AdversarialLosses import Gen
 from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.FeatureMatchingLoss import FeatureMatchLoss
 from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.MelSpectrogramLoss import MelSpectrogramLoss
 from Utility.utils import delete_old_checkpoints
+from Utility.utils import get_most_recent_checkpoint
 
 
 def train_loop(generator,
@@ -22,7 +23,8 @@ def train_loop(generator,
                epochs_per_save=1,
                path_to_checkpoint=None,
                batch_size=32,
-               steps=2500000):
+               steps=2500000,
+               resume=False):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -52,6 +54,8 @@ def train_loop(generator,
                               prefetch_factor=8,
                               persistent_workers=True)
 
+    if resume:
+        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=model_save_dir)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
         optimizer_g.load_state_dict(check_dict["generator_optimizer"])
@@ -86,16 +90,19 @@ def train_loop(generator,
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
             d_outs = d(pred_wave)
-            d_gold_outs = d(gold_wave).detach()
-            adversarial_loss = generator_adv_criterion(d_outs)
+            d_gold_outs = d(gold_wave)
+            if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
+                adversarial_loss = generator_adv_criterion(d_outs)
+            else: 
+                adversarial_loss = 0.0
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 4.0 + feature_matching_loss * 2.0
+            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
-            mel_losses.append(mel_loss.item() * 30.0)
-            feat_match_losses.append(feature_matching_loss.item() * 2.0)
+            mel_losses.append(mel_loss.item() * 40.0)
+            feat_match_losses.append(feature_matching_loss.item() * 0.3)
             adversarial_losses.append(adversarial_loss.item() * 4.0)
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
@@ -106,16 +113,18 @@ def train_loop(generator,
             #       Discriminator      #
             ############################
 
-            d_outs = d(pred_wave.detach())  # have to recompute unfortunately due to autograd behaviour
-            d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
-            discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
-            optimizer_d.zero_grad()
-            discriminator_loss.backward()
-            discriminator_losses.append(discriminator_loss.item())
-            torch.nn.utils.clip_grad_norm_(d.parameters(), 10.0)
-            optimizer_d.step()
-            scheduler_d.step()
-            optimizer_d.zero_grad()
+            # wasserstein seems appropriate, because the discriminator learns much much quicker
+            if step_counter > 10000 and step_counter % 2 == 0:
+                d_outs = d(pred_wave.detach())  # have to recompute unfortunately due to autograd behaviour
+                d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
+                discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
+                optimizer_d.zero_grad()
+                discriminator_loss.backward()
+                discriminator_losses.append(discriminator_loss.item())
+                torch.nn.utils.clip_grad_norm_(d.parameters(), 10.0)
+                optimizer_d.step()
+                scheduler_d.step()
+                optimizer_d.zero_grad()
 
         ##########################
         #     Epoch Complete     #
