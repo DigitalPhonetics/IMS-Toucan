@@ -8,9 +8,9 @@ import torch.multiprocessing
 import torch.nn as nn
 from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import dijkstra
+from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
-from torch.nn import CTCLoss
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 
@@ -73,6 +73,26 @@ class Aligner(torch.nn.Module):
 
         return x
 
+    @torch.no_grad()
+    def label_speech(self, speech):
+        # theoretically possible, but doesn't work well at all. Would probably require a beamsearch
+        probabilities_of_phones_over_frames = self(speech.unsqueeze(0)).squeeze()[:, :73]
+        smoothed_phone_probs_over_frames = list()
+        for index, _ in enumerate(probabilities_of_phones_over_frames):
+            access_safe_prev_index = max(0, index - 1)
+            access_safe_next_index = min(index + 1, len(probabilities_of_phones_over_frames) - 1)
+            smoothed_probs = (probabilities_of_phones_over_frames[access_safe_prev_index] +
+                              probabilities_of_phones_over_frames[access_safe_next_index] +
+                              probabilities_of_phones_over_frames[index]) / 3
+            smoothed_phone_probs_over_frames.append(smoothed_probs.unsqueeze(0))
+        print(torch.cat(smoothed_phone_probs_over_frames))
+        _, phone_ids_over_frames = torch.max(torch.cat(smoothed_phone_probs_over_frames), dim=1)
+        phone_ids = torch.unique_consecutive(phone_ids_over_frames)
+        phones = list()
+        for id_of_phone in phone_ids:
+            phones.append(self.tf.id_to_phone[int(id_of_phone)])
+        return "".join(phones)
+
     def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
 
         if not train:
@@ -88,7 +108,8 @@ class Aligner(torch.nn.Module):
 
         pred = self(mel.unsqueeze(0))
         if return_ctc:
-            ctc_loss = self.ctc_loss(pred.transpose(0, 1).log_softmax(2), torch.LongTensor(tokens), torch.LongTensor([len(pred[0])]),  torch.LongTensor([len(tokens)])).item()
+            ctc_loss = self.ctc_loss(pred.transpose(0, 1).log_softmax(2), torch.LongTensor(tokens), torch.LongTensor([len(pred[0])]),
+                                     torch.LongTensor([len(tokens)])).item()
         pred = pred.squeeze().cpu().detach().numpy()
         pred_max = pred[:, tokens]
         path_probs = 1. - pred_max

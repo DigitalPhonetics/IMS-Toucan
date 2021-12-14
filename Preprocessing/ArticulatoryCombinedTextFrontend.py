@@ -192,6 +192,8 @@ class ArticulatoryCombinedTextFrontend:
             'ʁ': 72,
             }  # for the states of the ctc loss and dijkstra in the aligner
 
+        self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
+
     def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True):
         """
         Fixes unicode errors, expands some abbreviations,
