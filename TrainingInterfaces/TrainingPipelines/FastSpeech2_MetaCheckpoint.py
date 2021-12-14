@@ -31,8 +31,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
 
-    assert resume_checkpoint is not None  # much better to start from a pretrained model that already knows diagonal alignment
-
     datasets = list()
 
     base_dir = os.path.join("Models", "MetaCheckpoint")
@@ -202,8 +200,8 @@ def train_loop(net,
                                         gold_speech=batch[2].to(device),
                                         speech_lengths=batch[3].to(device),
                                         gold_durations=batch[4].to(device),
-                                        gold_pitch=batch[5].to(device),
-                                        gold_energy=batch[6].to(device),
+                                        gold_pitch=batch[6].to(device),  # mind the switched order
+                                        gold_energy=batch[5].to(device),
                                         return_mels=False))
         # then we directly update our meta-parameters without
         # the need for any task specific parameters

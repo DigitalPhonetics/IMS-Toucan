@@ -27,10 +27,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     languages = list()
     datasets = list()
 
-    cache_dir_english = os.path.join("Corpora", "Nancy")
-    os.makedirs(cache_dir_english, exist_ok=True)
-    languages.append("en")
-
     cache_dir_greek = os.path.join("Corpora", "meta_Greek")
     os.makedirs(cache_dir_greek, exist_ok=True)
     languages.append("el")
@@ -59,9 +55,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(cache_dir_french, exist_ok=True)
     languages.append("fr")
 
-    cache_dir_german = os.path.join("Corpora", "meta_German")
+    cache_dir_german = os.path.join("Corpora", "Karlsson")
     os.makedirs(cache_dir_german, exist_ok=True)
     languages.append("de")
+
+    cache_dir_english = os.path.join("Corpora", "Nancy")
+    os.makedirs(cache_dir_english, exist_ok=True)
+    languages.append("en")
 
     datasets.append(AlignerDataset(build_path_to_transcript_dict_nancy(),
                                    cache_dir=cache_dir_english,

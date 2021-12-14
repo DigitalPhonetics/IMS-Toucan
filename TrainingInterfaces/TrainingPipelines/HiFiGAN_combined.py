@@ -32,44 +32,60 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-    file_lists = list()
-    file_lists.append(random.sample(get_file_list_css10gr(), 400))
-    file_lists.append(random.sample(get_file_list_elizabeth(), 400))
-    file_lists.append(random.sample(get_file_list_libritts(), 3000))
-    file_lists.append(random.sample(get_file_list_thorsten(), 400))
-    file_lists.append(random.sample(get_file_list_eva(), 400))
-    file_lists.append(random.sample(get_file_list_ljspeech(), 400))
-    file_lists.append(random.sample(get_file_list_css10ch(), 400))
-    file_lists.append(random.sample(get_file_list_css10du(), 400))
-    file_lists.append(random.sample(get_file_list_css10es(), 400))
-    file_lists.append(random.sample(get_file_list_css10fi(), 400))
-    file_lists.append(random.sample(get_file_list_css10fr(), 400))
-    file_lists.append(random.sample(get_file_list_css10de(), 400))
-    file_lists.append(random.sample(get_file_list_css10hu(), 400))
-    file_lists.append(random.sample(get_file_list_css10jp(), 400))
-    file_lists.append(random.sample(get_file_list_css10ru(), 400))
-    file_lists.append(get_file_list_karlsson())
-    file_lists.append(get_file_list_nancy())
-    file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
 
-    datasets = list()
+    # sampling multiple times from the dataset, because it's to big to fit all at once
+    for run_id in range(800):
 
-    for index, file_list in enumerate(file_lists):
-        datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}"))
-    train_set = ConcatDataset(datasets)
+        file_lists = list()
+        file_lists.append(random.sample(get_file_list_css10gr(), 400))
+        file_lists.append(random.sample(get_file_list_elizabeth(), 400))
+        file_lists.append(random.sample(get_file_list_libritts(), 5000))
+        file_lists.append(random.sample(get_file_list_thorsten(), 400))
+        file_lists.append(random.sample(get_file_list_eva(), 400))
+        file_lists.append(random.sample(get_file_list_ljspeech(), 400))
+        file_lists.append(random.sample(get_file_list_css10ch(), 400))
+        file_lists.append(random.sample(get_file_list_css10du(), 400))
+        file_lists.append(random.sample(get_file_list_css10es(), 400))
+        file_lists.append(random.sample(get_file_list_css10fi(), 400))
+        file_lists.append(random.sample(get_file_list_css10fr(), 400))
+        file_lists.append(random.sample(get_file_list_css10de(), 400))
+        file_lists.append(random.sample(get_file_list_css10hu(), 400))
+        file_lists.append(random.sample(get_file_list_css10jp(), 400))
+        file_lists.append(random.sample(get_file_list_css10ru(), 400))
+        file_lists.append(get_file_list_karlsson())
+        file_lists.append(get_file_list_nancy())
+        file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
 
-    generator = HiFiGANGenerator()
-    generator.reset_parameters()
-    discriminator = HiFiGANMultiScaleMultiPeriodDiscriminator()
+        datasets = list()
 
-    print("Training model")
-    train_loop(batch_size=16,
-               steps=2500000,
-               generator=generator,
-               discriminator=discriminator,
-               train_dataset=train_set,
-               device=device,
-               epochs_per_save=1,
-               model_save_dir=model_save_dir,
-               path_to_checkpoint=resume_checkpoint,
-               resume=resume)
+        for index, file_list in enumerate(file_lists):
+            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}"))
+        train_set = ConcatDataset(datasets)
+
+        generator = HiFiGANGenerator()
+        generator.reset_parameters()
+        discriminator = HiFiGANMultiScaleMultiPeriodDiscriminator()
+
+        print("Training model")
+        if run_id == 0:
+            train_loop(batch_size=16,
+                    steps=3000,
+                    generator=generator,
+                    discriminator=discriminator,
+                    train_dataset=train_set,
+                    device=device,
+                    epochs_per_save=2,
+                    model_save_dir=model_save_dir,
+                    path_to_checkpoint=resume_checkpoint,
+                    resume=resume)
+        else:
+            train_loop(batch_size=16,
+                    steps=3000,
+                    generator=generator,
+                    discriminator=discriminator,
+                    train_dataset=train_set,
+                    device=device,
+                    epochs_per_save=2,
+                    model_save_dir=model_save_dir,
+                    path_to_checkpoint=None,
+                    resume=True)

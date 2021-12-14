@@ -68,7 +68,7 @@ def train_loop(generator,
 
     start_time = time.time()
 
-    while True:
+    for _ in range(steps):
 
         epoch += 1
         discriminator_losses = list()
@@ -141,9 +141,6 @@ def train_loop(generator,
                 "step_counter"           : step_counter
                 }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(model_save_dir, keep=5)
-            if step_counter > steps:
-                # DONE
-                return
 
         print("Epoch:              {}".format(epoch + 1))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))

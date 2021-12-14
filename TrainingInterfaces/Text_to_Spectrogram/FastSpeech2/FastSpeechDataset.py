@@ -112,7 +112,7 @@ class FastSpeechDataset(Dataset):
             # now we can filter out some bad datapoints based on the CTC scores we collected
             mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
             std_dev = statistics.stdev(self.ctc_losses)
-            threshold = max(mean_ctc+std_dev, 0.2)  # this 0.2 needs to be tuned, in case the aligner is tuned on the data for more steps. For 10k steps of aligner tuning this seems to work ok. So if the data is super clean, no samples are excluded. And if the data has some outliers, they should be thrown out according to this threshold.
+            threshold = mean_ctc+std_dev
             for index in range(len(self.ctc_losses), 0, -1):
                 if self.ctc_losses[index-1] > threshold:
                     self.datapoints.pop(index-1)
