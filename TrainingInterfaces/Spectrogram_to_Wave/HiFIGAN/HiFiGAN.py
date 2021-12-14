@@ -6,6 +6,7 @@
 
 
 import copy
+
 import torch
 import torch.nn.functional as F
 
@@ -26,7 +27,7 @@ class HiFiGANGenerator(torch.nn.Module):
                  use_additional_convs=True,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1} ):
+                 nonlinear_activation_params={"negative_slope": 0.1}):
         """
         Initialize HiFiGANGenerator module.
         
@@ -93,7 +94,6 @@ class HiFiGANGenerator(torch.nn.Module):
 
         # reset parameters
         self.reset_parameters()
-
 
     def forward(self, c):
         """

@@ -13,12 +13,15 @@ def plot_embeddings(reduced_data, phoneme_list, title, save=False):
     consonants = ['w', 'b', 'ɡ', 'n', 'ʒ', 'ʃ', 'd', 'l', 'θ', 'ŋ', 'f', 'ɾ', 's', 'm', 't', 'h', 'z', 'p', 'ʔ', 'v', 'ɹ', 'j', 'ð', 'k']
     vowels = ['o', 'ɛ', 'ᵻ', 'ɔ', 'æ', 'i', 'ɐ', 'ɜ', 'ə', 'ɑ', 'e', 'ʌ', 'ɚ', 'a', 'ɪ', 'ʊ', 'u']
     special_symbols = ['?', '.', '!', '~', '#']
-    uniques = ['ç', 'x', 'y', 'ʏ', 'ø', 'œ', 'ε']
+    uniques_v = ['y', 'ʏ', 'ø', 'œ', 'ε']
+    uniques_c = ['ç', 'x']
 
     plt.clf()
-    plt.scatter(x=[x[0] for x in reduced_data], y=[x[1] for x in reduced_data], marker=MarkerStyle())
-    plt.tight_layout()
-    plt.axis('off')
+    fig, ax = plt.subplots(ncols=1, nrows=1)
+    fig.set_size_inches(3, 3)
+
+    ax.scatter(x=[x[0] for x in reduced_data], y=[x[1] for x in reduced_data], marker=MarkerStyle())
+    ax.axis('off')
     for index, phoneme in enumerate(reduced_data):
         x_position = phoneme[0]
         y_position = phoneme[1]
@@ -29,17 +32,19 @@ def plot_embeddings(reduced_data, phoneme_list, title, save=False):
             color = "blue"
         elif label in vowels:
             color = "darkgreen"
-        elif label in uniques:
-            color = "red"
+        elif label in uniques_v:
+            color = "darkorange"
+        elif label in uniques_c:
+            color = "darkred"
         else:
             continue
-        plt.text(x=x_position, y=y_position, s=label, color=color)
-    plt.subplots_adjust(top=0.85)
+        ax.text(x=x_position, y=y_position, s=label, color=color)
     if not save:
-        plt.title(title)
+        ax.title(title)
         plt.show()
     else:
-        plt.savefig(f"{title}.pdf")
+        fig.subplots_adjust(top=1.0, bottom=0.0, left=0.0, right=1.0)
+        fig.savefig(f"{title}.pdf")
 
 
 if __name__ == '__main__':

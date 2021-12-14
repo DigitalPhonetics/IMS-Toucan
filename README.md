@@ -13,6 +13,15 @@ which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan
 For a version of the toolkit that includes TransformerTTS instead of Tacotron 2 and MelGAN instead of HiFiGAN, check out
 the TransformerTTS and MelGAN branch. They are separated to keep the code clean, simple and minimal.
 
+## New Features
+
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 48kHz waveforms.
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
+  bottom of the readme for a bibtex entry.
+
 ## Demonstration
 
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
@@ -281,3 +290,16 @@ from [ESPnet](https://github.com/espnet/espnet) and
 [ParallelWaveGAN](https://github.com/kan-bayashi/ParallelWaveGAN), as mentioned above), so if you come across problems
 or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
 cool with it. Thank you for reading.
+
+## Citation
+
+```
+@inproceedings{lux2021toucan,
+  title={{The IMS Toucan system for the Blizzard Challenge 2021}},
+  author={Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
+  year={2021},
+  booktitle={Proc. Blizzard Challenge Workshop},
+  volume={2021},
+  publisher={{Speech Synthesis SIG}}
+}
+```

@@ -62,3 +62,4 @@ wcwidth==0.2.5
 speechbrain==0.5.10
 gdown
 unsilence
+auraloss
