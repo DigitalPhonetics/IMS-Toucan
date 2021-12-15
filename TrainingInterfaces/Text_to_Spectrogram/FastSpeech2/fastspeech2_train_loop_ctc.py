@@ -105,9 +105,6 @@ def train_loop(net,
     asr_aligner.load_state_dict(check_dict["asr_model"])
     net.stop_gradient_from_energy_predictor = False
     net.stop_gradient_from_pitch_predictor = False
-    vector_to_id = dict()
-    for phone in text_to_art_vec.phone_to_id:
-        vector_to_id[text_to_art_vec.phone_to_vector[phone]] = text_to_art_vec.phone_to_id[phone]
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
@@ -136,15 +133,15 @@ def train_loop(net,
         for sentence in tqdm(train_sentences):
             if sentence.strip() == "":
                 continue
-            text_vec = text_to_art_vec.string_to_tensor(sentence).squeeze(0).to(device)
 
+            phonemes = text_to_art_vec.get_phone_string(sentence)
             # collect batch of texts
-            batch_of_text_vecs.append(text_vec)
+            batch_of_text_vecs.append(text_to_art_vec.string_to_tensor(phonemes, input_phonemes=True).squeeze(0).to(device))
 
             # collect batch of tokens
             tokens = list()
-            for vector in text_vec:
-                tokens.append(vector_to_id[vector])
+            for phone in phonemes:
+                tokens.append(text_to_art_vec.phone_to_id[phone])
             tokens = torch.LongTensor(tokens).to(device)
             batch_of_tokens.append(tokens)
 

@@ -194,13 +194,16 @@ class ArticulatoryCombinedTextFrontend:
 
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
 
-    def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True):
+    def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True, input_phonemes=False):
         """
         Fixes unicode errors, expands some abbreviations,
         turns graphemes into phonemes and then vectorizes
         the sequence as articulatory features
         """
-        phones = self.get_phone_string(text=text, include_eos_symbol=True)
+        if input_phonemes:
+            phones = text
+        else:
+            phones = self.get_phone_string(text=text, include_eos_symbol=True)
         if view:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()
