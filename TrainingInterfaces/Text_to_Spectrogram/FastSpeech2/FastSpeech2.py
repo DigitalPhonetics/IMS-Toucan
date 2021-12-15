@@ -271,6 +271,14 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
 
+    def batch_inference(self, texts, text_lens):
+        _, after_outs, d_outs, _, _ = self._forward(texts,
+                                                    text_lens,
+                                                    None,
+                                                    is_inference=True,
+                                                    alpha=1.0)
+        return after_outs, d_outs
+
     def inference(self,
                   text,
                   speech=None,

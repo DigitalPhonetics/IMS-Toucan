@@ -128,7 +128,7 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         random.shuffle(train_sentences)
-        batch_of_predicted_specs = list()
+        batch_of_text_vecs = list()
         batch_of_tokens = list()
 
         for sentence in tqdm(train_sentences):
@@ -137,9 +137,8 @@ def train_loop(net,
             text_vec = text_to_art_vec.string_to_tensor(sentence).squeeze(0).to(device)
 
             with autocast():
-                # collect batch of specs
-                predicted_specs = net.inference(text=text_vec)
-                batch_of_predicted_specs.append(predicted_specs)
+                # collect batch of texts
+                batch_of_text_vecs.append(text_vec)
 
                 # collect batch of tokens
                 tokens = list()
@@ -152,10 +151,13 @@ def train_loop(net,
                 batch_of_tokens.append(tokens)
 
             if len(batch_of_tokens) == batch_size:
-                spec_batch = pad_sequence(batch_of_predicted_specs, batch_first=True)
-                spec_lens = torch.LongTensor([len(x) for x in batch_of_predicted_specs]).to(device)
                 token_batch = pad_sequence(batch_of_tokens, batch_first=True)
                 token_lens = torch.LongTensor([len(x) for x in batch_of_tokens]).to(device)
+                text_batch = pad_sequence(batch_of_text_vecs, batch_first=True)
+                spec_batch, d_outs = net.batch_inference(texts=text_batch, text_lens=token_lens)
+                print(d_outs)
+                print(d_outs.shape)
+                spec_lens = torch.LongTensor([sum(x) for x in d_outs]).to(device)
 
                 asr_pred = asr_aligner(spec_batch, spec_lens)
                 train_loss = asr_aligner.ctc_loss(asr_pred.transpose(0, 1).log_softmax(2), token_batch, spec_lens, token_lens)
