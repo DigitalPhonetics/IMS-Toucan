@@ -8,7 +8,6 @@ import torch
 import torch.multiprocessing
 import torch.multiprocessing
 from torch.cuda.amp import GradScaler
-from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
@@ -106,6 +105,9 @@ def train_loop(net,
     asr_aligner.load_state_dict(check_dict["asr_model"])
     net.stop_gradient_from_energy_predictor = False
     net.stop_gradient_from_pitch_predictor = False
+    vector_to_id = dict()
+    for phone in text_to_art_vec.phone_to_id:
+        vector_to_id[text_to_art_vec.phone_to_vector[phone]] = text_to_art_vec.phone_to_id[phone]
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
@@ -136,27 +138,21 @@ def train_loop(net,
                 continue
             text_vec = text_to_art_vec.string_to_tensor(sentence).squeeze(0).to(device)
 
-            with autocast():
-                # collect batch of texts
-                batch_of_text_vecs.append(text_vec)
+            # collect batch of texts
+            batch_of_text_vecs.append(text_vec)
 
-                # collect batch of tokens
-                tokens = list()
-                for vector in text_vec:
-                    for phone in text_to_art_vec.phone_to_vector:
-                        if vector.cpu().numpy().tolist() == text_to_art_vec.phone_to_vector[phone]:
-                            tokens.append(text_to_art_vec.phone_to_id[phone])
-                            # this is terribly inefficient, but it's good enough for testing for now.
-                tokens = torch.LongTensor(tokens).to(device)
-                batch_of_tokens.append(tokens)
+            # collect batch of tokens
+            tokens = list()
+            for vector in text_vec:
+                tokens.append(vector_to_id[vector])
+            tokens = torch.LongTensor(tokens).to(device)
+            batch_of_tokens.append(tokens)
 
             if len(batch_of_tokens) == batch_size:
                 token_batch = pad_sequence(batch_of_tokens, batch_first=True)
                 token_lens = torch.LongTensor([len(x) for x in batch_of_tokens]).to(device)
                 text_batch = pad_sequence(batch_of_text_vecs, batch_first=True)
                 spec_batch, d_outs = net.batch_inference(texts=text_batch, text_lens=token_lens)
-                print(d_outs)
-                print(d_outs.shape)
                 spec_lens = torch.LongTensor([sum(x) for x in d_outs]).to(device)
 
                 asr_pred = asr_aligner(spec_batch, spec_lens)
@@ -174,7 +170,7 @@ def train_loop(net,
                 scaler.update()
                 scheduler.step()
                 batch_of_tokens = list()
-                batch_of_predicted_specs = list()
+                batch_of_text_vecs = list()
 
         net.eval()
         if epoch % epochs_per_save == 0:
