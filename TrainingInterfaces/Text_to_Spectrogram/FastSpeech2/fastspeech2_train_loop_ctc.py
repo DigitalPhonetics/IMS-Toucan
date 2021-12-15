@@ -148,7 +148,7 @@ def train_loop(net,
                         if vector.cpu().numpy().tolist() == text_to_art_vec.phone_to_vector[phone]:
                             tokens.append(text_to_art_vec.phone_to_id[phone])
                             # this is terribly inefficient, but it's good enough for testing for now.
-                tokens = torch.LongTensor(tokens).unsqueeze(0).to(device)
+                tokens = torch.LongTensor(tokens).to(device)
                 batch_of_tokens.append(tokens)
 
             if len(batch_of_tokens) == batch_size:
