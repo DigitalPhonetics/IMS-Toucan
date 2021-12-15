@@ -3,13 +3,13 @@ import time
 
 import torch
 import torch.multiprocessing
-from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.TinyTTS import TinyTTS
+
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.TinyTTS import TinyTTS
 
 
 def collate_and_pad(batch):
@@ -56,9 +56,6 @@ def train_loop(train_dataset,
     tiny_tts = TinyTTS().to(device)
     optim_tts = Adam(tiny_tts.parameters(), lr=0.0001)
 
-
-    ctc_loss = CTCLoss(blank=144, zero_infinity=True)
-
     step_counter = 0
     if resume:
         previous_checkpoint = os.path.join(save_directory, "aligner.pt")
@@ -89,7 +86,7 @@ def train_loop(train_dataset,
 
             pred = asr_model(mel, mel_len)
 
-            loss = ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
+            loss = asr_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
 
             loss = loss + tiny_tts(x=pred, lens=mel_len, ys=mel)
 
@@ -117,6 +114,7 @@ def train_loop(train_dataset,
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
         if debug_img_path is not None:
-            asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=debug_img_path+"/"+str(step_counter)+".png", train=True)  # for testing
+            asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=debug_img_path + "/" + str(step_counter) + ".png",
+                                train=True)  # for testing
         if step_counter > steps:
             return

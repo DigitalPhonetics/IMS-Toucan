@@ -3,10 +3,7 @@ import random
 
 import torch
 
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop_ctc import train_loop
 from Utility.path_to_transcript_dicts import build_path_to_transcript_dict_nancy as build_path_to_transcript_dict
 
@@ -204,5 +201,4 @@ How long will you stay?""".split("\n")
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               resume=resume,
-               cycle_loss_start_steps=None)
+               resume=resume)
