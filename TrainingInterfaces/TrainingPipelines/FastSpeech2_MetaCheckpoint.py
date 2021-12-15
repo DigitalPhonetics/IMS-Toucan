@@ -117,7 +117,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_loop(net=FastSpeech2(),
                device=torch.device("cuda"),
                datasets=datasets,
-               batch_size=20,
+               batch_size=5,
                save_directory=meta_save_dir,
                steps=100000,
                steps_per_checkpoint=1000,

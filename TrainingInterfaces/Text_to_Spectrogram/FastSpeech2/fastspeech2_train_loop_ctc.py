@@ -13,7 +13,9 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-
+from torch.nn import CTCLoss
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
+import random
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
@@ -67,21 +69,12 @@ def plot_progress_spec(net, device, save_dir, step, lang):
     plt.close()
 
 
-def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch
-    return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True))
-
 
 def train_loop(net,
-               train_dataset,
+               train_sentences,
                device,
                save_directory,
+               aligner_checkpoint,
                batch_size=32,
                steps=300000,
                epochs_per_save=5,
@@ -101,9 +94,9 @@ def train_loop(net,
         lr: The initial learning rate for the optimiser
         path_to_checkpoint: reloads a checkpoint to continue training from there
         fine_tune: whether to load everything from a checkpoint, or only the model parameters
-        lang: language of the synthesis
+        lang: language of the synthesis and of the train sentences
         net: Model to train
-        train_dataset: Pytorch Dataset Object for train data
+        train_sentences: list of (string) sentences the CTC objective should be learned on
         device: Device to put the loaded tensors on
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
@@ -120,15 +113,13 @@ def train_loop(net,
         cycle_loss_start_steps = 0
 
     torch.multiprocessing.set_sharing_strategy('file_system')
-    train_loader = DataLoader(batch_size=batch_size,
-                              dataset=train_dataset,
-                              drop_last=True,
-                              num_workers=8,
-                              pin_memory=False,
-                              shuffle=True,
-                              prefetch_factor=8,
-                              collate_fn=collate_and_pad,
-                              persistent_workers=True)
+    text_to_art_vec = ArticulatoryCombinedTextFrontend(language=lang)
+    asr_aligner = Aligner().to(device)
+    check_dict = torch.load(os.path.join(aligner_checkpoint), map_location=device)
+    asr_aligner.load_state_dict(check_dict["asr_model"])
+    ctc_loss = CTCLoss(blank=144, zero_infinity=True)
+    net.stop_gradient_from_energy_predictor=False
+    net.stop_gradient_from_pitch_predictor=False
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
@@ -150,17 +141,25 @@ def train_loop(net,
         epoch += 1
         optimizer.zero_grad()
         train_losses_this_epoch = list()
-        for batch in tqdm(train_loader):
-            with autocast():
-                train_loss, predicted_mels = net(text_tensors=batch[0].to(device),
-                                                 text_lengths=batch[1].to(device),
-                                                 gold_speech=batch[2].to(device),
-                                                 speech_lengths=batch[3].to(device),
-                                                 gold_durations=batch[4].to(device),
-                                                 gold_pitch=batch[6].to(device),  # mind the change of order here!
-                                                 gold_energy=batch[5].to(device),
-                                                 return_mels=True)
+        random.shuffle(train_sentences)
+        batch_of_predicted_specs = list()
 
+        for sentence in tqdm(train_sentences):
+            if sentence.strip() == "":
+                continue
+            text_vec = text_to_art_vec.string_to_tensor(sentence).squeeze(0).to(device)
+            
+            with autocast():
+                predicted_mels = net.inference(text=text_vec)
+                asr_pred = asr_aligner(predicted_mels.unsqueeze(0))
+                tokens = list()
+                for vector in text_vec:
+                    for phone in text_to_art_vec.phone_to_vector:
+                        if vector.cpu().numpy().tolist() == text_to_art_vec.phone_to_vector[phone]:
+                            tokens.append(text_to_art_vec.phone_to_id[phone])
+                            # this is terribly inefficient, but it's good enough for testing for now.
+                tokens = torch.LongTensor(tokens).unsqueeze(0).to(device)
+                train_loss = ctc_loss(asr_pred.transpose(0, 1).log_softmax(2), tokens,  torch.LongTensor([len(predicted_mels)]).to(device), torch.LongTensor([len(text_vec)]).to(device))
                 train_losses_this_epoch.append(train_loss.item())
                 if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
                     pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
@@ -174,18 +173,23 @@ def train_loop(net,
                     del gold_spemb
                     cycle_loss = cycle_distance * min(1.0, (step_counter - cycle_loss_start_steps) / 500)
                     train_loss = train_loss + cycle_loss
-
-            optimizer.zero_grad()
-            if speaker_embedding_func is not None:
-                speaker_embedding_func.modules.embedding_model.zero_grad()
-            scaler.scale(train_loss).backward()
-            del train_loss
-            step_counter += 1
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-            scaler.step(optimizer)
-            scaler.update()
-            scheduler.step()
+                batch_losses.append(train_loss)
+            
+            if len(batch_losses) == batch_size:
+                train_loss = sum(batch_losses)/len(batch_losses)
+                optimizer.zero_grad()
+                if speaker_embedding_func is not None:
+                    speaker_embedding_func.modules.embedding_model.zero_grad()
+                asr_aligner.zero_grad()
+                scaler.scale(train_loss).backward()
+                del train_loss
+                step_counter += 1
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+                batch_losses = list()
 
         net.eval()
         if epoch % epochs_per_save == 0:
