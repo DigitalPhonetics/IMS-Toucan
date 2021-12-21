@@ -1,9 +1,10 @@
 import os
+import statistics
 
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import statistics
+
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
@@ -56,7 +57,6 @@ class FastSpeechDataset(Dataset):
             self.datapoints = list()
             self.ctc_losses = list()
 
-
             acoustic_model = Aligner()
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
 
@@ -80,9 +80,9 @@ class FastSpeechDataset(Dataset):
                 melspec_length = dataset[index][3]
 
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
-                                                                           tokens=text.to(device),
-                                                                           save_img_for_debug=os.path.join(vis_dir, f"{index}.png"),
-                                                                           return_ctc=True)
+                                                                    tokens=text.to(device),
+                                                                    save_img_for_debug=os.path.join(vis_dir, f"{index}.png"),
+                                                                    return_ctc=True)
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
@@ -112,11 +112,12 @@ class FastSpeechDataset(Dataset):
             # now we can filter out some bad datapoints based on the CTC scores we collected
             mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
             std_dev = statistics.stdev(self.ctc_losses)
-            threshold = mean_ctc+std_dev
+            threshold = mean_ctc + std_dev
             for index in range(len(self.ctc_losses), 0, -1):
-                if self.ctc_losses[index-1] > threshold:
-                    self.datapoints.pop(index-1)
-                    print(f"Removing datapoint {index-1}, because the CTC loss indicates there's something wrong with it. Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index-1], 4)} vs. mean: {round(mean_ctc, 4)}")
+                if self.ctc_losses[index - 1] > threshold:
+                    self.datapoints.pop(index - 1)
+                    print(
+                        f"Removing datapoint {index - 1}, because the CTC loss indicates there's something wrong with it. Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             tensored_datapoints = list()
             print("Converting into convenient format...")

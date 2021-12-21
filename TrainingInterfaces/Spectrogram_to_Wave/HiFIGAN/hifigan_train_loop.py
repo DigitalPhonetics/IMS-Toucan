@@ -93,7 +93,7 @@ def train_loop(generator,
             d_gold_outs = d(gold_wave)
             if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
                 adversarial_loss = generator_adv_criterion(d_outs)
-            else: 
+            else:
                 adversarial_loss = 0.0
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)

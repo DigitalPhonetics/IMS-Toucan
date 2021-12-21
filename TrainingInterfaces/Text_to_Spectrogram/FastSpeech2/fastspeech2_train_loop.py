@@ -190,12 +190,12 @@ def train_loop(net,
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({
-                "model": net.state_dict(),
-                "optimizer": optimizer.state_dict(),
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
                 "step_counter": step_counter,
-                "scaler": scaler.state_dict(),
-                "scheduler": scheduler.state_dict(),
-            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                "scaler"      : scaler.state_dict(),
+                "scheduler"   : scheduler.state_dict(),
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             with torch.no_grad():
                 plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang)

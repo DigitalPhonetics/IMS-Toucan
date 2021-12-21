@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(os.path.join(save_dir, "aligner"), exist_ok=True)
 
     path_to_transcript_dict = build_path_to_transcript_dict()
-    save_dir_aligner = save_dir+"/aligner"
+    save_dir_aligner = save_dir + "/aligner"
     os.makedirs(save_dir_aligner, exist_ok=True)
 
     if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")):
@@ -63,7 +63,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                   device=device)
 
     model = FastSpeech2()
-
 
     print("Training model")
     train_loop(net=model,

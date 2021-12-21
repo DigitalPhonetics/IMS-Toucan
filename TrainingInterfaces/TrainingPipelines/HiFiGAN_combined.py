@@ -32,7 +32,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-
     # sampling multiple times from the dataset, because it's to big to fit all at once
     for run_id in range(800):
 
@@ -69,23 +68,23 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         print("Training model")
         if run_id == 0:
             train_loop(batch_size=16,
-                    steps=3000,
-                    generator=generator,
-                    discriminator=discriminator,
-                    train_dataset=train_set,
-                    device=device,
-                    epochs_per_save=2,
-                    model_save_dir=model_save_dir,
-                    path_to_checkpoint=resume_checkpoint,
-                    resume=resume)
+                       steps=3000,
+                       generator=generator,
+                       discriminator=discriminator,
+                       train_dataset=train_set,
+                       device=device,
+                       epochs_per_save=2,
+                       model_save_dir=model_save_dir,
+                       path_to_checkpoint=resume_checkpoint,
+                       resume=resume)
         else:
             train_loop(batch_size=16,
-                    steps=3000,
-                    generator=generator,
-                    discriminator=discriminator,
-                    train_dataset=train_set,
-                    device=device,
-                    epochs_per_save=2,
-                    model_save_dir=model_save_dir,
-                    path_to_checkpoint=None,
-                    resume=True)
+                       steps=3000,
+                       generator=generator,
+                       discriminator=discriminator,
+                       train_dataset=train_set,
+                       device=device,
+                       epochs_per_save=2,
+                       model_save_dir=model_save_dir,
+                       path_to_checkpoint=None,
+                       resume=True)

@@ -16,7 +16,6 @@ from tqdm import tqdm
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -107,6 +106,54 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       cache_dir=cache_dir_french,
                                       device=torch.device("cuda"),
                                       lang="fr"))
+
+    cache_dir_english_lj = os.path.join("Corpora", "LJSpeech")
+    os.makedirs(cache_dir_english_lj, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_english_lj,
+                                      device=torch.device("cuda"),
+                                      lang="en"))
+
+    cache_dir_german_hokus = os.path.join("Corpora", "Hokus")
+    os.makedirs(cache_dir_german_hokus, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_hokuspokus(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_german_hokus,
+                                      device=torch.device("cuda"),
+                                      lang="de"))
+
+    cache_dir_english_lj = os.path.join("Corpora", "LJSpeech")
+    os.makedirs(cache_dir_english_lj, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_english_lj,
+                                      device=torch.device("cuda"),
+                                      lang="en"))
+
+    cache_dir_german_thorsten = os.path.join("Corpora", "Thorsten")
+    os.makedirs(cache_dir_german_thorsten, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_thorsten(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_german_thorsten,
+                                      device=torch.device("cuda"),
+                                      lang="de"))
+
+    cache_dir_english_libri = os.path.join("Corpora", "libri")
+    os.makedirs(cache_dir_english_libri, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_libritts(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_english_libri,
+                                      device=torch.device("cuda"),
+                                      lang="en"))
+
+    cache_dir_english_hifi = os.path.join("Corpora", "hifiTTS")
+    os.makedirs(cache_dir_english_hifi, exist_ok=True)
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=cache_dir_english_hifi,
+                                      device=torch.device("cuda"),
+                                      lang="en"))
 
     if model_dir is not None:
         meta_save_dir = model_dir

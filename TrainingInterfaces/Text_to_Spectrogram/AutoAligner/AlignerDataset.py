@@ -27,6 +27,7 @@ class AlignerDataset(Dataset):
                  verbose=False,
                  include_priors=False):
         self.include_priors = include_priors
+        os.makedirs(cache_dir, exist_ok=True)
         self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
