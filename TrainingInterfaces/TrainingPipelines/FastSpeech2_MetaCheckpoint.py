@@ -33,7 +33,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    base_dir = os.path.join("Models", "MetaCheckpoint")
+    base_dir = os.path.join("Models", "FastSpeech2_MetaCheckpoint")
 
     print("Preparing")
     cache_dir_english_nancy = os.path.join("Corpora", "Nancy")
