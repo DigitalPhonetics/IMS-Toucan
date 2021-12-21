@@ -35,125 +35,101 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     base_dir = os.path.join("Models", "FastSpeech2_MetaCheckpoint")
 
     print("Preparing")
-    cache_dir_english_nancy = os.path.join("Corpora", "Nancy")
-    os.makedirs(cache_dir_english_nancy, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_english_nancy,
+                                      cache_dir=os.path.join("Corpora", "Nancy"),
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    cache_dir_german_karlsson = os.path.join("Corpora", "Karlsson")
-    os.makedirs(cache_dir_german_karlsson, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_karlsson(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_german_karlsson,
+                                      cache_dir=os.path.join("Corpora", "Karlsson"),
                                       device=torch.device("cuda"),
                                       lang="de"))
 
-    cache_dir_greek = os.path.join("Corpora", "meta_Greek")
-    os.makedirs(cache_dir_greek, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10el(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_greek,
+                                      cache_dir=os.path.join("Corpora", "meta_Greek"),
                                       device=torch.device("cuda"),
                                       lang="el"))
 
-    cache_dir_spanish = os.path.join("Corpora", "meta_Spanish")
-    os.makedirs(cache_dir_spanish, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10es(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_spanish,
+                                      cache_dir=os.path.join("Corpora", "meta_Spanish"),
                                       device=torch.device("cuda"),
                                       lang="es"))
 
-    cache_dir_finnish = os.path.join("Corpora", "meta_Finnish")
-    os.makedirs(cache_dir_finnish, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fi(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_finnish,
+                                      cache_dir=os.path.join("Corpora", "meta_Finnish"),
                                       device=torch.device("cuda"),
                                       lang="fi"))
 
-    cache_dir_russian = os.path.join("Corpora", "meta_Russian")
-    os.makedirs(cache_dir_russian, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10ru(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_russian,
+                                      cache_dir=os.path.join("Corpora", "meta_Russian"),
                                       device=torch.device("cuda"),
                                       lang="ru"))
 
-    cache_dir_hungarian = os.path.join("Corpora", "meta_Hungarian")
-    os.makedirs(cache_dir_hungarian, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10hu(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_hungarian,
+                                      cache_dir=os.path.join("Corpora", "meta_Hungarian"),
                                       device=torch.device("cuda"),
                                       lang="hu"))
 
-    cache_dir_dutch = os.path.join("Corpora", "meta_Dutch")
-    os.makedirs(cache_dir_dutch, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10nl(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_dutch,
+                                      cache_dir=os.path.join("Corpora", "meta_Dutch"),
                                       device=torch.device("cuda"),
                                       lang="nl"))
 
-    cache_dir_french = os.path.join("Corpora", "meta_French")
-    os.makedirs(cache_dir_french, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fr(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_french,
+                                      cache_dir=os.path.join("Corpora", "meta_French"),
                                       device=torch.device("cuda"),
                                       lang="fr"))
 
-    cache_dir_english_lj = os.path.join("Corpora", "LJSpeech")
-    os.makedirs(cache_dir_english_lj, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_english_lj,
+                                      cache_dir=os.path.join("Corpora", "LJSpeech"),
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    cache_dir_german_hokus = os.path.join("Corpora", "Hokus")
-    os.makedirs(cache_dir_german_hokus, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_hokuspokus(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_german_hokus,
+                                      cache_dir=os.path.join("Corpora", "Hokus"),
                                       device=torch.device("cuda"),
                                       lang="de"))
 
-    cache_dir_english_lj = os.path.join("Corpora", "LJSpeech")
-    os.makedirs(cache_dir_english_lj, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_english_lj,
+                                      cache_dir=os.path.join("Corpora", "LJSpeech"),
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    cache_dir_german_thorsten = os.path.join("Corpora", "Thorsten")
-    os.makedirs(cache_dir_german_thorsten, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_thorsten(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_german_thorsten,
+                                      cache_dir=os.path.join("Corpora", "Thorsten"),
                                       device=torch.device("cuda"),
                                       lang="de"))
 
-    cache_dir_english_libri = os.path.join("Corpora", "libri")
-    os.makedirs(cache_dir_english_libri, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_libritts(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_english_libri,
+                                      cache_dir=os.path.join("Corpora", "libri"),
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    cache_dir_english_hifi = os.path.join("Corpora", "hifiTTS")
-    os.makedirs(cache_dir_english_hifi, exist_ok=True)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=cache_dir_english_hifi,
+                                      cache_dir=os.path.join("Corpora", "hifiTTS"),
                                       device=torch.device("cuda"),
                                       lang="en"))
+
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_att_hack(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=os.path.join("Corpora", "expressive_French"),
+                                      device=torch.device("cuda"),
+                                      lang="fr"))
 
     if model_dir is not None:
         meta_save_dir = model_dir

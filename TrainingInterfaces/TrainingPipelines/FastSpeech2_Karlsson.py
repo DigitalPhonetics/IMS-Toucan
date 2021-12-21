@@ -33,7 +33,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         save_dir = os.path.join("Models", "FastSpeech2_Karlsson")
     os.makedirs(cache_dir, exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)
-    os.makedirs(os.path.join(save_dir, "aligner"), exist_ok=True)
 
     path_to_transcript_dict = build_path_to_transcript_dict()
     save_dir_aligner = save_dir + "/aligner"

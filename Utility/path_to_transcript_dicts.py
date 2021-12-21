@@ -104,6 +104,17 @@ def build_path_to_transcript_dict_ljspeech():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_att_hack():
+    path_to_transcript = dict()
+    for transcript_file in os.listdir("/mount/resources/speech/corpora/FrenchExpressive/txt"):
+        if transcript_file.endswith(".txt"):
+            with open("/mount/resources/speech/corpora/FrenchExpressive/txt/" + transcript_file, 'r', encoding='utf8') as tf:
+                transcript = tf.read()
+            wav_path = "/mount/resources/speech/corpora/FrenchExpressive/wav/" + transcript_file.rstrip(".txt") + ".wav"
+            path_to_transcript[wav_path] = transcript
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_css10de():
     path_to_transcript = dict()
     with open("/mount/resources/speech/corpora/CSS10/german/transcript.txt", encoding="utf8") as f:

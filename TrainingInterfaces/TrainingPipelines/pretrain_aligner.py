@@ -97,6 +97,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    cache_dir=os.path.join("Corpora", "Thorsten"),
                                    lang="de"))
 
+    languages.append("fr")
+    datasets.append(AlignerDataset(build_path_to_transcript_dict_att_hack(),
+                                   cache_dir=os.path.join("Corpora", "expressive_French"),
+                                   lang="fr"))
+
     train_set = ConcatDataset(datasets)
     save_dir = os.path.join("Models", "Aligner")
     os.makedirs(save_dir, exist_ok=True)
