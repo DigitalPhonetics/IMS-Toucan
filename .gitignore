@@ -14,5 +14,5 @@ Models
 *.wav
 audios/notes.txt
 audios/
-playground.py*.egg-info
+playground.py
 *.egg-info/
