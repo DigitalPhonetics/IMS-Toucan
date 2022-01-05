@@ -118,7 +118,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False)
+                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
+                                 utt_embed=456)
 
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers, n_chans=duration_predictor_chans,
@@ -219,11 +220,11 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
-                 is_inference=False, alpha=1.0):
+                 is_inference=False, alpha=1.0, utterance_embedding=None):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
