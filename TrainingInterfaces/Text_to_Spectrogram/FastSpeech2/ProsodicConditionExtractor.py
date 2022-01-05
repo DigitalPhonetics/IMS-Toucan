@@ -25,9 +25,12 @@ class ProsodicConditionExtractor:
                                                                       run_opts={"device": str(device)},
                                                                       savedir="Models/SpeakerEmbedding/speechbrain_language_embedding_ecapa")
 
-    def extract_condition_from_reference_wave(self, wave):
-        norm_wave = self.ap.audio_to_wave_tensor(normalize=True, audio=wave)
-        norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
+    def extract_condition_from_reference_wave(self, wave, already_normalized=False):
+        if already_normalized:
+            norm_wave = wave
+        else:
+            norm_wave = self.ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
         energy = self.energy_calc(input_waves=norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
         average_energy = energy[energy[0] != 0.0].mean().unsqueeze(0)
         highest_energy = energy[energy[0] != 0.0].max().unsqueeze(0)
@@ -48,8 +51,8 @@ class ProsodicConditionExtractor:
                                             highest_pitch,
                                             lowest_pitch,
                                             std_dev_pitch,
-                                            spk_emb,
-                                            lang_emb], dim=0)
+                                            spk_emb.cpu(),
+                                            lang_emb.cpu()], dim=0)
         return combined_utt_condition
 
 
