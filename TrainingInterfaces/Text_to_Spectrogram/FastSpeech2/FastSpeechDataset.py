@@ -10,6 +10,7 @@ from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import Al
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
 class FastSpeechDataset(Dataset):
@@ -70,6 +71,7 @@ class FastSpeechDataset(Dataset):
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
+            pros_cond_ext = ProsodicConditionExtractor(sr=16000, device=device)
 
             for index in tqdm(range(len(dataset))):
                 norm_wave = norm_waves[index]
@@ -90,19 +92,24 @@ class FastSpeechDataset(Dataset):
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
                                             durations=cached_duration.unsqueeze(0),
-                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
+
                 cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
                                    input_waves_lengths=norm_wave_length,
                                    feats_lengths=melspec_length,
                                    durations=cached_duration.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().numpy()
+                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
+
+                prosodic_condition = pros_cond_ext.extract_condition_from_reference_wave(norm_wave, already_normalized=True).cpu()
+
                 self.datapoints.append([dataset[index][0],
                                         dataset[index][1],
                                         dataset[index][2],
                                         dataset[index][3],
-                                        cached_duration.cpu().numpy(),
+                                        cached_duration.cpu(),
                                         cached_energy,
-                                        cached_pitch])
+                                        cached_pitch,
+                                        prosodic_condition])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -117,19 +124,9 @@ class FastSpeechDataset(Dataset):
                 if self.ctc_losses[index - 1] > threshold:
                     self.datapoints.pop(index - 1)
                     print(
-                        f"Removing datapoint {index - 1}, because the CTC loss indicates there's something wrong with it. Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
+                        f"Removing datapoint {index - 1}, because the CTC loss indicates there's something wrong with it. "
+                        f"Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
-            tensored_datapoints = list()
-            print("Converting into convenient format...")
-            for datapoint in tqdm(self.datapoints):
-                tensored_datapoints.append([datapoint[0],
-                                            datapoint[1],
-                                            datapoint[2],
-                                            datapoint[3],
-                                            torch.LongTensor(datapoint[4]),  # durations
-                                            torch.Tensor(datapoint[5]),  # energy
-                                            torch.Tensor(datapoint[6])])  # pitch
-            self.datapoints = tensored_datapoints
             # save to cache
             if len(self.datapoints) > 0:
                 torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
@@ -140,6 +137,7 @@ class FastSpeechDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
+
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
     def __getitem__(self, index):
@@ -149,7 +147,8 @@ class FastSpeechDataset(Dataset):
                self.datapoints[index][3], \
                self.datapoints[index][4], \
                self.datapoints[index][5], \
-               self.datapoints[index][6]
+               self.datapoints[index][6], \
+               self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)
