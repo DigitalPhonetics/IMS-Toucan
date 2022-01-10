@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
 import torch.multiprocessing
-import torch.nn.functional as F
-from speechbrain.pretrained import EncoderClassifier
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -21,7 +19,8 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
-def plot_progress_spec(net, device, save_dir, step, lang):
+@torch.no_grad()
+def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -43,7 +42,7 @@ def plot_progress_spec(net, device, save_dir, step, lang):
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True)
+    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True, utterance_embedding=default_emb)
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -68,14 +67,15 @@ def plot_progress_spec(net, device, save_dir, step, lang):
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch
+    # text, text_len, speech, speech_len, durations, energy, pitch, prosodic condition vector
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True))
+            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
+            torch.stack([datapoint[7] for datapoint in batch]).squeeze())
 
 
 def train_loop(net,
@@ -90,11 +90,9 @@ def train_loop(net,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False,
-               resume=False,
-               cycle_loss_start_steps=None):
+               resume=False):
     """
     Args:
-        cycle_loss_start_steps: after how many steps the cycle consistency loss for voice identity should start
         resume: whether to resume from the most recent checkpoint
         warmup_steps: how long the learning rate should increase before it reaches the specified value
         steps: How many steps to train
@@ -111,13 +109,6 @@ def train_loop(net,
 
     """
     net = net.to(device)
-    if cycle_loss_start_steps is not None:
-        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                run_opts={"device": str(device)},
-                                                                savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
-    else:
-        speaker_embedding_func = None
-        cycle_loss_start_steps = 0
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -129,6 +120,8 @@ def train_loop(net,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
+    # the average of all utterance embeddings in this dataset is taken as the default for inference
+    default_embedding = torch.tensor([datapoint[7] for datapoint in train_dataset]).mean().to(device)
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
@@ -152,32 +145,18 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                train_loss, predicted_mels = net(text_tensors=batch[0].to(device),
-                                                 text_lengths=batch[1].to(device),
-                                                 gold_speech=batch[2].to(device),
-                                                 speech_lengths=batch[3].to(device),
-                                                 gold_durations=batch[4].to(device),
-                                                 gold_pitch=batch[6].to(device),  # mind the change of order here!
-                                                 gold_energy=batch[5].to(device),
-                                                 return_mels=True)
-
+                train_loss = net(text_tensors=batch[0].to(device),
+                                 text_lengths=batch[1].to(device),
+                                 gold_speech=batch[2].to(device),
+                                 speech_lengths=batch[3].to(device),
+                                 gold_durations=batch[4].to(device),
+                                 gold_pitch=batch[6].to(device),  # mind the change of order here!
+                                 gold_energy=batch[5].to(device),  # mind the change of order here!
+                                 utterance_embedding=batch[7].to(device),
+                                 return_mels=False)
                 train_losses_this_epoch.append(train_loss.item())
-                if step_counter > cycle_loss_start_steps and speaker_embedding_func is not None:
-                    pred_spemb = speaker_embedding_func.modules.embedding_model(predicted_mels,
-                                                                                torch.tensor([x / len(predicted_mels[0]) for x in batch[3]]))
-                    gold_spemb = speaker_embedding_func.modules.embedding_model(batch[2].to(device),
-                                                                                torch.tensor([x / len(batch[2][0]) for x in batch[3]]))
-                    # we have to recalculate the speaker embedding from our own mel because we project into a slightly different mel space
-                    cycle_distance = torch.tensor(1.0) - F.cosine_similarity(pred_spemb.squeeze(), gold_spemb.squeeze(), dim=1).mean()
-                    del pred_spemb
-                    del predicted_mels
-                    del gold_spemb
-                    cycle_loss = cycle_distance * min(1.0, (step_counter - cycle_loss_start_steps) / 500)
-                    train_loss = train_loss + cycle_loss
 
             optimizer.zero_grad()
-            if speaker_embedding_func is not None:
-                speaker_embedding_func.modules.embedding_model.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
@@ -195,10 +174,10 @@ def train_loop(net,
                 "step_counter": step_counter,
                 "scaler"      : scaler.state_dict(),
                 "scheduler"   : scheduler.state_dict(),
+                "default_emb" : default_embedding,
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
-            with torch.no_grad():
-                plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang)
+            plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
             if step_counter > steps:
                 # DONE
                 return

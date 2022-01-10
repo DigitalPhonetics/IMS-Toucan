@@ -172,6 +172,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                 gold_durations,
                 gold_pitch,
                 gold_energy,
+                utterance_embedding,
                 return_mels=False):
         """
         Calculate forward propagation.
@@ -195,7 +196,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
-                                                                        gold_durations, gold_pitch, gold_energy,
+                                                                        gold_durations, gold_pitch, gold_energy, utterance_embedding=utterance_embedding,
                                                                         is_inference=False)
 
         # modify mod part of groundtruth (speaking pace)
@@ -288,6 +289,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                   energy=None,
                   alpha=1.0,
                   use_teacher_forcing=False,
+                  utterance_embedding=None,
                   return_duration_pitch_energy=False):
         """
         Generate the sequence of features given the sequences of characters.
@@ -325,13 +327,15 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    ys,
                                                                                                    gold_durations=ds,
                                                                                                    gold_pitch=ps,
-                                                                                                   gold_energy=es)  # (1, L, odim)
+                                                                                                   gold_energy=es,
+                                                                                                   utterance_embedding=utterance_embedding)  # (1, L, odim)
         else:
             before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
                                                                                                    ilens,
                                                                                                    ys,
                                                                                                    is_inference=True,
-                                                                                                   alpha=alpha)  # (1, L, odim)
+                                                                                                   alpha=alpha,
+                                                                                                   utterance_embedding=utterance_embedding)  # (1, L, odim)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
