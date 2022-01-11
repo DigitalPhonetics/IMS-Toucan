@@ -121,7 +121,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     # the average of all utterance embeddings in this dataset is taken as the default for inference
-    default_embedding = torch.tensor([datapoint[7] for datapoint in train_dataset]).mean().to(device)
+    default_embedding = torch.Tensor.view(torch.tensor([datapoint[7] for datapoint in train_dataset]), -1).mean(1).to(device)
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
