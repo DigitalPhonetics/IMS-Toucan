@@ -14,14 +14,14 @@ def load_net_fast(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = FastSpeech2()
     net.load_state_dict(check_dict["model"])
-    return net
+    return net, check_dict["default_emb"]
 
 
 def load_net_hifigan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = HiFiGANGenerator()
     net.load_state_dict(check_dict["generator"])
-    return net
+    return net, None  # does not have utterance embedding
 
 
 def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
@@ -43,9 +43,10 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
         return None
     checkpoints_weights = {}
     model = None
+    default_embed = None
     for path_to_checkpoint in list_of_checkpoint_paths:
         print("loading model {}".format(path_to_checkpoint))
-        model = load_func(path=path_to_checkpoint)
+        model, default_embed = load_func(path=path_to_checkpoint)
         checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
     params = model.named_parameters()
     dict_params = dict(params)
@@ -63,14 +64,23 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
     model_dict.update(dict_params)
     model.load_state_dict(model_dict)
     model.eval()
-    return model
+    if default_embed is None:
+        return model
+    else:
+        return model, default_embed
 
 
-def save_model_for_use(model, name="", dict_name="model"):
+def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
     if model is None:
         return
     print("saving model...")
-    torch.save({dict_name: model.state_dict()}, name)
+    if default_embed is None:
+        torch.save({dict_name: model.state_dict()}, name)
+    else:
+        torch.save({
+            dict_name    : model.state_dict(),
+            "default_emb": default_embed
+            }, name)
     print("...done!")
 
 
@@ -82,8 +92,8 @@ def make_best_in_all(n=3):
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
         elif "FastSpeech2" in model_dir:
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-            averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
-            save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir))
+            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
+            save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
 
 
 def count_parameters(net):
