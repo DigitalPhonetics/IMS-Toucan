@@ -274,7 +274,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
 
-    def batch_inference(self, texts, text_lens):
+    def batch_inference(self, texts, text_lens, utt_emb):
         _, after_outs, d_outs, _, _ = self._forward(texts,
                                                     text_lens,
                                                     None,
@@ -329,14 +329,14 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    gold_durations=ds,
                                                                                                    gold_pitch=ps,
                                                                                                    gold_energy=es,
-                                                                                                   utterance_embedding=utterance_embedding)  # (1, L, odim)
+                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(0))  # (1, L, odim)
         else:
             before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
                                                                                                    ilens,
                                                                                                    ys,
                                                                                                    is_inference=True,
                                                                                                    alpha=alpha,
-                                                                                                   utterance_embedding=utterance_embedding)  # (1, L, odim)
+                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(0))  # (1, L, odim)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
