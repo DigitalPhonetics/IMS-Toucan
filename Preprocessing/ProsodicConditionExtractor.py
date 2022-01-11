@@ -57,6 +57,6 @@ class ProsodicConditionExtractor:
 
 
 if __name__ == '__main__':
-    wave, sr = sf.read("../../../audios/1.wav")
+    wave, sr = sf.read("../audios/1.wav")
     ext = ProsodicConditionExtractor(sr=sr)
     print(ext.extract_condition_from_reference_wave(wave=wave).shape)

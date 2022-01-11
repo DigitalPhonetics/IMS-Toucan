@@ -5,12 +5,12 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
 class FastSpeechDataset(Dataset):

@@ -67,7 +67,9 @@ class FastSpeech2(torch.nn.Module, ABC):
                  transformer_dec_positional_dropout_rate=0.2,
                  transformer_dec_attn_dropout_rate=0.2,
                  duration_predictor_dropout_rate=0.2,
-                 postnet_dropout_rate=0.5):
+                 postnet_dropout_rate=0.5,
+                 # additional features
+                 utt_embed_dim=456):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -78,21 +80,13 @@ class FastSpeech2(torch.nn.Module, ABC):
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                     torch.nn.Tanh(),
                                     torch.nn.Linear(100, adim))
-        self.encoder = Conformer(idim=idim,
-                                 attention_dim=adim,
-                                 attention_heads=aheads,
-                                 linear_units=eunits,
-                                 num_blocks=elayers,
-                                 input_layer=embed,
-                                 dropout_rate=transformer_enc_dropout_rate,
-                                 positional_dropout_rate=transformer_enc_positional_dropout_rate,
-                                 attention_dropout_rate=transformer_enc_attn_dropout_rate,
-                                 normalize_before=encoder_normalize_before,
-                                 concat_after=encoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=conformer_enc_kernel_size)
+        self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers,
+                                 input_layer=embed, dropout_rate=transformer_enc_dropout_rate,
+                                 positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
+                                 normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
+                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
+                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
+                                 utt_embed=utt_embed_dim)
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
@@ -139,64 +133,117 @@ class FastSpeech2(torch.nn.Module, ABC):
                                dropout_rate=postnet_dropout_rate)
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["model"])
 
-    def _forward(self,
-                 xs,
-                 ilens,
-                 ys=None,
-                 olens=None,
-                 ds=None,
-                 ps=None,
-                 es=None,
-                 is_inference=False,
-                 alpha=1.0):
-        x_masks = self._source_mask(ilens)
-        hs, _ = self.encoder(xs, x_masks)
+    def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
+                 gold_durations=None, gold_pitch=None, gold_energy=None,
+                 is_inference=False, alpha=1.0, utterance_embedding=None):
+        # forward encoder
+        text_masks = self._source_mask(text_lens)
 
-        d_masks = make_pad_mask(ilens).to(xs.device)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding)  # (B, Tmax, adim)
+
+        # forward duration predictor and variance predictors
+        d_masks = make_pad_mask(text_lens, device=text_lens.device)
+
         if self.stop_gradient_from_pitch_predictor:
-            p_outs = self.pitch_predictor(hs.detach(), d_masks.unsqueeze(-1))
+            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
         else:
-            p_outs = self.pitch_predictor(hs, d_masks.unsqueeze(-1))
+            pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
+
         if self.stop_gradient_from_energy_predictor:
-            e_outs = self.energy_predictor(hs.detach(), d_masks.unsqueeze(-1))
+            energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
         else:
-            e_outs = self.energy_predictor(hs, d_masks.unsqueeze(-1))
+            energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
+
         if is_inference:
-            d_outs = self.duration_predictor.inference(hs, d_masks)
-            p_embs = self.pitch_embed(p_outs.transpose(1, 2)).transpose(1, 2)
-            e_embs = self.energy_embed(e_outs.transpose(1, 2)).transpose(1, 2)
-            hs = hs + e_embs + p_embs
-            hs = self.length_regulator(hs, d_outs, alpha)
+            d_outs = self.duration_predictor.inference(encoded_texts, d_masks)  # (B, Tmax)
+            # use prediction in inference
+            p_embs = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+            e_embs = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + e_embs + p_embs
+            encoded_texts = self.length_regulator(encoded_texts, d_outs, alpha)  # (B, Lmax, adim)
         else:
-            d_outs = self.duration_predictor(hs, d_masks)
-            p_embs = self.pitch_embed(ps.transpose(1, 2)).transpose(1, 2)
-            e_embs = self.energy_embed(es.transpose(1, 2)).transpose(1, 2)
-            hs = hs + e_embs + p_embs
-            hs = self.length_regulator(hs, ds)
-        if olens is not None and not is_inference:
+            d_outs = self.duration_predictor(encoded_texts, d_masks)
+
+            # use groundtruth in training
+            p_embs = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            e_embs = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + e_embs + p_embs
+            encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
+
+        # forward decoder
+        if speech_lens is not None and not is_inference:
             if self.reduction_factor > 1:
-                olens_in = olens.new([olen // self.reduction_factor for olen in olens])
+                olens_in = speech_lens.new([olen // self.reduction_factor for olen in speech_lens])
             else:
-                olens_in = olens
+                olens_in = speech_lens
             h_masks = self._source_mask(olens_in)
         else:
             h_masks = None
-        zs, _ = self.decoder(hs, h_masks)
-        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)
+        zs, _ = self.decoder(encoded_texts, h_masks)  # (B, Lmax, adim)
+        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
+
+        # postnet -> (B, Lmax//r * r, odim)
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
-        return before_outs, after_outs, d_outs, p_outs, e_outs
 
-    def forward(self, text, alpha=1.0, return_duration_pitch_energy=False):
+        return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
+
+    def forward(self,
+                text,
+                speech=None,
+                durations=None,
+                pitch=None,
+                energy=None,
+                alpha=1.0,
+                use_teacher_forcing=False,
+                utterance_embedding=None,
+                return_duration_pitch_energy=False):
+        """
+        Generate the sequence of features given the sequences of characters.
+
+        Args:
+            text (LongTensor): Input sequence of characters (T,).
+            speech (Tensor, optional): Feature sequence to extract style (N, idim).
+            durations (LongTensor, optional): Groundtruth of duration (T + 1,).
+            pitch (Tensor, optional): Groundtruth of token-averaged pitch (T + 1, 1).
+            energy (Tensor, optional): Groundtruth of token-averaged energy (T + 1, 1).
+            alpha (float, optional): Alpha to control the speed.
+            use_teacher_forcing (bool, optional): Whether to use teacher forcing.
+                If true, groundtruth of duration, pitch and energy will be used.
+            return_duration_pitch_energy: whether to return the list of predicted durations for nicer plotting
+
+        Returns:
+            Tensor: Output sequence of features (L, odim).
+
+        """
         self.eval()
-        x = text
-        ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
-        xs = x.unsqueeze(0)
+        x, y = text, speech
+        d, p, e = durations, pitch, energy
 
-        before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
-                                                                                               ilens,
-                                                                                               None,
-                                                                                               is_inference=True,
-                                                                                               alpha=alpha)
+        # setup batch axis
+        ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
+        xs, ys = x.unsqueeze(0), None
+        if y is not None:
+            ys = y.unsqueeze(0)
+
+        if use_teacher_forcing:
+            # use groundtruth of duration, pitch, and energy
+            ds, ps, es = d.unsqueeze(0), p.unsqueeze(0), e.unsqueeze(0)
+            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
+                                                                                                   ilens,
+                                                                                                   ys,
+                                                                                                   gold_durations=ds,
+                                                                                                   gold_pitch=ps,
+                                                                                                   gold_energy=es,
+                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(
+                                                                                                       0))  # (1, L, odim)
+        else:
+            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
+                                                                                                   ilens,
+                                                                                                   ys,
+                                                                                                   is_inference=True,
+                                                                                                   alpha=alpha,
+                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(
+                                                                                                       0))  # (1, L, odim)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]

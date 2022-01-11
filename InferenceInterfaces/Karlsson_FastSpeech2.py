@@ -9,16 +9,23 @@ import torch
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
 class Karlsson_FastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu"):
+    def __init__(self, device="cpu", path_to_reference_audio=None):
         super().__init__()
+        model_name = "Karlsson"
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language="de", add_silence_to_end=True)
-        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", "FastSpeech2_Karlsson", "best.pt")).to(torch.device(device))
+        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
+        if path_to_reference_audio is None:
+            self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"]
+        else:
+            wave, sr = soundfile.read(path_to_reference_audio)
+            self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave)
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))
@@ -26,7 +33,7 @@ class Karlsson_FastSpeech2(torch.nn.Module):
     def forward(self, text, view=False):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
-            mel, durations, pitch, energy = self.phone2mel(phones, return_duration_pitch_energy=True)
+            mel, durations, pitch, energy = self.phone2mel(phones, return_duration_pitch_energy=True, utterance_embedding=self.default_utterance_embedding)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:
