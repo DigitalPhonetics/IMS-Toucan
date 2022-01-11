@@ -176,6 +176,15 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
+    default_embeddings = {"en":None, "de":None, "el":None, "es":None, "fi":None, "ru":None, "hu":None, "nl":None, "fr":None}
+    for index, lang in enumerate(["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]):
+        default_embedding = None
+        for datapoint in datasets[index]:
+            if default_embedding is None:
+                default_embedding = datapoint[7].squeeze()
+            else:
+                default_embedding = default_embedding + datapoint[7].squeeze()
+        default_embeddings[lang] = (default_embedding / len(train_dataset)).to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     grad_scaler = GradScaler()
     if resume:
@@ -224,7 +233,8 @@ def train_loop(net,
                                         speech_lengths=batch[3].to(device),
                                         gold_durations=batch[4].to(device),
                                         gold_pitch=batch[6].to(device),  # mind the switched order
-                                        gold_energy=batch[5].to(device),
+                                        gold_energy=batch[5].to(device),  # mind the switched order
+                                        utterance_embedding=batch[7].to(device),
                                         return_mels=False))
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
@@ -257,13 +267,15 @@ def train_loop(net,
                                    device=device,
                                    lang=lang,
                                    save_dir=save_directory,
-                                   step=step)
+                                   step=step,
+                                   utt_embeds=default_embeddings)
 
 
 @torch.no_grad()
-def plot_progress_spec(net, device, save_dir, step, lang):
+def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
+    default_embed = utt_embeds[lang]
     if lang == "en":
         sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
@@ -283,7 +295,7 @@ def plot_progress_spec(net, device, save_dir, step, lang):
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True)
+    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True, utterance_embedding=default_embed)
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -308,11 +320,12 @@ def plot_progress_spec(net, device, save_dir, step, lang):
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True))
+            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
+            torch.stack([datapoint[7] for datapoint in batch]).squeeze())
