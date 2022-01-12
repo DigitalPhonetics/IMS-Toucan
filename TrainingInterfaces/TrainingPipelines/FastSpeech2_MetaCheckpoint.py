@@ -176,7 +176,7 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    default_embeddings = {"en":None, "de":None, "el":None, "es":None, "fi":None, "ru":None, "hu":None, "nl":None, "fr":None}
+    default_embeddings = {"en": None, "de": None, "el": None, "es": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
     for index, lang in enumerate(["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]):
         default_embedding = None
         for datapoint in datasets[index]:
@@ -184,7 +184,7 @@ def train_loop(net,
                 default_embedding = datapoint[7].squeeze()
             else:
                 default_embedding = default_embedding + datapoint[7].squeeze()
-        default_embeddings[lang] = (default_embedding / len(train_dataset)).to(device)
+        default_embeddings[lang] = (default_embedding / len(datasets[index])).to(device)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     grad_scaler = GradScaler()
     if resume:
