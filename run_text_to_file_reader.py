@@ -2,13 +2,11 @@ import os
 
 import torch
 
-from InferenceInterfaces.Eva_FastSpeech2 import Eva_FastSpeech2
 from InferenceInterfaces.Karlsson_FastSpeech2 import Karlsson_FastSpeech2
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 
 tts_dict = {
     "fast_nancy"   : Nancy_FastSpeech2,
-    "fast_eva"     : Eva_FastSpeech2,
     "fast_karlsson": Karlsson_FastSpeech2,
     }
 

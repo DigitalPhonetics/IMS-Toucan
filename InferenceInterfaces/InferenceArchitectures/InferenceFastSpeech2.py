@@ -142,32 +142,38 @@ class FastSpeech2(torch.nn.Module, ABC):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
-        d_masks = make_pad_mask(text_lens, device=text_lens.device)
+        duration_masks = make_pad_mask(text_lens, device=text_lens.device)
 
         if self.stop_gradient_from_pitch_predictor:
-            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), duration_masks.unsqueeze(-1))
         else:
-            pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
+            pitch_predictions = self.pitch_predictor(encoded_texts, duration_masks.unsqueeze(-1))
 
         if self.stop_gradient_from_energy_predictor:
-            energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+            energy_predictions = self.energy_predictor(encoded_texts.detach(), duration_masks.unsqueeze(-1))
         else:
-            energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
+            energy_predictions = self.energy_predictor(encoded_texts, duration_masks.unsqueeze(-1))
 
         if is_inference:
-            d_outs = self.duration_predictor.inference(encoded_texts, d_masks)  # (B, Tmax)
-            # use prediction in inference
-            p_embs = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
-            e_embs = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + e_embs + p_embs
-            encoded_texts = self.length_regulator(encoded_texts, d_outs, alpha)  # (B, Lmax, adim)
+            if gold_durations is not None:
+                duration_predictions = gold_durations
+            else:
+                duration_predictions = self.duration_predictor.inference(encoded_texts, duration_masks)
+            if gold_pitch is not None:
+                pitch_predictions = gold_pitch
+            if gold_energy is not None:
+                energy_predictions = gold_energy
+            pitch_embeddings = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+            energy_embeddings = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
+            encoded_texts = self.length_regulator(encoded_texts, duration_predictions, alpha)
         else:
-            d_outs = self.duration_predictor(encoded_texts, d_masks)
+            duration_predictions = self.duration_predictor(encoded_texts, duration_masks)
 
             # use groundtruth in training
-            p_embs = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            e_embs = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + e_embs + p_embs
+            pitch_embeddings = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            energy_embeddings = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward decoder
@@ -185,7 +191,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # postnet -> (B, Lmax//r * r, odim)
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
 
-        return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
+        return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
 
     def forward(self,
                 text,
@@ -193,57 +199,46 @@ class FastSpeech2(torch.nn.Module, ABC):
                 durations=None,
                 pitch=None,
                 energy=None,
-                alpha=1.0,
-                use_teacher_forcing=False,
                 utterance_embedding=None,
                 return_duration_pitch_energy=False):
         """
         Generate the sequence of features given the sequences of characters.
 
         Args:
-            text (LongTensor): Input sequence of characters (T,).
-            speech (Tensor, optional): Feature sequence to extract style (N, idim).
-            durations (LongTensor, optional): Groundtruth of duration (T + 1,).
-            pitch (Tensor, optional): Groundtruth of token-averaged pitch (T + 1, 1).
-            energy (Tensor, optional): Groundtruth of token-averaged energy (T + 1, 1).
-            alpha (float, optional): Alpha to control the speed.
-            use_teacher_forcing (bool, optional): Whether to use teacher forcing.
-                If true, groundtruth of duration, pitch and energy will be used.
+            text: Input sequence of characters
+            speech: Feature sequence to extract style
+            durations: Groundtruth of duration
+            pitch: Groundtruth of token-averaged pitch
+            energy: Groundtruth of token-averaged energy
             return_duration_pitch_energy: whether to return the list of predicted durations for nicer plotting
+            utterance_embedding: embedding of utterance wide parameters
 
         Returns:
-            Tensor: Output sequence of features (L, odim).
+            Mel Spectrogram
 
         """
         self.eval()
-        x, y = text, speech
-        d, p, e = durations, pitch, energy
-
         # setup batch axis
-        ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
-        xs, ys = x.unsqueeze(0), None
-        if y is not None:
-            ys = y.unsqueeze(0)
-
-        if use_teacher_forcing:
-            # use groundtruth of duration, pitch, and energy
-            ds, ps, es = d.unsqueeze(0), p.unsqueeze(0), e.unsqueeze(0)
-            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
-                                                                                                   ilens,
-                                                                                                   ys,
-                                                                                                   gold_durations=ds,
-                                                                                                   gold_pitch=ps,
-                                                                                                   gold_energy=es,
-                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(
-                                                                                                       0))  # (1, L, odim)
+        ilens = torch.tensor([text.shape[0]], dtype=torch.long, device=text.device)
+        if speech is not None:
+            gold_speech = speech.unsqueeze(0)
         else:
-            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
-                                                                                                   ilens,
-                                                                                                   ys,
-                                                                                                   is_inference=True,
-                                                                                                   alpha=alpha,
-                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(
-                                                                                                       0))  # (1, L, odim)
+            gold_speech = None
+        if durations is not None:
+            durations = durations.unsqueeze(0)
+        if pitch is not None:
+            pitch = pitch.unsqueeze(0)
+        if energy is not None:
+            energy = energy.unsqueeze(0)
+
+        before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(text.unsqueeze(0),
+                                                                                               ilens,
+                                                                                               gold_speech=gold_speech,
+                                                                                               gold_durations=durations,
+                                                                                               is_inference=True,
+                                                                                               gold_pitch=pitch,
+                                                                                               gold_energy=energy,
+                                                                                               utterance_embedding=utterance_embedding.unsqueeze(0))
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]

@@ -1,3 +1,4 @@
+import itertools
 import os
 
 import librosa.display as lbd
@@ -14,26 +15,31 @@ from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 class Nancy_FastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", path_to_reference_audio=None):
+    def __init__(self, device="cpu"):
         super().__init__()
         model_name = "Nancy"
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", add_silence_to_end=True)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
-        if path_to_reference_audio is None:
-            self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"]
-        else:
-            wave, sr = soundfile.read(path_to_reference_audio)
-            self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave)
+        self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"]
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))
 
-    def forward(self, text, view=False):
+    def set_utterance_embedding(self, path_to_reference_audio):
+        wave, sr = soundfile.read(path_to_reference_audio)
+        self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave)
+
+    def forward(self, text, view=False, durations=None, pitch=None, energy=None):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
-            mel, durations, pitch, energy = self.phone2mel(phones, return_duration_pitch_energy=True, utterance_embedding=self.default_utterance_embedding)
+            mel, durations, pitch, energy = self.phone2mel(phones,
+                                                           return_duration_pitch_energy=True,
+                                                           utterance_embedding=self.default_utterance_embedding,
+                                                           durations=durations,
+                                                           pitch=pitch,
+                                                           energy=energy)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:
@@ -59,23 +65,29 @@ class Nancy_FastSpeech2(torch.nn.Module):
             plt.show()
         return wave
 
-    def read_to_file(self, text_list, file_location, silent=False):
+    def read_to_file(self, text_list, file_location, silent=False, dur_list=None, pitch_list=None, energy_list=None):
         """
         :param silent: Whether to be verbose about the process
         :param text_list: A list of strings to be read
         :param file_location: The path and name of the file it should be saved to
         """
+        if not dur_list:
+            dur_list = []
+        if not pitch_list:
+            pitch_list = []
+        if not energy_list:
+            energy_list = []
         wav = None
         silence = torch.zeros([24000])
-        for text in text_list:
+        for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
                 if wav is None:
-                    wav = self(text).cpu()
+                    wav = self(text, durations=durations, pitch=pitch, energy=energy).cpu()
                     wav = torch.cat((wav, silence), 0)
                 else:
-                    wav = torch.cat((wav, self(text).cpu()), 0)
+                    wav = torch.cat((wav, self(text, durations=durations, pitch=pitch, energy=energy).cpu()), 0)
                     wav = torch.cat((wav, silence), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=48000)
 
@@ -89,12 +101,3 @@ class Nancy_FastSpeech2(torch.nn.Module):
         else:
             sounddevice.play(torch.cat((wav, torch.zeros([12000])), 0).numpy(), samplerate=48000)
             sounddevice.wait()
-
-    def save_pretrained_weights(self):
-        torch.save(self.phone2mel.encoder.state_dict(), "Models/PretrainedModelFast/enc.pt")
-        torch.save(self.phone2mel.decoder.state_dict(), "Models/PretrainedModelFast/dec.pt")
-        torch.save(self.phone2mel.pitch_predictor.state_dict(), "Models/PretrainedModelFast/pitch_predictor.pt")
-        torch.save(self.phone2mel.energy_predictor.state_dict(), "Models/PretrainedModelFast/energy_predictor.pt")
-        torch.save(self.phone2mel.duration_predictor.state_dict(), "Models/PretrainedModelFast/duration_predictor.pt")
-        torch.save(self.phone2mel.feat_out.state_dict(), "Models/PretrainedModelFast/feat_out.pt")
-        torch.save(self.phone2mel.postnet.state_dict(), "Models/PretrainedModelFast/postnet.pt")
