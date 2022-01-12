@@ -59,8 +59,12 @@ def extract_prosody(transcript, ref_audio_path, lang="de"):
     return transcript, duration, pitch, energy
 
 
-def clone_utterance(path_to_reference_audio, reference_transcription, model_id="fast_karlsson", device="cpu", lang="de"):
+def clone_utterance(path_to_reference_audio, reference_transcription, filename_of_result, model_id="fast_karlsson", device="cpu", lang="de"):
     tts = tts_dict[model_id](device=device)
     tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
     transcript, duration, pitch, energy = extract_prosody(reference_transcription, path_to_reference_audio, lang=lang)
-    tts.read_to_file(text_list=[reference_transcription], file_location="audios/test_clone.wav", dur_list=[duration], pitch_list=[pitch], energy_list=[energy])
+    tts.read_to_file(text_list=[reference_transcription], file_location=filename_of_result, dur_list=[duration], pitch_list=[pitch], energy_list=[energy])
+
+
+if __name__ == '__main__':
+    clone_utterance(path_to_reference_audio="audios/test.wav", reference_transcription="Hallo Welt!", filename_of_result="audios/test_cloned.wav")
