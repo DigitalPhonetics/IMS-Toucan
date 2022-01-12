@@ -84,7 +84,13 @@ class Karlsson_FastSpeech2(torch.nn.Module):
                 if not silent:
                     print("Now synthesizing: {}".format(text))
                 if wav is None:
-                    wav = self(text, durations=durations.to(self.device), pitch=pitch.to(self.device), energy=energy.to(self.device)).cpu()
+                    if durations is not None:
+                        durations = durations.to(self.device)
+                    if pitch is not None:
+                        pitch = pitch.to(self.device)
+                    if energy is not None:
+                        energy = energy.to(self.device)
+                    wav = self(text, durations=durations, pitch=pitch, energy=energy).cpu()
                     wav = torch.cat((wav, silence), 0)
                 else:
                     wav = torch.cat((wav, self(text, durations=durations.to(self.device), pitch=pitch.to(self.device), energy=energy.to(self.device)).cpu()), 0)

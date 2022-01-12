@@ -49,13 +49,7 @@ if __name__ == '__main__':
     if not os.path.isdir("audios"):
         os.makedirs("audios")
 
-    read_texts(model_id="fast_karlsson",
-               sentence=[
-                   "Einst stritten sich Nordwind und Sonne, wer von ihnen beiden wohl der Stärkere wäre, als ein Wanderer, der in einen warmen Mantel gehüllt war, des Weges daherkam."],
-               device=exec_device,
-               filename="audios/1.wav")
-
     read_texts(model_id="fast_nancy",
-               sentence=["This is an English sentence, I really hope that it works."],
+               sentence=["Hello world, this is a test."],
                device=exec_device,
-               filename="audios/2.wav")
+               filename="audios/test_no_cond.wav")
