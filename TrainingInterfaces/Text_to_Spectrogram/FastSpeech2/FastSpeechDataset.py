@@ -100,7 +100,11 @@ class FastSpeechDataset(Dataset):
                                    durations=cached_duration.unsqueeze(0),
                                    durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                prosodic_condition = pros_cond_ext.extract_condition_from_reference_wave(norm_wave, already_normalized=True).cpu()
+                try:
+                    prosodic_condition = pros_cond_ext.extract_condition_from_reference_wave(norm_wave, already_normalized=True).cpu()
+                except RuntimeError:
+                    # if there is an audio without any voiced segments whatsoever we have to skip it.
+                    continue
 
                 self.datapoints.append([dataset[index][0],
                                         dataset[index][1],
