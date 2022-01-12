@@ -22,14 +22,15 @@ class Nancy_FastSpeech2(torch.nn.Module):
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", add_silence_to_end=True)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt")).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
-        self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"]
+        self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"].to(
+            self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.to(torch.device(device))
 
     def set_utterance_embedding(self, path_to_reference_audio):
         wave, sr = soundfile.read(path_to_reference_audio)
-        self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave)
+        self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave).to(self.device)
 
     def forward(self, text, view=False, durations=None, pitch=None, energy=None):
         with torch.no_grad():
@@ -84,10 +85,10 @@ class Nancy_FastSpeech2(torch.nn.Module):
                 if not silent:
                     print("Now synthesizing: {}".format(text))
                 if wav is None:
-                    wav = self(text, durations=durations, pitch=pitch, energy=energy).cpu()
+                    wav = self(text, durations=durations.to(self.device), pitch=pitch.to(self.device), energy=energy.to(self.device)).cpu()
                     wav = torch.cat((wav, silence), 0)
                 else:
-                    wav = torch.cat((wav, self(text, durations=durations, pitch=pitch, energy=energy).cpu()), 0)
+                    wav = torch.cat((wav, self(text, durations=durations.to(self.device), pitch=pitch.to(self.device), energy=energy.to(self.device)).cpu()), 0)
                     wav = torch.cat((wav, silence), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=48000)
 

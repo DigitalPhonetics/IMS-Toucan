@@ -54,8 +54,8 @@ def extract_prosody(transcript, ref_audio_path, lang="de"):
                 feats_lengths=melspec_length,
                 durations=duration.unsqueeze(0),
                 durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
-    phones = tf.get_phone_string(transcript)
-    print(len(phones), " ", len(duration), " ", len(pitch), " ", len(energy))
+    # phones = tf.get_phone_string(transcript)
+    # print(len(phones), " ", len(duration), " ", len(pitch), " ", len(energy))
     return transcript, duration, pitch, energy
 
 
@@ -67,4 +67,9 @@ def clone_utterance(path_to_reference_audio, reference_transcription, filename_o
 
 
 if __name__ == '__main__':
-    clone_utterance(path_to_reference_audio="audios/test.wav", reference_transcription="Hallo Welt!", filename_of_result="audios/test_cloned.wav")
+    clone_utterance(path_to_reference_audio="audios/test.wav",
+                    reference_transcription="Hello world, this is a test.",
+                    filename_of_result="audios/test_cloned.wav",
+                    model_id="fast_nancy",
+                    lang="en",
+                    device="cpu")
