@@ -255,11 +255,12 @@ def train_loop(net,
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             train_losses_total = list()
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "scaler"      : grad_scaler.state_dict(),
-                "step_counter": step
-                },
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scaler": grad_scaler.state_dict(),
+                "step_counter": step,
+                "default_emb": default_embeddings["en"]
+            },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
