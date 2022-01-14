@@ -119,11 +119,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "hifiTTS"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
+    # datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
+    #                                  acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+    #                                  cache_dir=os.path.join("Corpora", "hifiTTS"),
+    #                                  device=torch.device("cuda"),
+    #                                  lang="en"))
 
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_att_hack(),
                                       acoustic_checkpoint_path="Models/Aligner/aligner.pt",

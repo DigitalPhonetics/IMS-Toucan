@@ -54,6 +54,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         file_lists.append(get_file_list_karlsson())
         file_lists.append(get_file_list_nancy())
         file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
+        file_lists.append(random.sample(get_file_list_vctk(), 1000))
 
         datasets = list()
 

@@ -1,4 +1,9 @@
-import os
+from Utility.path_to_transcript_dicts import *
+
+
+def get_file_list_vctk():
+    path_to_transcript_dict = build_path_to_transcript_dict_vctk()
+    return list(path_to_transcript_dict.keys())
 
 
 def get_file_list_karlsson():
