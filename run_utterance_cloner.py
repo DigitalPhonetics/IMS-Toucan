@@ -14,9 +14,9 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 
 tts_dict = {
-    "fast_nancy"   : Nancy_FastSpeech2,
+    "fast_nancy": Nancy_FastSpeech2,
     "fast_karlsson": Karlsson_FastSpeech2,
-    }
+}
 
 
 def extract_prosody(transcript, ref_audio_path, lang="de"):

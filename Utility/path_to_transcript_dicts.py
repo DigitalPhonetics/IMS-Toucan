@@ -80,6 +80,18 @@ def build_path_to_transcript_dict_hokuspokus():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_vctk():
+    path_to_transcript = dict()
+    for transcript_dir in os.listdir("/mount/resources/speech/corpora/VCTK/txt"):
+        for transcript_file in os.listdir(f"/mount/resources/speech/corpora/VCTK/txt/{transcript_dir}"):
+            if transcript_file.endswith(".txt"):
+                with open(f"/mount/resources/speech/corpora/VCTK/txt/{transcript_dir}/" + transcript_file, 'r', encoding='utf8') as tf:
+                    transcript = tf.read()
+                wav_path = f"/mount/resources/speech/corpora/VCTK/wav48_silence_trimmed/{transcript_dir}/" + transcript_file.rstrip(".txt") + ".wav"
+                path_to_transcript[wav_path] = transcript
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_libritts():
     path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
     path_to_transcript = dict()

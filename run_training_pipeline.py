@@ -1,8 +1,8 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Eva import run as fast_eva
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as fast_karlsson
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTSVCTK import run as fast_multi
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy_CTC import run as fast_nancy_ctc
@@ -10,14 +10,14 @@ from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "fast_nancy"    : fast_nancy,
+    "fast_nancy": fast_nancy,
     "fast_nancy_ctc": fast_nancy_ctc,
-    "fast_meta"     : meta_fast,
-    "fast_eva"      : fast_eva,
-    "fast_karlsson" : fast_karlsson,
-    "hifi_combined" : hifigan_combined,
-    "aligner"       : aligner,
-    }
+    "fast_meta": meta_fast,
+    "fast_karlsson": fast_karlsson,
+    "fast_multi": fast_multi,
+    "hifi_combined": hifigan_combined,
+    "aligner": aligner,
+}
 
 if __name__ == '__main__':
 
