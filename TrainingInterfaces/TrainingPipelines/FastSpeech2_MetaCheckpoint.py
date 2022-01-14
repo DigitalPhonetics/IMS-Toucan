@@ -163,6 +163,7 @@ def train_loop(net,
     # Preparations
     # ============
     net = net.to(device)
+    torch.multiprocessing.set_sharing_strategy('file_system')
     train_loaders = list()
     train_iters = list()
     for dataset in datasets:
