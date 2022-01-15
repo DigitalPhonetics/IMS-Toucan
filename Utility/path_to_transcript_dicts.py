@@ -88,7 +88,8 @@ def build_path_to_transcript_dict_vctk():
                 with open(f"/mount/resources/speech/corpora/VCTK/txt/{transcript_dir}/" + transcript_file, 'r', encoding='utf8') as tf:
                     transcript = tf.read()
                 wav_path = f"/mount/resources/speech/corpora/VCTK/wav48_silence_trimmed/{transcript_dir}/" + transcript_file.rstrip(".txt") + "_mic2.flac"
-                path_to_transcript[wav_path] = transcript
+                if os.path.exists(wav_path):
+                    path_to_transcript[wav_path] = transcript
     return path_to_transcript
 
 
