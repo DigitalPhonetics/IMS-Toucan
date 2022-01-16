@@ -26,7 +26,8 @@ class FastSpeechDataset(Dataset):
                  cut_silence=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
-                 rebuild_cache=False):
+                 rebuild_cache=False,
+                 ctc_selection=True):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -120,16 +121,17 @@ class FastSpeechDataset(Dataset):
             # done with datapoint creation
             # =============================
 
-            # now we can filter out some bad datapoints based on the CTC scores we collected
-            mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
-            std_dev = statistics.stdev(self.ctc_losses)
-            threshold = mean_ctc + std_dev
-            for index in range(len(self.ctc_losses), 0, -1):
-                if self.ctc_losses[index - 1] > threshold:
-                    self.datapoints.pop(index - 1)
-                    print(
-                        f"Removing datapoint {index - 1}, because the CTC loss indicates there's something wrong with it. "
-                        f"Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
+            if ctc_selection:
+                # now we can filter out some bad datapoints based on the CTC scores we collected
+                mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
+                std_dev = statistics.stdev(self.ctc_losses)
+                threshold = mean_ctc + std_dev
+                for index in range(len(self.ctc_losses), 0, -1):
+                    if self.ctc_losses[index - 1] > threshold:
+                        self.datapoints.pop(index - 1)
+                        print(
+                            f"Removing datapoint {index - 1}, because the CTC loss indicates there's something wrong with it. "
+                            f"Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             # save to cache
             if len(self.datapoints) > 0:
