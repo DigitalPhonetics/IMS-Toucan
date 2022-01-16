@@ -20,7 +20,7 @@ class FastSpeechDataset(Dataset):
                  acoustic_checkpoint_path,
                  cache_dir,
                  lang,
-                 loading_processes=6,
+                 loading_processes=40,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
