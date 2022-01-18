@@ -31,6 +31,9 @@ class Karlsson_FastSpeech2(torch.nn.Module):
         wave, sr = soundfile.read(path_to_reference_audio)
         self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave).to(self.device)
 
+    def set_language(self, lang_id):
+        self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
+
     def forward(self, text, view=False, durations=None, pitch=None, energy=None):
         with torch.no_grad():
             phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))

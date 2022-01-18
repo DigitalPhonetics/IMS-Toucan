@@ -13,11 +13,11 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedT
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
-class Nancy_FastSpeech2(torch.nn.Module):
+class Meta_FastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()
-        model_name = "Nancy"
+        model_name = "Meta"
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language="en", add_silence_to_end=True)
         self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt")).to(torch.device(device))

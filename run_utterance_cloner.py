@@ -69,7 +69,7 @@ def clone_utterance(path_to_reference_audio, reference_transcription, filename_o
 if __name__ == '__main__':
     clone_utterance(path_to_reference_audio="audios/test.wav",
                     reference_transcription="Hello world, this is a test.",
-                    filename_of_result="audios/test_cloned_cond.wav",
+                    filename_of_result="audios/test_cloned_cond_vctklibri.wav",
                     model_id="fast_nancy",
                     lang="en",
                     device="cpu")
