@@ -43,126 +43,74 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(meta_save_dir, exist_ok=True)
 
     print("Preparing")
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "Nancy"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                   corpus_dir=os.path.join("Corpora", "Nancy"),
+                                   lang="en"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_karlsson(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "Karlsson"),
-                                      device=torch.device("cuda"),
-                                      lang="de"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+                                   corpus_dir=os.path.join("Corpora", "Karlsson"),
+                                   lang="de"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10el(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_Greek"),
-                                      device=torch.device("cuda"),
-                                      lang="el"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Greek"),
+                                   lang="el"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10es(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_Spanish"),
-                                      device=torch.device("cuda"),
-                                      lang="es"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
+                                   lang="es"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fi(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_Finnish"),
-                                      device=torch.device("cuda"),
-                                      lang="fi"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Finnish"),
+                                   lang="fi"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10ru(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_Russian"),
-                                      device=torch.device("cuda"),
-                                      lang="ru"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Russian"),
+                                   lang="ru"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10hu(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_Hungarian"),
-                                      device=torch.device("cuda"),
-                                      lang="hu"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
+                                   lang="hu"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10nl(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_Dutch"),
-                                      device=torch.device("cuda"),
-                                      lang="nl"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10nl(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Dutch"),
+                                   lang="nl"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_css10fr(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "meta_French"),
-                                      device=torch.device("cuda"),
-                                      lang="fr"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
+                                   corpus_dir=os.path.join("Corpora", "meta_French"),
+                                   lang="fr"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_ljspeech(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "LJSpeech"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                   corpus_dir=os.path.join("Corpora", "LJSpeech"),
+                                   lang="en"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_hokuspokus(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "Hokus"),
-                                      device=torch.device("cuda"),
-                                      lang="de"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hokuspokus(),
+                                   corpus_dir=os.path.join("Corpora", "Hokus"),
+                                   lang="de"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_thorsten(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "Thorsten"),
-                                      device=torch.device("cuda"),
-                                      lang="de"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
+                                   corpus_dir=os.path.join("Corpora", "Thorsten"),
+                                   lang="de"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_libritts(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "libri"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
+                                   corpus_dir=os.path.join("Corpora", "libri"),
+                                   lang="en"))
 
-    # datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nvidia_hifitts(),
-    #                                  acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-    #                                  cache_dir=os.path.join("Corpora", "hifiTTS"),
-    #                                  device=torch.device("cuda"),
-    #                                  lang="en"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
+                                   corpus_dir=os.path.join("Corpora", "expressive_French"),
+                                   lang="fr"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_att_hack(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "expressive_French"),
-                                      device=torch.device("cuda"),
-                                      lang="fr"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+                                   corpus_dir=os.path.join("Corpora", "vctk"),
+                                   lang="en"))
 
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_vctk(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "vctk"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                                   corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
+                                   lang="es"))
 
-    if not os.path.exists(os.path.join("Corpora", "flux_sing", "fast_train_cache.pt")):
-        train_aligner(train_dataset=AlignerDataset(build_path_to_transcript_dict_fluxsing(),
-                                                cache_dir=os.path.join("Corpora", "flux_sing"),
-                                                lang="en"),
-                    device=torch.device("cuda"),
-                    save_directory=os.path.join(meta_save_dir, "aligner_fluxsing"),
-                    steps=1000,
-                    batch_size=32,
-                    path_to_checkpoint="Models/Aligner/aligner.pt",
-                    fine_tune=True,
-                    debug_img_path=os.path.join(meta_save_dir, "aligner_fluxsing"),
-                    resume=False)
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_fluxsing(),
-                                      acoustic_checkpoint_path=os.path.join(meta_save_dir, "aligner_fluxsing", "aligner.pt"),
-                                      cache_dir=os.path.join("Corpora", "flux_sing"),
-                                      device=torch.device("cuda"),
-                                      lang="en",
-                                      ctc_selection=False))
-
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_spanish_blizzard_train(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "spanish_blizzard "),
-                                      device=torch.device("cuda"),
-                                      lang="es"))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
+                                   corpus_dir=os.path.join("Corpora", "flux_sing"),
+                                   lang="en",
+                                   ctc_selection=False))
 
     train_loop(net=FastSpeech2(),
                device=torch.device("cuda"),
@@ -174,6 +122,34 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,
                resume=resume)
+
+
+def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True):
+    """
+    create an aligner dataset,
+    fine-tune an aligner,
+    create a fastspeech dataset,
+    return it.
+
+    Skips parts that have been done before.
+    """
+    aligner_dir = os.path.join(corpus_dir, "aligner")
+    if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
+        train_aligner(train_dataset=AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang),
+                      device=torch.device("cuda"),
+                      save_directory=aligner_dir,
+                      steps=1000,
+                      batch_size=32,
+                      path_to_checkpoint="Models/Aligner/aligner.pt",
+                      fine_tune=True,
+                      debug_img_path=aligner_dir,
+                      resume=False)
+    return FastSpeechDataset(transcript_dict,
+                             acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
+                             cache_dir=corpus_dir,
+                             device=torch.device("cuda"),
+                             lang=lang,
+                             ctc_selection=ctc_selection)
 
 
 def train_loop(net,
