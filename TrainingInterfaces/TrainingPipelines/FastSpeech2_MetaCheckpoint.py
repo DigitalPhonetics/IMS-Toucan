@@ -14,8 +14,11 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -33,6 +36,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     datasets = list()
 
     base_dir = os.path.join("Models", "FastSpeech2_MetaCheckpoint")
+    if model_dir is not None:
+        meta_save_dir = model_dir
+    else:
+        meta_save_dir = base_dir
+    os.makedirs(meta_save_dir, exist_ok=True)
 
     print("Preparing")
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_nancy(),
@@ -131,8 +139,19 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       device=torch.device("cuda"),
                                       lang="en"))
 
+    train_aligner(train_dataset=AlignerDataset(build_path_to_transcript_dict_fluxsing(),
+                                               cache_dir=os.path.join("Corpora", "flux_sing"),
+                                               lang="en"),
+                  device=torch.device("cuda"),
+                  save_directory=os.path.join(meta_save_dir, "aligner_fluxsing"),
+                  steps=1000,
+                  batch_size=32,
+                  path_to_checkpoint="Models/Aligner/aligner.pt",
+                  fine_tune=True,
+                  debug_img_path=os.path.join(meta_save_dir, "aligner_fluxsing"),
+                  resume=False)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_fluxsing(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      acoustic_checkpoint_path=os.path.join(meta_save_dir, "aligner_fluxsing", "aligner.pt"),
                                       cache_dir=os.path.join("Corpora", "flux_sing"),
                                       device=torch.device("cuda"),
                                       lang="en",
@@ -143,12 +162,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       cache_dir=os.path.join("Corpora", "spanish_blizzard "),
                                       device=torch.device("cuda"),
                                       lang="es"))
-
-    if model_dir is not None:
-        meta_save_dir = model_dir
-    else:
-        meta_save_dir = base_dir
-    os.makedirs(meta_save_dir, exist_ok=True)
 
     train_loop(net=FastSpeech2(),
                device=torch.device("cuda"),
@@ -269,12 +282,12 @@ def train_loop(net,
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             train_losses_total = list()
             torch.save({
-                "model": net.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "scaler": grad_scaler.state_dict(),
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
+                "scaler"      : grad_scaler.state_dict(),
                 "step_counter": step,
-                "default_emb": default_embeddings["en"]
-            },
+                "default_emb" : default_embeddings["en"]
+                },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
