@@ -139,17 +139,18 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       device=torch.device("cuda"),
                                       lang="en"))
 
-    train_aligner(train_dataset=AlignerDataset(build_path_to_transcript_dict_fluxsing(),
-                                               cache_dir=os.path.join("Corpora", "flux_sing"),
-                                               lang="en"),
-                  device=torch.device("cuda"),
-                  save_directory=os.path.join(meta_save_dir, "aligner_fluxsing"),
-                  steps=1000,
-                  batch_size=32,
-                  path_to_checkpoint="Models/Aligner/aligner.pt",
-                  fine_tune=True,
-                  debug_img_path=os.path.join(meta_save_dir, "aligner_fluxsing"),
-                  resume=False)
+    if not os.path.exists(os.path.join("Corpora", "flux_sing", "fast_train_cache.pt")):
+        train_aligner(train_dataset=AlignerDataset(build_path_to_transcript_dict_fluxsing(),
+                                                cache_dir=os.path.join("Corpora", "flux_sing"),
+                                                lang="en"),
+                    device=torch.device("cuda"),
+                    save_directory=os.path.join(meta_save_dir, "aligner_fluxsing"),
+                    steps=1000,
+                    batch_size=32,
+                    path_to_checkpoint="Models/Aligner/aligner.pt",
+                    fine_tune=True,
+                    debug_img_path=os.path.join(meta_save_dir, "aligner_fluxsing"),
+                    resume=False)
     datasets.append(FastSpeechDataset(build_path_to_transcript_dict_fluxsing(),
                                       acoustic_checkpoint_path=os.path.join(meta_save_dir, "aligner_fluxsing", "aligner.pt"),
                                       cache_dir=os.path.join("Corpora", "flux_sing"),

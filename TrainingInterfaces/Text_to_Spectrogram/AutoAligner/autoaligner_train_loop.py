@@ -40,6 +40,7 @@ def train_loop(train_dataset,
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
     """
+    os.makedirs(save_directory, exist_ok=True)
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
