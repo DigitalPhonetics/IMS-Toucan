@@ -138,6 +138,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                       lang="en",
                                       ctc_selection=False))
 
+    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_spanish_blizzard_train(),
+                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                      cache_dir=os.path.join("Corpora", "spanish_blizzard "),
+                                      device=torch.device("cuda"),
+                                      lang="es"))
+
     if model_dir is not None:
         meta_save_dir = model_dir
     else:

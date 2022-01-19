@@ -275,3 +275,17 @@ def build_path_to_transcript_dict_nvidia_hifitts():
         path_to_transcript[f"{root}/{path}"] = norm_text
 
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_spanish_blizzard_train():
+    root = "/mount/resources/speech/corpora/Blizzard2021/spanish_blizzard_release_2021_v2/hub"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "train_text.txt"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            norm_transcript = line.split("\t")[1]
+            wav_path = os.path.join(root, "train_wav", line.split("\t")[0] + ".wav")
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript
+    return path_to_transcript

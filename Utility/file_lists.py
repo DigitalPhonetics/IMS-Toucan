@@ -234,3 +234,7 @@ def get_file_list_nvidia_hifitts():
         path_to_transcript[f"{root}/{path}"] = norm_text
 
     return list(path_to_transcript.keys())
+
+
+def get_file_list_spanish_blizzard_train():
+    return list(build_path_to_transcript_dict_spanish_blizzard_train().keys())

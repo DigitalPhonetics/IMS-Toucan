@@ -51,6 +51,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         file_lists.append(random.sample(get_file_list_css10hu(), 400))
         file_lists.append(random.sample(get_file_list_css10jp(), 400))
         file_lists.append(random.sample(get_file_list_css10ru(), 400))
+        file_lists.append(random.sample(get_file_list_spanish_blizzard_train(), 400))
         file_lists.append(get_file_list_karlsson())
         file_lists.append(get_file_list_nancy())
         file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
