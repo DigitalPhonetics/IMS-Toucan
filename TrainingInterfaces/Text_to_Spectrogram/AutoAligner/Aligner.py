@@ -102,7 +102,7 @@ class Aligner(torch.nn.Module):
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
                 tokens_indexed.append(self.vector_to_id[tuple(vector.cpu().detach().numpy().tolist())])
-            tokens = np.ndarray(tokens_indexed)
+            tokens = np.asarray(tokens_indexed)
         else:
             tokens = tokens.cpu().detach().numpy()
 
