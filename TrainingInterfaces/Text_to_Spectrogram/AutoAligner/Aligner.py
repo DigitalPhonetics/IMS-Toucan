@@ -58,6 +58,9 @@ class Aligner(torch.nn.Module):
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
+        self.vector_to_id = dict()
+        for phone_id in self.tf.phone_to_vector:
+            self.vector_to_id[tuple(self.tf.phone_to_vector[id])] = phone_id
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -98,11 +101,8 @@ class Aligner(torch.nn.Module):
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
-                for phone in self.tf.phone_to_vector:
-                    if vector.cpu().detach().numpy().tolist() == self.tf.phone_to_vector[phone]:
-                        tokens_indexed.append(self.tf.phone_to_id[phone])
-                        # this is terribly inefficient, but it's good enough for testing for now.
-            tokens = torch.LongTensor(tokens_indexed).numpy()
+                tokens_indexed.append(self.vector_to_id[tuple(vector.cpu().detach().numpy().tolist())])
+            tokens = np.ndarray(tokens_indexed)
         else:
             tokens = tokens.cpu().detach().numpy()
 
