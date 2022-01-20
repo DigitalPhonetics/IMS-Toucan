@@ -27,7 +27,8 @@ class FastSpeechDataset(Dataset):
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False,
-                 ctc_selection=True):
+                 ctc_selection=True,
+                 save_imgs=False):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -84,7 +85,7 @@ class FastSpeechDataset(Dataset):
 
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
                                                                     tokens=text.to(device),
-                                                                    save_img_for_debug=os.path.join(vis_dir, f"{index}.png"),
+                                                                    save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                     return_ctc=True)
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
