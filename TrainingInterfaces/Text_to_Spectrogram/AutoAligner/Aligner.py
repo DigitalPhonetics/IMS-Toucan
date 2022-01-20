@@ -60,7 +60,7 @@ class Aligner(torch.nn.Module):
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
         for phone in self.tf.phone_to_vector:
-            self.vector_to_id[tuple(self.tf.phone_to_vector[id])] = self.tf.phone_to_id[phone]
+            self.vector_to_id[tuple(self.tf.phone_to_vector[phone])] = self.tf.phone_to_id[phone]
 
     def forward(self, x, lens=None):
         for conv in self.convs:
