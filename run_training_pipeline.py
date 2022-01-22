@@ -2,7 +2,7 @@ import argparse
 import sys
 
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as fast_karlsson
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTSVCTK import run as fast_multi
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Libri import run as fast_multi
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as fast_nancy
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy_CTC import run as fast_nancy_ctc

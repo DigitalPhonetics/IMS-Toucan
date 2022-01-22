@@ -1,7 +1,6 @@
 import random
 
 import torch
-from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
@@ -27,24 +26,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_LibriTTSVCTK")
+        save_dir = os.path.join("Models", "FastSpeech2_Libri")
     os.makedirs(save_dir, exist_ok=True)
 
-    datasets = list()
-
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_libritts(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "libri"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
-
-    datasets.append(FastSpeechDataset(build_path_to_transcript_dict_vctk(),
-                                      acoustic_checkpoint_path="Models/Aligner/aligner.pt",
-                                      cache_dir=os.path.join("Corpora", "vctk"),
-                                      device=torch.device("cuda"),
-                                      lang="en"))
-
-    train_set = ConcatDataset(datasets)
+    train_set = FastSpeechDataset(build_path_to_transcript_dict_libritts(),
+                                  acoustic_checkpoint_path="Models/Aligner/aligner.pt",
+                                  cache_dir=os.path.join("Corpora", "libri"),
+                                  device=torch.device("cuda"),
+                                  lang="en")
 
     model = FastSpeech2()
 
