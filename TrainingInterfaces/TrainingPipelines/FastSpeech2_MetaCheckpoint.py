@@ -102,6 +102,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "vctk"),
                                    lang="en"))
 
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+                                   corpus_dir=os.path.join("Corpora", "hifi"),
+                                   lang="en"))
+
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
                                    corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
                                    lang="es"))
