@@ -69,7 +69,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  duration_predictor_dropout_rate=0.2,
                  postnet_dropout_rate=0.5,
                  # additional features
-                 utt_embed_dim=704):
+                 utt_embed_dim=192,
+                 connect_utt_emb_at_encoder_out=True):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -86,7 +87,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
-                                 utt_embed=utt_embed_dim)
+                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out)
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,

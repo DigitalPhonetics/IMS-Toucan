@@ -131,7 +131,7 @@ class FastSpeechDataset(Dataset):
                     if self.ctc_losses[index - 1] > threshold:
                         self.datapoints.pop(index - 1)
                         print(
-                            f"Removing datapoint {index - 1}, because the CTC loss indicates there's something wrong with it. "
+                            f"Removing datapoint {index - 1}, because the CTC loss is one std higher than the mean. "
                             f"Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             # save to cache
@@ -155,7 +155,7 @@ class FastSpeechDataset(Dataset):
                self.datapoints[index][4], \
                self.datapoints[index][5], \
                self.datapoints[index][6], \
-               self.datapoints[index][7]
+               self.datapoints[index][7][:192]
 
     def __len__(self):
         return len(self.datapoints)

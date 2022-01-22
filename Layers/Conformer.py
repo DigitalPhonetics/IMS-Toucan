@@ -48,7 +48,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, connect_utt_emb_at_encoder_out=True):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -65,6 +65,7 @@ class Conformer(torch.nn.Module):
 
         self.normalize_before = normalize_before
 
+        self.connect_utt_emb_at_encoder_out = connect_utt_emb_at_encoder_out
         if utt_embed is not None:
             self.hs_emb_projection = torch.nn.Linear(attention_dim + 64, attention_dim)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
@@ -110,6 +111,9 @@ class Conformer(torch.nn.Module):
         if self.embed is not None:
             xs = self.embed(xs)
 
+        if utterance_embedding is not None and not self.connect_utt_emb_at_encoder_out:
+            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
+            
         xs = self.pos_enc(xs)
 
         xs, masks = self.encoders(xs, masks)
@@ -119,7 +123,7 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             xs = self.after_norm(xs)
 
-        if utterance_embedding is not None:
+        if utterance_embedding is not None and self.connect_utt_emb_at_encoder_out:
             xs = self._integrate_with_utt_embed(xs, utterance_embedding)
 
         return xs, masks
