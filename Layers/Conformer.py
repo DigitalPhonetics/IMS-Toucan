@@ -66,9 +66,9 @@ class Conformer(torch.nn.Module):
         self.normalize_before = normalize_before
 
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + 128, attention_dim)
+            self.hs_emb_projection = torch.nn.Linear(attention_dim + 64, attention_dim)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, 128),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, 64),
                                                             torch.nn.Softsign())
 
         # self-attention module definition
@@ -110,9 +110,6 @@ class Conformer(torch.nn.Module):
         if self.embed is not None:
             xs = self.embed(xs)
 
-        if utterance_embedding is not None:
-            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
-
         xs = self.pos_enc(xs)
 
         xs, masks = self.encoders(xs, masks)
@@ -121,6 +118,10 @@ class Conformer(torch.nn.Module):
 
         if self.normalize_before:
             xs = self.after_norm(xs)
+
+        if utterance_embedding is not None:
+            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
+
         return xs, masks
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
