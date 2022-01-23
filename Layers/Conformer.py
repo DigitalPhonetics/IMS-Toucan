@@ -67,9 +67,9 @@ class Conformer(torch.nn.Module):
 
         self.connect_utt_emb_at_encoder_out = connect_utt_emb_at_encoder_out
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + 64, attention_dim)
+            self.hs_emb_projection = torch.nn.Linear(attention_dim + 128, attention_dim)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, 64),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, 128),
                                                             torch.nn.Softsign())
 
         # self-attention module definition

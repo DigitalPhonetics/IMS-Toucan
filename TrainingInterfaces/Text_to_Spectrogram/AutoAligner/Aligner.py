@@ -99,10 +99,23 @@ class Aligner(torch.nn.Module):
     def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
 
         if not train:
-            tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
+            tokens_indexed1 = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
+            tokens_indexed2 = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
-                tokens_indexed.append(self.vector_to_id[tuple(vector.cpu().detach().numpy().tolist())])
-            tokens = np.asarray(tokens_indexed)
+                tokens_indexed1.append(self.vector_to_id[tuple(vector.cpu().detach().numpy().tolist())])
+                for phone in self.tf.phone_to_vector:
+                    if vector.cpu().detach().numpy().tolist() == self.tf.phone_to_vector[phone]:
+                        tokens_indexed2.append(self.tf.phone_to_id[phone])
+                        # this is terribly inefficient, but it's good enough for testing for now.
+            tokens2 = torch.LongTensor(tokens_indexed2).numpy()
+            tokens1 = np.asarray(tokens_indexed1)
+
+            print(tokens1)
+            print(tokens2)
+
+            assert tokens1 == tokens2
+
+            tokens = tokens1
         else:
             tokens = tokens.cpu().detach().numpy()
 

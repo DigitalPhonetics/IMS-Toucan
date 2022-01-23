@@ -141,7 +141,7 @@ def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True):
         train_aligner(train_dataset=AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang),
                       device=torch.device("cuda"),
                       save_directory=aligner_dir,
-                      steps=max(len(transcript_dict.keys()) * 5, 500),
+                      steps=max((len(transcript_dict.keys()) * 5) / 32, 500),
                       batch_size=32,
                       path_to_checkpoint="Models/Aligner/aligner.pt",
                       fine_tune=True,
