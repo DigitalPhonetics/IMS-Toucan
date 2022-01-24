@@ -20,14 +20,16 @@ class HiFiGANDataset(Dataset):
                  cache_dir,
                  desired_samplingrate=48000,
                  samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
-                 loading_processes=40):
+                 loading_processes=40,
+                 use_random_corruption=False):
         os.makedirs(cache_dir, exist_ok=True)
+        self.use_random_corruption = use_random_corruption
         self.samples_per_segment = samples_per_segment
         self.desired_samplingrate = desired_samplingrate
         self.melspec_ap = AudioPreprocessor(input_sr=desired_samplingrate, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
-
         # hop length of spec loss must be same as the product of the upscale factors
         # samples per segment must be a multiple of hop length of spec loss
+
         _, self._orig_sr = sf.read(list_of_paths[0])
         #  ^ this is the reason why we must create individual
         # datasets and then concat them. If we just did all
@@ -78,7 +80,7 @@ class HiFiGANDataset(Dataset):
         audio_start = random.randint(0, max_audio_start)
         segment = self.waves[index][audio_start: audio_start + self.samples_per_segment]
 
-        if random.random() < 0.2:
+        if random.random() < 0.2 and self.use_random_corruption:
             # apply distortion to random samples with a 20% chance
             noise = torch.rand(size=segment.size) - 0.5  # get 0 centered noise
             speech_power = segment.norm(p=2)
