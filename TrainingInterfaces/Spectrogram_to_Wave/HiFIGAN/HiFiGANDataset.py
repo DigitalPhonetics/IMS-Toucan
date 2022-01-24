@@ -82,7 +82,7 @@ class HiFiGANDataset(Dataset):
 
         if random.random() < 0.2 and self.use_random_corruption:
             # apply distortion to random samples with a 20% chance
-            noise = torch.rand(size=segment.shape[0]) - 0.5  # get 0 centered noise
+            noise = torch.rand(size=(segment.shape[0],)) - 0.5  # get 0 centered noise
             speech_power = segment.norm(p=2)
             noise_power = noise.norm(p=2)
             scale = math.e * noise_power / speech_power  # signal to noise ratio of 10db
