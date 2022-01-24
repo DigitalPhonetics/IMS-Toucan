@@ -62,3 +62,10 @@ wcwidth==0.2.5
 speechbrain==0.5.10
 gdown
 unsilence
+
+torch~=1.9.0+cu111
+sklearn~=0.0
+jiwer~=2.2.1
+auraloss~=0.2.1
+pedalboard~=0.3.11
+argparse~=1.4.0
