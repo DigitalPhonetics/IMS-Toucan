@@ -6,6 +6,11 @@ def get_file_list_vctk():
     return list(path_to_transcript_dict.keys())
 
 
+def get_file_list_fluxsing():
+    path_to_transcript_dict = build_path_to_transcript_dict_fluxsing()
+    return list(path_to_transcript_dict.keys())
+
+
 def get_file_list_karlsson():
     root = "/mount/resources/speech/corpora/Karlsson"
     file_list = list()
