@@ -39,11 +39,10 @@ def train_loop(generator,
     discriminator_adv_criterion = DiscriminatorAdversarialLoss().to(device)
     generator_adv_criterion = GeneratorAdversarialLoss().to(device)
 
-    signal_processing_losses = list()
+    signal_processing_loss_functions = list()
     if use_signal_processing_losses:
-        signal_processing_losses.append(auraloss.time.SNRLoss())
-        signal_processing_losses.append(auraloss.time.SISDRLoss())
-        signal_processing_losses.append(auraloss.perceptual.FIRFilter())
+        signal_processing_loss_functions.append(auraloss.time.SNRLoss().to(device))
+        signal_processing_loss_functions.append(auraloss.time.SISDRLoss().to(device))
 
     g = generator.to(device)
     d = discriminator.to(device)
@@ -101,7 +100,7 @@ def train_loop(generator,
             pred_wave = g(melspec)
             signal_loss = 0.0
             if use_signal_processing_losses:
-                for sl in signal_processing_losses:
+                for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
                 signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
