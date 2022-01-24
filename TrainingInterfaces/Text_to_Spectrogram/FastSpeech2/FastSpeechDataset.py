@@ -21,7 +21,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  loading_processes=40,
-                 min_len_in_seconds=1,
+                 min_len_in_seconds=3,
                  max_len_in_seconds=20,
                  cut_silence=False,
                  reduction_factor=1,
@@ -78,6 +78,9 @@ class FastSpeechDataset(Dataset):
             for index in tqdm(range(len(dataset))):
                 norm_wave = norm_waves[index]
                 norm_wave_length = torch.LongTensor([len(norm_wave)])
+
+                if len(norm_wave) / 16000 < min_len_in_seconds and ctc_selection:
+                    continue
 
                 text = dataset[index][0]
                 melspec = dataset[index][2]
@@ -155,7 +158,7 @@ class FastSpeechDataset(Dataset):
                self.datapoints[index][4], \
                self.datapoints[index][5], \
                self.datapoints[index][6], \
-               self.datapoints[index][7][:192]
+               self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)
