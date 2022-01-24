@@ -41,9 +41,8 @@ def train_loop(generator,
 
     signal_processing_loss_functions = list()
     if use_signal_processing_losses:
-        signal_processing_loss_functions.append(auraloss.time.SNRLoss())
-        signal_processing_loss_functions.append(auraloss.time.SISDRLoss())
-        signal_processing_loss_functions.append(auraloss.perceptual.FIRFilter())
+        signal_processing_loss_functions.append(auraloss.time.SNRLoss().to(device))
+        signal_processing_loss_functions.append(auraloss.time.SISDRLoss().to(device))
 
     g = generator.to(device)
     d = discriminator.to(device)
