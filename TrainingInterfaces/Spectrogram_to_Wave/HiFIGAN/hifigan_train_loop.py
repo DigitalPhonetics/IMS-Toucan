@@ -26,7 +26,8 @@ def train_loop(generator,
                batch_size=32,
                steps=2500000,
                resume=False,
-               use_signal_processing_losses=False):
+               use_signal_processing_losses=False  # https://github.com/csteinmetz1/auraloss remember to cite if used
+               ):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -38,14 +39,10 @@ def train_loop(generator,
     discriminator_adv_criterion = DiscriminatorAdversarialLoss().to(device)
     generator_adv_criterion = GeneratorAdversarialLoss().to(device)
 
-    signal_processing_losses = list()
+    signal_processing_loss_functions = list()
     if use_signal_processing_losses:
-        signal_processing_losses.append(auraloss.time.SNRLoss())
-        signal_processing_losses.append(auraloss.time.SISDRLoss())
-        signal_processing_losses.append(auraloss.freq.RandomResolutionSTFTLoss())
-        signal_processing_losses.append(auraloss.freq.SumAndDifferenceSTFTLoss())
-        signal_processing_losses.append(auraloss.perceptual.SumAndDifference())
-        signal_processing_losses.append(auraloss.perceptual.FIRFilter())
+        signal_processing_loss_functions.append(auraloss.time.SNRLoss().to(device))
+        signal_processing_loss_functions.append(auraloss.time.SISDRLoss().to(device))
 
     g = generator.to(device)
     d = discriminator.to(device)
@@ -101,17 +98,17 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave = g(melspec)
-            signal_loss = 0.0
+            signal_loss = torch.tensor([0.0]).to(device)
             if use_signal_processing_losses:
-                for sl in signal_processing_losses:
+                for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
                 signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
             if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
                 adversarial_loss = generator_adv_criterion(d_outs)
-            else: 
-                adversarial_loss = 0.0
+            else:
+                adversarial_loss = torch.tensor([0.0]).to(device)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
             generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss
@@ -164,8 +161,9 @@ def train_loop(generator,
         print("Steps:              {}".format(step_counter))
         print("Generator Loss:     {}".format(round(sum(generator_losses) / len(generator_losses), 3)))
         print("    Mel Loss:       {}".format(round(sum(mel_losses) / len(mel_losses), 3)))
+        print("    FeatMatch Loss: {}".format(round(sum(feat_match_losses) / len(feat_match_losses), 3)))
         if use_signal_processing_losses:
             print("    SigProc Loss:   {}".format(round(sum(signal_processing_losses) / len(signal_processing_losses), 3)))
-        print("    FeatMatch Loss: {}".format(round(sum(feat_match_losses) / len(feat_match_losses), 3)))
         print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
-        print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
+        if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
+            print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
