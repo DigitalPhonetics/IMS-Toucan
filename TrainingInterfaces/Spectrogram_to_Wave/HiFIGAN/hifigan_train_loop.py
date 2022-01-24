@@ -25,11 +25,8 @@ def train_loop(generator,
                path_to_checkpoint=None,
                batch_size=32,
                steps=2500000,
-<<<<<<< HEAD
-               resume=False):
-=======
+               resume=False,
                use_signal_processing_losses=False):
->>>>>>> 13648dc7ae5e3a04d0ec85139a5cfdf1d1179f62
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -117,11 +114,7 @@ def train_loop(generator,
                 adversarial_loss = 0.0
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-<<<<<<< HEAD
-            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3
-=======
-            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 4.0 + feature_matching_loss * 2.0 + signal_loss
->>>>>>> 13648dc7ae5e3a04d0ec85139a5cfdf1d1179f62
+            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
