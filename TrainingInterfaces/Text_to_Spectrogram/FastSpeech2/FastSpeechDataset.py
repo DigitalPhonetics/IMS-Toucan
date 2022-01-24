@@ -134,8 +134,7 @@ class FastSpeechDataset(Dataset):
                     if self.ctc_losses[index - 1] > threshold:
                         self.datapoints.pop(index - 1)
                         print(
-                            f"Removing datapoint {index - 1}, because the CTC loss is one std higher than the mean. "
-                            f"Maybe the label is partially incorrect. ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
+                            f"Removing datapoint {index - 1}, because the CTC loss is one standard deviation higher than the mean. \n ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             # save to cache
             if len(self.datapoints) > 0:

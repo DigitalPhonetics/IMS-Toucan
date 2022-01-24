@@ -48,7 +48,8 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, connect_utt_emb_at_encoder_out=True):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, connect_utt_emb_at_encoder_out=True,
+                 spk_emb_bottleneck_size=128):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -67,9 +68,9 @@ class Conformer(torch.nn.Module):
 
         self.connect_utt_emb_at_encoder_out = connect_utt_emb_at_encoder_out
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + 128, attention_dim)
+            self.hs_emb_projection = torch.nn.Linear(attention_dim + spk_emb_bottleneck_size, attention_dim)
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, 128),
+            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, spk_emb_bottleneck_size),
                                                             torch.nn.Softsign())
 
         # self-attention module definition
@@ -113,7 +114,7 @@ class Conformer(torch.nn.Module):
 
         if utterance_embedding is not None and not self.connect_utt_emb_at_encoder_out:
             xs = self._integrate_with_utt_embed(xs, utterance_embedding)
-            
+
         xs = self.pos_enc(xs)
 
         xs, masks = self.encoders(xs, masks)
