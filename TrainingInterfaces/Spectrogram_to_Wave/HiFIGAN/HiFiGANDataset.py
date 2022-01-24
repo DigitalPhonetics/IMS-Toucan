@@ -1,3 +1,4 @@
+import math
 import os
 import random
 from multiprocessing import Manager
@@ -76,9 +77,20 @@ class HiFiGANDataset(Dataset):
         max_audio_start = len(self.waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
         segment = self.waves[index][audio_start: audio_start + self.samples_per_segment]
-        resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(), explicit_sampling_rate=16000, normalize=False).transpose(0, 1)[
-                  :-1].transpose(0, 1)
+
+        if random.random() < 0.2:
+            # apply distortion to random samples with a 20% chance
+            noise = torch.rand(size=segment.size) - 0.5  # get 0 centered noise
+            speech_power = segment.norm(p=2)
+            noise_power = noise.norm(p=2)
+            scale = math.e * noise_power / speech_power  # signal to noise ratio of 10db
+            noisy_segment = (scale * segment + noise) / 2
+            resampled_segment = self.melspec_ap.resample(noisy_segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+        else:
+            resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
+                                                           explicit_sampling_rate=16000,
+                                                           normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):

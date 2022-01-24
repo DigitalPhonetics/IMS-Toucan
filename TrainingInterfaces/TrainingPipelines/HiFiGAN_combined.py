@@ -52,6 +52,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         file_lists.append(random.sample(get_file_list_css10jp(), 400))
         file_lists.append(random.sample(get_file_list_css10ru(), 400))
         file_lists.append(random.sample(get_file_list_spanish_blizzard_train(), 400))
+        file_lists.append(random.sample(build_path_to_transcript_dict_fluxsing(), 100))
         file_lists.append(get_file_list_karlsson())
         file_lists.append(get_file_list_nancy())
         file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
@@ -78,7 +79,8 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
                        epochs_per_save=2,
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=resume_checkpoint,
-                       resume=resume)
+                       resume=resume,
+                       use_signal_processing_losses=True)
         else:
             train_loop(batch_size=16,
                        steps=3000,
@@ -89,4 +91,5 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
                        epochs_per_save=2,
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=None,
-                       resume=True)
+                       resume=True,
+                       use_signal_processing_losses=True)
