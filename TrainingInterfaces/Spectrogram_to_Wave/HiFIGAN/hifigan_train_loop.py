@@ -165,4 +165,5 @@ def train_loop(generator,
         if use_signal_processing_losses:
             print("    SigProc Loss:   {}".format(round(sum(signal_processing_losses) / len(signal_processing_losses), 3)))
         print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
-        print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
+        if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
+            print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
