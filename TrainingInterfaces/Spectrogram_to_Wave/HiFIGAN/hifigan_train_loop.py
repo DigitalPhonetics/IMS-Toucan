@@ -43,9 +43,6 @@ def train_loop(generator,
     if use_signal_processing_losses:
         signal_processing_losses.append(auraloss.time.SNRLoss())
         signal_processing_losses.append(auraloss.time.SISDRLoss())
-        signal_processing_losses.append(auraloss.freq.RandomResolutionSTFTLoss())
-        signal_processing_losses.append(auraloss.freq.SumAndDifferenceSTFTLoss())
-        signal_processing_losses.append(auraloss.perceptual.SumAndDifference())
         signal_processing_losses.append(auraloss.perceptual.FIRFilter())
 
     g = generator.to(device)
