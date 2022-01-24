@@ -26,7 +26,8 @@ def train_loop(generator,
                batch_size=32,
                steps=2500000,
                resume=False,
-               use_signal_processing_losses=False):
+               use_signal_processing_losses=False  # https://github.com/csteinmetz1/auraloss remember to cite if used
+               ):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
 
@@ -42,9 +43,6 @@ def train_loop(generator,
     if use_signal_processing_losses:
         signal_processing_losses.append(auraloss.time.SNRLoss())
         signal_processing_losses.append(auraloss.time.SISDRLoss())
-        signal_processing_losses.append(auraloss.freq.RandomResolutionSTFTLoss())
-        signal_processing_losses.append(auraloss.freq.SumAndDifferenceSTFTLoss())
-        signal_processing_losses.append(auraloss.perceptual.SumAndDifference())
         signal_processing_losses.append(auraloss.perceptual.FIRFilter())
 
     g = generator.to(device)
