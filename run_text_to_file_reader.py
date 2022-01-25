@@ -29,7 +29,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu"):
     if type(sentence) == str:
         sentence = [sentence]
     for index in range(10):
-        tts.default_utterance_embedding = torch.zeros(192).float().random_(-40, 40).to(device)
+        tts.default_utterance_embedding = torch.zeros(704).float().random_(-40, 40).to(device)
         tts.read_to_file(text_list=sentence, file_location=filename + f"_{index}" + ".wav")
 
 
