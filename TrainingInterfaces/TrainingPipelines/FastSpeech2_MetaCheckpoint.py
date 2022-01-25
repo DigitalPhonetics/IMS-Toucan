@@ -115,7 +115,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     train_loop(net=FastSpeech2(lang_embs=100),
                device=torch.device("cuda"),
-               datasets=datasets,
+               datasets=datasets[:2],  # for debugging and getting it started
                batch_size=5,
                save_directory=meta_save_dir,
                steps=100000,
@@ -365,4 +365,4 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[7] for datapoint in batch]).squeeze(),
-            torch.stack([datapoint[8] for datapoint in batch]).squeeze())
+            torch.stack([datapoint[8] for datapoint in batch]))
