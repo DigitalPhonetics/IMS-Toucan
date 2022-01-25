@@ -4,9 +4,6 @@ import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
-import torch.multiprocessing
-import torch.multiprocessing
-import torch.multiprocessing
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -192,7 +189,8 @@ def train_loop(net,
             else:
                 default_embedding = default_embedding + datapoint[7].squeeze()
         default_embeddings[lang] = (default_embedding / len(datasets[index])).to(device)
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+    optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+    # this is only included in more recent versions of torch, may need to upgrade torch if there's an error here
     grad_scaler = GradScaler()
     if resume:
         previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
