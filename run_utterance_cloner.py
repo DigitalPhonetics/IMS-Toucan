@@ -5,6 +5,7 @@ import torch
 from numpy import trim_zeros
 
 from InferenceInterfaces.Karlsson_FastSpeech2 import Karlsson_FastSpeech2
+from InferenceInterfaces.Meta_FastSpeech2 import Meta_FastSpeech2
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -14,9 +15,10 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 
 tts_dict = {
-    "fast_nancy": Nancy_FastSpeech2,
+    "fast_nancy"   : Nancy_FastSpeech2,
     "fast_karlsson": Karlsson_FastSpeech2,
-}
+    "fast_meta"    : Meta_FastSpeech2
+    }
 
 
 def extract_prosody(transcript, ref_audio_path, lang="de"):
@@ -63,6 +65,7 @@ def clone_utterance(path_to_reference_audio, reference_transcription, filename_o
     tts = tts_dict[model_id](device=device)
     tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
     transcript, duration, pitch, energy = extract_prosody(reference_transcription, path_to_reference_audio, lang=lang)
+    tts.set_language(lang)
     tts.read_to_file(text_list=[reference_transcription], file_location=filename_of_result, dur_list=[duration], pitch_list=[pitch], energy_list=[energy])
 
 
@@ -70,6 +73,6 @@ if __name__ == '__main__':
     clone_utterance(path_to_reference_audio="audios/test.wav",
                     reference_transcription="Hello world, this is a test.",
                     filename_of_result="audios/test_cloned_cond_vctklibri.wav",
-                    model_id="fast_nancy",
+                    model_id="fast_meta",
                     lang="en",
                     device="cpu")

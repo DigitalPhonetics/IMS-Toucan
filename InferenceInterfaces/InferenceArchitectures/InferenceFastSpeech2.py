@@ -70,7 +70,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  postnet_dropout_rate=0.5,
                  # additional features
                  utt_embed_dim=704,
-                 connect_utt_emb_at_encoder_out=True):
+                 connect_utt_emb_at_encoder_out=True,
+                 lang_embs=None):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -87,7 +88,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
-                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out)
+                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out, lang_embs=lang_embs)
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
@@ -136,11 +137,11 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
-                 is_inference=False, alpha=1.0, utterance_embedding=None):
+                 is_inference=False, alpha=1.0, utterance_embedding=None, lang_ids=None):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
         duration_masks = make_pad_mask(text_lens, device=text_lens.device)
@@ -201,7 +202,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                 pitch=None,
                 energy=None,
                 utterance_embedding=None,
-                return_duration_pitch_energy=False):
+                return_duration_pitch_energy=False,
+                lang_id=None):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -231,6 +233,8 @@ class FastSpeech2(torch.nn.Module, ABC):
             pitch = pitch.unsqueeze(0)
         if energy is not None:
             energy = energy.unsqueeze(0)
+        if lang_id is not None:
+            lang_id = lang_id.unsqueeze(0)
 
         before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(text.unsqueeze(0),
                                                                                                ilens,
@@ -239,7 +243,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                is_inference=True,
                                                                                                gold_pitch=pitch,
                                                                                                gold_energy=energy,
-                                                                                               utterance_embedding=utterance_embedding.unsqueeze(0))
+                                                                                               utterance_embedding=utterance_embedding.unsqueeze(0),
+                                                                                               lang_ids=lang_id)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]

@@ -274,6 +274,27 @@ def english_text_expansion(text):
     return text
 
 
+def get_language_id(language):
+    if language == "en":
+        return 0
+    elif language == "de":
+        return 1
+    elif language == "el":
+        return 2
+    elif language == "es":
+        return 3
+    elif language == "fi":
+        return 4
+    elif language == "ru":
+        return 5
+    elif language == "hu":
+        return 6
+    elif language == "nl":
+        return 7
+    elif language == "fr":
+        return 8
+
+
 if __name__ == '__main__':
     # test an English utterance
     tfr_en = ArticulatoryCombinedTextFrontend(language="en")

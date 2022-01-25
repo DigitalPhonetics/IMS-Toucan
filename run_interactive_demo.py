@@ -4,10 +4,12 @@ import warnings
 import torch
 
 from InferenceInterfaces.Karlsson_FastSpeech2 import Karlsson_FastSpeech2
+from InferenceInterfaces.Meta_FastSpeech2 import Meta_FastSpeech2
 from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
 
 tts_dict = {
     "fast_nancy"   : Nancy_FastSpeech2,
+    "fast_meta"    : Meta_FastSpeech2,
     "fast_karlsson": Karlsson_FastSpeech2,
     }
 

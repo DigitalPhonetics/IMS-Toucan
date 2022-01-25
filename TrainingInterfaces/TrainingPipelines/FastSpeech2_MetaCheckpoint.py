@@ -11,10 +11,11 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDatasetLanguageID import FastSpeechDataset
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -112,7 +113,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    lang="en",
                                    ctc_selection=False))
 
-    train_loop(net=FastSpeech2(),
+    train_loop(net=FastSpeech2(lang_embs=100),
                device=torch.device("cuda"),
                datasets=datasets,
                batch_size=5,
@@ -152,6 +153,31 @@ def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True):
                              ctc_selection=ctc_selection)
 
 
+@torch.no_grad()
+def find_faulty_samples(net,
+                        datasets,
+                        device,
+                        path_to_checkpoint):
+    net = net.to(device)
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
+    net.load_state_dict(check_dict["model"])
+    losses = list()
+    for dataset_index in range(len(datasets)):
+        for datapoint_index in tqdm(range(len(datasets[dataset_index]))):
+            loss = net(text_tensors=datasets[dataset_index][datapoint_index][0].unsqueeze(0).to(device),
+                       text_lengths=datasets[dataset_index][datapoint_index][1].unsqueeze(0).to(device),
+                       gold_speech=datasets[dataset_index][datapoint_index][2].unsqueeze(0).to(device),
+                       speech_lengths=datasets[dataset_index][datapoint_index][3].unsqueeze(0).to(device),
+                       gold_durations=datasets[dataset_index][datapoint_index][4].unsqueeze(0).to(device),
+                       gold_pitch=datasets[dataset_index][datapoint_index][6].unsqueeze(0).to(device),  # mind the switched order
+                       gold_energy=datasets[dataset_index][datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
+                       utterance_embedding=datasets[dataset_index][datapoint_index][7].unsqueeze(0).to(device),
+                       return_mels=False)
+            losses.append(loss.item())
+    print(sorted(losses))
+
+
 def train_loop(net,
                datasets,
                device,
@@ -174,7 +200,7 @@ def train_loop(net,
                                         dataset=dataset,
                                         drop_last=True,
                                         num_workers=2,
-                                        pin_memory=False,
+                                        pin_memory=True,
                                         shuffle=True,
                                         prefetch_factor=16,
                                         collate_fn=collate_and_pad,
@@ -240,6 +266,7 @@ def train_loop(net,
                                         gold_pitch=batch[6].to(device),  # mind the switched order
                                         gold_energy=batch[5].to(device),  # mind the switched order
                                         utterance_embedding=batch[7].to(device),
+                                        lang_ids=batch[8].to(device),
                                         return_mels=False))
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
@@ -301,7 +328,10 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True, utterance_embedding=default_embed)
+    spec, durations, *_ = net.inference(text=phoneme_vector,
+                                        return_duration_pitch_energy=True,
+                                        utterance_embedding=default_embed,
+                                        lang_id=get_language_id(lang))
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -326,7 +356,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -334,4 +364,5 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[7] for datapoint in batch]).squeeze())
+            torch.stack([datapoint[7] for datapoint in batch]).squeeze(),
+            torch.stack([datapoint[8] for datapoint in batch]).squeeze(),)
