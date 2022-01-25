@@ -276,23 +276,23 @@ def english_text_expansion(text):
 
 def get_language_id(language):
     if language == "en":
-        return 0
+        return torch.LongTensor([0])
     elif language == "de":
-        return 1
+        return torch.LongTensor([1])
     elif language == "el":
-        return 2
+        return torch.LongTensor([2])
     elif language == "es":
-        return 3
+        return torch.LongTensor([3])
     elif language == "fi":
-        return 4
+        return torch.LongTensor([4])
     elif language == "ru":
-        return 5
+        return torch.LongTensor([5])
     elif language == "hu":
-        return 6
+        return torch.LongTensor([6])
     elif language == "nl":
-        return 7
+        return torch.LongTensor([7])
     elif language == "fr":
-        return 8
+        return torch.LongTensor([8])
 
 
 if __name__ == '__main__':

@@ -195,6 +195,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
         return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
 
+    @torch.no_grad()
     def forward(self,
                 text,
                 speech=None,
