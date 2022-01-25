@@ -201,7 +201,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy, utterance_embedding=utterance_embedding,
-                                                                        is_inference=False, lang_embs=lang_ids)
+                                                                        is_inference=False, lang_ids=lang_ids)
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
