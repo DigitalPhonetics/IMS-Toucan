@@ -48,6 +48,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "Karlsson"),
                                    lang="de"))
 
+    """
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
                                    corpus_dir=os.path.join("Corpora", "meta_Greek"),
                                    lang="el"))
@@ -112,10 +113,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "flux_sing"),
                                    lang="en",
                                    ctc_selection=False))
+    """
 
     train_loop(net=FastSpeech2(lang_embs=100),
                device=torch.device("cuda"),
-               datasets=datasets[:2],  # for debugging and getting it started
+               datasets=datasets,
                batch_size=5,
                save_directory=meta_save_dir,
                steps=100000,
