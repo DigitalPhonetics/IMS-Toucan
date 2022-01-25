@@ -34,7 +34,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    base_dir = os.path.join("Models", "FastSpeech2_MetaCheckpoint")
+    base_dir = os.path.join("Models", "FastSpeech2_Meta")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
