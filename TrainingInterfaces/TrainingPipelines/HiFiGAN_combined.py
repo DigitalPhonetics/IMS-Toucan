@@ -61,7 +61,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         datasets = list()
 
         for index, file_list in enumerate(file_lists):
-            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}", use_random_corruption=True))
+            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}", use_random_corruption=False))
         train_set = ConcatDataset(datasets)
 
         generator = HiFiGANGenerator()
