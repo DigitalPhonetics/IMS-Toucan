@@ -24,7 +24,8 @@ def train_loop(generator,
                epochs_per_save=1,
                path_to_checkpoint=None,
                batch_size=32,
-               steps=2500000,
+               epochs=100,
+               # the ideas is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
                resume=False,
                use_signal_processing_losses=False  # https://github.com/csteinmetz1/auraloss remember to cite if used
                ):
@@ -48,9 +49,9 @@ def train_loop(generator,
     d = discriminator.to(device)
     g.train()
     d.train()
-    optimizer_g = torch.optim.Adam(g.parameters(), betas=(0.5, 0.9), lr=2.0e-4, weight_decay=0.0)
+    optimizer_g = torch.optim.RAdam(g.parameters(), betas=(0.5, 0.9), lr=0.001, weight_decay=0.0)
     scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
-    optimizer_d = torch.optim.Adam(d.parameters(), betas=(0.5, 0.9), lr=2.0e-4, weight_decay=0.0)
+    optimizer_d = torch.optim.RAdam(d.parameters(), betas=(0.5, 0.9), lr=0.0005, weight_decay=0.0)
     scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
 
     train_loader = DataLoader(dataset=train_dataset,
@@ -76,7 +77,7 @@ def train_loop(generator,
 
     start_time = time.time()
 
-    for _ in range(steps):
+    for _ in range(epochs):
 
         epoch += 1
         discriminator_losses = list()
@@ -102,7 +103,7 @@ def train_loop(generator,
             if use_signal_processing_losses:
                 for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
-                signal_processing_losses.append(signal_loss.item())
+                signal_processing_losses.append(signal_loss.item() * 0.5)
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
             if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
@@ -111,7 +112,7 @@ def train_loop(generator,
                 adversarial_loss = torch.tensor([0.0]).to(device)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss
+            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss * 0.5
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
