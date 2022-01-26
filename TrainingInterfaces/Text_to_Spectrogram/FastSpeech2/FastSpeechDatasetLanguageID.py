@@ -148,6 +148,7 @@ class FastSpeechDataset(Dataset):
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
 
+        self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
         print("Prepared {} datapoints.".format(len(self.datapoints)))
 
@@ -164,3 +165,9 @@ class FastSpeechDataset(Dataset):
 
     def __len__(self):
         return len(self.datapoints)
+
+    def remove_samples(self, list_of_samples_to_remove):
+        for remove_id in sorted(list_of_samples_to_remove, reverse=True):
+            self.datapoints.pop(remove_id)
+        torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
+        print("Dataset updated!")
