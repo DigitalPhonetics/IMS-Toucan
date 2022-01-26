@@ -39,7 +39,7 @@ class Meta_FastSpeech2(torch.nn.Module):
         The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
         """
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
-        self.lang_id = get_language_id(lang_id)
+        self.lang_id = get_language_id(lang_id).to(self.device)
 
     def forward(self, text, view=False, durations=None, pitch=None, energy=None):
         with torch.no_grad():

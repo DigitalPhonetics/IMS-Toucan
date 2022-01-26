@@ -331,7 +331,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
     spec, durations, *_ = net.inference(text=phoneme_vector,
                                         return_duration_pitch_energy=True,
                                         utterance_embedding=default_embed,
-                                        lang_id=get_language_id(lang))
+                                        lang_id=get_language_id(lang).to(device))
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
