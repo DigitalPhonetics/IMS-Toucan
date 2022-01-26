@@ -71,7 +71,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         print("Training model")
         if run_id == 0:
             train_loop(batch_size=16,
-                       steps=3000,
+                       epochs=8,
                        generator=generator,
                        discriminator=discriminator,
                        train_dataset=train_set,
@@ -83,7 +83,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
                        use_signal_processing_losses=True)
         else:
             train_loop(batch_size=16,
-                       steps=3000,
+                       epochs=8,
                        generator=generator,
                        discriminator=discriminator,
                        train_dataset=train_set,
