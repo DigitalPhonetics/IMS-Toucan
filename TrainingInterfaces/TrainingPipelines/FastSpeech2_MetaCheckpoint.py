@@ -113,6 +113,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    lang="en",
                                    ctc_selection=False))
 
+    find_faulty_samples(net=FastSpeech2(lang_embs=100),
+                        datasets=datasets,
+                        device=torch.device("cuda"),
+                        path_to_checkpoint=resume_checkpoint)
+
+    import sys
+    sys.exit()
+
     train_loop(net=FastSpeech2(lang_embs=100),
                device=torch.device("cuda"),
                datasets=datasets,
@@ -163,6 +171,7 @@ def find_faulty_samples(net,
     check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
     net.load_state_dict(check_dict["model"])
     losses = list()
+    index_pairs = list()
     for dataset_index in range(len(datasets)):
         for datapoint_index in tqdm(range(len(datasets[dataset_index]))):
             loss = net(text_tensors=datasets[dataset_index][datapoint_index][0].unsqueeze(0).to(device),
@@ -173,9 +182,17 @@ def find_faulty_samples(net,
                        gold_pitch=datasets[dataset_index][datapoint_index][6].unsqueeze(0).to(device),  # mind the switched order
                        gold_energy=datasets[dataset_index][datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
                        utterance_embedding=datasets[dataset_index][datapoint_index][7].unsqueeze(0).to(device),
+                       lang_ids=datasets[dataset_index][datapoint_index][7].unsqueeze(0).to(device),
                        return_mels=False)
             losses.append(loss.item())
-    print(sorted(losses))
+            index_pairs.append((dataset_index, datapoint_index))
+    loss_high_to_low = sorted(losses, reverse=True)
+    print(loss_high_to_low)
+    threshold = loss_high_to_low[100]
+    for index, loss in enumerate(losses):
+        if loss > threshold:
+            print(index_pairs[index])
+            print(loss)
 
 
 def train_loop(net,

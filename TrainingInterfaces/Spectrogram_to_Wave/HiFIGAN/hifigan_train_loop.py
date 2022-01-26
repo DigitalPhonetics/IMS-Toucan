@@ -102,7 +102,7 @@ def train_loop(generator,
             if use_signal_processing_losses:
                 for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
-                signal_processing_losses.append(signal_loss.item())
+                signal_processing_losses.append(signal_loss.item() * 0.5)
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
             if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
@@ -111,7 +111,7 @@ def train_loop(generator,
                 adversarial_loss = torch.tensor([0.0]).to(device)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss
+            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss * 0.5
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
