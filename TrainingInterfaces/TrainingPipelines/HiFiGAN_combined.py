@@ -32,7 +32,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
     if not os.path.exists(model_save_dir):
         os.makedirs(model_save_dir)
 
-
     # sampling multiple times from the dataset, because it's to big to fit all at once
     for run_id in range(800):
 
@@ -52,14 +51,17 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         file_lists.append(random.sample(get_file_list_css10hu(), 400))
         file_lists.append(random.sample(get_file_list_css10jp(), 400))
         file_lists.append(random.sample(get_file_list_css10ru(), 400))
+        file_lists.append(random.sample(get_file_list_spanish_blizzard_train(), 400))
+        file_lists.append(random.sample(get_file_list_fluxsing(), 100))
         file_lists.append(get_file_list_karlsson())
         file_lists.append(get_file_list_nancy())
         file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
+        file_lists.append(random.sample(get_file_list_vctk(), 1000))
 
         datasets = list()
 
         for index, file_list in enumerate(file_lists):
-            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}"))
+            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}", use_random_corruption=False))
         train_set = ConcatDataset(datasets)
 
         generator = HiFiGANGenerator()
@@ -69,23 +71,25 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         print("Training model")
         if run_id == 0:
             train_loop(batch_size=16,
-                    steps=3000,
-                    generator=generator,
-                    discriminator=discriminator,
-                    train_dataset=train_set,
-                    device=device,
-                    epochs_per_save=2,
-                    model_save_dir=model_save_dir,
-                    path_to_checkpoint=resume_checkpoint,
-                    resume=resume)
+                       epochs=8,
+                       generator=generator,
+                       discriminator=discriminator,
+                       train_dataset=train_set,
+                       device=device,
+                       epochs_per_save=2,
+                       model_save_dir=model_save_dir,
+                       path_to_checkpoint=resume_checkpoint,
+                       resume=resume,
+                       use_signal_processing_losses=True)
         else:
             train_loop(batch_size=16,
-                    steps=3000,
-                    generator=generator,
-                    discriminator=discriminator,
-                    train_dataset=train_set,
-                    device=device,
-                    epochs_per_save=2,
-                    model_save_dir=model_save_dir,
-                    path_to_checkpoint=None,
-                    resume=True)
+                       epochs=8,
+                       generator=generator,
+                       discriminator=discriminator,
+                       train_dataset=train_set,
+                       device=device,
+                       epochs_per_save=2,
+                       model_save_dir=model_save_dir,
+                       path_to_checkpoint=None,
+                       resume=True,
+                       use_signal_processing_losses=True)
