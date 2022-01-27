@@ -65,7 +65,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_set = ConcatDataset(datasets)
 
     model = FastSpeech2(lang_embs=100)
-    # even though it's monolingual, we initialize it with language embeddings, so that we can fine-tune from the meta-checkpoint.
 
     print("Training model")
     train_loop(net=model,
