@@ -22,7 +22,7 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samples_mode=False):
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
@@ -112,17 +112,22 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "flux_sing"),
                                    lang="en",
                                    ctc_selection=False))
-
-    train_loop(net=FastSpeech2(lang_embs=100),
-               device=torch.device("cuda"),
-               datasets=datasets,
-               batch_size=5,
-               save_directory=meta_save_dir,
-               steps=100000,
-               steps_per_checkpoint=1000,
-               lr=0.001,
-               path_to_checkpoint=resume_checkpoint,
-               resume=resume)
+    if find_faulty_samples_mode:
+        find_faulty_samples(net=FastSpeech2(lang_embs=100),
+                            datasets=datasets,
+                            device=torch.device("cuda"),
+                            path_to_checkpoint=resume_checkpoint)
+    else:
+        train_loop(net=FastSpeech2(lang_embs=100),
+                   device=torch.device("cuda"),
+                   datasets=datasets,
+                   batch_size=5,
+                   save_directory=meta_save_dir,
+                   steps=100000,
+                   steps_per_checkpoint=1000,
+                   lr=0.001,
+                   path_to_checkpoint=resume_checkpoint,
+                   resume=resume)
 
 
 def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True):
@@ -175,7 +180,9 @@ def find_faulty_samples(net,
                        gold_energy=datasets[dataset_index][datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
                        utterance_embedding=datasets[dataset_index][datapoint_index][7].unsqueeze(0).to(device),
                        lang_ids=datasets[dataset_index][datapoint_index][8].unsqueeze(0).to(device),
-                       return_mels=False)
+                       return_mels=False).squeeze()
+            if torch.isnan(loss):
+                print(f"CAREFUL, NAN DETECTED: {dataset_index}, {datapoint_index}")
             losses.append(loss.item())
             index_pairs.append((dataset_index, datapoint_index))
     loss_high_to_low = sorted(losses, reverse=True)

@@ -58,13 +58,13 @@ def extract_prosody(transcript, ref_audio_path, lang="de"):
                 durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
     # phones = tf.get_phone_string(transcript)
     # print(len(phones), " ", len(duration), " ", len(pitch), " ", len(energy))
-    return transcript, duration, pitch, energy
+    return duration, pitch, energy
 
 
 def clone_utterance(path_to_reference_audio, reference_transcription, filename_of_result, model_id="fast_karlsson", device="cpu", lang="de"):
     tts = tts_dict[model_id](device=device)
     tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
-    transcript, duration, pitch, energy = extract_prosody(reference_transcription, path_to_reference_audio, lang=lang)
+    duration, pitch, energy = extract_prosody(reference_transcription, path_to_reference_audio, lang=lang)
     tts.set_language(lang)
     tts.read_to_file(text_list=[reference_transcription], file_location=filename_of_result, dur_list=[duration], pitch_list=[pitch], energy_list=[energy])
 
