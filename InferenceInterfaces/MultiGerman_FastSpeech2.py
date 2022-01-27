@@ -18,7 +18,7 @@ class MultiGerman_FastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()
-        model_name = "MultiGerman"
+        model_name = "German"
         language = "de"
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
