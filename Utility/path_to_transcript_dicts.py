@@ -28,7 +28,10 @@ def build_path_to_transcript_dict_hokus():
 
 def build_path_to_transcript_dict_hui_others():
     root = "/mount/resources/speech/corpora/HUI_German/others"
-    return build_path_to_transcript_dict_hui_template(root=root)
+    pttd = dict()
+    for speaker in os.listdir(root):
+        pttd.update(build_path_to_transcript_dict_hui_template(root=f"{root}/{speaker}"))
+    return pttd
 
 
 def build_path_to_transcript_dict_hui_template(root):
