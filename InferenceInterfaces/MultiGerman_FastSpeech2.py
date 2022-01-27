@@ -10,22 +10,25 @@ import torch
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
-class Multi_FastSpeech2(torch.nn.Module):
+class MultiGerman_FastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu"):
         super().__init__()
-        model_name = "Multi"
+        model_name = "MultiGerman"
+        language = "de"
         self.device = device
-        self.text2phone = ArticulatoryCombinedTextFrontend(language="en", add_silence_to_end=True)
-        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt")).to(torch.device(device))
+        self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
+        checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
+        self.phone2mel = FastSpeech2(weights=checkpoint["model"]).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
-        self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"].to(
-            self.device)
+        self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
+        self.lang_id = get_language_id(language)
         self.to(torch.device(device))
 
     def set_utterance_embedding(self, path_to_reference_audio):
@@ -33,7 +36,11 @@ class Multi_FastSpeech2(torch.nn.Module):
         self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave).to(self.device)
 
     def set_language(self, lang_id):
+        """
+        The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
+        """
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
+        self.lang_id = get_language_id(lang_id).to(self.device)
 
     def forward(self, text, view=False, durations=None, pitch=None, energy=None):
         with torch.no_grad():

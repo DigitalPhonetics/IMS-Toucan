@@ -17,13 +17,6 @@ def load_net_fast(path):
     return net, check_dict["default_emb"]
 
 
-def load_net_fast_meta(path):
-    check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = FastSpeech2(lang_embs=100)
-    net.load_state_dict(check_dict["model"])
-    return net, check_dict["default_emb"]
-
-
 def load_net_hifigan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = HiFiGANGenerator()
@@ -98,14 +91,9 @@ def make_best_in_all(n=3):
             averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
             save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
         elif "FastSpeech2" in model_dir:
-            if "Meta" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast_meta)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
-            else:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
+            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
+            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
+            save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
 
 
 def count_parameters(net):

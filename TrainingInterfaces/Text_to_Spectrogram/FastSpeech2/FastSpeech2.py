@@ -99,7 +99,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_dtw_loss=False,
                  utt_embed_dim=704,
                  connect_utt_emb_at_encoder_out=True,
-                 lang_embs=None):
+                 lang_embs=100):
         super().__init__()
 
         # store hyperparameters

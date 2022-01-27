@@ -19,15 +19,16 @@ class Meta_FastSpeech2(torch.nn.Module):
     def __init__(self, device="cpu"):
         super().__init__()
         model_name = "Meta"
+        language = "en"
         self.device = device
-        self.text2phone = ArticulatoryCombinedTextFrontend(language="en", add_silence_to_end=True)
-        self.phone2mel = FastSpeech2(path_to_weights=os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), lang_embs=100).to(torch.device(device))
+        self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
+        checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
+        self.phone2mel = FastSpeech2(weights=checkpoint["model"]).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
-        self.default_utterance_embedding = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')["default_emb"].to(
-            self.device)
+        self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
-        self.lang_id = get_language_id("en")
+        self.lang_id = get_language_id(language)
         self.to(torch.device(device))
 
     def set_utterance_embedding(self, path_to_reference_audio):
@@ -49,8 +50,7 @@ class Meta_FastSpeech2(torch.nn.Module):
                                                            utterance_embedding=self.default_utterance_embedding,
                                                            durations=durations,
                                                            pitch=pitch,
-                                                           energy=energy,
-                                                           lang_id=self.lang_id)
+                                                           energy=energy)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:

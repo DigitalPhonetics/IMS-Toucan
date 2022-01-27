@@ -13,6 +13,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -42,7 +43,10 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, *_ = net.inference(text=phoneme_vector, return_duration_pitch_energy=True, utterance_embedding=default_emb)
+    spec, durations, *_ = net.inference(text=phoneme_vector,
+                                        return_duration_pitch_energy=True,
+                                        utterance_embedding=default_emb,
+                                        lang_id=get_language_id(lang).to(device))
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -67,7 +71,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, prosodic condition vector
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -75,7 +79,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[7] for datapoint in batch]).squeeze())
+            torch.stack([datapoint[7] for datapoint in batch]).squeeze(),
+            torch.stack([datapoint[8] for datapoint in batch]))
 
 
 def train_loop(net,
@@ -122,12 +127,13 @@ def train_loop(net,
                               persistent_workers=True)
     # the average of all utterance embeddings in this dataset is taken as the default for inference
     default_embedding = None
-    for datapoint in train_dataset:
+    for datapoint in train_dataset[:20]:
         if default_embedding is None:
             default_embedding = datapoint[7].squeeze()
         else:
             default_embedding = default_embedding + datapoint[7].squeeze()
     default_embedding = (default_embedding / len(train_dataset)).to(device)
+    # default speaker embedding is the average of the first 20 speaker embeddings.
     step_counter = 0
     optimizer = torch.optim.RAdam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
@@ -156,9 +162,10 @@ def train_loop(net,
                                  gold_speech=batch[2].to(device),
                                  speech_lengths=batch[3].to(device),
                                  gold_durations=batch[4].to(device),
-                                 gold_pitch=batch[6].to(device),  # mind the change of order here!
-                                 gold_energy=batch[5].to(device),  # mind the change of order here!
+                                 gold_pitch=batch[6].to(device),  # mind the switched order
+                                 gold_energy=batch[5].to(device),  # mind the switched order
                                  utterance_embedding=batch[7].to(device),
+                                 lang_ids=batch[8].to(device),
                                  return_mels=False)
                 train_losses_this_epoch.append(train_loss.item())
 

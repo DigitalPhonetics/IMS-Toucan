@@ -30,37 +30,29 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_German")
+        save_dir = os.path.join("Models", "FastSpeech2_English")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
                                    corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                   lang="de"))
+                                   lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
                                    corpus_dir=os.path.join("Corpora", "Eva"),
-                                   lang="de"))
+                                   lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
                                    corpus_dir=os.path.join("Corpora", "Hokus"),
-                                   lang="de"))
+                                   lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
                                    corpus_dir=os.path.join("Corpora", "Bernd"),
-                                   lang="de"))
+                                   lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                    corpus_dir=os.path.join("Corpora", "Friedrich"),
-                                   lang="de"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
-                                   corpus_dir=os.path.join("Corpora", "hui_others"),
-                                   lang="de"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
-                                   corpus_dir=os.path.join("Corpora", "Thorsten"),
-                                   lang="de"))
+                                   lang="en"))
 
     train_set = ConcatDataset(datasets)
 
@@ -73,7 +65,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                save_directory=save_dir,
                steps=500000,
                batch_size=32,
-               lang="de",
+               lang="en",
                lr=0.0001,
                warmup_steps=14000,
                path_to_checkpoint=resume_checkpoint,

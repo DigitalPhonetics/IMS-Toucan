@@ -4,9 +4,9 @@ import soundfile as sf
 import torch
 from numpy import trim_zeros
 
-from InferenceInterfaces.Karlsson_FastSpeech2 import Karlsson_FastSpeech2
 from InferenceInterfaces.Meta_FastSpeech2 import Meta_FastSpeech2
-from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
+from InferenceInterfaces.MultiEnglish_FastSpeech2 import MultiEnglish_FastSpeech2
+from InferenceInterfaces.MultiGerman_FastSpeech2 import MultiGerman_FastSpeech2
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
@@ -15,9 +15,9 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 
 tts_dict = {
-    "fast_nancy"   : Nancy_FastSpeech2,
-    "fast_karlsson": Karlsson_FastSpeech2,
-    "fast_meta"    : Meta_FastSpeech2
+    "fast_meta"   : Meta_FastSpeech2,
+    "fast_german" : MultiGerman_FastSpeech2,
+    "fast_english": MultiEnglish_FastSpeech2
     }
 
 
@@ -72,7 +72,7 @@ def clone_utterance(path_to_reference_audio, reference_transcription, filename_o
 if __name__ == '__main__':
     clone_utterance(path_to_reference_audio="audios/test.wav",
                     reference_transcription="Hello world, this is a test.",
-                    filename_of_result="audios/test_cloned_cond_vctklibri.wav",
+                    filename_of_result="audios/test_cloned.wav",
                     model_id="fast_meta",
                     lang="en",
                     device="cpu")

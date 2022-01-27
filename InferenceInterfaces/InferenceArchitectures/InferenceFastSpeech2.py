@@ -14,7 +14,7 @@ from Utility.utils import make_pad_mask
 class FastSpeech2(torch.nn.Module, ABC):
 
     def __init__(self,  # network structure related
-                 path_to_weights,
+                 weights,
                  idim=66,
                  odim=80,
                  adim=384,
@@ -71,7 +71,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  # additional features
                  utt_embed_dim=704,
                  connect_utt_emb_at_encoder_out=True,
-                 lang_embs=None):
+                 lang_embs=100):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -133,7 +133,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                n_filts=postnet_filts,
                                use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
-        self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["model"])
+        self.load_state_dict(weights)
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,

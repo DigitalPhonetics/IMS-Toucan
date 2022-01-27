@@ -2,16 +2,14 @@ import os
 
 import torch
 
-from InferenceInterfaces.Karlsson_FastSpeech2 import Karlsson_FastSpeech2
 from InferenceInterfaces.Meta_FastSpeech2 import Meta_FastSpeech2
-from InferenceInterfaces.Multi_FastSpeech2 import Multi_FastSpeech2
-from InferenceInterfaces.Nancy_FastSpeech2 import Nancy_FastSpeech2
+from InferenceInterfaces.MultiEnglish_FastSpeech2 import MultiEnglish_FastSpeech2
+from InferenceInterfaces.MultiGerman_FastSpeech2 import MultiGerman_FastSpeech2
 
 tts_dict = {
-    "fast_nancy"   : Nancy_FastSpeech2,
-    "fast_karlsson": Karlsson_FastSpeech2,
-    "fast_meta"    : Meta_FastSpeech2,
-    "fast_multi"   : Multi_FastSpeech2
+    "fast_meta"   : Meta_FastSpeech2,
+    "fast_german" : MultiGerman_FastSpeech2,
+    "fast_english": MultiEnglish_FastSpeech2
     }
 
 
@@ -63,7 +61,7 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("audios", exist_ok=True)
 
-    read_texts_as_ensemble(model_id="fast_multi",
+    read_texts_as_ensemble(model_id="fast_english",
                            sentence=["Hello world, this is a test."],
                            device=exec_device,
                            filename="audios/ensemble")
