@@ -2,29 +2,39 @@ import os
 
 
 def build_path_to_transcript_dict_karlsson():
-    """
-    https://arxiv.org/abs/2106.06309
-    """
-    root = "/mount/resources/speech/corpora/Karlsson"
-    path_to_transcript = dict()
-    for el in os.listdir(root):
-        if os.path.isdir(os.path.join(root, el)):
-            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
-                lookup = file.read()
-            for line in lookup.split("\n"):
-                if line.strip() != "":
-                    norm_transcript = line.split("|")[1]
-                    wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
-                    if os.path.exists(wav_path):
-                        path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    root = "/mount/resources/speech/corpora/HUI_German/Karlsson"
+    return build_path_to_transcript_dict_hui_template(root=root)
 
 
 def build_path_to_transcript_dict_eva():
+    root = "/mount/resources/speech/corpora/HUI_German/Eva"
+    return build_path_to_transcript_dict_hui_template(root=root)
+
+
+def build_path_to_transcript_dict_bernd():
+    root = "/mount/resources/speech/corpora/HUI_German/Bernd"
+    return build_path_to_transcript_dict_hui_template(root=root)
+
+
+def build_path_to_transcript_dict_friedrich():
+    root = "/mount/resources/speech/corpora/HUI_German/Friedrich"
+    return build_path_to_transcript_dict_hui_template(root=root)
+
+
+def build_path_to_transcript_dict_hokus():
+    root = "/mount/resources/speech/corpora/HUI_German/Hokus"
+    return build_path_to_transcript_dict_hui_template(root=root)
+
+
+def build_path_to_transcript_dict_hui_others():
+    root = "/mount/resources/speech/corpora/HUI_German/others"
+    return build_path_to_transcript_dict_hui_template(root=root)
+
+
+def build_path_to_transcript_dict_hui_template(root):
     """
     https://arxiv.org/abs/2106.06309
     """
-    root = "/mount/resources/speech/corpora/Eva_K"
     path_to_transcript = dict()
     for el in os.listdir(root):
         if os.path.isdir(os.path.join(root, el)):
