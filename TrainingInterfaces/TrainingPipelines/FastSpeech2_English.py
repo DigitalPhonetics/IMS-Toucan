@@ -47,11 +47,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    lang="en"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
-                                   corpus_dir=os.path.join("Corpora", "lj"),
+                                   corpus_dir=os.path.join("Corpora", "LJSpeech"),
                                    lang="en"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
-                                   corpus_dir=os.path.join("Corpora", "nancy"),
+                                   corpus_dir=os.path.join("Corpora", "Nancy"),
                                    lang="en"))
 
     train_set = ConcatDataset(datasets)
