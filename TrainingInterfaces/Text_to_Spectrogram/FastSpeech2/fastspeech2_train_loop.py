@@ -125,15 +125,15 @@ def train_loop(net,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-    # the average of all utterance embeddings in this dataset is taken as the default for inference
     default_embedding = None
-    for datapoint in train_dataset[:20]:
+    for index in range(20):  # slicing is not implemented for datasets, so this detour is needed.
         if default_embedding is None:
-            default_embedding = datapoint[7].squeeze()
+            default_embedding = train_dataset[index][7].squeeze()
         else:
-            default_embedding = default_embedding + datapoint[7].squeeze()
+            default_embedding = default_embedding + train_dataset[index][7].squeeze()
     default_embedding = (default_embedding / len(train_dataset)).to(device)
-    # default speaker embedding is the average of the first 20 speaker embeddings.
+    # default speaker embedding for inference is the average of the first 20 speaker embeddings. So if you use multiple datasets combined,
+    # put a single speaker one with the nicest voice first into the concat dataset.
     step_counter = 0
     optimizer = torch.optim.RAdam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
