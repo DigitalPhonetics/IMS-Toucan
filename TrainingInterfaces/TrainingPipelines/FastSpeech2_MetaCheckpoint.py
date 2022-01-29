@@ -80,14 +80,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                                    corpus_dir=os.path.join("Corpora", "LJSpeech"),
                                    lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hokuspokus(),
-                                   corpus_dir=os.path.join("Corpora", "Hokus"),
-                                   lang="de"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
-                                   corpus_dir=os.path.join("Corpora", "Thorsten"),
-                                   lang="de"))
-
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
                                    corpus_dir=os.path.join("Corpora", "libri"),
                                    lang="en"))
@@ -107,6 +99,30 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
                                    corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
                                    lang="es"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+                                   corpus_dir=os.path.join("Corpora", "Eva"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
+                                   corpus_dir=os.path.join("Corpora", "Hokus"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
+                                   corpus_dir=os.path.join("Corpora", "Bernd"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
+                                   corpus_dir=os.path.join("Corpora", "Friedrich"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
+                                   corpus_dir=os.path.join("Corpora", "hui_others"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
+                                   corpus_dir=os.path.join("Corpora", "Thorsten"),
+                                   lang="de"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
                                    corpus_dir=os.path.join("Corpora", "flux_sing"),
