@@ -11,34 +11,34 @@ def get_file_list_fluxsing():
     return list(path_to_transcript_dict.keys())
 
 
-def get_file_list_karlsson():
-    root = "/mount/resources/speech/corpora/Karlsson"
-    file_list = list()
-    for el in os.listdir(root):
-        if os.path.isdir(os.path.join(root, el)):
-            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
-                lookup = file.read()
-            for line in lookup.split("\n"):
-                if line.strip() != "":
-                    wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
-                    if os.path.exists(wav_path):
-                        file_list.append(wav_path)
-    return file_list
+def get_file_list_hui_karlsson():
+    path_to_transcript_dict = build_path_to_transcript_dict_karlsson()
+    return list(path_to_transcript_dict.keys())
 
 
-def get_file_list_eva():
-    root = "/mount/resources/speech/corpora/Eva_K"
-    file_list = list()
-    for el in os.listdir(root):
-        if os.path.isdir(os.path.join(root, el)):
-            with open(os.path.join(root, el, "metadata.csv"), "r", encoding="utf8") as file:
-                lookup = file.read()
-            for line in lookup.split("\n"):
-                if line.strip() != "":
-                    wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
-                    if os.path.exists(wav_path):
-                        file_list.append(wav_path)
-    return file_list
+def get_file_list_hui_eva():
+    path_to_transcript_dict = build_path_to_transcript_dict_eva()
+    return list(path_to_transcript_dict.keys())
+
+
+def get_file_list_hui_friedrich():
+    path_to_transcript_dict = build_path_to_transcript_dict_friedrich()
+    return list(path_to_transcript_dict.keys())
+
+
+def get_file_list_hui_bernd():
+    path_to_transcript_dict = build_path_to_transcript_dict_bernd()
+    return list(path_to_transcript_dict.keys())
+
+
+def get_file_list_hui_hokus():
+    path_to_transcript_dict = build_path_to_transcript_dict_hokus()
+    return list(path_to_transcript_dict.keys())
+
+
+def get_file_list_hui_others():
+    path_to_transcript_dict = build_path_to_transcript_dict_hui_others()
+    return list(path_to_transcript_dict.keys())
 
 
 def get_file_list_elizabeth():
@@ -53,14 +53,6 @@ def get_file_list_elizabeth():
                     wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
                     if os.path.exists(wav_path):
                         file_list.append(wav_path)
-    return file_list
-
-
-def get_file_list_hokuspokus():
-    file_list = list()
-    for wav_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav"):
-        if ".wav" in wav_file:
-            file_list.append("/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + wav_file)
     return file_list
 
 

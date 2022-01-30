@@ -35,6 +35,8 @@ class HiFiGANDataset(Dataset):
         # datasets and then concat them. If we just did all
         # datasets at once, there could be multiple sampling
         # rates.
+
+        self.needs_resampling = self._orig_sr != self.desired_samplingrate
         if loading_processes == 1:
             self.waves = list()
             self.cache_builder_process(list_of_paths)
@@ -59,14 +61,13 @@ class HiFiGANDataset(Dataset):
 
     def cache_builder_process(self, path_split):
         for path in tqdm(path_split):
-            with open(path, "rb") as audio_file:
-                wave, sr = sf.read(audio_file)
+            wave, sr = sf.read(path)
             if (len(wave) / sr) > ((self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
-                try:
+                if not self.needs_resampling:
+                    self.waves.append(wave)
+                else:
                     self.waves.append(librosa.resample(y=wave, orig_sr=self._orig_sr, target_sr=self.desired_samplingrate))
-                except BrokenPipeError:
-                    print(f"Something is likely wrong with this file: {path} - Perhaps the audio is too short?")
 
     def __getitem__(self, index):
         """

@@ -37,31 +37,34 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
 
         file_lists = list()
         file_lists.append(random.sample(get_file_list_css10gr(), 400))
-        file_lists.append(random.sample(get_file_list_elizabeth(), 400))
-        file_lists.append(random.sample(get_file_list_libritts(), 5000))
-        file_lists.append(random.sample(get_file_list_thorsten(), 400))
-        file_lists.append(random.sample(get_file_list_eva(), 400))
-        file_lists.append(random.sample(get_file_list_ljspeech(), 400))
         file_lists.append(random.sample(get_file_list_css10ch(), 400))
         file_lists.append(random.sample(get_file_list_css10du(), 400))
         file_lists.append(random.sample(get_file_list_css10es(), 400))
         file_lists.append(random.sample(get_file_list_css10fi(), 400))
         file_lists.append(random.sample(get_file_list_css10fr(), 400))
-        file_lists.append(random.sample(get_file_list_css10de(), 400))
         file_lists.append(random.sample(get_file_list_css10hu(), 400))
         file_lists.append(random.sample(get_file_list_css10jp(), 400))
         file_lists.append(random.sample(get_file_list_css10ru(), 400))
+        file_lists.append(random.sample(get_file_list_elizabeth(), 400))
+        file_lists.append(random.sample(get_file_list_thorsten(), 400))
+        file_lists.append(random.sample(get_file_list_ljspeech(), 400))
         file_lists.append(random.sample(get_file_list_spanish_blizzard_train(), 400))
+        file_lists.append(random.sample(get_file_list_hui_bernd(), 400))
+        file_lists.append(random.sample(get_file_list_hui_friedrich(), 400))
+        file_lists.append(random.sample(get_file_list_hui_hokus(), 400))
+        file_lists.append(random.sample(get_file_list_hui_eva(), 400))
         file_lists.append(random.sample(get_file_list_fluxsing(), 100))
-        file_lists.append(get_file_list_karlsson())
-        file_lists.append(get_file_list_nancy())
         file_lists.append(random.sample(get_file_list_nvidia_hifitts(), 1000))
         file_lists.append(random.sample(get_file_list_vctk(), 1000))
+        file_lists.append(random.sample(get_file_list_hui_others(), 1000))
+        file_lists.append(random.sample(get_file_list_libritts(), 5000))
+        file_lists.append(get_file_list_nancy())
+        file_lists.append(get_file_list_hui_karlsson())
 
         datasets = list()
 
         for index, file_list in enumerate(file_lists):
-            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}", use_random_corruption=False))
+            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}", use_random_corruption=True))
         train_set = ConcatDataset(datasets)
 
         generator = HiFiGANGenerator()
@@ -71,7 +74,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
         print("Training model")
         if run_id == 0:
             train_loop(batch_size=16,
-                       epochs=8,
+                       epochs=20,
                        generator=generator,
                        discriminator=discriminator,
                        train_dataset=train_set,
@@ -83,7 +86,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
                        use_signal_processing_losses=True)
         else:
             train_loop(batch_size=16,
-                       epochs=8,
+                       epochs=20,
                        generator=generator,
                        discriminator=discriminator,
                        train_dataset=train_set,

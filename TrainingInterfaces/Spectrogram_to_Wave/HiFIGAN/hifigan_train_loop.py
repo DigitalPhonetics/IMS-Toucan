@@ -25,7 +25,7 @@ def train_loop(generator,
                path_to_checkpoint=None,
                batch_size=32,
                epochs=100,
-               # the ideas is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
+               # the idea is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
                resume=False,
                use_signal_processing_losses=False  # https://github.com/csteinmetz1/auraloss remember to cite if used
                ):
@@ -103,7 +103,7 @@ def train_loop(generator,
             if use_signal_processing_losses:
                 for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
-                signal_processing_losses.append(signal_loss.item() * 0.5)
+                signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
             if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
@@ -112,12 +112,12 @@ def train_loop(generator,
                 adversarial_loss = torch.tensor([0.0]).to(device)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.3 + signal_loss * 0.5
+            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.5 + signal_loss
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
             mel_losses.append(mel_loss.item() * 40.0)
-            feat_match_losses.append(feature_matching_loss.item() * 0.3)
+            feat_match_losses.append(feature_matching_loss.item() * 0.5)
             adversarial_losses.append(adversarial_loss.item() * 4.0)
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
