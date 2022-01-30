@@ -91,9 +91,14 @@ class HiFiGANDataset(Dataset):
             resampled_segment = self.melspec_ap.resample(noisy_segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
         else:
             resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
-        melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
-                                                           explicit_sampling_rate=16000,
-                                                           normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        try:
+            melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
+                                                               explicit_sampling_rate=16000,
+                                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        except librosa.util.exceptions.ParameterError:  # seems like sometimes adding noise and then resampling can introduce overflows which cause errors.
+            melspec = self.melspec_ap.audio_to_mel_spec_tensor(self.melspec_ap.resample(segment).float(),
+                                                               explicit_sampling_rate=16000,
+                                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):
