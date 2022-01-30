@@ -83,7 +83,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=resume_checkpoint,
                        resume=resume,
-                       use_signal_processing_losses=True)
+                       use_signal_processing_losses=False)
         else:
             train_loop(batch_size=16,
                        epochs=20,
@@ -95,4 +95,4 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=None,
                        resume=True,
-                       use_signal_processing_losses=True)
+                       use_signal_processing_losses=False)
