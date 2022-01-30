@@ -27,7 +27,8 @@ def train_loop(generator,
                epochs=100,
                # the idea is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
                resume=False,
-               use_signal_processing_losses=False  # https://github.com/csteinmetz1/auraloss remember to cite if used
+               use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
+               generator_steps_per_discriminator_step=3
                ):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
@@ -106,13 +107,15 @@ def train_loop(generator,
                 signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
-            if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
+            if step_counter > 30000:  # a little bit of warmup helps, but it's not that important
                 adversarial_loss = generator_adv_criterion(d_outs)
             else:
                 adversarial_loss = torch.tensor([0.0]).to(device)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
             generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.5 + signal_loss
+            if torch.isnan(generator_total_loss):
+                print("Loss turned to NaN, aborting so the progress is not overwritten. The GAN possibly collapsed.")
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
@@ -129,7 +132,7 @@ def train_loop(generator,
             ############################
 
             # wasserstein seems appropriate, because the discriminator learns much much quicker
-            if step_counter > 10000 and step_counter % 2 == 0:
+            if step_counter > 30000 and step_counter % generator_steps_per_discriminator_step == 0:
                 d_outs = d(pred_wave.detach())  # have to recompute unfortunately due to autograd behaviour
                 d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
                 discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
@@ -166,5 +169,5 @@ def train_loop(generator,
         if use_signal_processing_losses:
             print("    SigProc Loss:   {}".format(round(sum(signal_processing_losses) / len(signal_processing_losses), 3)))
         print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
-        if step_counter > 10000:  # a little bit of warmup helps, but it's not that important
+        if step_counter > 30000:  # a little bit of warmup helps, but it's not that important
             print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
