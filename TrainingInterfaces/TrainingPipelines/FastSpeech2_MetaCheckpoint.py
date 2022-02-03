@@ -51,9 +51,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
                                    corpus_dir=os.path.join("Corpora", "meta_Greek"),
                                    lang="el"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                                   corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
                                    lang="es"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
@@ -96,8 +95,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                                    corpus_dir=os.path.join("Corpora", "hifi"),
                                    lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
-                                   corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
                                    lang="es"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_eva(),

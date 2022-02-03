@@ -41,13 +41,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
 
     print("Preparing")
 
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+                                   corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                                   lang="es",
+                                   ctc_selection=False))
+
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
                                    corpus_dir=os.path.join("Corpora", "meta_Greek"),
                                    lang="el"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
-                                   lang="es"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
                                    corpus_dir=os.path.join("Corpora", "meta_Finnish"),
@@ -87,10 +88,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                                    lang="pl",
                                    ctc_selection=False))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
-                                   corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                   lang="es",
-                                   ctc_selection=False))
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
+                                   lang="es"))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
                                    corpus_dir=os.path.join("Corpora", "mls_french"),
@@ -217,8 +217,8 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    default_embeddings = {"el": None, "es": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
-    for index, lang in enumerate(["el", "es", "fi", "ru", "hu", "nl", "fr"]):
+    default_embeddings = {"es": None, "el": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
+    for index, lang in enumerate(["es", "el", "fi", "ru", "hu", "nl", "fr"]):
         default_embedding = None
         for datapoint in datasets[index]:
             if default_embedding is None:
