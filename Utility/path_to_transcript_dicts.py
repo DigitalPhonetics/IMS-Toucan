@@ -46,9 +46,9 @@ def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
         lookup = file.read()
     for line in lookup.split("\n"):
         if line.strip() != "":
-            norm_transcript = line.split("        ")[1]
-            wav_folders = line.split("        ")[0].split("_")
-            wav_path = os.path.join(root, "audio", wav_folders[0], wav_folders[1], line.split("        ")[0] + ".flac")
+            norm_transcript = line.split("\t")[1]
+            wav_folders = line.split("\t")[0].split("_")
+            wav_path = os.path.join(root, "audio", wav_folders[0], wav_folders[1], line.split("\t")[0] + ".flac")
             if os.path.exists(wav_path):
                 path_to_transcript[wav_path] = norm_transcript
             else:
