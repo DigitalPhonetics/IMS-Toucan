@@ -42,7 +42,7 @@ def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
     https://arxiv.org/abs/2012.03411
     """
     path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.txt"), "r", encoding="utf8") as file:
+    with open(os.path.join(root, "transcripts.txt"), "r", encoding="utf8") as file:
         lookup = file.read()
     for line in lookup.split("\n"):
         if line.strip() != "":
