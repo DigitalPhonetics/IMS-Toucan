@@ -24,88 +24,119 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     print("Preparing")
 
-    languages = list()
     datasets = list()
 
-    languages.append("fr")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_att_hack(),
-                                   cache_dir=os.path.join("Corpora", "expressive_French"),
-                                   lang="fr"))
-
-    languages.append("en")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_vctk(),
-                                   cache_dir=os.path.join("Corpora", "vctk"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                   corpus_dir=os.path.join("Corpora", "Nancy"),
                                    lang="en"))
 
-    languages.append("de")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_thorsten(),
-                                   cache_dir=os.path.join("Corpora", "Thorsten"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+                                   corpus_dir=os.path.join("Corpora", "Karlsson"),
                                    lang="de"))
 
-    languages.append("el")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10el(),
-                                   cache_dir=os.path.join("Corpora", "meta_Greek"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Greek"),
                                    lang="el"))
 
-    languages.append("es")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10es(),
-                                   cache_dir=os.path.join("Corpora", "meta_Spanish"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
                                    lang="es"))
 
-    languages.append("fi")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fi(),
-                                   cache_dir=os.path.join("Corpora", "meta_Finnish"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Finnish"),
                                    lang="fi"))
 
-    languages.append("ru")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10ru(),
-                                   cache_dir=os.path.join("Corpora", "meta_Russian"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Russian"),
                                    lang="ru"))
 
-    languages.append("hu")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10hu(),
-                                   cache_dir=os.path.join("Corpora", "meta_Hungarian"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
                                    lang="hu"))
 
-    languages.append("nl")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10nl(),
-                                   cache_dir=os.path.join("Corpora", "meta_Dutch"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10nl(),
+                                   corpus_dir=os.path.join("Corpora", "meta_Dutch"),
                                    lang="nl"))
 
-    languages.append("fr")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_css10fr(),
-                                   cache_dir=os.path.join("Corpora", "meta_French"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
+                                   corpus_dir=os.path.join("Corpora", "meta_French"),
                                    lang="fr"))
 
-    languages.append("de")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_karlsson(),
-                                   cache_dir=os.path.join("Corpora", "Karlsson"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                   corpus_dir=os.path.join("Corpora", "LJSpeech"),
+                                   lang="en"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
+                                   corpus_dir=os.path.join("Corpora", "libri"),
+                                   lang="en"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
+                                   corpus_dir=os.path.join("Corpora", "expressive_French"),
+                                   lang="fr"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+                                   corpus_dir=os.path.join("Corpora", "vctk"),
+                                   lang="en"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+                                   corpus_dir=os.path.join("Corpora", "hifi"),
+                                   lang="en"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                                   corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
+                                   lang="es"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+                                   corpus_dir=os.path.join("Corpora", "Eva"),
                                    lang="de"))
 
-    languages.append("en")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_nancy(),
-                                   cache_dir=os.path.join("Corpora", "Nancy"),
-                                   lang="en"))
-
-    languages.append("en")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_ljspeech(),
-                                   cache_dir=os.path.join("Corpora", "LJSpeech"),
-                                   lang="en"))
-
-    languages.append("en")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_libritts(),
-                                   cache_dir=os.path.join("Corpora", "libri"),
-                                   lang="en"))
-
-    languages.append("en")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_nvidia_hifitts(),
-                                   cache_dir=os.path.join("Corpora", "hifiTTS"),
-                                   lang="en"))
-
-    languages.append("de")
-    datasets.append(AlignerDataset(build_path_to_transcript_dict_hokuspokus(),
-                                   cache_dir=os.path.join("Corpora", "Hokus"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
+                                   corpus_dir=os.path.join("Corpora", "Hokus"),
                                    lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
+                                   corpus_dir=os.path.join("Corpora", "Bernd"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
+                                   corpus_dir=os.path.join("Corpora", "Friedrich"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
+                                   corpus_dir=os.path.join("Corpora", "hui_others"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
+                                   corpus_dir=os.path.join("Corpora", "Thorsten"),
+                                   lang="de"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
+                                   corpus_dir=os.path.join("Corpora", "flux_sing"),
+                                   lang="en"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+                                   corpus_dir=os.path.join("Corpora", "mls_porto"),
+                                   lang="pt"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+                                   corpus_dir=os.path.join("Corpora", "mls_polish"),
+                                   lang="pl"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+                                   corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                                   lang="es"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
+                                   corpus_dir=os.path.join("Corpora", "mls_french"),
+                                   lang="fr"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+                                   corpus_dir=os.path.join("Corpora", "mls_italian"),
+                                   lang="it"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
+                                   corpus_dir=os.path.join("Corpora", "mls_dutch"),
+                                   lang="nl"))
 
     train_set = ConcatDataset(datasets)
     save_dir = os.path.join("Models", "Aligner")
@@ -122,3 +153,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                   fine_tune=finetune,
                   debug_img_path=save_dir_aligner,
                   resume=resume)
+
+
+def prepare_corpus(transcript_dict, corpus_dir, lang):
+    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang)

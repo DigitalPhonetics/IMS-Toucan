@@ -1,6 +1,61 @@
 import os
 
 
+def build_path_to_transcript_dict_mls_italian():
+    lang = "italian"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+
+def build_path_to_transcript_dict_mls_french():
+    lang = "french"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+
+def build_path_to_transcript_dict_mls_dutch():
+    lang = "dutch"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+
+def build_path_to_transcript_dict_mls_polish():
+    lang = "polish"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+
+def build_path_to_transcript_dict_mls_spanish():
+    lang = "spanish"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+
+def build_path_to_transcript_dict_mls_portuguese():
+    lang = "portuguese"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+
+def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
+    """
+    https://arxiv.org/abs/2012.03411
+    """
+    path_to_transcript = dict()
+    with open(os.path.join(root, "metadata.csv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            norm_transcript = line.split("        ")[1]
+            wav_folders = line.split("        ")[0].split("_")
+            wav_path = os.path.join(root, "audio", wav_folders[0], wav_folders[1], line.split("        ")[0] + ".flac")
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript
+            else:
+                print(f"not found: {wav_path}")
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_karlsson():
     root = "/mount/resources/speech/corpora/HUI_German/Karlsson"
     return build_path_to_transcript_dict_hui_template(root=root)
