@@ -137,7 +137,8 @@ class ArticulatoryCombinedTextFrontend:
             papercup_features = self.phone_to_vector_papercup[phone]
             self.phone_to_vector[phone] = papercup_features + panphon_features[0]
 
-        self.phone_to_id = {
+        self.phone_to_id = {  # this lookup must be updated manually, because the only
+            # other way would be extracting them from a set, which can be non-deterministic
             '~': 0,
             '#': 1,
             '?': 2,
@@ -211,6 +212,7 @@ class ArticulatoryCombinedTextFrontend:
             'ʑ': 70,
             'ʋ': 71,
             'ʁ': 72,
+            'ᵻ': 73,
             }  # for the states of the ctc loss and dijkstra in the aligner
 
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
