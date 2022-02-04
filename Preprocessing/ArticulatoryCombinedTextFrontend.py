@@ -256,7 +256,7 @@ class ArticulatoryCombinedTextFrontend:
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~/',
                                       with_stress=self.use_stress).replace(";", ",").replace("/", " ").replace("—", "") \
             .replace(":", ",").replace('"', ",").replace("-", ",").replace("...", ",").replace("-", ",").replace("\n", " ") \
-            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "").replace("̃", "")
+            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "").replace("̃", "").replace("̪", "")
         # less than 1 wide characters hidden here
         phones = re.sub("~+", "~", phones)
         if not self.use_prosody:
