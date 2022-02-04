@@ -516,6 +516,13 @@ def generate_feature_lookup():
             'vowel_openness'   : 'close',
             'vowel_roundedness': 'unrounded'
             },
+        'ʂ': {
+            'symbol_type'     : 'phoneme',
+            'vowel_consonant' : 'consonant',
+            'VUV'             : 'unvoiced',
+            'consonant_place' : 'palatal',  # should be retroflex, but palatal should be close enough
+            'consonant_manner': 'fricative'
+            },
         }
 
 
