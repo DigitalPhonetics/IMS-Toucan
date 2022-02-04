@@ -21,7 +21,7 @@ class FastSpeechDataset(Dataset):
                  cache_dir,
                  lang,
                  loading_processes=40,
-                 min_len_in_seconds=3,
+                 min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
                  reduction_factor=1,

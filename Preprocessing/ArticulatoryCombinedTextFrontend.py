@@ -102,6 +102,27 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a French Text-Frontend")
 
+        elif language == "it":
+            self.clean_lang = None
+            self.g2p_lang = "it"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Italian Text-Frontend")
+
+        elif language == "pt":
+            self.clean_lang = None
+            self.g2p_lang = "pt"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Portuguese Text-Frontend")
+
+        elif language == "pl":
+            self.clean_lang = None
+            self.g2p_lang = "pl"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Polish Text-Frontend")
+
         else:
             print("Language not supported yet")
             sys.exit()
@@ -293,6 +314,12 @@ def get_language_id(language):
         return torch.LongTensor([7])
     elif language == "fr":
         return torch.LongTensor([8])
+    elif language == "pt":
+        return torch.LongTensor([9])
+    elif language == "pl":
+        return torch.LongTensor([10])
+    elif language == "it":
+        return torch.LongTensor([11])
 
 
 if __name__ == '__main__':

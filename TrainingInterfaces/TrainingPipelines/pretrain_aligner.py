@@ -26,6 +26,30 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+                                   corpus_dir=os.path.join("Corpora", "mls_porto"),
+                                   lang="pt"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+                                   corpus_dir=os.path.join("Corpora", "mls_polish"),
+                                   lang="pl"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+                                   corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                                   lang="es"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
+                                   corpus_dir=os.path.join("Corpora", "mls_french"),
+                                   lang="fr"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+                                   corpus_dir=os.path.join("Corpora", "mls_italian"),
+                                   lang="it"))
+
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
+                                   corpus_dir=os.path.join("Corpora", "mls_dutch"),
+                                   lang="nl"))
+
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                    corpus_dir=os.path.join("Corpora", "Nancy"),
                                    lang="en"))
@@ -113,30 +137,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
                                    corpus_dir=os.path.join("Corpora", "flux_sing"),
                                    lang="en"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
-                                   corpus_dir=os.path.join("Corpora", "mls_porto"),
-                                   lang="pt"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
-                                   corpus_dir=os.path.join("Corpora", "mls_polish"),
-                                   lang="pl"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
-                                   corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                   lang="es"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
-                                   corpus_dir=os.path.join("Corpora", "mls_french"),
-                                   lang="fr"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
-                                   corpus_dir=os.path.join("Corpora", "mls_italian"),
-                                   lang="it"))
-
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
-                                   corpus_dir=os.path.join("Corpora", "mls_dutch"),
-                                   lang="nl"))
 
     train_set = ConcatDataset(datasets)
     save_dir = os.path.join("Models", "Aligner")
