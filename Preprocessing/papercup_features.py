@@ -1103,6 +1103,14 @@ if __name__ == '__main__':
             'consonant_place' : 'uvular',
             'consonant_manner': 'fricative'
             },
+        'ɨ': {
+            'symbol_type'      : 'phoneme',
+            'vowel_consonant'  : 'vowel',
+            'VUV'              : 'voiced',
+            'vowel_frontness'  : 'central',
+            'vowel_openness'   : 'close',
+            'vowel_roundedness': 'unrounded'
+            },
         }
 
     count = 0
