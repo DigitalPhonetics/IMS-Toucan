@@ -523,6 +523,13 @@ def generate_feature_lookup():
             'consonant_place' : 'palatal',  # should be retroflex, but palatal should be close enough
             'consonant_manner': 'fricative'
             },
+        'ɬ': {
+            'symbol_type'     : 'phoneme',
+            'vowel_consonant' : 'consonant',
+            'VUV'             : 'unvoiced',
+            'consonant_place' : 'alveolar',  # should be noted it's also lateral, but should be close enough
+            'consonant_manner': 'fricative'
+            },
         }
 
 
