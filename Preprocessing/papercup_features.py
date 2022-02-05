@@ -530,7 +530,7 @@ def generate_feature_lookup():
             'consonant_place' : 'alveolar',  # should be noted it's also lateral, but should be close enough
             'consonant_manner': 'fricative'
             },
-        }
+        }  # REMEMBER to also add the phonemes added here to the ID lookup table in the TextFrontend as the new highest ID
 
 
 def generate_feature_table():
