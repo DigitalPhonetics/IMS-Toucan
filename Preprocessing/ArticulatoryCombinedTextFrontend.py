@@ -212,8 +212,9 @@ class ArticulatoryCombinedTextFrontend:
             'ʑ': 70,
             'ʋ': 71,
             'ʁ': 72,
-            'ʂ': 73,
-            'ɬ': 74,
+            'ɨ': 73,
+            'ʂ': 74,
+            'ɬ': 75,
             }  # for the states of the ctc loss and dijkstra in the aligner
 
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
