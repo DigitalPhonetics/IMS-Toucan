@@ -80,6 +80,11 @@ class AudioPreprocessor:
     def logmelfilterbank(self, audio, sampling_rate, fmin=40, fmax=8000, eps=1e-10):
         """
         Compute log-Mel filterbank
+
+        one day this could be replaced by torchaudio's internal log10(melspec(audio)), but
+        for some reason it gives slightly different results, so in order not to break backwards
+        compatibility, this is kept for now. If there is ever a reason to completely re-train
+        all models, this would be a good opportunity to make the switch.
         """
         if isinstance(audio, torch.Tensor):
             audio = audio.numpy()

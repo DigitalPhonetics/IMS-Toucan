@@ -1,5 +1,6 @@
 import os
 import random
+import warnings
 
 import soundfile as sf
 import torch
@@ -20,7 +21,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=60,
+                 loading_processes=10,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
@@ -37,7 +38,6 @@ class AlignerDataset(Dataset):
                            force_reload=True,
                            onnx=False)  # download and cache for it to be loaded and used later
         os.makedirs(cache_dir, exist_ok=True)
-        self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
@@ -107,7 +107,7 @@ class AlignerDataset(Dataset):
                         print(f"Inconsistency in text tensors in {cache_dir}!")
                 except TypeError:
                     print(f"Inconsistency in text tensors in {cache_dir}!")
-
+        self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         print(f"Prepared {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -134,7 +134,9 @@ class AlignerDataset(Dataset):
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             try:
-                norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
+                    norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
