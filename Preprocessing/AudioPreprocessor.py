@@ -100,7 +100,7 @@ class AudioPreprocessor:
         """
         audio = self.to_mono(audio)
         audio = self.normalize_loudness(audio)
-        audio = torch.Tensor(audio, device=self.device)
+        audio = torch.Tensor(audio).to(self.device)
         audio = self.resample(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_audio(audio)
