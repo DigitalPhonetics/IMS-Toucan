@@ -79,10 +79,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                                    corpus_dir=os.path.join("Corpora", "libri"),
                                    lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
-                                   corpus_dir=os.path.join("Corpora", "expressive_French"),
-                                   lang="fr"))
-
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
                                    corpus_dir=os.path.join("Corpora", "vctk"),
                                    lang="en"))

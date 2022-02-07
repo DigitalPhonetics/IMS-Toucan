@@ -21,7 +21,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=38,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
+                 loading_processes=30,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
