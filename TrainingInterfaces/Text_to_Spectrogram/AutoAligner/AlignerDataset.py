@@ -25,7 +25,8 @@ class AlignerDataset(Dataset):
                  max_len_in_seconds=20,
                  cut_silences=True,
                  rebuild_cache=False,
-                 verbose=False):
+                 verbose=False,
+                 device="cpu"):
         try:
             set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
         except RuntimeError:
@@ -60,7 +61,8 @@ class AlignerDataset(Dataset):
                                   min_len_in_seconds,
                                   max_len_in_seconds,
                                   cut_silences,
-                                  verbose),
+                                  verbose,
+                                  device),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -114,11 +116,12 @@ class AlignerDataset(Dataset):
                               min_len,
                               max_len,
                               cut_silences,
-                              verbose):
+                              verbose,
+                              device):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences)
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences, device=device)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":

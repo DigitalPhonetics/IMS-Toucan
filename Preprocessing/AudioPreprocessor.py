@@ -104,7 +104,7 @@ class AudioPreprocessor:
         audio = self.resample(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_audio(audio)
-        return audio
+        return audio.to("cpu")
 
     def visualize_cleaning(self, unclean_audio):
         """
