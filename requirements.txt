@@ -5,7 +5,6 @@ auraloss~=0.2.1
 certifi~=2021.5.30
 cffi~=1.14.6
 charset-normalizer~=2.0.4
-clean-text~=0.5.0
 clldutils~=3.9.0
 colorama~=0.4.4
 colorlog~=6.4.1

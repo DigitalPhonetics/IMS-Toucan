@@ -6,10 +6,7 @@ import numpy
 import numpy as np
 import pyloudnorm as pyln
 import torch
-from torchaudio.transforms import MuLawDecoding
-from torchaudio.transforms import MuLawEncoding
 from torchaudio.transforms import Resample
-from torchaudio.transforms import Vad as VoiceActivityDetection
 
 
 class AudioPreprocessor:
@@ -28,49 +25,30 @@ class AudioPreprocessor:
         self.hop_length = hop_length
         self.n_fft = n_fft
         self.mel_buckets = melspec_buckets
-        self.vad = VoiceActivityDetection(sample_rate=input_sr)
-        self.mu_encode = MuLawEncoding()
-        self.mu_decode = MuLawDecoding()
-        self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
+        if cut_silence:
+            # careful: assumes 16kHz or 8kHz audio
+            self.silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
+                                                      model='silero_vad',
+                                                      force_reload=True,
+                                                      onnx=False)
+            (self.get_speech_timestamps,
+             self.save_audio,
+             self.read_audio,
+             self.VADIterator,
+             self.collect_chunks) = utils
         if output_sr is not None and output_sr != input_sr:
             self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
+        self.meter = pyln.Meter(self.final_sr)
 
-    def apply_mu_law(self, audio):
+    def cut_silence_from_audio(self, audio):
         """
-        brings the audio down from 16 bit
-        resolution to 8 bit resolution to
-        make using softmax to predict a
-        wave from it more feasible.
-
-        !CAREFUL! transforms the floats
-        between -1 and 1 to integers
-        between 0 and 255. So that is good
-        to work with, but bad to save/listen
-        to. Apply mu-law decoding before
-        saving or listening to the audio.
+        https://github.com/snakers4/silero-vad
         """
-        if isinstance(audio, torch.Tensor):
-            return self.mu_encode(audio)
-        else:
-            return self.mu_encode(torch.Tensor(audio))
-
-    def cut_silence_from_beginning_and_end(self, audio):
-        """
-        applies cepstral voice activity
-        detection and noise reduction to
-        cut silence from the beginning
-        and end of a recording
-        """
-        silence = torch.zeros([20000])
-        no_silence_front = self.vad(torch.cat((silence, torch.Tensor(audio), silence), 0))
-        reversed_audio = torch.flip(no_silence_front, (0,))
-        no_silence_back = self.vad(torch.Tensor(reversed_audio))
-        unreversed_audio = torch.flip(no_silence_back, (0,))
-        return unreversed_audio
+        return self.collect_chunks(self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr), audio)
 
     def to_mono(self, x):
         """
@@ -116,12 +94,12 @@ class AudioPreprocessor:
         order that makes sense.
         """
         audio = self.to_mono(audio)
+        audio = self.resample(audio)
         audio = self.normalize_loudness(audio)
         if self.cut_silence:
-            audio = self.cut_silence_from_beginning_and_end(audio)
+            audio = self.cut_silence_from_audio(audio)
         else:
             audio = torch.Tensor(audio)
-        audio = self.resample(audio)
         return audio
 
     def visualize_cleaning(self, unclean_audio):
@@ -145,11 +123,9 @@ class AudioPreprocessor:
         ax[1].label_outer()
         plt.show()
 
-    def audio_to_wave_tensor(self, audio, normalize=True, mulaw=False):
+    def audio_to_wave_tensor(self, audio, normalize=True):
         if normalize:
-            audio = self.normalize_audio(audio)
-        if mulaw:
-            return self.apply_mu_law(audio)
+            return self.normalize_audio(audio)
         else:
             if isinstance(audio, torch.Tensor):
                 return audio

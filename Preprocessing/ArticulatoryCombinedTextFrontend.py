@@ -4,7 +4,6 @@ import sys
 import panphon
 import phonemizer
 import torch
-from cleantext import clean
 
 from Preprocessing.papercup_features import generate_feature_table
 
@@ -40,88 +39,78 @@ class ArticulatoryCombinedTextFrontend:
         self.feature_table = panphon.FeatureTable()
 
         if language == "en":
-            self.clean_lang = "en"
             self.g2p_lang = "en-us"
             self.expand_abbreviations = english_text_expansion
             if not silent:
                 print("Created an English Text-Frontend")
 
         elif language == "de":
-            self.clean_lang = "de"
             self.g2p_lang = "de"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a German Text-Frontend")
 
         elif language == "el":
-            self.clean_lang = None
             self.g2p_lang = "el"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Greek Text-Frontend")
 
         elif language == "es":
-            self.clean_lang = None
             self.g2p_lang = "es"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Spanish Text-Frontend")
 
         elif language == "fi":
-            self.clean_lang = None
             self.g2p_lang = "fi"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Finnish Text-Frontend")
 
         elif language == "ru":
-            self.clean_lang = None
             self.g2p_lang = "ru"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Russian Text-Frontend")
 
         elif language == "hu":
-            self.clean_lang = None
             self.g2p_lang = "hu"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Hungarian Text-Frontend")
 
         elif language == "nl":
-            self.clean_lang = None
             self.g2p_lang = "nl"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Dutch Text-Frontend")
 
         elif language == "fr":
-            self.clean_lang = None
             self.g2p_lang = "fr-fr"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a French Text-Frontend")
 
         elif language == "it":
-            self.clean_lang = None
             self.g2p_lang = "it"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Italian Text-Frontend")
 
         elif language == "pt":
-            self.clean_lang = None
             self.g2p_lang = "pt"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Portuguese Text-Frontend")
 
         elif language == "pl":
-            self.clean_lang = None
             self.g2p_lang = "pl"
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Polish Text-Frontend")
+
+        # remember to also update get_language_id() when adding something here
 
         else:
             print("Language not supported yet")
@@ -215,7 +204,7 @@ class ArticulatoryCombinedTextFrontend:
             'ɨ': 73,
             'ʂ': 74,
             'ɬ': 75,
-            }  # for the states of the ctc loss and dijkstra in the aligner
+            }  # for the states of the ctc loss and dijkstra/mas in the aligner
 
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
 
@@ -245,9 +234,8 @@ class ArticulatoryCombinedTextFrontend:
         return torch.Tensor(phones_vector, device=device)
 
     def get_phone_string(self, text, include_eos_symbol=True):
-        # clean unicode errors, expand abbreviations, handle emojis etc.
-        utt = clean(text, fix_unicode=True, to_ascii=False, lower=False, lang=self.clean_lang)
-        self.expand_abbreviations(utt)
+        # expand abbreviations
+        utt = self.expand_abbreviations(text)
         # phonemize
         phones = phonemizer.phonemize(utt,
                                       language_switch='remove-flags',

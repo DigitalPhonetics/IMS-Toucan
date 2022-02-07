@@ -34,7 +34,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "mls_polish"),
                                    lang="pl"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_spanish().items(), 12000)),
+                                   # take only 12k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_spanish"),
                                    lang="es"))
 
