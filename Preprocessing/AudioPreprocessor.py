@@ -11,7 +11,7 @@ from torchaudio.transforms import Resample
 
 class AudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False, device="cpu"):
         """
         The parameters are by default set up to do well
         on a 16kHz signal. A different sampling rate may
@@ -20,11 +20,13 @@ class AudioPreprocessor:
         doubling n_fft)
         """
         self.cut_silence = cut_silence
+        self.device = device
         self.sr = input_sr
         self.new_sr = output_sr
         self.hop_length = hop_length
         self.n_fft = n_fft
         self.mel_buckets = melspec_buckets
+        self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
         if cut_silence:
             # careful: assumes 16kHz or 8kHz audio
@@ -37,12 +39,12 @@ class AudioPreprocessor:
              self.read_audio,
              self.VADIterator,
              self.collect_chunks) = utils
+            self.silero_model = self.silero_model.to(self.device)
         if output_sr is not None and output_sr != input_sr:
-            self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)
+            self.resample = Resample(orig_freq=input_sr, new_freq=output_sr).to(self.device)
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
-        self.meter = pyln.Meter(self.final_sr)
 
     def cut_silence_from_audio(self, audio):
         """
@@ -94,12 +96,11 @@ class AudioPreprocessor:
         order that makes sense.
         """
         audio = self.to_mono(audio)
-        audio = self.resample(audio)
         audio = self.normalize_loudness(audio)
+        audio = torch.Tensor(audio, device=self.device)
+        audio = self.resample(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_audio(audio)
-        else:
-            audio = torch.Tensor(audio)
         return audio
 
     def visualize_cleaning(self, unclean_audio):
