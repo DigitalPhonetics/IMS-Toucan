@@ -26,11 +26,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_portuguese().items(), 20000)),
+                                   # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_porto"),
                                    lang="pt"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_polish().items(), 20000)),
+                                   # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_polish"),
                                    lang="pl"))
 
@@ -44,7 +46,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "mls_french"),
                                    lang="fr"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_italian().items(), 20000)),
+                                   # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_italian"),
                                    lang="it"))
 
@@ -97,15 +100,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "libri"),
                                    lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
-                                   corpus_dir=os.path.join("Corpora", "expressive_French"),
-                                   lang="fr"))
+    # datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
+    #                               corpus_dir=os.path.join("Corpora", "expressive_French"),
+    #                               lang="fr"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_vctk().items(), 20000)),
+                                   # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "vctk"),
                                    lang="en"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_nvidia_hifitts().items(), 20000)),
+                                   # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "hifi"),
                                    lang="en"))
 
@@ -117,11 +122,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "Eva"),
                                    lang="de"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_hokus().items(), 12000)),
+                                   # take only 12k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "Hokus"),
                                    lang="de"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_bernd().items(), 12000)),
+                                   # take only 12k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "Bernd"),
                                    lang="de"))
 
@@ -133,7 +140,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "hui_others"),
                                    lang="de"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_thorsten().items(), 12000)),
+                                   # take only 12k samples from this, since the corpus is not that high quality,
                                    corpus_dir=os.path.join("Corpora", "Thorsten"),
                                    lang="de"))
 
