@@ -157,3 +157,11 @@ class AudioPreprocessor:
         if normalize:
             audio = self.normalize_audio(audio)
         return self.logmelfilterbank(audio=audio, sampling_rate=explicit_sampling_rate)
+
+
+if __name__ == '__main__':
+    import soundfile
+
+    wav, sr = soundfile.read("../audios/test.wav")
+    ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
+    ap.visualize_cleaning(wav)

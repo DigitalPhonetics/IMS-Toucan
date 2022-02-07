@@ -21,17 +21,20 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=10,
+                 loading_processes=38,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu"):
-        try:
-            set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
-        except RuntimeError:
-            pass
+        if device == "cuda" or device == torch.device("cuda"):
+            try:
+                set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
+            except RuntimeError:
+                pass
+        else:
+            torch.set_num_threads(1)
         if cut_silences:
             torch.hub.load(repo_or_dir='snakers4/silero-vad',
                            model='silero_vad',
