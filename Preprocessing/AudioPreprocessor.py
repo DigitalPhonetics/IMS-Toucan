@@ -35,7 +35,7 @@ class AudioPreprocessor:
             # careful: assumes 16kHz or 8kHz audio
             self.silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
                                                       model='silero_vad',
-                                                      force_reload=True,
+                                                      force_reload=False,
                                                       onnx=False)
             (self.get_speech_timestamps,
              self.save_audio,
