@@ -40,7 +40,8 @@ class FastSpeechDataset(Dataset):
                                min_len_in_seconds=min_len_in_seconds,
                                max_len_in_seconds=max_len_in_seconds,
                                cut_silences=cut_silence,
-                               rebuild_cache=rebuild_cache)
+                               rebuild_cache=rebuild_cache,
+                               device=device)
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             if not isinstance(datapoints, tuple):  # check for backwards compatibility

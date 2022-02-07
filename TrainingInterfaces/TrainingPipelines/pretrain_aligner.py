@@ -29,76 +29,93 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_portuguese().items(), 20000)),
                                    # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_porto"),
-                                   lang="pt"))
+                                   lang="pt",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_polish().items(), 20000)),
                                    # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_polish"),
-                                   lang="pl"))
+                                   lang="pl",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_spanish().items(), 12000)),
                                    # take only 12k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                   lang="es"))
+                                   lang="es",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_french().items(), 12000)),
                                    # take only 12k samples from this, since the corpus is way too big
                                    corpus_dir=os.path.join("Corpora", "mls_french"),
-                                   lang="fr"))
+                                   lang="fr",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_italian().items(), 20000)),
                                    # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "mls_italian"),
-                                   lang="it"))
+                                   lang="it",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_dutch().items(), 12000)),
                                    # take only 12k samples from this, since the corpus is way too big
                                    corpus_dir=os.path.join("Corpora", "mls_dutch"),
-                                   lang="nl"))
+                                   lang="nl",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                    corpus_dir=os.path.join("Corpora", "Nancy"),
-                                   lang="en"))
+                                   lang="en",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
                                    corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
                                    corpus_dir=os.path.join("Corpora", "meta_Greek"),
-                                   lang="el"))
+                                   lang="el",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
                                    corpus_dir=os.path.join("Corpora", "meta_Spanish"),
-                                   lang="es"))
+                                   lang="es",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
                                    corpus_dir=os.path.join("Corpora", "meta_Finnish"),
-                                   lang="fi"))
+                                   lang="fi",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
                                    corpus_dir=os.path.join("Corpora", "meta_Russian"),
-                                   lang="ru"))
+                                   lang="ru",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
                                    corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
-                                   lang="hu"))
+                                   lang="hu",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10nl(),
                                    corpus_dir=os.path.join("Corpora", "meta_Dutch"),
-                                   lang="nl"))
+                                   lang="nl",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
                                    corpus_dir=os.path.join("Corpora", "meta_French"),
-                                   lang="fr"))
+                                   lang="fr",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
                                    corpus_dir=os.path.join("Corpora", "LJSpeech"),
-                                   lang="en"))
+                                   lang="en",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
                                    corpus_dir=os.path.join("Corpora", "libri"),
-                                   lang="en"))
+                                   lang="en",
+                                   device=device))
 
     # datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
     #                               corpus_dir=os.path.join("Corpora", "expressive_French"),
@@ -107,47 +124,57 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_vctk().items(), 20000)),
                                    # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "vctk"),
-                                   lang="en"))
+                                   lang="en",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_nvidia_hifitts().items(), 20000)),
                                    # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "hifi"),
-                                   lang="en"))
+                                   lang="en",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
                                    corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
-                                   lang="es"))
+                                   lang="es",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
                                    corpus_dir=os.path.join("Corpora", "Eva"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_hokus().items(), 12000)),
                                    # take only 12k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "Hokus"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_bernd().items(), 12000)),
                                    # take only 12k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "Bernd"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
                                    corpus_dir=os.path.join("Corpora", "Friedrich"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
                                    corpus_dir=os.path.join("Corpora", "hui_others"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_thorsten().items(), 12000)),
                                    # take only 12k samples from this, since the corpus is not that high quality,
                                    corpus_dir=os.path.join("Corpora", "Thorsten"),
-                                   lang="de"))
+                                   lang="de",
+                                   device=device))
 
     datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
                                    corpus_dir=os.path.join("Corpora", "flux_sing"),
-                                   lang="en"))
+                                   lang="en",
+                                   device=device))
 
     train_set = ConcatDataset(datasets)
     save_dir = os.path.join("Models", "Aligner")
@@ -166,5 +193,5 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                   resume=resume)
 
 
-def prepare_corpus(transcript_dict, corpus_dir, lang):
-    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang)
+def prepare_corpus(transcript_dict, corpus_dir, lang, device):
+    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, device=device)
