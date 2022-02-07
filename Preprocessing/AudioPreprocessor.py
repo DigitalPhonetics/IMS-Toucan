@@ -19,8 +19,6 @@ class AudioPreprocessor:
         doubling frequency --> doubling hop_length and
         doubling n_fft)
         """
-        if device == "cpu" and cut_silence:
-            print("Running silence removal on CPU is very slow, consider using GPU for this.")
         self.cut_silence = cut_silence
         self.device = device
         self.sr = input_sr
