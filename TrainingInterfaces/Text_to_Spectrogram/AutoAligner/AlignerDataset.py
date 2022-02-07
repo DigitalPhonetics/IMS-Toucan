@@ -27,7 +27,10 @@ class AlignerDataset(Dataset):
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu"):
-        set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
+        try:
+            set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
+        except RuntimeError:
+            pass
         os.makedirs(cache_dir, exist_ok=True)
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
