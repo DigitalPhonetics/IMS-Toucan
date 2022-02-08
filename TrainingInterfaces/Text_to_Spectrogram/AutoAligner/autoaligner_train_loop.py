@@ -6,6 +6,7 @@ import torch.multiprocessing
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim import Adam
 from torch.utils.data.dataloader import DataLoader
+from torchaudio.transforms import RNNTLoss
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
@@ -28,7 +29,8 @@ def train_loop(train_dataset,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False,
-               debug_img_path=None):
+               debug_img_path=None,
+               use_transducer_loss=True):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -56,6 +58,9 @@ def train_loop(train_dataset,
 
     tiny_tts = TinyTTS().to(device)
     optim_tts = Adam(tiny_tts.parameters(), lr=0.0001)
+
+    if use_transducer_loss:
+        transducer_loss = RNNTLoss(blank=144)
 
     step_counter = 0
     if resume:
@@ -87,9 +92,20 @@ def train_loop(train_dataset,
 
             pred = asr_model(mel, mel_len)
 
-            loss = asr_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
+            loss = asr_model.ctc_loss(pred.transpose(0, 1).log_softmax(2),
+                                      tokens,
+                                      mel_len,
+                                      tokens_len)
 
-            loss = loss + tiny_tts(x=pred, lens=mel_len, ys=mel)
+            if use_transducer_loss:
+                loss = loss + transducer_loss(pred.transpose(0, 1).log_softmax(2),
+                                              tokens,
+                                              mel_len,
+                                              tokens_len) * 5  # like ctc, but models state transitions
+
+            loss = loss + tiny_tts(x=pred,
+                                   lens=mel_len,
+                                   ys=mel) * 5  # reconstruction loss to make the states more distinct
 
             optim_asr.zero_grad()
             optim_tts.zero_grad()
@@ -115,7 +131,9 @@ def train_loop(train_dataset,
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
         if debug_img_path is not None:
-            asr_model.inference(mel=mel[0][:mel_len[0]], tokens=tokens[0][:tokens_len[0]], save_img_for_debug=debug_img_path + "/" + str(step_counter) + ".png",
+            asr_model.inference(mel=mel[0][:mel_len[0]],
+                                tokens=tokens[0][:tokens_len[0]],
+                                save_img_for_debug=debug_img_path + f"/{step_counter}.png",
                                 train=True)  # for testing
         if step_counter > steps:
             return
