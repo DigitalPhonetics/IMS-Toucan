@@ -122,8 +122,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "Eva"),
                                    lang="de"))
 
-    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_hokus().items(), 12000)),
-                                   # take only 12k samples from this, since the corpus is way too big,
+    datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_hokus().items(), 10000)),
+                                   # take only 10k samples from this
                                    corpus_dir=os.path.join("Corpora", "Hokus"),
                                    lang="de"))
 

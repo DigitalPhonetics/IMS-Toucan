@@ -28,20 +28,21 @@ class AlignerDataset(Dataset):
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu"):
-        if device == "cuda" or device == torch.device("cuda"):
-            try:
-                set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
-            except RuntimeError:
-                pass
-        else:
-            torch.set_num_threads(1)
-        if cut_silences:
-            torch.hub.load(repo_or_dir='snakers4/silero-vad',
-                           model='silero_vad',
-                           force_reload=True,
-                           onnx=False)  # download and cache for it to be loaded and used later
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
+            if device == "cuda" or device == torch.device("cuda"):
+                try:
+                    set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
+                except RuntimeError:
+                    pass
+            else:
+                torch.set_num_threads(1)
+            if cut_silences:
+                torch.hub.load(repo_or_dir='snakers4/silero-vad',
+                               model='silero_vad',
+                               force_reload=False,
+                               onnx=False,
+                               verbose=False)  # download and cache for it to be loaded and used later
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
