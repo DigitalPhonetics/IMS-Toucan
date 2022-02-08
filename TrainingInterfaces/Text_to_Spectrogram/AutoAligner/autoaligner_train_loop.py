@@ -4,9 +4,8 @@ import time
 import torch
 import torch.multiprocessing
 from torch.nn.utils.rnn import pad_sequence
-from torch.optim import Adam
+from torch.optim import RAdam
 from torch.utils.data.dataloader import DataLoader
-from torchaudio.transforms import RNNTLoss
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
@@ -29,8 +28,7 @@ def train_loop(train_dataset,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False,
-               debug_img_path=None,
-               use_transducer_loss=True):
+               debug_img_path=None):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -54,13 +52,10 @@ def train_loop(train_dataset,
                               persistent_workers=True)
 
     asr_model = Aligner().to(device)
-    optim_asr = Adam(asr_model.parameters(), lr=0.0001)
+    optim_asr = RAdam(asr_model.parameters(), lr=0.0001)
 
     tiny_tts = TinyTTS().to(device)
-    optim_tts = Adam(tiny_tts.parameters(), lr=0.0001)
-
-    if use_transducer_loss:
-        transducer_loss = RNNTLoss(blank=144)
+    optim_tts = RAdam(tiny_tts.parameters(), lr=0.0001)
 
     step_counter = 0
     if resume:
@@ -96,12 +91,6 @@ def train_loop(train_dataset,
                                       tokens,
                                       mel_len,
                                       tokens_len)
-
-            if use_transducer_loss:
-                loss = loss + transducer_loss(pred.transpose(0, 1).log_softmax(2),
-                                              tokens,
-                                              mel_len,
-                                              tokens_len) * 5  # like ctc, but models state transitions
 
             loss = loss + tiny_tts(x=pred,
                                    lens=mel_len,
