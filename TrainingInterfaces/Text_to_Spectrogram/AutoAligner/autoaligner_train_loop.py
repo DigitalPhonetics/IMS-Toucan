@@ -92,9 +92,10 @@ def train_loop(train_dataset,
                                       mel_len,
                                       tokens_len)
 
+            tts_lambda = min([5, step_counter / 2000])  # super simple schedule
             loss = loss + tiny_tts(x=pred,
                                    lens=mel_len,
-                                   ys=mel) * 5  # reconstruction loss to make the states more distinct
+                                   ys=mel) * tts_lambda  # reconstruction loss to make the states more distinct
 
             optim_asr.zero_grad()
             optim_tts.zero_grad()
