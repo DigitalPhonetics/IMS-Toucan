@@ -130,7 +130,7 @@ class AlignerDataset(Dataset):
                 self.datapoints = self.datapoints[0]
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
-        print(f"Prepared {len(self.spec_datapoints)} datapoints in {cache_dir}.")
+        print(f"Prepared {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
                               path_list,
@@ -201,9 +201,9 @@ class AlignerDataset(Dataset):
                     # this is terribly inefficient, but it's good enough for testing for now.
         tokens = torch.LongTensor(tokens)
         return tokens, \
-               self.spec_datapoints[index][1], \
-               self.spec_datapoints[index][2], \
-               self.spec_datapoints[index][3], \
+               self.datapoints[index][1], \
+               self.datapoints[index][2], \
+               self.datapoints[index][3], \
                self.speaker_embeddings[index]
 
     def __len__(self):
