@@ -18,8 +18,8 @@ class TinyTTS(torch.nn.Module):
         self.rnn1 = torch.nn.LSTM(lstm_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.rnn2 = torch.nn.LSTM(2 * lstm_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.out_proj = torch.nn.Linear(2 * lstm_dim, n_mels)
-        self.l1_criterion = torch.nn.L1Loss(reduction="mean")
-        self.l2_criterion = torch.nn.MSELoss(reduction="mean")
+        self.l1_criterion = torch.nn.L1Loss(reduction="none")
+        self.l2_criterion = torch.nn.MSELoss(reduction="none")
 
     def forward(self, x, lens, ys):
         x = self.in_proj(x)

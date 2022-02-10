@@ -17,7 +17,8 @@ def collate_and_pad(batch):
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
+            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+            torch.stack([datapoint[4] for datapoint in batch]).squeeze())
 
 
 def train_loop(train_dataset,

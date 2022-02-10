@@ -99,21 +99,35 @@ class AlignerDataset(Dataset):
                 print(f"There seems to be a problem in the transcriptions. Deleting datapoint {pop_index}.")
                 self.datapoints.pop(pop_index)
 
+            # add speaker embeddings
+            self.speaker_embeddings = list()
+            speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                          run_opts={"device": str(device)},
+                                                                          savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+            with torch.no_grad():
+                for wave in tqdm(norm_waves):
+                    self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
+
             # save to cache
-            torch.save((self.datapoints, norm_waves), os.path.join(cache_dir, "aligner_train_cache.pt"))
+            torch.save((self.datapoints, norm_waves, self.speaker_embeddings), os.path.join(cache_dir, "aligner_train_cache.pt"))
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-        self.spec_datapoints = self.datapoints[0]
-        wave_datapoints = self.datapoints[1]
-        del self.datapoints
-        self.speaker_embeddings = list()
-        speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                      run_opts={"device": str(device)},
-                                                                      savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
-        with torch.no_grad():
-            for wave in wave_datapoints:
-                self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
+            if len(self.datapoints == 2):
+                # speaker embeddings are still missing, have to add them here
+                wave_datapoints = self.datapoints[1]
+                self.datapoints = self.datapoints[0]
+                self.speaker_embeddings = list()
+                speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                              run_opts={"device": str(device)},
+                                                                              savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+                with torch.no_grad():
+                    for wave in tqdm(wave_datapoints):
+                        self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
+                torch.save((self.datapoints, wave_datapoints, self.speaker_embeddings), os.path.join(cache_dir, "aligner_train_cache.pt"))
+            else:
+                self.speaker_embeddings = self.datapoints[2]
+                self.datapoints = self.datapoints[0]
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         print(f"Prepared {len(self.spec_datapoints)} datapoints in {cache_dir}.")
@@ -177,7 +191,6 @@ class AlignerDataset(Dataset):
                                                    norm_wave.cpu().detach().numpy()])
         self.datapoints += process_internal_dataset_chunk
 
-    @torch.no_grad()
     def __getitem__(self, index):
         text_vector = self.spec_datapoints[index][0]
         tokens = list()
