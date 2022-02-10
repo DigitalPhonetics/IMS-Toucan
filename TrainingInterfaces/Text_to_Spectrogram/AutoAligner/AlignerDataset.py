@@ -31,7 +31,7 @@ class AlignerDataset(Dataset):
                  device="cpu"):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
-            if device == "cuda" or device == torch.device("cuda") and cut_silences:
+            if (device == "cuda" or device == torch.device("cuda")) and cut_silences:
                 try:
                     set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
                 except RuntimeError:
