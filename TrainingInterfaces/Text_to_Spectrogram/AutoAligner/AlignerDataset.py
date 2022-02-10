@@ -192,7 +192,7 @@ class AlignerDataset(Dataset):
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
-        text_vector = self.spec_datapoints[index][0]
+        text_vector = self.datapoints[index][0]
         tokens = list()
         for vector in text_vector:
             for phone in self.tf.phone_to_vector:
