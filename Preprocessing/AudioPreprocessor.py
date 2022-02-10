@@ -42,6 +42,8 @@ class AudioPreprocessor:
              self.VADIterator,
              self.collect_chunks) = utils
             self.silero_model = self.silero_model.to(self.device)
+        else:
+            self.device = "cpu"  # if we don't run the VAD model, there's simply no reason to use the GPU.
         if output_sr is not None and output_sr != input_sr:
             self.resample = Resample(orig_freq=input_sr, new_freq=output_sr).to(self.device)
             self.final_sr = output_sr
