@@ -5,6 +5,7 @@ import warnings
 import soundfile as sf
 import torch
 from numpy import trim_zeros
+from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.multiprocessing import set_start_method
@@ -103,16 +104,19 @@ class AlignerDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-            self.datapoints = self.datapoints[0]  # don't need the waves here
+        self.spec_datapoints = self.datapoints[0]
+        wave_datapoints = self.datapoints[1]
+        del self.datapoints
+        self.speaker_embeddings = list()
+        speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                      run_opts={"device": str(device)},
+                                                                      savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+        with torch.no_grad():
+            for wave in wave_datapoints:
+                self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
 
-            for el in self.datapoints:
-                try:
-                    if len(el[0][0]) != 66:
-                        print(f"Inconsistency in text tensors in {cache_dir}!")
-                except TypeError:
-                    print(f"Inconsistency in text tensors in {cache_dir}!")
         self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
-        print(f"Prepared {len(self.datapoints)} datapoints in {cache_dir}.")
+        print(f"Prepared {len(self.spec_datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
                               path_list,
@@ -173,8 +177,9 @@ class AlignerDataset(Dataset):
                                                    norm_wave.cpu().detach().numpy()])
         self.datapoints += process_internal_dataset_chunk
 
+    @torch.no_grad()
     def __getitem__(self, index):
-        text_vector = self.datapoints[index][0]
+        text_vector = self.spec_datapoints[index][0]
         tokens = list()
         for vector in text_vector:
             for phone in self.tf.phone_to_vector:
@@ -183,9 +188,10 @@ class AlignerDataset(Dataset):
                     # this is terribly inefficient, but it's good enough for testing for now.
         tokens = torch.LongTensor(tokens)
         return tokens, \
-               self.datapoints[index][1], \
-               self.datapoints[index][2], \
-               self.datapoints[index][3]
+               self.spec_datapoints[index][1], \
+               self.spec_datapoints[index][2], \
+               self.spec_datapoints[index][3], \
+               self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)

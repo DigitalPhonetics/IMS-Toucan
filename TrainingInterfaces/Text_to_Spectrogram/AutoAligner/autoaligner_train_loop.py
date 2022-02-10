@@ -66,8 +66,10 @@ def train_loop(train_dataset,
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         asr_model.load_state_dict(check_dict["asr_model"])
+        tiny_tts.load_state_dict(check_dict["tts_model"])
         if not fine_tune:
             optim_asr.load_state_dict(check_dict["optimizer"])
+            optim_tts.load_state_dict(check_dict["tts_optimizer"])
             step_counter = check_dict["step_counter"]
             if step_counter > steps:
                 print("Desired steps already reached in loaded checkpoint.")
@@ -84,18 +86,23 @@ def train_loop(train_dataset,
             tokens_len = batch[1].to(device)
             mel = batch[2].to(device)
             mel_len = batch[3].to(device)
+            speaker_embeddings = batch[4].to(device)
 
             pred = asr_model(mel, mel_len)
 
-            loss = asr_model.ctc_loss(pred.transpose(0, 1).log_softmax(2),
-                                      tokens,
-                                      mel_len,
-                                      tokens_len)
+            ctc_loss = asr_model.ctc_loss(pred.transpose(0, 1).log_softmax(2),
+                                          tokens,
+                                          mel_len,
+                                          tokens_len)
 
+            speaker_embeddings_expanded = torch.nn.functional.normalize(speaker_embeddings).unsqueeze(1).expand(-1, pred.size(1), -1)
             tts_lambda = min([5, step_counter / 2000])  # super simple schedule
-            loss = loss + tiny_tts(x=pred,
-                                   lens=mel_len,
-                                   ys=mel) * tts_lambda  # reconstruction loss to make the states more distinct
+            reconstruction_loss = tiny_tts(x=torch.cat([pred, speaker_embeddings_expanded], dim=-1),
+                                           # combine ASR prediction with speaker embeddings to allow for reconstruction loss on multiple speakers
+                                           lens=mel_len,
+                                           ys=mel) * tts_lambda  # reconstruction loss to make the states more distinct
+
+            loss = ctc_loss + reconstruction_loss
 
             optim_asr.zero_grad()
             optim_tts.zero_grad()
@@ -112,9 +119,11 @@ def train_loop(train_dataset,
         asr_model.eval()
         loss_this_epoch = sum(loss_sum) / len(loss_sum)
         torch.save({
-            "asr_model"   : asr_model.state_dict(),
-            "optimizer"   : optim_asr.state_dict(),
-            "step_counter": step_counter,
+            "asr_model"    : asr_model.state_dict(),
+            "optimizer"    : optim_asr.state_dict(),
+            "tts_model"    : tiny_tts.state_dict(),
+            "tts_optimizer": optim_tts.state_dict(),
+            "step_counter" : step_counter,
             },
             os.path.join(save_directory, "aligner.pt"))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))

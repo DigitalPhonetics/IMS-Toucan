@@ -6,7 +6,7 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as germa
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy_CTC import run as fast_nancy_ctc
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
+from TrainingInterfaces.TrainingPipelines.improved_reconstruction import run as aligner
 
 pipeline_dict = {
     "fast_nancy_ctc": fast_nancy_ctc,
