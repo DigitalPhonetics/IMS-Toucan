@@ -113,7 +113,7 @@ class AlignerDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-            if len(self.datapoints == 2):
+            if len(self.datapoints) == 2:
                 # speaker embeddings are still missing, have to add them here
                 wave_datapoints = self.datapoints[1]
                 self.datapoints = self.datapoints[0]
