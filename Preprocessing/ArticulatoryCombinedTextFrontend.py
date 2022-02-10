@@ -316,8 +316,8 @@ def get_language_id(language):
 
 if __name__ == '__main__':
     # test an English utterance
-    tfr_en = ArticulatoryCombinedTextFrontend(language="en")
-    print(tfr_en.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True))
+    tf = ArticulatoryCombinedTextFrontend(language="en")
+    print(tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True))
 
-    tfr_en = ArticulatoryCombinedTextFrontend(language="de")
-    print(tfr_en.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True))
+    tf = ArticulatoryCombinedTextFrontend(language="de")
+    print(tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True))

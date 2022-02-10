@@ -100,10 +100,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                    corpus_dir=os.path.join("Corpora", "libri"),
                                    lang="en"))
 
-    # datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_att_hack(),
-    #                               corpus_dir=os.path.join("Corpora", "expressive_French"),
-    #                               lang="fr"))
-
     datasets.append(prepare_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_vctk().items(), 20000)),
                                    # take only 20k samples from this, since the corpus is way too big,
                                    corpus_dir=os.path.join("Corpora", "vctk"),
@@ -167,4 +163,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
 
 def prepare_corpus(transcript_dict, corpus_dir, lang):
-    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang)
+    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, loading_processes=60, cut_silences=False, device="cpu")

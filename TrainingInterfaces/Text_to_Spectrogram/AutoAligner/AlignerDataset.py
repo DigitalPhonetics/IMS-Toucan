@@ -25,18 +25,18 @@ class AlignerDataset(Dataset):
                  loading_processes=30,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
-                 cut_silences=True,
+                 cut_silences=False,
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu"):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
-            if device == "cuda" or device == torch.device("cuda"):
+            if device == "cuda" or device == torch.device("cuda") and cut_silences:
                 try:
                     set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
                 except RuntimeError:
                     pass
-            else:
+            elif cut_silences:
                 torch.set_num_threads(1)
             if cut_silences:
                 torch.hub.load(repo_or_dir='snakers4/silero-vad',
@@ -141,7 +141,7 @@ class AlignerDataset(Dataset):
                               verbose,
                               device):
         process_internal_dataset_chunk = list()
-        tf = ArticulatoryCombinedTextFrontend(language=lang)
+        tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences, device=device)
 

@@ -26,8 +26,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
-                                   corpus_dir=os.path.join("Corpora", "flux_sing"),
+    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
+                                   corpus_dir=os.path.join("Corpora", "libri"),
                                    lang="en"))
 
     train_set = ConcatDataset(datasets)
@@ -48,4 +48,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
 
 def prepare_corpus(transcript_dict, corpus_dir, lang):
-    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang)
+    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, loading_processes=60, cut_silences=False, device="cpu")

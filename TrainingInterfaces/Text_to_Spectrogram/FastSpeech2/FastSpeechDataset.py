@@ -71,8 +71,9 @@ class FastSpeechDataset(Dataset):
             dio = Dio(reduction_factor=reduction_factor, fs=16000)
             energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
             dc = DurationCalculator(reduction_factor=reduction_factor)
-            vis_dir = os.path.join(cache_dir, "duration_vis")
-            os.makedirs(vis_dir, exist_ok=True)
+            if save_imgs:
+                vis_dir = os.path.join(cache_dir, "duration_vis")
+                os.makedirs(vis_dir, exist_ok=True)
             pros_cond_ext = ProsodicConditionExtractor(sr=16000, device=device)
 
             for index in tqdm(range(len(dataset))):
@@ -83,6 +84,7 @@ class FastSpeechDataset(Dataset):
                     continue
 
                 text = dataset[index][0]
+                text_len = dataset[index][1]
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
@@ -92,6 +94,27 @@ class FastSpeechDataset(Dataset):
                                                                     return_ctc=True)
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
+
+                # now we check for all silence labels whether they have a duration of less than 5 frames.
+                # If so, we remove it from the text, update the text length and recompute alignment.
+                silence_phoneme = torch.tensor([0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                                0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                                0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                                0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+                pop_indexes = list()
+                for sequence_index, phoneme in enumerate(text):
+                    if phoneme == silence_phoneme:
+                        if cached_duration[sequence_index] < 5:  # silence too short to be substantial, let's exclude it.
+                            pop_indexes.append(sequence_index)
+                if pop_indexes:
+                    for pop_index in sorted(pop_indexes, reverse=True):
+                        text.pop(pop_index)
+                        text_len -= 1
+                    alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
+                                                                        tokens=text.to(device),
+                                                                        save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
+                                                                        return_ctc=True)
+                    cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
@@ -111,8 +134,8 @@ class FastSpeechDataset(Dataset):
                     # if there is an audio without any voiced segments whatsoever we have to skip it.
                     continue
 
-                self.datapoints.append([dataset[index][0],
-                                        dataset[index][1],
+                self.datapoints.append([text,
+                                        text_len,
                                         dataset[index][2],
                                         dataset[index][3],
                                         cached_duration.cpu(),
