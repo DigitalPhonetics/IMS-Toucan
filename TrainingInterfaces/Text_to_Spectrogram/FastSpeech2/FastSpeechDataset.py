@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
+from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
@@ -76,6 +77,15 @@ class FastSpeechDataset(Dataset):
                 os.makedirs(vis_dir, exist_ok=True)
             pros_cond_ext = ProsodicConditionExtractor(sr=16000, device=device)
 
+            orig_texts = list()
+            tf_no_pauses = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=False)
+            tf_with_pauses = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
+            for index in tqdm(range(len(dataset))):
+                text = dataset[index][0]
+                for graphemes in path_to_transcript_dict.values():
+                    if tf_no_pauses.string_to_tensor(graphemes) == text:
+                        orig_texts.append(tf_with_pauses.string_to_tensor(graphemes))
+
             for index in tqdm(range(len(dataset))):
                 norm_wave = norm_waves[index]
                 norm_wave_length = torch.LongTensor([len(norm_wave)])
@@ -83,8 +93,7 @@ class FastSpeechDataset(Dataset):
                 if len(norm_wave) / 16000 < min_len_in_seconds and ctc_selection:
                     continue
 
-                text = dataset[index][0]
-                text_len = dataset[index][1]
+                text = orig_texts[index]
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
@@ -95,26 +104,29 @@ class FastSpeechDataset(Dataset):
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
-                # now we check for all silence labels whether they have a duration of less than 5 frames.
+                # now we check for all silence labels whether they have a duration of less than 10 frames.
                 # If so, we remove it from the text, update the text length and recompute alignment.
+
                 silence_phoneme = torch.tensor([0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                                                 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                                                 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                                                 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.])
+
                 pop_indexes = list()
                 for sequence_index, phoneme in enumerate(text):
                     if phoneme == silence_phoneme:
-                        if cached_duration[sequence_index] < 5:  # silence too short to be substantial, let's exclude it.
+                        if cached_duration[sequence_index] < 10:  # silence too short to be substantial, let's exclude it.
                             pop_indexes.append(sequence_index)
                 if pop_indexes:
                     for pop_index in sorted(pop_indexes, reverse=True):
                         text.pop(pop_index)
-                        text_len -= 1
                     alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
                                                                         tokens=text.to(device),
-                                                                        save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
+                                                                        save_img_for_debug=os.path.join(vis_dir, f"{index}_fixed.png") if save_imgs else None,
                                                                         return_ctc=True)
                     cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
+
+                text_len = len(text)
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,

@@ -141,7 +141,7 @@ class AlignerDataset(Dataset):
                               verbose,
                               device):
         process_internal_dataset_chunk = list()
-        tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
+        tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=False)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences, device=device)
 
