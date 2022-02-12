@@ -29,7 +29,8 @@ class FastSpeechDataset(Dataset):
                  device=torch.device("cpu"),
                  rebuild_cache=False,
                  ctc_selection=True,
-                 save_imgs=False):
+                 save_imgs=False,
+                 aligner_datapoints=None):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -42,7 +43,10 @@ class FastSpeechDataset(Dataset):
                                cut_silences=cut_silence,
                                rebuild_cache=rebuild_cache,
                                device=device)
-            datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+            if aligner_datapoints is None:
+                datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+            else:
+                datapoints = aligner_datapoints
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             if not isinstance(datapoints, tuple):  # check for backwards compatibility
                 AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,

@@ -29,7 +29,8 @@ def train_loop(train_dataset,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False,
-               debug_img_path=None):
+               debug_img_path=None,
+               use_reconstruction=True):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -96,22 +97,27 @@ def train_loop(train_dataset,
                                           mel_len,
                                           tokens_len)
 
-            speaker_embeddings_expanded = torch.nn.functional.normalize(speaker_embeddings).unsqueeze(1).expand(-1, pred.size(1), -1)
-            tts_lambda = min([5, step_counter / 2000])  # super simple schedule
-            reconstruction_loss = tiny_tts(x=torch.cat([pred, speaker_embeddings_expanded], dim=-1),
-                                           # combine ASR prediction with speaker embeddings to allow for reconstruction loss on multiple speakers
-                                           lens=mel_len,
-                                           ys=mel) * tts_lambda  # reconstruction loss to make the states more distinct
-
-            loss = ctc_loss + reconstruction_loss
+            if use_reconstruction:
+                speaker_embeddings_expanded = torch.nn.functional.normalize(speaker_embeddings).unsqueeze(1).expand(-1, pred.size(1), -1)
+                tts_lambda = min([5, step_counter / 2000])  # super simple schedule
+                reconstruction_loss = tiny_tts(x=torch.cat([pred, speaker_embeddings_expanded], dim=-1),
+                                               # combine ASR prediction with speaker embeddings to allow for reconstruction loss on multiple speakers
+                                               lens=mel_len,
+                                               ys=mel) * tts_lambda  # reconstruction loss to make the states more distinct
+                loss = ctc_loss + reconstruction_loss
+            else:
+                loss = ctc_loss
 
             optim_asr.zero_grad()
-            optim_tts.zero_grad()
+            if use_reconstruction:
+                optim_tts.zero_grad()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(asr_model.parameters(), 1.0)
-            torch.nn.utils.clip_grad_norm_(tiny_tts.parameters(), 1.0)
+            if use_reconstruction:
+                torch.nn.utils.clip_grad_norm_(tiny_tts.parameters(), 1.0)
             optim_asr.step()
-            optim_tts.step()
+            if use_reconstruction:
+                optim_tts.step()
 
             step_counter += 1
 

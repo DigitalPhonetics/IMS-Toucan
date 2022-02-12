@@ -157,7 +157,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
         train_loop(net=FastSpeech2(lang_embs=100),
                    device=torch.device("cuda"),
                    datasets=datasets,
-                   batch_size=5,
+                   batch_size=4,
                    save_directory=meta_save_dir,
                    steps=100000,
                    steps_per_checkpoint=1000,
@@ -166,7 +166,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                    resume=resume)
 
 
-def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True):
+def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True, fine_tune_aligner=True, use_reconstruction=False):
     """
     create an aligner dataset,
     fine-tune an aligner,
@@ -175,17 +175,29 @@ def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True):
 
     Skips parts that have been done before.
     """
-    aligner_dir = os.path.join(corpus_dir, "aligner")
-    if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
-        train_aligner(train_dataset=AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang),
-                      device=torch.device("cuda"),
-                      save_directory=aligner_dir,
-                      steps=(len(transcript_dict.keys()) / 32) * 2,  # 3 epochs worth of finetuning
-                      batch_size=32,
-                      path_to_checkpoint="Models/Aligner/aligner.pt",
-                      fine_tune=True,
-                      debug_img_path=aligner_dir,
-                      resume=False)
+    if fine_tune_aligner:
+        aligner_dir = os.path.join(corpus_dir, "aligner")
+        if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
+            aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang)
+            train_aligner(train_dataset=aligner_datapoints,
+                          device=torch.device("cuda"),
+                          save_directory=aligner_dir,
+                          steps=len(aligner_datapoints) * 5,
+                          batch_size=32,
+                          path_to_checkpoint="Models/Aligner/aligner.pt",
+                          fine_tune=True,
+                          debug_img_path=aligner_dir,
+                          resume=False,
+                          use_reconstruction=use_reconstruction)
+            return FastSpeechDataset(transcript_dict,
+                                     acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
+                                     cache_dir=corpus_dir,
+                                     device=torch.device("cuda"),
+                                     lang=lang,
+                                     ctc_selection=ctc_selection,
+                                     aligner_datapoints=aligner_datapoints)
+    else:
+        aligner_dir = "Models/Aligner/"
     return FastSpeechDataset(transcript_dict,
                              acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
                              cache_dir=corpus_dir,
@@ -254,7 +266,7 @@ def train_loop(net,
                                         num_workers=2,
                                         pin_memory=True,
                                         shuffle=True,
-                                        prefetch_factor=16,
+                                        prefetch_factor=5,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
