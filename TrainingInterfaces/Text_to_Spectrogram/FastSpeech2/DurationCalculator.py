@@ -16,17 +16,8 @@ class DurationCalculator(torch.nn.Module):
     @torch.no_grad()
     def forward(self, att_ws, vis=None):
         """
-        Convert attention weight to durations.
+        Convert alignment matrix to durations.
         """
-        duration = self._calculate_duration(att_ws, vis=vis)
-        return duration
-
-    @staticmethod
-    def _calculate_focus_rate(att_ws):
-        # transformer case -> (#layers, #heads, L, T)
-        return att_ws.max(dim=-1)[0].mean(dim=-1).max()
-
-    def _calculate_duration(self, att_ws, vis):
         if vis is not None:
             plt.figure(figsize=(8, 4))
             plt.imshow(att_ws.cpu().numpy(), interpolation='nearest', aspect='auto', origin="lower")
@@ -35,6 +26,6 @@ class DurationCalculator(torch.nn.Module):
             plt.tight_layout()
             plt.savefig(vis)
             plt.close()
-        # calculate duration from 2d attention weight
+        # calculate duration from 2d alignment matrix
         durations = torch.stack([att_ws.argmax(-1).eq(i).sum() for i in range(att_ws.shape[1])])
         return durations.view(-1) * self.reduction_factor
