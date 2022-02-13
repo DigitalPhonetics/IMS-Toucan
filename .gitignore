@@ -3,8 +3,8 @@
 *.png
 *.pdf
 tensorboard_logs
-Corpora
-Models
+Corpora/
+Models/
 *_graph
 *.out
 *.wav

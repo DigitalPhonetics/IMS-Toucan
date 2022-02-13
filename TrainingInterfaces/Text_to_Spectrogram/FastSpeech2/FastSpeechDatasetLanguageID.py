@@ -49,6 +49,7 @@ class FastSpeechDataset(Dataset):
                 datapoints = aligner_datapoints
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             if not isinstance(datapoints, tuple):  # check for backwards compatibility
+                print(f"It seems like the Aligner dataset in {cache_dir} is not a tuple. Regenerating it, since we need the preprocessed waves.")
                 AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
                                cache_dir=cache_dir,
                                lang=lang,
@@ -155,7 +156,7 @@ class FastSpeechDataset(Dataset):
 
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
-        print("Prepared {} datapoints.".format(len(self.datapoints)))
+        print(f"Prepared a FastSpeech dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \

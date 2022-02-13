@@ -130,7 +130,7 @@ class AlignerDataset(Dataset):
                 self.datapoints = self.datapoints[0]
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
-        print(f"Prepared {len(self.datapoints)} datapoints in {cache_dir}.")
+        print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
                               path_list,
