@@ -12,10 +12,8 @@ from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDatasetLanguageID import FastSpeechDataset
+from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -41,59 +39,58 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
 
     print("Preparing")
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
-                                   corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                   lang="es",
-                                   ctc_selection=False))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+                                              corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                                              lang="es",
+                                              ctc_selection=False))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Greek"),
-                                   lang="el"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
+                                              corpus_dir=os.path.join("Corpora", "meta_Greek"),
+                                              lang="el"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Finnish"),
-                                   lang="fi"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
+                                              corpus_dir=os.path.join("Corpora", "meta_Finnish"),
+                                              lang="fi"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Russian"),
-                                   lang="ru"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
+                                              corpus_dir=os.path.join("Corpora", "meta_Russian"),
+                                              lang="ru"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
-                                   lang="hu"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
+                                              corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
+                                              lang="hu"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
-                                   corpus_dir=os.path.join("Corpora", "meta_French"),
-                                   lang="fr"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
+                                              corpus_dir=os.path.join("Corpora", "meta_French"),
+                                              lang="fr"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
-                                   corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
-                                   lang="es"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                                              corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
+                                              lang="es"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
-                                   corpus_dir=os.path.join("Corpora", "mls_porto"),
-                                   lang="pt",
-                                   ctc_selection=False))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+                                              corpus_dir=os.path.join("Corpora", "mls_porto"),
+                                              lang="pt",
+                                              ctc_selection=False))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
-                                   corpus_dir=os.path.join("Corpora", "mls_polish"),
-                                   lang="pl",
-                                   ctc_selection=False))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+                                              corpus_dir=os.path.join("Corpora", "mls_polish"),
+                                              lang="pl",
+                                              ctc_selection=False))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
-                                   corpus_dir=os.path.join("Corpora", "meta_Spanish"),
-                                   lang="es"))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+                                              corpus_dir=os.path.join("Corpora", "meta_Spanish"),
+                                              lang="es"))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
-                                   corpus_dir=os.path.join("Corpora", "mls_french"),
-                                   lang="fr",
-                                   ctc_selection=False))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
+                                              corpus_dir=os.path.join("Corpora", "mls_french"),
+                                              lang="fr",
+                                              ctc_selection=False))
 
-    datasets.append(prepare_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
-                                   corpus_dir=os.path.join("Corpora", "mls_italian"),
-                                   lang="it",
-                                   ctc_selection=False))
-
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+                                              corpus_dir=os.path.join("Corpora", "mls_italian"),
+                                              lang="it",
+                                              ctc_selection=False))
 
     if find_faulty_samples_mode:
         find_faulty_samples(net=FastSpeech2(lang_embs=100),
@@ -111,46 +108,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                    lr=0.001,
                    path_to_checkpoint=resume_checkpoint,
                    resume=resume)
-
-
-def prepare_corpus(transcript_dict, corpus_dir, lang, ctc_selection=True, fine_tune_aligner=True, use_reconstruction=False):
-    """
-    create an aligner dataset,
-    fine-tune an aligner,
-    create a fastspeech dataset,
-    return it.
-
-    Skips parts that have been done before.
-    """
-    if fine_tune_aligner:
-        aligner_dir = os.path.join(corpus_dir, "aligner")
-        if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
-            aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang)
-            train_aligner(train_dataset=aligner_datapoints,
-                          device=torch.device("cuda"),
-                          save_directory=aligner_dir,
-                          steps=(len(aligner_datapoints) * 5) // 32,
-                          batch_size=32,
-                          path_to_checkpoint="Models/Aligner/aligner.pt",
-                          fine_tune=True,
-                          debug_img_path=aligner_dir,
-                          resume=False,
-                          use_reconstruction=use_reconstruction)
-            return FastSpeechDataset(transcript_dict,
-                                     acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
-                                     cache_dir=corpus_dir,
-                                     device=torch.device("cuda"),
-                                     lang=lang,
-                                     ctc_selection=ctc_selection,
-                                     aligner_datapoints=aligner_datapoints)
-    else:
-        aligner_dir = "Models/Aligner/"
-    return FastSpeechDataset(transcript_dict,
-                             acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
-                             cache_dir=corpus_dir,
-                             device=torch.device("cuda"),
-                             lang=lang,
-                             ctc_selection=ctc_selection)
 
 
 @torch.no_grad()
