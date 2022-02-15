@@ -1,20 +1,22 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_English import run as english_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as german_fast
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ_long import run as lj_long
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy_CTC import run as fast_nancy_ctc
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "fast_nancy_ctc": fast_nancy_ctc,
-    "fast_meta"     : meta_fast,
-    "fast_german"   : german_fast,
-    "fast_english"  : english_fast,
-    "hifi_combined" : hifigan_combined,
-    "aligner"       : aligner,
+    "libri"        : libri,
+    "meta"         : meta_fast,
+    "karlsson"     : karlsson,
+    "lj"           : lj,
+    "lj_long"      : lj_long,
+    "hifi_combined": hifigan_combined,
+    "aligner"      : aligner,
     }
 
 if __name__ == '__main__':
