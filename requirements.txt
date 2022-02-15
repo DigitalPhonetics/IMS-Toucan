@@ -18,7 +18,6 @@ emoji~=1.4.2
 filelock~=3.0.12
 ftfy~=6.0.3
 future~=0.18.2
-gdown~=3.13.0
 graphviz~=0.17
 huggingface-hub~=0.0.16
 HyperPyYAML~=1.0.0
@@ -81,3 +80,4 @@ uritemplate~=3.0.1
 urllib3~=1.26.6
 wcwidth~=0.2.5
 wincertstore~=0.2
+gdown

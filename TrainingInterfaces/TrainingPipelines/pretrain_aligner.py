@@ -151,11 +151,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                            lang="de",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
-                                           corpus_dir=os.path.join("Corpora", "Friedrich"),
-                                           lang="de",
-                                           device=device))
-
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
                                            corpus_dir=os.path.join("Corpora", "hui_others"),
                                            lang="de",

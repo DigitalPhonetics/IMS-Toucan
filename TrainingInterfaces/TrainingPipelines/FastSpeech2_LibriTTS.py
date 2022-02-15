@@ -1,7 +1,6 @@
 import random
 
 import torch
-from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -28,15 +27,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_English")
+        save_dir = os.path.join("Models", "FastSpeech2_LibriTTS")
     os.makedirs(save_dir, exist_ok=True)
 
-    datasets = list()
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
-                                              corpus_dir=os.path.join("Corpora", "libri"),
-                                              lang="en"))
-
-    train_set = ConcatDataset(datasets)
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
+                                          corpus_dir=os.path.join("Corpora", "libri"),
+                                          lang="en")
 
     model = FastSpeech2(lang_embs=100)
 

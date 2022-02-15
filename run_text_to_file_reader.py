@@ -57,11 +57,22 @@ def read_harvard_sentences(model_id, device):
         tts.read_to_file(text_list=[sent], file_location=output_dir + "/{}.wav".format(index))
 
 
+def read_contrastive_focus_sentences(model_id, device):
+    tts = tts_dict[model_id](device=device)
+
+    with open("Utility/contrastive_focus_test_sentences.txt", "r", encoding="utf8") as f:
+        sents = f.read().split("\n")
+    output_dir = "audios/focus_{}".format(model_id)
+    os.makedirs(output_dir, exist_ok=True)
+    for index, sent in enumerate(sents):
+        tts.read_to_file(text_list=[sent], file_location=output_dir + "/{}.wav".format(index))
+
+
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("audios", exist_ok=True)
 
-    read_texts_as_ensemble(model_id="fast_english",
+    read_texts_as_ensemble(model_id="fast_meta",
                            sentence=["Hello world, this is a test."],
                            device=exec_device,
                            filename="audios/ensemble")

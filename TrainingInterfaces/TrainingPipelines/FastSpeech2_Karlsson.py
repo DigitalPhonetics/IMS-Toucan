@@ -28,36 +28,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_German")
+        save_dir = os.path.join("Models", "FastSpeech2_Karlsson")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
                                               corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
-                                              corpus_dir=os.path.join("Corpora", "Eva"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
-                                              corpus_dir=os.path.join("Corpora", "Hokus"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
-                                              corpus_dir=os.path.join("Corpora", "Bernd"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
-                                              corpus_dir=os.path.join("Corpora", "Friedrich"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
-                                              corpus_dir=os.path.join("Corpora", "hui_others"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
-                                              corpus_dir=os.path.join("Corpora", "Thorsten"),
                                               lang="de"))
 
     train_set = ConcatDataset(datasets)

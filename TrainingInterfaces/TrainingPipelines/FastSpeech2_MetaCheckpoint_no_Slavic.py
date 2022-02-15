@@ -101,10 +101,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                                               corpus_dir=os.path.join("Corpora", "Bernd"),
                                               lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_friedrich(),
-                                              corpus_dir=os.path.join("Corpora", "Friedrich"),
-                                              lang="de"))
-
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
                                               corpus_dir=os.path.join("Corpora", "hui_others"),
                                               lang="de"))
