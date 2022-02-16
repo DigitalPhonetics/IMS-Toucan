@@ -54,7 +54,8 @@ class AudioPreprocessor:
         """
         https://github.com/snakers4/silero-vad
         """
-        return self.collect_chunks(self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr), audio)
+        speech_timestamps = self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr)
+        return audio[speech_timestamps[0]['start']:audio[-1]['end']]
 
     def to_mono(self, x):
         """
