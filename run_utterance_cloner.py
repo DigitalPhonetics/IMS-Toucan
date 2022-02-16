@@ -4,6 +4,7 @@ import soundfile as sf
 import torch
 from numpy import trim_zeros
 from torch.optim import SGD
+from tqdm import tqdm
 
 from InferenceInterfaces.Meta_FastSpeech2 import Meta_FastSpeech2
 from InferenceInterfaces.MultiEnglish_FastSpeech2 import MultiEnglish_FastSpeech2
@@ -22,7 +23,7 @@ tts_dict = {
 }
 
 
-def extract_prosody(transcript, ref_audio_path, lang="de", on_line_fine_tune=True, set_silences_to_zero=True):
+def extract_prosody(transcript, ref_audio_path, lang="de", on_line_fine_tune=True):
     device = 'cpu'
     acoustic_model = Aligner()
     acoustic_checkpoint_path = os.path.join("Models", "Aligner", "aligner.pt")
@@ -60,7 +61,7 @@ def extract_prosody(transcript, ref_audio_path, lang="de", on_line_fine_tune=Tru
         mel_len = torch.LongTensor([len(mel)]).to(device)
         # actual fine-tuning starts here
         optim_asr = SGD(acoustic_model.parameters(), lr=0.1)
-        for step_counter in range(steps):
+        for _ in tqdm(list(range(steps))):
             acoustic_model.train()
             pred = acoustic_model(mel.unsqueeze(0), mel_len)
             loss = acoustic_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
@@ -85,23 +86,10 @@ def extract_prosody(transcript, ref_audio_path, lang="de", on_line_fine_tune=Tru
                 durations=duration.unsqueeze(0),
                 durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
 
-    if set_silences_to_zero:
-        # we set the pitch and energy values to zero for all of the phonemes that should be silence.
-        for index, vector in enumerate(text):
-            if vector == tf.phone_to_vector("~") or \
-                    vector == tf.phone_to_vector(".") or \
-                    vector == tf.phone_to_vector("!") or \
-                    vector == tf.phone_to_vector("?") or \
-                    vector == tf.phone_to_vector("#"):
-                pitch[index] = 0.0
-                energy[index] = 0.0
-
-    # phones = tf.get_phone_string(transcript)
-    # print(len(phones), " ", len(duration), " ", len(pitch), " ", len(energy))
     return duration, pitch, energy
 
 
-def clone_utterance(path_to_reference_audio, reference_transcription, filename_of_result, clone_speaker_identity=True, model_id="fast_karlsson", device="cpu", lang="de"):
+def clone_utterance(path_to_reference_audio, reference_transcription, filename_of_result, clone_speaker_identity=True, model_id="fast_meta", device="cpu", lang="de"):
     tts = tts_dict[model_id](device=device)
     if clone_speaker_identity:
         tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
