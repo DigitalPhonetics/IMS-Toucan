@@ -55,7 +55,7 @@ class AudioPreprocessor:
         https://github.com/snakers4/silero-vad
         """
         speech_timestamps = self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr)
-        return audio[speech_timestamps[0]['start']:audio[-1]['end']]
+        return audio[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
     def to_mono(self, x):
         """
@@ -165,5 +165,5 @@ if __name__ == '__main__':
     import soundfile
 
     wav, sr = soundfile.read("../audios/test.wav")
-    ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
+    ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True)
     ap.visualize_cleaning(wav)
