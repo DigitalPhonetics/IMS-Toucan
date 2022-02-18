@@ -32,7 +32,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_3xljspeech(),
                                           corpus_dir=os.path.join("Corpora", "LJSpeech_long"),
-                                          lang="de")
+                                          lang="en")
 
     model = FastSpeech2(lang_embs=100)
 
@@ -44,8 +44,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                steps=500000,
                batch_size=32,
                lang="en",
-               lr=0.0004,
-               warmup_steps=14000,
+               lr=0.0001,
+               warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume)

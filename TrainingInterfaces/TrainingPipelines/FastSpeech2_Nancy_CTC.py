@@ -74,7 +74,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                batch_size=32,
                lang="en",
                lr=0.0001,
-               warmup_steps=14000,
+               warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume)

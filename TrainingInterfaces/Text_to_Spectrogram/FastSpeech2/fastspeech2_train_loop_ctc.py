@@ -75,7 +75,7 @@ def train_loop(net,
                epochs_per_save=5,
                lang="en",
                lr=0.0001,
-               warmup_steps=14000,
+               warmup_steps=4000,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False):
