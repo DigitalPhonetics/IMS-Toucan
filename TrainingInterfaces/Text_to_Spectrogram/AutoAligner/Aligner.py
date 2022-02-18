@@ -96,8 +96,8 @@ class Aligner(torch.nn.Module):
             phones.append(self.tf.id_to_phone[int(id_of_phone)])
         return "".join(phones)
 
+    @torch.inference_mode()
     def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
-
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:

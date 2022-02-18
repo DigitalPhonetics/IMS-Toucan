@@ -14,12 +14,10 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
-class Meta_FastSpeech2(torch.nn.Module):
+class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu"):
+    def __init__(self, device="cpu", model_name="Meta", language="en"):
         super().__init__()
-        model_name = "Meta"
-        language = "en"
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
         checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
@@ -43,7 +41,7 @@ class Meta_FastSpeech2(torch.nn.Module):
         self.lang_id = get_language_id(lang_id).to(self.device)
 
     def forward(self, text, view=False, durations=None, pitch=None, energy=None):
-        with torch.no_grad():
+        with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,

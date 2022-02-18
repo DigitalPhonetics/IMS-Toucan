@@ -5,9 +5,7 @@ import torch
 from torch.optim import SGD
 from tqdm import tqdm
 
-from InferenceInterfaces.Meta_FastSpeech2 import Meta_FastSpeech2
-from InferenceInterfaces.MultiEnglish_FastSpeech2 import MultiEnglish_FastSpeech2
-from InferenceInterfaces.MultiGerman_FastSpeech2 import MultiGerman_FastSpeech2
+from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
@@ -15,17 +13,11 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator impor
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
 
-tts_dict = {
-    "fast_meta"   : Meta_FastSpeech2,
-    "fast_german" : MultiGerman_FastSpeech2,
-    "fast_english": MultiEnglish_FastSpeech2
-    }
-
 
 class UtteranceCloner:
 
     def __init__(self, model_id, device):
-        self.tts = tts_dict[model_id](device=device)
+        self.tts = InferenceFastSpeech2(device=device, model_name=model_id)
         self.device = device
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio
@@ -83,9 +75,9 @@ class UtteranceCloner:
                 pred = acoustic_model(mel)
                 loss = acoustic_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
                 optim_asr.zero_grad()
-                loss.backward()
-                torch.nn.utils.clip_grad_norm_(acoustic_model.parameters(), 1.0)
-                optim_asr.step()
+                # loss.backward()
+                # torch.nn.utils.clip_grad_norm_(acoustic_model.parameters(), 1.0)
+                # optim_asr.step()
             acoustic_model.eval()
 
         alignment_path = acoustic_model.inference(mel=melspec.to(self.device),
@@ -126,7 +118,7 @@ class UtteranceCloner:
 
 
 if __name__ == '__main__':
-    uc = UtteranceCloner(model_id="fast_meta", device="cuda" if torch.cuda.is_available() else "cpu")
+    uc = UtteranceCloner(model_id="Meta", device="cuda" if torch.cuda.is_available() else "cpu")
 
     uc.clone_utterance(path_to_reference_audio="audios/test.wav",
                        reference_transcription="Hello world, this is a test.",
