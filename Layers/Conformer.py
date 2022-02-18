@@ -148,6 +148,6 @@ class Conformer(torch.nn.Module):
     def _integrate_with_lang_embed(self, hs, lang_ids):
         lang_embs = self.language_embedding(lang_ids)
         # concat hidden states with language embeds and then apply projection to offset the phoneme distribution of a language
-        speaker_embeddings_expanded = F.normalize(lang_embs).unsqueeze(1).expand(-1, hs.size(1), -1)
+        speaker_embeddings_expanded = F.normalize(lang_embs).expand(-1, hs.size(1), -1)
         hs = self.language_embedding_to_hidden_state_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
