@@ -91,7 +91,7 @@ def train_loop(net,
                steps=300000,
                epochs_per_save=1,
                lang="en",
-               lr=0.0001,
+               lr=0.0004,
                warmup_steps=14000,
                path_to_checkpoint=None,
                fine_tune=False,
@@ -135,7 +135,7 @@ def train_loop(net,
     # default speaker embedding for inference is the average of the first 20 speaker embeddings. So if you use multiple datasets combined,
     # put a single speaker one with the nicest voice first into the concat dataset.
     step_counter = 0
-    optimizer = torch.optim.RAdam(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0

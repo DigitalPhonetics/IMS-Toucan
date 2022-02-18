@@ -74,6 +74,8 @@ class Conformer(torch.nn.Module):
                                                             torch.nn.Softsign())
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
+            self.language_embedding_to_hidden_state_projection = torch.nn.Linear(attention_dim + attention_dim, attention_dim)
+            self.lang_norm = LayerNorm(attention_dim)
 
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
@@ -115,11 +117,11 @@ class Conformer(torch.nn.Module):
             xs = self.embed(xs)
 
         if lang_ids is not None:
-            lang_embs = self.language_embedding(lang_ids)
-            xs = xs + lang_embs  # offset the phoneme distribution of a language
+            xs = self._integrate_with_lang_embed(xs, lang_ids=lang_ids)
+            xs = self.lang_norm(xs)
 
         if utterance_embedding is not None and not self.connect_utt_emb_at_encoder_out:
-            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
+            xs = self._integrate_with_utt_embed(xs, utt_embeddings=utterance_embedding)
 
         xs = self.pos_enc(xs)
 
@@ -127,11 +129,11 @@ class Conformer(torch.nn.Module):
         if isinstance(xs, tuple):
             xs = xs[0]
 
+        if utterance_embedding is not None and self.connect_utt_emb_at_encoder_out:
+            xs = self._integrate_with_utt_embed(xs, utt_embeddings=utterance_embedding)
+
         if self.normalize_before:
             xs = self.after_norm(xs)
-
-        if utterance_embedding is not None and self.connect_utt_emb_at_encoder_out:
-            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
 
         return xs, masks
 
@@ -141,4 +143,11 @@ class Conformer(torch.nn.Module):
         # concat hidden states with spk embeds and then apply projection
         speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        return hs
+
+    def _integrate_with_lang_embed(self, hs, lang_ids):
+        lang_embs = self.language_embedding(lang_ids)
+        # concat hidden states with language embeds and then apply projection to offset the phoneme distribution of a language
+        speaker_embeddings_expanded = F.normalize(lang_embs).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.language_embedding_to_hidden_state_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
