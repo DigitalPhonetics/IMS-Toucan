@@ -157,7 +157,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                    save_directory=meta_save_dir,
                    steps=100000,
                    steps_per_checkpoint=1000,
-                   lr=0.0001,
+                   lr=0.001,
                    path_to_checkpoint=resume_checkpoint,
                    resume=resume)
 
@@ -236,7 +236,7 @@ def train_loop(net,
             else:
                 default_embedding = default_embedding + datapoint[7].squeeze()
         default_embeddings[lang] = (default_embedding / len(datasets[index])).to(device)
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+    optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if resume:
