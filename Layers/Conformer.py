@@ -3,6 +3,7 @@ Taken from ESPNet
 """
 
 import torch
+import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
 from Layers.Convolution import ConvolutionModule
