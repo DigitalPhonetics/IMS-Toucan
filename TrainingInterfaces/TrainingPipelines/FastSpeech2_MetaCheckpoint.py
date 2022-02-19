@@ -13,6 +13,7 @@ from tqdm import tqdm
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+from Utility.WarmupScheduler import WarmupScheduler
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
@@ -156,7 +157,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
                    save_directory=meta_save_dir,
                    steps=100000,
                    steps_per_checkpoint=1000,
-                   lr=0.0001,
+                   lr=0.00005,
                    path_to_checkpoint=resume_checkpoint,
                    resume=resume)
 
@@ -206,7 +207,8 @@ def train_loop(net,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
-               resume=False):
+               resume=False,
+               warmup_steps=4000):
     # ============
     # Preparations
     # ============
@@ -234,9 +236,10 @@ def train_loop(net,
             else:
                 default_embedding = default_embedding + datapoint[7].squeeze()
         default_embeddings[lang] = (default_embedding / len(datasets[index])).to(device)
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
+    optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     # this is only included in more recent versions of torch, may need to upgrade torch if there's an error here
     grad_scaler = GradScaler()
+    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if resume:
         previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
         if previous_checkpoint is not None:
@@ -252,6 +255,7 @@ def train_loop(net,
             optimizer.load_state_dict(check_dict["optimizer"])
             step_counter = check_dict["step_counter"]
             grad_scaler.load_state_dict(check_dict["scaler"])
+            scheduler.load_state_dict(check_dict["scheduler"])
             if step_counter > steps:
                 print("Desired steps already reached in loaded checkpoint.")
                 return
@@ -297,6 +301,7 @@ def train_loop(net,
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
         grad_scaler.step(optimizer)
         grad_scaler.update()
+        scheduler.step()
 
         if step % steps_per_checkpoint == 0:
             # ==============================
@@ -309,6 +314,7 @@ def train_loop(net,
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
                 "scaler"      : grad_scaler.state_dict(),
+                "scheduler"   : scheduler.state_dict(),
                 "step_counter": step,
                 "default_emb" : default_embeddings["en"]
                 },
