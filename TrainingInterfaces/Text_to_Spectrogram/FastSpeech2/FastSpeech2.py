@@ -111,6 +111,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
         self.use_scaled_pos_enc = use_scaled_pos_enc
+        self.multilingual_model = lang_embs is not None
+        self.multispeaker_model = utt_embed_dim is not None
 
         # define encoder
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
@@ -226,6 +228,13 @@ class FastSpeech2(torch.nn.Module, ABC):
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
                  is_inference=False, alpha=1.0, utterance_embedding=None, lang_ids=None):
+
+        if not self.multilingual_model:
+            lang_ids = None
+
+        if not self.multispeaker_model:
+            utterance_embedding = None
+
         # forward encoder
         text_masks = self._source_mask(text_lens)
 

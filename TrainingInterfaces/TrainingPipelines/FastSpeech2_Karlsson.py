@@ -39,6 +39,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_set = ConcatDataset(datasets)
 
     model = FastSpeech2(lang_embs=100)
+    # because we want to finetune it, we treat it as multilingual and multispeaker model, even though it only has one speaker
 
     print("Training model")
     train_loop(net=model,
@@ -49,6 +50,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                batch_size=32,
                lang="de",
                lr=0.001,
+               epochs_per_save=10,
                warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,

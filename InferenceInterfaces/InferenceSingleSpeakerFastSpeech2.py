@@ -14,14 +14,14 @@ from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 
-class InferenceFastSpeech2(torch.nn.Module):
+class InferenceSingleSpeakerFastSpeech2(torch.nn.Module):
 
     def __init__(self, device="cpu", model_name="Meta", language="en"):
         super().__init__()
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
         checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
-        self.phone2mel = FastSpeech2(weights=checkpoint["model"]).to(torch.device(device))
+        self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None).to(torch.device(device))
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.phone2mel.eval()

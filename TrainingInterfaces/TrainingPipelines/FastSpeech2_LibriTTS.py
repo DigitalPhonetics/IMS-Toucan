@@ -34,7 +34,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                           corpus_dir=os.path.join("Corpora", "libri"),
                                           lang="en")
 
-    model = FastSpeech2(lang_embs=100)
+    model = FastSpeech2(lang_embs=None)
 
     print("Training model")
     train_loop(net=model,
