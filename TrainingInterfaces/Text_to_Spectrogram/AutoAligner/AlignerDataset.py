@@ -44,6 +44,7 @@ class AlignerDataset(Dataset):
                                force_reload=False,
                                onnx=False,
                                verbose=False)  # download and cache for it to be loaded and used later
+                torch.set_grad_enabled(True)
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())

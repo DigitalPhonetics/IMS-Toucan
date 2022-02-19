@@ -41,6 +41,8 @@ class AudioPreprocessor:
              self.read_audio,
              self.VADIterator,
              self.collect_chunks) = utils
+            torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
+            # this to false globally during model loading rather than using inference mode or no_grad
             self.silero_model = self.silero_model.to(self.device)
         else:
             self.device = "cpu"  # if we don't run the VAD model, there's simply no reason to use the GPU.
@@ -54,7 +56,8 @@ class AudioPreprocessor:
         """
         https://github.com/snakers4/silero-vad
         """
-        speech_timestamps = self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr)
+        with torch.inference_mode():
+            speech_timestamps = self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr)
         return audio[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
     def to_mono(self, x):

@@ -27,6 +27,8 @@ class UtteranceCloner:
                                                   onnx=False,
                                                   verbose=False)
         (self.get_speech_timestamps, _, _, _, _) = utils
+        torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
+        # this to false globally during model loading rather than using inference mode or no_grad
         self.silero_model = self.silero_model.to(self.device)
 
     def extract_prosody(self, transcript, ref_audio_path, lang="de", on_line_fine_tune=True):
@@ -46,7 +48,8 @@ class UtteranceCloner:
             print('Something went wrong, the reference wave might be too short.')
             raise RuntimeError
 
-        speech_timestamps = self.get_speech_timestamps(norm_wave, self.silero_model, sampling_rate=16000)
+        with torch.inference_mode():
+            speech_timestamps = self.get_speech_timestamps(norm_wave, self.silero_model, sampling_rate=16000)
         norm_wave = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
@@ -75,9 +78,9 @@ class UtteranceCloner:
                 pred = acoustic_model(mel)
                 loss = acoustic_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
                 optim_asr.zero_grad()
-                # loss.backward()
-                # torch.nn.utils.clip_grad_norm_(acoustic_model.parameters(), 1.0)
-                # optim_asr.step()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(acoustic_model.parameters(), 1.0)
+                optim_asr.step()
             acoustic_model.eval()
 
         alignment_path = acoustic_model.inference(mel=melspec.to(self.device),
