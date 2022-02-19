@@ -125,7 +125,7 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        speaker_embeddings_projected = self.embedding_projection(utt_embeddings)
+        speaker_embeddings_projected = self.embedding_projection(utt_embeddings).unsqueeze(1)
         hs = hs + speaker_embeddings_projected  # offset phone realization of a speaker
         hs = self.speaker_norm(hs)
         return hs
