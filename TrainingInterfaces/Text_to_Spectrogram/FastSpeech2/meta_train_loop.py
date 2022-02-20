@@ -1,5 +1,3 @@
-import random
-
 import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
@@ -12,139 +10,11 @@ from tqdm import tqdm
 
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from Utility.WarmupScheduler import WarmupScheduler
-from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
-
-
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samples_mode=False):
-    torch.manual_seed(131714)
-    random.seed(131714)
-    torch.random.manual_seed(131714)
-
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
-
-    datasets = list()
-
-    base_dir = os.path.join("Models", "FastSpeech2_Meta")
-    if model_dir is not None:
-        meta_save_dir = model_dir
-    else:
-        meta_save_dir = base_dir
-    os.makedirs(meta_save_dir, exist_ok=True)
-
-    print("Preparing")
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
-                                              corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                              lang="es",
-                                              ctc_selection=False))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Greek"),
-                                              lang="el"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Finnish"),
-                                              lang="fi"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Russian"),
-                                              lang="ru"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
-                                              lang="hu"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
-                                              corpus_dir=os.path.join("Corpora", "meta_French"),
-                                              lang="fr"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
-                                              corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
-                                              lang="es"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
-                                              corpus_dir=os.path.join("Corpora", "mls_porto"),
-                                              lang="pt",
-                                              ctc_selection=False))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
-                                              corpus_dir=os.path.join("Corpora", "mls_polish"),
-                                              lang="pl",
-                                              ctc_selection=False))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Spanish"),
-                                              lang="es"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
-                                              corpus_dir=os.path.join("Corpora", "mls_french"),
-                                              lang="fr",
-                                              ctc_selection=False))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
-                                              corpus_dir=os.path.join("Corpora", "mls_italian"),
-                                              lang="it",
-                                              ctc_selection=False))
-
-    if find_faulty_samples_mode:
-        find_faulty_samples(net=FastSpeech2(lang_embs=100),
-                            datasets=datasets,
-                            device=torch.device("cuda"),
-                            path_to_checkpoint=resume_checkpoint)
-    else:
-        train_loop(net=FastSpeech2(lang_embs=100),
-                   device=torch.device("cuda"),
-                   datasets=datasets,
-                   batch_size=5,
-                   save_directory=meta_save_dir,
-                   steps=100000,
-                   steps_per_checkpoint=1000,
-                   lr=0.0001,
-                   path_to_checkpoint=resume_checkpoint,
-                   resume=resume)
-
-
-@torch.no_grad()
-def find_faulty_samples(net,
-                        datasets,
-                        device,
-                        path_to_checkpoint):
-    net = net.to(device)
-    torch.multiprocessing.set_sharing_strategy('file_system')
-    check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
-    net.load_state_dict(check_dict["model"])
-    losses = list()
-    index_pairs = list()
-    for dataset_index in range(len(datasets)):
-        for datapoint_index in tqdm(range(len(datasets[dataset_index]))):
-            loss = net(text_tensors=datasets[dataset_index][datapoint_index][0].unsqueeze(0).to(device),
-                       text_lengths=datasets[dataset_index][datapoint_index][1].to(device),
-                       gold_speech=datasets[dataset_index][datapoint_index][2].unsqueeze(0).to(device),
-                       speech_lengths=datasets[dataset_index][datapoint_index][3].to(device),
-                       gold_durations=datasets[dataset_index][datapoint_index][4].unsqueeze(0).to(device),
-                       gold_pitch=datasets[dataset_index][datapoint_index][6].unsqueeze(0).to(device),  # mind the switched order
-                       gold_energy=datasets[dataset_index][datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
-                       utterance_embedding=datasets[dataset_index][datapoint_index][7].unsqueeze(0).to(device),
-                       lang_ids=datasets[dataset_index][datapoint_index][8].unsqueeze(0).to(device),
-                       return_mels=False).squeeze()
-            if torch.isnan(loss):
-                print(f"CAREFUL, NAN DETECTED: {dataset_index}, {datapoint_index}")
-            losses.append(loss.item())
-            index_pairs.append((dataset_index, datapoint_index))
-    loss_high_to_low = sorted(losses, reverse=True)
-    print(loss_high_to_low)
-    threshold = loss_high_to_low[1000]
-    for index, loss in enumerate(losses):
-        if loss > threshold:
-            print(index_pairs[index])
-            print(loss)
 
 
 def train_loop(net,
@@ -156,7 +26,8 @@ def train_loop(net,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
-               resume=False):
+               resume=False,
+               warmup_steps=4000):
     # ============
     # Preparations
     # ============
@@ -175,8 +46,8 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    default_embeddings = {"el": None, "es": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
-    for index, lang in enumerate(["el", "es", "fi", "ru", "hu", "nl", "fr"]):
+    default_embeddings = {"en": None, "de": None, "el": None, "es": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
+    for index, lang in enumerate(["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]):
         default_embedding = None
         for datapoint in datasets[index]:
             if default_embedding is None:
@@ -186,7 +57,7 @@ def train_loop(net,
         default_embeddings[lang] = (default_embedding / len(datasets[index])).to(device)
     optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     grad_scaler = GradScaler()
-    scheduler = WarmupScheduler(optimizer, warmup_steps=4000)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if resume:
         previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
         if previous_checkpoint is not None:
@@ -266,7 +137,7 @@ def train_loop(net,
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
-            for lang in ["el", "es", "fi", "ru", "hu", "nl", "fr"]:
+            for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
                 plot_progress_spec(net=net,
                                    device=device,
                                    lang=lang,

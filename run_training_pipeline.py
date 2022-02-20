@@ -6,6 +6,8 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ_long import run as lj_long
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Germanic import run as no_ger
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Slavic import run as no_slav
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -17,6 +19,8 @@ pipeline_dict = {
     "lj_long"      : lj_long,
     "hifi_combined": hifigan_combined,
     "aligner"      : aligner,
+    "no_ger"       : no_ger,
+    "no_slav"      : no_slav
     }
 
 if __name__ == '__main__':

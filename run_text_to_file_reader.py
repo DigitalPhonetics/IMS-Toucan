@@ -60,7 +60,4 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("audios", exist_ok=True)
 
-    read_texts_as_ensemble(model_id="Meta",
-                           sentence=["Hello world, this is a test."],
-                           device=exec_device,
-                           filename="audios/ensemble")
+    read_contrastive_focus_sentences("LJ_long", exec_device)
