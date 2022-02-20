@@ -153,7 +153,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
         train_loop(net=FastSpeech2(lang_embs=100),
                    device=torch.device("cuda"),
                    datasets=datasets,
-                   batch_size=4,
+                   batch_size=3,
                    save_directory=meta_save_dir,
                    steps=100000,
                    steps_per_checkpoint=1000,
@@ -259,11 +259,11 @@ def train_loop(net,
                 print("Desired steps already reached in loaded checkpoint.")
                 return
 
+    net.train()
     # =============================
     # Actual train loop starts here
     # =============================
     for step in tqdm(range(step_counter, steps)):
-        net.train()
         batches = []
         for index in range(len(datasets)):
             # we get one batch for each task (i.e. language in this case)
@@ -274,25 +274,24 @@ def train_loop(net,
                 train_iters[index] = iter(train_loaders[index])
                 batch = next(train_iters[index])
                 batches.append(batch)
-        train_losses = list()
+        train_loss = 0.0
         for batch in batches:
             with autocast():
                 # we sum the loss for each task, as we would do for the
                 # second order regular MAML, but we do it only over one
                 # step (i.e. iterations of inner loop = 1)
-                train_losses.append(net(text_tensors=batch[0].to(device),
-                                        text_lengths=batch[1].to(device),
-                                        gold_speech=batch[2].to(device),
-                                        speech_lengths=batch[3].to(device),
-                                        gold_durations=batch[4].to(device),
-                                        gold_pitch=batch[6].to(device),  # mind the switched order
-                                        gold_energy=batch[5].to(device),  # mind the switched order
-                                        utterance_embedding=batch[7].to(device),
-                                        lang_ids=batch[8].to(device),
-                                        return_mels=False))
+                train_loss = train_loss + net(text_tensors=batch[0].to(device),
+                                              text_lengths=batch[1].to(device),
+                                              gold_speech=batch[2].to(device),
+                                              speech_lengths=batch[3].to(device),
+                                              gold_durations=batch[4].to(device),
+                                              gold_pitch=batch[6].to(device),  # mind the switched order
+                                              gold_energy=batch[5].to(device),  # mind the switched order
+                                              utterance_embedding=batch[7].to(device),
+                                              lang_ids=batch[8].to(device),
+                                              return_mels=False)
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
-        train_loss = sum(train_losses)
         train_losses_total.append(train_loss.item())
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
@@ -326,9 +325,10 @@ def train_loop(net,
                                    save_dir=save_directory,
                                    step=step,
                                    utt_embeds=default_embeddings)
+            net.train()
 
 
-@torch.no_grad()
+@torch.inference_mode()
 def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""

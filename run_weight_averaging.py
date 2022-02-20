@@ -12,9 +12,19 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastS
 
 def load_net_fast(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = FastSpeech2()
-    net.load_state_dict(check_dict["model"])
-    return net, check_dict["default_emb"]
+    try:
+        net = FastSpeech2()
+        net.load_state_dict(check_dict["model"])
+        return net, check_dict["default_emb"]
+    except RuntimeError:
+        try:
+            net = FastSpeech2(lang_embs=None)
+            net.load_state_dict(check_dict["model"])
+            return net, check_dict["default_emb"]
+        except RuntimeError:
+            net = FastSpeech2(lang_embs=None, utt_embed_dim=None)
+            net.load_state_dict(check_dict["model"])
+            return net, check_dict["default_emb"]
 
 
 def load_net_hifigan(path):

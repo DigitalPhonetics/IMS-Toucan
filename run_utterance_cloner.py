@@ -5,7 +5,7 @@ import torch
 from torch.optim import SGD
 from tqdm import tqdm
 
-from InferenceInterfaces.InferenceMultiSpeakerMultiLingualFastSpeech2 import InferenceMultiSpeakerMultiLingualFastSpeech2
+from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
 from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
@@ -17,7 +17,7 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import D
 class UtteranceCloner:
 
     def __init__(self, model_id, device):
-        self.tts = InferenceMultiSpeakerMultiLingualFastSpeech2(device=device, model_name=model_id)
+        self.tts = InferenceFastSpeech2(device=device, model_name=model_id)
         self.device = device
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio

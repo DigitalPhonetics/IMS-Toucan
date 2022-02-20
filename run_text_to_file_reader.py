@@ -2,11 +2,11 @@ import os
 
 import torch
 
-from InferenceInterfaces.InferenceMultiSpeakerMultiLingualFastSpeech2 import InferenceMultiSpeakerMultiLingualFastSpeech2
+from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
 
 
 def read_texts(model_id, sentence, filename, device="cpu"):
-    tts = InferenceMultiSpeakerMultiLingualFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, model_name=model_id)
     if type(sentence) == str:
         sentence = [sentence]
     tts.read_to_file(text_list=sentence, file_location=filename)
@@ -17,7 +17,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu"):
     """
     for this function, the filename should NOT contain the .wav ending, it's added automatically
     """
-    tts = InferenceMultiSpeakerMultiLingualFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, model_name=model_id)
     if type(sentence) == str:
         sentence = [sentence]
     for index in range(10):
@@ -26,7 +26,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu"):
 
 
 def read_harvard_sentences(model_id, device):
-    tts = InferenceMultiSpeakerMultiLingualFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, model_name=model_id)
 
     with open("Utility/test_sentences_combined_3.txt", "r", encoding="utf8") as f:
         sents = f.read().split("\n")
@@ -46,7 +46,7 @@ def read_harvard_sentences(model_id, device):
 
 
 def read_contrastive_focus_sentences(model_id, device):
-    tts = InferenceMultiSpeakerMultiLingualFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, model_name=model_id)
 
     with open("Utility/contrastive_focus_test_sentences.txt", "r", encoding="utf8") as f:
         sents = f.read().split("\n")
