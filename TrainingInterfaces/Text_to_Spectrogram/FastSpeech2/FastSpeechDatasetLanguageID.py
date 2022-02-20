@@ -1,6 +1,7 @@
 import os
 import statistics
 
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -102,7 +103,7 @@ class FastSpeechDataset(Dataset):
                     if last_vec is None:
                         last_vec = vec
                     else:
-                        if last_vec == vec:
+                        if np.equal([last_vec.numpy() == vec.numpy()]):
                             # we found a case of repeating phonemes!
                             # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
                             dur_1 = cached_duration[phoneme_index - 1]
@@ -204,7 +205,7 @@ class FastSpeechDataset(Dataset):
                 if last_vec is None:
                     last_vec = vec
                 else:
-                    if last_vec == vec:
+                    if np.equal([last_vec.numpy() == vec.numpy()]):
                         # we found a case of repeating phonemes!
                         # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
                         dur_1 = self.datapoints[datapoint_index][4][phoneme_index - 1]
