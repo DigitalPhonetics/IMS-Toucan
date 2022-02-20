@@ -97,6 +97,22 @@ class FastSpeechDataset(Dataset):
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
+                last_vec = None
+                for phoneme_index, vec in enumerate(text):
+                    if last_vec is None:
+                        last_vec = vec
+                    else:
+                        if last_vec == vec:
+                            # we found a case of repeating phonemes!
+                            # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
+                            dur_1 = cached_duration[phoneme_index - 1]
+                            dur_2 = cached_duration[phoneme_index]
+                            total_dur = dur_1 + dur_2
+                            new_dur_1 = int((total_dur / 5) * 3)
+                            new_dur_2 = total_dur - new_dur_1
+                            cached_duration[phoneme_index - 1] = new_dur_1
+                            cached_duration[phoneme_index] = new_dur_2
+
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
@@ -191,11 +207,12 @@ class FastSpeechDataset(Dataset):
                     if last_vec == vec:
                         # we found a case of repeating phonemes!
                         # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                        dur_1 = self.datapoints[4][phoneme_index - 1]
-                        dur_2 = self.datapoints[4][phoneme_index]
+                        dur_1 = self.datapoints[datapoint_index][4][phoneme_index - 1]
+                        dur_2 = self.datapoints[datapoint_index][4][phoneme_index]
                         total_dur = dur_1 + dur_2
                         new_dur_1 = int((total_dur / 5) * 3)
                         new_dur_2 = total_dur - new_dur_1
-                        self.datapoints[4][phoneme_index - 1] = new_dur_1
-                        self.datapoints[4][phoneme_index] = new_dur_2
+                        self.datapoints[datapoint_index][4][phoneme_index - 1] = new_dur_1
+                        self.datapoints[datapoint_index][4][phoneme_index] = new_dur_2
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
+        print("Dataset updated!")
