@@ -144,7 +144,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
         train_loop(net=FastSpeech2(lang_embs=100),
                    device=torch.device("cuda"),
                    datasets=datasets,
-                   batch_size=5,
+                   batch_size=4,
                    save_directory=meta_save_dir,
                    steps=100000,
                    steps_per_checkpoint=1000,

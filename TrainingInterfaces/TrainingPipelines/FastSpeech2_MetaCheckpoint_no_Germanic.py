@@ -102,7 +102,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
         train_loop(net=FastSpeech2(lang_embs=100),
                    device=torch.device("cuda"),
                    datasets=datasets,
-                   batch_size=5,
+                   batch_size=4,
                    save_directory=meta_save_dir,
                    steps=100000,
                    steps_per_checkpoint=1000,
@@ -262,7 +262,7 @@ def train_loop(net,
                 "scaler"      : grad_scaler.state_dict(),
                 "scheduler"   : scheduler.state_dict(),
                 "step_counter": step,
-                "default_emb" : default_embeddings["en"]
+                "default_emb": default_embeddings["es"]
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)

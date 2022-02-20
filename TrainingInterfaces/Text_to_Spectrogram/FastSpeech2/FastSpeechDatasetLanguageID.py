@@ -30,6 +30,7 @@ class FastSpeechDataset(Dataset):
                  rebuild_cache=False,
                  ctc_selection=True,
                  save_imgs=False):
+        self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -173,3 +174,28 @@ class FastSpeechDataset(Dataset):
             self.datapoints.pop(remove_id)
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
         print("Dataset updated!")
+
+    def fix_repeating_phones(self):
+        """
+        The viterbi decoding of the durations cannot
+        handle repetitions. This is now solved heuristically,
+        but if you have a cache from before March 2022,
+        use this method to postprocess those cases.
+        """
+        for datapoint_index in tqdm(list(range(len(self.datapoints)))):
+            last_vec = None
+            for phoneme_index, vec in enumerate(self.datapoints[datapoint_index][0]):
+                if last_vec is None:
+                    last_vec = vec
+                else:
+                    if last_vec == vec:
+                        # we found a case of repeating phonemes!
+                        # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
+                        dur_1 = self.datapoints[4][phoneme_index - 1]
+                        dur_2 = self.datapoints[4][phoneme_index]
+                        total_dur = dur_1 + dur_2
+                        new_dur_1 = int((total_dur / 5) * 3)
+                        new_dur_2 = total_dur - new_dur_1
+                        self.datapoints[4][phoneme_index - 1] = new_dur_1
+                        self.datapoints[4][phoneme_index] = new_dur_2
+        torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
