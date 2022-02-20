@@ -103,7 +103,7 @@ class FastSpeechDataset(Dataset):
                     if last_vec is None:
                         last_vec = vec
                     else:
-                        if np.equal([last_vec.numpy(), vec.numpy()]):
+                        if np.equal(last_vec.numpy(), vec.numpy()):
                             # we found a case of repeating phonemes!
                             # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
                             dur_1 = cached_duration[phoneme_index - 1]
@@ -205,7 +205,7 @@ class FastSpeechDataset(Dataset):
                 if last_vec is None:
                     last_vec = vec
                 else:
-                    if np.equal([last_vec.numpy(), vec.numpy()]):
+                    if np.equal(last_vec.numpy(), vec.numpy()):
                         # we found a case of repeating phonemes!
                         # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
                         dur_1 = self.datapoints[datapoint_index][4][phoneme_index - 1]
@@ -215,5 +215,6 @@ class FastSpeechDataset(Dataset):
                         new_dur_2 = total_dur - new_dur_1
                         self.datapoints[datapoint_index][4][phoneme_index - 1] = new_dur_1
                         self.datapoints[datapoint_index][4][phoneme_index] = new_dur_2
+                    print("fix applied")
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
         print("Dataset updated!")
