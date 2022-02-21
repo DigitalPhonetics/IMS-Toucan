@@ -36,11 +36,9 @@ def prepare_fastspeech_corpus(transcript_dict, corpus_dir, lang, ctc_selection=T
                           use_reconstruction=use_reconstruction)
     else:
         aligner_dir = "Models/Aligner/"
-    ds = FastSpeechDataset(transcript_dict,
-                           acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
-                           cache_dir=corpus_dir,
-                           device=torch.device("cuda"),
-                           lang=lang,
-                           ctc_selection=ctc_selection)
-    ds.fix_repeating_phones()
-    return 1
+    return FastSpeechDataset(transcript_dict,
+                             acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
+                             cache_dir=corpus_dir,
+                             device=torch.device("cuda"),
+                             lang=lang,
+                             ctc_selection=ctc_selection)
