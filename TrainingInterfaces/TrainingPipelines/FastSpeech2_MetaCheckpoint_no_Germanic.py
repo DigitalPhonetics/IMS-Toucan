@@ -31,7 +31,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
 
     datasets = list()
 
-    base_dir = os.path.join("Models", "FastSpeech2_Meta")
+    base_dir = os.path.join("Models", "FastSpeech2_Meta_no_ger")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:

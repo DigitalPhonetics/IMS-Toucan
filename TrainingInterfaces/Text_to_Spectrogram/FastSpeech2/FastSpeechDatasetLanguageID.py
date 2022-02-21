@@ -99,9 +99,7 @@ class FastSpeechDataset(Dataset):
 
                 last_vec = None
                 for phoneme_index, vec in enumerate(text):
-                    if last_vec is None:
-                        last_vec = vec
-                    else:
+                    if last_vec is not None:
                         if last_vec.numpy().tolist() == vec.numpy().tolist():
                             # we found a case of repeating phonemes!
                             # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
@@ -112,6 +110,7 @@ class FastSpeechDataset(Dataset):
                             new_dur_2 = total_dur - new_dur_1
                             cached_duration[phoneme_index - 1] = new_dur_1
                             cached_duration[phoneme_index] = new_dur_2
+                    last_vec = vec
 
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
@@ -201,9 +200,7 @@ class FastSpeechDataset(Dataset):
         for datapoint_index in tqdm(list(range(len(self.datapoints)))):
             last_vec = None
             for phoneme_index, vec in enumerate(self.datapoints[datapoint_index][0]):
-                if last_vec is None:
-                    last_vec = vec
-                else:
+                if last_vec is not None:
                     if last_vec.numpy().tolist() == vec.numpy().tolist():
                         # we found a case of repeating phonemes!
                         # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
@@ -215,5 +212,6 @@ class FastSpeechDataset(Dataset):
                         self.datapoints[datapoint_index][4][phoneme_index - 1] = new_dur_1
                         self.datapoints[datapoint_index][4][phoneme_index] = new_dur_2
                     print("fix applied")
+                last_vec = vec
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
         print("Dataset updated!")
