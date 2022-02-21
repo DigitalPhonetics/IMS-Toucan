@@ -211,7 +211,7 @@ class FastSpeechDataset(Dataset):
                         new_dur_2 = total_dur - new_dur_1
                         self.datapoints[datapoint_index][4][phoneme_index - 1] = new_dur_1
                         self.datapoints[datapoint_index][4][phoneme_index] = new_dur_2
-                    print("fix applied")
+                        print("fix applied")
                 last_vec = vec
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
         print("Dataset updated!")
