@@ -42,7 +42,7 @@ class Visualizer:
     def _plot_embeddings(self, projected_data, labels, title):
         label_to_color = dict()
         for index, label in enumerate(list(set(labels))):
-            label_to_color[label] = (1 / len(label_to_color)) * index
+            label_to_color[label] = (1 / len(labels)) * index
         plt.clf()
         plt.scatter(x=[x[0] for x in projected_data],
                     y=[x[1] for x in projected_data],
