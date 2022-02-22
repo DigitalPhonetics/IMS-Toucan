@@ -5,8 +5,9 @@ import torch
 from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
 
 
-def read_texts(model_id, sentence, filename, device="cpu"):
+def read_texts(model_id, sentence, filename, device="cpu", language="en"):
     tts = InferenceFastSpeech2(device=device, model_name=model_id)
+    tts.set_language(language)
     if type(sentence) == str:
         sentence = [sentence]
     tts.read_to_file(text_list=sentence, file_location=filename)
@@ -60,4 +61,4 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("audios", exist_ok=True)
 
-    read_contrastive_focus_sentences("LJ_long", exec_device)
+    read_texts(model_id="Meta", sentence="Hello World.", filename="audios/read_speech.wav", device="cpu", language="en")
