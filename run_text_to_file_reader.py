@@ -14,14 +14,15 @@ def read_texts(model_id, sentence, filename, device="cpu", language="en"):
     del tts
 
 
-def read_texts_as_ensemble(model_id, sentence, filename, device="cpu"):
+def read_texts_as_ensemble(model_id, sentence, filename, device="cpu", language="en", amount=10):
     """
     for this function, the filename should NOT contain the .wav ending, it's added automatically
     """
     tts = InferenceFastSpeech2(device=device, model_name=model_id)
+    tts.set_language(language)
     if type(sentence) == str:
         sentence = [sentence]
-    for index in range(10):
+    for index in range(amount):
         tts.default_utterance_embedding = torch.zeros(704).float().random_(-40, 40).to(device)
         tts.read_to_file(text_list=sentence, file_location=filename + f"_{index}" + ".wav")
 
