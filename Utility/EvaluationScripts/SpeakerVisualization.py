@@ -10,13 +10,13 @@ from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 class Visualizer:
 
-    def __init__(self, sr=48000):
+    def __init__(self, sr=48000, device="cpu"):
         """
         Args:
             sr: The sampling rate of the audios you want to visualize.
         """
-        self.tsne = TSNE(verbose=1, learning_rate=4, perplexity=30, n_iter=200000, n_iter_without_progress=8000, init='pca')
-        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr)
+        self.tsne = TSNE(verbose=1, learning_rate=4, perplexity=30, n_iter=200000, n_iter_without_progress=8000, init='pca', n_jobs=-1)
+        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.sr = sr
 
     def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot):

@@ -1,6 +1,8 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanLowResource import run as low_ger
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as single_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ_long import run as lj_long
@@ -8,6 +10,8 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as lib
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Germanic import run as no_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Slavic import run as no_slav
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianLowResource import run as low_rus
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianSingle import run as single_rus
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -20,7 +24,11 @@ pipeline_dict = {
     "hifi_combined": hifigan_combined,
     "aligner"      : aligner,
     "no_ger"       : no_ger,
-    "no_slav"      : no_slav
+    "no_slav"      : no_slav,
+    "low_rus"      : low_rus,
+    "low_ger"      : low_ger,
+    "single_ger"   : single_ger,
+    "single_rus"   : single_rus
     }
 
 if __name__ == '__main__':

@@ -1,7 +1,6 @@
 import random
 
 import torch
-from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -16,7 +15,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     else:
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
+        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
         device = torch.device("cuda")
 
     torch.manual_seed(131714)
@@ -28,18 +27,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_Karlsson")
+        save_dir = os.path.join("Models", "FastSpeech2_GermanSingle")
     os.makedirs(save_dir, exist_ok=True)
 
-    datasets = list()
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
-                                              corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                              lang="de"))
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+                                          corpus_dir=os.path.join("Corpora", "Karlsson"),
+                                          lang="de")
 
-    train_set = ConcatDataset(datasets)
-
-    model = FastSpeech2(lang_embs=100)
-    # because we want to finetune it, we treat it as multilingual and multispeaker model, even though it only has one speaker
+    model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
 
     print("Training model")
     train_loop(net=model,

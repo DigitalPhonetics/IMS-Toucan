@@ -1,10 +1,10 @@
 import random
 
+import soundfile
 import torch
-from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.low_resource_fastspeech2_train_loop import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
@@ -28,15 +28,32 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_Karlsson")
+        save_dir = os.path.join("Models", "FastSpeech2_German_low_resource")
     os.makedirs(save_dir, exist_ok=True)
 
-    datasets = list()
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
-                                              corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                              lang="de"))
+    path_to_transcript_dict_ = build_path_to_transcript_dict_karlsson()
+    path_to_transcript_dict = dict()
 
-    train_set = ConcatDataset(datasets)
+    paths = list(path_to_transcript_dict_.keys())
+    used_samples = set()
+    total_len = 0.0
+    while total_len < 5.0 * 60.0:
+        path = random.choice(paths)
+        x, sr = soundfile.read(path)
+        duration = len(x) / sr
+        if 10 > duration > 5 and path not in used_samples:
+            used_samples.add(path)
+            total_len += duration
+
+    print(f"Collected {total_len / 60.0} minutes worth of samples.")
+
+    for key in path_to_transcript_dict_:
+        if key in used_samples:
+            path_to_transcript_dict[key] = path_to_transcript_dict_[key]
+
+    train_set = prepare_fastspeech_corpus(transcript_dict=path_to_transcript_dict,
+                                          corpus_dir=os.path.join("Corpora", "German_low_resource"),
+                                          lang="de")
 
     model = FastSpeech2(lang_embs=100)
     # because we want to finetune it, we treat it as multilingual and multispeaker model, even though it only has one speaker
@@ -46,12 +63,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=500000,
+               steps=10000,
                batch_size=32,
                lang="de",
                lr=0.001,
-               epochs_per_save=10,
-               warmup_steps=4000,
+               epochs_per_save=2,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume)
