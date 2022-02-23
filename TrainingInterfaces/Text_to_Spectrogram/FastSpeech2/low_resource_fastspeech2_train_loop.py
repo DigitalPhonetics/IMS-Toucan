@@ -132,7 +132,7 @@ def train_loop(net,
     # default speaker embedding for inference is the average of the first 20 speaker embeddings. So if you use multiple datasets combined,
     # put a single speaker one with the nicest voice first into the concat dataset.
     step_counter = 0
-    optimizer = torch.optim.Adam(net.encoder.language_embedding.parameters(), lr=lr)  # first we only tune the embedding layer, later we tune the rest
+    optimizer = torch.optim.SGD(net.encoder.language_embedding.parameters(), lr=lr)  # first we only tune the embedding layer, later we tune the rest
     scaler = GradScaler()
     epoch = 0
     if resume:
@@ -158,7 +158,7 @@ def train_loop(net,
         for batch in tqdm(train_loader):
             if step_counter == steps // 2:
                 # half of the time we only train the language embedding, then we train everything jointly
-                optimizer = torch.optim.Adam(net.parameters(), lr=lr / 10)
+                optimizer = torch.optim.SGD(net.parameters(), lr=lr)
                 print("Model is now unfrozen, good luck!")
 
             with autocast():
