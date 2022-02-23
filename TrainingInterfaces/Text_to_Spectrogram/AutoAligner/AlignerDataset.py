@@ -25,7 +25,7 @@ class AlignerDataset(Dataset):
                  loading_processes=30,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
-                 cut_silences=False,
+                 cut_silences=True,
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu"):
