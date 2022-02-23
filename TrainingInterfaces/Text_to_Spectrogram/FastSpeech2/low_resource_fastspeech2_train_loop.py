@@ -145,6 +145,11 @@ def train_loop(net,
             step_counter = check_dict["step_counter"]
             scaler.load_state_dict(check_dict["scaler"])
     start_time = time.time()
+
+    net.eval()
+    plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
+    net.train()
+
     while True:
         net.train()
         epoch += 1

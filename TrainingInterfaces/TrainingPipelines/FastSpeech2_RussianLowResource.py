@@ -66,8 +66,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                steps=10000,
                batch_size=32,
                lang="ru",
-               lr=0.001,
-               epochs_per_save=2,
+               lr=0.00005,
+               epochs_per_save=20,
                path_to_checkpoint="Models/FastSpeech2_Meta_no_slav/best.pt",
                fine_tune=True,
                resume=resume)
