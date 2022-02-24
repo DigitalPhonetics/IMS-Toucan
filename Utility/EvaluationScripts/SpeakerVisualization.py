@@ -1,8 +1,13 @@
+import matplotlib
 import numpy
 import soundfile as sf
 from matplotlib import pyplot as plt
 from matplotlib.markers import MarkerStyle
+
+matplotlib.use("tkAgg")
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+
 from tqdm import tqdm
 
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
@@ -16,10 +21,11 @@ class Visualizer:
             sr: The sampling rate of the audios you want to visualize.
         """
         self.tsne = TSNE(verbose=1, learning_rate=4, perplexity=30, n_iter=200000, n_iter_without_progress=8000, init='pca', n_jobs=-1)
+        self.pca = PCA(n_components=2)
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.sr = sr
 
-    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot):
+    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None):
         label_list = list()
         embedding_list = list()
         for label in tqdm(label_to_filepaths):
@@ -36,10 +42,14 @@ class Visualizer:
                 embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().numpy())
                 label_list.append(label)
         embeddings_as_array = numpy.array(embedding_list)
-        dimensionality_reduced_embeddings = self.tsne.fit_transform(embeddings_as_array)
-        self._plot_embeddings(dimensionality_reduced_embeddings, label_list, title=title_of_plot)
 
-    def _plot_embeddings(self, projected_data, labels, title):
+        dimensionality_reduced_embeddings_tsne = self.tsne.fit_transform(embeddings_as_array)
+        dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
+
+        self._plot_embeddings(dimensionality_reduced_embeddings_tsne, label_list, title=title_of_plot + " t-SNE", save_file_path=save_file_path)
+        self._plot_embeddings(dimensionality_reduced_embeddings_pca, label_list, title=title_of_plot + " PCA", save_file_path=save_file_path)
+
+    def _plot_embeddings(self, projected_data, labels, title, save_file_path):
         label_to_color = dict()
         for index, label in enumerate(list(set(labels))):
             label_to_color[label] = (1 / len(labels)) * index
@@ -54,4 +64,8 @@ class Visualizer:
         plt.axis('off')
         plt.subplots_adjust(top=0.9, bottom=0.0, right=1.0, left=0.0)
         plt.title(title)
-        plt.show()
+        if save_file_path is not None:
+            plt.savefig(save_file_path)
+        else:
+            plt.show()
+        plt.close()
