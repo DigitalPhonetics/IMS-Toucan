@@ -49,7 +49,7 @@ tts_low_diff = InferenceFastSpeech2(device="cuda" if torch.cuda.is_available() e
 tts_low_diff.set_utterance_embedding(porto_speaker_reference)
 
 kaldi_style_transcript = ""
-for index, path in enumerate(random.sample(list(russian_ptt.keys()), 3000)):
+for index, path in enumerate(tqdm(random.sample(list(russian_ptt.keys()), 3000))):
     # 3000 audios should be totally sufficient, and we won't have to wait for days
     shutil.copy(path, f"experiment_audios/russian/human/{index}.wav")
     kaldi_style_transcript += f"{index} {russian_ptt[path]}\n"
@@ -78,7 +78,7 @@ tts_low_diff = InferenceFastSpeech2(device="cuda" if torch.cuda.is_available() e
 tts_low_diff.set_utterance_embedding(porto_speaker_reference)
 
 kaldi_style_transcript = ""
-for index, path in enumerate(random.sample(list(german_ptt.keys()), 3000)):
+for index, path in enumerate(tqdm(random.sample(list(german_ptt.keys()), 3000))):
     # 3000 audios should be totally sufficient, and we won't have to wait for days
     shutil.copy(path, f"experiment_audios/german/human/{index}.wav")
     kaldi_style_transcript += f"{index} {german_ptt[path]}\n"
@@ -123,7 +123,7 @@ for prop in os.listdir(root + "txt"):
                 audio_paths_study.append(root + f"wav_44khz/{prop}/{cat}/{trans.split('.')[0]}.wav")
 
 kaldi_style_transcript = ""
-for index in range(len(transcript_paths)):
+for index in tqdm(list(range(len(transcript_paths)))):
     with open(transcript_paths[index], encoding="utf8", mode="r") as trans_file:
         text = trans_file.read().strip()
     shutil.copy(audio_paths[index], f"experiment_audios/adept/human/{index}.wav")
@@ -158,7 +158,7 @@ os.makedirs("experiment_audios/adept_study/diff_voice_same_style", exist_ok=True
 os.makedirs("experiment_audios/adept_study/same_voice_same_style", exist_ok=True)
 os.makedirs("experiment_audios/adept_study/same_voice_diff_style", exist_ok=True)
 
-for index in range(len(transcript_paths_study)):
+for index in tqdm(list(range(len(transcript_paths_study)))):
     with open(transcript_paths_study[index], encoding="utf8", mode="r") as trans_file:
         text = trans_file.read().strip()
     shutil.copy(audio_paths_study[index], f"experiment_audios/adept_study/human/{index}.wav")
