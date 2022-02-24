@@ -108,6 +108,7 @@ class UtteranceCloner:
                         clone_speaker_identity=True,
                         lang="de"):
         if clone_speaker_identity:
+            prev_speaker_embedding = self.tts.default_utterance_embedding.clone().detach()
             self.tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
         duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(reference_transcription,
                                                                                                  path_to_reference_audio,
@@ -118,6 +119,8 @@ class UtteranceCloner:
         cloned_speech = self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
         sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=48000)
+        if clone_speaker_identity:
+            self.tts.default_utterance_embedding = prev_speaker_embedding  # return to normal
 
 
 if __name__ == '__main__':
