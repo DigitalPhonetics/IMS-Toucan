@@ -235,17 +235,17 @@ class FastSpeech2(torch.nn.Module, ABC):
         # setup batch axis
         ilens = torch.tensor([text.shape[0]], dtype=torch.long, device=text.device)
         if speech is not None:
-            gold_speech = speech.unsqueeze(0)
+            gold_speech = speech.unsqueeze(0).to(text.device)
         else:
             gold_speech = None
         if durations is not None:
-            durations = durations.unsqueeze(0)
+            durations = durations.unsqueeze(0).to(text.device)
         if pitch is not None:
-            pitch = pitch.unsqueeze(0)
+            pitch = pitch.unsqueeze(0).to(text.device)
         if energy is not None:
-            energy = energy.unsqueeze(0)
+            energy = energy.unsqueeze(0).to(text.device)
         if lang_id is not None:
-            lang_id = lang_id.unsqueeze(0)
+            lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(text.unsqueeze(0),
                                                                                                ilens,
