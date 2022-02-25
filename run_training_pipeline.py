@@ -1,16 +1,16 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanLowResource import run as low_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as single_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ_long import run as lj_long
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_germ_finetune import run as low_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Germanic import run as no_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Slavic import run as no_slav
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianLowResource import run as low_rus
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_rus_finetune import run as low_rus
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianSingle import run as single_rus
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
