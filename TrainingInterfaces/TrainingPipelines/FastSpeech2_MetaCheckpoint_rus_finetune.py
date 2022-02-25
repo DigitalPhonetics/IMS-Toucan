@@ -31,7 +31,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
 
     datasets = list()
 
-    resume_checkpoint = "Models/FastSpeech2_Meta_Russian_low_resource/best.pt"
+    resume_checkpoint = "Models/FastSpeech2_Russian_low_resource/best.pt"
 
     base_dir = os.path.join("Models", "FastSpeech2_Meta_joint_finetune_russian")
     if model_dir is not None:
