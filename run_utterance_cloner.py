@@ -19,6 +19,8 @@ class UtteranceCloner:
     def __init__(self, model_id, device):
         self.tts = InferenceFastSpeech2(device=device, model_name=model_id)
         self.device = device
+        acoustic_checkpoint_path = os.path.join("Models", "Aligner", "aligner.pt")
+        self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"]
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio
         self.silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
@@ -33,8 +35,7 @@ class UtteranceCloner:
 
     def extract_prosody(self, transcript, ref_audio_path, lang="de", on_line_fine_tune=True):
         acoustic_model = Aligner()
-        acoustic_checkpoint_path = os.path.join("Models", "Aligner", "aligner.pt")
-        acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
+        acoustic_model.load_state_dict(self.aligner_weights)
         acoustic_model = acoustic_model.to(self.device)
         dio = Dio(reduction_factor=1, fs=16000)
         energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
@@ -49,7 +50,7 @@ class UtteranceCloner:
             raise RuntimeError
 
         with torch.inference_mode():
-            speech_timestamps = self.get_speech_timestamps(norm_wave, self.silero_model, sampling_rate=16000)
+            speech_timestamps = self.get_speech_timestamps(norm_wave.to(self.device), self.silero_model, sampling_rate=16000)
         norm_wave = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
