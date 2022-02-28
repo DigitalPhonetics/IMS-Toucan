@@ -17,8 +17,7 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 
 - [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
   super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 48kHz waveforms. This is however not present in this branch to stay true to the 
-  setup we used for the LAML paper. The vocoder module can be used interchangeably though.
+  spectrograms as input, but produces 48kHz waveforms. 
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
   bottom of the readme for a bibtex entry.
