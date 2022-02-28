@@ -37,7 +37,7 @@ def visualize_speakers_languages_crossover():
     ltf = dict()
     vs = Visualizer()
     for file in os.listdir("speakers_for_plotting"):
-        label = file.split("_")[0]
+        label = file.split("_")[0].capitalize() + " Speaker"
         if label not in ltf:
             ltf[label] = list()
         ltf[label].append(f"speakers_for_plotting/{file}")

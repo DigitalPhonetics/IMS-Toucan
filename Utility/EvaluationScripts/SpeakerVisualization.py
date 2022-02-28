@@ -1,6 +1,7 @@
 import matplotlib
 import numpy
 import soundfile as sf
+from matplotlib import cm
 from matplotlib import pyplot as plt
 
 matplotlib.use("tkAgg")
@@ -58,9 +59,11 @@ class Visualizer:
                                   legend=legend)
 
     def _plot_embeddings(self, projected_data, labels, title, save_file_path, legend):
+        colors = cm.gist_rainbow(numpy.linspace(0, 1, len(set(labels))))
         label_to_color = dict()
         for index, label in enumerate(list(set(labels))):
-            label_to_color[label] = (1 / len(labels)) * index
+            label_to_color[label] = colors[index]
+
         labels_to_points_x = dict()
         labels_to_points_y = dict()
         for label in labels:
@@ -74,14 +77,11 @@ class Visualizer:
         for label in set(labels):
             x = numpy.array(labels_to_points_x[label])
             y = numpy.array(labels_to_points_y[label])
-            print(x.shape)
-            print(label_to_color[label])
             ax.scatter(x=x,
                        y=y,
-                       c=[label_to_color[label]] * len(x),
-                       cmap='gist_rainbow',
+                       c=label_to_color[label],
                        label=label,
-                       alpha=0.8)
+                       alpha=0.9)
         if legend:
             ax.legend()
         fig.tight_layout()
