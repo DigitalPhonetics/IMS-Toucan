@@ -4,9 +4,9 @@ IMS Toucan is a toolkit for teaching, training and using state-of-the-art Speech
 **Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
 PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
 
-The PyTorch Modules of [Tacotron 2](https://arxiv.org/abs/1712.05884)
-and [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
-[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of [HiFiGAN](https://arxiv.org/abs/2010.05646) are taken
+The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
+[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of 
+[HiFiGAN](https://arxiv.org/abs/2010.05646) are taken
 from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
 which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
 
@@ -15,26 +15,7 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 
 ---
 
-## Contents
-
-- [New Features](#new-features)
-- [Demonstration](#demonstration)
-- [Installation](#installation)
-  + [Basic Requirements](#basic-requirements)
-  + [Speaker Embedding](#speaker-embedding)
-  + [espeak-ng](#espeak-ng)
-- [Creating a new Pipeline](#creating-a-new-pipeline)
-  * [Build a HiFi-GAN Pipeline](#build-a-hifi-gan-pipeline)
-  * [Build a FastSpeech 2 Pipeline](#build-a-fastspeech-2-pipeline)
-- [Training a Model](#training-a-model)
-- [Creating a new InferenceInterface](#creating-a-new-inferenceinterface)
-- [Using a trained Model for Inference](#using-a-trained-model-for-inference)
-- [FAQ](#faq)
-- [Citation](#citation)
-
----
-
-## New Features
+## New Features 🐣
 
 - [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
   super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
@@ -42,35 +23,39 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
   bottom of the readme for a bibtex entry.
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
-  multilingual data.
-- We provide a checkpoint trained with [model agnostic meta learning](https://arxiv.org/abs/1703.03400) from which you
-  should be able to fine-tune a model with very little data in almost any language.
-- We now use a small self-contained Aligner that is trained with CTC, inspired by
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 48kHz waveforms. 
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
+  bottom of the readme for a bibtex entry.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use multilingual data to benefit less resource-rich languages. For IPA representations this works flawlessly, for other input representations you'll have to either stick to the embedding lookup table approach from the older branches of this toolkit or build your own  text frontend that encodes your representations into meaningful vectors and feed those into the models. Especially tonal languages suffer from this, since there isn't a great unified phonetic representation system for those that allows data from multiple languages to be used together. We plan on supporting tonal languages in the future, but for now we'll stick to pitch accent and word accent languages.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to fine-tune a model with very little data in almost any language (except for tonal languages, as mentioned in the last point). The last two contributions are described in our paper that we will present at the ACL 2022! We will link a preview version of the paper here soon.
+- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner). This allows us to get rid of the dependence on
   autoregressive models. Tacotron 2 is thus now also no longer in this branch, but still present in other branches,
   similar to TransformerTTS.
+ - By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, multi-lingual and multi-speaker models are possible. Combined with our previously proposed LAML method, we can build a single model that can speak any language it has been trained on and learn new languages from as little as 5 minutes of data in that language. We experimented with encoder designs and found one that allows speakers and languages to be very disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
+ - Vocoders can also be used to do some slight speech-enhancement by corrupting a small percentage of their input spectrograms, which we also added.
+ - Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with everything else! So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. We apply this to literary studies.
+
+A pretrained checkpoint for our massively multi-lingual model will be available shortly in the release section.
 
 ---
 
 ## Demonstration
 
+[Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
+
+[Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
+
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
 produced by Tacotron 2 combined with HiFi-GAN, trained on
-[Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) using this toolkit.
-
-[Here is some speech](https://drive.google.com/file/d/1mZ1LvTlY6pJ5ZQ4UXZ9jbzB651mufBrB/view?usp=sharing)
-produced by FastSpeech 2 and MelGAN trained on [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)
-using this toolkit.
+[Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) using this toolkit. (not in this branch)
 
 And [here is a sentence](https://drive.google.com/file/d/1FT49Jf0yyibwMDbsEJEO9mjwHkHRIGXc/view?usp=sharing)
 produced by TransformerTTS and MelGAN trained on [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)
-using this toolkit.
-
-[Here is some speech](https://drive.google.com/file/d/14nPo2o1VKtWLPGF7e_0TxL8XGI3n7tAs/view?usp=sharing)
-produced by a multi-speaker FastSpeech 2 with MelGAN trained on
-[LibriTTS](https://research.google/tools/datasets/libri-tts/) using this toolkit. Fans of the videogame Portal may
-recognize who was used as the reference speaker for this utterance.
+using this toolkit. (not in this branch)
 
 [Interactive Demo of our entry to the Blizzard Challenge 2021.](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw)
 This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5
@@ -99,14 +84,11 @@ pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f ht
 
 #### Speaker Embedding
 
-As [NVIDIA has shown](https://arxiv.org/pdf/2110.05798.pdf), you get better results by fine-tuning a pretrained model on
-a new speaker, rather than training a multispeaker model. We have thus dropped support for zero-shot multispeaker models
-using speaker embeddings. However we still
-use [Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb) for a cycle consistency loss to
-make adapting to new speakers a bit faster.
+We use an ensemble of [Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb)
+and [Speechbrain's x-Vector](https://huggingface.co/speechbrain/spkrec-xvect-voxceleb) as the speaker conditioning.
 
 In the current version of the toolkit no further action should be required. When you are using multispeaker for the
-first time, it requires an internet connection to download the pretrained models though.
+first time, it requires an internet connection to (automatically) download the pretrained models though.
 
 #### espeak-ng
 
@@ -124,7 +106,7 @@ apt-get install espeak-ng
 
 To create a new pipeline to train a HiFiGAN vocoder, you only need a set of audio files. To create a new pipeline for a
 FastSpeech 2, you need audio files, corresponding text labels, and an already trained Aligner model to estimate the
-duration information that FastSpeech 2 needs as input. Let's go through them in order of increasing complexity.
+duration information that FastSpeech 2 needs as input.
 
 ### Build a HiFi-GAN Pipeline
 
@@ -168,7 +150,7 @@ different directory.
 
 In your new pipeline file, look out for the line in which the
 *acoustic_model* is loaded. Change the path to the checkpoint of an Aligner model. It can either be the one that is
-supplied with the toolkit in the download script, or one that you trained yourself. In the example pipelines, the one
+supplied with the toolkit on the release page, or one that you trained yourself. In the example pipelines, the one
 that we provide is finetuned to the dataset it is applied to before it is used to extract durations.
 
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
@@ -196,14 +178,15 @@ Once this is done, we are almost done, now we just need to make it available to 
 Once you have a pipeline built, training is super easy. Just activate your virtual environment and run the command
 below. You might want to use something like nohup to keep it running after you log out from the server (then you should
 also add -u as option to python) and add an & to start it in the background. Also, you might want to direct the std:out
-and std:err into a file using > but all of that is just standard shell use and has nothing to do with the toolkit.
+and std:err into a specific file using > but all of that is just standard shell use and has nothing to do with the toolkit.
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>
 ```
 
 You can supply any of the following arguments, but don't have to (although for training you should definitely specify at
-least a GPU ID).
+least a GPU ID). It is recommended to download the LAML-pretrained checkpoint from the releases and use it as basis for 
+fine-tuning for any new model that you train to significantly reduce training time.
 
 ```
 --gpu_id <ID of the GPU you wish to use, as displayed with nvidia-smi, default is cpu> 
@@ -247,31 +230,11 @@ significantly, so you should do this and then use the
 
 ---
 
-## Creating a new InferenceInterface
-
-To build a new
-*InferenceInterface*, which you can then use for super simple inference, we're going to use an existing one as template
-again. Make a copy of the
-*InferenceInterface*. Change the name of the class in the copy and change the paths to the models to use the trained
-models of your choice. Instantiate the model with the same hyperparameters that you used when you created it in the
-corresponding training pipeline. The last thing to check is the language that you supply to the text frontend. Make sure
-it matches what you used during training.
-
-With your newly created
-*InferenceInterface*, you can use your trained models pretty much anywhere, e.g. in other projects. All you need is the
-*Utility* directory, the
-*Layers*
-directory, the
-*Preprocessing* directory and the
-*InferenceInterfaces* directory (and of course your model checkpoint). That's all the code you need, it works
-standalone.
-
----
-
 ## Using a trained Model for Inference
 
-An
-*InferenceInterface* contains two useful methods. They are
+You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle identifying the model you want to use, the rest should work out in the background. YOu might want to set a language embedding or a speaker embedding. The methods for that should be self-explanatory.
+
+An *InferenceInterface* contains two useful methods. They are
 *read_to_file* and
 *read_aloud*.
 
@@ -285,14 +248,9 @@ An
   wave it created from that spectrogram. So all the representations can be seen, text to phoneme, phoneme to spectrogram
   and finally spectrogram to wave.
 
-Those methods are used in demo code in the toolkit. In
+Their use is demonstrated in
 *run_interactive_demo.py* and
-*run_text_to_file_reader.py*, you can import
-*InferenceInterfaces* that you created and add them to the dictionary in each of the files with a shorthand that makes
-sense. In the interactive demo, you can just call the python script, then type in the shorthand when prompted and
-immediately listen to your synthesis saying whatever you put in next (be wary of out of memory errors for too long
-inputs). In the text reader demo script you have to call the function that wraps around the
-*InferenceInterface* and supply the shorthand of your choice. It should be pretty clear from looking at it.
+*run_text_to_file_reader.py*.
 
 ---
 
@@ -304,6 +262,8 @@ Here are a few points that were brought up by users:
   specified GPU is set as the only visible device, in order to avoid backend stuff running accidentally on different
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
+- read_to_file produces strange outputs - Check if you're passing a list to the method or a string. Since strings can be 
+- iterated over, it might not throw an error, but a list is expected.
 
 ---
 
