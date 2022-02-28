@@ -181,7 +181,9 @@ python run_training_pipeline.py <shorthand of the pipeline>
 ```
 
 You can supply any of the following arguments, but don't have to (although for training you should definitely specify at
-least a GPU ID).
+least a GPU ID). With this version of the toolkit, we recommend that you download the meta-checkpoint of the model you want 
+to train and fine-tune from it to significantly decrease need for data, time for training and chance of success if your data 
+is not very high quality.
 
 ```
 --gpu_id <ID of the GPU you wish to use, as displayed with nvidia-smi, default is cpu> 
@@ -276,15 +278,6 @@ Here are a few points that were brought up by users:
   specified GPU is set as the only visible device, in order to avoid backend stuff running accidentally on different
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
-
----
-
-## Example Pipelines available
-
-| Dataset                                                                              | Language | Single or Multi | TransformerTTS | Tacotron 2 | FastSpeech 2 | 
-| -------------------------------------------------------------------------------------|----------|-----------------|:--------------:|:---------:|:-----------:|
-| [LJSpeech](https://keithito.com/LJ-Speech-Dataset/)                                  | English  | Single Speaker | ✅              | ✅        |✅           |
-| [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) | English  | Single Speaker | ✅              | ✅        |✅           |
 
 ---
 
