@@ -17,10 +17,13 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 
 - [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
   super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 48kHz waveforms.
+  spectrograms as input, but produces 48kHz waveforms. This is however not present in this branch to stay true to the 
+  setup we used for the LAML paper. The vocoder module can be used interchangeably though.
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
   bottom of the readme for a bibtex entry.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use multilingual data to benefit less resource-rich languages. For IPA representations this works flawlessly, for other input representations you'll have to either stick to the embedding lookup table approach from the older branches of this toolkit or build your own  text frontend that encodes your representations into meaningful vectors and feed those into the models. Especially tonal languages suffer from this, since there isn't a great unified phonetic representation system for those. We plan on supporting tonal languages in the future, but for now we'll stick to pitch accent an dword accent languages.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to fine-tune a model with very little data in almost any language (except for tonal languages, as mentioned in the last point). These two contributions are described in our paper that we will present at the ACL 2022! Check the releases for the models. We will link a preview version of the paper here soon.
 
 ## Demonstration
 
