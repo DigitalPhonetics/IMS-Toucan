@@ -25,7 +25,7 @@ class Visualizer:
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.sr = sr
 
-    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None):
+    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None, include_pca=True):
         label_list = list()
         embedding_list = list()
         for label in tqdm(label_to_filepaths):
@@ -44,10 +44,17 @@ class Visualizer:
         embeddings_as_array = numpy.array(embedding_list)
 
         dimensionality_reduced_embeddings_tsne = self.tsne.fit_transform(embeddings_as_array)
-        dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
+        self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_tsne,
+                              labels=label_list,
+                              title=title_of_plot + " t-SNE" if include_pca else title_of_plot,
+                              save_file_path=save_file_path)
 
-        self._plot_embeddings(dimensionality_reduced_embeddings_tsne, label_list, title=title_of_plot + " t-SNE", save_file_path=save_file_path)
-        self._plot_embeddings(dimensionality_reduced_embeddings_pca, label_list, title=title_of_plot + " PCA", save_file_path=save_file_path)
+        if include_pca:
+            dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
+            self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_pca,
+                                  labels=label_list,
+                                  title=title_of_plot + " PCA",
+                                  save_file_path=save_file_path)
 
     def _plot_embeddings(self, projected_data, labels, title, save_file_path):
         label_to_color = dict()

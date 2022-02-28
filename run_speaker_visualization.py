@@ -33,5 +33,16 @@ def visualize_libritts():
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of a Subset of LibriTTS")
 
 
+def visualize_speakers_languages_crossover():
+    ltf = dict()
+    vs = Visualizer()
+    for file in os.listdir("speakers_for_plotting"):
+        label = file.split("_")[0]
+        if label not in ltf:
+            ltf[label] = list()
+        ltf[label].append(f"speakers_for_plotting/{file}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Speakers Across Languages", include_pca=False)
+
+
 if __name__ == '__main__':
-    visualize_random_speakers()
+    visualize_speakers_languages_crossover()
