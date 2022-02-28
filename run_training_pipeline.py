@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as full_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as single_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
@@ -28,7 +29,8 @@ pipeline_dict = {
     "low_rus"      : low_rus,
     "low_ger"      : low_ger,
     "single_ger"   : single_ger,
-    "single_rus"   : single_rus
+    "single_rus"   : single_rus,
+    "full_ger"     : full_ger
     }
 
 if __name__ == '__main__':
