@@ -12,18 +12,18 @@ torch.random.manual_seed(131714)
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = "6"  # hardcoded gpu ID, be careful with this script
 
-speaker_references = ["spanish.wav",
-                      "russian.wav",
-                      "portuguese.flac",
-                      "polish.flac",
-                      "italian.flac",
-                      "hungarian.wav",
-                      "greek.wav",
-                      "german.wav",
-                      "french.wav",
-                      "finnish.wav",
-                      "english.wav",
-                      "dutch.wav"]
+speaker_references = ["audios/spanish.wav",
+                      "audios/russian.wav",
+                      "audios/portuguese.flac",
+                      "audios/polish.flac",
+                      "audios/italian.flac",
+                      "audios/hungarian.wav",
+                      "audios/greek.wav",
+                      "audios/german.wav",
+                      "audios/french.wav",
+                      "audios/finnish.wav",
+                      "audios/english.wav",
+                      "audios/dutch.wav"]
 
 lang_sents = {
     "de": "Klebe das Blatt auf den dunkelblauen Hintergrund. Das Kanu aus Birkenholz glitt über die glatten Planken.",
@@ -48,4 +48,4 @@ for speaker_ref in speaker_references:
     tts.set_utterance_embedding(speaker_ref)
     for lang in lang_sents:
         tts.set_language(lang)
-        tts.read_to_file(lang_sents[lang], f"experiment_audios/speakers_for_plotting/{speaker_ref.split('.')[0]}_{lang}.wav")
+        tts.read_to_file([lang_sents[lang]], f"experiment_audios/speakers_for_plotting/{speaker_ref.split('.')[0]}_{lang}.wav")
