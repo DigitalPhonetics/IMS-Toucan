@@ -29,21 +29,37 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
   bottom of the readme for a bibtex entry.
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use multilingual data to benefit less resource-rich languages. For IPA representations this works flawlessly, for other input representations you'll have to either stick to the embedding lookup table approach from the older branches of this toolkit or build your own  text frontend that encodes your representations into meaningful vectors and feed those into the models. Especially tonal languages suffer from this, since there isn't a great unified phonetic representation system for those that allows data from multiple languages to be used together. We plan on supporting tonal languages in the future, but for now we'll stick to pitch accent and word accent languages.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to fine-tune a model with very little data in almost any language (except for tonal languages, as mentioned in the last point). The last two contributions are described in our paper that we will present at the ACL 2022! We will link a preview version of the paper here soon.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use 
+  multilingual data to benefit less resource-rich languages. For IPA representations this works flawlessly, for 
+  other input representations you'll have to either stick to the embedding lookup table approach from the older 
+  branches of this toolkit or build your own  text frontend that encodes your representations into meaningful vectors 
+  and feed those into the models. Especially tonal languages suffer from this, since there isn't a great unified phonetic 
+  representation system for those that allows data from multiple languages to be used together. We plan on supporting 
+  tonal languages in the future, but for now we'll stick to pitch accent and word accent languages.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to 
+  fine-tune a model with very little data in almost any language (except for tonal languages, as mentioned in the last 
+  point). The last two contributions are described in our paper that we will present at the ACL 2022! We will link a 
+  preview version of the paper here soon.
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner). This allows us to get rid of the dependence on
   autoregressive models. Tacotron 2 is thus now also no longer in this branch, but still present in other branches,
   similar to TransformerTTS.
- - By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, multi-lingual and multi-speaker models are possible. Combined with our previously proposed LAML method, we can build a single model that can speak any language it has been trained on and learn new languages from as little as 5 minutes of data in that language. We experimented with encoder designs and found one that allows speakers and languages to be very disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
- - Vocoders can also be used to do some slight speech-enhancement by corrupting a small percentage of their input spectrograms, which we also added.
- - Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with everything else! So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. We apply this to literary studies.
+ - By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, 
+   multi-lingual and multi-speaker models are possible. Combined with our previously proposed LAML method, we can build a 
+   single model that can speak any language it has been trained on and learn new languages from as little as 5 minutes of 
+   data in that language. We experimented with encoder designs and found one that allows speakers and languages to be very 
+   disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
+ - Vocoders can also be used to do some slight speech-enhancement by corrupting a small percentage of their input spectrograms, 
+   which we also added and experimented with.
+ - Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with everything else! 
+   So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. 
+   We apply this to literary studies.
 
 A pretrained checkpoint for our massively multi-lingual model will be available shortly in the release section.
 
 ---
 
-## Demonstration
+## Demonstration 🦚
 
 [Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
 
@@ -63,7 +79,7 @@ hours of Spanish.
 
 ---
 
-## Installation
+## Installation 🦉
 
 #### Basic Requirements
 
@@ -102,7 +118,7 @@ apt-get install espeak-ng
 
 ---
 
-## Creating a new Pipeline
+## Creating a new Pipeline 🦆
 
 To create a new pipeline to train a HiFiGAN vocoder, you only need a set of audio files. To create a new pipeline for a
 FastSpeech 2, you need audio files, corresponding text labels, and an already trained Aligner model to estimate the
@@ -173,7 +189,7 @@ Once this is done, we are almost done, now we just need to make it available to 
 
 ---
 
-## Training a Model
+## Training a Model 🦜
 
 Once you have a pipeline built, training is super easy. Just activate your virtual environment and run the command
 below. You might want to use something like nohup to keep it running after you log out from the server (then you should
@@ -230,7 +246,7 @@ significantly, so you should do this and then use the
 
 ---
 
-## Using a trained Model for Inference
+## Using a trained Model for Inference 🦢
 
 You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle identifying the model you want to use, the rest should work out in the background. YOu might want to set a language embedding or a speaker embedding. The methods for that should be self-explanatory.
 
@@ -254,7 +270,7 @@ Their use is demonstrated in
 
 ---
 
-## FAQ
+## FAQ 🐓
 
 Here are a few points that were brought up by users:
 
@@ -263,7 +279,7 @@ Here are a few points that were brought up by users:
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
 - read_to_file produces strange outputs - Check if you're passing a list to the method or a string. Since strings can be 
-- iterated over, it might not throw an error, but a list is expected.
+  iterated over, it might not throw an error, but a list is expected.
 
 ---
 
@@ -273,7 +289,7 @@ from [ESPnet](https://github.com/espnet/espnet) and
 or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
 cool with it. Thank you for reading.
 
-## Citation
+## Citation 🐧
 
 ```
 @inproceedings{lux2021toucan,
