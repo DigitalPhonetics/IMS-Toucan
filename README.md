@@ -55,7 +55,7 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
    So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. 
    We apply this to literary studies.
 
-A pretrained checkpoint for our massively multi-lingual model will be available shortly in the release section.
+**A pretrained checkpoint for our massively multi-lingual model and the self contained aligner is available in the release section.**
 
 ---
 
@@ -64,6 +64,8 @@ A pretrained checkpoint for our massively multi-lingual model will be available 
 [Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
 
 [Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
+
+[Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
 produced by Tacotron 2 combined with HiFi-GAN, trained on
@@ -115,6 +117,12 @@ not, and you have the sufficient rights, you can install it by simply running
 ```
 apt-get install espeak-ng
 ```
+
+#### Pretrained Models
+
+You don't need to use pretrained models, but it can speed things up tremendously. Go into the release section and 
+download the aligner model, the HiFiGAN model and the multi-lingual-multi-speaker FastSpeech2 model. Place them in 
+*Models/ALigner/aligner.pt*, *Models/HiFiGAN_combined/best.pt* and *Models/FastSpeech2_Meta/best.pt*.
 
 ---
 
@@ -201,7 +209,7 @@ python run_training_pipeline.py <shorthand of the pipeline>
 ```
 
 You can supply any of the following arguments, but don't have to (although for training you should definitely specify at
-least a GPU ID). It is recommended to download the LAML-pretrained checkpoint from the releases and use it as basis for 
+least a GPU ID). It is recommended to download the pretrained checkpoint from the releases and use it as basis for 
 fine-tuning for any new model that you train to significantly reduce training time.
 
 ```
@@ -248,7 +256,7 @@ significantly, so you should do this and then use the
 
 ## Using a trained Model for Inference 🦢
 
-You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle identifying the model you want to use, the rest should work out in the background. YOu might want to set a language embedding or a speaker embedding. The methods for that should be self-explanatory.
+You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle identifying the model you want to use, the rest should work out in the background. You might want to set a language embedding or a speaker embedding. The methods for that should be self-explanatory.
 
 An *InferenceInterface* contains two useful methods. They are
 *read_to_file* and
