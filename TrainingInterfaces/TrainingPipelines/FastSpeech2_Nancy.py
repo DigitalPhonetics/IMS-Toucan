@@ -27,14 +27,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_LJ_long")
+        save_dir = os.path.join("Models", "FastSpeech2_Nancy")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_3xljspeech(),
-                                          corpus_dir=os.path.join("Corpora", "LJSpeech_long"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                          corpus_dir=os.path.join("Corpora", "Nancy"),
                                           lang="en")
 
-    model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
+    model = FastSpeech2()
 
     print("Training model")
     train_loop(net=model,
@@ -47,6 +47,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                lr=0.001,
                epochs_per_save=15,
                warmup_steps=4000,
-               path_to_checkpoint=resume_checkpoint,
-               fine_tune=finetune,
+               path_to_checkpoint="Models/FastSpeech2_Meta/best.pt",
+               fine_tune=True,
                resume=resume)

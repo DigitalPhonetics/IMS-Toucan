@@ -23,7 +23,7 @@ def prepare_fastspeech_corpus(transcript_dict, corpus_dir, lang, ctc_selection=T
     if fine_tune_aligner:
         aligner_dir = os.path.join(corpus_dir, "aligner")
         if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
-            aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input)
+            aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
             train_aligner(train_dataset=aligner_datapoints,
                           device=torch.device("cuda"),
                           save_directory=aligner_dir,
