@@ -193,7 +193,7 @@ def build_path_to_transcript_dict_libritts_asr(label_file):
     with open(label_file, encoding="utf8", mode="r") as f:
         labels = f.read()
     audio_handle_to_transcript = dict()
-    for line in labels:
+    for line in labels.split("\n"):
         if line.strip() == "":
             continue
         audio_handle_to_transcript[line.split()[0]] = line.lstrip(f"{line.split()[0]} ")
