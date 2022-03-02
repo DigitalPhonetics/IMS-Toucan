@@ -46,9 +46,9 @@ class InferenceFastSpeech2(torch.nn.Module):
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
         self.lang_id = get_language_id(lang_id).to(self.device)
 
-    def forward(self, text, view=False, durations=None, pitch=None, energy=None):
+    def forward(self, text, view=False, durations=None, pitch=None, energy=None, input_is_phones=False):
         with torch.inference_mode():
-            phones = self.text2phone.string_to_tensor(text).to(torch.device(self.device))
+            phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
