@@ -28,7 +28,8 @@ class AlignerDataset(Dataset):
                  cut_silences=True,
                  rebuild_cache=False,
                  verbose=False,
-                 device="cpu"):
+                 device="cpu",
+                 phone_input=False):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             if (device == "cuda" or device == torch.device("cuda")) and cut_silences:
@@ -68,7 +69,8 @@ class AlignerDataset(Dataset):
                                   max_len_in_seconds,
                                   cut_silences,
                                   verbose,
-                                  device),
+                                  device,
+                                  phone_input),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -140,7 +142,8 @@ class AlignerDataset(Dataset):
                               max_len,
                               cut_silences,
                               verbose,
-                              device):
+                              device,
+                              phone_input):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=False)
         _, sr = sf.read(path_list[0])
@@ -171,9 +174,9 @@ class AlignerDataset(Dataset):
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
             try:
-                cached_text = tf.string_to_tensor(transcript, handle_missing=False).squeeze(0).cpu().numpy()
+                cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
             except KeyError:
-                tf.string_to_tensor(transcript, handle_missing=True).squeeze(0).cpu().numpy()
+                tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                 continue  # we skip sentences with unknown symbols
             try:
                 if len(cached_text[0]) != 66:
