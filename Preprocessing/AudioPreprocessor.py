@@ -58,7 +58,12 @@ class AudioPreprocessor:
         """
         with torch.inference_mode():
             speech_timestamps = self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr)
-        return audio[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
+        try:
+            result = audio[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
+            return result
+        except IndexError:
+            print("Audio might be too short to cut silences from front and back.")
+        return audio
 
     def to_mono(self, x):
         """

@@ -203,7 +203,10 @@ def build_path_to_transcript_dict_libritts_asr(label_file):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
             for file in os.listdir(os.path.join(path_train, speaker, chapter)):
                 if file.endswith(".wav"):
-                    path_to_transcript[os.path.join(path_train, speaker, chapter, file)] = audio_handle_to_transcript[file.split(".")[0]]
+                    try:
+                        path_to_transcript[os.path.join(path_train, speaker, chapter, file)] = audio_handle_to_transcript[file.split(".")[0]]
+                    except KeyError:
+                        print(f"Problem with {file}, no transcription found!")
     return path_to_transcript
 
 
