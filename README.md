@@ -67,6 +67,8 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
+Don't like interactive demos? Have a look at our [pre-generated list of multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/).
+
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
 produced by Tacotron 2 combined with HiFi-GAN, trained on
 [Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) using this toolkit. (not in this branch)
