@@ -35,7 +35,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                           corpus_dir=os.path.join("Corpora", "libri_asr_out"),
                                           lang="en")
 
-    model = FastSpeech2()
+    model = FastSpeech2(lang_embs=None)
 
     find_faulty_samples(net=model,
                         datasets=train_set,
@@ -80,7 +80,7 @@ def find_faulty_samples(net,
                    gold_pitch=datasets[datapoint_index][6].unsqueeze(0).to(device),  # mind the switched order
                    gold_energy=datasets[datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
                    utterance_embedding=datasets[datapoint_index][7].unsqueeze(0).to(device),
-                   lang_ids=datasets[datapoint_index][8].unsqueeze(0).to(device),
+                   lang_ids=None,
                    return_mels=False).squeeze()
         if torch.isnan(loss):
             print(f"CAREFUL, NAN DETECTED: {datapoint_index}")
