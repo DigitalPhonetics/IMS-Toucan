@@ -8,7 +8,6 @@ from numpy import trim_zeros
 from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
-from torch.multiprocessing import set_start_method
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
@@ -32,14 +31,8 @@ class AlignerDataset(Dataset):
                  phone_input=False):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
-            if (device == "cuda" or device == torch.device("cuda")) and cut_silences:
-                try:
-                    set_start_method('spawn')  # in order to be able to make use of cuda in multiprocessing
-                except RuntimeError:
-                    pass
-            elif cut_silences:
-                torch.set_num_threads(1)
             if cut_silences:
+                torch.set_num_threads(1)
                 torch.hub.load(repo_or_dir='snakers4/silero-vad',
                                model='silero_vad',
                                force_reload=False,
@@ -69,7 +62,7 @@ class AlignerDataset(Dataset):
                                   max_len_in_seconds,
                                   cut_silences,
                                   verbose,
-                                  device,
+                                  "cpu",
                                   phone_input),
                             daemon=True))
                 process_list[-1].start()
