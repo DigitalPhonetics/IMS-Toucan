@@ -1,6 +1,7 @@
 import random
 
 import torch
+from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -34,7 +35,15 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                           corpus_dir=os.path.join("Corpora", "libri_asr_out"),
                                           lang="en")
 
-    model = FastSpeech2(lang_embs=None)
+    model = FastSpeech2()
+
+    find_faulty_samples(net=model,
+                        datasets=train_set,
+                        device=torch.device("cuda"),
+                        path_to_checkpoint="Models/FastSpeech2_LibriTTS/best.pt")
+
+    import sys
+    sys.exit()
 
     print("Training model")
     train_loop(net=model,
@@ -49,3 +58,41 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                path_to_checkpoint="Models/FastSpeech2_LibriTTS/best.pt",
                fine_tune=True,
                resume=resume)
+
+
+@torch.inference_mode()
+def find_faulty_samples(net,
+                        datasets,
+                        device,
+                        path_to_checkpoint):
+    net = net.to(device)
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
+    net.load_state_dict(check_dict["model"])
+    losses = list()
+    index_pairs = list()
+    for datapoint_index in tqdm(range(len(datasets))):
+        loss = net(text_tensors=datasets[datapoint_index][0].unsqueeze(0).to(device),
+                   text_lengths=datasets[datapoint_index][1].to(device),
+                   gold_speech=datasets[datapoint_index][2].unsqueeze(0).to(device),
+                   speech_lengths=datasets[datapoint_index][3].to(device),
+                   gold_durations=datasets[datapoint_index][4].unsqueeze(0).to(device),
+                   gold_pitch=datasets[datapoint_index][6].unsqueeze(0).to(device),  # mind the switched order
+                   gold_energy=datasets[datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
+                   utterance_embedding=datasets[datapoint_index][7].unsqueeze(0).to(device),
+                   lang_ids=datasets[datapoint_index][8].unsqueeze(0).to(device),
+                   return_mels=False).squeeze()
+        if torch.isnan(loss):
+            print(f"CAREFUL, NAN DETECTED: {datapoint_index}")
+            losses.append(999999)
+        else:
+            losses.append(loss.item())
+        index_pairs.append(datapoint_index)
+
+    loss_high_to_low = sorted(losses, reverse=True)
+    print(loss_high_to_low)
+    threshold = loss_high_to_low[500]
+    for index, loss in enumerate(losses):
+        if loss > threshold:
+            print(index_pairs[index])
+            print(loss)
