@@ -37,14 +37,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     model = FastSpeech2(lang_embs=None)
 
-    find_faulty_samples(net=model,
-                        datasets=train_set,
-                        device=torch.device("cuda"),
-                        path_to_checkpoint="Models/FastSpeech2_LibriTTS/best.pt")
-
-    import sys
-    sys.exit()
-
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
