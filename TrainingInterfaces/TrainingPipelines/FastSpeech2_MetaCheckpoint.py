@@ -2,6 +2,7 @@ import random
 
 import torch
 import torch.multiprocessing
+from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
@@ -10,7 +11,7 @@ from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samples_mode=False):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_samples=False):
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
@@ -28,141 +29,166 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, find_faulty_samp
     os.makedirs(meta_save_dir, exist_ok=True)
 
     print("Preparing")
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
-                                              corpus_dir=os.path.join("Corpora", "Nancy"),
-                                              lang="en"))
+    english_datasets = list()
+    german_datasets = list()
+    greek_datasets = list()
+    spanish_datasets = list()
+    finnish_datasets = list()
+    russian_datasets = list()
+    hungarian_datasets = list()
+    dutch_datasets = list()
+    french_datasets = list()
+    portuguese_datasets = list()
+    polish_datasets = list()
+    italian_datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
-                                              corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                              lang="de"))
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                                      corpus_dir=os.path.join("Corpora", "Nancy"),
+                                                      lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Greek"),
-                                              lang="el"))
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
+                                                      corpus_dir=os.path.join("Corpora", "flux_sing"),
+                                                      lang="en",
+                                                      ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
-                                              corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
-                                              lang="es"))
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                                      corpus_dir=os.path.join("Corpora", "LJSpeech"),
+                                                      lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Finnish"),
-                                              lang="fi"))
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
+                                                      corpus_dir=os.path.join("Corpora", "libri"),
+                                                      lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Russian"),
-                                              lang="ru"))
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+                                                      corpus_dir=os.path.join("Corpora", "vctk"),
+                                                      lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
-                                              lang="hu"))
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+                                                      corpus_dir=os.path.join("Corpora", "hifi"),
+                                                      lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10nl(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Dutch"),
-                                              lang="nl"))
+    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+                                                     corpus_dir=os.path.join("Corpora", "Karlsson"),
+                                                     lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
-                                              corpus_dir=os.path.join("Corpora", "meta_French"),
-                                              lang="fr"))
+    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+                                                     corpus_dir=os.path.join("Corpora", "Eva"),
+                                                     lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
-                                              corpus_dir=os.path.join("Corpora", "LJSpeech"),
-                                              lang="en"))
+    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
+                                                     corpus_dir=os.path.join("Corpora", "Hokus"),
+                                                     lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
-                                              corpus_dir=os.path.join("Corpora", "libri"),
-                                              lang="en"))
+    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
+                                                     corpus_dir=os.path.join("Corpora", "Bernd"),
+                                                     lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
-                                              corpus_dir=os.path.join("Corpora", "vctk"),
-                                              lang="en"))
+    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
+                                                     corpus_dir=os.path.join("Corpora", "hui_others"),
+                                                     lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
-                                              corpus_dir=os.path.join("Corpora", "hifi"),
-                                              lang="en"))
+    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
+                                                     corpus_dir=os.path.join("Corpora", "Thorsten"),
+                                                     lang="de"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
-                                              corpus_dir=os.path.join("Corpora", "meta_Spanish"),
-                                              lang="es"))
+    greek_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
+                                                    corpus_dir=os.path.join("Corpora", "meta_Greek"),
+                                                    lang="el"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
-                                              corpus_dir=os.path.join("Corpora", "Eva"),
-                                              lang="de"))
+    spanish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                                                      corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
+                                                      lang="es"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
-                                              corpus_dir=os.path.join("Corpora", "Hokus"),
-                                              lang="de"))
+    spanish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+                                                      corpus_dir=os.path.join("Corpora", "meta_Spanish"),
+                                                      lang="es"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
-                                              corpus_dir=os.path.join("Corpora", "Bernd"),
-                                              lang="de"))
+    spanish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+                                                      corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                                                      lang="es"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
-                                              corpus_dir=os.path.join("Corpora", "hui_others"),
-                                              lang="de"))
+    finnish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
+                                                      corpus_dir=os.path.join("Corpora", "meta_Finnish"),
+                                                      lang="fi"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
-                                              corpus_dir=os.path.join("Corpora", "Thorsten"),
-                                              lang="de"))
+    russian_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
+                                                      corpus_dir=os.path.join("Corpora", "meta_Russian"),
+                                                      lang="ru"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
-                                              corpus_dir=os.path.join("Corpora", "flux_sing"),
-                                              lang="en",
-                                              ctc_selection=False))
+    hungarian_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
+                                                        corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
+                                                        lang="hu"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
-                                              corpus_dir=os.path.join("Corpora", "mls_porto"),
-                                              lang="pt"))
+    dutch_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10nl(),
+                                                    corpus_dir=os.path.join("Corpora", "meta_Dutch"),
+                                                    lang="nl"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
-                                              corpus_dir=os.path.join("Corpora", "mls_polish"),
-                                              lang="pl"))
+    dutch_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
+                                                    corpus_dir=os.path.join("Corpora", "mls_dutch"),
+                                                    lang="nl"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
-                                              corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                              lang="es"))
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
+                                                     corpus_dir=os.path.join("Corpora", "meta_French"),
+                                                     lang="fr"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
-                                              corpus_dir=os.path.join("Corpora", "mls_french"),
-                                              lang="fr"))
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
+                                                     corpus_dir=os.path.join("Corpora", "mls_french"),
+                                                     lang="fr"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
-                                              corpus_dir=os.path.join("Corpora", "mls_italian"),
-                                              lang="it"))
+    portuguese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+                                                         corpus_dir=os.path.join("Corpora", "mls_porto"),
+                                                         lang="pt"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
-                                              corpus_dir=os.path.join("Corpora", "mls_dutch"),
-                                              lang="nl"))
+    polish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+                                                     corpus_dir=os.path.join("Corpora", "mls_polish"),
+                                                     lang="pl"))
 
-    if find_faulty_samples_mode:
-        find_faulty_samples(net=FastSpeech2(lang_embs=100),
-                            datasets=datasets,
-                            device=torch.device("cuda"),
-                            path_to_checkpoint=resume_checkpoint)
-    else:
-        train_loop(net=FastSpeech2(lang_embs=100),
-                   device=torch.device("cuda"),
-                   datasets=datasets,
-                   batch_size=3,
-                   save_directory=meta_save_dir,
-                   steps=100000,
-                   steps_per_checkpoint=1000,
-                   lr=0.001,
-                   path_to_checkpoint=resume_checkpoint,
-                   resume=resume)
+    italian_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+                                                      corpus_dir=os.path.join("Corpora", "mls_italian"),
+                                                      lang="it"))
+
+    datasets.append(ConcatDataset(english_datasets))
+    datasets.append(ConcatDataset(german_datasets))
+    datasets.append(ConcatDataset(greek_datasets))
+    datasets.append(ConcatDataset(spanish_datasets))
+    datasets.append(ConcatDataset(finnish_datasets))
+    datasets.append(ConcatDataset(russian_datasets))
+    datasets.append(ConcatDataset(hungarian_datasets))
+    datasets.append(ConcatDataset(dutch_datasets))
+    datasets.append(ConcatDataset(french_datasets))
+    datasets.append(ConcatDataset(portuguese_datasets))
+    datasets.append(ConcatDataset(polish_datasets))
+    datasets.append(ConcatDataset(italian_datasets))
+
+    if remove_faulty_samples:
+        find_and_remove_faulty_samples(net=FastSpeech2(lang_embs=100),
+                                       datasets=datasets,
+                                       device=torch.device("cuda"),
+                                       path_to_checkpoint=resume_checkpoint)
+
+    train_loop(net=FastSpeech2(lang_embs=100),
+               device=torch.device("cuda"),
+               datasets=datasets,
+               batch_size=5,
+               save_directory=meta_save_dir,
+               steps=100000,
+               steps_per_checkpoint=1000,
+               lr=0.001,
+               path_to_checkpoint=resume_checkpoint,
+               resume=resume)
 
 
-@torch.no_grad()
-def find_faulty_samples(net,
-                        datasets,
-                        device,
-                        path_to_checkpoint):
+@torch.inference_mode()
+def find_and_remove_faulty_samples(net,
+                                   datasets,
+                                   device,
+                                   path_to_checkpoint):
     net = net.to(device)
     torch.multiprocessing.set_sharing_strategy('file_system')
     check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
     net.load_state_dict(check_dict["model"])
-    losses = list()
-    index_pairs = list()
     for dataset_index in range(len(datasets)):
+        nan_ids = list()
         for datapoint_index in tqdm(range(len(datasets[dataset_index]))):
             loss = net(text_tensors=datasets[dataset_index][datapoint_index][0].unsqueeze(0).to(device),
                        text_lengths=datasets[dataset_index][datapoint_index][1].to(device),
@@ -175,13 +201,6 @@ def find_faulty_samples(net,
                        lang_ids=datasets[dataset_index][datapoint_index][8].unsqueeze(0).to(device),
                        return_mels=False).squeeze()
             if torch.isnan(loss):
-                print(f"CAREFUL, NAN DETECTED: {dataset_index}, {datapoint_index}")
-            losses.append(loss.item())
-            index_pairs.append((dataset_index, datapoint_index))
-    loss_high_to_low = sorted(losses, reverse=True)
-    print(loss_high_to_low)
-    threshold = loss_high_to_low[1000]
-    for index, loss in enumerate(losses):
-        if loss > threshold:
-            print(index_pairs[index])
-            print(loss)
+                print(f"NAN DETECTED: {dataset_index}, {datapoint_index}")
+                nan_ids.append(datapoint_index)
+        datasets[dataset_index].remove_samples(nan_ids)
