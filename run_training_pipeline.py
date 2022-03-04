@@ -6,8 +6,10 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as libri
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS_600 import run as libri600
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS_asr_out import run as asr_out
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS_asr_phn import run as asr_phn
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS_asr_phn_600 import run as phn600
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_germ_finetune import run as low_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Germanic import run as no_ger
@@ -34,7 +36,9 @@ pipeline_dict = {
     "single_rus"   : single_rus,
     "full_ger"     : full_ger,
     "asr_out"      : asr_out,
-    "asr_phn"      : asr_phn
+    "asr_phn"      : asr_phn,
+    "phn600"       : phn600,
+    "libri600"     : libri600
     }
 
 if __name__ == '__main__':
