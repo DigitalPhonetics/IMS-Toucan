@@ -28,6 +28,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
         meta_save_dir = base_dir
     os.makedirs(meta_save_dir, exist_ok=True)
 
+    find_and_remove_faulty_samples(net=FastSpeech2(lang_embs=100),
+                                   datasets=[prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                                                                       corpus_dir=os.path.join("Corpora", "libri_all_clean"),
+                                                                       lang="en")],
+                                   device=torch.device("cuda"),
+                                   path_to_checkpoint=resume_checkpoint)
+
     print("Preparing")
     english_datasets = list()
     german_datasets = list()
@@ -55,8 +62,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                                                       corpus_dir=os.path.join("Corpora", "LJSpeech"),
                                                       lang="en"))
 
-    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts(),
-                                                      corpus_dir=os.path.join("Corpora", "libri"),
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                                                      corpus_dir=os.path.join("Corpora", "libri_all_clean"),
                                                       lang="en"))
 
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
