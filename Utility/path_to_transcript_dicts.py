@@ -190,7 +190,7 @@ def build_path_to_transcript_dict_libritts():
 
 
 def build_path_to_transcript_dict_libritts_all_clean():
-    path_train = "/mount/resources/speech/corpora/LibriTTS/all-clean"
+    path_train = "/mount/resources/speech/corpora/LibriTTS/all_clean"
     path_to_transcript = dict()
     for speaker in os.listdir(path_train):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
