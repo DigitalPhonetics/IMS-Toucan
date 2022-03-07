@@ -40,8 +40,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     model = FastSpeech2(lang_embs=None)
 
-    find_faulty_samples(model, train_set, device, "Models/FastSpeech2_LibriTTS_asr_phn/best.pt")
-
     train_sets = list()
     train_sets.append(train_set)
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_asr_phn(),

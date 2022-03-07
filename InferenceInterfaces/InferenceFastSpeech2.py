@@ -85,14 +85,18 @@ class InferenceFastSpeech2(torch.nn.Module):
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()
         if self.noise_reduce:
-            wave = torch.tensor(noisereduce.reduce_noise(y=wave, y_noise=self.prototypical_noise, sr=48000, stationary=True))
+            wave = torch.tensor(noisereduce.reduce_noise(y=wave, y_noise=self.prototypical_noise, sr=48000, stationary=True), device=self.device)
         return wave
 
     def read_to_file(self, text_list, file_location, silent=False, dur_list=None, pitch_list=None, energy_list=None):
         """
-        :param silent: Whether to be verbose about the process
-        :param text_list: A list of strings to be read
-        :param file_location: The path and name of the file it should be saved to
+        Args:
+            silent: Whether to be verbose about the process
+            text_list: A list of strings to be read
+            file_location: The path and name of the file it should be saved to
+            energy_list: list of energy tensors to be used for the texts
+            pitch_list: list of pitch tensors to be used for the texts
+            dur_list: list of duration tensors to be used for the texts
         """
         if not dur_list:
             dur_list = []
