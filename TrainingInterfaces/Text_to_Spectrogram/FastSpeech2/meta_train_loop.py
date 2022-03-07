@@ -86,7 +86,7 @@ def train_loop(net,
     # =============================
     for step in tqdm(range(step_counter, steps)):
         batches = []
-        for index in random.sample(list(range(len(datasets)))):
+        for index in random.sample(list(range(len(datasets))), len(datasets)):
             # we get one batch for each task (i.e. language in this case)
             try:
                 batch = next(train_iters[index])
