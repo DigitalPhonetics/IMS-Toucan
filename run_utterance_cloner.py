@@ -130,7 +130,7 @@ if __name__ == '__main__':
     uc.clone_utterance(path_to_reference_audio="audios/test.wav",
                        reference_transcription="Hello world, this is a test.",
                        filename_of_result="audios/test_cloned.wav",
-                       clone_speaker_identity=False,
+                       clone_speaker_identity=True,
                        lang="en")
 
     uc.clone_utterance(path_to_reference_audio="audios/test.wav",
