@@ -67,7 +67,9 @@ hours of Spanish.
 ### Pre-Generated Audios
 Have a look at our [pre-generated list of multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/).
 
-[Here you can find some examples of human-in-the-loop edited examples for German literary studies](https://poetictts.github.io/).
+[Here you can listen to some samples](https://toucanprosodycloningdemo.github.io) where we clone prosody across speakers.
+
+And [here you can find some examples of human-in-the-loop edited examples for German literary studies](https://poetictts.github.io/).
 
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
 produced by Tacotron 2 combined with HiFi-GAN, trained on
