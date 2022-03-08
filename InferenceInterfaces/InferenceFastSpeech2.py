@@ -37,13 +37,19 @@ class InferenceFastSpeech2(torch.nn.Module):
         self.to(torch.device(device))
         self.noise_reduce = noise_reduce
         if self.noise_reduce:
-            self.noise_reduce = False
-            self.prototypical_noise = self("~." * 100, input_is_phones=True).cpu().numpy()
-            self.noise_reduce = True
+            self.prototypical_noise = None
+            self.update_noise_profile()
 
     def set_utterance_embedding(self, path_to_reference_audio):
         wave, sr = soundfile.read(path_to_reference_audio)
         self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave).to(self.device)
+        if self.noise_reduce:
+            self.update_noise_profile()
+
+    def update_noise_profile(self):
+        self.noise_reduce = False
+        self.prototypical_noise = self("~." * 100, input_is_phones=True).cpu().numpy()
+        self.noise_reduce = True
 
     def set_language(self, lang_id):
         """
