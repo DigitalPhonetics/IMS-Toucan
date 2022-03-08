@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_English import run as english
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as full_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as single_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
@@ -38,7 +39,8 @@ pipeline_dict = {
     "asr_out"      : asr_out,
     "asr_phn"      : asr_phn,
     "phn600"       : phn600,
-    "libri600"     : libri600
+    "libri600"     : libri600,
+    "english"      : english
     }
 
 if __name__ == '__main__':
