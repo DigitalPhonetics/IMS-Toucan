@@ -1,4 +1,5 @@
 import librosa
+import librosa.display as lbd
 import matplotlib.pyplot as plt
 import numpy
 import soundfile as sf
@@ -141,7 +142,7 @@ def get_pitch_curves(path_1, path_2, plot_curves=False, length_norm=True):
     pitch_curve_2 = dio(norm_wave_2.unsqueeze(0), norm_by_average=False)[0].squeeze()
 
     if length_norm:
-        # symmetrically remove samples from front and back so we end up with the same amount of frames in both
+        # symmetrically remove samples from front and back, so we end up with the same amount of frames in both
         toggle = True
         while len(pitch_curve_1) > len(pitch_curve_2):
             if toggle:
@@ -162,3 +163,60 @@ def get_pitch_curves(path_1, path_2, plot_curves=False, length_norm=True):
         plt.show()
 
     return pitch_curve_1, pitch_curve_2
+
+
+def get_pitch_curves_abc(path_1, path_2, path_3):
+    wave_1, sr_1 = sf.read(path_1)
+    wave_2, sr_2 = sf.read(path_2)
+    wave_3, sr_3 = sf.read(path_3)
+
+    ap_1 = AudioPreprocessor(cut_silence=True, input_sr=sr_1, output_sr=16000, fmax_for_spec=1000)
+    ap_2 = AudioPreprocessor(cut_silence=True, input_sr=sr_2, output_sr=16000, fmax_for_spec=1000)
+    ap_3 = AudioPreprocessor(cut_silence=True, input_sr=sr_3, output_sr=16000, fmax_for_spec=1000)
+
+    norm_wave_1 = ap_1.audio_to_wave_tensor(wave_1, normalize=True)
+    norm_wave_2 = ap_2.audio_to_wave_tensor(wave_2, normalize=True)
+    norm_wave_3 = ap_3.audio_to_wave_tensor(wave_3, normalize=True)
+
+    dio = Dio(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
+
+    pitch_curve_1 = dio(norm_wave_1.unsqueeze(0), norm_by_average=False)[0].squeeze()
+    pitch_curve_2 = dio(norm_wave_2.unsqueeze(0), norm_by_average=False)[0].squeeze()
+    pitch_curve_3 = dio(norm_wave_3.unsqueeze(0), norm_by_average=False)[0].squeeze()
+
+    fig, ax = plt.subplots(nrows=3, ncols=1)
+    lbd.specshow(ap_1.audio_to_mel_spec_tensor(wave_1).numpy(),
+                 ax=ax[0],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[0].yaxis.set_visible(False)
+    ax[0].set_title("Human Speech")
+    ax[0].plot(pitch_curve_1, c="darkred")
+
+    lbd.specshow(ap_2.audio_to_mel_spec_tensor(wave_2).numpy(),
+                 ax=ax[1],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[1].yaxis.set_visible(False)
+    ax[1].set_title("Synthetic Speech 2")
+    ax[1].plot(pitch_curve_2, c="darkred")
+
+    lbd.specshow(ap_3.audio_to_mel_spec_tensor(wave_3).numpy(),
+                 ax=ax[2],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[2].yaxis.set_visible(False)
+    ax[2].set_title("Synthetic Speech 1")
+    ax[2].plot(pitch_curve_3, c="darkred")
+
+    plt.tight_layout()
+    plt.show()

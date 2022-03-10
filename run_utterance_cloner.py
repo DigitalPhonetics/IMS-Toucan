@@ -31,7 +31,6 @@ class UtteranceCloner:
         (self.get_speech_timestamps, _, _, _, _) = utils
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference mode or no_grad
-        self.silero_model = self.silero_model.to(self.device)
 
     def extract_prosody(self, transcript, ref_audio_path, lang="de", on_line_fine_tune=True):
         acoustic_model = Aligner()
@@ -50,7 +49,7 @@ class UtteranceCloner:
             raise RuntimeError
 
         with torch.inference_mode():
-            speech_timestamps = self.get_speech_timestamps(norm_wave.to(self.device), self.silero_model, sampling_rate=16000)
+            speech_timestamps = self.get_speech_timestamps(norm_wave, self.silero_model, sampling_rate=16000)
         norm_wave = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
