@@ -3,13 +3,12 @@ import os
 from tqdm import tqdm
 
 from Utility.EvaluationScripts.audio_vs_audio import ffe
+# from Utility.EvaluationScripts.playground_audio_vs_audio_poem import get_pitch_curves_abc
 from Utility.EvaluationScripts.audio_vs_audio import gpe
 from Utility.EvaluationScripts.audio_vs_audio import mcd_with_warping
 from Utility.EvaluationScripts.audio_vs_audio import vde
 
-ffe(f"audios/adept/human/1.wav", f"audios/adept/same_voice_same_style/1.wav")
-gpe(f"audios/adept/human/1.wav", f"audios/adept/same_voice_same_style/1.wav")
-vde(f"audios/adept/human/1.wav", f"audios/adept/same_voice_same_style/1.wav")
+# get_pitch_curves_abc(f"audios/ps2/PoetryStudy/Set5/s5_p1_ref2.wav", f"audios/ps2/PoetryStudy/Set5/s5_p1_ref1.wav", f"audios/ps2/PoetryStudy/Set5/s5_p1_base2_pros_1.wav")
 
 mcd_same_style = list()
 mcd_diff_style = list()
@@ -56,9 +55,14 @@ print((1 / len(gpe_diff_style)) * sum(gpe_diff_style))
 print((1 / len(ffe_diff_style)) * sum(ffe_diff_style))
 
 """
+Results on ADEPT
+
+25.628487893016743
 0.3197801087172897
 0.6701621670474431
 0.6701621670474431
+
+5.585193124795971
 0.4236358253409133
 0.7842741112107358
 0.7842741112107358
