@@ -21,31 +21,23 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
   super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
   spectrograms as input, but produces 48kHz waveforms.
 - We officially introduced IMS Toucan in
-  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
-  bottom of the readme for a bibtex entry.
-- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
-  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 48kHz waveforms. 
-- We officially introduced IMS Toucan in
-  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). Check out the
-  bottom of the readme for a bibtex entry.
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). 
 - We now use articulatory representations of phonemes as the input for all models. This allows us to easily use 
   multilingual data to benefit less resource-rich languages. For IPA representations this works flawlessly, for 
   other input representations you'll have to either stick to the embedding lookup table approach from the older 
   branches of this toolkit or build your own  text frontend that encodes your representations into meaningful vectors 
-  and feed those into the models. Especially tonal languages suffer from this, since there isn't a great unified phonetic 
-  representation system for those that allows data from multiple languages to be used together. We plan on supporting 
-  tonal languages in the future, but for now we'll stick to pitch accent and word accent languages.
+  and feed those into the models.
 - We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to 
   fine-tune a model with very little data in almost any language (except for tonal languages, as mentioned in the last 
-  point). The last two contributions are described in our paper that we will present at the ACL 2022! We will link a 
-  preview version of the paper here soon.
+  point). The last two contributions are described in 
+  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)! 
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner). This allows us to get rid of the dependence on
   autoregressive models. Tacotron 2 is thus now also no longer in this branch, but still present in other branches,
   similar to TransformerTTS.
  - By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, 
-   multi-lingual and multi-speaker models are possible. Combined with our previously proposed LAML method, we can build a 
+   multi-lingual and multi-speaker models are possible. Combined with our 
+   [previously proposed LAML method](https://arxiv.org/abs/2203.03191), we can build a 
    single model that can speak any language it has been trained on and learn new languages from as little as 5 minutes of 
    data in that language. We experimented with encoder designs and found one that allows speakers and languages to be very 
    disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
@@ -61,13 +53,23 @@ the TransformerTTS and MelGAN branch. They are separated to keep the code clean,
 
 ## Demonstration 🦚
 
+### Interactive Demos
 [Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
 
 [Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
 
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
-Don't like interactive demos? Have a look at our [pre-generated list of multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/).
+[Blizzard Challenge 2021 Demo](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw)
+This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5
+hours of Spanish.
+
+### Pre-Generated Audios
+Have a look at our [pre-generated list of multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/).
+
+[Here you can listen to some samples](https://toucanprosodycloningdemo.github.io) where we clone prosody across speakers.
+
+And [here you can find some examples of human-in-the-loop edited examples for German literary studies](https://poetictts.github.io/).
 
 [Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
 produced by Tacotron 2 combined with HiFi-GAN, trained on
@@ -77,9 +79,7 @@ And [here is a sentence](https://drive.google.com/file/d/1FT49Jf0yyibwMDbsEJEO9m
 produced by TransformerTTS and MelGAN trained on [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)
 using this toolkit. (not in this branch)
 
-[Interactive Demo of our entry to the Blizzard Challenge 2021.](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw)
-This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5
-hours of Spanish.
+
 
 ---
 
@@ -124,7 +124,7 @@ apt-get install espeak-ng
 
 You don't need to use pretrained models, but it can speed things up tremendously. Go into the release section and 
 download the aligner model, the HiFiGAN model and the multi-lingual-multi-speaker FastSpeech2 model. Place them in 
-*Models/ALigner/aligner.pt*, *Models/HiFiGAN_combined/best.pt* and *Models/FastSpeech2_Meta/best.pt*.
+*Models/Aligner/aligner.pt*, *Models/HiFiGAN_combined/best.pt* and *Models/FastSpeech2_Meta/best.pt*.
 
 ---
 
@@ -289,7 +289,7 @@ Here are a few points that were brought up by users:
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
 - read_to_file produces strange outputs - Check if you're passing a list to the method or a string. Since strings can be 
-  iterated over, it might not throw an error, but a list is expected.
+  iterated over, it might not throw an error, but a list of strings is expected.
 
 ---
 
@@ -301,6 +301,7 @@ cool with it. Thank you for reading.
 
 ## Citation 🐧
 
+### Introduction of the Toolkit
 ```
 @inproceedings{lux2021toucan,
   title={{The IMS Toucan system for the Blizzard Challenge 2021}},
@@ -309,5 +310,15 @@ cool with it. Thank you for reading.
   booktitle={Proc. Blizzard Challenge Workshop},
   volume={2021},
   publisher={{Speech Synthesis SIG}}
+}
+```
+
+### Adding Articulatory Features and Meta-Learning Pretraining
+```
+@article{lux2022laml,
+  title={{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
+  author={Florian Lux and Ngoc Thang Vu},
+  year={2022},
+  journal={arXiv preprint arXiv:2203.03191},
 }
 ```
