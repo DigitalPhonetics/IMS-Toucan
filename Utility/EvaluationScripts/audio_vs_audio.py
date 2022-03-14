@@ -145,7 +145,7 @@ def logmelfilterbank(audio, sampling_rate, fmin=40, fmax=8000, eps=1e-10):
     # get mel basis
     fmin = 0 if fmin is None else fmin
     fmax = sampling_rate / 2 if fmax is None else fmax
-    mel_basis = librosa.filters.mel(sampling_rate, 1024, 10, fmin, fmax)
+    mel_basis = librosa.filters.mel(sampling_rate, 1024, 80, fmin, fmax)
     # apply log and return
     return numpy.log10(numpy.maximum(eps, numpy.dot(spc, mel_basis.T)))
 
