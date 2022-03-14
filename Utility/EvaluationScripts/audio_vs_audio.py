@@ -85,7 +85,9 @@ def mcd_with_warping(path_1, path_2):
     spec_1 = logmelfilterbank(audio=wave_1, sampling_rate=sr_1)
     spec_2 = logmelfilterbank(audio=wave_2, sampling_rate=sr_2)
     dist, _, _ = dtw(spec_1, spec_2, mean_squared_error)
-    return dist / len(spec_1)
+    d = dist / len(spec_1)
+    print(d)
+    return d
 
 
 @torch.inference_mode()
@@ -97,10 +99,17 @@ def soft_mcd(path_1, path_2):
     """
     wave_1, sr_1 = sf.read(path_1)
     wave_2, sr_2 = sf.read(path_2)
-    spec_1 = logmelfilterbank(audio=wave_1, sampling_rate=sr_1)
-    spec_2 = logmelfilterbank(audio=wave_2, sampling_rate=sr_2)
-    dist = SoftDTW(use_cuda=False)(torch.tensor(spec_1).unsqueeze(0), torch.tensor(spec_2).unsqueeze(0))
-    return dist / len(spec_1)
+
+    ap1 = AudioPreprocessor(cut_silence=True, input_sr=sr_1, output_sr=16000)
+    ap2 = AudioPreprocessor(cut_silence=True, input_sr=sr_2, output_sr=16000)
+
+    spec_1 = logmelfilterbank(audio=ap1.audio_to_wave_tensor(wave_1, normalize=True).squeeze().numpy(), sampling_rate=16000)
+    spec_2 = logmelfilterbank(audio=ap2.audio_to_wave_tensor(wave_2, normalize=True).squeeze().numpy(), sampling_rate=16000)
+
+    dist = SoftDTW(use_cuda=False, gamma=0.0001)(torch.tensor(spec_1).unsqueeze(0), torch.tensor(spec_2).unsqueeze(0)) / len(spec_2)
+    print(dist)
+
+    return dist
 
 
 def dtw(x, y, dist, warp=1):
@@ -136,7 +145,7 @@ def logmelfilterbank(audio, sampling_rate, fmin=40, fmax=8000, eps=1e-10):
     # get mel basis
     fmin = 0 if fmin is None else fmin
     fmax = sampling_rate / 2 if fmax is None else fmax
-    mel_basis = librosa.filters.mel(sampling_rate, 1024, 80, fmin, fmax)
+    mel_basis = librosa.filters.mel(sampling_rate, 1024, 10, fmin, fmax)
     # apply log and return
     return numpy.log10(numpy.maximum(eps, numpy.dot(spc, mel_basis.T)))
 
