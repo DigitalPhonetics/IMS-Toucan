@@ -3,6 +3,7 @@ import librosa.display as lbd
 import matplotlib.pyplot as plt
 import numpy
 import soundfile as sf
+import torch
 from numpy import inf
 from numpy import ndim
 from numpy import zeros
@@ -11,6 +12,7 @@ from sklearn.metrics import mean_squared_error
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from Utility.EvaluationScripts.soft_dtw import SoftDTW
 
 
 def vde(path_1, path_2):
@@ -72,9 +74,9 @@ def ffe(path_1, path_2):
 
 def mcd_with_warping(path_1, path_2):
     """
-    calculate mel cepstral distortion between two unaligned sequences by first performing alignment with warping and then calculating the MSE between them.
+    calculate mel cepstral distortion between two unaligned sequences by performing alignment with warping using MSE as the distance between them.
 
-    The two audios have to be spoken by the same speaker for it to make sense.
+    The two audios have to be spoken by the same speaker for it to make sense. The first one should be the gold reference.
 
     DTW takes an insane amount of RAM if you're not careful with sequence lengths
     """
@@ -86,12 +88,25 @@ def mcd_with_warping(path_1, path_2):
     return dist / len(spec_1)
 
 
+@torch.inference_mode()
+def soft_mcd(path_1, path_2):
+    """
+    calculate mel cepstral distortion between two unaligned sequences by performing alignment with warping using euclidean distance between them.
+
+    The two audios have to be spoken by the same speaker for it to make sense. The first one should be the gold reference.
+    """
+    wave_1, sr_1 = sf.read(path_1)
+    wave_2, sr_2 = sf.read(path_2)
+    spec_1 = logmelfilterbank(audio=wave_1, sampling_rate=sr_1)
+    spec_2 = logmelfilterbank(audio=wave_2, sampling_rate=sr_2)
+    dist = SoftDTW(use_cuda=False)(torch.tensor(spec_1).unsqueeze(0), torch.tensor(spec_2).unsqueeze(0))
+    return dist / len(spec_1)
+
+
 def dtw(x, y, dist, warp=1):
     """
     https://github.com/pierre-rouanet/dtw/blob/master/dtw/dtw.py
     """
-    assert len(x)
-    assert len(y)
     if ndim(x) == 1:
         x = x.reshape(-1, 1)
     if ndim(y) == 1:
