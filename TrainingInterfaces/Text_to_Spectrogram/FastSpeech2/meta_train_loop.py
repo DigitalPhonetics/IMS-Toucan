@@ -50,7 +50,7 @@ def train_loop(net,
         train_iters.append(iter(train_loaders[-1]))
     default_embeddings = {"en": None, "de": None, "el": None, "es": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
     for index, lang in enumerate(["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]):
-        default_embeddings[lang] = datasets[index][0][7].squeeze()
+        default_embeddings[lang] = datasets[index][0][7].squeeze().to(device)
     optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
