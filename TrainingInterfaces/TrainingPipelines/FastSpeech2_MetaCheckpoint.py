@@ -162,7 +162,18 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
 
     if remove_faulty_samples:
         find_and_remove_faulty_samples(net=FastSpeech2(lang_embs=100),
-                                       datasets=datasets,
+                                       datasets=english_datasets +
+                                                german_datasets +
+                                                greek_datasets +
+                                                spanish_datasets +
+                                                finnish_datasets +
+                                                russian_datasets +
+                                                hungarian_datasets +
+                                                dutch_datasets +
+                                                french_datasets +
+                                                portuguese_datasets +
+                                                polish_datasets +
+                                                italian_datasets,
                                        device=torch.device("cuda"),
                                        path_to_checkpoint=resume_checkpoint)
 
