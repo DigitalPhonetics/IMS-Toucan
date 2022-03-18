@@ -17,7 +17,7 @@ from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=True):
+    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False):
         super().__init__()
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)

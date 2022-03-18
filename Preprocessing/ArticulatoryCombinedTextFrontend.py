@@ -288,9 +288,7 @@ def english_text_expansion(text):
 
 
 def get_language_id(language):
-    if language == "en":
-        return torch.LongTensor([0])
-    elif language == "de":
+    if language == "de":
         return torch.LongTensor([1])
     elif language == "el":
         return torch.LongTensor([2])
@@ -312,6 +310,8 @@ def get_language_id(language):
         return torch.LongTensor([10])
     elif language == "it":
         return torch.LongTensor([11])
+    elif language == "en":
+        return torch.LongTensor([12])
 
 
 if __name__ == '__main__':
