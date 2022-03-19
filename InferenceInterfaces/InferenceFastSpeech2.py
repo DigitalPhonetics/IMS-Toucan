@@ -22,10 +22,12 @@ class InferenceFastSpeech2(torch.nn.Module):
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
         checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
+        self.use_lang_id = True
         try:
             self.phone2mel = FastSpeech2(weights=checkpoint["model"]).to(torch.device(device))  # multi speaker multi language
         except RuntimeError:
             try:
+                self.use_lang_id = False
                 self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None).to(torch.device(device))  # multi speaker single language
             except RuntimeError:
                 self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None).to(torch.device(device))  # single speaker
@@ -33,7 +35,10 @@ class InferenceFastSpeech2(torch.nn.Module):
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
-        self.lang_id = get_language_id(language)
+        if self.use_lang_id:
+            self.lang_id = get_language_id(language)
+        else:
+            self.lang_id = None
         self.to(torch.device(device))
         self.noise_reduce = noise_reduce
         if self.noise_reduce:
@@ -56,7 +61,10 @@ class InferenceFastSpeech2(torch.nn.Module):
         The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
         """
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
-        self.lang_id = get_language_id(lang_id).to(self.device)
+        if self.use_lang_id:
+            self.lang_id = get_language_id(lang_id).to(self.device)
+        else:
+            self.lang_id = None
 
     def forward(self, text, view=False, durations=None, pitch=None, energy=None, input_is_phones=False):
         with torch.inference_mode():
