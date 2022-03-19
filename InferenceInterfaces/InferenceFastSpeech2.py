@@ -66,7 +66,8 @@ class InferenceFastSpeech2(torch.nn.Module):
                                                            utterance_embedding=self.default_utterance_embedding,
                                                            durations=durations,
                                                            pitch=pitch,
-                                                           energy=energy)
+                                                           energy=energy,
+                                                           lang_id=self.lang_id)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:
