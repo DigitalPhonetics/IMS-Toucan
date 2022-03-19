@@ -11,7 +11,7 @@ from torchaudio.transforms import Resample
 
 class AudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False, device="cpu"):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False, device="cpu", fmax_for_spec=8000):
         """
         The parameters are by default set up to do well
         on a 16kHz signal. A different sampling rate may
@@ -28,6 +28,7 @@ class AudioPreprocessor:
         self.mel_buckets = melspec_buckets
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
+        self.fmax_for_spec = fmax_for_spec
         if cut_silence:
             torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
             # careful: assumes 16kHz or 8kHz audio
@@ -58,7 +59,12 @@ class AudioPreprocessor:
         """
         with torch.inference_mode():
             speech_timestamps = self.get_speech_timestamps(audio, self.silero_model, sampling_rate=self.final_sr)
-        return audio[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
+        try:
+            result = audio[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
+            return result
+        except IndexError:
+            print("Audio might be too short to cut silences from front and back.")
+        return audio
 
     def to_mono(self, x):
         """
@@ -82,7 +88,7 @@ class AudioPreprocessor:
         peak_normed = numpy.divide(loud_normed, peak)
         return peak_normed
 
-    def logmelfilterbank(self, audio, sampling_rate, fmin=40, fmax=8000, eps=1e-10):
+    def logmelfilterbank(self, audio, sampling_rate, fmin=40, fmax=None, eps=1e-10):
         """
         Compute log-Mel filterbank
 
@@ -91,6 +97,8 @@ class AudioPreprocessor:
         compatibility, this is kept for now. If there is ever a reason to completely re-train
         all models, this would be a good opportunity to make the switch.
         """
+        if fmax is None:
+            fmax = self.fmax_for_spec
         if isinstance(audio, torch.Tensor):
             audio = audio.numpy()
         # get amplitude spectrogram

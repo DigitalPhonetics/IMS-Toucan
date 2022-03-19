@@ -189,6 +189,92 @@ def build_path_to_transcript_dict_libritts():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_libritts_all_clean():
+    path_train = "/mount/resources/speech/corpora/LibriTTS/all_clean"
+    path_to_transcript = dict()
+    for speaker in os.listdir(path_train):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
+                        transcript = tf.read()
+                    wav_file = file.split(".")[0] + ".wav"
+                    path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_libritts_other500():
+    path_train = "/mount/resources/asr-data/LibriTTS/train-other-500"
+    path_to_transcript = dict()
+    for speaker in os.listdir(path_train):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
+                        transcript = tf.read()
+                    wav_file = file.split(".")[0] + ".wav"
+                    path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_libritts_asr_other500(label_file):
+    with open(label_file, encoding="utf8", mode="r") as f:
+        labels = f.read()
+    audio_handle_to_transcript = dict()
+    for line in labels.split("\n"):
+        if line.strip() == "":
+            continue
+        audio_handle_to_transcript[line.split()[0]] = line.lstrip(f"{line.split()[0]} ")
+    path_train = "/mount/resources/asr-data/LibriTTS/train-other-500"
+    path_to_transcript = dict()
+    for speaker in os.listdir(path_train):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith(".wav"):
+                    try:
+                        path_to_transcript[os.path.join(path_train, speaker, chapter, file)] = audio_handle_to_transcript[file.split(".")[0]]
+                    except KeyError:
+                        print(f"Problem with {file}, no transcription found!")
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_libritts_asr(label_file):
+    with open(label_file, encoding="utf8", mode="r") as f:
+        labels = f.read()
+    audio_handle_to_transcript = dict()
+    for line in labels.split("\n"):
+        if line.strip() == "":
+            continue
+        audio_handle_to_transcript[line.split()[0]] = line.lstrip(f"{line.split()[0]} ")
+    path_train = "/mount/resources/speech/corpora/LibriTTS/train-clean-100"
+    path_to_transcript = dict()
+    for speaker in os.listdir(path_train):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith(".wav"):
+                    try:
+                        path_to_transcript[os.path.join(path_train, speaker, chapter, file)] = audio_handle_to_transcript[file.split(".")[0]]
+                    except KeyError:
+                        print(f"Problem with {file}, no transcription found!")
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_libritts_asr_out():
+    return build_path_to_transcript_dict_libritts_asr("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-bpe100.txt")
+
+
+def build_path_to_transcript_dict_libritts_asr_phn():
+    return build_path_to_transcript_dict_libritts_asr("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-phn-bpe100.txt")
+
+
+def build_path_to_transcript_dict_libritts_asr_out_500():
+    return build_path_to_transcript_dict_libritts_asr_other500("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-bpe100.txt")
+
+
+def build_path_to_transcript_dict_libritts_asr_phn_500():
+    return build_path_to_transcript_dict_libritts_asr_other500("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-phn-bpe100.txt")
+
+
 def build_path_to_transcript_dict_ljspeech():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LJSpeech/16kHz/txt"):

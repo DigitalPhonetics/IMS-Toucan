@@ -80,6 +80,4 @@ uritemplate~=3.0.1
 urllib3~=1.26.6
 wcwidth~=0.2.5
 wincertstore~=0.2
-gdown
-transformers
-datasets
+noisereduce

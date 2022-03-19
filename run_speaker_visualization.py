@@ -33,16 +33,64 @@ def visualize_libritts():
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of a Subset of LibriTTS")
 
 
+def visualize_adept_experiment():
+    vs = Visualizer()
+    ltf = dict()
+    for exp in os.listdir("audios/adept_plot"):
+        for sample in os.listdir(f"audios/adept_plot/{exp}"):
+
+            spk_id = sample.split("_")[1].split(".")[0]
+            if spk_id == "ad00":
+                spk_label = "Female"
+            elif spk_id == "ad01":
+                spk_label = "Male"
+            else:
+                spk_label = "Other Female"
+
+            if exp == "human":
+                exp_label = "Human"
+            elif exp == "same_voice_diff_style":
+                exp_label = "Unconditioned"
+            else:
+                exp_label = "Cloned"
+
+            plot_label = f"{spk_label} - {exp_label}"
+
+            if exp_label != "Human" and spk_label != "Other Female":
+                if plot_label not in ltf:
+                    ltf[plot_label] = list()
+                ltf[plot_label].append(f"audios/adept_plot/{exp}/{sample}")
+
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf,
+                                    title_of_plot="Speakers with and without Cloning",
+                                    include_pca=False,
+                                    colors=["limegreen", "darkgreen", "dodgerblue", "darkblue"])
+
+
 def visualize_speakers_languages_crossover():
     ltf = dict()
     vs = Visualizer()
-    for file in os.listdir("speakers_for_plotting"):
-        label = file.split("_")[0]
+    for file in os.listdir("audios/speakers_for_plotting"):
+        label = file.split("_")[0].capitalize() + " Speaker"
         if label not in ltf:
             ltf[label] = list()
-        ltf[label].append(f"speakers_for_plotting/{file}")
+        ltf[label].append(f"audios/speakers_for_plotting/{file}")
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Speakers Across Languages", include_pca=False)
 
 
+def calculate_spk_sims_multiling():
+    ltf = dict()
+    vs = Visualizer()
+    for file in os.listdir("audios/speakers_for_plotting"):
+        label = file.split("_")[0]
+        if label not in ltf:
+            ltf[label] = list()
+        ltf[label].append(f"audios/speakers_for_plotting/{file}")
+    for reference in os.listdir("audios/multilanguage_references"):
+        label = reference.split(".")[0]
+        print(label)
+        print(vs.calculate_spk_sim(f"audios/multilanguage_references/{reference}", ltf[label]))
+
+
 if __name__ == '__main__':
-    visualize_speakers_languages_crossover()
+    calculate_spk_sims_multiling()

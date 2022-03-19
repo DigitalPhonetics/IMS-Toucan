@@ -1,16 +1,14 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_English import run as english
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as full_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as single_ger
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ_long import run as lj_long
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_germ_finetune import run as low_ger
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Germanic import run as no_ger
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_no_Slavic import run as no_slav
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint_rus_finetune import run as low_rus
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianSingle import run as single_rus
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
@@ -20,15 +18,13 @@ pipeline_dict = {
     "meta"         : meta_fast,
     "karlsson"     : karlsson,
     "lj"           : lj,
-    "lj_long"      : lj_long,
+    "nancy"        : nancy,
     "hifi_combined": hifigan_combined,
     "aligner"      : aligner,
-    "no_ger"       : no_ger,
-    "no_slav"      : no_slav,
-    "low_rus"      : low_rus,
-    "low_ger"      : low_ger,
     "single_ger"   : single_ger,
-    "single_rus"   : single_rus
+    "single_rus"   : single_rus,
+    "full_ger"     : full_ger,
+    "english"      : english
     }
 
 if __name__ == '__main__':
