@@ -18,3 +18,4 @@ pretrained_models/
 .vscode/
 split/
 singing/
+*.egg-info/

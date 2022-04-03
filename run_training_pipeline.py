@@ -1,5 +1,7 @@
 import argparse
 import sys
+from typing import Callable
+from typing import Dict
 
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_English import run as english
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as full_ger
@@ -10,10 +12,11 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as lib
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianSingle import run as single_rus
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Cherokee_West import run as chr_w_run
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
-pipeline_dict = {
+pipeline_dict: Dict[str, Callable] = {
     "libri"        : libri,
     "meta"         : meta_fast,
     "karlsson"     : karlsson,
@@ -24,7 +27,9 @@ pipeline_dict = {
     "single_ger"   : single_ger,
     "single_rus"   : single_rus,
     "full_ger"     : full_ger,
-    "english"      : english
+    "english"      : english,
+    "chr"          : chr_w_run,
+    "chr-w"        : chr_w_run
     }
 
 if __name__ == '__main__':

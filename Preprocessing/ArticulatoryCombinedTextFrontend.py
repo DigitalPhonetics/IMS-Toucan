@@ -12,7 +12,7 @@ class ArticulatoryCombinedTextFrontend:
 
     def __init__(self,
                  language,
-                 use_word_boundaries=False,  # goes together well with 
+                 use_word_boundaries=False,  # goes together well with
                  # parallel models and a aligner. Doesn't go together 
                  # well with autoregressive models.
                  use_explicit_eos=True,
@@ -110,6 +110,18 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Polish Text-Frontend")
 
+        elif language == "chr" or language == "chr-w":
+            self.g2p_lang = "chr-w"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Western Cherokee Text-Frontend")
+
+        elif language == "chr-e":
+            self.g2p_lang = "chr-e"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created an Eastern Cherokee Text-Frontend")
+
         # remember to also update get_language_id() when adding something here
 
         else:
@@ -204,6 +216,20 @@ class ArticulatoryCombinedTextFrontend:
             'ɨ': 73,
             'ʂ': 74,
             'ɬ': 75,
+            # Tone letters: https://en.wikipedia.org/wiki/Tone_letter
+            # They are usually combined like the following:
+            # ˩˥ ˧˥ ˨˦ ˩˧ ˩˩˧
+            # ˥˩ ˥˧ ˦˨ ˧˩ ˥˥˧
+            '\u02e5': 76,  # ◌˥
+            '\u02e6': 77,  # ◌˦
+            '\u02e7': 78,  # ◌˧
+            '\u02e8': 79,  # ◌˨
+            '\u02e9': 80,  # ◌˩
+            # Lengthened and shortened vowels are grammatically important in some languages
+            # https://en.wikipedia.org/wiki/Vowel_length
+            '\u02d0': 81,  # ◌ː
+            '\u02d1': 82,  # ◌ˑ
+            '\u0306': 83,  # ◌̆
             }  # for the states of the ctc loss and dijkstra/mas in the aligner
 
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
@@ -237,16 +263,27 @@ class ArticulatoryCombinedTextFrontend:
         # expand abbreviations
         utt = self.expand_abbreviations(text)
         # phonemize
-        phones = phonemizer.phonemize(utt,
-                                      language_switch='remove-flags',
-                                      backend="espeak",
-                                      language=self.g2p_lang,
-                                      preserve_punctuation=True,
-                                      strip=True,
-                                      punctuation_marks=';:,.!?¡¿—…"«»“”~/',
-                                      with_stress=self.use_stress).replace(";", ",").replace("/", " ").replace("—", "") \
-            .replace(":", ",").replace('"', ",").replace("-", ",").replace("...", ",").replace("-", ",").replace("\n", " ") \
-            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "").replace("̃", "").replace("̪", "")
+        phones: str
+        if self.g2p_lang.startswith("chr"):
+            from Preprocessing.lang_utils_chr import chr_mco_ipa
+            phones = chr_mco_ipa(text)
+        else:
+            phones = phonemizer.phonemize(utt,
+                                          language_switch='remove-flags',
+                                          backend="espeak",
+                                          language=self.g2p_lang,
+                                          preserve_punctuation=True,
+                                          strip=True,
+                                          punctuation_marks=';:,.!?¡¿—…"«»“”~/',
+                                          with_stress=self.use_stress)
+
+        phones = re.sub('[\u201C\u201D\u201E\u201F\u2033\u2036]', '"', phones)
+        phones = re.sub("[\u2018\u2019\u201A\u201B\u2032\u2035]", "'", phones)
+        phones = phones.replace(";", ",").replace("/", " ").replace("—", "").replace(":", ",").replace('"', ",") \
+            .replace("-", ",").replace("...", ",").replace("-", ",").replace("\n", " ").replace("\t", " ") \
+            .replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "").replace("̃", "") \
+            .replace("̪", "")
+        
         # less than 1 wide characters hidden here
         phones = re.sub("~+", "~", phones)
         if not self.use_prosody:
@@ -287,7 +324,7 @@ def english_text_expansion(text):
     return text
 
 
-def get_language_id(language):
+def get_language_id(language: str):
     if language == "de":
         return torch.LongTensor([1])
     elif language == "el":
@@ -312,6 +349,12 @@ def get_language_id(language):
         return torch.LongTensor([11])
     elif language == "en":
         return torch.LongTensor([12])
+    elif language == "chr-w" or language == "chr":
+        return torch.LongTensor([int.from_bytes("chr-w".encode("UTF-8"), byteorder='little')])
+    elif language == "chr-e":
+        return torch.LongTensor([int.from_bytes("chr-e".encode("UTF-8"), byteorder='little')])
+    # Fallback tensor
+    return torch.LongTensor([int.from_bytes(language.encode("UTF-8"), byteorder='little')])
 
 
 if __name__ == '__main__':
