@@ -49,7 +49,7 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
 
 
 def average_checkpoints(list_of_checkpoint_paths, load_func):
-    if list_of_checkpoint_paths is None:
+    if list_of_checkpoint_paths is None or len(list_of_checkpoint_paths) == 0:
         return None
     checkpoints_weights = {}
     model = None
@@ -88,22 +88,23 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
         torch.save({dict_name: model.state_dict()}, name)
     else:
         torch.save({
-            dict_name    : model.state_dict(),
+            dict_name: model.state_dict(),
             "default_emb": default_embed
-            }, name)
+        }, name)
     print("...done!")
 
 
 def make_best_in_all(n=3):
     for model_dir in os.listdir("Models"):
-        if "HiFiGAN" in model_dir:
-            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-            averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
-            save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
-        elif "FastSpeech2" in model_dir:
-            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
-            save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
+        if os.path.isdir(f"Models/{model_dir}"):
+            if "HiFiGAN" in model_dir:
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
+                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
+                save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
+            elif "FastSpeech2" in model_dir:
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
+                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
+                save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
 
 
 def count_parameters(net):
