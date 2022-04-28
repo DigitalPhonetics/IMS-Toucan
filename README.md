@@ -15,43 +15,15 @@ the other branches. They are separated to keep the code clean, simple and minima
 
 ---
 
-## New Features 🐣
-
-- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
-  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 48kHz waveforms.
-- We officially introduced IMS Toucan in
-  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf). 
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use 
-  multilingual data to benefit less resource-rich languages. For IPA representations this works flawlessly, for 
-  other input representations you'll have to either stick to the embedding lookup table approach from the older 
-  branches of this toolkit or build your own  text frontend that encodes your representations into meaningful vectors 
-  and feed those into the models.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to 
-  fine-tune a model with very little data in almost any language (except for tonal languages, as mentioned in the last 
-  point). The last two contributions are described in 
-  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)! 
-- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction objective, inspired by
-  [this implementation](https://github.com/as-ideas/DeepForcedAligner). This allows us to get rid of the dependence on
-  autoregressive models. Tacotron 2 is thus now also no longer in this branch, but still present in other branches,
-  similar to TransformerTTS.
- - By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, 
-   multi-lingual and multi-speaker models are possible. Combined with our 
-   [previously proposed LAML method](https://arxiv.org/abs/2203.03191), we can build a 
-   single model that can speak any language it has been trained on and learn new languages from as little as 5 minutes of 
-   data in that language. We experimented with encoder designs and found one that allows speakers and languages to be very 
-   disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
- - Vocoders can also be used to do some slight speech-enhancement by corrupting a small percentage of their input spectrograms, 
-   which we also added and experimented with.
- - Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with everything else! 
-   So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. 
-   We apply this to literary studies.
-
-**A pretrained checkpoint for our massively multi-lingual model and the self contained aligner is available in the release section.**
-
----
-
 ## Demonstration 🦚
+
+### Pre-Generated Audios
+[Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
+
+[Cloning prosody across speakers](https://toucanprosodycloningdemo.github.io)
+
+[Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/).
+
 
 ### Interactive Demos
 [Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
@@ -60,26 +32,34 @@ the other branches. They are separated to keep the code clean, simple and minima
 
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
-[Blizzard Challenge 2021 Demo](https://colab.research.google.com/drive/1bRaySf8U55MRPaxqBr8huWrzCOzlxVqw)
-This is based on an older version of the toolkit though. It uses FastSpeech2 and MelGAN as vocoder and is trained on 5
-hours of Spanish.
 
-### Pre-Generated Audios
-Have a look at our [pre-generated list of multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/).
+---
 
-[Here you can listen to some samples](https://toucanprosodycloningdemo.github.io) where we clone prosody across speakers.
+## New Features 🐣
 
-And [here you can find some examples of human-in-the-loop edited examples for German literary studies](https://poetictts.github.io/).
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 48kHz waveforms.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use 
+  multilingual data to benefit less resource-rich languages. 
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to 
+  fine-tune a model with very little data in almost any language. The last two contributions are described in 
+  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)! 
+- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction objective, inspired by
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner). 
+- By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, 
+  multi-lingual and multi-speaker models are possible. 
+- We experimented with encoder designs and found one that allows speakers and languages to be very 
+  disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
+- Vocoders can also be used to do some slight speech-enhancement by corrupting a small percentage of their input spectrograms, 
+  which we also added and experimented with.
+- Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with everything else! 
+  So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. 
+  We apply this to literary studies.
 
-[Here are two sentences](https://drive.google.com/file/d/1ltAyR2EwAbmDo2hgkx1mvUny4FuxYmru/view?usp=sharing)
-produced by Tacotron 2 combined with HiFi-GAN, trained on
-[Nancy Krebs](https://www.cstr.ed.ac.uk/projects/blizzard/2011/lessac_blizzard2011/) using this toolkit. (not in this branch)
-
-And [here is a sentence](https://drive.google.com/file/d/1FT49Jf0yyibwMDbsEJEO9mjwHkHRIGXc/view?usp=sharing)
-produced by TransformerTTS and MelGAN trained on [Thorsten](https://github.com/thorstenMueller/deep-learning-german-tts)
-using this toolkit. (not in this branch)
-
-
+**A pretrained checkpoint for our massively multi-lingual model and the self contained aligner is available in the release section.**
 
 ---
 
@@ -290,6 +270,9 @@ Here are a few points that were brought up by users:
   running on the GPU you specified.
 - read_to_file produces strange outputs - Check if you're passing a list to the method or a string. Since strings can be 
   iterated over, it might not throw an error, but a list of strings is expected.
+- `UserWarning: Detected call of lr_scheduler.step() before optimizer.step().` - We use a custom scheduler, and torch 
+  incorrectly thinks that we call the scheduler and the optimizer in the wrong order. Just ignore this warning, it is 
+  completely meaningless.
 
 ---
 
