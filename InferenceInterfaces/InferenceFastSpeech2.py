@@ -10,9 +10,9 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import get_language_id
 
 
 class InferenceFastSpeech2(torch.nn.Module):

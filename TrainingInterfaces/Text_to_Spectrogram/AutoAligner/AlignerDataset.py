@@ -11,8 +11,8 @@ from torch.multiprocessing import Process
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 class AlignerDataset(Dataset):

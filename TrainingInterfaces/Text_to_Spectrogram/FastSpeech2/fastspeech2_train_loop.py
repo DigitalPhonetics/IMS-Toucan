@@ -12,8 +12,8 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import get_language_id
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints

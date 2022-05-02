@@ -3,7 +3,7 @@ import torch.multiprocessing
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDatasetLanguageID import FastSpeechDataset
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
 from Utility.path_to_transcript_dicts import *
 
 

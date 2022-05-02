@@ -1,11 +1,10 @@
 import re
 import sys
 
-import panphon
 import phonemizer
 import torch
 
-from Preprocessing.papercup_features import generate_feature_table
+from Preprocessing.articulatory_features import generate_feature_table, get_phone_to_id
 
 
 class ArticulatoryCombinedTextFrontend:
@@ -36,7 +35,6 @@ class ArticulatoryCombinedTextFrontend:
         self.use_prosody = use_prosody
         self.use_stress = use_lexical_stress
         self.add_silence_to_end = add_silence_to_end
-        self.feature_table = panphon.FeatureTable()
 
         if language == "en":
             self.g2p_lang = "en-us"
@@ -116,95 +114,9 @@ class ArticulatoryCombinedTextFrontend:
             print("Language not supported yet")
             sys.exit()
 
-        self.phone_to_vector_papercup = generate_feature_table()
+        self.phone_to_vector = generate_feature_table()
 
-        self.phone_to_vector = dict()
-        for phone in self.phone_to_vector_papercup:
-            panphon_features = self.feature_table.word_to_vector_list(phone, numeric=True)
-            if panphon_features == []:
-                panphon_features = [[0] * 24]
-            papercup_features = self.phone_to_vector_papercup[phone]
-            self.phone_to_vector[phone] = papercup_features + panphon_features[0]
-
-        self.phone_to_id = {  # this lookup must be updated manually, because the only
-            # other way would be extracting them from a set, which can be non-deterministic
-            '~': 0,
-            '#': 1,
-            '?': 2,
-            '!': 3,
-            '.': 4,
-            'ɜ': 5,
-            'ɫ': 6,
-            'ə': 7,
-            'ɚ': 8,
-            'a': 9,
-            'ð': 10,
-            'ɛ': 11,
-            'ɪ': 12,
-            'ᵻ': 13,
-            'ŋ': 14,
-            'ɔ': 15,
-            'ɒ': 16,
-            'ɾ': 17,
-            'ʃ': 18,
-            'θ': 19,
-            'ʊ': 20,
-            'ʌ': 21,
-            'ʒ': 22,
-            'æ': 23,
-            'b': 24,
-            'ʔ': 25,
-            'd': 26,
-            'e': 27,
-            'f': 28,
-            'g': 29,
-            'h': 30,
-            'i': 31,
-            'j': 32,
-            'k': 33,
-            'l': 34,
-            'm': 35,
-            'n': 36,
-            'ɳ': 37,
-            'o': 38,
-            'p': 39,
-            'ɡ': 40,
-            'ɹ': 41,
-            'r': 42,
-            's': 43,
-            't': 44,
-            'u': 45,
-            'v': 46,
-            'w': 47,
-            'x': 48,
-            'z': 49,
-            'ʀ': 50,
-            'ø': 51,
-            'ç': 52,
-            'ɐ': 53,
-            'œ': 54,
-            'y': 55,
-            'ʏ': 56,
-            'ɑ': 57,
-            'c': 58,
-            'ɲ': 59,
-            'ɣ': 60,
-            'ʎ': 61,
-            'β': 62,
-            'ʝ': 63,
-            'ɟ': 64,
-            'q': 65,
-            'ɕ': 66,
-            'ʲ': 67,
-            'ɭ': 68,
-            'ɵ': 69,
-            'ʑ': 70,
-            'ʋ': 71,
-            'ʁ': 72,
-            'ɨ': 73,
-            'ʂ': 74,
-            'ɬ': 75,
-            }  # for the states of the ctc loss and dijkstra/mas in the aligner
+        self.phone_to_id = get_phone_to_id()
 
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
 

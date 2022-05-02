@@ -1,31 +1,17 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_English import run as english
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_German import run as full_ger
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_GermanSingle import run as single_ger
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Karlsson import run as karlsson
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LJ import run as lj
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Nancy import run as nancy
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_RussianSingle import run as single_rus
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "libri"        : libri,
-    "meta"         : meta_fast,
-    "karlsson"     : karlsson,
-    "lj"           : lj,
-    "nancy"        : nancy,
+    "meta": meta_fast,
     "hifi_combined": hifigan_combined,
-    "aligner"      : aligner,
-    "single_ger"   : single_ger,
-    "single_rus"   : single_rus,
-    "full_ger"     : full_ger,
-    "english"      : english
-    }
+    "aligner": aligner,
+    "fine_ger": fine_ger
+}
 
 if __name__ == '__main__':
 

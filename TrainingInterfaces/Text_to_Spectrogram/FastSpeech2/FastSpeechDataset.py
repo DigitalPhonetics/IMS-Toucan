@@ -5,8 +5,8 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
+from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator

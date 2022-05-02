@@ -6,8 +6,8 @@ from torch.optim import SGD
 from tqdm import tqdm
 
 from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator

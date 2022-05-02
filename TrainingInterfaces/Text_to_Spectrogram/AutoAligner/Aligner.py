@@ -12,7 +12,7 @@ from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 class BatchNormConv(nn.Module):
