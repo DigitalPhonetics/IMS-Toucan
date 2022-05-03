@@ -29,6 +29,7 @@ def generate_feature_lookup():
         '?': {'symbol_type': 'questionmark'},
         '!': {'symbol_type': 'exclamationmark'},
         '.': {'symbol_type': 'fullstop'},
+        ' ': {'symbol_type': 'word-boundary'},
         'ɜ': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'vowel',
@@ -898,69 +899,94 @@ def generate_feature_table():
     # print("}")
 
     value_to_index = {
-        "dental": 0,
-        "postalveolar": 1,
-        "mid": 2,
-        "close-mid": 3,
-        "vowel": 4,
-        "silence": 5,
-        "consonant": 6,
-        "close": 7,
-        "velar": 8,
-        "plosive": 9,
-        "palatal": 10,
-        "nasal": 11,
-        "glottal": 12,
-        "central": 13,
-        "back": 14,
-        "approximant": 15,
-        "uvular": 16,
-        "open-mid": 17,
-        "front_central": 18,
-        "front": 19,
-        "end of sentence": 20,
-        "labiodental": 21,
-        "close_close-mid": 22,
-        "labial-velar": 23,
-        "unvoiced": 24,
-        "central_back": 25,
-        "trill": 26,
-        "rounded": 27,
-        "open-mid_open": 28,
-        "flap": 29,
-        "alveolar": 30,
-        "bilabial": 31,
-        "phoneme": 32,
-        "open": 33,
-        "fricative": 34,
-        "unrounded": 35,
-        "lateral-approximant": 36,
-        "voiced": 37,
-        "questionmark": 38,
-        "exclamationmark": 39,
-        "fullstop": 40,
-        "alveolopalatal": 41,
-        "lengthened": 42,  # modified by following symbol
-        "half-length": 43,  # modified by following symbol
-        "shortened": 44,  # modified by following symbol
-        "stressed": 45,  # modified by previous symbol
-        "very-high-tone": 46,  # modified by following symbol
-        "high-tone": 47,  # modified by following symbol
-        "mid-tone": 48,  # modified by following symbol
-        "low-tone": 49,  # modified by following symbol
-        "very-low-tone": 50,  # modified by following symbol
-        "implosive": 51,
-        "vibrant": 52,
-        "retroflex": 53,
-        "click": 54,
-        "pharyngal": 55,
-        "epiglottal": 56
+        # MODIFIER
+        # -- stress: modified by the previous symbol
+        "stressed": 0,
+        # -- tone: modified by the following symbol
+        "very-high-tone": 1,
+        "high-tone": 2,
+        "mid-tone": 3,
+        "low-tone": 4,
+        "very-low-tone": 5,
+        "rising-tone": 6,
+        "falling-tone": 7,
+        # -- lengthening: modified by the following symbol
+        "lengthened": 8,
+        "half-length": 9,
+        "shortened": 10,
+
+        # CATEGORIES
+        "consonant": 11,
+        "vowel": 12,
+        "phoneme": 13,
+
+        # NON-SPEECH-MARKERS
+        "silence": 14,
+        "end of sentence": 15,
+        "questionmark": 16,
+        "exclamationmark": 17,
+        "fullstop": 18,
+        "word-boundary": 19,
+
+        # PLACE
+        "dental": 20,
+        "postalveolar": 21,
+        "velar": 22,
+        "palatal": 23,
+        "glottal": 24,
+        "uvular": 25,
+        "labiodental": 26,
+        "labial-velar": 27,
+        "alveolar": 28,
+        "bilabial": 29,
+        "alveolopalatal": 30,
+        "retroflex": 31,
+        "pharyngal": 32,
+        "epiglottal": 33,
+
+        # TONGUE POSITION
+        "central": 34,
+        "back": 35,
+        "front_central": 36,
+        "front": 37,
+        "central_back": 38,
+
+        # MOUTH OPENNESS
+        "mid": 39,
+        "close-mid": 40,
+        "close": 41,
+        "open-mid": 42,
+        "close_close-mid": 43,
+        "open-mid_open": 44,
+        "open": 45,
+
+        # MOUTH SHAPE
+        "rounded": 46,
+        "unrounded": 47,
+
+        # MANNER
+        "plosive": 48,
+        "nasal": 49,
+        "approximant": 50,
+        "trill": 51,
+        "flap": 52,
+        "fricative": 53,
+        "lateral-approximant": 54,
+        "implosive": 55,
+        "vibrant": 56,
+        "click": 57,
+
+        # TYPE
+        "unvoiced": 58,
+        "voiced": 59,
+
     }
 
     phone_to_vector = dict()
     for ipa in ipa_to_phonemefeats:
         if len(ipa) == 1:
-            phone_to_vector[ipa] = [0] * sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])
+            phone_to_vector[ipa] = [0] * (11 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
+            # there are 9 features which do not occur in the vectors, because they are context dependent and not lexical
             for feat in ipa_to_phonemefeats[ipa]:
                 if ipa_to_phonemefeats[ipa][feat] in value_to_index:
                     phone_to_vector[ipa][value_to_index[ipa_to_phonemefeats[ipa][feat]]] = 1

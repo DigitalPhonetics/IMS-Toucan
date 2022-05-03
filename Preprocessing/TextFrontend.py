@@ -11,28 +11,16 @@ class ArticulatoryCombinedTextFrontend:
 
     def __init__(self,
                  language,
-                 use_word_boundaries=False,  # goes together well with 
-                 # parallel models and a aligner. Doesn't go together 
-                 # well with autoregressive models.
                  use_explicit_eos=True,
-                 use_prosody=False,  # unfortunately the non-segmental
-                 # nature of prosodic markers mixed with the sequential
-                 # phonemes hurts the performance of end-to-end models a
-                 # lot, even though one might think enriching the input
-                 # with such information would help.
-                 use_lexical_stress=False,
+                 use_lexical_stress=True,
                  silent=True,
                  allow_unknown=False,
-                 add_silence_to_end=True,
-                 strip_silence=True):
+                 add_silence_to_end=True):
         """
         Mostly preparing ID lookups
         """
-        self.strip_silence = strip_silence
-        self.use_word_boundaries = use_word_boundaries
         self.allow_unknown = allow_unknown
         self.use_explicit_eos = use_explicit_eos
-        self.use_prosody = use_prosody
         self.use_stress = use_lexical_stress
         self.add_silence_to_end = add_silence_to_end
 
@@ -108,16 +96,14 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Polish Text-Frontend")
 
-        # remember to also update get_language_id() when adding something here
+        # remember to also update get_language_id() below when adding something here
 
         else:
             print("Language not supported yet")
             sys.exit()
 
         self.phone_to_vector = generate_feature_table()
-
         self.phone_to_id = get_phone_to_id()
-
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
 
     def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True, input_phonemes=False):
@@ -129,12 +115,46 @@ class ArticulatoryCombinedTextFrontend:
         if input_phonemes:
             phones = text
         else:
-            phones = self.get_phone_string(text=text, include_eos_symbol=True)
+            phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True)
         if view:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()
         # turn into numeric vectors
         for char in phones:
+            if char == '\u02C8':
+                # primary stress
+                pass
+            elif char == '\u02D0':
+                # lengthened
+                pass
+            elif char == '\u02D1':
+                # half length
+                pass
+            elif char == '\u0306':
+                # shortened
+                pass
+            elif char == "˥":
+                # very high tone
+                pass
+            elif char == "˦":
+                # high tone
+                pass
+            elif char == "˧":
+                # mid tone
+                pass
+            elif char == "˨":
+                # low tone
+                pass
+            elif char == "˩":
+                # very low tone
+                pass
+            elif char == '\u030C':
+                # rising tone
+                pass
+            elif char == '\u0302':
+                # falling tone
+                pass
+
             if handle_missing:
                 try:
                     phones_vector.append(self.phone_to_vector[char])
@@ -145,7 +165,7 @@ class ArticulatoryCombinedTextFrontend:
 
         return torch.Tensor(phones_vector, device=device)
 
-    def get_phone_string(self, text, include_eos_symbol=True):
+    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
         # phonemize
@@ -156,25 +176,50 @@ class ArticulatoryCombinedTextFrontend:
                                       preserve_punctuation=True,
                                       strip=True,
                                       punctuation_marks=';:,.!?¡¿—…"«»“”~/',
-                                      with_stress=self.use_stress).replace(";", ",").replace("/", " ").replace("—", "") \
-            .replace(":", ",").replace('"', ",").replace("-", ",").replace("...", ",").replace("-", ",").replace("\n", " ") \
-            .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~").replace(" ̃", "").replace('̩', "").replace("̃", "").replace("̪", "")
-        # less than 1 wide characters hidden here
+                                      with_stress=self.use_stress)
+        replacements = [(";", ","),
+                        ("/", " "),
+                        ("—", ""),
+                        (":", ","),
+                        ('"', ","),
+                        ("-", ","),
+                        ("...", ","),
+                        ("-", ","),
+                        ("\n", " "),
+                        ("\t", " "),
+                        ("¡", ""),
+                        ("¿", ""),
+                        ('\u02CC', ""),  # we don't use secondary stress, only primary stress
+                        ('\u030B', "˥"),
+                        ('\u0301', "˦"),
+                        ('\u0304', "˧"),
+                        ('\u0300', "˨"),
+                        ('\u030F', "˩"),
+                        (",", "~")  # make sure this remains the final one when adding new ones
+                        ]
+        if not for_feature_extraction:
+            # in case we want to plot etc, we only need the segmental units.
+            replacements = replacements + [
+                ('\u02C8', ""),  # primary stress
+                ('\u02D0', ""),  # lengthened
+                ('\u02D1', ""),  # half length
+                ('\u0306', ""),  # shortened
+                ("˥", ""),  # very high tone
+                ("˦", ""),  # high tone
+                ("˧", ""),  # mid tone
+                ("˨", ""),  # low tone
+                ("˩", ""),  # very low tone
+                ('\u030C', ""),  # rising tone
+                ('\u0302', "")  # falling tone
+            ]
+        for replacement in replacements:
+            phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)
-        if not self.use_prosody:
-            # retain ~ as heuristic pause marker, even though all other symbols are removed with this option.
-            # also retain . ? and ! since they can be indicators for the stop token
-            phones = phones.replace("ˌ", "").replace("ː", "").replace("ˑ", "") \
-                .replace("˘", "").replace("|", "").replace("‖", "")
-        if not self.use_word_boundaries:
-            phones = phones.replace(" ", "")
-        else:
-            phones = re.sub(r"\s+", " ", phones)
-            phones = re.sub(" ", "~", phones)
-        if self.strip_silence:
-            phones = phones.lstrip("~").rstrip("~")
+        phones = re.sub(r"\s+", " ", phones)
+        phones = phones.lstrip("~").rstrip("~")
+
         if self.add_silence_to_end:
-            phones += "~"  # adding a silence in the end during add_silence_to_end produces more natural sounding prosody
+            phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
 
