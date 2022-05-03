@@ -3,6 +3,25 @@
 # Modified by Florian Lux, 2021
 # Further modified by Florian Lux, 2022
 
+
+"""
+Almost all phonemes in the IPA standard are supported.
+Only the postalveolar click is not supported because
+the IPA symbol overlaps with the excalamation mark [!],
+which I find to be more important in most languages.
+
+zero-width characters are generally not supported, as
+well as some other modifiers. Tone, stress and
+lengthening are represented with placeholder dimensions,
+however they need to be set manually, this conversion
+from phonemes to features works on a character by
+character basis. In a few cases, the place of
+articulation is approximated because only one phoneme
+had such a combination, which does not warrant a new
+dimension.
+"""
+
+
 def generate_feature_lookup():
     return {
         '~': {'symbol_type': 'silence'},
@@ -700,8 +719,144 @@ def generate_feature_lookup():
             'vowel_roundedness': 'rounded',
             'consonant_manner': 'nasal'
         },
-
-    }  # REMEMBER to also add the phonemes added here to the ID lookup table below as the new highest ID
+        'ʡ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'epiglottal',
+            'consonant_manner': 'plosive'
+        },
+        'ʈ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'retroflex',
+            'consonant_manner': 'plosive'
+        },
+        'ʜ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'epiglottal',
+            'consonant_manner': 'fricative'
+        },
+        'ɱ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'labiodental',
+            'consonant_manner': 'nasal'
+        },
+        'ɯ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'back',
+            'vowel_openness': 'close',
+            'vowel_roundedness': 'unrounded'
+        },
+        'ǀ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'dental',
+            'consonant_manner': 'click'
+        },
+        'ɧ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'palatal',  # should be velopalatal to be exact
+            'consonant_manner': 'fricative'
+        },
+        'ɸ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'bilabial',
+            'consonant_manner': 'fricative'
+        },
+        'ʘ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'bilabial',
+            'consonant_manner': 'click'
+        },
+        'ʐ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'retroflex',
+            'consonant_manner': 'fricative'
+        },
+        'ɰ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'velar',
+            'consonant_manner': 'approximant'
+        },
+        'ɘ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'close-mid',
+            'vowel_roundedness': 'unrounded'
+        },
+        'ɥ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'palatal',  # should be labiopalatal to be exact
+            'consonant_manner': 'approximant'
+        },
+        'ħ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'pharyngal',
+            'consonant_manner': 'fricative'
+        },
+        'ɞ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'open-mid',
+            'vowel_roundedness': 'rounded'
+        },
+        'ʉ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'close',
+            'vowel_roundedness': 'rounded'
+        },
+        'ɴ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'uvular',
+            'consonant_manner': 'nasal'
+        },
+        'ʢ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'epiglottal',
+            'consonant_manner': 'fricative'
+        },
+        'ѵ': {
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'labiodental',
+            'consonant_manner': 'flap'
+        }
+    }  # REMEMBER to also add the phonemes added here to the ID lookup below as the new highest ID
 
 
 def get_phone_to_id():
@@ -709,128 +864,10 @@ def get_phone_to_id():
     for the states of the ctc loss and dijkstra/mas in the aligner
     cannot be extracted trivially from above because sets are unordered and the IDs need to be consistent
     """
-    return {
-        '~': 0,
-        '#': 1,
-        '?': 2,
-        '!': 3,
-        '.': 4,
-        'ɜ': 5,
-        'ɫ': 6,
-        'ə': 7,
-        'ɚ': 8,
-        'a': 9,
-        'ð': 10,
-        'ɛ': 11,
-        'ɪ': 12,
-        'ᵻ': 13,
-        'ŋ': 14,
-        'ɔ': 15,
-        'ɒ': 16,
-        'ɾ': 17,
-        'ʃ': 18,
-        'θ': 19,
-        'ʊ': 20,
-        'ʌ': 21,
-        'ʒ': 22,
-        'æ': 23,
-        'b': 24,
-        'ʔ': 25,
-        'd': 26,
-        'e': 27,
-        'f': 28,
-        'g': 29,
-        'h': 30,
-        'i': 31,
-        'j': 32,
-        'k': 33,
-        'l': 34,
-        'm': 35,
-        'n': 36,
-        'ɳ': 37,
-        'o': 38,
-        'p': 39,
-        'ɡ': 40,
-        'ɹ': 41,
-        'r': 42,
-        's': 43,
-        't': 44,
-        'u': 45,
-        'v': 46,
-        'w': 47,
-        'x': 48,
-        'z': 49,
-        'ʀ': 50,
-        'ø': 51,
-        'ç': 52,
-        'ɐ': 53,
-        'œ': 54,
-        'y': 55,
-        'ʏ': 56,
-        'ɑ': 57,
-        'c': 58,
-        'ɲ': 59,
-        'ɣ': 60,
-        'ʎ': 61,
-        'β': 62,
-        'ʝ': 63,
-        'ɟ': 64,
-        'q': 65,
-        'ɕ': 66,
-        'ʲ': 67,
-        'ɭ': 68,
-        'ɵ': 69,
-        'ʑ': 70,
-        'ʋ': 71,
-        'ʁ': 72,
-        'ɨ': 73,
-        'ʂ': 74,
-        'ɬ': 75,
-        'ɓ': 76,
-        'ʙ': 77,
-        'ɗ': 78,
-        'ɖ': 79,
-        'χ': 80,
-        'ʛ': 81,
-        'ʟ': 82,
-        'ɽ': 83,
-        'ɢ': 84,
-        'ɠ': 85,
-        'ǂ': 86,
-        'ɦ': 87,
-        'ǁ': 88,
-        'ĩ': 89,
-        'ʍ': 90,
-        'ʕ': 91,
-        'ɻ': 92,
-        'ʄ': 93,
-        'ɺ': 94,
-        'ũ': 95,
-        'ɤ': 96,
-        'ɶ': 97,
-        'õ': 98,
-    }
-
-
-# ʡ
-# ʈ
-# ʜ
-# ɱ
-# ɯ
-# ǀ
-# ɧ
-# ɸ
-# ʘ
-# ʐ
-# ɰ
-# ɘ
-# ɥ
-# ħ
-# ɞ
-# ʉ
-# ɴ
-# ʢ
-# ѵ
+    phone_to_id = dict()
+    for index, phone in enumerate("~#?!.ɜɫəɚaðɛɪᵻŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɬɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄɺũɤɶõʡʈʜɱɯǀɧɸʘʐɰɘɥħɞʉɴʢѵ"):
+        phone_to_id[phone] = index
+    return phone_to_id
 
 
 def generate_feature_table():
@@ -917,6 +954,7 @@ def generate_feature_table():
         "retroflex": 53,
         "click": 54,
         "pharyngal": 55,
+        "epiglottal": 56
     }
 
     phone_to_vector = dict()
@@ -935,5 +973,3 @@ def generate_feature_table():
     # print(f"{sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])} should be 42")
 
     return phone_to_vector
-
-# postalveolar click is not supported because the IPA symbol overlaps with the excalamation mark, which I find to be more important in most languages.
