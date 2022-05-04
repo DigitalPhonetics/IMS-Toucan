@@ -125,7 +125,7 @@ class AlignerDataset(Dataset):
                 self.speaker_embeddings = self.datapoints[2]
                 self.datapoints = self.datapoints[0]
 
-        self.tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=True)
+        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -138,7 +138,7 @@ class AlignerDataset(Dataset):
                               device,
                               phone_input):
         process_internal_dataset_chunk = list()
-        tf = ArticulatoryCombinedTextFrontend(language=lang, use_word_boundaries=False)
+        tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=cut_silences, device=device)
 
@@ -196,7 +196,7 @@ class AlignerDataset(Dataset):
                 if vector.numpy().tolist()[11:] == self.tf.phone_to_vector[phone][:11]:
                     # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
                     tokens.append(self.tf.phone_to_id[phone])
-                    # this is terribly inefficient, but it's good enough for testing for now.
+                    # this is terribly inefficient, but it's fine
         tokens = torch.LongTensor(tokens)
         return tokens, \
                self.datapoints[index][1], \

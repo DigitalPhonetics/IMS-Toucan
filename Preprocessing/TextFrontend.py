@@ -233,6 +233,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
+        phones = re.sub(r"\s+", "", phones)  # TODO remove this line, once word boundaries are properly implemented
         phones = phones.lstrip("~").rstrip("~")
 
         if self.add_silence_to_end:
