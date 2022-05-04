@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_EnglishSingleSpeaker import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
@@ -10,7 +11,8 @@ pipeline_dict = {
     "meta": meta_fast,
     "hifi_combined": hifigan_combined,
     "aligner": aligner,
-    "fine_ger": fine_ger
+    "fine_ger": fine_ger,
+    "integration_test": integration_test
 }
 
 if __name__ == '__main__':
