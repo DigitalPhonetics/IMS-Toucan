@@ -120,48 +120,65 @@ class ArticulatoryCombinedTextFrontend:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()
         # turn into numeric vectors
+        stressed_flag = False
+
         for char in phones:
             if char == '\u02C8':
                 # primary stress
-                pass
+                # affects following phoneme
+                stressed_flag = True
             elif char == '\u02D0':
                 # lengthened
-                pass
+                # affects previous phoneme
+                phones_vector[-1][8] = 1
             elif char == '\u02D1':
                 # half length
-                pass
+                # affects previous phoneme
+                phones_vector[-1][9] = 1
             elif char == '\u0306':
                 # shortened
-                pass
+                # affects previous phoneme
+                phones_vector[-1][10] = 1
             elif char == "˥":
                 # very high tone
-                pass
+                # affects previous phoneme
+                phones_vector[-1][1] = 1
             elif char == "˦":
                 # high tone
-                pass
+                # affects previous phoneme
+                phones_vector[-1][2] = 1
             elif char == "˧":
                 # mid tone
-                pass
+                # affects previous phoneme
+                phones_vector[-1][3] = 1
             elif char == "˨":
                 # low tone
-                pass
+                # affects previous phoneme
+                phones_vector[-1][4] = 1
             elif char == "˩":
                 # very low tone
-                pass
+                # affects previous phoneme
+                phones_vector[-1][5] = 1
             elif char == '\u030C':
                 # rising tone
-                pass
+                # affects previous phoneme
+                phones_vector[-1][6] = 1
             elif char == '\u0302':
                 # falling tone
-                pass
-
-            if handle_missing:
-                try:
-                    phones_vector.append(self.phone_to_vector[char])
-                except KeyError:
-                    print("unknown phoneme: {}".format(char))
+                # affects previous phoneme
+                phones_vector[-1][7] = 1
             else:
-                phones_vector.append(self.phone_to_vector[char])  # leave error handling to elsewhere
+                if handle_missing:
+                    try:
+                        phones_vector.append(self.phone_to_vector[char])
+                    except KeyError:
+                        print("unknown phoneme: {}".format(char))
+                else:
+                    phones_vector.append(self.phone_to_vector[char])  # leave error handling to elsewhere
+
+                if stressed_flag:
+                    stressed_flag = False
+                    phones_vector[-1][0] = 1
 
         return torch.Tensor(phones_vector, device=device)
 
@@ -272,7 +289,6 @@ def get_language_id(language):
 
 
 if __name__ == '__main__':
-    # test an English utterance
     tf = ArticulatoryCombinedTextFrontend(language="en")
     print(tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True))
 

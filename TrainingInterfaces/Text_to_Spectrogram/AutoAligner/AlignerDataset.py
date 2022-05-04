@@ -193,7 +193,8 @@ class AlignerDataset(Dataset):
         tokens = list()
         for vector in text_vector:
             for phone in self.tf.phone_to_vector:
-                if vector.numpy().tolist() == self.tf.phone_to_vector[phone]:
+                if vector.numpy().tolist()[11:] == self.tf.phone_to_vector[phone][:11]:
+                    # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
                     tokens.append(self.tf.phone_to_id[phone])
                     # this is terribly inefficient, but it's good enough for testing for now.
         tokens = torch.LongTensor(tokens)
