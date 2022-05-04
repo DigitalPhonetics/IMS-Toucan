@@ -87,7 +87,7 @@ class AlignerDataset(Dataset):
             pop_indexes = list()
             for index, el in enumerate(self.datapoints):
                 try:
-                    if len(el[0][0]) != 66:
+                    if len(el[0][0]) != 60:
                         pop_indexes.append(index)
                 except TypeError:
                     pop_indexes.append(index)
@@ -172,7 +172,7 @@ class AlignerDataset(Dataset):
                 tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                 continue  # we skip sentences with unknown symbols
             try:
-                if len(cached_text[0]) != 66:
+                if len(cached_text[0]) != 60:
                     print(f"There seems to be a problem with the following transcription: {transcript}")
                     continue
             except TypeError:
