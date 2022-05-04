@@ -258,6 +258,10 @@ Their use is demonstrated in
 *run_interactive_demo.py* and
 *run_text_to_file_reader.py*.
 
+There are simple scaling parameters to control the duration, the variance of the pitch curve and the variance of the
+energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
+pass them to the interface when you use it in your own code.
+
 ---
 
 ## FAQ 🐓
