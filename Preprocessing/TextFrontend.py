@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 import re
 import sys
 
@@ -214,6 +217,13 @@ class ArticulatoryCombinedTextFrontend:
                         ('\u030F', "˩"),
                         (",", "~")  # make sure this remains the final one when adding new ones
                         ]
+        unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
+                                      '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
+                                      '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
+                                      '̚', '↗', 'ꜛ', '̻', '̥', 'ˁ', '̘', '͡', '̺'}
+        for char in unsupported_ipa_characters:
+            replacements.append((char, ""))
+
         if not for_feature_extraction:
             # in case we want to plot etc, we only need the segmental units.
             replacements = replacements + [
@@ -233,7 +243,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
-        phones = re.sub(r"\s+", "", phones)  # TODO remove this line, once word boundaries are properly implemented
+        phones = phones.replace(" ", "")  # TODO remove this line, once word boundaries are properly implemented
         phones = phones.lstrip("~").rstrip("~")
 
         if self.add_silence_to_end:

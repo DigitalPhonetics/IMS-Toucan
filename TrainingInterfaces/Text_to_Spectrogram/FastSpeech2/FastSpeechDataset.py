@@ -90,6 +90,8 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
+                # TODO 2 versions of text created here: with and without word boundaries. Note index of word boundaries and reinsert with dur, pi, en 0 afterwards
+
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
                                                                     tokens=text.to(device),
                                                                     save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,

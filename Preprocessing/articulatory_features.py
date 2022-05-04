@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 # partly derived from an open-source resource provided by Papercup Technologies Limited
 # Resource-Author: Marlene Staib
 # Modified by Florian Lux, 2021
@@ -5,10 +8,7 @@
 
 
 """
-Almost all phonemes in the IPA standard are supported.
-Only the postalveolar click is not supported because
-the IPA symbol overlaps with the excalamation mark [!],
-which I find to be more important in most languages.
+All phonemes in the IPA standard are supported.
 
 zero-width characters are generally not supported, as
 well as some other modifiers. Tone, stress and
@@ -856,7 +856,15 @@ def generate_feature_lookup():
             'VUV': 'voiced',
             'consonant_place': 'labiodental',
             'consonant_manner': 'flap'
-        }
+        },
+        'ǃ': {  # looks deceivingly like an exclamation mark, but it's a different unicode entry
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'alveolar',
+            'consonant_manner': 'click'
+        },
+
     }  # REMEMBER to also add the phonemes added here to the ID lookup below as the new highest ID
 
 
@@ -866,7 +874,7 @@ def get_phone_to_id():
     cannot be extracted trivially from above because sets are unordered and the IDs need to be consistent
     """
     phone_to_id = dict()
-    for index, phone in enumerate("~#?!.ɜɫəɚaðɛɪᵻŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɬɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄɺũɤɶõʡʈʜɱɯǀɧɸʘʐɰɘɥħɞʉɴʢѵ"):
+    for index, phone in enumerate("~#?!ǃ.ɜɫəɚaðɛɪᵻŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɬɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄɺũɤɶõʡʈʜɱɯǀɧɸʘʐɰɘɥħɞʉɴʢѵɮ"):
         phone_to_id[phone] = index
     return phone_to_id
 
