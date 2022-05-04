@@ -137,9 +137,3 @@ if __name__ == '__main__':
                        filename_of_result="audios/test_cloned_unnecessary_pauses.wav",
                        clone_speaker_identity=False,
                        lang="en")
-
-    uc.clone_utterance(path_to_reference_audio="audios/test_sing.wav",
-                       reference_transcription="It was, one hundred degrees, as we sat, beneath, a willow tree, whose tears didn't care, they just hung in the air and refused, to fall.",
-                       filename_of_result="audios/test_sing_cloned.wav",
-                       clone_speaker_identity=False,
-                       lang="en")
