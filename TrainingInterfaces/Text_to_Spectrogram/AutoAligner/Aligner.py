@@ -59,8 +59,6 @@ class Aligner(torch.nn.Module):
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
-        for phone in self.tf.phone_to_vector:
-            self.vector_to_id[tuple(self.tf.phone_to_vector[phone])] = self.tf.phone_to_id[phone]
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -101,7 +99,11 @@ class Aligner(torch.nn.Module):
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
-                tokens_indexed.append(self.vector_to_id[tuple(vector.cpu().detach().numpy().tolist())])
+                for phone in self.tf.phone_to_vector:
+                    if vector.numpy().tolist()[11:] == self.tf.phone_to_vector[phone][:11]:
+                        # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                        tokens.append(self.tf.phone_to_id[phone])
+                        # this is terribly inefficient, but it's fine
             tokens = np.asarray(tokens_indexed)
         else:
             tokens = tokens.cpu().detach().numpy()
