@@ -253,7 +253,6 @@ class ArticulatoryCombinedTextFrontend:
 
         phones = "~" + phones
         phones = re.sub("~+", "~", phones)
-        print(phones)
         return phones
 
 

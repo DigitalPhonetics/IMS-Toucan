@@ -47,7 +47,7 @@ class FastSpeechDataset(Dataset):
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             dataset = datapoints[0]
             norm_waves = datapoints[1]
-            filepaths = datapoints[2]
+            filepaths = datapoints[3]  # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner
 
             # build cache
             print("... building dataset cache ...")
@@ -180,31 +180,5 @@ class FastSpeechDataset(Dataset):
     def remove_samples(self, list_of_samples_to_remove):
         for remove_id in sorted(list_of_samples_to_remove, reverse=True):
             self.datapoints.pop(remove_id)
-        torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
-        print("Dataset updated!")
-
-    def fix_repeating_phones(self):
-        """
-        The viterbi decoding of the durations cannot
-        handle repetitions. This is now solved heuristically,
-        but if you have a cache from before March 2022,
-        use this method to postprocess those cases.
-        """
-        for datapoint_index in tqdm(list(range(len(self.datapoints)))):
-            last_vec = None
-            for phoneme_index, vec in enumerate(self.datapoints[datapoint_index][0]):
-                if last_vec is not None:
-                    if last_vec.numpy().tolist() == vec.numpy().tolist():
-                        # we found a case of repeating phonemes!
-                        # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                        dur_1 = self.datapoints[datapoint_index][4][phoneme_index - 1]
-                        dur_2 = self.datapoints[datapoint_index][4][phoneme_index]
-                        total_dur = dur_1 + dur_2
-                        new_dur_1 = int((total_dur / 5) * 3)
-                        new_dur_2 = total_dur - new_dur_1
-                        self.datapoints[datapoint_index][4][phoneme_index - 1] = new_dur_1
-                        self.datapoints[datapoint_index][4][phoneme_index] = new_dur_2
-                        print("fix applied")
-                last_vec = vec
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
         print("Dataset updated!")
