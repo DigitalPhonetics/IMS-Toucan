@@ -7,7 +7,8 @@ import sys
 import phonemizer
 import torch
 
-from Preprocessing.articulatory_features import generate_feature_table, get_phone_to_id
+from Preprocessing.articulatory_features import generate_feature_table
+from Preprocessing.articulatory_features import get_phone_to_id
 
 
 class ArticulatoryCombinedTextFrontend:
@@ -209,6 +210,14 @@ class ArticulatoryCombinedTextFrontend:
                         ("\t", " "),
                         ("¡", ""),
                         ("¿", ""),
+                        ("ɫ", "l"),  # the alveolopalatal lateral approximant is too rare and too similar to be treated independently
+                        ("ɚ", "ə"),
+                        ('ᵻ', 'ɨ'),
+                        ("ɧ", "ç"),  # velopalatal is also too rare and too similar to warrant its own identity
+                        ("ɥ", "j"),  # labiopalatal is also too rare and too similar to warrant its own identity
+                        ("ɬ", "s"),  # the lateral variant can be treated as the same for the most part
+                        ("ɮ", "z"),  # the lateral variant can be treated as the same for the most part
+                        ('ɺ', 'ɾ'),  # the lateral variant can be treated as the same for the most part
                         ('\u02CC', ""),  # we don't use secondary stress, only primary stress
                         ('\u030B', "˥"),
                         ('\u0301', "˦"),
@@ -238,7 +247,7 @@ class ArticulatoryCombinedTextFrontend:
                 ("˩", ""),  # very low tone
                 ('\u030C', ""),  # rising tone
                 ('\u0302', "")  # falling tone
-            ]
+                ]
         for replacement in replacements:
             phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)

@@ -47,9 +47,9 @@ class FastSpeechDataset(Dataset):
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             dataset = datapoints[0]
             norm_waves = datapoints[1]
-            filepaths = datapoints[3]  # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner
+            # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner, we don't need them anymore
+            filepaths = datapoints[3]
 
-            # build cache
             print("... building dataset cache ...")
             self.datapoints = list()
             self.ctc_losses = list()

@@ -149,13 +149,7 @@ class AlignerDataset(Dataset):
             except KeyError:
                 tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                 continue  # we skip sentences with unknown symbols
-            try:
-                if len(cached_text[0]) != 60:
-                    print(f"There seems to be a problem with the following transcription: {transcript}")
-                    continue
-            except TypeError:
-                print(f"There seems to be a problem with the following transcription: {transcript}")
-                continue
+
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
@@ -176,6 +170,7 @@ class AlignerDataset(Dataset):
                     # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
                     tokens.append(self.tf.phone_to_id[phone])
                     # this is terribly inefficient, but it's fine
+                    break
         tokens = torch.LongTensor(tokens)
         return tokens, \
                self.datapoints[index][1], \

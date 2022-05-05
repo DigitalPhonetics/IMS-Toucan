@@ -38,22 +38,7 @@ def generate_feature_lookup():
             'vowel_openness': 'open-mid',
             'vowel_roundedness': 'unrounded',
         },
-        'ɫ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'alveolar',
-            'consonant_manner': 'lateral-approximant',
-        },
         'ə': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'vowel',
-            'VUV': 'voiced',
-            'vowel_frontness': 'central',
-            'vowel_openness': 'mid',
-            'vowel_roundedness': 'unrounded',
-        },
-        'ɚ': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'vowel',
             'VUV': 'voiced',
@@ -90,14 +75,6 @@ def generate_feature_lookup():
             'VUV': 'voiced',
             'vowel_frontness': 'front_central',
             'vowel_openness': 'close_close-mid',
-            'vowel_roundedness': 'unrounded',
-        },
-        'ᵻ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'vowel',
-            'VUV': 'voiced',
-            'vowel_frontness': 'central',
-            'vowel_openness': 'close',
             'vowel_roundedness': 'unrounded',
         },
         'ŋ': {
@@ -269,12 +246,12 @@ def generate_feature_lookup():
             'consonant_manner': 'nasal'
         },
         'ɳ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'palatal',
+            'symbol_type'     : 'phoneme',
+            'vowel_consonant' : 'consonant',
+            'VUV'             : 'voiced',
+            'consonant_place' : 'retroflex',
             'consonant_manner': 'nasal'
-        },
+            },
         'o': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'vowel',
@@ -288,13 +265,6 @@ def generate_feature_lookup():
             'vowel_consonant': 'consonant',
             'VUV': 'unvoiced',
             'consonant_place': 'bilabial',
-            'consonant_manner': 'plosive'
-        },
-        'ɡ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'velar',
             'consonant_manner': 'plosive'
         },
         'ɹ': {
@@ -494,13 +464,13 @@ def generate_feature_lookup():
             'consonant_manner': 'lateral-approximant'
         },
         'ɵ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'vowel',
-            'VUV': 'voiced',
-            'vowel_frontness': 'central',
-            'vowel_openness': 'open-mid',
+            'symbol_type'      : 'phoneme',
+            'vowel_consonant'  : 'vowel',
+            'VUV'              : 'voiced',
+            'vowel_frontness'  : 'central',
+            'vowel_openness'   : 'close-mid',
             'vowel_roundedness': 'rounded'
-        },
+            },
         'ʑ': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'consonant',
@@ -536,13 +506,6 @@ def generate_feature_lookup():
             'VUV': 'unvoiced',
             'consonant_place': 'retroflex',
             'consonant_manner': 'fricative'
-        },
-        'ɬ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'unvoiced',
-            'consonant_place': 'alveolar',
-            'consonant_manner': 'fricative'  # it's a lateral fricative, but should be close enough
         },
         'ɓ': {
             'symbol_type': 'phoneme',
@@ -592,13 +555,6 @@ def generate_feature_lookup():
             'VUV': 'voiced',
             'consonant_place': 'velar',
             'consonant_manner': 'lateral-approximant'
-        },
-        'ɮ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'alveolar',
-            'consonant_manner': 'fricative'
         },
         'ɽ': {
             'symbol_type': 'phoneme',
@@ -679,13 +635,6 @@ def generate_feature_lookup():
             'consonant_place': 'palatal',
             'consonant_manner': 'implosive'
         },
-        'ɺ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'alveolar',
-            'consonant_manner': 'flap'  # it's a lateral flap, but should be close enough
-        },
         'ũ': {  # identical with u, but nasal
             'symbol_type': 'phoneme',
             'vowel_consonant': 'vowel',
@@ -763,13 +712,6 @@ def generate_feature_lookup():
             'consonant_place': 'dental',
             'consonant_manner': 'click'
         },
-        'ɧ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'unvoiced',
-            'consonant_place': 'palatal',  # should be velopalatal to be exact
-            'consonant_manner': 'fricative'
-        },
         'ɸ': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'consonant',
@@ -805,13 +747,6 @@ def generate_feature_lookup():
             'vowel_frontness': 'central',
             'vowel_openness': 'close-mid',
             'vowel_roundedness': 'unrounded'
-        },
-        'ɥ': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'palatal',  # should be labiopalatal to be exact
-            'consonant_manner': 'approximant'
         },
         'ħ': {
             'symbol_type': 'phoneme',
@@ -858,12 +793,12 @@ def generate_feature_lookup():
             'consonant_manner': 'flap'
         },
         'ǃ': {  # looks deceivingly like an exclamation mark, but it's a different unicode entry
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'unvoiced',
-            'consonant_place': 'alveolar',
+            'symbol_type'     : 'phoneme',
+            'vowel_consonant' : 'consonant',
+            'VUV'             : 'unvoiced',
+            'consonant_place' : 'postalveolar',
             'consonant_manner': 'click'
-        },
+            },
 
     }  # REMEMBER to also add the phonemes added here to the ID lookup below as the new highest ID
 
@@ -874,7 +809,7 @@ def get_phone_to_id():
     cannot be extracted trivially from above because sets are unordered and the IDs need to be consistent
     """
     phone_to_id = dict()
-    for index, phone in enumerate("~#?!ǃ.ɜɫəɚaðɛɪᵻŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɬɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄɺũɤɶõʡʈʜɱɯǀɧɸʘʐɰɘɥħɞʉɴʢѵɮ"):
+    for index, phone in enumerate("~#?!ǃ.ɜəaðɛɪŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄũɤɶõʡʈʜɱɯǀɸʘʐɰɘħɞʉɴʢѵ"):
         phone_to_id[phone] = index
     return phone_to_id
 
