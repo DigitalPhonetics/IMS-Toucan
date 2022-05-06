@@ -188,13 +188,13 @@ def generate_feature_lookup():
             'consonant_place': 'labiodental',
             'consonant_manner': 'fricative'
         },
-        'g': {
-            'symbol_type': 'phoneme',
-            'vowel_consonant': 'consonant',
-            'VUV': 'voiced',
-            'consonant_place': 'velar',
+        'ɡ': {
+            'symbol_type'     : 'phoneme',
+            'vowel_consonant' : 'consonant',
+            'VUV'             : 'voiced',
+            'consonant_place' : 'velar',
             'consonant_manner': 'plosive'
-        },
+            },
         'h': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'consonant',
