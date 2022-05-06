@@ -4,8 +4,9 @@
 import re
 import sys
 
-import phonemizer
 import torch
+from phonemizer.backend import EspeakBackend
+from pypinyin import pinyin
 
 from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_phone_to_id
@@ -100,11 +101,35 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Polish Text-Frontend")
 
+        elif language == "cmn":
+            self.g2p_lang = "cmn-latn-pinyin"  # in older versions of espeak this shorthand was zh
+            self.expand_abbreviations = convert_kanji_to_pinyin_mandarin
+            if not silent:
+                print("Created a Mandarin-Chinese Text-Frontend")
+
+        elif language == "vi":
+            self.g2p_lang = "vi"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Northern-Vietnamese Text-Frontend")
+
+        elif language == "uk":
+            self.g2p_lang = "uk"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Ukrainian Text-Frontend")
+
         # remember to also update get_language_id() below when adding something here
 
         else:
             print("Language not supported yet")
             sys.exit()
+
+        self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
+                                                punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                preserve_punctuation=True,
+                                                language_switch='remove-flags',
+                                                with_stress=self.use_stress)
 
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
@@ -190,42 +215,69 @@ class ArticulatoryCombinedTextFrontend:
         # expand abbreviations
         utt = self.expand_abbreviations(text)
         # phonemize
-        phones = phonemizer.phonemize(utt,
-                                      language_switch='remove-flags',
-                                      backend="espeak",
-                                      language=self.g2p_lang,
-                                      preserve_punctuation=True,
-                                      strip=True,
-                                      punctuation_marks=';:,.!?¡¿—…"«»“”~/',
-                                      with_stress=self.use_stress)
-        replacements = [(";", ","),
-                        ("/", " "),
-                        ("—", ""),
-                        (":", ","),
-                        ('"', ","),
-                        ("-", ","),
-                        ("...", ","),
-                        ("-", ","),
-                        ("\n", " "),
-                        ("\t", " "),
-                        ("¡", ""),
-                        ("¿", ""),
-                        ("ɫ", "l"),  # the alveolopalatal lateral approximant is too rare and too similar to be treated independently
-                        ("ɚ", "ə"),
-                        ('ᵻ', 'ɨ'),
-                        ("ɧ", "ç"),  # velopalatal is also too rare and too similar to warrant its own identity
-                        ("ɥ", "j"),  # labiopalatal is also too rare and too similar to warrant its own identity
-                        ("ɬ", "s"),  # the lateral variant can be treated as the same for the most part
-                        ("ɮ", "z"),  # the lateral variant can be treated as the same for the most part
-                        ('ɺ', 'ɾ'),  # the lateral variant can be treated as the same for the most part
-                        ('\u02CC', ""),  # we don't use secondary stress, only primary stress
-                        ('\u030B', "˥"),
-                        ('\u0301', "˦"),
-                        ('\u0304', "˧"),
-                        ('\u0300', "˨"),
-                        ('\u030F', "˩"),
-                        (",", "~")  # make sure this remains the final one when adding new ones
-                        ]
+        phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]
+
+        # Unfortunately tonal languages don't agree on the tone, most tonal
+        # languages use different tones denoted by different numbering
+        # systems. At this point in the script, it is attempted to unify
+        # them all to the tones in the IPA standard.
+        if self.g2p_lang == "cmn-latn-pinyin":
+            phones = phones.replace(".", "")  # no idea why espeak puts dots everywhere for Chinese
+            phones = phones.replace('1', "˥")
+            phones = phones.replace('2', "˧\u030C")
+            phones = phones.replace('ɜ', "˨\u0302\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('4', "˦\u0302")
+            phones = phones.replace('5', "˧")
+            phones = phones.replace('0', "˧")
+        if self.g2p_lang == "vi":
+            phones = phones.replace('2', "˩\u0302")
+            phones = phones.replace('ɜ', "˧\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('4', "˧\u0302\u030C")
+            phones = phones.replace('5', "˧\u030C")
+            phones = phones.replace('6', "˧\u0302")
+        replacements = [
+            # punctuation in languages with non-latin script
+            ("。", "."),
+            ("【", '"'),
+            ("】", '"'),
+            ("、", ","),
+            ("‥", "…"),
+            ("؟", "?"),
+            ("،", ","),
+            ("“", '"'),
+            ("”", '"'),
+            ("؛", ","),
+            # latin script punctuation
+            ("/", " "),
+            ("—", ""),
+            ("\n", " "),
+            ("\t", " "),
+            ("¡", ""),
+            ("¿", ""),
+            # unifying some phoneme representations
+            ("ɫ", "l"),  # alveolopalatal
+            ("ɚ", "ə"),
+            ('ᵻ', 'ɨ'),
+            ("ɧ", "ç"),  # velopalatal
+            ("ɥ", "j"),  # labiopalatal
+            ("ɬ", "s"),  # lateral
+            ("ɮ", "z"),  # lateral
+            ('ɺ', 'ɾ'),  # lateral
+            ('\u02CC', ""),  # secondary stress
+            ('\u030B', "˥"),
+            ('\u0301', "˦"),
+            ('\u0304', "˧"),
+            ('\u0300', "˨"),
+            ('\u030F', "˩"),
+            # symbols that indicate a pause or silence
+            ('"', "~"),
+            ("-", "~"),
+            ("-", "~"),
+            ("…", "."),
+            (":", "~"),
+            (";", "~"),
+            (",", "~")  # make sure this remains the final one when adding new ones
+            ]
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
                                       '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
@@ -234,7 +286,7 @@ class ArticulatoryCombinedTextFrontend:
             replacements.append((char, ""))
 
         if not for_feature_extraction:
-            # in case we want to plot etc, we only need the segmental units.
+            # in case we want to plot etc., we only need the segmental units, so we remove everything else.
             replacements = replacements + [
                 ('\u02C8', ""),  # primary stress
                 ('\u02D0', ""),  # lengthened
@@ -252,6 +304,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
+        phones = re.sub(r"\.+", ".", phones)
         phones = phones.replace(" ", "")  # TODO remove this line, once word boundaries are properly implemented
         phones = phones.lstrip("~").rstrip("~")
 
@@ -280,6 +333,15 @@ def english_text_expansion(text):
     return text
 
 
+def convert_kanji_to_pinyin_mandarin(text):
+    # somehow the phonemizer looses the tone information, but
+    # after the conversion to pinyin it is still there. Maybe
+    # we need a better conversion from pinyin to IPA that
+    # includes tone symbols if espeak-ng doesn't do a good job
+    # on this.
+    return " ".join([x[0] for x in pinyin(text)])
+
+
 def get_language_id(language):
     if language == "de":
         return torch.LongTensor([1])
@@ -305,11 +367,26 @@ def get_language_id(language):
         return torch.LongTensor([11])
     elif language == "en":
         return torch.LongTensor([12])
+    elif language == "cmn":
+        return torch.LongTensor([13])
+    elif language == "vi":
+        return torch.LongTensor([14])
+    elif language == "uk":
+        return torch.LongTensor([15])
 
 
 if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="en")
-    print(tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True))
+    tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
 
     tf = ArticulatoryCombinedTextFrontend(language="de")
-    print(tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True))
+    tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True)
+
+    tf = ArticulatoryCombinedTextFrontend(language="cmn")
+    tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
+    tf.string_to_tensor("李绅 《悯农》    锄禾日当午，    汗滴禾下土。    谁知盘中餐，    粒粒皆辛苦。", view=True)
+    tf.string_to_tensor("巴	拔	把	爸	吧", view=True)
+
+    tf = ArticulatoryCombinedTextFrontend(language="vi")
+    tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
+    tf.string_to_tensor("ba bà bá bạ bả bã", view=True)

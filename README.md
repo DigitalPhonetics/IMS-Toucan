@@ -100,10 +100,16 @@ not, and you have the sufficient rights, you can install it by simply running
 apt-get install espeak-ng
 ```
 
+For other systems, e.g. Windows, they provide a convenient .msi installer file
+[on their github release page](https://github.com/espeak-ng/espeak-ng/releases). After installation on non-linux
+systems, you'll also need to tell the phonemizer library where to find your espeak installation, which is discussed in
+[this issue](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718). Since the project is still in
+active development, there are frequent updates, which can actually benefit your use significantly.
+
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. Go into the release section and 
-download the aligner model, the HiFiGAN model and the multi-lingual-multi-speaker FastSpeech2 model. Place them in 
+You don't need to use pretrained models, but it can speed things up tremendously. Go into the release section and
+download the aligner model, the HiFiGAN model and the multi-lingual-multi-speaker FastSpeech2 model. Place them in
 *Models/Aligner/aligner.pt*, *Models/HiFiGAN_combined/best.pt* and *Models/FastSpeech2_Meta/best.pt*.
 
 ---

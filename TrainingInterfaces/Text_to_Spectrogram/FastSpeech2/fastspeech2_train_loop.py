@@ -42,6 +42,10 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
+    elif lang == "cmn":
+        sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
+    elif lang == "vi":
+        sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     spec, durations, *_ = net.inference(text=phoneme_vector,
                                         return_duration_pitch_energy=True,
