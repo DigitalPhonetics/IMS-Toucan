@@ -12,6 +12,9 @@ from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Parselmouth import Parselmouth
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Crepe import Crepe
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Yin import Yin
 
 
 class UtteranceCloner:
@@ -36,7 +39,10 @@ class UtteranceCloner:
         acoustic_model = Aligner()
         acoustic_model.load_state_dict(self.aligner_weights)
         acoustic_model = acoustic_model.to(self.device)
-        dio = Dio(reduction_factor=1, fs=16000)
+        # dio = Dio(reduction_factor=1, fs=16000)
+        # parsel = Parselmouth(reduction_factor=1, fs=16000)
+        # crepe = Crepe(reduction_factor=1, fs=16000)
+        yin = Yin(reduction_factor=1, fs=16000)
         energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
         dc = DurationCalculator(reduction_factor=1)
         wave, sr = sf.read(ref_audio_path)
@@ -54,6 +60,7 @@ class UtteranceCloner:
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
         text = tf.string_to_tensor(transcript, handle_missing=False).squeeze(0)
+        print(text)
         melspec = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1)
         melspec_length = torch.LongTensor([len(melspec)]).numpy()
 
@@ -93,7 +100,22 @@ class UtteranceCloner:
                              feats_lengths=melspec_length,
                              durations=duration.unsqueeze(0),
                              durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
-        pitch = dio(input_waves=norm_wave.unsqueeze(0),
+        # pitch = dio(input_waves=norm_wave.unsqueeze(0),
+        #             input_waves_lengths=norm_wave_length,
+        #             feats_lengths=melspec_length,
+        #             durations=duration.unsqueeze(0),
+        #             durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
+        # pitch = parsel(input_waves=norm_wave.unsqueeze(0),
+        #             input_waves_lengths=norm_wave_length,
+        #             feats_lengths=melspec_length,
+        #             durations=duration.unsqueeze(0),
+        #             durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
+        # pitch = crepe(input_waves=norm_wave.unsqueeze(0),
+        #             input_waves_lengths=norm_wave_length,
+        #             feats_lengths=melspec_length,
+        #             durations=duration.unsqueeze(0),
+        #             durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
+        pitch = yin(input_waves=norm_wave.unsqueeze(0),
                     input_waves_lengths=norm_wave_length,
                     feats_lengths=melspec_length,
                     durations=duration.unsqueeze(0),
@@ -126,20 +148,20 @@ class UtteranceCloner:
 if __name__ == '__main__':
     uc = UtteranceCloner(model_id="Meta", device="cuda" if torch.cuda.is_available() else "cpu")
 
-    uc.clone_utterance(path_to_reference_audio="audios/test.wav",
-                       reference_transcription="Hello world, this is a test.",
-                       filename_of_result="audios/test_cloned.wav",
+    uc.clone_utterance(path_to_reference_audio="/Users/kockja/Documents/PhD/adept/human/3.wav",
+                       reference_transcription="Flour is in a separate aisle from other baking supplies?",
+                       filename_of_result="audios/test_yin_3.wav",
                        clone_speaker_identity=True,
                        lang="en")
 
-    uc.clone_utterance(path_to_reference_audio="audios/test.wav",
-                       reference_transcription="Hello, world, this, is, a, test.",
-                       filename_of_result="audios/test_cloned_unnecessary_pauses.wav",
-                       clone_speaker_identity=False,
-                       lang="en")
+    # uc.clone_utterance(path_to_reference_audio="audios/test.wav",
+    #                    reference_transcription="Hello, world, this, is, a, test.",
+    #                    filename_of_result="audios/test_cloned_unnecessary_pauses.wav",
+    #                    clone_speaker_identity=False,
+    #                    lang="en")
 
-    uc.clone_utterance(path_to_reference_audio="audios/test_sing.wav",
-                       reference_transcription="It was, one hundred degrees, as we sat, beneath, a willow tree, whose tears didn't care, they just hung in the air and refused, to fall.",
-                       filename_of_result="audios/test_sing_cloned.wav",
-                       clone_speaker_identity=False,
-                       lang="en")
+    # uc.clone_utterance(path_to_reference_audio="audios/test_sing.wav",
+    #                    reference_transcription="It was, one hundred degrees, as we sat, beneath, a willow tree, whose tears didn't care, they just hung in the air and refused, to fall.",
+    #                    filename_of_result="audios/test_sing_cloned.wav",
+    #                    clone_speaker_identity=False,
+    #                    lang="en")
