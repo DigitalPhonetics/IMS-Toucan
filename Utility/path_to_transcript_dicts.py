@@ -142,7 +142,7 @@ def build_path_to_transcript_dict_integration_test():
     path_to_transcript = dict()
     with open(os.path.join(root, "metadata.csv"), "r", encoding="utf8") as file:
         lookup = file.read()
-    for line in lookup.split("\n")[500:]:
+    for line in lookup.split("\n")[:500]:
         if line.strip() != "":
             norm_transcript = line.split("|")[1]
             wav_path = os.path.join(root, "wav", line.split("|")[0] + ".wav")

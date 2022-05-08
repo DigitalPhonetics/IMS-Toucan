@@ -35,7 +35,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     os.makedirs(save_dir, exist_ok=True)
 
     train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
-                                          corpus_dir=os.path.join("Corpora", "Nancy"),
+                                          corpus_dir=os.path.join("Corpora", "IntegrationTest"),
                                           lang="en")
 
     model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
