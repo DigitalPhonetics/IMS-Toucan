@@ -89,7 +89,7 @@ class FastSpeechDataset(Dataset):
                 text_without_word_boundaries = list()
                 indexes_of_word_boundaries = list()
                 for phoneme_index, vector in enumerate(text):
-                    if vector[13] == 0:
+                    if vector[19] == 0:
                         text_without_word_boundaries.append(vector)
                         indexes_of_word_boundaries.append(phoneme_index)
                 matrix_without_word_boundaries = torch.Tensor(vector)
