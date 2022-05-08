@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_EnglishSingleSpeaker import run as integration_test
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
