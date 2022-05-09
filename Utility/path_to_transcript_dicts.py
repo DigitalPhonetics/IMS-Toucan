@@ -340,7 +340,7 @@ def build_path_to_transcript_dict_vietTTS():
     for line in transcriptions:
         if line.strip() != "":
             audio_path, transcript = line.split("\t")
-            path_to_transcript[audio_path] = transcript
+            path_to_transcript[os.path.join(root, audio_path)] = transcript
     return path_to_transcript
 
 

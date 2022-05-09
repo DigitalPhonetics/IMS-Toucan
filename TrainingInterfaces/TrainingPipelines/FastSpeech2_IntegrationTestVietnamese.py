@@ -37,7 +37,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
                                           corpus_dir=os.path.join("Corpora", "VietTTS"),
                                           lang="vi",
-                                          save_imgs=True)
+                                          save_imgs=False)
 
     model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
 
