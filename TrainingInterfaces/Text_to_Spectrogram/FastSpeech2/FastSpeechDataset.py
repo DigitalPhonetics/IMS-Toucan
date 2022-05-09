@@ -80,14 +80,28 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
-                # TODO 2 versions of text created here: with and without word boundaries. Note index of word boundaries and reinsert with dur, pi, en 0 afterwards
+                # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
+                # We note the index of word boundaries and insert durations of 0 afterwards
+                text_without_word_boundaries = list()
+                indexes_of_word_boundaries = list()
+                for phoneme_index, vector in enumerate(text):
+                    if vector[19] == 0:
+                        text_without_word_boundaries.append(vector.numpy().tolist())
+                    else:
+                        indexes_of_word_boundaries.append(phoneme_index)
+                matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
-                                                                    tokens=text.to(device),
+                                                                    tokens=matrix_without_word_boundaries.to(device),
                                                                     save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                     return_ctc=True)
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
+
+                for index_of_word_boundary in indexes_of_word_boundaries:
+                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
+                                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
+                                                 cached_duration[index_of_word_boundary:]])
 
                 last_vec = None
                 for phoneme_index, vec in enumerate(text):
