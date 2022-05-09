@@ -226,15 +226,19 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('1', "˥")
             phones = phones.replace('2', "˧\u030C")
             phones = phones.replace('ɜ', "˨\u0302\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('3', "˨\u0302\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
             phones = phones.replace('4', "˦\u0302")
             phones = phones.replace('5', "˧")
             phones = phones.replace('0', "˧")
         if self.g2p_lang == "vi":
+            phones = phones.replace('1', "˧")
             phones = phones.replace('2', "˩\u0302")
             phones = phones.replace('ɜ', "˧\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('3', "˧\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
             phones = phones.replace('4', "˧\u0302\u030C")
             phones = phones.replace('5', "˧\u030C")
             phones = phones.replace('6', "˧\u0302")
+            phones = phones.replace('7', "˧")
         replacements = [
             # punctuation in languages with non-latin script
             ("。", "."),
