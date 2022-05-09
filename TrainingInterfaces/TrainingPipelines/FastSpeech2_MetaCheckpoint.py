@@ -46,8 +46,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     portuguese_datasets = list()
     polish_datasets = list()
     italian_datasets = list()
-    vietnamese_datasets = list()
     chinese_datasets = list()
+    vietnamese_datasets = list()
 
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                                       corpus_dir=os.path.join("Corpora", "Nancy"),

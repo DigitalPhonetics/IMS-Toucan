@@ -333,10 +333,15 @@ def build_path_to_transcript_dict_css10cmn():
 
 
 def build_path_to_transcript_dict_vietTTS():
-    """
-    placeholder
-    """
-    return None
+    path_to_transcript = dict()
+    root = "/mount/resources/speech/corpora/VietTTS"
+    with open(root + "/meta_data.tsv", encoding="utf8") as f:
+        transcriptions = f.read()
+    for line in transcriptions:
+        if line.strip() != "":
+            audio_path, transcript = line.split("\t")
+            path_to_transcript[audio_path] = transcript
+    return path_to_transcript
 
 
 def build_path_to_transcript_dict_thorsten():
