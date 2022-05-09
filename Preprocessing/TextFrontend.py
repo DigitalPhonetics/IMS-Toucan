@@ -250,6 +250,7 @@ class ArticulatoryCombinedTextFrontend:
             # latin script punctuation
             ("/", " "),
             ("—", ""),
+            ("...", "…"),
             ("\n", " "),
             ("\t", " "),
             ("¡", ""),
