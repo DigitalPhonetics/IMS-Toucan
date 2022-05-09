@@ -211,7 +211,7 @@ class ArticulatoryCombinedTextFrontend:
 
         return torch.Tensor(phones_vector, device=device)
 
-    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False):
+    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
         # phonemize
@@ -311,6 +311,9 @@ class ArticulatoryCombinedTextFrontend:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
         if include_eos_symbol:
             phones += "#"
+
+        if for_plot_labels:
+            phones = phones.replace(" ", "|")
 
         phones = "~" + phones
         phones = re.sub("~+", "~", phones)

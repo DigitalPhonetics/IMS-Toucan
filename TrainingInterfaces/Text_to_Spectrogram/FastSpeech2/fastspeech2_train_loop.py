@@ -67,7 +67,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence))
+    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True))
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
