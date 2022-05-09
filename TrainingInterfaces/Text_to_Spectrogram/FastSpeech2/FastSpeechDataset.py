@@ -5,7 +5,6 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-import Preprocessing.TextFrontend
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
@@ -81,18 +80,16 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
-                tf = Preprocessing.TextFrontend.ArticulatoryCombinedTextFrontend(lang="en")
-                text = tf.string_to_tensor("a e i o u")  # THIS IS FOR A ONE OFF TEST; REMOVE ONCE IT WORKS
-
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
                 # We note the index of word boundaries and insert durations of 0 afterwards
                 text_without_word_boundaries = list()
                 indexes_of_word_boundaries = list()
                 for phoneme_index, vector in enumerate(text):
                     if vector[19] == 0:
-                        text_without_word_boundaries.append(vector)
+                        text_without_word_boundaries.append(vector.numpy().tolist())
+                    else:
                         indexes_of_word_boundaries.append(phoneme_index)
-                matrix_without_word_boundaries = torch.Tensor(vector)
+                matrix_without_word_boundaries = torch.cat(text_without_word_boundaries)
 
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
                                                                     tokens=matrix_without_word_boundaries.to(device),
@@ -101,20 +98,10 @@ class FastSpeechDataset(Dataset):
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
-                print(text)
-                print("\n")
-                print(matrix_without_word_boundaries)
-                print("\n")
-                print(cached_duration)
-
-                for indexes_added_so_far, index_of_word_boundary in enumerate(indexes_of_word_boundaries):
-                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary + indexes_added_so_far],
+                for index_of_word_boundary in indexes_of_word_boundaries:
+                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
                                                  torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
-                                                 cached_duration[index_of_word_boundary + indexes_added_so_far:]])
-
-                print("\n")
-                print(cached_duration)
-                print("\n\n\n\n\n\n")
+                                                 cached_duration[index_of_word_boundary:]])
 
                 last_vec = None
                 for phoneme_index, vec in enumerate(text):
