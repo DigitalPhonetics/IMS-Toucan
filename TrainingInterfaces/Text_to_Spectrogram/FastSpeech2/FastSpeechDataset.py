@@ -89,7 +89,7 @@ class FastSpeechDataset(Dataset):
                         text_without_word_boundaries.append(vector.numpy().tolist())
                     else:
                         indexes_of_word_boundaries.append(phoneme_index)
-                matrix_without_word_boundaries = torch.cat(text_without_word_boundaries)
+                matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
                                                                     tokens=matrix_without_word_boundaries.to(device),
