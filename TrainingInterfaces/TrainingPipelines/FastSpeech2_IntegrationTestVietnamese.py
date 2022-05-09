@@ -31,13 +31,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_IntegrationTestChinese")
+        save_dir = os.path.join("Models", "FastSpeech2_IntegrationTestVietnamese")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn(),
-                                          corpus_dir=os.path.join("Corpora", "css10_chinese"),
-                                          lang="cmn",
-                                          save_imgs=True)
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
+                                          corpus_dir=os.path.join("Corpora", "VietTTS"),
+                                          lang="vi",
+                                          save_imgs=False)
 
     model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
 
@@ -48,7 +48,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                save_directory=save_dir,
                steps=20000,
                batch_size=32,
-               lang="cmn",
+               lang="vi",
                lr=0.001,
                epochs_per_save=1,
                warmup_steps=4000,
