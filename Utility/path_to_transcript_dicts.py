@@ -337,7 +337,7 @@ def build_path_to_transcript_dict_vietTTS():
     root = "/mount/resources/speech/corpora/VietTTS"
     with open(root + "/meta_data.tsv", encoding="utf8") as f:
         transcriptions = f.read()
-    for line in transcriptions:
+    for line in transcriptions.split("\n"):
         if line.strip() != "":
             parsed_line = line.split(".wav")
             audio_path = parsed_line[0]
