@@ -11,7 +11,7 @@ from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
 
 
 class FastSpeechDataset(Dataset):
@@ -62,7 +62,7 @@ class FastSpeechDataset(Dataset):
             # ==========================================
 
             acoustic_model = acoustic_model.to(device)
-            dio = Dio(reduction_factor=reduction_factor, fs=16000)
+            parsel = Parselmouth(reduction_factor=reduction_factor, fs=16000)
             energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
@@ -107,12 +107,14 @@ class FastSpeechDataset(Dataset):
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
+                                            text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
+                cached_pitch = parsel(input_waves=norm_wave.unsqueeze(0),
                                    input_waves_lengths=norm_wave_length,
                                    feats_lengths=melspec_length,
+                                   text=text,
                                    durations=cached_duration.unsqueeze(0),
                                    durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 

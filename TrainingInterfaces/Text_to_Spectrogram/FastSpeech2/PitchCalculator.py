@@ -3,23 +3,23 @@
 # Adapted by Florian Lux 2021
 
 import numpy as np
-import pyworld
+import math
+import parselmouth
 import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
 
 from Utility.utils import pad_list
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class Dio(torch.nn.Module):
+class Parselmouth(torch.nn.Module):
     """
-    F0 estimation with dio + stonemask algortihm.
-    This is f0 extractor based on dio + stonemask algorithm
-    introduced in https://doi.org/10.1587/transinf.2015EDP7457
+    F0 estimation with Parselmouth https://parselmouth.readthedocs.io/en/stable/index.html
     """
 
     def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=400, use_token_averaged_f0=True,
-                 use_continuous_f0=True, use_log_f0=True, reduction_factor=1):
+                 use_continuous_f0=False, use_log_f0=False, reduction_factor=1):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
@@ -43,21 +43,24 @@ class Dio(torch.nn.Module):
                     reduction_factor=self.reduction_factor)
 
     def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
-                durations_lengths=None, norm_by_average=True):
+                durations_lengths=None, norm_by_average=True, text=None):
         # If not provided, we assume that the inputs have the same length
         if input_waves_lengths is None:
             input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
         # F0 extraction
         pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
-
+        num_frames = [math.ceil(w/self.hop_length) for w in input_waves_lengths]
+    
+        pitch = [self._adjust_num_frames(p, nf).view(-1) for p, nf in zip(pitch, num_frames)]
+    
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
             pitch = [self._adjust_num_frames(p, fl).view(-1) for p, fl in zip(pitch, feats_lengths)]
 
         # (Optional): Average by duration to calculate token-wise f0
         if self.use_token_averaged_f0:
-            pitch = [self._average_by_duration(p, d).view(-1) for p, d in zip(pitch, durations)]
+            pitch = [self._average_by_duration(p, d, text).view(-1) for p, d in zip(pitch, durations)]
             pitch_lengths = durations_lengths
         else:
             pitch_lengths = input_waves.new_tensor([len(p) for p in pitch], dtype=torch.long)
@@ -73,8 +76,8 @@ class Dio(torch.nn.Module):
 
     def _calculate_f0(self, input):
         x = input.cpu().numpy().astype(np.double)
-        f0, timeaxis = pyworld.dio(x, self.fs, f0_floor=self.f0min, f0_ceil=self.f0max, frame_period=self.frame_period)
-        f0 = pyworld.stonemask(x, f0, timeaxis, self.fs)
+        snd = parselmouth.Sound(values=x,sampling_frequency=self.fs)
+        f0 = snd.to_pitch(time_step=self.hop_length/self.fs, pitch_floor=self.f0min, pitch_ceiling=self.f0max).selected_array['frequency']
         if self.use_continuous_f0:
             f0 = self._convert_to_continuous_f0(f0)
         if self.use_log_f0:
@@ -85,7 +88,8 @@ class Dio(torch.nn.Module):
     @staticmethod
     def _adjust_num_frames(x, num_frames):
         if num_frames > len(x):
-            x = F.pad(x, (0, num_frames - len(x)))
+            # x = F.pad(x, (0, num_frames - len(x)))
+            x = F.pad(x, (math.ceil((num_frames - len(x))/2), math.floor((num_frames - len(x))/2)))
         elif num_frames < len(x):
             x = x[:num_frames]
         return x
@@ -112,10 +116,22 @@ class Dio(torch.nn.Module):
 
         return f0
 
-    def _average_by_duration(self, x, d):
+    def _average_by_duration(self, x, d, text=None):
+
         assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [
             x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
+
+         # find tokens that are not phoneme and set pitch to 0
+        if text is not None:
+            tf = ArticulatoryCombinedTextFrontend(language='en')
+            for i, vector in enumerate(text):
+                for phone in tf.phone_to_vector:
+                    if vector.numpy().tolist()[11:] == tf.phone_to_vector[phone][11:]:
+                        # idx 13 corresponds to 'phoneme' feature
+                        if vector[13] == 0:
+                            x_avg[i] = torch.tensor(0.0)
+                          
         return torch.stack(x_avg)

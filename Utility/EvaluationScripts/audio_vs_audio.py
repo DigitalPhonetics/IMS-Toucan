@@ -11,8 +11,8 @@ from scipy.spatial.distance import cdist
 from sklearn.metrics import mean_squared_error
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Parselmouth import Parselmouth
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Dio import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Crepe import Crepe
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Yin import Yin
 from Utility.EvaluationScripts.soft_dtw import SoftDTW
@@ -248,7 +248,7 @@ def get_pitch_curves_abc(path_1, path_2, path_3):
     plt.tight_layout()
     plt.show()
 
-def get_pitch_curve_diff_extractors(audio_path):
+def get_pitch_curve_diff_extractors(audio_path, text=None):
     wave, sr = sf.read(audio_path)
 
     ap = AudioPreprocessor(cut_silence=True, input_sr=sr, output_sr=16000, fmax_for_spec=1000)
