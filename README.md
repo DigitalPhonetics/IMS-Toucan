@@ -36,7 +36,7 @@ the other branches. They are separated to keep the code clean, simple and minima
 ---
 
 ## New Features 🐣
-
+### 2021
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
 - [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
@@ -44,22 +44,34 @@ the other branches. They are separated to keep the code clean, simple and minima
   spectrograms as input, but produces 48kHz waveforms.
 - We now use articulatory representations of phonemes as the input for all models. This allows us to easily use 
   multilingual data to benefit less resource-rich languages. 
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to 
-  fine-tune a model with very little data in almost any language. The last two contributions are described in 
-  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)! 
-- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction objective, inspired by
-  [this implementation](https://github.com/as-ideas/DeepForcedAligner). 
-- By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language embeddings, 
-  multi-lingual and multi-speaker models are possible. 
-- We experimented with encoder designs and found one that allows speakers and languages to be very 
-  disentangled, so you can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
-- Vocoders can also be used to do some slight speech-enhancement by corrupting a small percentage of their input spectrograms, 
-  which we also added and experimented with.
-- Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with everything else! 
-  So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum customizability. 
-  We apply this to literary studies.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to
+  fine-tune a model with very little data in almost any language. The last two contributions are described in
+  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)!
+- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
+  objective, inspired by
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner).
+- By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language
+  embeddings, multi-lingual and multi-speaker models are possible.
+- We experimented with encoder designs and found one that allows speakers and languages to be very disentangled, so you
+  can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
+- Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with
+  everything else!
+  So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum
+  customizability. We apply this to literary studies.
 
-**A pretrained checkpoint for our massively multi-lingual model and the self contained aligner is available in the release section.**
+### 2022
+
+- We reworked our input representation to now include tone, lengthening and primary stress. All phonemes in the IPA
+  standard are now supported, so you can train on **any** language, as long as you have a way to convert text to IPA. We
+  also include word-boundary pseudo-tokens which are only visible to the text encoder.
+- We added a scorer utility to inspect your data and find potentially problematic samples.
+- [Temporary Note] If you have models from before May 2022, they have become incompatible with the current state of the
+  toolkit. Also you might need to upgrade your version of the phonemizer dependency and espeak-ng.
+
+### Pretrained models are available!
+
+Pretrained checkpoints for our massively multi-lingual model and the self-contained aligner are available in the
+[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases).
 
 ---
 
