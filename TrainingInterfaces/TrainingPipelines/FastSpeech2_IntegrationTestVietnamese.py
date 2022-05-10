@@ -46,7 +46,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=20000,
+               steps=60000,
                batch_size=32,
                lang="vi",
                lr=0.001,

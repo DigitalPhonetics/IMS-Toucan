@@ -153,6 +153,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                                                       corpus_dir=os.path.join("Corpora", "css10_chinese"),
                                                       lang="cmn"))
 
+    chinese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_aishell3(),
+                                                      corpus_dir=os.path.join("Corpora", "aishell3"),
+                                                      lang="cmn"))
+
     vietnamese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
                                                          corpus_dir=os.path.join("Corpora", "VietTTS"),
                                                          lang="vi"))

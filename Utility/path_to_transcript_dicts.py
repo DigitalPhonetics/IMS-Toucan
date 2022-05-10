@@ -492,3 +492,17 @@ def build_path_to_transcript_dict_3xljspeech():
         wav_path = "/mount/arbeitsdaten/synthesis/attention_projects/LJSpeech_3xlong_stripped/wav_long/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_aishell3():
+    root = "/mount/resources/speech/corpora/aishell3/train"
+    path_to_transcript_dict = dict()
+    with open(root + "/label_train-set.txt", mode="r", encoding="utf8") as f:
+        transcripts = f.read().replace("$", "").replace("%", ",").split("\n")
+    for transcript in transcripts:
+        if transcript.strip() != "":
+            parsed_line = transcript.split("|")
+            audio_file = f"{root}/wav/{parsed_line[0][:8]}/{parsed_line[0]}.wav"
+            kanji = parsed_line[2]
+            path_to_transcript_dict[audio_file] = kanji
+    return path_to_transcript_dict
