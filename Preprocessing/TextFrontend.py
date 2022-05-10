@@ -282,7 +282,7 @@ class ArticulatoryCombinedTextFrontend:
             (":", "~"),
             (";", "~"),
             (",", "~")  # make sure this remains the final one when adding new ones
-            ]
+        ]
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
                                       '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
@@ -304,7 +304,7 @@ class ArticulatoryCombinedTextFrontend:
                 ("˩", ""),  # very low tone
                 ('\u030C', ""),  # rising tone
                 ('\u0302', "")  # falling tone
-                ]
+            ]
         for replacement in replacements:
             phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)

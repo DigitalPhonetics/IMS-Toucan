@@ -8,8 +8,8 @@ import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
 
-from Utility.utils import pad_list
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Utility.utils import pad_list
 
 
 class Dio(torch.nn.Module):
@@ -121,7 +121,7 @@ class Dio(torch.nn.Module):
             x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
-         # find tokens that are not phoneme and set pitch to 0
+        # find tokens that are not phoneme and set pitch to 0
         if text is not None:
             tf = ArticulatoryCombinedTextFrontend(language='en')
             for i, vector in enumerate(text):
@@ -130,7 +130,7 @@ class Dio(torch.nn.Module):
                         # idx 13 corresponds to 'phoneme' feature
                         if vector[13] == 0:
                             x_avg[i] = torch.tensor(0.0)
-                                           
+
         return torch.stack(x_avg)
 
     # def _average_by_duration(self, x, d, text=None):

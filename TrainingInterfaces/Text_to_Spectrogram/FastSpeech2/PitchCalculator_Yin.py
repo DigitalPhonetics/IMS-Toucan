@@ -2,15 +2,16 @@
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux 2021
 
-import numpy as np
 import math
+
+import numpy as np
 import torch
-import torchyin
 import torch.nn.functional as F
+import torchyin
 from scipy.interpolate import interp1d
 
-from Utility.utils import pad_list
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Utility.utils import pad_list
 
 
 class Yin(torch.nn.Module):
@@ -50,7 +51,7 @@ class Yin(torch.nn.Module):
 
         # F0 extraction
         pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
-        num_frames = [math.ceil(w/self.hop_length) for w in input_waves_lengths]
+        num_frames = [math.ceil(w / self.hop_length) for w in input_waves_lengths]
         pitch = [self._adjust_num_frames(p, nf).view(-1) for p, nf in zip(pitch, num_frames)]
 
         # (Optional): Adjust length to match with the mel-spectrogram
@@ -75,8 +76,8 @@ class Yin(torch.nn.Module):
 
     def _calculate_f0(self, input):
         x = input.cpu().numpy().astype(np.double)
-        f0 = torchyin.estimate(x, sample_rate=self.fs, pitch_min=self.f0min, pitch_max=self.f0max, frame_stride=self.hop_length/self.fs)
-        
+        f0 = torchyin.estimate(x, sample_rate=self.fs, pitch_min=self.f0min, pitch_max=self.f0max, frame_stride=self.hop_length / self.fs)
+
         if self.use_continuous_f0:
             f0 = self._convert_to_continuous_f0(f0)
         if self.use_log_f0:
@@ -88,7 +89,7 @@ class Yin(torch.nn.Module):
     def _adjust_num_frames(x, num_frames):
         if num_frames > len(x):
             # x = F.pad(x, (0, num_frames - len(x)))
-            x = F.pad(x, (math.ceil((num_frames - len(x))/2), math.floor((num_frames - len(x))/2)))
+            x = F.pad(x, (math.ceil((num_frames - len(x)) / 2), math.floor((num_frames - len(x)) / 2)))
         elif num_frames < len(x):
             x = x[:num_frames]
         return x
@@ -123,7 +124,7 @@ class Yin(torch.nn.Module):
             x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
-         # find tokens that are not phoneme and set pitch to 0
+        # find tokens that are not phoneme and set pitch to 0
         if text is not None:
             tf = ArticulatoryCombinedTextFrontend(language='en')
             for i, vector in enumerate(text):
@@ -132,5 +133,5 @@ class Yin(torch.nn.Module):
                         # idx 13 corresponds to 'phoneme' feature
                         if vector[13] == 0:
                             x_avg[i] = torch.tensor(0.0)
-                                      
+
         return torch.stack(x_avg)

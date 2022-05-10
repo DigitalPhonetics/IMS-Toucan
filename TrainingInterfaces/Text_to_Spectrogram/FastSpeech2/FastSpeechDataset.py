@@ -126,11 +126,11 @@ class FastSpeechDataset(Dataset):
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
                 cached_pitch = parsel(input_waves=norm_wave.unsqueeze(0),
-                                   input_waves_lengths=norm_wave_length,
-                                   feats_lengths=melspec_length,
-                                   text=text,
-                                   durations=cached_duration.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
+                                      input_waves_lengths=norm_wave_length,
+                                      feats_lengths=melspec_length,
+                                      text=text,
+                                      durations=cached_duration.unsqueeze(0),
+                                      durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
                 try:
                     prosodic_condition = pros_cond_ext.extract_condition_from_reference_wave(norm_wave, already_normalized=True).cpu()

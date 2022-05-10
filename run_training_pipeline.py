@@ -9,13 +9,13 @@ from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "meta"                       : meta_fast,
-    "hifi_combined"              : hifigan_combined,
-    "aligner"                    : aligner,
-    "fine_ger"                   : fine_ger,
-    "integration_test"           : integration_test,
+    "meta": meta_fast,
+    "hifi_combined": hifigan_combined,
+    "aligner": aligner,
+    "fine_ger": fine_ger,
+    "integration_test": integration_test,
     "integration_test_vietnamese": integration_test_vietnamese
-    }
+}
 
 if __name__ == '__main__':
 

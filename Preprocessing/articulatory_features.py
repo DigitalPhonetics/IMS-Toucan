@@ -189,12 +189,12 @@ def generate_feature_lookup():
             'consonant_manner': 'fricative'
         },
         'ɡ': {
-            'symbol_type'     : 'phoneme',
-            'vowel_consonant' : 'consonant',
-            'VUV'             : 'voiced',
-            'consonant_place' : 'velar',
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'velar',
             'consonant_manner': 'plosive'
-            },
+        },
         'h': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'consonant',
@@ -246,12 +246,12 @@ def generate_feature_lookup():
             'consonant_manner': 'nasal'
         },
         'ɳ': {
-            'symbol_type'     : 'phoneme',
-            'vowel_consonant' : 'consonant',
-            'VUV'             : 'voiced',
-            'consonant_place' : 'retroflex',
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'voiced',
+            'consonant_place': 'retroflex',
             'consonant_manner': 'nasal'
-            },
+        },
         'o': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'vowel',
@@ -464,13 +464,13 @@ def generate_feature_lookup():
             'consonant_manner': 'lateral-approximant'
         },
         'ɵ': {
-            'symbol_type'      : 'phoneme',
-            'vowel_consonant'  : 'vowel',
-            'VUV'              : 'voiced',
-            'vowel_frontness'  : 'central',
-            'vowel_openness'   : 'close-mid',
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'vowel',
+            'VUV': 'voiced',
+            'vowel_frontness': 'central',
+            'vowel_openness': 'close-mid',
             'vowel_roundedness': 'rounded'
-            },
+        },
         'ʑ': {
             'symbol_type': 'phoneme',
             'vowel_consonant': 'consonant',
@@ -793,12 +793,12 @@ def generate_feature_lookup():
             'consonant_manner': 'flap'
         },
         'ǃ': {  # looks deceivingly like an exclamation mark, but it's a different unicode entry
-            'symbol_type'     : 'phoneme',
-            'vowel_consonant' : 'consonant',
-            'VUV'             : 'unvoiced',
-            'consonant_place' : 'postalveolar',
+            'symbol_type': 'phoneme',
+            'vowel_consonant': 'consonant',
+            'VUV': 'unvoiced',
+            'consonant_place': 'postalveolar',
             'consonant_manner': 'click'
-            },
+        },
 
     }  # REMEMBER to also add the phonemes added here to the ID lookup below as the new highest ID
 

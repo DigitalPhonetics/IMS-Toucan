@@ -11,9 +11,9 @@ from scipy.spatial.distance import cdist
 from sklearn.metrics import mean_squared_error
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Dio import Dio
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Crepe import Crepe
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Dio import Dio
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Yin import Yin
 from Utility.EvaluationScripts.soft_dtw import SoftDTW
 
@@ -248,6 +248,7 @@ def get_pitch_curves_abc(path_1, path_2, path_3):
     plt.tight_layout()
     plt.show()
 
+
 def get_pitch_curve_diff_extractors(audio_path, text=None):
     wave, sr = sf.read(audio_path)
 
@@ -259,7 +260,6 @@ def get_pitch_curve_diff_extractors(audio_path, text=None):
     crepe = Crepe(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
     yin = Yin(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
 
-
     pitch_curve_1 = dio(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
     pitch_curve_2 = parsel(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
     pitch_curve_3 = crepe(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
@@ -270,7 +270,7 @@ def get_pitch_curve_diff_extractors(audio_path, text=None):
     print('Parsel\n', pitch_curve_2, "\n", len(pitch_curve_2))
     print('Crepe\n', pitch_curve_3, "\n", len(pitch_curve_3))
     print('Yin\n', pitch_curve_3, "\n", len(pitch_curve_4))
-    
+
     # plt.plot(pitch_curve_1, c="red")
     # plt.plot(pitch_curve_2, c="blue")
     # plt.plot(pitch_curve_3, c="green")
@@ -299,8 +299,6 @@ def get_pitch_curve_diff_extractors(audio_path, text=None):
     ax[1].set_title("Parselmouth")
     ax[1].plot(pitch_curve_2, c="darkred")
 
-
-    
     lbd.specshow(ap.audio_to_mel_spec_tensor(wave).numpy(),
                  ax=ax[2],
                  sr=16000,
@@ -311,7 +309,6 @@ def get_pitch_curve_diff_extractors(audio_path, text=None):
     ax[2].yaxis.set_visible(False)
     ax[2].set_title("Crepe")
     ax[2].plot(pitch_curve_3, c="darkred")
-
 
     lbd.specshow(ap.audio_to_mel_spec_tensor(wave).numpy(),
                  ax=ax[3],

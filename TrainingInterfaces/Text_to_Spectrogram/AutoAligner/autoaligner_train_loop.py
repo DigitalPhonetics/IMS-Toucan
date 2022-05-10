@@ -126,12 +126,12 @@ def train_loop(train_dataset,
         asr_model.eval()
         loss_this_epoch = sum(loss_sum) / len(loss_sum)
         torch.save({
-            "asr_model"    : asr_model.state_dict(),
-            "optimizer"    : optim_asr.state_dict(),
-            "tts_model"    : tiny_tts.state_dict(),
+            "asr_model": asr_model.state_dict(),
+            "optimizer": optim_asr.state_dict(),
+            "tts_model": tiny_tts.state_dict(),
             "tts_optimizer": optim_tts.state_dict(),
-            "step_counter" : step_counter,
-            },
+            "step_counter": step_counter,
+        },
             os.path.join(save_directory, "aligner.pt"))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))

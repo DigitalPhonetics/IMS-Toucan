@@ -6,8 +6,8 @@ import torch
 import torch.nn.functional as F
 
 from Layers.STFT import STFT
-from Utility.utils import pad_list
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Utility.utils import pad_list
 
 
 class EnergyCalculator(torch.nn.Module):
@@ -77,7 +77,7 @@ class EnergyCalculator(torch.nn.Module):
         assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0) for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
-         
+
         # find tokens that are not phoneme and set energy to 0
         if text is not None:
             tf = ArticulatoryCombinedTextFrontend(language='en')
@@ -87,7 +87,7 @@ class EnergyCalculator(torch.nn.Module):
                         # idx 13 corresponds to 'phoneme' feature
                         if vector[13] == 0:
                             x_avg[i] = torch.tensor(0.0)
-                                           
+
         return torch.stack(x_avg)
 
     # def _average_by_duration(self, x, d):

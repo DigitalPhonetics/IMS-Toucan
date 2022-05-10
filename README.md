@@ -5,27 +5,28 @@ IMS Toucan is a toolkit for teaching, training and using state-of-the-art Speech
 PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
 
 The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
-[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of 
-[HiFiGAN](https://arxiv.org/abs/2010.05646) are taken
-from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
+[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of
+[HiFiGAN](https://arxiv.org/abs/2010.05646) are taken from
+the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
 which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
 
-For a version of the toolkit that includes TransformerTTS, Tacotron 2 or MelGAN, check out
-the other branches. They are separated to keep the code clean, simple and minimal as the development progresses.
+For a version of the toolkit that includes TransformerTTS, Tacotron 2 or MelGAN, check out the other branches. They are
+separated to keep the code clean, simple and minimal as the development progresses.
 
 ---
 
 ## Demonstration 🦚
 
 ### Pre-Generated Audios
+
 [Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
 
 [Cloning prosody across speakers](https://toucanprosodycloningdemo.github.io)
 
 [Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/).
 
-
 ### Interactive Demos
+
 [Check out our multi-lingual demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
 
 [Check out our demo on exact style cloning on Huggingface🤗](https://huggingface.co/spaces/Flux9665/SpeechCloning)
@@ -36,21 +37,23 @@ the other branches. They are separated to keep the code clean, simple and minima
 ---
 
 ## New Features 🐣
+
 ### 2021
+
 - We officially introduced IMS Toucan in
   [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
 - [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
   super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
   spectrograms as input, but produces 48kHz waveforms.
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use 
-  multilingual data to benefit less resource-rich languages. 
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
+  multilingual data to benefit less resource-rich languages.
 - We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to
   fine-tune a model with very little data in almost any language. The last two contributions are described in
   [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)!
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
   objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner).
-- By conditioning the TTS on an ensemble of speaker embeddings as well an an embedding lookup table for language
+- By conditioning the TTS on an ensemble of speaker embeddings as well as an embedding lookup table for language
   embeddings, multi-lingual and multi-speaker models are possible.
 - We experimented with encoder designs and found one that allows speakers and languages to be very disentangled, so you
   can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
@@ -175,8 +178,8 @@ different directory.
 
 In your new pipeline file, look out for the line in which the
 *acoustic_model* is loaded. Change the path to the checkpoint of an Aligner model. It can either be the one that is
-supplied with the toolkit on the release page, or one that you trained yourself. In the example pipelines, the one
-that we provide is finetuned to the dataset it is applied to before it is used to extract durations.
+supplied with the toolkit on the release page, or one that you trained yourself. In the example pipelines, the one that
+we provide is finetuned to the dataset it is applied to before it is used to extract durations.
 
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
 *Preprocessing/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the language of
@@ -203,14 +206,15 @@ Once this is done, we are almost done, now we just need to make it available to 
 Once you have a pipeline built, training is super easy. Just activate your virtual environment and run the command
 below. You might want to use something like nohup to keep it running after you log out from the server (then you should
 also add -u as option to python) and add an & to start it in the background. Also, you might want to direct the std:out
-and std:err into a specific file using > but all of that is just standard shell use and has nothing to do with the toolkit.
+and std:err into a specific file using > but all of that is just standard shell use and has nothing to do with the
+toolkit.
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>
 ```
 
 You can supply any of the following arguments, but don't have to (although for training you should definitely specify at
-least a GPU ID). It is recommended to download the pretrained checkpoint from the releases and use it as basis for 
+least a GPU ID). It is recommended to download the pretrained checkpoint from the releases and use it as basis for
 fine-tuning for any new model that you train to significantly reduce training time.
 
 ```
@@ -257,7 +261,9 @@ significantly, so you should do this and then use the
 
 ## Using a trained Model for Inference 🦢
 
-You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle identifying the model you want to use, the rest should work out in the background. You might want to set a language embedding or a speaker embedding. The methods for that should be self-explanatory.
+You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle
+identifying the model you want to use, the rest should work out in the background. You might want to set a language
+embedding or a speaker embedding. The methods for that should be self-explanatory.
 
 An *InferenceInterface* contains two useful methods. They are
 *read_to_file* and
@@ -291,10 +297,10 @@ Here are a few points that were brought up by users:
   specified GPU is set as the only visible device, in order to avoid backend stuff running accidentally on different
   GPUs. So internally the program will name the device GPU0, because it is the only GPU it can see. It is actually
   running on the GPU you specified.
-- read_to_file produces strange outputs - Check if you're passing a list to the method or a string. Since strings can be 
+- read_to_file produces strange outputs - Check if you're passing a list to the method or a string. Since strings can be
   iterated over, it might not throw an error, but a list of strings is expected.
-- `UserWarning: Detected call of lr_scheduler.step() before optimizer.step().` - We use a custom scheduler, and torch 
-  incorrectly thinks that we call the scheduler and the optimizer in the wrong order. Just ignore this warning, it is 
+- `UserWarning: Detected call of lr_scheduler.step() before optimizer.step().` - We use a custom scheduler, and torch
+  incorrectly thinks that we call the scheduler and the optimizer in the wrong order. Just ignore this warning, it is
   completely meaningless.
 
 ---
@@ -308,6 +314,7 @@ cool with it. Thank you for reading.
 ## Citation 🐧
 
 ### Introduction of the Toolkit
+
 ```
 @inproceedings{lux2021toucan,
   title={{The IMS Toucan system for the Blizzard Challenge 2021}},
@@ -320,6 +327,7 @@ cool with it. Thank you for reading.
 ```
 
 ### Adding Articulatory Features and Meta-Learning Pretraining
+
 ```
 @article{lux2022laml,
   title={{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
