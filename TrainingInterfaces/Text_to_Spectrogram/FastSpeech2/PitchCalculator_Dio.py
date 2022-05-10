@@ -3,8 +3,7 @@
 # Adapted by Florian Lux 2021
 
 import numpy as np
-import math
-import parselmouth
+import pyworld
 import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
@@ -13,9 +12,11 @@ from Utility.utils import pad_list
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class Parselmouth(torch.nn.Module):
+class Dio(torch.nn.Module):
     """
-    F0 estimation with Parselmouth https://parselmouth.readthedocs.io/en/stable/index.html
+    F0 estimation with dio + stonemask algortihm.
+    This is f0 extractor based on dio + stonemask algorithm
+    introduced in https://doi.org/10.1587/transinf.2015EDP7457
     """
 
     def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=400, use_token_averaged_f0=True,
@@ -50,10 +51,7 @@ class Parselmouth(torch.nn.Module):
 
         # F0 extraction
         pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
-        num_frames = [math.ceil(w/self.hop_length) for w in input_waves_lengths]
-    
-        pitch = [self._adjust_num_frames(p, nf).view(-1) for p, nf in zip(pitch, num_frames)]
-    
+
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
             pitch = [self._adjust_num_frames(p, fl).view(-1) for p, fl in zip(pitch, feats_lengths)]
@@ -76,8 +74,8 @@ class Parselmouth(torch.nn.Module):
 
     def _calculate_f0(self, input):
         x = input.cpu().numpy().astype(np.double)
-        snd = parselmouth.Sound(values=x,sampling_frequency=self.fs)
-        f0 = snd.to_pitch(time_step=self.hop_length/self.fs, pitch_floor=self.f0min, pitch_ceiling=self.f0max).selected_array['frequency']
+        f0, timeaxis = pyworld.dio(x, self.fs, f0_floor=self.f0min, f0_ceil=self.f0max, frame_period=self.frame_period)
+        f0 = pyworld.stonemask(x, f0, timeaxis, self.fs)
         if self.use_continuous_f0:
             f0 = self._convert_to_continuous_f0(f0)
         if self.use_log_f0:
@@ -88,8 +86,7 @@ class Parselmouth(torch.nn.Module):
     @staticmethod
     def _adjust_num_frames(x, num_frames):
         if num_frames > len(x):
-            # x = F.pad(x, (0, num_frames - len(x)))
-            x = F.pad(x, (math.ceil((num_frames - len(x))/2), math.floor((num_frames - len(x))/2)))
+            x = F.pad(x, (0, num_frames - len(x)))
         elif num_frames < len(x):
             x = x[:num_frames]
         return x
@@ -133,5 +130,13 @@ class Parselmouth(torch.nn.Module):
                         # idx 13 corresponds to 'phoneme' feature
                         if vector[13] == 0:
                             x_avg[i] = torch.tensor(0.0)
-                          
+                                           
         return torch.stack(x_avg)
+
+    # def _average_by_duration(self, x, d, text=None):
+    #     assert 0 <= len(x) - d.sum() < self.reduction_factor
+    #     d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
+    #     x_avg = [
+    #         x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
+    #         for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
+    #     return torch.stack(x_avg)

@@ -2,20 +2,20 @@
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux 2021
 
+from re import X
 import numpy as np
-import math
-import parselmouth
 import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
+import torchcrepe
 
 from Utility.utils import pad_list
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
-class Parselmouth(torch.nn.Module):
+class Crepe(torch.nn.Module):
     """
-    F0 estimation with Parselmouth https://parselmouth.readthedocs.io/en/stable/index.html
+    F0 estimation with Crepe: https://github.com/maxrmorrison/torchcrepe
     """
 
     def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=400, use_token_averaged_f0=True,
@@ -50,10 +50,7 @@ class Parselmouth(torch.nn.Module):
 
         # F0 extraction
         pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
-        num_frames = [math.ceil(w/self.hop_length) for w in input_waves_lengths]
-    
-        pitch = [self._adjust_num_frames(p, nf).view(-1) for p, nf in zip(pitch, num_frames)]
-    
+        
         # (Optional): Adjust length to match with the mel-spectrogram
         if feats_lengths is not None:
             pitch = [self._adjust_num_frames(p, fl).view(-1) for p, fl in zip(pitch, feats_lengths)]
@@ -76,8 +73,18 @@ class Parselmouth(torch.nn.Module):
 
     def _calculate_f0(self, input):
         x = input.cpu().numpy().astype(np.double)
-        snd = parselmouth.Sound(values=x,sampling_frequency=self.fs)
-        f0 = snd.to_pitch(time_step=self.hop_length/self.fs, pitch_floor=self.f0min, pitch_ceiling=self.f0max).selected_array['frequency']
+        x = input.unsqueeze(0)
+        f0 = torchcrepe.predict(x,
+                           self.fs,
+                           self.hop_length,
+                           self.f0min,
+                           self.f0max,
+                           model='full',
+                           decoder=torchcrepe.decode.weighted_argmax
+                           # batch_size=batch_size,
+                           # device=device
+                           ).squeeze(0).cpu().numpy().astype(np.double)
+        f0 = np.nan_to_num(f0, nan=0.0)
         if self.use_continuous_f0:
             f0 = self._convert_to_continuous_f0(f0)
         if self.use_log_f0:
@@ -88,8 +95,7 @@ class Parselmouth(torch.nn.Module):
     @staticmethod
     def _adjust_num_frames(x, num_frames):
         if num_frames > len(x):
-            # x = F.pad(x, (0, num_frames - len(x)))
-            x = F.pad(x, (math.ceil((num_frames - len(x))/2), math.floor((num_frames - len(x))/2)))
+            x = F.pad(x, (0, num_frames - len(x)))
         elif num_frames < len(x):
             x = x[:num_frames]
         return x
@@ -131,7 +137,7 @@ class Parselmouth(torch.nn.Module):
                 for phone in tf.phone_to_vector:
                     if vector.numpy().tolist()[11:] == tf.phone_to_vector[phone][11:]:
                         # idx 13 corresponds to 'phoneme' feature
-                        if vector[13] == 0:
+                        if vector[13] == 0:               
                             x_avg[i] = torch.tensor(0.0)
-                          
+                                              
         return torch.stack(x_avg)
