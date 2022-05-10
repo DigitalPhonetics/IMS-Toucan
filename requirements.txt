@@ -82,3 +82,4 @@ wcwidth~=0.2.5
 wincertstore~=0.2
 noisereduce
 pypinyin
+praat-parselmouth

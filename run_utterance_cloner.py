@@ -13,6 +13,7 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator impor
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
 
+
 class UtteranceCloner:
 
     def __init__(self, model_id, device):
@@ -61,11 +62,14 @@ class UtteranceCloner:
             steps = 10
             tokens = list()  # we need an ID sequence for training rather than a sequence of phonological features
             for vector in text:
-                for phone in tf.phone_to_vector:
-                    if vector.numpy().tolist() == tf.phone_to_vector[phone]:
-                        tokens.append(tf.phone_to_id[phone])
-            tokens = torch.LongTensor(tokens)
-            tokens = tokens.squeeze().to(self.device)
+                if vector[19] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
+                    for phone in tf.phone_to_vector:
+                        if vector.numpy().tolist()[11:] == tf.phone_to_vector[phone][11:]:
+                            # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                            tokens.append(tf.phone_to_id[phone])
+                            # this is terribly inefficient, but it's fine
+                            break
+            tokens = torch.LongTensor(tokens).squeeze().to(self.device)
             tokens_len = torch.LongTensor([len(tokens)]).to(self.device)
             mel = melspec.unsqueeze(0).to(self.device)
             mel.requires_grad = True
@@ -82,11 +86,43 @@ class UtteranceCloner:
                 optim_asr.step()
             acoustic_model.eval()
 
+        # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
+        # We note the index of word boundaries and insert durations of 0 afterwards
+        text_without_word_boundaries = list()
+        indexes_of_word_boundaries = list()
+        for phoneme_index, vector in enumerate(text):
+            if vector[19] == 0:
+                text_without_word_boundaries.append(vector.numpy().tolist())
+            else:
+                indexes_of_word_boundaries.append(phoneme_index)
+        matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
+
         alignment_path = acoustic_model.inference(mel=melspec.to(self.device),
-                                                  tokens=text.to(self.device),
+                                                  tokens=matrix_without_word_boundaries.to(self.device),
                                                   return_ctc=False)
 
         duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
+
+        for index_of_word_boundary in indexes_of_word_boundaries:
+            duration = torch.cat([duration[:index_of_word_boundary],
+                                  torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
+                                  duration[index_of_word_boundary:]])
+
+        last_vec = None
+        for phoneme_index, vec in enumerate(text):
+            if last_vec is not None:
+                if last_vec.numpy().tolist() == vec.numpy().tolist():
+                    # we found a case of repeating phonemes!
+                    # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
+                    dur_1 = duration[phoneme_index - 1]
+                    dur_2 = duration[phoneme_index]
+                    total_dur = dur_1 + dur_2
+                    new_dur_1 = int((total_dur / 5) * 3)
+                    new_dur_2 = total_dur - new_dur_1
+                    duration[phoneme_index - 1] = new_dur_1
+                    duration[phoneme_index] = new_dur_2
+            last_vec = vec
+
         energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                              input_waves_lengths=norm_wave_length,
                              feats_lengths=melspec_length,
@@ -94,11 +130,11 @@ class UtteranceCloner:
                              durations=duration.unsqueeze(0),
                              durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
         pitch = parsel(input_waves=norm_wave.unsqueeze(0),
-                    input_waves_lengths=norm_wave_length,
-                    feats_lengths=melspec_length,
-                    text=text,
-                    durations=duration.unsqueeze(0),
-                    durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
+                       input_waves_lengths=norm_wave_length,
+                       feats_lengths=melspec_length,
+                       text=text,
+                       durations=duration.unsqueeze(0),
+                       durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
         return duration, pitch, energy, speech_timestamps[0]['start'], speech_timestamps[-1]['end']
 
     def clone_utterance(self,
@@ -124,16 +160,10 @@ class UtteranceCloner:
 
 
 if __name__ == '__main__':
-    uc = UtteranceCloner(model_id="Meta", device="cuda" if torch.cuda.is_available() else "cpu")
+    uc = UtteranceCloner(model_id="Vietnamese", device="cuda" if torch.cuda.is_available() else "cpu")
 
     uc.clone_utterance(path_to_reference_audio="audios/test.wav",
-                       reference_transcription="Hello, world, this, is, a, test.",
-                       filename_of_result="audios/test_cloned_unnecessary_pauses.wav",
-                       clone_speaker_identity=False,
-                       lang="en")
-
-    uc.clone_utterance(path_to_reference_audio="audios/test_sing.wav",
-                       reference_transcription="It was, one hundred degrees, as we sat, beneath, a willow tree, whose tears didn't care, they just hung in the air and refused, to fall.",
-                       filename_of_result="audios/test_sing_cloned.wav",
+                       reference_transcription="Hello world, this is a test.",
+                       filename_of_result="audios/test_cloned.wav",
                        clone_speaker_identity=False,
                        lang="en")

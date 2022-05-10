@@ -64,6 +64,7 @@ the other branches. They are separated to keep the code clean, simple and minima
 - We reworked our input representation to now include tone, lengthening and primary stress. All phonemes in the IPA
   standard are now supported, so you can train on **any** language, as long as you have a way to convert text to IPA. We
   also include word-boundary pseudo-tokens which are only visible to the text encoder.
+- We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
 - [Temporary Note] If you have models from before May 2022, they have become incompatible with the current state of the
   toolkit. Also you might need to upgrade your version of the phonemizer dependency and espeak-ng.
