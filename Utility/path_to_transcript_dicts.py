@@ -512,10 +512,10 @@ def build_path_to_transcript_dict_VIVOS_viet():
     root = "/mount/resources/speech/corpora/VIVOS_vietnamese/train"
     path_to_transcript_dict = dict()
     with open(root + "/prompts.txt", mode="r", encoding="utf8") as f:
-        transcripts = f.read().lower().split("\n")
+        transcripts = f.read().split("\n")
     for transcript in transcripts:
         if transcript.strip() != "":
             parsed_line = transcript.split(" ")
-            audio_file = f"{root}/wav/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
-            path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:])
+            audio_file = f"{root}/waves/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
+            path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:]).lower()
     return path_to_transcript_dict
