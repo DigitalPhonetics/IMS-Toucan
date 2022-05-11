@@ -10,8 +10,6 @@ import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
 
-from Utility.utils import pad_list
-
 
 class Parselmouth(torch.nn.Module):
     """
@@ -44,34 +42,21 @@ class Parselmouth(torch.nn.Module):
 
     def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
                 durations_lengths=None, norm_by_average=True, text=None):
-        # If not provided, we assume that the inputs have the same length
-        if input_waves_lengths is None:
-            input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
         # F0 extraction
-        pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
-        num_frames = [math.ceil(w / self.hop_length) for w in input_waves_lengths]
+        pitch = self._calculate_f0(input_waves[0])
 
-        pitch = [self._adjust_num_frames(p, nf).view(-1) for p, nf in zip(pitch, num_frames)]
+        # Adjust length to match with the mel-spectrogram
+        pitch = self._adjust_num_frames(pitch, feats_lengths[0]).view(-1)
 
-        # (Optional): Adjust length to match with the mel-spectrogram
-        if feats_lengths is not None:
-            pitch = [self._adjust_num_frames(p, fl).view(-1) for p, fl in zip(pitch, feats_lengths)]
+        pitch = self._average_by_duration(pitch, durations[0], text).view(-1)
+        pitch_lengths = durations_lengths
 
-        # (Optional): Average by duration to calculate token-wise f0
-        if self.use_token_averaged_f0:
-            pitch = [self._average_by_duration(p, d, text).view(-1) for p, d in zip(pitch, durations)]
-            pitch_lengths = durations_lengths
-        else:
-            pitch_lengths = input_waves.new_tensor([len(p) for p in pitch], dtype=torch.long)
-
-        # Padding
-        pitch = pad_list(pitch, 0.0)
-
-        # Return with the shape (B, T, 1)
         if norm_by_average:
             average = pitch[0][pitch[0] != 0.0].mean()
             pitch = pitch / average
+
+        # Return with the shape (B, T, 1)
         return pitch.unsqueeze(-1), pitch_lengths
 
     def _calculate_f0(self, input):
