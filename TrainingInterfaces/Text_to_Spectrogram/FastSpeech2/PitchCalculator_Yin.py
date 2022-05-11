@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import torchyin
 from scipy.interpolate import interp1d
 
-from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.utils import pad_list
 
 
@@ -124,14 +123,11 @@ class Yin(torch.nn.Module):
             x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
-        # find tokens that are not phoneme and set pitch to 0
+        # find tokens that are not phones and set pitch to 0
         if text is not None:
-            tf = ArticulatoryCombinedTextFrontend(language='en')
             for i, vector in enumerate(text):
-                for phone in tf.phone_to_vector:
-                    if vector.numpy().tolist()[11:] == tf.phone_to_vector[phone][11:]:
-                        # idx 13 corresponds to 'phoneme' feature
-                        if vector[13] == 0:
-                            x_avg[i] = torch.tensor(0.0)
+                if vector[13] == 0:
+                    # idx 13 corresponds to 'phoneme' feature
+                    x_avg[i] = torch.tensor(0.0)
 
         return torch.stack(x_avg)

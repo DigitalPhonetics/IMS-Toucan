@@ -10,7 +10,6 @@ import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
 
-from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.utils import pad_list
 
 
@@ -19,7 +18,7 @@ class Parselmouth(torch.nn.Module):
     F0 estimation with Parselmouth https://parselmouth.readthedocs.io/en/stable/index.html
     """
 
-    def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=400, use_token_averaged_f0=True,
+    def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=600, use_token_averaged_f0=True,
                  use_continuous_f0=False, use_log_f0=False, reduction_factor=1):
         super().__init__()
         self.fs = fs
@@ -125,14 +124,11 @@ class Parselmouth(torch.nn.Module):
             x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
-        # find tokens that are not phoneme and set pitch to 0
+        # find tokens that are not phones and set pitch to 0
         if text is not None:
-            tf = ArticulatoryCombinedTextFrontend(language='en')
             for i, vector in enumerate(text):
-                for phone in tf.phone_to_vector:
-                    if vector.numpy().tolist()[11:] == tf.phone_to_vector[phone][11:]:
-                        # idx 13 corresponds to 'phoneme' feature
-                        if vector[13] == 0:
-                            x_avg[i] = torch.tensor(0.0)
+                if vector[13] == 0:
+                    # idx 13 corresponds to 'phoneme' feature
+                    x_avg[i] = torch.tensor(0.0)
 
         return torch.stack(x_avg)
