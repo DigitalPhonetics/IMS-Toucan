@@ -221,7 +221,7 @@ class ArticulatoryCombinedTextFrontend:
         # languages use different tones denoted by different numbering
         # systems. At this point in the script, it is attempted to unify
         # them all to the tones in the IPA standard.
-        if self.g2p_lang == "cmn-latn-pinyin":
+        if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = phones.replace(".", "")  # no idea why espeak puts dots everywhere for Chinese
             phones = phones.replace('1', "˥")
             phones = phones.replace('2', "˧\u030C")

@@ -502,7 +502,20 @@ def build_path_to_transcript_dict_aishell3():
     for transcript in transcripts:
         if transcript.strip() != "":
             parsed_line = transcript.split("|")
-            audio_file = f"{root}/wav/{parsed_line[0][:8]}/{parsed_line[0]}.wav"
+            audio_file = f"{root}/wav/{parsed_line[0][:7]}/{parsed_line[0]}.wav"
             kanji = parsed_line[2]
             path_to_transcript_dict[audio_file] = kanji
+    return path_to_transcript_dict
+
+
+def build_path_to_transcript_dict_VIVOS_viet():
+    root = "/mount/resources/speech/corpora/VIVOS_vietnamese/train"
+    path_to_transcript_dict = dict()
+    with open(root + "/prompts.txt", mode="r", encoding="utf8") as f:
+        transcripts = f.read().lower().split("\n")
+    for transcript in transcripts:
+        if transcript.strip() != "":
+            parsed_line = transcript.split(" ")
+            audio_file = f"{root}/wav/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
+            path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:])
     return path_to_transcript_dict
