@@ -302,6 +302,10 @@ Here are a few points that were brought up by users:
 - `UserWarning: Detected call of lr_scheduler.step() before optimizer.step().` - We use a custom scheduler, and torch
   incorrectly thinks that we call the scheduler and the optimizer in the wrong order. Just ignore this warning, it is
   completely meaningless.
+- Loss turns to `NaN` - The default learning rates work on clean data. If your data is less clean, try using the scorer
+  to find problematic samples, or reduce the learning rate. The most common problem is there being pauses in the speech,
+  but nothing that hints at them in the text. That's why ASR corpora, which leave out punctuation are usually difficult
+  to use for TTS.
 
 ---
 
