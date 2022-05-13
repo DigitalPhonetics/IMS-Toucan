@@ -500,7 +500,7 @@ def build_path_to_transcript_dict_aishell3():
     with open(root + "/label_train-set.txt", mode="r", encoding="utf8") as f:
         transcripts = f.read().replace("$", "").replace("%", ",").split("\n")
     for transcript in transcripts:
-        if transcript.strip() != "":
+        if transcript.strip() != "" and not transcript.startswith("#"):
             parsed_line = transcript.split("|")
             audio_file = f"{root}/wav/{parsed_line[0][:7]}/{parsed_line[0]}.wav"
             kanji = parsed_line[2]
