@@ -41,6 +41,8 @@ def train_loop(train_dataset,
         device: Device to put the loaded tensors on
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
+        debug_img_path: where to put images of the training progress if desired
+        use_reconstruction: whether to use the auxiliary spectrogram reconstruction procedure/loss, which can make the alignment sharper
     """
     os.makedirs(save_directory, exist_ok=True)
     train_loader = DataLoader(batch_size=batch_size,
@@ -126,12 +128,12 @@ def train_loop(train_dataset,
         asr_model.eval()
         loss_this_epoch = sum(loss_sum) / len(loss_sum)
         torch.save({
-            "asr_model": asr_model.state_dict(),
-            "optimizer": optim_asr.state_dict(),
-            "tts_model": tiny_tts.state_dict(),
+            "asr_model"    : asr_model.state_dict(),
+            "optimizer"    : optim_asr.state_dict(),
+            "tts_model"    : tiny_tts.state_dict(),
             "tts_optimizer": optim_tts.state_dict(),
-            "step_counter": step_counter,
-        },
+            "step_counter" : step_counter,
+            },
             os.path.join(save_directory, "aligner.pt"))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
