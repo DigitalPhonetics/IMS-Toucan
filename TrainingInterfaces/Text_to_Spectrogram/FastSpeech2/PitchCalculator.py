@@ -53,7 +53,7 @@ class Parselmouth(torch.nn.Module):
         pitch_lengths = durations_lengths
 
         if norm_by_average:
-            average = pitch[0][pitch[0] != 0.0].mean()
+            average = pitch[pitch != 0.0].mean()
             pitch = pitch / average
 
         # Return with the shape (B, T, 1)
