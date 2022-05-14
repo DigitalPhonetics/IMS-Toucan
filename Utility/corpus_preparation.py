@@ -14,7 +14,8 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device):
 def prepare_fastspeech_corpus(transcript_dict,
                               corpus_dir,
                               lang,
-                              ctc_selection=True,
+                              ctc_selection=True,  # heuristically removes some samples which might be problematic.
+                              # For small datasets it's best to turn this off and instead inspect the data with the scorer, if there are any issues.
                               fine_tune_aligner=True,
                               use_reconstruction=True,
                               phone_input=False,
