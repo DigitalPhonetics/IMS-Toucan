@@ -12,6 +12,7 @@ import torch
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import get_language_id
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 
@@ -76,7 +77,8 @@ class TTSScorer:
         self.device = device
         self.nans = list()
         self.tts = FastSpeech2()
-        weights = torch.load(path_to_fastspeech_model, map_location='cpu')["model"]
+        checkpoint = torch.load(path_to_fastspeech_model, map_location='cpu')
+        weights = checkpoint["model"]
         try:
             self.tts.load_state_dict(weights)
         except RuntimeError:
@@ -86,7 +88,10 @@ class TTSScorer:
             except RuntimeError:
                 self.tts = FastSpeech2(lang_embs=None, utt_embed_dim=None)
                 self.tts.load_state_dict(weights)
+        self.style_embedding_function = StyleEmbedding()
+        self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
         self.tts.to(self.device)
+        self.style_embedding_function.to(device)
 
     def score(self, path_to_fastspeech_dataset, lang_id):
         """
@@ -95,6 +100,8 @@ class TTSScorer:
         datapoints = torch.load(path_to_fastspeech_dataset, map_location='cpu')
         for index in tqdm(range(len(datapoints))):
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = datapoints[index]
+            style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
+                                                            batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
             loss = self.tts(text_tensors=text.unsqueeze(0).to(self.device),
                             text_lengths=text_len.to(self.device),
                             gold_speech=spec.unsqueeze(0).to(self.device),
@@ -102,7 +109,7 @@ class TTSScorer:
                             gold_durations=duration.unsqueeze(0).to(self.device),
                             gold_pitch=pitch.unsqueeze(0).to(self.device),
                             gold_energy=energy.unsqueeze(0).to(self.device),
-                            utterance_embedding=embed.unsqueeze(0).to(self.device),
+                            utterance_embedding=style_embedding.to(self.device),
                             lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
                             return_mels=False)
             if torch.isnan(loss):
