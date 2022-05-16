@@ -10,9 +10,10 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
-from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 
 
 class InferenceFastSpeech2(torch.nn.Module):
@@ -33,6 +34,9 @@ class InferenceFastSpeech2(torch.nn.Module):
                 self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None).to(torch.device(device))  # single speaker
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        self.style_embedding_function = StyleEmbedding().to(self.device)
+        self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+        self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
         if self.use_lang_id:
@@ -47,7 +51,12 @@ class InferenceFastSpeech2(torch.nn.Module):
 
     def set_utterance_embedding(self, path_to_reference_audio):
         wave, sr = soundfile.read(path_to_reference_audio)
-        self.default_utterance_embedding = ProsodicConditionExtractor(sr=sr).extract_condition_from_reference_wave(wave).to(self.device)
+        if sr != self.audio_preprocessor.sr:
+            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
+        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave)
+        spec_len = torch.LongTensor([len(spec)])
+        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
+                                                                         spec_len.unsqueeze(0).to(self.device))
         if self.noise_reduce:
             self.update_noise_profile()
 
