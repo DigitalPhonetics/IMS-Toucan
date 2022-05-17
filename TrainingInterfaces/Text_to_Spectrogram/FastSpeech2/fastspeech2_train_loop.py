@@ -24,7 +24,7 @@ from Utility.utils import get_most_recent_checkpoint
 def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
-        if lang == "en":
+    if lang == "en":
         sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
         sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
