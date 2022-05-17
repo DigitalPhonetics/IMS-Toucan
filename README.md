@@ -80,7 +80,11 @@ conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
 pip install --no-cache-dir -r requirements.txt
 ```
 
-The models are implemented and tested with PyTorch 1.9.0. Other versions (especially more recent ones) will most likely also work, I'm not aware of anything relevant that breaks backwards compatibility. To install torch 1.9.0, use the command appropriate for your system from [this link to the official PyTorch installation instructions](https://pytorch.org/get-started/previous-versions/#v190). 
+The models are implemented and tested with PyTorch 1.9.0. Other versions (especially more recent ones) will most likely also work, I'm not aware of anything relevant that breaks backwards compatibility.
+
+```
+pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
+```
 
 #### Speaker Embedding
 
