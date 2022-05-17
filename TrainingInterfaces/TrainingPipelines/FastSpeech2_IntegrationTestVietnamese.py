@@ -34,8 +34,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         save_dir = os.path.join("Models", "FastSpeech2_IntegrationTestVietnamese")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_VIVOS_viet(),
-                                          corpus_dir=os.path.join("Corpora", "VIVOS_viet"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
+                                          corpus_dir=os.path.join("Corpora", "vietTTS"),
                                           lang="vi",
                                           save_imgs=False)
 
