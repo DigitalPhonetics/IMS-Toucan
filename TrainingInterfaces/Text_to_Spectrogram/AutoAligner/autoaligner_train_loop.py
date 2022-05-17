@@ -41,6 +41,8 @@ def train_loop(train_dataset,
         device: Device to put the loaded tensors on
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
+        debug_img_path: where to put images of the training progress if desired
+        use_reconstruction: whether to use the auxiliary spectrogram reconstruction procedure/loss, which can make the alignment sharper
     """
     os.makedirs(save_directory, exist_ok=True)
     train_loader = DataLoader(batch_size=batch_size,

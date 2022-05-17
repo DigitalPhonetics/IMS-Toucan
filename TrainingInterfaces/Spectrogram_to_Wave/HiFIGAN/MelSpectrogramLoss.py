@@ -48,13 +48,13 @@ class MelSpectrogram(torch.nn.Module):
                                      fmax=fmax, )
         self.register_buffer("melmat", torch.from_numpy(melmat.T).float())
         self.stft_params = {
-            "n_fft"     : self.fft_size,
+            "n_fft": self.fft_size,
             "win_length": self.win_length,
             "hop_length": self.hop_size,
-            "center"    : self.center,
+            "center": self.center,
             "normalized": self.normalized,
-            "onesided"  : self.onesided,
-            }
+            "onesided": self.onesided,
+        }
         self.stft_params["return_complex"] = False
 
         self.log_base = log_base

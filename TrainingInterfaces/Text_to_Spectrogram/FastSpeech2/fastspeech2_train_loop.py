@@ -12,8 +12,9 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import get_language_id
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -42,6 +43,10 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
+    elif lang == "cmn":
+        sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
+    elif lang == "vi":
+        sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     spec, durations, *_ = net.inference(text=phoneme_vector,
                                         return_duration_pitch_energy=True,
@@ -63,7 +68,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence))
+    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True))
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
@@ -114,6 +119,7 @@ def train_loop(net,
 
     """
     net = net.to(device)
+    style_embedding_function = StyleEmbedding().to(device)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -125,15 +131,7 @@ def train_loop(net,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-    default_embedding = None
-    for index in range(20):  # slicing is not implemented for datasets, so this detour is needed.
-        if default_embedding is None:
-            default_embedding = train_dataset[index][7].squeeze()
-        else:
-            default_embedding = default_embedding + train_dataset[index][7].squeeze()
-    default_embedding = (default_embedding / len(train_dataset)).to(device)
-    # default speaker embedding for inference is the average of the first 20 speaker embeddings. So if you use multiple datasets combined,
-    # put a single speaker one with the nicest voice first into the concat dataset.
+
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
@@ -144,6 +142,7 @@ def train_loop(net,
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
+        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
@@ -157,6 +156,8 @@ def train_loop(net,
         train_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
+                style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                           batch_of_spectrogram_lengths=batch[3].to(device))
                 train_loss = net(text_tensors=batch[0].to(device),
                                  text_lengths=batch[1].to(device),
                                  gold_speech=batch[2].to(device),
@@ -164,7 +165,7 @@ def train_loop(net,
                                  gold_durations=batch[4].to(device),
                                  gold_pitch=batch[6].to(device),  # mind the switched order
                                  gold_energy=batch[5].to(device),  # mind the switched order
-                                 utterance_embedding=batch[7].to(device),
+                                 utterance_embedding=style_embedding,
                                  lang_ids=batch[8].to(device),
                                  return_mels=False)
                 train_losses_this_epoch.append(train_loss.item())
@@ -180,14 +181,18 @@ def train_loop(net,
             scheduler.step()
 
         net.eval()
+        style_embedding_function.eval()
         if epoch % epochs_per_save == 0:
+            default_embedding = style_embedding_function(batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+                                                         batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "step_counter": step_counter,
-                "scaler"      : scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                "default_emb" : default_embedding,
+                "model"         : net.state_dict(),
+                "optimizer"     : optimizer.state_dict(),
+                "step_counter"  : step_counter,
+                "scaler"        : scaler.state_dict(),
+                "scheduler"     : scheduler.state_dict(),
+                "default_emb"   : default_embedding,
+                "style_emb_func": style_embedding_function.state_dict()
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
@@ -199,3 +204,4 @@ def train_loop(net,
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
         net.train()
+        style_embedding_function.train()

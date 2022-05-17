@@ -2,21 +2,21 @@
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 # Adapted by Florian Lux 2021
 
-import math
-
 import numpy as np
-import parselmouth
 import torch
 import torch.nn.functional as F
+import torchcrepe
 from scipy.interpolate import interp1d
 
+from Utility.utils import pad_list
 
-class Parselmouth(torch.nn.Module):
+
+class Crepe(torch.nn.Module):
     """
-    F0 estimation with Parselmouth https://parselmouth.readthedocs.io/en/stable/index.html
+    F0 estimation with Crepe: https://github.com/maxrmorrison/torchcrepe
     """
 
-    def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=600, use_token_averaged_f0=True,
+    def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=400, use_token_averaged_f0=True,
                  use_continuous_f0=False, use_log_f0=False, reduction_factor=1):
         super().__init__()
         self.fs = fs
@@ -42,27 +42,47 @@ class Parselmouth(torch.nn.Module):
 
     def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
                 durations_lengths=None, norm_by_average=True, text=None):
+        # If not provided, we assume that the inputs have the same length
+        if input_waves_lengths is None:
+            input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
 
         # F0 extraction
-        pitch = self._calculate_f0(input_waves[0])
+        pitch = [self._calculate_f0(x[:xl]) for x, xl in zip(input_waves, input_waves_lengths)]
 
-        # Adjust length to match with the mel-spectrogram
-        pitch = self._adjust_num_frames(pitch, feats_lengths[0]).view(-1)
+        # (Optional): Adjust length to match with the mel-spectrogram
+        if feats_lengths is not None:
+            pitch = [self._adjust_num_frames(p, fl).view(-1) for p, fl in zip(pitch, feats_lengths)]
 
-        pitch = self._average_by_duration(pitch, durations[0], text).view(-1)
-        pitch_lengths = durations_lengths
+        # (Optional): Average by duration to calculate token-wise f0
+        if self.use_token_averaged_f0:
+            pitch = [self._average_by_duration(p, d, text).view(-1) for p, d in zip(pitch, durations)]
+            pitch_lengths = durations_lengths
+        else:
+            pitch_lengths = input_waves.new_tensor([len(p) for p in pitch], dtype=torch.long)
 
-        if norm_by_average:
-            average = pitch[pitch != 0.0].mean()
-            pitch = pitch / average
+        # Padding
+        pitch = pad_list(pitch, 0.0)
 
         # Return with the shape (B, T, 1)
+        if norm_by_average:
+            average = pitch[0][pitch[0] != 0.0].mean()
+            pitch = pitch / average
         return pitch.unsqueeze(-1), pitch_lengths
 
     def _calculate_f0(self, input):
         x = input.cpu().numpy().astype(np.double)
-        snd = parselmouth.Sound(values=x, sampling_frequency=self.fs)
-        f0 = snd.to_pitch(time_step=self.hop_length / self.fs, pitch_floor=self.f0min, pitch_ceiling=self.f0max).selected_array['frequency']
+        x = input.unsqueeze(0)
+        f0 = torchcrepe.predict(x,
+                                self.fs,
+                                self.hop_length,
+                                self.f0min,
+                                self.f0max,
+                                model='full',
+                                decoder=torchcrepe.decode.weighted_argmax
+                                # batch_size=batch_size,
+                                # device=device
+                                ).squeeze(0).cpu().numpy().astype(np.double)
+        f0 = np.nan_to_num(f0, nan=0.0)
         if self.use_continuous_f0:
             f0 = self._convert_to_continuous_f0(f0)
         if self.use_log_f0:
@@ -73,8 +93,7 @@ class Parselmouth(torch.nn.Module):
     @staticmethod
     def _adjust_num_frames(x, num_frames):
         if num_frames > len(x):
-            # x = F.pad(x, (0, num_frames - len(x)))
-            x = F.pad(x, (math.ceil((num_frames - len(x)) / 2), math.floor((num_frames - len(x)) / 2)))
+            x = F.pad(x, (0, num_frames - len(x)))
         elif num_frames < len(x):
             x = x[:num_frames]
         return x

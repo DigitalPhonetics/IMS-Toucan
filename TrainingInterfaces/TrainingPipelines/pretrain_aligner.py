@@ -167,6 +167,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                            lang="en",
                                            device=device))
 
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn(),
+                                           corpus_dir=os.path.join("Corpora", "css10_chinese"),
+                                           lang="cmn",
+                                           device=device))
+
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_aishell3(),
+                                           corpus_dir=os.path.join("Corpora", "aishell3"),
+                                           lang="cmn",
+                                           device=device))
+
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_VIVOS_viet(),
+                                           corpus_dir=os.path.join("Corpora", "VIVOS_viet"),
+                                           lang="vi",
+                                           device=device))
+
     train_set = ConcatDataset(datasets)
     save_dir = os.path.join("Models", "Aligner")
     os.makedirs(save_dir, exist_ok=True)

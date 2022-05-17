@@ -12,6 +12,11 @@ from Utility.path_to_transcript_dicts import *
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_samples=False):
+    # It is not recommended training this yourself or to finetune this, but you can.
+    # The recommended use is to download the pretrained model from the github release
+    # page and finetune to your desired data similar to how it is showcased in
+    # FastSpeech2_finetune_to_German.py
+
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
@@ -41,15 +46,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     portuguese_datasets = list()
     polish_datasets = list()
     italian_datasets = list()
+    chinese_datasets = list()
+    vietnamese_datasets = list()
 
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                                       corpus_dir=os.path.join("Corpora", "Nancy"),
                                                       lang="en"))
-
-    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
-                                                      corpus_dir=os.path.join("Corpora", "flux_sing"),
-                                                      lang="en",
-                                                      ctc_selection=False))
 
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
                                                       corpus_dir=os.path.join("Corpora", "LJSpeech"),
@@ -147,6 +149,18 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                                                       corpus_dir=os.path.join("Corpora", "mls_italian"),
                                                       lang="it"))
 
+    chinese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn(),
+                                                      corpus_dir=os.path.join("Corpora", "css10_chinese"),
+                                                      lang="cmn"))
+
+    chinese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_aishell3(),
+                                                      corpus_dir=os.path.join("Corpora", "aishell3"),
+                                                      lang="cmn"))
+
+    vietnamese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
+                                                         corpus_dir=os.path.join("Corpora", "vietTTS"),
+                                                         lang="vi"))
+
     datasets.append(ConcatDataset(english_datasets))
     datasets.append(ConcatDataset(german_datasets))
     datasets.append(ConcatDataset(greek_datasets))
@@ -159,6 +173,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     datasets.append(ConcatDataset(portuguese_datasets))
     datasets.append(ConcatDataset(polish_datasets))
     datasets.append(ConcatDataset(italian_datasets))
+    datasets.append(ConcatDataset(chinese_datasets))
+    datasets.append(ConcatDataset(vietnamese_datasets))
 
     if remove_faulty_samples:
         find_and_remove_faulty_samples(net=FastSpeech2(lang_embs=100),
@@ -173,7 +189,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                                                 french_datasets +
                                                 portuguese_datasets +
                                                 polish_datasets +
-                                                italian_datasets,
+                                                italian_datasets +
+                                                chinese_datasets +
+                                                vietnamese_datasets,
                                        device=torch.device("cuda"),
                                        path_to_checkpoint=resume_checkpoint)
 
