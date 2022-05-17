@@ -126,6 +126,7 @@ def train_loop(net,
     """
     net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
+    cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -161,23 +162,36 @@ def train_loop(net,
         epoch += 1
         optimizer.zero_grad()
         train_losses_this_epoch = list()
+        cycle_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
-                train_loss = net(text_tensors=batch[0].to(device),
-                                 text_lengths=batch[1].to(device),
-                                 gold_speech=batch[2].to(device),
-                                 speech_lengths=batch[3].to(device),
-                                 gold_durations=batch[4].to(device),
-                                 gold_pitch=batch[6].to(device),  # mind the switched order
-                                 gold_energy=batch[5].to(device),  # mind the switched order
-                                 utterance_embedding=style_embedding,
-                                 lang_ids=batch[8].to(device),
-                                 return_mels=False)
+                train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                      text_lengths=batch[1].to(device),
+                                                      gold_speech=batch[2].to(device),
+                                                      speech_lengths=batch[3].to(device),
+                                                      gold_durations=batch[4].to(device),
+                                                      gold_pitch=batch[6].to(device),  # mind the switched order
+                                                      gold_energy=batch[5].to(device),  # mind the switched order
+                                                      utterance_embedding=style_embedding,
+                                                      lang_ids=batch[8].to(device),
+                                                      return_mels=True)
+
+                style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                   batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                # unfortunately we have to calculate the same thing again as above,
+                # since the backward pass can be incorrect if we re-use the one from above
+                style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                        batch_of_spectrogram_lengths=batch[3].to(device))
+
+                cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
+
                 train_losses_this_epoch.append(train_loss.item())
+                cycle_losses_this_epoch.append(cycle_dist.item())
 
             optimizer.zero_grad()
+            train_loss = train_loss + cycle_dist
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
@@ -206,9 +220,10 @@ def train_loop(net,
             if step_counter > steps:
                 # DONE
                 return
-        print("Epoch:        {}".format(epoch))
-        print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Steps:        {}".format(step_counter))
+        print("Epoch:              {}".format(epoch))
+        print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        print("Cycle Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
+        print("Steps:              {}".format(step_counter))
         net.train()
         style_embedding_function.train()
