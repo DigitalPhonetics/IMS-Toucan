@@ -54,4 +54,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               resume=resume)
+               resume=resume,
+               use_cycle_loss=True,
+               use_barlow_twins=True)
