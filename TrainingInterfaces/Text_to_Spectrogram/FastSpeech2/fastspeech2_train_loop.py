@@ -184,7 +184,7 @@ def train_loop(net,
                                                       return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
 
-                if use_cycle_loss:
+                if use_cycle_loss and step_counter > warmup_steps:
                     style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                        batch_of_spectrogram_lengths=batch[3].to(device)).detach()
                     # unfortunately we have to calculate the same thing again as above,
