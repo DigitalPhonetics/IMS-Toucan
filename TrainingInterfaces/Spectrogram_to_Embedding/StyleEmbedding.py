@@ -18,8 +18,8 @@ class StyleEmbedding(torch.nn.Module):
         if not swin_config:
             self.swin_config = {
                 "model_type": "swin",
-                "img_size": [700, 80],
-                "patch_size": [7,4],
+                "img_size": [250, 80],
+                "patch_size": [5,4],
                 "in_chans": 1,
                 "num_classes": 64,
                 "embed_dim": 128,
@@ -79,17 +79,9 @@ class StyleEmbedding(torch.nn.Module):
         batch_of_spectrograms_unified_length = batch_of_spectrograms_unified_length.view(
             batch_of_spectrograms_unified_length.size(0),
             1,
-<<<<<<< HEAD
-            batch_of_spectrograms_unified_length.size(1),
-            batch_of_spectrograms_unified_length.size(2),
-            )
-
-        speaker_embedding = self.swin(batch_of_spectrograms_unified_length)
-=======
             batch_of_spectrograms.size(1),
             batch_of_spectrograms.size(2),
         )
 
         speaker_embedding = self.swin(batch_of_spectrograms)
->>>>>>> 709fc93 (update swin architecture)
         return speaker_embedding
