@@ -62,10 +62,10 @@ class StyleEmbedding(torch.nn.Module):
         list_of_specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):
             spec = batch_of_spectrograms[index][:spec_length]
-            if spec_length > spec_length:
+            if spec_length > spec_max_length:
                 # take random window
                 frames_to_remove = spec_length - spec_max_length
-                remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu())#[0]
+                remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu())  # [0]
                 list_of_specs.append(spec[remove_front:remove_front + spec_max_length])
             elif spec_length < spec_max_length:
                 # add random padding
@@ -75,6 +75,7 @@ class StyleEmbedding(torch.nn.Module):
             elif spec_length == spec_max_length:
                 # take as is
                 list_of_specs.append(spec)
+
         batch_of_spectrograms_unified_length = torch.stack(list_of_specs, dim=0)
 
         batch_of_spectrograms_unified_length = batch_of_spectrograms_unified_length.view(
