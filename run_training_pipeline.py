@@ -3,19 +3,25 @@ import sys
 
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTestVietnamese import run as integration_test_vietnamese
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriOnline import run as online
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriOnlineCycle import run as cycle
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriOnlineCycleRedundancy import run as redundancy
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "meta": meta_fast,
-    "hifi_combined": hifigan_combined,
-    "aligner": aligner,
-    "fine_ger": fine_ger,
-    "integration_test": integration_test,
+    "meta"                       : meta_fast,
+    "hifi_combined"              : hifigan_combined,
+    "aligner"                    : aligner,
+    "fine_ger"                   : fine_ger,
+    "integration_test"           : integration_test,
+    "online"                     : online,
+    "cycle"                      : cycle,
+    "redundancy"                 : redundancy,
     "integration_test_vietnamese": integration_test_vietnamese
-}
+    }
 
 if __name__ == '__main__':
 
