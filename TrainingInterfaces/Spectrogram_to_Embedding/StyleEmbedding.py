@@ -19,13 +19,13 @@ class StyleEmbedding(torch.nn.Module):
             self.swin_config = {
                 "model_type": "swin",
                 "img_size": [250, 80],
-                "patch_size": [5,4],
+                "patch_size": [12, 4],
                 "in_chans": 1,
                 "num_classes": 64,
-                "embed_dim": 128,
+                "embed_dim": 64,
                 "depths": [2, 2, 2], #[2, 2, 18, 2],
                 "num_heads": [2, 4, 8],
-                "window_size": 5,
+                "window_size": 6,
                 "mlp_ratio": 4,
                 "qkv_bias": False,
                 "qk_scale": None,
@@ -64,12 +64,12 @@ class StyleEmbedding(torch.nn.Module):
             if spec_length > 250:
                 # take random window
                 frames_to_remove = spec_length - 250
-                remove_front = numpy.random.randint(low=0, high=frames_to_remove)[0]
+                remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu())#[0]
                 list_of_specs.append(spec[remove_front:remove_front + 250])
             elif spec_length < 250:
                 # add random padding
                 frames_to_pad = 250 - spec_length
-                pad_front = numpy.random.randint(low=0, high=frames_to_pad)[0]
+                pad_front = numpy.random.randint(low=0, high=frames_to_pad.cpu())#[0]
                 list_of_specs.append(torch.nn.functional.pad(input=spec, pad=(0, 0, pad_front, frames_to_pad - pad_front)))
             elif spec_length == 250:
                 # take as is
@@ -79,9 +79,9 @@ class StyleEmbedding(torch.nn.Module):
         batch_of_spectrograms_unified_length = batch_of_spectrograms_unified_length.view(
             batch_of_spectrograms_unified_length.size(0),
             1,
-            batch_of_spectrograms.size(1),
-            batch_of_spectrograms.size(2),
+            batch_of_spectrograms_unified_length.size(1),
+            batch_of_spectrograms_unified_length.size(2),
         )
 
-        speaker_embedding = self.swin(batch_of_spectrograms)
+        speaker_embedding = self.swin(batch_of_spectrograms_unified_length)
         return speaker_embedding
