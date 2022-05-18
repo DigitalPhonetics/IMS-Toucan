@@ -18,14 +18,14 @@ class StyleEmbedding(torch.nn.Module):
         if not swin_config:
             self.swin_config = {
                 "model_type": "swin",
-                "img_size": [250, 80],
-                "patch_size": [12, 4],
+                "img_size": [256, 80],
+                "patch_size": [16, 10],
                 "in_chans": 1,
                 "num_classes": 64,
                 "embed_dim": 64,
                 "depths": [2, 2, 2], #[2, 2, 18, 2],
                 "num_heads": [2, 4, 8],
-                "window_size": 6,
+                "window_size": 4,
                 "mlp_ratio": 4,
                 "qkv_bias": False,
                 "qk_scale": None,
@@ -58,20 +58,21 @@ class StyleEmbedding(torch.nn.Module):
         """
 
         # we take a random window with a length of 250 out of the spectrogram or add random zero padding in front and back to get a length of 250
+        spec_max_length = 256
         list_of_specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):
             spec = batch_of_spectrograms[index][:spec_length]
-            if spec_length > 250:
+            if spec_length > spec_length:
                 # take random window
-                frames_to_remove = spec_length - 250
+                frames_to_remove = spec_length - spec_max_length
                 remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu())#[0]
-                list_of_specs.append(spec[remove_front:remove_front + 250])
-            elif spec_length < 250:
+                list_of_specs.append(spec[remove_front:remove_front + spec_max_length])
+            elif spec_length < spec_max_length:
                 # add random padding
-                frames_to_pad = 250 - spec_length
+                frames_to_pad = spec_max_length - spec_length
                 pad_front = numpy.random.randint(low=0, high=frames_to_pad.cpu())#[0]
-                list_of_specs.append(torch.nn.functional.pad(input=spec, pad=(0, 0, pad_front, frames_to_pad - pad_front)))
-            elif spec_length == 250:
+                list_of_specs.append(torch.nn.functional.pad(input=spec, pad=(0, 0, int(pad_front), frames_to_pad.cpu() - pad_front)))
+            elif spec_length == spec_max_length:
                 # take as is
                 list_of_specs.append(spec)
         batch_of_spectrograms_unified_length = torch.stack(list_of_specs, dim=0)
