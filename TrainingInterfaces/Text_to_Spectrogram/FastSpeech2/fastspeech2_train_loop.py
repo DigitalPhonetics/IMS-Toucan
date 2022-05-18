@@ -198,12 +198,13 @@ def train_loop(net,
                     style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                             batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
+                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted,
+                                                             style_embedding_of_gold) * 200  # balancing factor for order of magnitude
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
 
                     if use_barlow_twins:
-                        bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
+                        bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold) * 5  # balancing factor for order of magnitude
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
                         train_loss = train_loss + bt_cycle_dist
 
