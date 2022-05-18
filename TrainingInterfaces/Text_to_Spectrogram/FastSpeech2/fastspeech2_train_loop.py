@@ -134,7 +134,7 @@ def train_loop(net,
     if use_cycle_loss:
         cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
         if use_barlow_twins:
-            bt_loss = BarlowTwinsLoss()
+            bt_loss = BarlowTwinsLoss().to(device)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -150,6 +150,8 @@ def train_loop(net,
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     optimizer.add_param_group({"params": style_embedding_function.parameters()})
+    if use_barlow_twins:
+        optimizer.add_param_group({"params": bt_loss.parameters()})
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
