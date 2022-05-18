@@ -237,7 +237,7 @@ def train_loop(net,
                 return
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        if use_cycle_loss:
+        if use_cycle_loss and len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
             if use_barlow_twins:
                 print("BarlowTwins Loss:   {}".format(sum(bt_cycle_losses_this_epoch) / len(bt_cycle_losses_this_epoch)))
