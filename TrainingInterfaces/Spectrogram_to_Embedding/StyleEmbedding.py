@@ -65,12 +65,12 @@ class StyleEmbedding(torch.nn.Module):
             if spec_length > window_size:
                 # take random window
                 frames_to_remove = spec_length - window_size
-                remove_front = numpy.random.randint(low=0, high=frames_to_remove.squeeze().cpu())  # [0]
+                remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu().item())  # [0]
                 list_of_specs.append(spec[remove_front:remove_front + window_size])
             elif spec_length < window_size:
                 # add random padding
                 frames_to_pad = window_size - spec_length
-                pad_front = numpy.random.randint(low=0, high=frames_to_pad.squeeze().cpu())  # [0]
+                pad_front = numpy.random.randint(low=0, high=frames_to_pad.cpu().item())  # [0]
                 list_of_specs.append(torch.nn.functional.pad(input=spec, pad=(0, 0, int(pad_front), frames_to_pad.cpu() - pad_front)))
             elif spec_length == window_size:
                 # take as is
