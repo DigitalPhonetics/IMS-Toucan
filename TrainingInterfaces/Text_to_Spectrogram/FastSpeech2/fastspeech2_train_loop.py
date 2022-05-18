@@ -146,7 +146,7 @@ def train_loop(net,
 
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    optimizer.add_param_group({"style_embed_func_params": style_embedding_function.parameters()})
+    optimizer.add_param_group({"params": style_embedding_function.parameters()})
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
