@@ -68,10 +68,7 @@ class Conformer(torch.nn.Module):
 
         self.connect_utt_emb_at_encoder_out = connect_utt_emb_at_encoder_out
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + spk_emb_bottleneck_size, attention_dim)
-            # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
-            self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, spk_emb_bottleneck_size),
-                                                            torch.nn.Softsign())
+            self.hs_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -133,9 +130,6 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        # project embedding into smaller space
-        speaker_embeddings_projected = self.embedding_projection(utt_embeddings)
-        # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
+        speaker_embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
         return hs
