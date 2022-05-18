@@ -57,7 +57,7 @@ class StyleEmbedding(torch.nn.Module):
             batch of 64 dimensional embeddings (b,64)
         """
 
-        # we take a random window with a length of 250 out of the spectrogram or add random zero padding in front and back to get a length of 250
+        # we take a random window with a length of 256 out of the spectrogram or add random zero padding in front and back to get a length of 256
         spec_max_length = 256
         list_of_specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):

@@ -15,6 +15,7 @@ from tqdm import tqdm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from Utility.BarlowTwinsLoss import BarlowTwinsLoss
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -132,6 +133,8 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     if use_cycle_loss:
         cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
+        if use_barlow_twins:
+            bt_loss = BarlowTwinsLoss()
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -168,6 +171,7 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
+        bt_cycle_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
@@ -194,11 +198,15 @@ def train_loop(net,
 
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                     cycle_losses_this_epoch.append(cycle_dist.item())
+                    train_loss = train_loss + cycle_dist
+
+                    if use_barlow_twins:
+                        bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
+                        cycle_losses_this_epoch.append(cycle_dist.item())
+                        train_loss = train_loss + bt_cycle_dist
 
             optimizer.zero_grad()
 
-            if use_cycle_loss:
-                train_loss = train_loss + cycle_dist
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
@@ -231,6 +239,8 @@ def train_loop(net,
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if use_cycle_loss:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
+            if use_barlow_twins:
+                print("BarlowTwins Loss:   {}".format(sum(bt_cycle_losses_this_epoch) / len(bt_cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
         net.train()
