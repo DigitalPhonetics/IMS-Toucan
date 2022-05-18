@@ -204,7 +204,7 @@ def train_loop(net,
 
                     if use_barlow_twins:
                         bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
-                        cycle_losses_this_epoch.append(cycle_dist.item())
+                        bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
                         train_loss = train_loss + bt_cycle_dist
 
             optimizer.zero_grad()
@@ -241,7 +241,7 @@ def train_loop(net,
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if use_cycle_loss and len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
-            if use_barlow_twins:
+            if use_barlow_twins and len(bt_cycle_losses_this_epoch) != 0:
                 print("BarlowTwins Loss:   {}".format(sum(bt_cycle_losses_this_epoch) / len(bt_cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
