@@ -12,7 +12,7 @@ class BarlowTwinsLoss(torch.nn.Module):
 
     def forward(self, z1, z2):
         c = self.bn(z1).T @ self.bn(z2)
-        c.div_(z1.shape(0))
+        c.div_(z1.size(0))
         on_diag = torch.diagonal(c).add_(-1).pow_(2).sum()
         off_diag = off_diagonal(c).pow_(2).sum()
         loss = on_diag + self.lambd * off_diag
