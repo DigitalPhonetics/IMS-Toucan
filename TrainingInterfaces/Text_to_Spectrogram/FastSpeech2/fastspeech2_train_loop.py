@@ -42,6 +42,12 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
+    elif lang == "pt":
+        sentence = "Esta é uma frase complexa, tem até uma pausa!"
+    elif lang == "pl":
+        sentence = "To jest zdanie złożone, ma nawet pauzę!"
+    elif lang == "it":
+        sentence = "Questa è una frase complessa, ha anche una pausa!"
     elif lang == "cmn":
         sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
     elif lang == "vi":
