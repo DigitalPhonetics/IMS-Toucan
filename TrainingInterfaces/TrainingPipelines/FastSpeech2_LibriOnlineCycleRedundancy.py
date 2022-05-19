@@ -1,10 +1,7 @@
-"""
-This is basically an integration test
-"""
-
 import random
 
 import torch
+from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
@@ -34,9 +31,24 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         save_dir = os.path.join("Models", "FastSpeech2_LibriOnline")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
-                                          corpus_dir=os.path.join("Corpora", "libri_all_clean"),
-                                          lang="en")
+    datasets = list()
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                                              corpus_dir=os.path.join("Corpora", "libri_all_clean"),
+                                              lang="en"))
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+                                              corpus_dir=os.path.join("Corpora", "vctk"),
+                                              lang="en"))
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+                                              corpus_dir=os.path.join("Corpora", "hifi"),
+                                              lang="en"))
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                              corpus_dir=os.path.join("Corpora", "Nancy"),
+                                              lang="en"))
+
+    train_set = ConcatDataset(datasets)
 
     model = FastSpeech2(lang_embs=None)
 

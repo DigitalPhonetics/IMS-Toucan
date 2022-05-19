@@ -107,7 +107,7 @@ class AudioPreprocessor:
         # get mel basis
         fmin = 0 if fmin is None else fmin
         fmax = sampling_rate / 2 if fmax is None else fmax
-        mel_basis = librosa.filters.mel(sampling_rate, self.n_fft, self.mel_buckets, fmin, fmax)
+        mel_basis = librosa.filters.mel(sr=sampling_rate, n_fft=self.n_fft, n_mels=self.mel_buckets, fmin=fmin, fmax=fmax)
         # apply log and return
         return torch.Tensor(np.log10(np.maximum(eps, np.dot(spc, mel_basis.T)))).transpose(0, 1)
 

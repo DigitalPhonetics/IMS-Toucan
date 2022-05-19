@@ -17,6 +17,12 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tts = InferenceFastSpeech2(device=device, model_name=model_id)
     tts.set_language(lang_id=input("Which Language?\n"))
+    speaker_reference = input("Path to a reference .wav of a speaker? \nPress enter without typing anything to use the default voice\n").strip()
+    if speaker_reference != "":
+        if os.path.exists(speaker_reference):
+            tts.set_utterance_embedding(speaker_reference)
+        else:
+            print(f"File {speaker_reference} could not be found, please check for typos and re-run. Using default for now.")
     while True:
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":
