@@ -119,6 +119,18 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Ukrainian Text-Frontend")
 
+        elif language == "fa":
+            self.g2p_lang = "fa"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Farsi Text-Frontend")
+
+        elif language == "chr":
+            self.g2p_lang = "chr"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Cherokee Text-Frontend")
+
         # remember to also update get_language_id() below when adding something here
 
         else:
@@ -380,6 +392,10 @@ def get_language_id(language):
         return torch.LongTensor([14])
     elif language == "uk":
         return torch.LongTensor([15])
+    elif language == "fa":
+        return torch.LongTensor([16])
+    elif language == "chr":
+        return torch.LongTensor([17])
 
 
 if __name__ == '__main__':
