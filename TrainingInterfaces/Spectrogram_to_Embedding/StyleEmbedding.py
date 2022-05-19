@@ -19,17 +19,17 @@ class StyleEmbedding(torch.nn.Module):
             self.swin_config = {
                 "model_type": "swin",
                 "img_size": [256, 80],
-                "patch_size": [16, 10],
-                "in_chans": 1,
-                "num_classes": 64,
-                "embed_dim": 64,
-                "depths": [2, 2, 2], #[2, 2, 18, 2],
-                "num_heads": [2, 4, 8],
-                "window_size": 4,
-                "mlp_ratio": 4,
-                "qkv_bias": False,
-                "qk_scale": None,
-                "drop_rate": 0,
+                "patch_size"    : [16, 10],
+                "in_chans"      : 1,
+                "num_classes"   : 64,
+                "embed_dim"     : 64,
+                "depths"        : [2, 2, 2], #[2, 2, 18, 2],
+                "num_heads"     : [2, 4, 8],
+                "window_size"   : 4,
+                "mlp_ratio"     : 4,
+                "qkv_bias"      : False,
+                "qk_scale"      : None,
+                "drop_rate"     : 0,
                 "drop_path_rate": 0.3,
                 "ape"           : False,
                 "patch_norm"    : True,
@@ -39,8 +39,8 @@ class StyleEmbedding(torch.nn.Module):
             self.swin_config = swin_config
 
         self.swin = build_model(self.swin_config)
-        n_parameters = sum(p.numel() for p in self.swin.parameters() if p.requires_grad)
-        print('SWIN number of params:', n_parameters)
+        # n_parameters = sum(p.numel() for p in self.swin.parameters() if p.requires_grad)
+        # print('SWIN number of params:', n_parameters)
 
     def forward(self, batch_of_spectrograms, batch_of_spectrogram_lengths):
         """

@@ -18,7 +18,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False, use_style_embedding_ensemble=False):
+    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False, use_style_embedding_ensemble=True):
         super().__init__()
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
@@ -54,12 +54,12 @@ class InferenceFastSpeech2(torch.nn.Module):
         wave, sr = soundfile.read(path_to_reference_audio)
         if sr != self.audio_preprocessor.sr:
             self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
-        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave)
+        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         if self.use_style_embedding_ensemble:
             # since a random window is taken everytime, we can just pass in the same thing multiple times to get slightly different results
-            spec_batch = torch.stack([spec.unsqueeze(0)] * 5)
-            spec_len_batch = torch.stack([spec_len.unsqueeze(0)] * 5)
+            spec_batch = torch.stack([spec] * 5, dim=0)
+            spec_len_batch = torch.stack([spec_len] * 5, dim=0)
             self.default_utterance_embedding = torch.mean(self.style_embedding_function(spec_batch.to(self.device),
                                                                                         spec_len_batch.to(self.device)), dim=0).squeeze()
         else:
