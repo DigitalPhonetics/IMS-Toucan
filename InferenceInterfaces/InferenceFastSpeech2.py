@@ -18,7 +18,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False):
+    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False, use_style_embedding_ensemble=False):
         super().__init__()
         self.device = device
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
@@ -44,6 +44,7 @@ class InferenceFastSpeech2(torch.nn.Module):
         else:
             self.lang_id = None
         self.to(torch.device(device))
+        self.use_style_embedding_ensemble = use_style_embedding_ensemble
         self.noise_reduce = noise_reduce
         if self.noise_reduce:
             self.prototypical_noise = None
@@ -55,8 +56,15 @@ class InferenceFastSpeech2(torch.nn.Module):
             self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
         spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave)
         spec_len = torch.LongTensor([len(spec)])
-        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                         spec_len.unsqueeze(0).to(self.device))
+        if self.use_style_embedding_ensemble:
+            # since a random window is taken everytime, we can just pass in the same thing multiple times to get slightly different results
+            spec_batch = torch.stack([spec.unsqueeze(0)] * 5)
+            spec_len_batch = torch.stack([spec_len.unsqueeze(0)] * 5)
+            self.default_utterance_embedding = torch.mean(self.style_embedding_function(spec_batch.to(self.device),
+                                                                                        spec_len_batch.to(self.device)), dim=0).squeeze()
+        else:
+            self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
+                                                                             spec_len.unsqueeze(0).to(self.device)).squeeze()
         if self.noise_reduce:
             self.update_noise_profile()
 

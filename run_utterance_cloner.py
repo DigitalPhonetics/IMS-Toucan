@@ -50,6 +50,8 @@ class UtteranceCloner:
 
         with torch.inference_mode():
             speech_timestamps = self.get_speech_timestamps(norm_wave, self.silero_model, sampling_rate=16000)
+        start_silence = speech_timestamps[0]['start']
+        end_silence = len(norm_wave) - speech_timestamps[-1]['end']
         norm_wave = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
@@ -135,7 +137,7 @@ class UtteranceCloner:
                        text=text,
                        durations=duration.unsqueeze(0),
                        durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
-        return duration, pitch, energy, speech_timestamps[0]['start'], speech_timestamps[-1]['end']
+        return duration, pitch, energy, start_silence, end_silence
 
     def clone_utterance(self,
                         path_to_reference_audio,
