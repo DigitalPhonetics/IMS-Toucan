@@ -17,7 +17,6 @@ if __name__ == '__main__':
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tts = InferenceFastSpeech2(device=device, model_name=model_id)
     tts.set_language(lang_id=input("Which Language?\n"))
-    tts.set_utterance_embedding("audios/test_cloned.wav")
     while True:
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":
