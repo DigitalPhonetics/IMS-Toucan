@@ -77,13 +77,13 @@ class InferenceFastSpeech2(torch.nn.Module):
                 energy=None,
                 input_is_phones=False):
         """
-        duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
+        duration_scaling_factor: reasonable values are 0.5 < scale < 1.5.
                                      1.0 means no scaling happens, higher values increase durations for the whole
                                      utterance, lower values decrease durations for the whole utterance.
-        pitch_variance_scale: reasonable values are 0.6 < scale < 1.4.
+        pitch_variance_scale: reasonable values are 0.0 < scale < 2.0.
                                   1.0 means no scaling happens, higher values increase variance of the pitch curve,
                                   lower values decrease variance of the pitch curve.
-        energy_variance_scale: reasonable values are 0.6 < scale < 1.4.
+        energy_variance_scale: reasonable values are 0.0 < scale < 2.0.
                                    1.0 means no scaling happens, higher values increase variance of the energy curve,
                                    lower values decrease variance of the energy curve.
         """
@@ -144,13 +144,13 @@ class InferenceFastSpeech2(torch.nn.Module):
             energy_list: list of energy tensors to be used for the texts
             pitch_list: list of pitch tensors to be used for the texts
             dur_list: list of duration tensors to be used for the texts
-            duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
+            duration_scaling_factor: reasonable values are 0.5 < scale < 1.5.
                                      1.0 means no scaling happens, higher values increase durations for the whole
                                      utterance, lower values decrease durations for the whole utterance.
-            pitch_variance_scale: reasonable values are 0.6 < scale < 1.4.
+            pitch_variance_scale: reasonable values are 0.0 < scale < 12.0.
                                   1.0 means no scaling happens, higher values increase variance of the pitch curve,
                                   lower values decrease variance of the pitch curve.
-            energy_variance_scale: reasonable values are 0.6 < scale < 1.4.
+            energy_variance_scale: reasonable values are 0.0 < scale < 2.0.
                                    1.0 means no scaling happens, higher values increase variance of the energy curve,
                                    lower values decrease variance of the energy curve.
         """
