@@ -69,7 +69,7 @@ separated to keep the code clean, simple and minimal as the development progress
   also include word-boundary pseudo-tokens which are only visible to the text encoder.
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
-- [Temporary Note] If you have models from before May 2022, they have become incompatible with the current state of the
+- [Temporary Note] If you have models or dataset caches from before May 2022, they have become incompatible with the current state of the
   toolkit. Also you might need to upgrade your version of the phonemizer dependency and espeak-ng.
 
 ### Pretrained models are available!
