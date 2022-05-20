@@ -202,7 +202,7 @@ def train_loop(net,
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     # schedule 0.0 --> 100.0 over 50,000 steps
-                    train_loss = train_loss + cycle_dist * min(100.0, (steps - warmup_steps) / 500)
+                    train_loss = train_loss + cycle_dist * min(100.0, (steps - warmup_steps) / 5000)
 
                     if use_barlow_twins:
                         bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
