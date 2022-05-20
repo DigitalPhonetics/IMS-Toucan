@@ -133,6 +133,8 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     if use_cycle_loss:
         cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
+        double_descent_style_embedding_function = StyleEmbedding().to(device)
+
         if use_barlow_twins:
             bt_loss = BarlowTwinsLoss().to(device)
 
@@ -191,22 +193,22 @@ def train_loop(net,
                 train_losses_this_epoch.append(train_loss.item())
 
                 if use_cycle_loss and step_counter > warmup_steps:
-                    style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                       batch_of_spectrogram_lengths=batch[3].to(device)).detach()
-                    # unfortunately we have to calculate the same thing again as above,
-                    # since the backward pass can be incorrect if we re-use the one from above
-                    style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
-                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
+                    double_descent_style_embedding_function.load_state_dict(style_embedding_function.state_dict())
 
-                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted,
-                                                             style_embedding_of_gold) * 200  # balancing factor for order of magnitude
+                    style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                                      batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                    style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                                           batch_of_spectrogram_lengths=batch[3].to(device))
+                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                     cycle_losses_this_epoch.append(cycle_dist.item())
-                    train_loss = train_loss + cycle_dist
+                    # schedule 0.0 --> 100.0 over 50,000 steps
+                    train_loss = train_loss + cycle_dist * min(100.0, (steps - warmup_steps) / 500)
 
                     if use_barlow_twins:
-                        bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold) * 5  # balancing factor for order of magnitude
+                        bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
-                        train_loss = train_loss + bt_cycle_dist
+                        # schedule 0.0 --> 1.0 over 50,000 steps
+                        train_loss = train_loss + bt_cycle_dist * min(1.0, (steps - warmup_steps) / 500000)
 
             optimizer.zero_grad()
 
