@@ -12,8 +12,8 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import get_language_id
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -42,6 +42,16 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
+    elif lang == "pt":
+        sentence = "Esta é uma frase complexa, tem até uma pausa!"
+    elif lang == "pl":
+        sentence = "To jest zdanie złożone, ma nawet pauzę!"
+    elif lang == "it":
+        sentence = "Questa è una frase complessa, ha anche una pausa!"
+    elif lang == "cmn":
+        sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
+    elif lang == "vi":
+        sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     spec, durations, *_ = net.inference(text=phoneme_vector,
                                         return_duration_pitch_energy=True,
@@ -63,7 +73,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence))
+    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True))
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
@@ -182,13 +192,13 @@ def train_loop(net,
         net.eval()
         if epoch % epochs_per_save == 0:
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
                 "step_counter": step_counter,
-                "scaler"      : scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                "default_emb" : default_embedding,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                "scaler": scaler.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "default_emb": default_embedding,
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
             if step_counter > steps:

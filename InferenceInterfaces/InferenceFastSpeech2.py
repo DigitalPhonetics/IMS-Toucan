@@ -10,9 +10,9 @@ import torch
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import get_language_id
 
 
 class InferenceFastSpeech2(torch.nn.Module):
@@ -118,7 +118,7 @@ class InferenceFastSpeech2(torch.nn.Module):
             ax[1].set_xticks(duration_splits, minor=True)
             ax[1].xaxis.grid(True, which='minor')
             ax[1].set_xticks(label_positions, minor=False)
-            ax[1].set_xticklabels(self.text2phone.get_phone_string(text))
+            ax[1].set_xticklabels(self.text2phone.get_phone_string(text, for_plot_labels=True))
             ax[0].set_title(text)
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()

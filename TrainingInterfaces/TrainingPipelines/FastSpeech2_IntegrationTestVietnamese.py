@@ -1,3 +1,7 @@
+"""
+This is basically an integration test
+"""
+
 import random
 
 import torch
@@ -15,7 +19,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     else:
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        os.environ["CUDA_VISIBLE_DEVICES"] = "{}".format(gpu_id)
+        os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         device = torch.device("cuda")
 
     torch.manual_seed(131714)
@@ -27,12 +31,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_GermanSingle")
+        save_dir = os.path.join("Models", "FastSpeech2_IntegrationTestVietnamese")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
-                                          corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                          lang="de")
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
+                                          corpus_dir=os.path.join("Corpora", "vietTTS"),
+                                          lang="vi",
+                                          save_imgs=False)
 
     model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
 
@@ -41,11 +46,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=500000,
+               steps=60000,
                batch_size=32,
-               lang="de",
-               lr=0.001,
-               epochs_per_save=10,
+               lang="vi",
+               lr=0.0001,
+               epochs_per_save=1,
                warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,

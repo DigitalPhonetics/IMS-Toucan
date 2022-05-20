@@ -11,7 +11,10 @@ from scipy.spatial.distance import cdist
 from sklearn.metrics import mean_squared_error
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Crepe import Crepe
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Dio import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator_Yin import Yin
 from Utility.EvaluationScripts.soft_dtw import SoftDTW
 
 
@@ -241,6 +244,82 @@ def get_pitch_curves_abc(path_1, path_2, path_3):
     ax[2].yaxis.set_visible(False)
     ax[2].set_title("Synthetic Speech 1")
     ax[2].plot(pitch_curve_3, c="darkred")
+
+    plt.tight_layout()
+    plt.show()
+
+
+def get_pitch_curve_diff_extractors(audio_path, text=None):
+    wave, sr = sf.read(audio_path)
+
+    ap = AudioPreprocessor(cut_silence=True, input_sr=sr, output_sr=16000, fmax_for_spec=1000)
+
+    norm_wave = ap.audio_to_wave_tensor(wave, normalize=True)
+    dio = Dio(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
+    parsel = Parselmouth(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
+    crepe = Crepe(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
+    yin = Yin(fs=16000, use_token_averaged_f0=False, use_log_f0=False, use_continuous_f0=False, n_fft=1024, hop_length=256)
+
+    pitch_curve_1 = dio(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
+    pitch_curve_2 = parsel(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
+    pitch_curve_3 = crepe(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
+    pitch_curve_4 = yin(norm_wave.unsqueeze(0), norm_by_average=False)[0].squeeze()
+
+    print(norm_wave.shape)
+    print('Dio\n', pitch_curve_1, "\n", len(pitch_curve_1))
+    print('Parsel\n', pitch_curve_2, "\n", len(pitch_curve_2))
+    print('Crepe\n', pitch_curve_3, "\n", len(pitch_curve_3))
+    print('Yin\n', pitch_curve_3, "\n", len(pitch_curve_4))
+
+    # plt.plot(pitch_curve_1, c="red")
+    # plt.plot(pitch_curve_2, c="blue")
+    # plt.plot(pitch_curve_3, c="green")
+    # plt.show()
+
+    fig, ax = plt.subplots(nrows=4, ncols=1)
+    lbd.specshow(ap.audio_to_mel_spec_tensor(wave).numpy(),
+                 ax=ax[0],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[0].yaxis.set_visible(False)
+    ax[0].set_title("Dio")
+    ax[0].plot(pitch_curve_1, c="darkred")
+
+    lbd.specshow(ap.audio_to_mel_spec_tensor(wave).numpy(),
+                 ax=ax[1],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[1].yaxis.set_visible(False)
+    ax[1].set_title("Parselmouth")
+    ax[1].plot(pitch_curve_2, c="darkred")
+
+    lbd.specshow(ap.audio_to_mel_spec_tensor(wave).numpy(),
+                 ax=ax[2],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[2].yaxis.set_visible(False)
+    ax[2].set_title("Crepe")
+    ax[2].plot(pitch_curve_3, c="darkred")
+
+    lbd.specshow(ap.audio_to_mel_spec_tensor(wave).numpy(),
+                 ax=ax[3],
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax[3].yaxis.set_visible(False)
+    ax[3].set_title("Yin")
+    ax[3].plot(pitch_curve_4, c="darkred")
 
     plt.tight_layout()
     plt.show()
