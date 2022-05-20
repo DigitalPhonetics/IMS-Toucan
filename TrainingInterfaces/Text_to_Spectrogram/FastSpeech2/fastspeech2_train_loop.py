@@ -109,7 +109,8 @@ def train_loop(net,
                fine_tune=False,
                resume=False,
                use_cycle_loss=False,
-               use_barlow_twins=False):
+               use_barlow_twins=False,
+               cycle_warmup_steps=16000):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -127,6 +128,7 @@ def train_loop(net,
         epochs_per_save: how many epochs to train in between checkpoints
         use_cycle_loss: whether to use the cycle consistency objective
         use_barlow_twins: whether to use the barlow twins objective for the cycle consistency
+        cycle_warmup_steps: how many steps to train before using any of the cycle objectives
 
     """
     net = net.to(device)
@@ -192,7 +194,7 @@ def train_loop(net,
                                                       return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
 
-                if use_cycle_loss and step_counter > warmup_steps:
+                if use_cycle_loss and step_counter > cycle_warmup_steps:
                     double_descent_style_embedding_function.load_state_dict(style_embedding_function.state_dict())
 
                     style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
@@ -202,13 +204,13 @@ def train_loop(net,
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     # schedule 0.0 --> 100.0 over 50,000 steps
-                    train_loss = train_loss + cycle_dist * min(100.0, (steps - warmup_steps) / 5000)
+                    train_loss = train_loss + (cycle_dist * (steps - cycle_warmup_steps) / 50000)
 
                     if use_barlow_twins:
                         bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
                         # schedule 0.0 --> 1.0 over 50,000 steps
-                        train_loss = train_loss + bt_cycle_dist * min(1.0, (steps - warmup_steps) / 50000000)
+                        train_loss = train_loss + (bt_cycle_dist * (steps - cycle_warmup_steps) / 500000000)
                         # this should never reach max, barlow twins loss can escalate quickly and is very hard to balance.
 
             optimizer.zero_grad()
