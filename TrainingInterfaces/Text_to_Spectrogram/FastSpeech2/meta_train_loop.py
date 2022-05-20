@@ -10,8 +10,8 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import get_language_id
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import cumsum_durations
@@ -48,8 +48,9 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    default_embeddings = {"en": None, "de": None, "el": None, "es": None, "fi": None, "ru": None, "hu": None, "nl": None, "fr": None}
-    for index, lang in enumerate(["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]):
+    languages_used = ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr", "pt", "pl", "it", "cmn", "vi"]
+    default_embeddings = dict()
+    for index, lang in enumerate(languages_used):
         default_embeddings[lang] = datasets[index][0][7].squeeze().to(device)
     optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
     grad_scaler = GradScaler()
@@ -124,16 +125,16 @@ def train_loop(net,
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             train_losses_total = list()
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "scaler"      : grad_scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scaler": grad_scaler.state_dict(),
+                "scheduler": scheduler.state_dict(),
                 "step_counter": step,
-                "default_emb" : default_embeddings["en"]
-                },
+                "default_emb": default_embeddings["en"]
+            },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
-            for lang in ["en", "de", "el", "es", "fi", "ru", "hu", "nl", "fr"]:
+            for lang in languages_used:
                 plot_progress_spec(net=net,
                                    device=device,
                                    lang=lang,
@@ -166,6 +167,16 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
         sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
     elif lang == "fr":
         sentence = "C'est une phrase complexe, elle a même une pause !"
+    elif lang == "pt":
+        sentence = "Esta é uma frase complexa, tem até uma pausa!"
+    elif lang == "pl":
+        sentence = "To jest zdanie złożone, ma nawet pauzę!"
+    elif lang == "it":
+        sentence = "Questa è una frase complessa, ha anche una pausa!"
+    elif lang == "cmn":
+        sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
+    elif lang == "vi":
+        sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     spec, durations, *_ = net.inference(text=phoneme_vector,
                                         return_duration_pitch_energy=True,
@@ -187,7 +198,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence))
+    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True))
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png"))
     plt.clf()

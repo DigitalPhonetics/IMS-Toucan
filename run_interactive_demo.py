@@ -21,4 +21,4 @@ if __name__ == '__main__':
         text = input("\nWhat should I say? (or 'exit')\n")
         if text == "exit":
             sys.exit()
-        tts.read_aloud(text, view=True, blocking=False)
+        tts.read_aloud(text, view=True, blocking=False, duration_scaling_factor=1.0, energy_variance_scale=1.0, pitch_variance_scale=1.0)

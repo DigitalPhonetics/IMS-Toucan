@@ -35,7 +35,7 @@ class EnergyCalculator(torch.nn.Module):
                     normalized=self.stft.normalized, use_token_averaged_energy=self.use_token_averaged_energy, reduction_factor=self.reduction_factor)
 
     def forward(self, input_waves, input_waves_lengths=None, feats_lengths=None, durations=None,
-                durations_lengths=None, norm_by_average=True):
+                durations_lengths=None, norm_by_average=True, text=None):
         # If not provided, we assume that the inputs have the same length
         if input_waves_lengths is None:
             input_waves_lengths = (input_waves.new_ones(input_waves.shape[0], dtype=torch.long) * input_waves.shape[1])
@@ -58,7 +58,7 @@ class EnergyCalculator(torch.nn.Module):
 
         # (Optional): Average by duration to calculate token-wise energy
         if self.use_token_averaged_energy:
-            energy = [self._average_by_duration(e[:el].view(-1), d) for e, el, d in zip(energy, energy_lengths, durations)]
+            energy = [self._average_by_duration(e[:el].view(-1), d, text) for e, el, d in zip(energy, energy_lengths, durations)]
             energy_lengths = durations_lengths
 
         # Padding
@@ -71,10 +71,18 @@ class EnergyCalculator(torch.nn.Module):
             energy = energy / average
         return energy.unsqueeze(-1), energy_lengths
 
-    def _average_by_duration(self, x, d):
+    def _average_by_duration(self, x, d, text=None):
+
         assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0) for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
+
+        # find tokens that are not phoneme and set energy to 0
+        if text is not None:
+            for i, vector in enumerate(text):
+                if vector[13] == 0:
+                    x_avg[i] = torch.tensor(0.0)
+
         return torch.stack(x_avg)
 
     @staticmethod

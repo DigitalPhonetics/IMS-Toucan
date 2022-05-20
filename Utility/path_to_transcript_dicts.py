@@ -137,6 +137,20 @@ def build_path_to_transcript_dict_nancy():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_integration_test():
+    root = "/mount/resources/speech/corpora/NancyKrebs"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "metadata.csv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n")[:500]:
+        if line.strip() != "":
+            norm_transcript = line.split("|")[1]
+            wav_path = os.path.join(root, "wav", line.split("|")[0] + ".wav")
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_hokuspokus():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):
@@ -307,6 +321,31 @@ def build_path_to_transcript_dict_css10de():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_css10cmn():
+    path_to_transcript = dict()
+    with open("/mount/resources/speech/corpora/CSS10/chinese/transcript.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["/mount/resources/speech/corpora/CSS10/chinese/" + line.split("|")[0]] = line.split("|")[2]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_vietTTS():
+    path_to_transcript = dict()
+    root = "/mount/resources/speech/corpora/VietTTS"
+    with open(root + "/meta_data.tsv", encoding="utf8") as f:
+        transcriptions = f.read()
+    for line in transcriptions.split("\n"):
+        if line.strip() != "":
+            parsed_line = line.split(".wav")
+            audio_path = parsed_line[0]
+            transcript = parsed_line[1]
+            path_to_transcript[os.path.join(root, audio_path + ".wav")] = transcript.strip()
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_thorsten():
     path_to_transcript = dict()
     with open("/mount/resources/speech/corpora/Thorsten_DE/metadata_shuf.csv", encoding="utf8") as f:
@@ -453,3 +492,30 @@ def build_path_to_transcript_dict_3xljspeech():
         wav_path = "/mount/arbeitsdaten/synthesis/attention_projects/LJSpeech_3xlong_stripped/wav_long/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_aishell3():
+    root = "/mount/resources/speech/corpora/aishell3/train"
+    path_to_transcript_dict = dict()
+    with open(root + "/label_train-set.txt", mode="r", encoding="utf8") as f:
+        transcripts = f.read().replace("$", "").replace("%", ",").split("\n")
+    for transcript in transcripts:
+        if transcript.strip() != "" and not transcript.startswith("#"):
+            parsed_line = transcript.split("|")
+            audio_file = f"{root}/wav/{parsed_line[0][:7]}/{parsed_line[0]}.wav"
+            kanji = parsed_line[2]
+            path_to_transcript_dict[audio_file] = kanji
+    return path_to_transcript_dict
+
+
+def build_path_to_transcript_dict_VIVOS_viet():
+    root = "/mount/resources/speech/corpora/VIVOS_vietnamese/train"
+    path_to_transcript_dict = dict()
+    with open(root + "/prompts.txt", mode="r", encoding="utf8") as f:
+        transcripts = f.read().split("\n")
+    for transcript in transcripts:
+        if transcript.strip() != "":
+            parsed_line = transcript.split(" ")
+            audio_file = f"{root}/waves/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
+            path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:]).lower()
+    return path_to_transcript_dict

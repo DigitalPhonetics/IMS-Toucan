@@ -5,13 +5,13 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import get_language_id
 from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
+from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Dio
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
 
 
 class FastSpeechDataset(Dataset):
@@ -45,21 +45,11 @@ class FastSpeechDataset(Dataset):
                                device=device)
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
-            if not isinstance(datapoints, tuple):  # check for backwards compatibility
-                print(f"It seems like the Aligner dataset in {cache_dir} is not a tuple. Regenerating it, since we need the preprocessed waves.")
-                AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
-                               cache_dir=cache_dir,
-                               lang=lang,
-                               loading_processes=loading_processes,
-                               min_len_in_seconds=min_len_in_seconds,
-                               max_len_in_seconds=max_len_in_seconds,
-                               cut_silences=cut_silence,
-                               rebuild_cache=True)
-                datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             dataset = datapoints[0]
             norm_waves = datapoints[1]
+            # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner, we don't need them anymore
+            filepaths = datapoints[3]
 
-            # build cache
             print("... building dataset cache ...")
             self.datapoints = list()
             self.ctc_losses = list()
@@ -72,7 +62,7 @@ class FastSpeechDataset(Dataset):
             # ==========================================
 
             acoustic_model = acoustic_model.to(device)
-            dio = Dio(reduction_factor=reduction_factor, fs=16000)
+            parsel = Parselmouth(reduction_factor=reduction_factor, fs=16000)
             energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
@@ -90,12 +80,28 @@ class FastSpeechDataset(Dataset):
                 melspec = dataset[index][2]
                 melspec_length = dataset[index][3]
 
+                # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
+                # We note the index of word boundaries and insert durations of 0 afterwards
+                text_without_word_boundaries = list()
+                indexes_of_word_boundaries = list()
+                for phoneme_index, vector in enumerate(text):
+                    if vector[19] == 0:
+                        text_without_word_boundaries.append(vector.numpy().tolist())
+                    else:
+                        indexes_of_word_boundaries.append(phoneme_index)
+                matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
+
                 alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
-                                                                    tokens=text.to(device),
+                                                                    tokens=matrix_without_word_boundaries.to(device),
                                                                     save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                     return_ctc=True)
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
+
+                for index_of_word_boundary in indexes_of_word_boundaries:
+                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
+                                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
+                                                 cached_duration[index_of_word_boundary:]])
 
                 last_vec = None
                 for phoneme_index, vec in enumerate(text):
@@ -115,14 +121,16 @@ class FastSpeechDataset(Dataset):
                 cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
+                                            text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                cached_pitch = dio(input_waves=norm_wave.unsqueeze(0),
-                                   input_waves_lengths=norm_wave_length,
-                                   feats_lengths=melspec_length,
-                                   durations=cached_duration.unsqueeze(0),
-                                   durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
+                cached_pitch = parsel(input_waves=norm_wave.unsqueeze(0),
+                                      input_waves_lengths=norm_wave_length,
+                                      feats_lengths=melspec_length,
+                                      text=text,
+                                      durations=cached_duration.unsqueeze(0),
+                                      durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
                 try:
                     prosodic_condition = pros_cond_ext.extract_condition_from_reference_wave(norm_wave, already_normalized=True).cpu()
@@ -137,7 +145,8 @@ class FastSpeechDataset(Dataset):
                                         cached_duration.cpu(),
                                         cached_energy,
                                         cached_pitch,
-                                        prosodic_condition])
+                                        prosodic_condition,
+                                        filepaths[index]])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -187,31 +196,5 @@ class FastSpeechDataset(Dataset):
     def remove_samples(self, list_of_samples_to_remove):
         for remove_id in sorted(list_of_samples_to_remove, reverse=True):
             self.datapoints.pop(remove_id)
-        torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
-        print("Dataset updated!")
-
-    def fix_repeating_phones(self):
-        """
-        The viterbi decoding of the durations cannot
-        handle repetitions. This is now solved heuristically,
-        but if you have a cache from before March 2022,
-        use this method to postprocess those cases.
-        """
-        for datapoint_index in tqdm(list(range(len(self.datapoints)))):
-            last_vec = None
-            for phoneme_index, vec in enumerate(self.datapoints[datapoint_index][0]):
-                if last_vec is not None:
-                    if last_vec.numpy().tolist() == vec.numpy().tolist():
-                        # we found a case of repeating phonemes!
-                        # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                        dur_1 = self.datapoints[datapoint_index][4][phoneme_index - 1]
-                        dur_2 = self.datapoints[datapoint_index][4][phoneme_index]
-                        total_dur = dur_1 + dur_2
-                        new_dur_1 = int((total_dur / 5) * 3)
-                        new_dur_2 = total_dur - new_dur_1
-                        self.datapoints[datapoint_index][4][phoneme_index - 1] = new_dur_1
-                        self.datapoints[datapoint_index][4][phoneme_index] = new_dur_2
-                        print("fix applied")
-                last_vec = vec
         torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
         print("Dataset updated!")

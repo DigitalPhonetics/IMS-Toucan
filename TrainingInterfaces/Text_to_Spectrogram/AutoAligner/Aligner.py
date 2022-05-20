@@ -12,7 +12,7 @@ from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
-from Preprocessing.ArticulatoryCombinedTextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 class BatchNormConv(nn.Module):
@@ -53,14 +53,12 @@ class Aligner(torch.nn.Module):
             nn.Dropout(p=0.5),
             BatchNormConv(conv_dim, conv_dim, 3),
             nn.Dropout(p=0.5),
-            ])
+        ])
         self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
-        for phone in self.tf.phone_to_vector:
-            self.vector_to_id[tuple(self.tf.phone_to_vector[phone])] = self.tf.phone_to_id[phone]
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -101,7 +99,13 @@ class Aligner(torch.nn.Module):
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
-                tokens_indexed.append(self.vector_to_id[tuple(vector.cpu().detach().numpy().tolist())])
+                if vector[19] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
+                    for phone in self.tf.phone_to_vector:
+                        if vector.cpu().numpy().tolist()[11:] == self.tf.phone_to_vector[phone][11:]:
+                            # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                            tokens_indexed.append(self.tf.phone_to_id[phone])
+                            # this is terribly inefficient, but it's fine
+                            break
             tokens = np.asarray(tokens_indexed)
         else:
             tokens = tokens.cpu().detach().numpy()
