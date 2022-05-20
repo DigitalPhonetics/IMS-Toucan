@@ -208,7 +208,8 @@ def train_loop(net,
                         bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
                         # schedule 0.0 --> 1.0 over 50,000 steps
-                        train_loss = train_loss + bt_cycle_dist * min(1.0, (steps - warmup_steps) / 500000)
+                        train_loss = train_loss + bt_cycle_dist * min(1.0, (steps - warmup_steps) / 50000000)
+                        # this should never reach max, barlow twins loss can escalate quickly and is very hard to balance.
 
             optimizer.zero_grad()
 
