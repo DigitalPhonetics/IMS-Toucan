@@ -194,7 +194,7 @@ def train_loop(net,
                                                       return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
 
-                if use_cycle_loss and step_counter > cycle_warmup_steps:
+                if use_cycle_loss and step_counter > cycle_warmup_steps and step_counter % 3 == 0:
                     double_descent_style_embedding_function.load_state_dict(style_embedding_function.state_dict())
 
                     style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
@@ -202,16 +202,15 @@ def train_loop(net,
                     style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
+                    cycle_dist = cycle_dist * 0.1
                     cycle_losses_this_epoch.append(cycle_dist.item())
-                    # schedule 0.0 --> 100.0 over 50,000 steps
-                    train_loss = train_loss + (cycle_dist * (steps - cycle_warmup_steps) / 50000)
+                    train_loss = train_loss + cycle_dist
 
                     if use_barlow_twins:
                         bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
+                        bt_cycle_dist = bt_cycle_dist * 0.001
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
-                        # schedule 0.0 --> 1.0 over 50,000 steps
-                        train_loss = train_loss + (bt_cycle_dist * (steps - cycle_warmup_steps) / 500000000)
-                        # this should never reach max, barlow twins loss can escalate quickly and is very hard to balance.
+                        train_loss = train_loss + bt_cycle_dist
 
             optimizer.zero_grad()
 
