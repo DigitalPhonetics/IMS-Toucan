@@ -62,6 +62,8 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
     # COLLECT CHECKPOINTS
     if list_of_checkpoint_paths is None or len(list_of_checkpoint_paths) == 0:
         return None
+    tts_checkpoints_weights = {}
+    embed_checkpoints_weights = {}
     checkpoints_weights = {}
     model = None
     default_embed = None
@@ -72,19 +74,21 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
         print("loading model {}".format(path_to_checkpoint))
         if model_type == "tts":
             model, default_embed, embed_func = load_func(path=path_to_checkpoint)
+            tts_checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
+            embed_checkpoints_weights[path_to_checkpoint] = dict(embed_func.named_parameters())
         else:
             model, default_embed = load_func(path=path_to_checkpoint)
-        checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
+            checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
 
     if model_type == "tts":
         # TTS WEIGHT AVERAGING
         params = model.named_parameters()
         dict_params = dict(params)
-        checkpoint_amount = len(checkpoints_weights)
+        checkpoint_amount = len(tts_checkpoints_weights)
         print("averaging...")
         for name in dict_params.keys():
             custom_params = None
-            for _, checkpoint_parameters in checkpoints_weights.items():
+            for _, checkpoint_parameters in tts_checkpoints_weights.items():
                 if custom_params is None:
                     custom_params = checkpoint_parameters[name].data
                 else:
@@ -95,20 +99,20 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
         model.load_state_dict(model_dict)
         model.eval()
         # EMBEDDING FUNCTION WEIGHT AVERAGING
-        params = embed_func.named_parameters()
-        dict_params = dict(params)
-        checkpoint_amount = len(checkpoints_weights)
+        embed_params = embed_func.named_parameters()
+        embed_dict_params = dict(embed_params)
+        checkpoint_amount = len(embed_checkpoints_weights)
         print("averaging...")
-        for name in dict_params.keys():
+        for name in embed_dict_params.keys():
             custom_params = None
-            for _, checkpoint_parameters in checkpoints_weights.items():
+            for _, checkpoint_parameters in embed_checkpoints_weights.items():
                 if custom_params is None:
                     custom_params = checkpoint_parameters[name].data
                 else:
                     custom_params += checkpoint_parameters[name].data
-            dict_params[name].data.copy_(custom_params / checkpoint_amount)
+            embed_dict_params[name].data.copy_(custom_params / checkpoint_amount)
         model_dict = embed_func.state_dict()
-        model_dict.update(dict_params)
+        model_dict.update(embed_dict_params)
         embed_func.load_state_dict(model_dict)
         embed_func.eval()
         return model, default_embed, embed_func
