@@ -1,3 +1,4 @@
+import copy
 import os
 import time
 
@@ -135,8 +136,6 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     if use_cycle_loss:
         cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
-        double_descent_style_embedding_function = StyleEmbedding().to(device)
-
         if use_barlow_twins:
             bt_loss = BarlowTwinsLoss().to(device)
 
@@ -195,7 +194,9 @@ def train_loop(net,
                 train_losses_this_epoch.append(train_loss.item())
 
                 if use_cycle_loss and step_counter > cycle_warmup_steps and step_counter % 3 == 0:
-                    double_descent_style_embedding_function.load_state_dict(style_embedding_function.state_dict())
+                    double_descent_style_embedding_function = copy.deepcopy(style_embedding_function)
+                    double_descent_style_embedding_function.eval()
+                    double_descent_style_embedding_function.requires_grad_(False)
 
                     style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                                       batch_of_spectrogram_lengths=batch[3].to(device)).detach()
