@@ -158,13 +158,13 @@ def make_best_in_all(n=3):
         if os.path.isdir(f"Models/{model_dir}"):
             if "HiFiGAN" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
-                if len(checkpoint_paths) == 0:
+                if checkpoint_paths is None:
                     continue
                 averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan, model_type="vocoder")
                 save_model_for_use(model=averaged_model, name=f"Models/{model_dir}/best.pt", dict_name="generator")
             elif "FastSpeech2" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
-                if len(checkpoint_paths) == 0:
+                if checkpoint_paths is None:
                     continue
                 averaged_model, default_embed, averaged_embed_func = average_checkpoints(checkpoint_paths, load_func=load_net_fast, model_type="tts")
                 save_model_for_use(model=(averaged_model, averaged_embed_func), default_embed=default_embed, name=f"Models/{model_dir}/best.pt")
