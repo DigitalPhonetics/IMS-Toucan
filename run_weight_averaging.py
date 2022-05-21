@@ -6,6 +6,7 @@ import os
 
 import torch
 
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.HiFiGAN import HiFiGANGenerator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 
@@ -15,16 +16,22 @@ def load_net_fast(path):
     try:
         net = FastSpeech2()
         net.load_state_dict(check_dict["model"])
-        return net, check_dict["default_emb"]
+        embed = StyleEmbedding()
+        embed.load_state_dict(check_dict["style_emb_func"])
+        return net, check_dict["default_emb"], embed
     except RuntimeError:
         try:
             net = FastSpeech2(lang_embs=None)
             net.load_state_dict(check_dict["model"])
-            return net, check_dict["default_emb"]
+            embed = StyleEmbedding()
+            embed.load_state_dict(check_dict["style_emb_func"])
+            return net, check_dict["default_emb"], embed
         except RuntimeError:
             net = FastSpeech2(lang_embs=None, utt_embed_dim=None)
             net.load_state_dict(check_dict["model"])
-            return net, check_dict["default_emb"]
+            embed = StyleEmbedding()
+            embed.load_state_dict(check_dict["style_emb_func"])
+            return net, check_dict["default_emb"], embed
 
 
 def load_net_hifigan(path):
@@ -39,7 +46,10 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
         if el.endswith(".pt") and el != "best.pt":
-            checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+            try:
+                checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+            except RuntimeError:
+                pass
     if len(checkpoint_list) == 0:
         return None
     elif len(checkpoint_list) < n:
@@ -48,49 +58,94 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     return [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:n]]
 
 
-def average_checkpoints(list_of_checkpoint_paths, load_func):
+def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
+    # COLLECT CHECKPOINTS
     if list_of_checkpoint_paths is None or len(list_of_checkpoint_paths) == 0:
         return None
     checkpoints_weights = {}
     model = None
     default_embed = None
+    embed_func = None
+
+    # LOAD CHECKPOINTS
     for path_to_checkpoint in list_of_checkpoint_paths:
         print("loading model {}".format(path_to_checkpoint))
-        model, default_embed = load_func(path=path_to_checkpoint)
+        if model_type == "tts":
+            model, default_embed, embed_func = load_func(path=path_to_checkpoint)
+        else:
+            model, default_embed = load_func(path=path_to_checkpoint)
         checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
-    params = model.named_parameters()
-    dict_params = dict(params)
-    checkpoint_amount = len(checkpoints_weights)
-    print("averaging...")
-    for name in dict_params.keys():
-        custom_params = None
-        for _, checkpoint_parameters in checkpoints_weights.items():
-            if custom_params is None:
-                custom_params = checkpoint_parameters[name].data
-            else:
-                custom_params += checkpoint_parameters[name].data
-        dict_params[name].data.copy_(custom_params / checkpoint_amount)
-    model_dict = model.state_dict()
-    model_dict.update(dict_params)
-    model.load_state_dict(model_dict)
-    model.eval()
-    if default_embed is None:
-        return model
+
+    if model_type == "tts":
+        # TTS WEIGHT AVERAGING
+        params = model.named_parameters()
+        dict_params = dict(params)
+        checkpoint_amount = len(checkpoints_weights)
+        print("averaging...")
+        for name in dict_params.keys():
+            custom_params = None
+            for _, checkpoint_parameters in checkpoints_weights.items():
+                if custom_params is None:
+                    custom_params = checkpoint_parameters[name].data
+                else:
+                    custom_params += checkpoint_parameters[name].data
+            dict_params[name].data.copy_(custom_params / checkpoint_amount)
+        model_dict = model.state_dict()
+        model_dict.update(dict_params)
+        model.load_state_dict(model_dict)
+        model.eval()
+        # EMBEDDING FUNCTION WEIGHT AVERAGING
+        params = embed_func.named_parameters()
+        dict_params = dict(params)
+        checkpoint_amount = len(checkpoints_weights)
+        print("averaging...")
+        for name in dict_params.keys():
+            custom_params = None
+            for _, checkpoint_parameters in checkpoints_weights.items():
+                if custom_params is None:
+                    custom_params = checkpoint_parameters[name].data
+                else:
+                    custom_params += checkpoint_parameters[name].data
+            dict_params[name].data.copy_(custom_params / checkpoint_amount)
+        model_dict = embed_func.state_dict()
+        model_dict.update(dict_params)
+        embed_func.load_state_dict(model_dict)
+        embed_func.eval()
+        return model, default_embed, embed_func
+
     else:
-        return model, default_embed
+        # VOCODER WEIGHT AVERAGING
+        params = model.named_parameters()
+        dict_params = dict(params)
+        checkpoint_amount = len(checkpoints_weights)
+        print("averaging...")
+        for name in dict_params.keys():
+            custom_params = None
+            for _, checkpoint_parameters in checkpoints_weights.items():
+                if custom_params is None:
+                    custom_params = checkpoint_parameters[name].data
+                else:
+                    custom_params += checkpoint_parameters[name].data
+            dict_params[name].data.copy_(custom_params / checkpoint_amount)
+        model_dict = model.state_dict()
+        model_dict.update(dict_params)
+        model.load_state_dict(model_dict)
+        model.eval()
+        return model
 
 
 def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
-    if model is None:
-        return
     print("saving model...")
     if default_embed is None:
+        # HiFiGAN case
         torch.save({dict_name: model.state_dict()}, name)
     else:
+        # TTS case
         torch.save({
-            dict_name: model.state_dict(),
-            "default_emb": default_embed
-        }, name)
+            dict_name       : model[0].state_dict(),
+            "default_emb"   : default_embed,
+            "style_emb_func": model[1].state_dict()
+            }, name)
     print("...done!")
 
 
@@ -98,13 +153,17 @@ def make_best_in_all(n=3):
     for model_dir in os.listdir("Models"):
         if os.path.isdir(f"Models/{model_dir}"):
             if "HiFiGAN" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
-                save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
+                if len(checkpoint_paths) == 0:
+                    continue
+                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan, model_type="vocoder")
+                save_model_for_use(model=averaged_model, name=f"Models/{model_dir}/best.pt", dict_name="generator")
             elif "FastSpeech2" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
-                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
+                if len(checkpoint_paths) == 0:
+                    continue
+                averaged_model, default_embed, averaged_embed_func = average_checkpoints(checkpoint_paths, load_func=load_net_fast, model_type="tts")
+                save_model_for_use(model=(averaged_model, averaged_embed_func), default_embed=default_embed, name=f"Models/{model_dir}/best.pt")
 
 
 def count_parameters(net):
