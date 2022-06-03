@@ -27,6 +27,7 @@ def train_loop(generator,
                epochs=100,
                # the idea is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
                resume=False,
+               finetune=False,
                use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
                generator_steps_per_discriminator_step=3
                ):
@@ -68,13 +69,15 @@ def train_loop(generator,
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=model_save_dir)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
-        optimizer_g.load_state_dict(check_dict["generator_optimizer"])
-        optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
-        scheduler_g.load_state_dict(check_dict["generator_scheduler"])
-        scheduler_d.load_state_dict(check_dict["discriminator_scheduler"])
+        if not finetune:
+            # careful: fine-tuning a GAN might lead to instability. It is recommended to use the provided model as is or train from scratch.
+            optimizer_g.load_state_dict(check_dict["generator_optimizer"])
+            optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
+            scheduler_g.load_state_dict(check_dict["generator_scheduler"])
+            scheduler_d.load_state_dict(check_dict["discriminator_scheduler"])
+            d.load_state_dict(check_dict["discriminator"])
+            step_counter = check_dict["step_counter"]
         g.load_state_dict(check_dict["generator"])
-        d.load_state_dict(check_dict["discriminator"])
-        step_counter = check_dict["step_counter"]
 
     start_time = time.time()
 
