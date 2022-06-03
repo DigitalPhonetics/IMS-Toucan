@@ -49,7 +49,7 @@ separated to keep the code clean, simple and minimal as the development progress
   multilingual data to benefit less resource-rich languages.
 - We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to
   fine-tune a model with very little data in almost any language. The last two contributions are described in
-  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)!
+  [our paper that we have presented at the ACL 2022]([https://arxiv.org/abs/2203.03191](https://aclanthology.org/2022.acl-long.472/))!
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
   objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner).
@@ -333,10 +333,11 @@ cool with it. Thank you for reading.
 ### Adding Articulatory Features and Meta-Learning Pretraining
 
 ```
-@article{lux2022laml,
-  title={{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
-  author={Florian Lux and Ngoc Thang Vu},
-  year={2022},
-  journal={arXiv preprint arXiv:2203.03191},
+@inproceedings{lux2022language,
+  title={Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features},
+  author={Florian Lux and Thang Vu},
+  booktitle={Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
+  pages={6858--6868},
+  year={2022}
 }
 ```
