@@ -15,7 +15,7 @@ def cumsum_durations(durations):
     centers = list()
     for index, _ in enumerate(out):
         if index + 1 < len(out):
-            centers.append((out[index] + out[index + 1]) / 2)
+            centers.append((out[index] + out[index + 1]) // 2)
     return out, centers
 
 

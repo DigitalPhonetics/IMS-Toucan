@@ -76,7 +76,14 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True))
+    phones = tf.get_phone_string(sentence, for_plot_labels=True)
+    ax.set_xticklabels(phones)
+    word_boundaries = list()
+    for label_index, word_boundary in enumerate(phones):
+        if word_boundary == "|":
+            word_boundaries.append(label_positions[label_index])
+    ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000)
+    ax.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=8000)
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
