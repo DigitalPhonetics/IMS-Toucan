@@ -178,10 +178,10 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
     elif lang == "vi":
         sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, *_ = net.inference(text=phoneme_vector,
-                                        return_duration_pitch_energy=True,
-                                        utterance_embedding=default_embed,
-                                        lang_id=get_language_id(lang).to(device))
+    spec, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                   return_duration_pitch_energy=True,
+                                                   utterance_embedding=default_embed,
+                                                   lang_id=get_language_id(lang).to(device))
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -206,6 +206,10 @@ def plot_progress_spec(net, device, save_dir, step, lang, utt_embeds):
             word_boundaries.append(label_positions[label_index])
     ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000)
     ax.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=8000)
+    pitch_array = pitch.cpu().numpy()
+    for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+        if pitch_array[pitch_index] > 0.001:
+            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red", linestyles="solid")
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png"))
     plt.clf()
