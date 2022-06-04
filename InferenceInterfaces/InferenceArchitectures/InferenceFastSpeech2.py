@@ -291,10 +291,17 @@ class FastSpeech2(torch.nn.Module, ABC):
 
 
 def _scale_variance(sequence, scale):
+    # first we need to figure out which elements are supposed to be 0, because 0 has multiple meaning, but the predictions are never exactly 0.
+    for sequence_index in range(len(sequence[0])):
+        if sequence[0][sequence_index] < 0.001:
+            sequence[0][sequence_index] = 0.0
     if scale == 1.0:
         return sequence
     average = sequence[0][sequence[0] != 0.0].mean()
     sequence = sequence - average  # center sequence around 0
     sequence = sequence * scale  # scale the variance
     sequence = sequence + average  # move center back to original with changed variance
+    for sequence_index in range(len(sequence[0])):
+        if sequence[0][sequence_index] < 0.0:
+            sequence[0][sequence_index] = 0.0
     return sequence

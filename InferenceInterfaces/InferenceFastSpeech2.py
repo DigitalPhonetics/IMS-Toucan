@@ -142,6 +142,10 @@ class InferenceFastSpeech2(torch.nn.Module):
                     word_boundaries.append(label_positions[label_index])
             ax[1].vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000)
             ax[1].vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=8000)
+            pitch_array = pitch.cpu().numpy()
+            for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+                if pitch_array[pitch_index] != 0:
+                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red", linestyles="solid")
             ax[0].set_title(text)
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()
