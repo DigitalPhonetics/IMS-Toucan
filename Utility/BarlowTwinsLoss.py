@@ -5,7 +5,7 @@ import torch
 
 class BarlowTwinsLoss(torch.nn.Module):
 
-    def __init__(self, lambd=1e-5, vector_dimensions=64):
+    def __init__(self, lambd=1e-5, vector_dimensions=128):
         super().__init__()
         self.lambd = lambd
         self.bn = torch.nn.BatchNorm1d(vector_dimensions, affine=False)
