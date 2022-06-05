@@ -122,7 +122,7 @@ def train_loop(net,
                resume=False,
                use_cycle_loss=False,
                use_barlow_twins=False,
-               cycle_warmup_steps=16000):
+               cycle_warmup_steps=32000):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -190,33 +190,44 @@ def train_loop(net,
         bt_cycle_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                           batch_of_spectrogram_lengths=batch[3].to(device))
-                train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                      text_lengths=batch[1].to(device),
-                                                      gold_speech=batch[2].to(device),
-                                                      speech_lengths=batch[3].to(device),
-                                                      gold_durations=batch[4].to(device),
-                                                      gold_pitch=batch[6].to(device),  # mind the switched order
-                                                      gold_energy=batch[5].to(device),  # mind the switched order
-                                                      utterance_embedding=style_embedding,
-                                                      lang_ids=batch[8].to(device),
-                                                      return_mels=True)
-                train_losses_this_epoch.append(train_loss.item())
-
-                if use_cycle_loss and step_counter > cycle_warmup_steps and step_counter % 3 == 0:
+                if not (use_cycle_loss and step_counter > cycle_warmup_steps and step_counter % 3 == 0):
+                    # after a certain amount of steps, every third update is based purely on the cycle objective
+                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                               batch_of_spectrogram_lengths=batch[3].to(device))
+                    train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                          text_lengths=batch[1].to(device),
+                                                          gold_speech=batch[2].to(device),
+                                                          speech_lengths=batch[3].to(device),
+                                                          gold_durations=batch[4].to(device),
+                                                          gold_pitch=batch[6].to(device),  # mind the switched order
+                                                          gold_energy=batch[5].to(device),  # mind the switched order
+                                                          utterance_embedding=style_embedding,
+                                                          lang_ids=batch[8].to(device),
+                                                          return_mels=True)
+                    train_losses_this_epoch.append(train_loss.item())
+                else:
                     double_descent_style_embedding_function = copy.deepcopy(style_embedding_function)
                     double_descent_style_embedding_function.eval()
-                    double_descent_style_embedding_function.requires_grad_(False)
-
+                    for param in double_descent_style_embedding_function.parameters():
+                        param.requires_grad = False
                     style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                                       batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                    _, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                 text_lengths=batch[1].to(device),
+                                                 gold_speech=batch[2].to(device),
+                                                 speech_lengths=batch[3].to(device),
+                                                 gold_durations=batch[4].to(device),
+                                                 gold_pitch=batch[6].to(device),  # mind the switched order
+                                                 gold_energy=batch[5].to(device),  # mind the switched order
+                                                 utterance_embedding=style_embedding_of_gold,
+                                                 lang_ids=batch[8].to(device),
+                                                 return_mels=True)
                     style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                     cycle_dist = cycle_dist * 0.1
                     cycle_losses_this_epoch.append(cycle_dist.item())
-                    train_loss = train_loss + cycle_dist
+                    train_loss = cycle_dist
 
                     if use_barlow_twins:
                         bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
