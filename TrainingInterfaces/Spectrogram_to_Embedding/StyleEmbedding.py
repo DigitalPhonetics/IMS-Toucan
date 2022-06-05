@@ -1,7 +1,7 @@
 import numpy
 import torch
 
-from .swin.build import build_model
+from TrainingInterfaces.Spectrogram_to_Embedding.swin.build import build_model
 
 
 class StyleEmbedding(torch.nn.Module):
@@ -17,13 +17,13 @@ class StyleEmbedding(torch.nn.Module):
         # SWIN architecture
         if not swin_config:
             self.swin_config = {
-                "model_type": "swin",
-                "img_size": [256, 80],
+                "model_type"    : "swin",
+                "img_size"      : [256, 80],
                 "patch_size"    : [16, 10],
                 "in_chans"      : 1,
-                "num_classes"   : 64,
+                "num_classes"   : 128,
                 "embed_dim"     : 64,
-                "depths"        : [2, 2, 2], #[2, 2, 18, 2],
+                "depths"        : [2, 2, 2],  # [2, 2, 18, 2],
                 "num_heads"     : [2, 4, 8],
                 "window_size"   : 4,
                 "mlp_ratio"     : 4,
@@ -83,7 +83,12 @@ class StyleEmbedding(torch.nn.Module):
             1,
             batch_of_spectrograms_unified_length.size(1),
             batch_of_spectrograms_unified_length.size(2),
-        )
+            )
 
         speaker_embedding = self.swin(batch_of_spectrograms_unified_length)
         return speaker_embedding
+
+
+if __name__ == '__main__':
+    style_emb = StyleEmbedding()
+    print(f"SWIN parameter count: {sum(p.numel() for p in style_emb.swin.parameters() if p.requires_grad)}")
