@@ -95,7 +95,7 @@ conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
 
 pip install --no-cache-dir -r requirements.txt
 
-pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio==0.9.0 -f https://download.pytorch.org/whl/torch_stable.html
+pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 #### Speaker Embedding
