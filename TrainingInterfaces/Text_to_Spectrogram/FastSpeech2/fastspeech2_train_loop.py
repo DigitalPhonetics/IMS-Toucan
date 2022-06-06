@@ -139,7 +139,7 @@ def train_loop(net,
         batch_size: How many elements should be loaded at once
         epochs_per_save: how many epochs to train in between checkpoints
         use_cycle_loss: whether to use the cycle consistency objective
-        use_barlow_twins: whether to use the barlow twins objective for the cycle consistency
+        use_barlow_twins: whether to use the barlow twins objective to learn speaker identification
         cycle_warmup_steps: how many steps to train before using any of the cycle objectives
 
     """
@@ -230,8 +230,15 @@ def train_loop(net,
                     train_loss = cycle_dist
 
                     if use_barlow_twins:
-                        bt_cycle_dist = bt_loss(style_embedding_of_predicted, style_embedding_of_gold)
-                        bt_cycle_dist = bt_cycle_dist * 0.001
+                        style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
+                        style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
+                        # due to the random windows we take, the two style embedding batches should be slightly different.
+                        # But the difference should be minimal, thus we use the barlow twins objective to make them more
+                        # similar and reduce redundancy within the embedding vectors.
+                        bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
+                        bt_cycle_dist = bt_cycle_dist
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
                         train_loss = train_loss + bt_cycle_dist
 
