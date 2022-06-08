@@ -225,7 +225,7 @@ def train_loop(net,
                     style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
-                    cycle_dist = cycle_dist * 0.1
+                    cycle_dist = cycle_dist * 10
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = cycle_dist
 
@@ -238,7 +238,7 @@ def train_loop(net,
                         # But the difference should be minimal, thus we use the barlow twins objective to make them more
                         # similar and reduce redundancy within the embedding vectors.
                         bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                        bt_cycle_dist = bt_cycle_dist
+                        bt_cycle_dist = bt_cycle_dist * 10
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
                         train_loss = train_loss + bt_cycle_dist
 
