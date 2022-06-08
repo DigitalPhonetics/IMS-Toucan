@@ -12,35 +12,40 @@ class StyleEmbedding(torch.nn.Module):
     Optionally we could pretrain the module on the speaker identification task.
     """
 
-    def __init__(self, swin_config=None):
+    def __init__(self, swin_config=None, lstm_baseline=False):
         super().__init__()
-        # SWIN architecture
-        if not swin_config:
-            self.swin_config = {
-                "model_type"    : "swin",
-                "img_size"      : [256, 80],
-                "patch_size"    : [16, 10],
-                "in_chans"      : 1,
-                "num_classes"   : 128,
-                "embed_dim"     : 64,
-                "depths"        : [2, 2, 2],  # [2, 2, 18, 2],
-                "num_heads"     : [2, 4, 8],
-                "window_size"   : 4,
-                "mlp_ratio"     : 4,
-                "qkv_bias"      : False,
-                "qk_scale"      : None,
-                "drop_rate"     : 0,
-                "drop_path_rate": 0.3,
-                "ape"           : False,
-                "patch_norm"    : True,
-                "use_checkpoint": False
-                }
-        else:
-            self.swin_config = swin_config
 
-        self.swin = build_model(self.swin_config)
-        # n_parameters = sum(p.numel() for p in self.swin.parameters() if p.requires_grad)
-        # print('SWIN number of params:', n_parameters)
+        self.lstm_baseline = lstm_baseline
+        if not lstm_baseline:
+            # SWIN architecture
+            if not swin_config:
+                self.swin_config = {
+                    "model_type"    : "swin",
+                    "img_size"      : [256, 80],
+                    "patch_size"    : [16, 10],
+                    "in_chans"      : 1,
+                    "num_classes"   : 128,
+                    "embed_dim"     : 64,
+                    "depths"        : [2, 2, 2],  # [2, 2, 18, 2],
+                    "num_heads"     : [2, 4, 8],
+                    "window_size"   : 4,
+                    "mlp_ratio"     : 4,
+                    "qkv_bias"      : False,
+                    "qk_scale"      : None,
+                    "drop_rate"     : 0,
+                    "drop_path_rate": 0.3,
+                    "ape"           : False,
+                    "patch_norm"    : True,
+                    "use_checkpoint": False
+                    }
+            else:
+                self.swin_config = swin_config
+
+            self.swin = build_model(self.swin_config)
+
+        else:
+            # baseline: we replace swin with literally just a 3 layer BiLSTM with roughly the same parameter count
+            self.lstm = torch.nn.LSTM(input_size=80, hidden_size=128, num_layers=3, bias=True, batch_first=True, dropout=0.2, bidirectional=True)
 
     def forward(self, batch_of_spectrograms, batch_of_spectrogram_lengths):
         """
@@ -78,17 +83,25 @@ class StyleEmbedding(torch.nn.Module):
 
         batch_of_spectrograms_unified_length = torch.stack(list_of_specs, dim=0)
 
-        batch_of_spectrograms_unified_length = batch_of_spectrograms_unified_length.view(
-            batch_of_spectrograms_unified_length.size(0),
-            1,
-            batch_of_spectrograms_unified_length.size(1),
-            batch_of_spectrograms_unified_length.size(2),
-            )
+        if not self.lstm_baseline:
+            batch_of_spectrograms_unified_length = batch_of_spectrograms_unified_length.view(
+                batch_of_spectrograms_unified_length.size(0),
+                1,
+                batch_of_spectrograms_unified_length.size(1),
+                batch_of_spectrograms_unified_length.size(2),
+                )
+            speaker_embedding = self.swin(batch_of_spectrograms_unified_length)
+        else:
+            speaker_embedding = self.lstm(batch_of_spectrograms_unified_length)[1][0].mean(0)
 
-        speaker_embedding = self.swin(batch_of_spectrograms_unified_length)
         return speaker_embedding
 
 
 if __name__ == '__main__':
-    style_emb = StyleEmbedding()
+    style_emb = StyleEmbedding(lstm_baseline=False)
     print(f"SWIN parameter count: {sum(p.numel() for p in style_emb.swin.parameters() if p.requires_grad)}")
+    print(style_emb(torch.randn(5, 600, 80), torch.tensor([600, 600, 600, 600, 600])).shape)
+
+    style_emb = StyleEmbedding(lstm_baseline=True)
+    print(f"Baseline parameter count: {sum(p.numel() for p in style_emb.lstm.parameters() if p.requires_grad)}")
+    print(style_emb(torch.randn(5, 600, 80), torch.tensor([600, 600, 600, 600, 600])).shape)

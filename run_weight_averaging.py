@@ -75,12 +75,7 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
         if model_type == "tts":
             model, default_embed, embed_func = load_func(path=path_to_checkpoint)
             tts_checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
-            """
-            turns out averaging the embedding function makes it sometimes unstable, so we just use the most recent one
             embed_checkpoints_weights[path_to_checkpoint] = dict(embed_func.named_parameters())
-            """
-            if embed_checkpoints_weights == {}:
-                embed_checkpoints_weights = embed_func
         else:
             model, default_embed = load_func(path=path_to_checkpoint)
             checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
@@ -104,8 +99,6 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
         model.load_state_dict(model_dict)
         model.eval()
         # EMBEDDING FUNCTION WEIGHT AVERAGING
-        """
-        turns out averaging the embedding function makes it sometimes unstable, so we just use the most recent one
         embed_params = embed_func.named_parameters()
         embed_dict_params = dict(embed_params)
         checkpoint_amount = len(embed_checkpoints_weights)
@@ -120,8 +113,6 @@ def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
             embed_dict_params[name].data.copy_(custom_params / checkpoint_amount)
         model_dict = embed_func.state_dict()
         model_dict.update(embed_dict_params)
-        """
-        embed_func = embed_checkpoints_weights
         embed_func.eval()
         return model, default_embed, embed_func
 
@@ -189,4 +180,5 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     # show_all_models_params()
-    make_best_in_all(n=5)
+    make_best_in_all(n=1)  # right now only useful for checkpoint compression,
+    # averaging multiple checkpoints causes instability with the learned embedding function
