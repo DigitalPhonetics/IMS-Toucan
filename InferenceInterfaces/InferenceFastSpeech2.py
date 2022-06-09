@@ -21,8 +21,20 @@ class InferenceFastSpeech2(torch.nn.Module):
     def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False, use_style_embedding_ensemble=True):
         super().__init__()
         self.device = device
+
+        ################################
+        #   build text to phone        #
+        ################################
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
+
+        ################################
+        #   load weights               #
+        ################################
         checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
+
+        ################################
+        #   load phone to mel model    #
+        ################################
         self.use_lang_id = True
         try:
             self.phone2mel = FastSpeech2(weights=checkpoint["model"]).to(torch.device(device))  # multi speaker multi language
@@ -32,10 +44,30 @@ class InferenceFastSpeech2(torch.nn.Module):
                 self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None).to(torch.device(device))  # multi speaker single language
             except RuntimeError:
                 self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None).to(torch.device(device))  # single speaker
+
+        ################################
+        #  load mel to style model     #
+        ################################
+        try:
+            self.style_embedding_function = StyleEmbedding().to(self.device)
+            self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+        except RuntimeError:
+            try:
+                self.style_embedding_function = StyleEmbedding(gst_baseline=True).to(self.device)
+                self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+            except RuntimeError:
+                self.style_embedding_function = StyleEmbedding(lstm_baseline=True).to(self.device)
+                self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+
+        ################################
+        #  load mel to wave model      #
+        ################################
         self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
+
+        ################################
+        #  set defaults                #
+        ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
-        self.style_embedding_function = StyleEmbedding().to(self.device)
-        self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()

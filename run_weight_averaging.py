@@ -16,22 +16,24 @@ def load_net_fast(path):
     try:
         net = FastSpeech2()
         net.load_state_dict(check_dict["model"])
-        embed = StyleEmbedding()
-        embed.load_state_dict(check_dict["style_emb_func"])
-        return net, check_dict["default_emb"], embed
     except RuntimeError:
         try:
             net = FastSpeech2(lang_embs=None)
             net.load_state_dict(check_dict["model"])
-            embed = StyleEmbedding()
-            embed.load_state_dict(check_dict["style_emb_func"])
-            return net, check_dict["default_emb"], embed
         except RuntimeError:
             net = FastSpeech2(lang_embs=None, utt_embed_dim=None)
             net.load_state_dict(check_dict["model"])
-            embed = StyleEmbedding()
+    try:
+        embed = StyleEmbedding()
+        embed.load_state_dict(check_dict["style_emb_func"])
+    except RuntimeError:
+        try:
+            embed = StyleEmbedding(gst_baseline=True)
             embed.load_state_dict(check_dict["style_emb_func"])
-            return net, check_dict["default_emb"], embed
+        except RuntimeError:
+            embed = StyleEmbedding(lstm_baseline=True)
+            embed.load_state_dict(check_dict["style_emb_func"])
+    return net, check_dict["default_emb"], embed
 
 
 def load_net_hifigan(path):

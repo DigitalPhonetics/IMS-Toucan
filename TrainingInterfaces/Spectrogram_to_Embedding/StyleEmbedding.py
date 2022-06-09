@@ -13,7 +13,7 @@ class StyleEmbedding(torch.nn.Module):
     Optionally we could pretrain the module on the speaker identification task.
     """
 
-    def __init__(self, swin_config=None, lstm_baseline=False, gst_baseline=True):
+    def __init__(self, swin_config=None, lstm_baseline=False, gst_baseline=False):
         super().__init__()
         assert not lstm_baseline or not gst_baseline
         self.lstm_baseline = lstm_baseline
