@@ -9,8 +9,8 @@ if __name__ == '__main__':
 
     # =================================================
     # remember to call run_weight_averaging.py before to prepare the inference checkpoint file
-    model_id = "LibriCycle"
-    name_of_output_dir = "audios/test_roddeler"
+    model_id = "LibriLSTM"
+    name_of_output_dir = "audios/test_lstm"
     # =================================================
 
     tts = InferenceFastSpeech2(device="cpu", model_name=model_id)

@@ -122,7 +122,9 @@ def train_loop(net,
                resume=False,
                use_cycle_loss=False,
                use_barlow_twins=False,
-               cycle_warmup_steps=32000):
+               cycle_warmup_steps=32000,
+               gst_baseline=False,
+               lstm_baseline=False):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -144,7 +146,7 @@ def train_loop(net,
 
     """
     net = net.to(device)
-    style_embedding_function = StyleEmbedding().to(device)
+    style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device)
     if use_cycle_loss:
         cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
         if use_barlow_twins:
@@ -207,7 +209,8 @@ def train_loop(net,
                     train_losses_this_epoch.append(train_loss.item())
                 else:
                     double_descent_style_embedding_function = copy.deepcopy(style_embedding_function)
-                    double_descent_style_embedding_function.eval()
+                    if not style_embedding_function.lstm_baseline:
+                        double_descent_style_embedding_function.eval()
                     for param in double_descent_style_embedding_function.parameters():
                         param.requires_grad = False
                     style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),

@@ -1,6 +1,7 @@
 import numpy
 import torch
 
+from TrainingInterfaces.Spectrogram_to_Embedding.GST import StyleEncoder
 from TrainingInterfaces.Spectrogram_to_Embedding.swin.build import build_model
 
 
@@ -12,23 +13,24 @@ class StyleEmbedding(torch.nn.Module):
     Optionally we could pretrain the module on the speaker identification task.
     """
 
-    def __init__(self, swin_config=None, lstm_baseline=False):
+    def __init__(self, swin_config=None, lstm_baseline=False, gst_baseline=True):
         super().__init__()
-
+        assert not lstm_baseline or not gst_baseline
         self.lstm_baseline = lstm_baseline
-        if not lstm_baseline:
+        self.gst_baseline = gst_baseline
+        if not lstm_baseline and not gst_baseline:
             # SWIN architecture
             if not swin_config:
                 self.swin_config = {
                     "model_type"    : "swin",
                     "img_size"      : [256, 80],
-                    "patch_size"    : [16, 10],
+                    "patch_size"    : [4, 5],
                     "in_chans"      : 1,
                     "num_classes"   : 128,
-                    "embed_dim"     : 64,
+                    "embed_dim"     : 32,
                     "depths"        : [2, 2, 2],  # [2, 2, 18, 2],
                     "num_heads"     : [2, 4, 8],
-                    "window_size"   : 4,
+                    "window_size"   : 8,
                     "mlp_ratio"     : 4,
                     "qkv_bias"      : False,
                     "qk_scale"      : None,
@@ -43,9 +45,13 @@ class StyleEmbedding(torch.nn.Module):
 
             self.swin = build_model(self.swin_config)
 
-        else:
-            # baseline: we replace swin with literally just a 3 layer BiLSTM with roughly the same parameter count
-            self.lstm = torch.nn.LSTM(input_size=80, hidden_size=128, num_layers=3, bias=True, batch_first=True, dropout=0.2, bidirectional=True)
+        elif lstm_baseline:
+            # baseline: we replace swin with literally just a 2 layer BiLSTM with roughly the same parameter count
+            self.lstm = torch.nn.LSTM(input_size=80, hidden_size=128, num_layers=2, bias=True, batch_first=True, dropout=0.2, bidirectional=True)
+
+        elif gst_baseline:
+            # baseline: we replace swin with GST
+            self.gst = StyleEncoder()
 
     def forward(self, batch_of_spectrograms, batch_of_spectrogram_lengths):
         """
@@ -83,7 +89,7 @@ class StyleEmbedding(torch.nn.Module):
 
         batch_of_spectrograms_unified_length = torch.stack(list_of_specs, dim=0)
 
-        if not self.lstm_baseline:
+        if not self.lstm_baseline and not self.gst_baseline:
             batch_of_spectrograms_unified_length = batch_of_spectrograms_unified_length.view(
                 batch_of_spectrograms_unified_length.size(0),
                 1,
@@ -91,17 +97,23 @@ class StyleEmbedding(torch.nn.Module):
                 batch_of_spectrograms_unified_length.size(2),
                 )
             speaker_embedding = self.swin(batch_of_spectrograms_unified_length)
-        else:
+        elif self.lstm_baseline:
             speaker_embedding = self.lstm(batch_of_spectrograms_unified_length)[1][0].mean(0)
+        elif self.gst_baseline:
+            speaker_embedding = self.gst(batch_of_spectrograms_unified_length)
 
         return speaker_embedding
 
 
 if __name__ == '__main__':
-    style_emb = StyleEmbedding(lstm_baseline=False)
+    style_emb = StyleEmbedding(lstm_baseline=False, gst_baseline=False)
     print(f"SWIN parameter count: {sum(p.numel() for p in style_emb.swin.parameters() if p.requires_grad)}")
     print(style_emb(torch.randn(5, 600, 80), torch.tensor([600, 600, 600, 600, 600])).shape)
 
-    style_emb = StyleEmbedding(lstm_baseline=True)
-    print(f"Baseline parameter count: {sum(p.numel() for p in style_emb.lstm.parameters() if p.requires_grad)}")
+    style_emb = StyleEmbedding(lstm_baseline=True, gst_baseline=False)
+    print(f"LSTM baseline parameter count: {sum(p.numel() for p in style_emb.lstm.parameters() if p.requires_grad)}")
+    print(style_emb(torch.randn(5, 600, 80), torch.tensor([600, 600, 600, 600, 600])).shape)
+
+    style_emb = StyleEmbedding(lstm_baseline=False, gst_baseline=True)
+    print(f"GST baseline parameter count: {sum(p.numel() for p in style_emb.gst.parameters() if p.requires_grad)}")
     print(style_emb(torch.randn(5, 600, 80), torch.tensor([600, 600, 600, 600, 600])).shape)

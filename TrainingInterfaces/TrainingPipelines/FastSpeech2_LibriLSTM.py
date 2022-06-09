@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_LibriCycle")
+        save_dir = os.path.join("Models", "FastSpeech2_LibriLSTM")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
@@ -66,4 +66,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume,
-               use_cycle_loss=True)
+               use_cycle_loss=True,
+               use_barlow_twins=True,
+               lstm_baseline=True
+               )
