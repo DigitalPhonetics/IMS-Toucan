@@ -1,7 +1,6 @@
 # Copyright 2020 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-from typing import Sequence
 
 import torch
 
@@ -21,7 +20,7 @@ class StyleEncoder(torch.nn.Module):
         gst_heads (int, optional): The number of heads in GST multihead attention.
         conv_layers (int, optional): The number of conv layers in the reference encoder.
         conv_chans_list: (Sequence[int], optional):
-            List of the number of channels of conv layers in the referece encoder.
+            List of the number of channels of conv layers in the reference encoder.
         conv_kernel_size (int, optional):
             Kernel size of conv layers in the reference encoder.
         conv_stride (int, optional):
@@ -37,7 +36,7 @@ class StyleEncoder(torch.nn.Module):
             gst_token_dim: int = 128,
             gst_heads: int = 4,
             conv_layers: int = 6,
-            conv_chans_list: Sequence[int] = (32, 32, 64, 64, 128, 128),
+            conv_chans_list=(32, 32, 64, 64, 128, 128),
             conv_kernel_size: int = 3,
             conv_stride: int = 2,
             gru_layers: int = 1,
@@ -94,7 +93,7 @@ class ReferenceEncoder(torch.nn.Module):
             self,
             idim=80,
             conv_layers: int = 6,
-            conv_chans_list: Sequence[int] = (32, 32, 64, 64, 128, 128),
+            conv_chans_list=(32, 32, 64, 64, 128, 128),
             conv_kernel_size: int = 3,
             conv_stride: int = 2,
             gru_layers: int = 1,
@@ -105,9 +104,7 @@ class ReferenceEncoder(torch.nn.Module):
 
         # check hyperparameters are valid
         assert conv_kernel_size % 2 == 1, "kernel size must be odd."
-        assert (
-                len(conv_chans_list) == conv_layers
-        ), "the number of conv layers and length of channels list must be the same."
+        assert (len(conv_chans_list) == conv_layers), "the number of conv layers and length of channels list must be the same."
 
         convs = []
         padding = (conv_kernel_size - 1) // 2
@@ -122,8 +119,7 @@ class ReferenceEncoder(torch.nn.Module):
                                       # Do not use bias due to the following batch norm
                                       bias=False, ),
                       torch.nn.BatchNorm2d(conv_out_chans),
-                      torch.nn.ReLU(inplace=True),
-                      ]
+                      torch.nn.ReLU(inplace=True), ]
         self.convs = torch.nn.Sequential(*convs)
 
         self.conv_layers = conv_layers

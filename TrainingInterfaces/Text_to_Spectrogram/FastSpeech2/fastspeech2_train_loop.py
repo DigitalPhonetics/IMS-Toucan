@@ -208,7 +208,9 @@ def train_loop(net,
                                                           return_mels=True)
                     train_losses_this_epoch.append(train_loss.item())
                 else:
-                    double_descent_style_embedding_function = copy.deepcopy(style_embedding_function)
+                    double_descent_style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device).load_state_dict(
+                        copy.deepcopy(style_embedding_function.state_dict()))
+
                     if not style_embedding_function.lstm_baseline:
                         double_descent_style_embedding_function.eval()
                     for param in double_descent_style_embedding_function.parameters():
