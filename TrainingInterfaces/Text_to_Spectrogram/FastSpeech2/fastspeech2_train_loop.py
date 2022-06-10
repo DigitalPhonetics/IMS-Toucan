@@ -211,7 +211,7 @@ def train_loop(net,
                     double_descent_style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device)
                     double_descent_style_embedding_function.load_state_dict(copy.deepcopy(style_embedding_function.state_dict()))
 
-                    if not style_embedding_function.lstm_baseline:
+                    if not style_embedding_function.lstm_baseline and not style_embedding_function.gst_baseline:
                         double_descent_style_embedding_function.eval()
                     for param in double_descent_style_embedding_function.parameters():
                         param.requires_grad = False
