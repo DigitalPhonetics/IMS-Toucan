@@ -153,7 +153,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  dropout_rate=transformer_dec_dropout_rate, positional_dropout_rate=transformer_dec_positional_dropout_rate,
                                  attention_dropout_rate=transformer_dec_attn_dropout_rate, normalize_before=decoder_normalize_before,
                                  concat_after=decoder_concat_after, positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size)
+                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size,
+                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
@@ -278,7 +279,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             h_masks = self._source_mask(olens_in)
         else:
             h_masks = None
-        zs, _ = self.decoder(encoded_texts, h_masks)  # (B, Lmax, adim)
+        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding=utterance_embedding)  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)
