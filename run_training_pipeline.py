@@ -3,8 +3,11 @@ import sys
 
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriGST import run as gst
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriGST_nocycle import run as gst_n
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriLSTM import run as lstm
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriLSTM_nocycle import run as lstm_n
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriSWIN import run as swin
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriSWIN_nocycle import run as swin_n
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
@@ -19,6 +22,9 @@ pipeline_dict = {
     "swin"            : swin,
     "gst"             : gst,
     "lstm"            : lstm,
+    "swin_n"          : swin_n,
+    "gst_n"           : gst_n,
+    "lstm_n"          : lstm_n,
     }
 
 if __name__ == '__main__':
