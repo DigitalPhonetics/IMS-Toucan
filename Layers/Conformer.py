@@ -130,5 +130,5 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        hs = self.hs_emb_projection(x=hs, speker_embedding=utt_embeddings)
+        hs = self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings)
         return hs
