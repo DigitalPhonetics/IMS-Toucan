@@ -122,7 +122,7 @@ def train_loop(net,
                resume=False,
                use_cycle_loss=False,
                use_barlow_twins=False,
-               cycle_warmup_steps=32000,
+               cycle_warmup_steps=200000,
                gst_baseline=False,
                lstm_baseline=False):
     """
