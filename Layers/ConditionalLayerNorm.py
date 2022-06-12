@@ -13,16 +13,17 @@ import torch
 from torch import nn
 
 
-class Condional_LayerNorm(nn.Module):
+class ConditionalLayerNorm(nn.Module):
 
     def __init__(self,
                  normal_shape,
+                 speaker_embedding_dim,
                  epsilon=1e-5
                  ):
-        super(Condional_LayerNorm, self).__init__()
+        super(ConditionalLayerNorm, self).__init__()
         if isinstance(normal_shape, int):
             self.normal_shape = normal_shape
-        self.speaker_embedding_dim = 256
+        self.speaker_embedding_dim = speaker_embedding_dim
         self.epsilon = epsilon
         self.W_scale = nn.Linear(self.speaker_embedding_dim, self.normal_shape)
         self.W_bias = nn.Linear(self.speaker_embedding_dim, self.normal_shape)

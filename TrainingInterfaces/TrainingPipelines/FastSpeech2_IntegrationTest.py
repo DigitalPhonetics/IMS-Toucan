@@ -39,7 +39,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                           lang="en",
                                           save_imgs=True)
 
-    model = FastSpeech2(lang_embs=None, utt_embed_dim=None)
+    model = FastSpeech2(lang_embs=10, utt_embed_dim=128)
 
     print("Training model")
     train_loop(net=model,

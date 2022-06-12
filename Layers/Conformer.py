@@ -3,9 +3,9 @@ Taken from ESPNet
 """
 
 import torch
-import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
+from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -68,7 +68,7 @@ class Conformer(torch.nn.Module):
 
         self.connect_utt_emb_at_encoder_out = connect_utt_emb_at_encoder_out
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
+            self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=128)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -130,6 +130,5 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        speaker_embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        hs = self.hs_emb_projection(x=hs, speker_embedding=utt_embeddings)
         return hs
