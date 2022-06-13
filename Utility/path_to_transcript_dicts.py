@@ -519,3 +519,15 @@ def build_path_to_transcript_dict_VIVOS_viet():
             audio_file = f"{root}/waves/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
             path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:]).lower()
     return path_to_transcript_dict
+
+
+def build_path_to_transcript_dict_RAVDESS():
+    root = "/mount/resources/speech/corpora/RAVDESS"
+    path_to_transcript_dict = dict()
+    for speaker_dir in os.listdir(root):
+        for audio_file in os.listdir(os.path.join(root, speaker_dir)):
+            if audio_file.split("-")[4] == "01":
+                path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Kids are talking by the door."
+            else:
+                path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
+    return path_to_transcript_dict
