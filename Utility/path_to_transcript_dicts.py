@@ -537,11 +537,12 @@ def build_path_to_transcript_dict_ESDS():
     root = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
     path_to_transcript_dict = dict()
     for speaker_dir in os.listdir(root):
-        if int(speaker_dir) > 10:
-            with open(f"{root}/{speaker_dir}/fixed_unicode.txt", mode="r", encoding="utf8") as f:
-                transcripts = f.read()
-            for line in transcripts.replace("\n\n", "\n").replace(",", ", ").split("\n"):
-                if line.strip() != "":
-                    filename, text, emo_dir = line.split("\t")
-                    path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
+        if speaker_dir.startswith("00"):
+            if int(speaker_dir) > 10:
+                with open(f"{root}/{speaker_dir}/fixed_unicode.txt", mode="r", encoding="utf8") as f:
+                    transcripts = f.read()
+                for line in transcripts.replace("\n\n", "\n").replace(",", ", ").split("\n"):
+                    if line.strip() != "":
+                        filename, text, emo_dir = line.split("\t")
+                        path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
     return path_to_transcript_dict
