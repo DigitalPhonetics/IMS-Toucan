@@ -531,3 +531,16 @@ def build_path_to_transcript_dict_RAVDESS():
             else:
                 path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
     return path_to_transcript_dict
+
+
+def build_path_to_transcript_dict_ESDS():
+    root = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
+    path_to_transcript_dict = dict()
+    for speaker_dir in os.listdir(root):
+        if int(speaker_dir) > 10:
+            with open(root + "/" + speaker_dir + f"{speaker_dir}.txt", mode="r", encoding="utf8") as f:
+                transcripts = f.read().replace("\n\n", "\n").split("\n")
+            for line in transcripts:
+                filename, text, emo_dir = line.split("\t")
+                path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
+    return path_to_transcript_dict

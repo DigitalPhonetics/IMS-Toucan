@@ -37,6 +37,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                               lang="en",
                                               ctc_selection=False))
 
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
+                                              corpus_dir=os.path.join("Corpora", "esds"),
+                                              lang="en",
+                                              ctc_selection=False))
+
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
                                               corpus_dir=os.path.join("Corpora", "libri_all_clean"),
                                               lang="en"))
