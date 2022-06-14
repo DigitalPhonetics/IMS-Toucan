@@ -76,8 +76,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
 
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
                                                       corpus_dir=os.path.join("Corpora", "esds"),
-                                                      lang="en",
-                                                      ctc_selection=False))
+                                                      lang="en"))
 
     german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
                                                      corpus_dir=os.path.join("Corpora", "Karlsson"),

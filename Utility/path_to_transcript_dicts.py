@@ -539,7 +539,7 @@ def build_path_to_transcript_dict_ESDS():
     for speaker_dir in os.listdir(root):
         if int(speaker_dir) > 10:
             with open(f"{root}/{speaker_dir}/{speaker_dir}.txt", mode="r", encoding="utf8") as f:
-                transcripts = f.read().replace("\n\n", "\n").split("\n")
+                transcripts = f.read().replace("\n\n", "\n").replace(",", ", ").split("\n")
             for line in transcripts:
                 filename, text, emo_dir = line.split("\t")
                 path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
