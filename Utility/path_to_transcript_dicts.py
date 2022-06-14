@@ -544,5 +544,6 @@ def build_path_to_transcript_dict_ESDS():
                 for line in transcripts.replace("\n\n", "\n").replace(",", ", ").split("\n"):
                     if line.strip() != "":
                         filename, text, emo_dir = line.split("\t")
+                        filename = speaker_dir + "_" + filename.split("_")[1]
                         path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
     return path_to_transcript_dict
