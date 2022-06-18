@@ -122,7 +122,9 @@ def train_loop(net,
                resume=False,
                use_cycle_loss=False,
                use_barlow_twins=False,
-               cycle_warmup_steps=200000,
+               phase_1_steps=200000,
+               phase_2_steps=200000,
+               phase_3_steps=200000,
                gst_baseline=False,
                lstm_baseline=False):
     """
@@ -142,7 +144,9 @@ def train_loop(net,
         epochs_per_save: how many epochs to train in between checkpoints
         use_cycle_loss: whether to use the cycle consistency objective
         use_barlow_twins: whether to use the barlow twins objective to learn speaker identification
-        cycle_warmup_steps: how many steps to train before using any of the cycle objectives
+        phase_1_steps: how many steps to train before using any of the cycle objectives
+        phase_2_steps: how many steps to train using the cycle objectives
+        phase_3_steps: how many steps to train with a frozen speaker embedding to allow the TTS to fully adapt to it
 
     """
     net = net.to(device)
@@ -151,6 +155,10 @@ def train_loop(net,
         cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
         if use_barlow_twins:
             bt_loss = BarlowTwinsLoss().to(device)
+
+    if phase_1_steps + phase_2_steps + phase_3_steps > steps and use_cycle_loss:
+        # in case we use the cycle objective, we split training into 3 phases to get the most out of the embedding function.
+        steps = phase_1_steps + phase_2_steps + phase_3_steps
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -192,7 +200,7 @@ def train_loop(net,
         bt_cycle_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                if not (use_cycle_loss and step_counter > cycle_warmup_steps and step_counter % 3 == 0):
+                if not (use_cycle_loss and step_counter > phase_1_steps and step_counter % 3 == 0):
                     # after a certain amount of steps, every third update is based purely on the cycle objective
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
@@ -208,50 +216,76 @@ def train_loop(net,
                                                           return_mels=True)
                     train_losses_this_epoch.append(train_loss.item())
                 else:
-                    double_descent_style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device)
-                    double_descent_style_embedding_function.load_state_dict(copy.deepcopy(style_embedding_function.state_dict()))
+                    if step_counter < phase_2_steps + phase_1_steps:
+                        double_descent_style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device)
+                        double_descent_style_embedding_function.load_state_dict(copy.deepcopy(style_embedding_function.state_dict()))
 
-                    if not style_embedding_function.lstm_baseline and not style_embedding_function.gst_baseline:
-                        double_descent_style_embedding_function.eval()
-                    for param in double_descent_style_embedding_function.parameters():
-                        param.requires_grad = False
-                    style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                                      batch_of_spectrogram_lengths=batch[3].to(device)).detach()
-                    _, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                 text_lengths=batch[1].to(device),
-                                                 gold_speech=batch[2].to(device),
-                                                 speech_lengths=batch[3].to(device),
-                                                 gold_durations=batch[4].to(device),
-                                                 gold_pitch=batch[6].to(device),  # mind the switched order
-                                                 gold_energy=batch[5].to(device),  # mind the switched order
-                                                 utterance_embedding=style_embedding_of_gold,
-                                                 lang_ids=batch[8].to(device),
-                                                 return_mels=True)
-                    style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
-                                                                                           batch_of_spectrogram_lengths=batch[3].to(device))
-                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
-                    cycle_dist = cycle_dist * 10
-                    cycle_losses_this_epoch.append(cycle_dist.item())
-                    train_loss = cycle_dist
+                        if not style_embedding_function.lstm_baseline and not style_embedding_function.gst_baseline:
+                            double_descent_style_embedding_function.eval()
+                        for param in double_descent_style_embedding_function.parameters():
+                            param.requires_grad = False
+                        style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                                          batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                        _, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                     text_lengths=batch[1].to(device),
+                                                     gold_speech=batch[2].to(device),
+                                                     speech_lengths=batch[3].to(device),
+                                                     gold_durations=batch[4].to(device),
+                                                     gold_pitch=batch[6].to(device),  # mind the switched order
+                                                     gold_energy=batch[5].to(device),  # mind the switched order
+                                                     utterance_embedding=style_embedding_of_gold,
+                                                     lang_ids=batch[8].to(device),
+                                                     return_mels=True)
+                        style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                                               batch_of_spectrogram_lengths=batch[3].to(device))
+                        cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
+                        cycle_dist = cycle_dist * 10
+                        cycle_losses_this_epoch.append(cycle_dist.item())
+                        train_loss = cycle_dist
 
-                    if use_barlow_twins:
-                        style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
-                        style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
-                        # due to the random windows we take, the two style embedding batches should be slightly different.
-                        # But the difference should be minimal, thus we use the barlow twins objective to make them more
-                        # similar and reduce redundancy within the embedding vectors.
-                        bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                        bt_cycle_dist = bt_cycle_dist * 10
-                        bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
-                        train_loss = train_loss + bt_cycle_dist
+                        if use_barlow_twins:
+                            style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                         batch_of_spectrogram_lengths=batch[3].to(device))
+                            style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                         batch_of_spectrogram_lengths=batch[3].to(device))
+                            # due to the random windows we take, the two style embedding batches should be slightly different.
+                            # But the difference should be minimal, thus we use the barlow twins objective to make them more
+                            # similar and reduce redundancy within the embedding vectors.
+                            bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
+                            bt_cycle_dist = bt_cycle_dist * 0.1  # this can disrupt convergence if the scale is too large.
+                            # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
+                            bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
+                            train_loss = train_loss + bt_cycle_dist
+                    else:
+                        # we're in phase 3 now, so no more updates to the embedding function.
+                        style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                           batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                        _, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                     text_lengths=batch[1].to(device),
+                                                     gold_speech=batch[2].to(device),
+                                                     speech_lengths=batch[3].to(device),
+                                                     gold_durations=batch[4].to(device),
+                                                     gold_pitch=batch[6].to(device),  # mind the switched order
+                                                     gold_energy=batch[5].to(device),  # mind the switched order
+                                                     utterance_embedding=style_embedding_of_gold,
+                                                     lang_ids=batch[8].to(device),
+                                                     return_mels=True)
+                        style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                                batch_of_spectrogram_lengths=batch[3].to(device))
+                        cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
+                        cycle_dist = cycle_dist * 10
+                        cycle_losses_this_epoch.append(cycle_dist.item())
+                        train_loss = cycle_dist
 
             optimizer.zero_grad()
 
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
+            if step_counter == phase_1_steps + phase_2_steps:
+                # entering phase 3
+                for param in style_embedding_function.parameters():
+                    param.requires_grad = False
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
