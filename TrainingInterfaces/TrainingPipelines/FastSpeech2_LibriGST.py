@@ -66,7 +66,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=500000,
                batch_size=18,
                lang="en",
                lr=0.001,
@@ -74,11 +73,4 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               resume=resume,
-               use_cycle_loss=True,
-               use_barlow_twins=True,
-               gst_baseline=True,
-               phase_1_steps=100,
-               phase_2_steps=100000,
-               phase_3_steps=200000
-               )
+               resume=resume)

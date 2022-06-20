@@ -1,4 +1,3 @@
-import copy
 import os
 import time
 
@@ -112,7 +111,6 @@ def train_loop(net,
                device,
                save_directory,
                batch_size=32,
-               steps=300000,
                epochs_per_save=1,
                lang="en",
                lr=0.0001,
@@ -120,18 +118,13 @@ def train_loop(net,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False,
-               use_cycle_loss=False,
-               use_barlow_twins=False,
-               phase_1_steps=200000,
+               phase_1_steps=100000,
                phase_2_steps=200000,
-               phase_3_steps=200000,
-               gst_baseline=False,
-               lstm_baseline=False):
+               phase_3_steps=300000):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
         warmup_steps: how long the learning rate should increase before it reaches the specified value
-        steps: How many steps to train
         lr: The initial learning rate for the optimiser
         path_to_checkpoint: reloads a checkpoint to continue training from there
         fine_tune: whether to load everything from a checkpoint, or only the model parameters
@@ -142,23 +135,17 @@ def train_loop(net,
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
         epochs_per_save: how many epochs to train in between checkpoints
-        use_cycle_loss: whether to use the cycle consistency objective
-        use_barlow_twins: whether to use the barlow twins objective to learn speaker identification
         phase_1_steps: how many steps to train before using any of the cycle objectives
         phase_2_steps: how many steps to train using the cycle objectives
         phase_3_steps: how many steps to train with a frozen speaker embedding to allow the TTS to fully adapt to it
 
     """
     net = net.to(device)
-    style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device)
-    if use_cycle_loss:
-        cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')  # intuitively, sum might be better for this?
-        if use_barlow_twins:
-            bt_loss = BarlowTwinsLoss().to(device)
+    style_embedding_function = StyleEmbedding().to(device)
+    cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')
+    bt_loss = BarlowTwinsLoss().to(device)
 
-    if phase_1_steps + phase_2_steps + phase_3_steps > steps and use_cycle_loss:
-        # in case we use the cycle objective, we split training into 3 phases to get the most out of the embedding function.
-        steps = phase_1_steps + phase_2_steps + phase_3_steps
+    steps = phase_1_steps + phase_2_steps + phase_3_steps
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -170,12 +157,10 @@ def train_loop(net,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
-
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     optimizer.add_param_group({"params": style_embedding_function.parameters()})
-    if use_barlow_twins:
-        optimizer.add_param_group({"params": bt_loss.parameters()})
+    optimizer.add_param_group({"params": bt_loss.parameters()})
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -200,8 +185,10 @@ def train_loop(net,
         bt_cycle_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
-                if not (use_cycle_loss and step_counter > phase_1_steps and step_counter % 3 == 0):
-                    # after a certain amount of steps, every third update is based purely on the cycle objective
+                if step_counter < phase_1_steps or (step_counter % 6 != 0 and step_counter < phase_2_steps + phase_1_steps):
+                    # ================================
+                    # = PHASE 1: learning end to end =
+                    # ================================
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
                     train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
@@ -217,65 +204,44 @@ def train_loop(net,
                     train_losses_this_epoch.append(train_loss.item())
                 else:
                     if step_counter < phase_2_steps + phase_1_steps:
-                        double_descent_style_embedding_function = StyleEmbedding(gst_baseline=gst_baseline, lstm_baseline=lstm_baseline).to(device)
-                        double_descent_style_embedding_function.load_state_dict(copy.deepcopy(style_embedding_function.state_dict()))
-
-                        if not style_embedding_function.lstm_baseline and not style_embedding_function.gst_baseline:
-                            double_descent_style_embedding_function.eval()
-                        for param in double_descent_style_embedding_function.parameters():
-                            param.requires_grad = False
-                        style_embedding_of_gold = double_descent_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                                          batch_of_spectrogram_lengths=batch[3].to(device)).detach()
-                        _, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                     text_lengths=batch[1].to(device),
-                                                     gold_speech=batch[2].to(device),
-                                                     speech_lengths=batch[3].to(device),
-                                                     gold_durations=batch[4].to(device),
-                                                     gold_pitch=batch[6].to(device),  # mind the switched order
-                                                     gold_energy=batch[5].to(device),  # mind the switched order
-                                                     utterance_embedding=style_embedding_of_gold,
-                                                     lang_ids=batch[8].to(device),
-                                                     return_mels=True)
-                        style_embedding_of_predicted = double_descent_style_embedding_function(batch_of_spectrograms=output_spectrograms,
-                                                                                               batch_of_spectrogram_lengths=batch[3].to(device))
-                        cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
-                        cycle_dist = cycle_dist * 10
-                        cycle_losses_this_epoch.append(cycle_dist.item())
-                        train_loss = cycle_dist
-
-                        if use_barlow_twins:
-                            style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                         batch_of_spectrogram_lengths=batch[3].to(device))
-                            style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                         batch_of_spectrogram_lengths=batch[3].to(device))
-                            # due to the random windows we take, the two style embedding batches should be slightly different.
-                            # But the difference should be minimal, thus we use the barlow twins objective to make them more
-                            # similar and reduce redundancy within the embedding vectors.
-                            bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                            bt_cycle_dist = bt_cycle_dist * 0.1  # this can disrupt convergence if the scale is too large.
-                            # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
-                            bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
-                            train_loss = train_loss + bt_cycle_dist
+                        # ======================================================================
+                        # = PHASE 2: supervision for the embedding function on every few steps =
+                        # ======================================================================
+                        style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
+                        style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
+                        # due to the random windows we take, the two style embedding batches should be slightly different.
+                        # But the difference should be minimal, thus we use the barlow twins objective to make them more
+                        # similar and reduce redundancy within the embedding vectors.
+                        bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
+                        bt_cycle_dist = bt_cycle_dist * 0.5  # this can disrupt convergence if the scale is too large.
+                        # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
+                        bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
+                        train_loss = train_loss + bt_cycle_dist
                     else:
-                        # we're in phase 3 now, so no more updates to the embedding function.
+                        # =======================================================================================================
+                        # = PHASE 3: cycle consistency is added as objective function and the embedding function remains stable =
+                        # =======================================================================================================
                         style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                            batch_of_spectrogram_lengths=batch[3].to(device)).detach()
-                        _, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                     text_lengths=batch[1].to(device),
-                                                     gold_speech=batch[2].to(device),
-                                                     speech_lengths=batch[3].to(device),
-                                                     gold_durations=batch[4].to(device),
-                                                     gold_pitch=batch[6].to(device),  # mind the switched order
-                                                     gold_energy=batch[5].to(device),  # mind the switched order
-                                                     utterance_embedding=style_embedding_of_gold,
-                                                     lang_ids=batch[8].to(device),
-                                                     return_mels=True)
+                        train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                              text_lengths=batch[1].to(device),
+                                                              gold_speech=batch[2].to(device),
+                                                              speech_lengths=batch[3].to(device),
+                                                              gold_durations=batch[4].to(device),
+                                                              gold_pitch=batch[6].to(device),  # mind the switched order
+                                                              gold_energy=batch[5].to(device),  # mind the switched order
+                                                              utterance_embedding=style_embedding_of_gold,
+                                                              lang_ids=batch[8].to(device),
+                                                              return_mels=True)
                         style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                                 batch_of_spectrogram_lengths=batch[3].to(device))
                         cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                         cycle_dist = cycle_dist * 10
+                        train_losses_this_epoch.append(train_loss.item())
                         cycle_losses_this_epoch.append(cycle_dist.item())
-                        train_loss = cycle_dist
+                        train_loss = train_loss + cycle_dist
 
             optimizer.zero_grad()
 
@@ -313,9 +279,9 @@ def train_loop(net,
                 return
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        if use_cycle_loss and len(cycle_losses_this_epoch) != 0:
+        if len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
-            if use_barlow_twins and len(bt_cycle_losses_this_epoch) != 0:
+            if len(bt_cycle_losses_this_epoch) != 0:
                 print("BarlowTwins Loss:   {}".format(sum(bt_cycle_losses_this_epoch) / len(bt_cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))

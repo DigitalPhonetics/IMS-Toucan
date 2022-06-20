@@ -181,6 +181,7 @@ def show_all_models_params():
 
 
 if __name__ == '__main__':
+    show_all_models_params()
     # show_all_models_params()
     make_best_in_all(n=1)  # right now only useful for checkpoint compression,
     # averaging multiple checkpoints causes instability with the learned embedding function

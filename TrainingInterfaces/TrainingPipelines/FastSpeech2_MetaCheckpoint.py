@@ -204,7 +204,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                                        device=torch.device("cuda"),
                                        path_to_checkpoint=resume_checkpoint)
 
-    train_loop(net=FastSpeech2(lang_embs=100),
+    train_loop(net=FastSpeech2(),
                device=torch.device("cuda"),
                datasets=datasets,
                batch_size=6,

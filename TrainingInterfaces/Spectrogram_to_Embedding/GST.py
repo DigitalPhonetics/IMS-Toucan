@@ -32,17 +32,17 @@ class StyleEncoder(torch.nn.Module):
     def __init__(
             self,
             idim: int = 80,
-            gst_tokens: int = 10,
+            gst_tokens: int = 12,
             gst_token_dim: int = 128,
-            gst_heads: int = 4,
+            gst_heads: int = 6,
             conv_layers: int = 6,
             conv_chans_list=(32, 32, 64, 64, 128, 128),
             conv_kernel_size: int = 3,
             conv_stride: int = 2,
             gru_layers: int = 1,
-            gru_units: int = 128,
+            gru_units: int = 256,
             ):
-        """Initilize global style encoder module."""
+        """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
 
         self.ref_enc = ReferenceEncoder(idim=idim,
@@ -176,7 +176,7 @@ class StyleTokenLayer(torch.nn.Module):
             gst_heads: int = 4,
             dropout_rate: float = 0.0,
             ):
-        """Initilize style token layer module."""
+        """Initialize style token layer module."""
         super(StyleTokenLayer, self).__init__()
 
         gst_embs = torch.randn(gst_tokens, gst_token_dim // gst_heads)

@@ -39,14 +39,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                           lang="en",
                                           save_imgs=True)
 
-    model = FastSpeech2(lang_embs=100, utt_embed_dim=128)
+    model = FastSpeech2()
 
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=5000,
                batch_size=8,
                lang="en",
                lr=0.001,
@@ -55,5 +54,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume,
-               use_cycle_loss=True,
-               use_barlow_twins=True)
+               phase_1_steps=100,
+               phase_2_steps=100,
+               phase_3_steps=100)
