@@ -10,22 +10,24 @@ from sklearn.decomposition import PCA
 import numpy
 from tqdm import tqdm
 
-from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
+from Preprocessing.GSTExtractor import ProsodicConditionExtractor
 
 
 class Visualizer:
 
-    def __init__(self, sr=48000, device="cpu"):
+    def __init__(self, sr=48000, device="cpu", model_id="Meta"):
         """
         Args:
             sr: The sampling rate of the audios you want to visualize.
         """
         self.tsne = TSNE(n_jobs=-1, n_iter_without_progress=4000, n_iter=20000)
         self.pca = PCA(n_components=2)
-        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
+        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device, model_id=model_id)
+        self.model_id = model_id
+        self.device = device
         self.sr = sr
 
-    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None, include_pca=True, legend=True, colors=None):
+    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None, include_pca=False, legend=True, colors=None):
         label_list = list()
         embedding_list = list()
         ordered_labels = sorted(list(label_to_filepaths.keys()))
@@ -38,7 +40,7 @@ class Visualizer:
                     print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
                           "creating a new condition extractor. Results will be correct, but if there are too many cases "
                           "of changing samplingrate, this will run very slowly.")
-                    self.pros_cond_ext = ProsodicConditionExtractor(sr=sr)
+                    self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=self.device, model_id=self.model_id)
                     self.sr = sr
                 embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().numpy())
                 label_list.append(label)

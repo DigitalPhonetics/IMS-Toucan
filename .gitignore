@@ -19,3 +19,5 @@ pretrained_models/
 split/
 singing/
 toucan_conda_venv/
+app.py
+gradio*

@@ -1,5 +1,8 @@
 import os
 
+import soundfile as sf
+
+from Preprocessing.GSTExtractor import ProsodicConditionExtractor
 from Utility.EvaluationScripts.SpeakerVisualization import Visualizer
 from run_text_to_file_reader import read_texts_as_ensemble
 
@@ -22,15 +25,15 @@ def visualize_random_speakers(generate=False):
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of TTS with random Condition")
 
 
-def visualize_libritts():
-    vs = Visualizer()
+def visualize_libritts(model_id):
+    vs = Visualizer(model_id=model_id)
     ltf = dict()
     for speaker in os.listdir("audios/LibriTTS"):
         ltf[speaker] = list()
         for book in os.listdir(f"audios/LibriTTS/{speaker}"):
             for audio_file in os.listdir(f"audios/LibriTTS/{speaker}/{book}"):
                 ltf[speaker].append(f"audios/LibriTTS/{speaker}/{book}/{audio_file}")
-    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of a Subset of LibriTTS")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Some LibriTTS Embeddings - {model_id}")
 
 
 def visualize_adept_experiment():
@@ -92,5 +95,12 @@ def calculate_spk_sims_multiling():
         print(vs.calculate_spk_sim(f"audios/multilanguage_references/{reference}", ltf[label]))
 
 
+def _test_speaker_embedding_extraction():
+    wave, sr = sf.read("audios/speaker_references_for_testing/female_mid_voice.wav")
+    ext = ProsodicConditionExtractor(sr=sr, model_id="LibriGST")
+    print(ext.extract_condition_from_reference_wave(wave=wave).shape)
+
+
 if __name__ == '__main__':
-    calculate_spk_sims_multiling()
+    visualize_libritts(model_id="LibriGST")
+    visualize_libritts(model_id="LibriGST_no_cycle")
