@@ -32,18 +32,19 @@ class Visualizer:
         embedding_list = list()
         ordered_labels = sorted(list(label_to_filepaths.keys()))
         for label in tqdm(ordered_labels):
-            for filepath in tqdm(label_to_filepaths[label]):
-                wave, sr = sf.read(filepath)
-                if len(wave) / sr < 1:
-                    continue
-                if self.sr != sr:
-                    print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
-                          "creating a new condition extractor. Results will be correct, but if there are too many cases "
-                          "of changing samplingrate, this will run very slowly.")
-                    self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=self.device, model_id=self.model_id)
-                    self.sr = sr
-                embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().numpy())
-                label_list.append(label)
+            for filepath in label_to_filepaths[label]:
+                if filepath.endswith(".wav") or filepath.endswith(".flac"):
+                    wave, sr = sf.read(filepath)
+                    if len(wave) / sr < 1:
+                        continue
+                    if self.sr != sr:
+                        print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
+                              "creating a new condition extractor. Results will be correct, but if there are too many cases "
+                              "of changing samplingrate, this will run very slowly.")
+                        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=self.device, model_id=self.model_id)
+                        self.sr = sr
+                    embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().detach().numpy())
+                    label_list.append(label)
         embeddings_as_array = numpy.array(embedding_list)
 
         dimensionality_reduced_embeddings_tsne = self.tsne.fit_transform(embeddings_as_array)
@@ -100,7 +101,7 @@ class Visualizer:
             plt.show()
         plt.close()
 
-    def calculate_spk_sim(self, reference_path, comparisons):
+    def calculate_spk_sim(self, reference_path, comparisons, model_id):
         embedding_list = list()
         for filepath in tqdm(comparisons):
             wave, sr = sf.read(filepath)
@@ -110,13 +111,13 @@ class Visualizer:
                 print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
                       "creating a new condition extractor. Results will be correct, but if there are too many cases "
                       "of changing samplingrate, this will run very slowly.")
-                self.pros_cond_ext = ProsodicConditionExtractor(sr=sr)
+                self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, model_id=model_id)
                 self.sr = sr
             embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze())
 
         wave, sr = sf.read(reference_path)
         if self.sr != sr:
-            self.pros_cond_ext = ProsodicConditionExtractor(sr=sr)
+            self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, model_id=model_id)
             self.sr = sr
         reference_embedding = self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze()
 

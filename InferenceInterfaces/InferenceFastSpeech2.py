@@ -48,16 +48,8 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #  load mel to style model     #
         ################################
-        try:
-            self.style_embedding_function = StyleEmbedding().to(self.device)
-            self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
-        except RuntimeError:
-            try:
-                self.style_embedding_function = StyleEmbedding(gst_baseline=True).to(self.device)
-                self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
-            except RuntimeError:
-                self.style_embedding_function = StyleEmbedding(lstm_baseline=True).to(self.device)
-                self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+        self.style_embedding_function = StyleEmbedding().to(self.device)
+        self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
 
         ################################
         #  load mel to wave model      #
