@@ -218,7 +218,7 @@ def train_loop(net,
                         bt_cycle_dist = bt_cycle_dist * 0.5  # this can disrupt convergence if the scale is too large.
                         # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
                         bt_cycle_losses_this_epoch.append(bt_cycle_dist.item())
-                        train_loss = train_loss + bt_cycle_dist
+                        train_loss = bt_cycle_dist
                     else:
                         # =======================================================================================================
                         # = PHASE 3: cycle consistency is added as objective function and the embedding function remains stable =

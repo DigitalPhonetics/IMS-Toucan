@@ -34,7 +34,7 @@ class StyleEncoder(torch.nn.Module):
             idim: int = 80,
             gst_tokens: int = 12,
             gst_token_dim: int = 128,
-            gst_heads: int = 6,
+            gst_heads: int = 8,
             conv_layers: int = 6,
             conv_chans_list=(32, 32, 64, 64, 128, 128),
             conv_kernel_size: int = 3,
