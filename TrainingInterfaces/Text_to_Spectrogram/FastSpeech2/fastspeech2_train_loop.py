@@ -271,7 +271,7 @@ def train_loop(net,
                 "scheduler"     : scheduler.state_dict(),
                 "default_emb"   : default_embedding,
                 "style_emb_func": style_embedding_function.state_dict()
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
             if step_counter > steps:
@@ -281,8 +281,8 @@ def train_loop(net,
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
-            if len(bt_cycle_losses_this_epoch) != 0:
-                print("BarlowTwins Loss:   {}".format(sum(bt_cycle_losses_this_epoch) / len(bt_cycle_losses_this_epoch)))
+        if len(bt_cycle_losses_this_epoch) != 0:
+            print("BarlowTwins Loss:   {}".format(sum(bt_cycle_losses_this_epoch) / len(bt_cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
         net.train()
