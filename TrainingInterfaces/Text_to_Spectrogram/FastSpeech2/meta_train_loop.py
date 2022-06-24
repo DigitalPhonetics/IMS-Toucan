@@ -185,7 +185,7 @@ def train_loop(net,
                                lang="en",
                                save_dir=save_directory,
                                step=step,
-                               utt_embeds=default_embedding)
+                               default_embed=default_embedding)
             net.train()
             style_embedding_function.train()
 
