@@ -46,7 +46,7 @@ def train_loop(net,
         train_loaders.append(DataLoader(batch_size=batch_size,
                                         dataset=dataset,
                                         drop_last=True,
-                                        num_workers=2,
+                                        num_workers=4,
                                         pin_memory=True,
                                         shuffle=True,
                                         prefetch_factor=5,
@@ -94,7 +94,7 @@ def train_loop(net,
                 param.requires_grad = False
         batches = []
         for index in random.sample(list(range(len(datasets))), len(datasets)):
-            # we get one batch for each task (i.e. language in this case)
+            # we get one batch for each task (i.e. language in this case) in a randomized order
             try:
                 batch = next(train_iters[index])
                 batches.append(batch)
