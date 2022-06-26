@@ -89,7 +89,7 @@ def train_loop(net,
     # Actual train loop starts here
     # =============================
     for step in tqdm(range(step_counter, steps)):
-        if step_counter == phase_1_steps:
+        if step == phase_1_steps:
             # entering phase 2
             for param in style_embedding_function.parameters():
                 param.requires_grad = False
@@ -108,7 +108,7 @@ def train_loop(net,
         cycle_loss = 0.0
         for batch in batches:
             with autocast():
-                if step_counter <= phase_1_steps:
+                if step <= phase_1_steps:
                     # PHASE 1
                     # we sum the loss for each task, as we would do for the
                     # second order regular MAML, but we do it only over one
