@@ -82,6 +82,7 @@ def train_loop(net,
         # starting in phase 2
         for param in style_embedding_function.parameters():
             param.requires_grad = False
+        print("Embedding Function is now frozen!")
 
     net.train()
     # =============================
@@ -92,6 +93,7 @@ def train_loop(net,
             # entering phase 2
             for param in style_embedding_function.parameters():
                 param.requires_grad = False
+                print("Embedding Function is now frozen!")
         batches = []
         for index in random.sample(list(range(len(datasets))), len(datasets)):
             # we get one batch for each task (i.e. language in this case) in a randomized order
@@ -162,18 +164,18 @@ def train_loop(net,
             # ==============================
             net.eval()
             style_embedding_function.eval()
-            default_embedding = style_embedding_function(batch_of_spectrograms=batches[0][2][0].to(device).unsqueeze(0).to(device)).squeeze()
-
+            default_embedding = style_embedding_function(batch_of_spectrograms=datasets[0][0][2].to(device).unsqueeze(0).to(device)).squeeze()
+            print(f"\nTotal Steps: {step}")
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             train_losses_total = list()
             cycle_losses_total = list()
             torch.save({
-                "model"         : net.state_dict(),
-                "optimizer"     : optimizer.state_dict(),
-                "scaler"        : grad_scaler.state_dict(),
-                "scheduler"     : scheduler.state_dict(),
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scaler": grad_scaler.state_dict(),
+                "scheduler": scheduler.state_dict(),
                 "step_counter"  : step,
                 "default_emb"   : default_embedding,
                 "style_emb_func": style_embedding_function.state_dict()
