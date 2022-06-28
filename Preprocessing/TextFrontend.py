@@ -19,12 +19,10 @@ class ArticulatoryCombinedTextFrontend:
                  use_explicit_eos=True,
                  use_lexical_stress=True,
                  silent=True,
-                 allow_unknown=False,
                  add_silence_to_end=True):
         """
         Mostly preparing ID lookups
         """
-        self.allow_unknown = allow_unknown
         self.use_explicit_eos = use_explicit_eos
         self.use_stress = use_lexical_stress
         self.add_silence_to_end = add_silence_to_end

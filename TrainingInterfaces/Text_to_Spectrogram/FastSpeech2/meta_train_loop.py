@@ -93,7 +93,7 @@ def train_loop(net,
             # entering phase 2
             for param in style_embedding_function.parameters():
                 param.requires_grad = False
-                print("Embedding Function is now frozen!")
+            print("Embedding Function is now frozen!")
         batches = []
         for index in random.sample(list(range(len(datasets))), len(datasets)):
             # we get one batch for each task (i.e. language in this case) in a randomized order

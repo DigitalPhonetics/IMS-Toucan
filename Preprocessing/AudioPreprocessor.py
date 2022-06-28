@@ -82,7 +82,11 @@ class AudioPreprocessor:
         signal with different magnitudes into
         the same magnitude by analysing loudness
         """
-        loudness = self.meter.integrated_loudness(audio)
+        try:
+            loudness = self.meter.integrated_loudness(audio)
+        except ValueError:
+            # if the audio is too short, a value error will arise
+            return audio
         loud_normed = pyln.normalize.loudness(audio, loudness, -30.0)
         peak = numpy.amax(numpy.abs(loud_normed))
         peak_normed = numpy.divide(loud_normed, peak)

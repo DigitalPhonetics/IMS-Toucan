@@ -36,6 +36,40 @@ def visualize_libritts(model_id):
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Some LibriTTS Embeddings - {model_id}")
 
 
+def visualize_ravdess(model_id):
+    vs = Visualizer(model_id=model_id)
+    ltf = dict()
+    for speaker in os.listdir("audios/RAVDESS_male"):
+        ltf[speaker] = list()
+        for audio_file in os.listdir(f"audios/RAVDESS_male/{speaker}"):
+            ltf[speaker].append(f"audios/RAVDESS_male/{speaker}/{audio_file}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"RAVDESS Male Embeddings - {model_id}")
+    vs = Visualizer(model_id=model_id)
+    ltf = dict()
+    for speaker in os.listdir("audios/RAVDESS_female"):
+        ltf[speaker] = list()
+        for audio_file in os.listdir(f"audios/RAVDESS_female/{speaker}"):
+            ltf[speaker].append(f"audios/RAVDESS_female/{speaker}/{audio_file}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"RAVDESS Female Embeddings - {model_id}")
+
+
+def visualize_speakers_and_emotions(model_id):
+    vs = Visualizer(model_id=model_id)
+    ltf = dict()
+    for speaker in os.listdir("audios/emotions"):
+        ltf[speaker] = list()
+        for audio_file in os.listdir(f"audios/emotions/{speaker}"):
+            ltf[speaker].append(f"audios/emotions/{speaker}/{audio_file}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Embeddings by Emotion")
+    vs = Visualizer(model_id=model_id)
+    ltf = dict()
+    for speaker in os.listdir("audios/speakers"):
+        ltf[speaker] = list()
+        for audio_file in os.listdir(f"audios/speakers/{speaker}"):
+            ltf[speaker].append(f"audios/speakers/{speaker}/{audio_file}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Embeddings by Speaker")
+
+
 def visualize_adept_experiment():
     vs = Visualizer()
     ltf = dict()
@@ -101,6 +135,12 @@ def _test_speaker_embedding_extraction():
     print(ext.extract_condition_from_reference_wave(wave=wave).shape)
 
 
+def check_same_params(model1, model2):
+    for p1, p2 in zip(model1.parameters(), model2.parameters()):
+        if p1.data.ne(p2.data).sum() > 0:
+            return False
+    return True
+
+
 if __name__ == '__main__':
-    visualize_libritts(model_id="LibriGST")
-    visualize_libritts(model_id="LibriGST_no_cycle")
+    visualize_speakers_and_emotions(model_id="MetaNew")
