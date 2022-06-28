@@ -60,7 +60,13 @@ class InferenceFastSpeech2(torch.nn.Module):
         """
         The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
         """
+        self.set_phonemizer_language(lang_id=lang_id)
+        self.set_accent_language(lang_id=lang_id)
+
+    def set_phonemizer_language(self, lang_id):
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
+
+    def set_accent_language(self, lang_id):
         if self.use_lang_id:
             self.lang_id = get_language_id(lang_id).to(self.device)
         else:
