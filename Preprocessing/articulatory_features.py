@@ -844,24 +844,26 @@ def generate_feature_table():
     value_to_index = {
         # MODIFIER
         # -- stress: modified by the previous symbol
-        "stressed": 0,
+        "stressed"       : 0,
         # -- tone: modified by the following symbol
-        "very-high-tone": 1,
-        "high-tone": 2,
-        "mid-tone": 3,
-        "low-tone": 4,
-        "very-low-tone": 5,
-        "rising-tone": 6,
-        "falling-tone": 7,
+        "very-high-tone" : 1,
+        "high-tone"      : 2,
+        "mid-tone"       : 3,
+        "low-tone"       : 4,
+        "very-low-tone"  : 5,
+        "rising-tone"    : 6,
+        "falling-tone"   : 7,
+        "peaking-tone"   : 60,  # added retrospectively, thus the unordered index
+        "dipping-tone"   : 61,  # added retrospectively, thus the unordered index
         # -- lengthening: modified by the following symbol
-        "lengthened": 8,
-        "half-length": 9,
-        "shortened": 10,
+        "lengthened"     : 8,
+        "half-length"    : 9,
+        "shortened"      : 10,
 
         # CATEGORIES
-        "consonant": 11,
-        "vowel": 12,
-        "phoneme": 13,
+        "consonant"      : 11,
+        "vowel"          : 12,
+        "phoneme"        : 13,
 
         # NON-SPEECH-MARKERS
         "silence": 14,
@@ -928,7 +930,7 @@ def generate_feature_table():
     phone_to_vector = dict()
     for ipa in ipa_to_phonemefeats:
         if len(ipa) == 1:
-            phone_to_vector[ipa] = [0] * (11 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
+            phone_to_vector[ipa] = [0] * (13 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
             # there are 9 features which do not occur in the vectors, because they are context dependent and not lexical
             for feat in ipa_to_phonemefeats[ipa]:
                 if ipa_to_phonemefeats[ipa][feat] in value_to_index:
@@ -939,6 +941,6 @@ def generate_feature_table():
             if value not in value_to_index:
                 print(f"Unknown feature value in featureset! {value}")
 
-    # print(f"{sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])} should be 42")
+    # print(f"{sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]])} should be 49")
 
     return phone_to_vector

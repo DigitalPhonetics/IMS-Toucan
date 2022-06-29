@@ -149,58 +149,94 @@ class ArticulatoryCombinedTextFrontend:
             phones = text
         else:
             phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True)
-        phones = phones.replace("ɚ","ə").replace("ᵻ","ɨ")
+        phones = phones.replace("ɚ", "ə").replace("ᵻ", "ɨ")
         if view:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()
         # turn into numeric vectors
         stressed_flag = False
 
+        # tone can occur in a sequence, so we will transform tone sequences into single characters for easier conversion into features
+
+        # register tones
+        phones = phones.replace("꜒", "˥")
+        phones = phones.replace("꜓", "˦")
+        phones = phones.replace("꜔", "˧")
+        phones = phones.replace("꜕", "˨")
+        phones = phones.replace("꜖", "˩")
+
+        # rising and falling tones
+        phones = phones.replace('\u030C', "⭧")
+        phones = phones.replace('\u0302', "⭨")
+
+        phones = phones.replace("˩˥", "˩⭧˥")
+        phones = phones.replace("˧˥", "˧⭧˥")
+        phones = phones.replace("˨˦", "˨⭧˦")
+        phones = phones.replace("˩˧", "˩⭧˧")
+        phones = phones.replace("˩˩˧", "˩˩⭧˧")
+
+        phones = phones.replace("˥˩", "˥⭨˩")
+        phones = phones.replace("˥˧", "˥⭨˧")
+        phones = phones.replace("˦˨", "˦⭨˨")
+        phones = phones.replace("˧˩", "˧⭨˩")
+        phones = phones.replace("˥˥˧", "˥˥⭨˧")
+        phones = phones.replace("˨˩", "˨⭨˩")
+
+        # peaking and dipping tones
+        phones = phones.replace("˩˥˧", "˩˥˧⮁")
+        phones = phones.replace("˧˥˩", "˧˥˩⮁")
+        phones = phones.replace("˧˥˧", "˧˥˧⮁")
+        phones = phones.replace("˩˧˩", "˩˧˩⮁")
+
+        phones = phones.replace("˥˩˧", "˥˩˧⮃")
+        phones = phones.replace("˧˩˥", "˧˩˥⮃")
+        phones = phones.replace("˥˧˥", "˥˧˥⮃")
+        phones = phones.replace("˧˩˧", "˧˩˧⮃")
+        phones = phones.replace("˨˦˨", "˨˦˨⮃")
+        phones = phones.replace("˦˨˦", "˦˨˦⮃")
+
         for char in phones:
+            # affects following phoneme
             if char == '\u02C8':
                 # primary stress
-                # affects following phoneme
                 stressed_flag = True
+            # affects previous phoneme
             elif char == '\u02D0':
                 # lengthened
-                # affects previous phoneme
                 phones_vector[-1][8] = 1
             elif char == '\u02D1':
                 # half length
-                # affects previous phoneme
                 phones_vector[-1][9] = 1
             elif char == '\u0306':
                 # shortened
-                # affects previous phoneme
                 phones_vector[-1][10] = 1
             elif char == "˥":
                 # very high tone
-                # affects previous phoneme
                 phones_vector[-1][1] = 1
             elif char == "˦":
                 # high tone
-                # affects previous phoneme
                 phones_vector[-1][2] = 1
             elif char == "˧":
                 # mid tone
-                # affects previous phoneme
                 phones_vector[-1][3] = 1
             elif char == "˨":
                 # low tone
-                # affects previous phoneme
                 phones_vector[-1][4] = 1
             elif char == "˩":
                 # very low tone
-                # affects previous phoneme
                 phones_vector[-1][5] = 1
-            elif char == '\u030C':
+            elif char == "⭧":
                 # rising tone
-                # affects previous phoneme
                 phones_vector[-1][6] = 1
-            elif char == '\u0302':
+            elif char == "⭨":
                 # falling tone
-                # affects previous phoneme
                 phones_vector[-1][7] = 1
+            elif char == "⮁":
+                # peaking tone
+                phones_vector[-1][60] = 1
+            elif char == "⮃":
+                # dipping tone
+                phones_vector[-1][61] = 1
             else:
                 if handle_missing:
                     try:
@@ -229,20 +265,20 @@ class ArticulatoryCombinedTextFrontend:
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = phones.replace(".", "")  # no idea why espeak puts dots everywhere for Chinese
             phones = phones.replace('1', "˥")
-            phones = phones.replace('2', "˧\u030C")
-            phones = phones.replace('ɜ', "˨\u0302\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
-            phones = phones.replace('3', "˨\u0302\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
-            phones = phones.replace('4', "˦\u0302")
+            phones = phones.replace('2', "˧⭧˥")
+            phones = phones.replace('ɜ', "˨⭨˩")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('3', "˨⭨˩")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('4', "˦⭨˩")
             phones = phones.replace('5', "˧")
             phones = phones.replace('0', "˧")
         if self.g2p_lang == "vi":
             phones = phones.replace('1', "˧")
-            phones = phones.replace('2', "˩\u0302")
-            phones = phones.replace('ɜ', "˧\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
-            phones = phones.replace('3', "˧\u030C")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
-            phones = phones.replace('4', "˧\u0302\u030C")
-            phones = phones.replace('5', "˧\u030C")
-            phones = phones.replace('6', "˧\u0302")
+            phones = phones.replace('2', "˨⭨˩")
+            phones = phones.replace('ɜ', "˧⭧˥")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('3', "˧⭧˥")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
+            phones = phones.replace('4', "˦˧˥⮃")
+            phones = phones.replace('5', "˧˩˧⮃")
+            phones = phones.replace('6', "˧⭨˩ʔ˨")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
         replacements = [
             # punctuation in languages with non-latin script
@@ -287,7 +323,7 @@ class ArticulatoryCombinedTextFrontend:
             (":", "~"),
             (";", "~"),
             (",", "~")  # make sure this remains the final one when adding new ones
-        ]
+            ]
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
                                       '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
@@ -309,7 +345,7 @@ class ArticulatoryCombinedTextFrontend:
                 ("˩", ""),  # very low tone
                 ('\u030C', ""),  # rising tone
                 ('\u0302', "")  # falling tone
-            ]
+                ]
         for replacement in replacements:
             phones = phones.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)

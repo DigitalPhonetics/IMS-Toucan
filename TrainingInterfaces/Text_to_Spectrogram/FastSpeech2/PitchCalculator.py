@@ -112,8 +112,8 @@ class Parselmouth(torch.nn.Module):
         # find tokens that are not phones and set pitch to 0
         if text is not None:
             for i, vector in enumerate(text):
-                if vector[13] == 0:
-                    # idx 13 corresponds to 'phoneme' feature
+                if vector[59] == 0:
+                    # idx 59 corresponds to 'voiced' feature
                     x_avg[i] = torch.tensor(0.0)
 
         return torch.stack(x_avg)

@@ -97,9 +97,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  use_dtw_loss=False,
-                 utt_embed_dim=256,
-                 connect_utt_emb_at_encoder_out=True,
-                 lang_embs=8000):
+                 utt_embed_dim=128,
+                 lang_embs=1000):
         super().__init__()
 
         # store hyperparameters
@@ -124,7 +123,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
-                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out, lang_embs=lang_embs)
+                                 utt_embed=utt_embed_dim, lang_embs=lang_embs, encoder=True)
 
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers, n_chans=duration_predictor_chans,
@@ -154,7 +153,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  attention_dropout_rate=transformer_dec_attn_dropout_rate, normalize_before=decoder_normalize_before,
                                  concat_after=decoder_concat_after, positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size,
-                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out)
+                                 utt_embed=utt_embed_dim, encoder=False)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)

@@ -3,6 +3,7 @@ Taken from ESPNet
 """
 
 import torch
+import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
@@ -48,8 +49,8 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, connect_utt_emb_at_encoder_out=True,
-                 spk_emb_bottleneck_size=128, lang_embs=None):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None,
+                 lang_embs=None, encoder=True):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -65,10 +66,14 @@ class Conformer(torch.nn.Module):
             raise ValueError("unknown input_layer: " + input_layer)
 
         self.normalize_before = normalize_before
-
-        self.connect_utt_emb_at_encoder_out = connect_utt_emb_at_encoder_out
+        self.encoder = encoder
         if utt_embed is not None:
-            self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=128)
+            if self.encoder:
+                self.embedding_bottleneck = torch.nn.Sequential(torch.nn.Linear(utt_embed, 128), torch.nn.Softsign())
+                self.hs_emb_projection = torch.nn.Linear(attention_dim + 128, attention_dim)
+                # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+            else:
+                self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=128)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -112,9 +117,6 @@ class Conformer(torch.nn.Module):
             lang_embs = self.language_embedding(lang_ids)
             xs = xs + lang_embs  # offset the phoneme distribution of a language
 
-        if utterance_embedding is not None and not self.connect_utt_emb_at_encoder_out:
-            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
-
         xs = self.pos_enc(xs)
 
         xs, masks = self.encoders(xs, masks)
@@ -124,11 +126,22 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             xs = self.after_norm(xs)
 
-        if utterance_embedding is not None and self.connect_utt_emb_at_encoder_out:
-            xs = self._integrate_with_utt_embed(xs, utterance_embedding)
+        if utterance_embedding is not None:
+            if self.encoder:
+                xs = self._integrate_with_utt_embed_encoder(xs, utterance_embedding)
+            else:
+                xs = self._integrate_with_utt_embed_decoder(xs, utterance_embedding)
 
         return xs, masks
 
-    def _integrate_with_utt_embed(self, hs, utt_embeddings):
+    def _integrate_with_utt_embed_encoder(self, hs, utt_embeddings):
+        # project embedding into smaller space
+        speaker_embeddings_projected = self.embedding_bottleneck(utt_embeddings)
+        # concat hidden states with spk embeds and then apply projection
+        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        return hs
+
+    def _integrate_with_utt_embed_decoder(self, hs, utt_embeddings):
         hs = self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings)
         return hs
