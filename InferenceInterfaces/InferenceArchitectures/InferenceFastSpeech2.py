@@ -69,7 +69,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  duration_predictor_dropout_rate=0.2,
                  postnet_dropout_rate=0.5,
                  # additional features
-                 utt_embed_dim=128,
+                 utt_embed_dim=256,
                  lang_embs=1000):
         super().__init__()
         self.idim = idim
@@ -178,6 +178,10 @@ class FastSpeech2(torch.nn.Module, ABC):
             if gold_energy is not None:
                 energy_predictions = gold_energy
 
+            for phoneme_index, phoneme_vector in enumerate(text_tensors):
+                if phoneme_vector[59] == 0:
+                    pitch_predictions[phoneme_index] = 0.0
+                    energy_predictions[phoneme_index] = 0.0
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
@@ -188,6 +192,10 @@ class FastSpeech2(torch.nn.Module, ABC):
         else:
             duration_predictions = self.duration_predictor(encoded_texts, duration_masks)
 
+            for phoneme_index, phoneme_vector in enumerate(text_tensors):
+                if phoneme_vector[59] == 0:
+                    pitch_predictions[phoneme_index] = 0.0
+                    energy_predictions[phoneme_index] = 0.0
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
@@ -292,10 +300,6 @@ class FastSpeech2(torch.nn.Module, ABC):
 
 
 def _scale_variance(sequence, scale):
-    # first we need to figure out which elements are supposed to be 0, because 0 has multiple meaning, but the predictions are never exactly 0.
-    for sequence_index in range(len(sequence[0])):
-        if sequence[0][sequence_index] < 0.001:
-            sequence[0][sequence_index] = 0.0
     if scale == 1.0:
         return sequence
     average = sequence[0][sequence[0] != 0.0].mean()

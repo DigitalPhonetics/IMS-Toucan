@@ -42,7 +42,7 @@ class Conformer(torch.nn.Module):
         selfattention_layer_type (str): Conformer attention layer type.
         activation_type (str): Conformer activation function type.
         use_cnn_module (bool): Whether to use convolution module.
-        cnn_module_kernel (int): Kernerl size of convolution module.
+        cnn_module_kernel (int): Kernel size of convolution module.
         padding_idx (int): Padding idx for input_layer=embed.
 
     """
@@ -73,7 +73,7 @@ class Conformer(torch.nn.Module):
                 self.hs_emb_projection = torch.nn.Linear(attention_dim + 128, attention_dim)
                 # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
             else:
-                self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=128)
+                self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 

@@ -97,7 +97,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  use_dtw_loss=False,
-                 utt_embed_dim=128,
+                 utt_embed_dim=256,
                  lang_embs=1000):
         super().__init__()
 
@@ -354,6 +354,10 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    alpha=alpha,
                                                                                                    utterance_embedding=utterance_embedding.unsqueeze(0),
                                                                                                    lang_ids=lang_id)  # (1, L, odim)
+        for phoneme_index, phoneme_vector in enumerate(xs):
+            if phoneme_vector[59] == 0:
+                pitch_predictions[phoneme_index] = 0.0
+                energy_predictions[phoneme_index] = 0.0
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
