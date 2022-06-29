@@ -36,7 +36,7 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def __init__(self,
                  # network structure related
-                 idim=60,
+                 idim=62,
                  odim=80,
                  adim=384,
                  aheads=4,
