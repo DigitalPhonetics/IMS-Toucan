@@ -39,7 +39,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
                                               corpus_dir=os.path.join("Corpora", "esds"),
-                                              lang="en"))
+                                              lang="en",
+                                              ctc_selection=False))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
                                               corpus_dir=os.path.join("Corpora", "libri_all_clean"),
@@ -57,6 +58,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                               corpus_dir=os.path.join("Corpora", "Nancy"),
                                               lang="en"))
 
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                              corpus_dir=os.path.join("Corpora", "LJSpeech"),
+                                              lang="en"))
     train_set = ConcatDataset(datasets)
 
     model = FastSpeech2(lang_embs=None)
@@ -66,7 +70,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               batch_size=18,
+               batch_size=32,
                lang="en",
                lr=0.001,
                epochs_per_save=1,
