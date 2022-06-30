@@ -12,7 +12,6 @@ from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
-from Utility.SoftDTW.sdtw_cuda_loss import SoftDTW
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
@@ -96,7 +95,6 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_masking=False,
                  use_weighted_masking=True,
                  # additional features
-                 use_dtw_loss=False,
                  utt_embed_dim=256,
                  lang_embs=1000):
         super().__init__()
@@ -104,7 +102,6 @@ class FastSpeech2(torch.nn.Module, ABC):
         # store hyperparameters
         self.idim = idim
         self.odim = odim
-        self.use_dtw_loss = use_dtw_loss
         self.eos = 1
         self.reduction_factor = reduction_factor
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
@@ -165,9 +162,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
 
-        # define criterions
+        # define criterion
         self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
-        self.dtw_criterion = SoftDTW(use_cuda=True, gamma=0.1)
 
     def forward(self,
                 text_tensors,
@@ -214,12 +210,6 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                          e_outs=e_outs, ys=gold_speech, ds=gold_durations, ps=gold_pitch, es=gold_energy,
                                                                          ilens=text_lengths, olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
-
-        if self.use_dtw_loss:
-            # print("Regular Loss: {}".format(loss))
-            dtw_loss = self.dtw_criterion(after_outs, gold_speech).mean() / 2000.0  # division to balance orders of magnitude
-            # print("DTW Loss: {}".format(dtw_loss))
-            loss = loss + dtw_loss
 
         if return_mels:
             return loss, after_outs
@@ -354,7 +344,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    alpha=alpha,
                                                                                                    utterance_embedding=utterance_embedding.unsqueeze(0),
                                                                                                    lang_ids=lang_id)  # (1, L, odim)
-        for phoneme_index, phoneme_vector in enumerate(xs):
+        for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[59] == 0:
                 pitch_predictions[phoneme_index] = 0.0
                 energy_predictions[phoneme_index] = 0.0

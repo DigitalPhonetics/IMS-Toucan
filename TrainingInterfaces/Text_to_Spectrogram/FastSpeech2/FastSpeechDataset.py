@@ -174,15 +174,6 @@ class FastSpeechDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
-            # fix existing dataset
-            for datapoint_index in tqdm(range(len(self.datapoints))):
-                self.datapoints[datapoint_index][0] = torch.cat([self.datapoints[datapoint_index][0], torch.zeros(len(self.datapoints[datapoint_index][0]), 2)],
-                                                                dim=1)
-                for phoneme_index, phoneme_vector in enumerate(self.datapoints[datapoint_index][0]):
-                    if phoneme_vector[59] == 0:
-                        self.datapoints[datapoint_index][5][phoneme_index] = 0.0
-                        self.datapoints[datapoint_index][6][phoneme_index] = 0.0
-            torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
 
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
