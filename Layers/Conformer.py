@@ -3,7 +3,6 @@ Taken from ESPNet
 """
 
 import torch
-import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
@@ -69,9 +68,7 @@ class Conformer(torch.nn.Module):
         self.encoder = encoder
         if utt_embed is not None:
             if self.encoder:
-                self.embedding_bottleneck = torch.nn.Sequential(torch.nn.Linear(utt_embed, 128), torch.nn.Softsign())
-                self.hs_emb_projection = torch.nn.Linear(attention_dim + 128, attention_dim)
-                # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
+                self.embedding_expansion = torch.nn.Linear(utt_embed, attention_dim)
             else:
                 self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
         if lang_embs is not None:
@@ -135,13 +132,10 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed_encoder(self, hs, utt_embeddings):
-        # project embedding into smaller space
-        speaker_embeddings_projected = self.embedding_bottleneck(utt_embeddings)
-        # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(speaker_embeddings_projected).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
-        return hs
+        expanded_embeddings = self.embedding_expansion(utt_embeddings)
+        return hs + expanded_embeddings
 
     def _integrate_with_utt_embed_decoder(self, hs, utt_embeddings):
-        hs = self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings)
+        hs = self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings.detach())
+        # we want the information flow of the objective function to the embedding function to only come from the encoder
         return hs
