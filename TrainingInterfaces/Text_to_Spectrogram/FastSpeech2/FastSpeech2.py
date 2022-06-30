@@ -346,8 +346,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    lang_ids=lang_id)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[59] == 0:
-                pitch_predictions[phoneme_index] = 0.0
-                energy_predictions[phoneme_index] = 0.0
+                pitch_predictions[0][phoneme_index] = 0.0
+                energy_predictions[0][phoneme_index] = 0.0
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]

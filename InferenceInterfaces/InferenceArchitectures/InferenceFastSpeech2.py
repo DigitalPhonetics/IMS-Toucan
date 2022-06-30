@@ -178,10 +178,10 @@ class FastSpeech2(torch.nn.Module, ABC):
             if gold_energy is not None:
                 energy_predictions = gold_energy
 
-            for phoneme_index, phoneme_vector in enumerate(text_tensors):
+            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
                 if phoneme_vector[59] == 0:
-                    pitch_predictions[phoneme_index] = 0.0
-                    energy_predictions[phoneme_index] = 0.0
+                    pitch_predictions[0][phoneme_index] = 0.0
+                    energy_predictions[0][phoneme_index] = 0.0
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 

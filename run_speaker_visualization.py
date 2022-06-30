@@ -143,4 +143,4 @@ def check_same_params(model1, model2):
 
 
 if __name__ == '__main__':
-    visualize_speakers_and_emotions(model_id="MetaNew")
+    visualize_speakers_and_emotions(model_id="LibriGST_new")
