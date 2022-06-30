@@ -132,7 +132,7 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed_encoder(self, hs, utt_embeddings):
-        expanded_embeddings = self.embedding_expansion(utt_embeddings)
+        expanded_embeddings = self.embedding_expansion(utt_embeddings).unsqueeze(1)
         return hs + expanded_embeddings
 
     def _integrate_with_utt_embed_decoder(self, hs, utt_embeddings):

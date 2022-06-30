@@ -72,16 +72,14 @@ class EnergyCalculator(torch.nn.Module):
         return energy.unsqueeze(-1), energy_lengths
 
     def _average_by_duration(self, x, d, text=None):
-
-        assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0) for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
         # find tokens that are not phoneme and set energy to 0
         if text is not None:
             for i, vector in enumerate(text):
-                if vector[59] == 0:
-                    # idx 59 corresponds to 'voiced' feature
+                if vector[13] == 0:
+                    # idx 13 corresponds to 'phoneme' feature
                     x_avg[i] = torch.tensor(0.0)
 
         return torch.stack(x_avg)

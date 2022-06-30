@@ -102,14 +102,12 @@ class Parselmouth(torch.nn.Module):
         return f0
 
     def _average_by_duration(self, x, d, text=None):
-
-        assert 0 <= len(x) - d.sum() < self.reduction_factor
         d_cumsum = F.pad(d.cumsum(dim=0), (1, 0))
         x_avg = [
             x[start:end].masked_select(x[start:end].gt(0.0)).mean(dim=0) if len(x[start:end].masked_select(x[start:end].gt(0.0))) != 0 else x.new_tensor(0.0)
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
-        # find tokens that are not phones and set pitch to 0
+        # find tokens that are not voiced and set pitch to 0
         if text is not None:
             for i, vector in enumerate(text):
                 if vector[59] == 0:
