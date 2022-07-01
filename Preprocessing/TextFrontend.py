@@ -344,7 +344,11 @@ class ArticulatoryCombinedTextFrontend:
                 ("˨", ""),  # low tone
                 ("˩", ""),  # very low tone
                 ('\u030C', ""),  # rising tone
-                ('\u0302', "")  # falling tone
+                ('\u0302', ""),  # falling tone
+                ('⭧', ""),  # rising
+                ('⭨', ""),  # falling
+                ('⮃', ""),  # dipping
+                ('⮁', ""),  # peaking
                 ]
         for replacement in replacements:
             phones = phones.replace(replacement[0], replacement[1])
