@@ -18,9 +18,10 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False):
+    def __init__(self, device="cpu", model_name="Meta", language="en", noise_reduce=False, use_style_embedding_ensemble=True):
         super().__init__()
         self.device = device
+        self.use_style_embedding_ensemble = use_style_embedding_ensemble
 
         ################################
         #   build text to phone        #
@@ -78,7 +79,16 @@ class InferenceFastSpeech2(torch.nn.Module):
         if sr != self.audio_preprocessor.sr:
             self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
         spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
-        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device)).squeeze()
+        spec_len = torch.LongTensor([len(spec)])
+        if self.use_style_embedding_ensemble:
+            # since a random window is taken everytime, we can just pass in the same thing multiple times to get slightly different results
+            spec_batch = torch.stack([spec] * 5, dim=0)
+            spec_len_batch = torch.stack([spec_len] * 5, dim=0)
+            self.default_utterance_embedding = torch.mean(self.style_embedding_function(spec_batch.to(self.device),
+                                                                                        spec_len_batch.to(self.device)), dim=0).squeeze()
+        else:
+            self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
+                                                                             spec_len.unsqueeze(0).to(self.device)).squeeze()
         if self.noise_reduce:
             self.update_noise_profile()
 
