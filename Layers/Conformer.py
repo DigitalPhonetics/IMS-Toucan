@@ -5,7 +5,6 @@ Taken from ESPNet
 import torch
 
 from Layers.Attention import RelPositionMultiHeadedAttention
-from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -49,7 +48,7 @@ class Conformer(torch.nn.Module):
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
                  macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None,
-                 lang_embs=None, encoder=True):
+                 lang_embs=None):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -65,12 +64,8 @@ class Conformer(torch.nn.Module):
             raise ValueError("unknown input_layer: " + input_layer)
 
         self.normalize_before = normalize_before
-        self.encoder = encoder
         if utt_embed is not None:
-            if self.encoder:
-                self.embedding_expansion = torch.nn.Linear(utt_embed, attention_dim)
-            else:
-                self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
+            self.embedding_expansion = torch.nn.Linear(utt_embed, attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -124,18 +119,10 @@ class Conformer(torch.nn.Module):
             xs = self.after_norm(xs)
 
         if utterance_embedding is not None:
-            if self.encoder:
-                xs = self._integrate_with_utt_embed_encoder(xs, utterance_embedding)
-            else:
-                xs = self._integrate_with_utt_embed_decoder(xs, utterance_embedding)
+            xs = self._integrate_with_utt_embed_encoder(xs, utterance_embedding)
 
         return xs, masks
 
     def _integrate_with_utt_embed_encoder(self, hs, utt_embeddings):
         expanded_embeddings = self.embedding_expansion(utt_embeddings).unsqueeze(1)
         return hs + expanded_embeddings
-
-    def _integrate_with_utt_embed_decoder(self, hs, utt_embeddings):
-        hs = self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings.detach())
-        # we want the information flow of the objective function to the embedding function to only come from the encoder
-        return hs

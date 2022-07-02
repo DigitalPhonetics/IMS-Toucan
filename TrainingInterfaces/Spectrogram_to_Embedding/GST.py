@@ -33,14 +33,14 @@ class StyleEncoder(torch.nn.Module):
             self,
             idim: int = 80,
             gst_tokens: int = 10,
-            gst_token_dim: int = 64,
+            gst_token_dim: int = 128,
             gst_heads: int = 4,
             conv_layers: int = 6,
             conv_chans_list=(32, 32, 64, 64, 128, 128),
             conv_kernel_size: int = 3,
             conv_stride: int = 2,
             gru_layers: int = 1,
-            gru_units: int = 64,
+            gru_units: int = 128,
             ):
         """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
