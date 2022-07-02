@@ -215,7 +215,7 @@ def train_loop(net,
                         # But the difference should be minimal, thus we use the barlow twins objective to make them more
                         # similar and reduce redundancy within the embedding vectors.
                         bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                        bt_cycle_dist = bt_cycle_dist * 0.1  # this can disrupt convergence if the scale is too large.
+                        bt_cycle_dist = bt_cycle_dist * 0.01  # this can disrupt convergence if the scale is too large.
                         # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
                         bt_losses_this_epoch.append(bt_cycle_dist.item())
                         train_loss = train_loss + bt_cycle_dist
