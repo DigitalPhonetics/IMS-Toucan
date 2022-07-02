@@ -23,4 +23,6 @@ class ProsodicConditionExtractor:
             norm_wave = trim_zeros(norm_wave.numpy())
         spec = self.ap.audio_to_mel_spec_tensor(norm_wave, explicit_sampling_rate=self.sr).transpose(0, 1)
         spec_batch = torch.stack([spec] * 5, dim=0)
-        return torch.mean(self.tts.style_embedding_function(spec_batch.to(self.device)), dim=0).squeeze()
+        spec_len_batch = torch.LongTensor([len(spec)] * 5)
+        return torch.mean(self.tts.style_embedding_function(spec_batch.to(self.device),
+                                                            spec_len_batch.to(self.device)), dim=0).squeeze()
