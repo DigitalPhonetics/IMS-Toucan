@@ -156,45 +156,6 @@ class ArticulatoryCombinedTextFrontend:
         # turn into numeric vectors
         stressed_flag = False
 
-        # tone can occur in a sequence, so we will transform tone sequences into single characters for easier conversion into features
-
-        # register tones
-        phones = phones.replace("꜒", "˥")
-        phones = phones.replace("꜓", "˦")
-        phones = phones.replace("꜔", "˧")
-        phones = phones.replace("꜕", "˨")
-        phones = phones.replace("꜖", "˩")
-
-        # rising and falling tones
-        phones = phones.replace('\u030C', "⭧")
-        phones = phones.replace('\u0302', "⭨")
-
-        phones = phones.replace("˩˥", "˩⭧˥")
-        phones = phones.replace("˧˥", "˧⭧˥")
-        phones = phones.replace("˨˦", "˨⭧˦")
-        phones = phones.replace("˩˧", "˩⭧˧")
-        phones = phones.replace("˩˩˧", "˩˩⭧˧")
-
-        phones = phones.replace("˥˩", "˥⭨˩")
-        phones = phones.replace("˥˧", "˥⭨˧")
-        phones = phones.replace("˦˨", "˦⭨˨")
-        phones = phones.replace("˧˩", "˧⭨˩")
-        phones = phones.replace("˥˥˧", "˥˥⭨˧")
-        phones = phones.replace("˨˩", "˨⭨˩")
-
-        # peaking and dipping tones
-        phones = phones.replace("˩˥˧", "˩˥˧⮁")
-        phones = phones.replace("˧˥˩", "˧˥˩⮁")
-        phones = phones.replace("˧˥˧", "˧˥˧⮁")
-        phones = phones.replace("˩˧˩", "˩˧˩⮁")
-
-        phones = phones.replace("˥˩˧", "˥˩˧⮃")
-        phones = phones.replace("˧˩˥", "˧˩˥⮃")
-        phones = phones.replace("˥˧˥", "˥˧˥⮃")
-        phones = phones.replace("˧˩˧", "˧˩˧⮃")
-        phones = phones.replace("˨˦˨", "˨˦˨⮃")
-        phones = phones.replace("˦˨˦", "˦˨˦⮃")
-
         for char in phones:
             # affects following phoneme
             if char == '\u02C8':
@@ -280,6 +241,13 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('5', "˧˩˧⮃")
             phones = phones.replace('6', "˧⭨˩ʔ˨")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
+
+        return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
+
+    def postprocess_phoneme_string(self, phoneme_string, for_feature_extraction, include_eos_symbol, for_plot_labels):
+        """
+        Takes as input a phoneme string and processes it to work best with the way we represent phonemes as featurevectors
+        """
         replacements = [
             # punctuation in languages with non-latin script
             ("。", "."),
@@ -351,11 +319,47 @@ class ArticulatoryCombinedTextFrontend:
                 ('⮁', ""),  # peaking
                 ]
         for replacement in replacements:
-            phones = phones.replace(replacement[0], replacement[1])
+            phones = phoneme_string.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
         phones = re.sub(r"\.+", ".", phones)
         phones = phones.lstrip("~").rstrip("~")
+
+        # tone can occur in a sequence, so we will transform tone sequences into single characters for easier conversion into features
+        # register tones
+        phones = phones.replace("꜒", "˥")
+        phones = phones.replace("꜓", "˦")
+        phones = phones.replace("꜔", "˧")
+        phones = phones.replace("꜕", "˨")
+        phones = phones.replace("꜖", "˩")
+        # rising and falling tones
+        phones = phones.replace('\u030C', "⭧")
+        phones = phones.replace('\u0302', "⭨")
+        # rising tones
+        phones = phones.replace("˩˥", "˩⭧˥")
+        phones = phones.replace("˧˥", "˧⭧˥")
+        phones = phones.replace("˨˦", "˨⭧˦")
+        phones = phones.replace("˩˧", "˩⭧˧")
+        phones = phones.replace("˩˩˧", "˩˩⭧˧")
+        # falling tones
+        phones = phones.replace("˥˩", "˥⭨˩")
+        phones = phones.replace("˥˧", "˥⭨˧")
+        phones = phones.replace("˦˨", "˦⭨˨")
+        phones = phones.replace("˧˩", "˧⭨˩")
+        phones = phones.replace("˥˥˧", "˥˥⭨˧")
+        phones = phones.replace("˨˩", "˨⭨˩")
+        # peaking tones
+        phones = phones.replace("˩˥˧", "˩˥˧⮁")
+        phones = phones.replace("˧˥˩", "˧˥˩⮁")
+        phones = phones.replace("˧˥˧", "˧˥˧⮁")
+        phones = phones.replace("˩˧˩", "˩˧˩⮁")
+        # dipping tones
+        phones = phones.replace("˥˩˧", "˥˩˧⮃")
+        phones = phones.replace("˧˩˥", "˧˩˥⮃")
+        phones = phones.replace("˥˧˥", "˥˧˥⮃")
+        phones = phones.replace("˧˩˧", "˧˩˧⮃")
+        phones = phones.replace("˨˦˨", "˨˦˨⮃")
+        phones = phones.replace("˦˨˦", "˦˨˦⮃")
 
         if self.add_silence_to_end:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
@@ -367,6 +371,7 @@ class ArticulatoryCombinedTextFrontend:
 
         phones = "~" + phones
         phones = re.sub("~+", "~", phones)
+
         return phones
 
 
