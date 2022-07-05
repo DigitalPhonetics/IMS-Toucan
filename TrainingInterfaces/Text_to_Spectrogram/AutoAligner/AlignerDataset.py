@@ -150,7 +150,7 @@ class AlignerDataset(Dataset):
             try:
                 cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
             except KeyError:
-                tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                 if not allow_unknown_symbols:
                     continue  # we skip sentences with unknown symbols
 
