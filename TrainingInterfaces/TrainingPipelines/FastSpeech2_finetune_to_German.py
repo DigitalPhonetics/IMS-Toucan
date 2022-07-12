@@ -28,50 +28,31 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_German")
+        save_dir = os.path.join("Models", "FastSpeech2_German")  # KEEP THE 'FastSpeech2_' BUT CHANGE THE MODEL ID TO SOMETHING MEANINGFUL FOR YOUR DATA
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
                                               corpus_dir=os.path.join("Corpora", "Karlsson"),
-                                              lang="de"))
+                                              lang="de"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
                                               corpus_dir=os.path.join("Corpora", "Eva"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
-                                              corpus_dir=os.path.join("Corpora", "Bernd"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
-                                              corpus_dir=os.path.join("Corpora", "Hokus"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
-                                              corpus_dir=os.path.join("Corpora", "hui_others"),
-                                              lang="de"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
-                                              corpus_dir=os.path.join("Corpora", "Thorsten"),
-                                              lang="de"))
+                                              lang="de"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
 
     train_set = ConcatDataset(datasets)
 
-    model = FastSpeech2(lang_embs=100)
-    # because we want to finetune it, we treat it as multilingual, even though we are only interested in German here
-
     print("Training model")
-    train_loop(net=model,
+    train_loop(net=FastSpeech2(),
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               steps=500000,
-               batch_size=32,
-               lang="de",
+               batch_size=12,  # YOU MIGHT GET OUT OF MEMORY ISSUES ON SMALL GPUs, IF SO, DECREASE THIS
+               lang="de",  # CHANGE THIS TO THE LANGUAGE YOU'RE TRAINING ON
                lr=0.001,
                epochs_per_save=1,
                warmup_steps=4000,
-               path_to_checkpoint="Models/FastSpeech2_Meta/best.pt",
-               fine_tune=True,
+               # DOWNLOAD THIS INITIALIZATION MODEL FROM THE RELEASE PAGE OF THE GITHUB
+               path_to_checkpoint="Models/FastSpeech2_Meta/best.pt" if resume_checkpoint is None else resume_checkpoint,
+               fine_tune=True if resume_checkpoint is None else finetune,
                resume=resume)
