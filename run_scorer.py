@@ -11,6 +11,7 @@ alignment_scorer = AlignmentScorer(path_to_aligner_model="Models/Aligner/aligner
 alignment_scorer.score(path_to_aligner_dataset="Corpora/IntegrationTest/aligner_train_cache.pt")
 alignment_scorer.show_samples_with_highest_loss(20)
 
-alignment_scorer = TTSScorer(path_to_fastspeech_model="Models/FastSpeech2_IntegrationTest/best.pt", device="cpu")
-alignment_scorer.score(path_to_fastspeech_dataset="Corpora/IntegrationTest/fast_train_cache.pt", lang_id="en")
-alignment_scorer.show_samples_with_highest_loss(20)
+tts_scorer = TTSScorer(path_to_fastspeech_model="Models/FastSpeech2_IntegrationTest/best.pt", device="cpu")
+tts_scorer.score(path_to_fastspeech_dataset="Corpora/IntegrationTest/fast_train_cache.pt", lang_id="en")
+tts_scorer.show_samples_with_highest_loss(20)
+tts_scorer.remove_samples_with_highest_loss(20)
