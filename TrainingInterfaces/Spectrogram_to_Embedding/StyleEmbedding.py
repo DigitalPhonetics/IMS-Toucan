@@ -33,21 +33,22 @@ class StyleEmbedding(torch.nn.Module):
             batch of 128 dimensional embeddings (b,128)
         """
 
-        window_size = 64
+        window_size = 256  # Zipf distribution suggests 64 would be best, because GST can actually get confused by padding. But that's too little information
+        # on the time axis to accurately learn a style. So instead, we concatenate each spectrogram with itself until we reach at least 256.
         list_of_specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):
             spec = batch_of_spectrograms[index][:spec_length]
-            if spec_length > window_size:
+            current_spec_length = spec_length
+            if current_spec_length < window_size:
+                # make it longer
+                spec = spec.expand(window_size * 2)
+                current_spec_length += window_size * 2
+            if current_spec_length > window_size:
                 # take random window
-                frames_to_remove = spec_length - window_size
+                frames_to_remove = current_spec_length - window_size
                 remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu().item())
                 list_of_specs.append(spec[remove_front:remove_front + window_size])
-            elif spec_length < window_size:
-                # add random padding
-                frames_to_pad = window_size - spec_length
-                pad_front = numpy.random.randint(low=0, high=frames_to_pad.cpu().item())
-                list_of_specs.append(torch.nn.functional.pad(input=spec, pad=(0, 0, int(pad_front), frames_to_pad.cpu() - pad_front)))
-            elif spec_length == window_size:
+            elif current_spec_length == window_size:
                 # take as is
                 list_of_specs.append(spec)
 
