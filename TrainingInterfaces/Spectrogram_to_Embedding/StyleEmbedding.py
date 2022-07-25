@@ -1,3 +1,5 @@
+import math
+
 import numpy
 import torch
 
@@ -38,15 +40,16 @@ class StyleEmbedding(torch.nn.Module):
         list_of_specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):
             spec = batch_of_spectrograms[index][:spec_length]
-            current_spec_length = spec_length
+            current_spec_length = spec_length.cpu().item()
             if current_spec_length < window_size:
                 # make it longer
-                spec = spec.expand(window_size * 2)
-                current_spec_length += window_size * 2
+                repeat_factor = math.ceil((window_size * 2) / spec_length)
+                spec = spec.repeat((repeat_factor, 1))
+                current_spec_length = len(spec)
             if current_spec_length > window_size:
                 # take random window
                 frames_to_remove = current_spec_length - window_size
-                remove_front = numpy.random.randint(low=0, high=frames_to_remove.cpu().item())
+                remove_front = numpy.random.randint(low=0, high=frames_to_remove)
                 list_of_specs.append(spec[remove_front:remove_front + window_size])
             elif current_spec_length == window_size:
                 # take as is
@@ -59,4 +62,6 @@ class StyleEmbedding(torch.nn.Module):
 if __name__ == '__main__':
     style_emb = StyleEmbedding()
     print(f"GST parameter count: {sum(p.numel() for p in style_emb.gst.parameters() if p.requires_grad)}")
-    print(style_emb(torch.randn(5, 600, 80), torch.tensor([600, 600, 600, 600, 600])).shape)
+
+    seq_length = 142
+    print(style_emb(torch.randn(5, seq_length, 80), torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)
