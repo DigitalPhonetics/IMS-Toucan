@@ -1,8 +1,8 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_EmoGST import run as gst
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_LibriGST import run as gst
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined

@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_LibriGST")
+        save_dir = os.path.join("Models", "FastSpeech2_EmoGST")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
