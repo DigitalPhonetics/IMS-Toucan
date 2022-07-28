@@ -22,7 +22,7 @@ class Visualizer:
         """
         self.tsne = TSNE(n_jobs=-1, learning_rate="auto", init="pca", verbose=1, n_iter_without_progress=20000, n_iter=60000)
         self.pca = PCA(n_components=2)
-        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device, model_id=model_id)
+        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.model_id = model_id
         self.device = device
         self.sr = sr
@@ -41,7 +41,7 @@ class Visualizer:
                         print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
                               "creating a new condition extractor. Results will be correct, but if there are too many cases "
                               "of changing samplingrate, this will run very slowly.")
-                        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=self.device, model_id=self.model_id)
+                        self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=self.device)
                         self.sr = sr
                     embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().detach().numpy())
                     label_list.append(label)
@@ -117,7 +117,7 @@ class Visualizer:
 
         wave, sr = sf.read(reference_path)
         if self.sr != sr:
-            self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, model_id=model_id)
+            self.pros_cond_ext = ProsodicConditionExtractor(sr=sr)
             self.sr = sr
         reference_embedding = self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze()
 

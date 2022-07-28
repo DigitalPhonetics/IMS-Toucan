@@ -54,7 +54,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                warmup_steps=4000,
                # DOWNLOAD THIS INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB
                path_to_checkpoint="Models/FastSpeech2_Meta/best.pt" if resume_checkpoint is None else resume_checkpoint,
-               path_to_embed_model="Models/embedding_function.pt",
+               path_to_embed_model="Models/Embeddings/embedding_function.pt",
                fine_tune=True if resume_checkpoint is None else finetune,
                resume=resume,
                phase_1_steps=50000,

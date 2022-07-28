@@ -49,8 +49,10 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #  load mel to style model     #
         ################################
-        self.style_embedding_function = StyleEmbedding().to(self.device)
-        self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+        self.style_embedding_function = StyleEmbedding()
+        check_dict = torch.load("Models/Embedding/embedding_function.pt", map_location="cpu")
+        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        self.style_embedding_function.to(self.device)
 
         ################################
         #  load mel to wave model      #

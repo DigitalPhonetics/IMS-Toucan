@@ -147,7 +147,7 @@ def calculate_spk_sims_multiling():
 
 def _test_speaker_embedding_extraction():
     wave, sr = sf.read("audios/speaker_references_for_testing/female_mid_voice.wav")
-    ext = ProsodicConditionExtractor(sr=sr, model_id="LibriGST")
+    ext = ProsodicConditionExtractor(sr=sr)
     print(ext.extract_condition_from_reference_wave(wave=wave).shape)
 
 

@@ -189,16 +189,16 @@ def train_loop(net,
                     # ===============================================
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
-                    train_loss, _ = net(text_tensors=batch[0].to(device),
-                                        text_lengths=batch[1].to(device),
-                                        gold_speech=batch[2].to(device),
-                                        speech_lengths=batch[3].to(device),
-                                        gold_durations=batch[4].to(device),
-                                        gold_pitch=batch[6].to(device),  # mind the switched order
-                                        gold_energy=batch[5].to(device),  # mind the switched order
-                                        utterance_embedding=style_embedding,
-                                        lang_ids=batch[8].to(device),
-                                        return_mels=True)
+                    train_loss = net(text_tensors=batch[0].to(device),
+                                     text_lengths=batch[1].to(device),
+                                     gold_speech=batch[2].to(device),
+                                     speech_lengths=batch[3].to(device),
+                                     gold_durations=batch[4].to(device),
+                                     gold_pitch=batch[6].to(device),  # mind the switched order
+                                     gold_energy=batch[5].to(device),  # mind the switched order
+                                     utterance_embedding=style_embedding,
+                                     lang_ids=batch[8].to(device),
+                                     return_mels=False)
                     train_losses_this_epoch.append(train_loss.item())
 
                 else:

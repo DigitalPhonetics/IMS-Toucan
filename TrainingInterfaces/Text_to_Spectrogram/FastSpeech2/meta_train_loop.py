@@ -36,10 +36,16 @@ def train_loop(net,
     # ============
     # Preparations
     # ============
+    steps = phase_1_steps + phase_2_steps
+
     net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
+    check_dict = torch.load(path_to_embed_model, map_location=device)
+    style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+    style_embedding_function.requires_grad_(False)
+
     cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')
-    steps = phase_1_steps + phase_2_steps
+
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loaders = list()
     train_iters = list()
@@ -69,7 +75,6 @@ def train_loop(net,
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
         net.load_state_dict(check_dict["model"])
-        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         if resume:
             optimizer.load_state_dict(check_dict["optimizer"])
             step_counter = check_dict["step_counter"]
@@ -78,22 +83,12 @@ def train_loop(net,
             if step_counter > steps:
                 print("Desired steps already reached in loaded checkpoint.")
                 return
-    if step_counter >= phase_1_steps:
-        # starting in phase 2
-        for param in style_embedding_function.parameters():
-            param.requires_grad = False
-        print("Embedding Function is now frozen!")
 
     net.train()
     # =============================
     # Actual train loop starts here
     # =============================
     for step in tqdm(range(step_counter, steps)):
-        if step == phase_1_steps:
-            # entering phase 2
-            for param in style_embedding_function.parameters():
-                param.requires_grad = False
-            print("Embedding Function is now frozen!")
         batches = []
         for index in random.sample(list(range(len(datasets))), len(datasets)):
             # we get one batch for each task (i.e. language in this case) in a randomized order
@@ -178,7 +173,6 @@ def train_loop(net,
                 "scheduler": scheduler.state_dict(),
                 "step_counter"  : step,
                 "default_emb"   : default_embedding,
-                "style_emb_func": style_embedding_function.state_dict()
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)

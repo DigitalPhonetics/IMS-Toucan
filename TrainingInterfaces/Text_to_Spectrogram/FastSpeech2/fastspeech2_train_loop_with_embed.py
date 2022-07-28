@@ -274,6 +274,9 @@ def train_loop(net,
                 "default_emb"   : default_embedding,
                 "style_emb_func": style_embedding_function.state_dict()
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            torch.save({
+                "style_emb_func": style_embedding_function.state_dict()
+                }, os.path.join(save_directory, "embedding_function.pt"))
             delete_old_checkpoints(save_directory, keep=5)
             plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
             if step_counter > steps:

@@ -3,15 +3,18 @@ import torch.multiprocessing
 import torch.multiprocessing
 from numpy import trim_zeros
 
-from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 
 
 class ProsodicConditionExtractor:
 
-    def __init__(self, sr, model_id, device=torch.device("cpu")):
+    def __init__(self, sr, device=torch.device("cpu")):
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
-        self.tts = InferenceFastSpeech2(device=device, model_name=model_id)
+        self.embed = StyleEmbedding()
+        check_dict = torch.load("Models/Embedding/embedding_function.pt", map_location="cpu")
+        self.embed.load_state_dict(check_dict["style_emb_func"])
+        self.embed.to(device)
         self.sr = sr
         self.device = device
 
@@ -24,5 +27,4 @@ class ProsodicConditionExtractor:
         spec = self.ap.audio_to_mel_spec_tensor(norm_wave, explicit_sampling_rate=self.sr).transpose(0, 1)
         spec_batch = torch.stack([spec] * 5, dim=0)
         spec_len_batch = torch.LongTensor([len(spec)] * 5)
-        return torch.mean(self.tts.style_embedding_function(spec_batch.to(self.device),
-                                                            spec_len_batch.to(self.device)), dim=0).squeeze()
+        return torch.mean(self.embed(spec_batch.to(self.device), spec_len_batch.to(self.device)), dim=0).squeeze()
