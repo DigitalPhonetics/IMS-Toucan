@@ -23,3 +23,5 @@ tokenizers
 tqdm
 transformers
 timm
+gradio==2.7.5.2
+Jinja2

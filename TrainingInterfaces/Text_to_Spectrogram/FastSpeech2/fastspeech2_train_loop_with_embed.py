@@ -15,6 +15,7 @@ from tqdm import tqdm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from Utility.BarlowTwinsLoss import BarlowTwinsLoss
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
@@ -115,11 +116,10 @@ def train_loop(net,
                lr=0.0001,
                warmup_steps=4000,
                path_to_checkpoint=None,
-               path_to_embed_model="Models/embedding_function.pt",
                fine_tune=False,
                resume=False,
-               phase_1_steps=100000,
-               phase_2_steps=100000):
+               phase_1_steps=300000,
+               phase_2_steps=200000):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -136,18 +136,14 @@ def train_loop(net,
         epochs_per_save: how many epochs to train in between checkpoints
         phase_1_steps: how many steps to train before using any of the cycle objectives
         phase_2_steps: how many steps to train using the cycle objectives
-        path_to_embed_model: path to the pretrained embedding function
+
     """
-
-    steps = phase_1_steps + phase_2_steps
-
     net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
-    check_dict = torch.load(path_to_embed_model, map_location=device)
-    style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.requires_grad_(False)
-
     cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')
+    bt_loss = BarlowTwinsLoss().to(device)
+
+    steps = phase_1_steps + phase_2_steps
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -161,6 +157,8 @@ def train_loop(net,
                               persistent_workers=True)
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer.add_param_group({"params": style_embedding_function.parameters()})
+    optimizer.add_param_group({"params": bt_loss.parameters()})
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -169,11 +167,17 @@ def train_loop(net,
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
+        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
             scaler.load_state_dict(check_dict["scaler"])
+    if step_counter >= phase_1_steps:
+        # starting in phase 2
+        for param in style_embedding_function.parameters():
+            param.requires_grad = False
+            print("Style Embedding Function is now frozen!")
     start_time = time.time()
     while True:
         net.train()
@@ -181,30 +185,45 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
+        bt_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
                 if step_counter <= phase_1_steps:
                     # ===============================================
-                    # =        PHASE 1: no cycle objective          =
+                    # = PHASE 1: learning TTS and embedding jointly =
                     # ===============================================
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
-                    train_loss, _ = net(text_tensors=batch[0].to(device),
-                                        text_lengths=batch[1].to(device),
-                                        gold_speech=batch[2].to(device),
-                                        speech_lengths=batch[3].to(device),
-                                        gold_durations=batch[4].to(device),
-                                        gold_pitch=batch[6].to(device),  # mind the switched order
-                                        gold_energy=batch[5].to(device),  # mind the switched order
-                                        utterance_embedding=style_embedding,
-                                        lang_ids=batch[8].to(device),
-                                        return_mels=True)
+                    train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                          text_lengths=batch[1].to(device),
+                                                          gold_speech=batch[2].to(device),
+                                                          speech_lengths=batch[3].to(device),
+                                                          gold_durations=batch[4].to(device),
+                                                          gold_pitch=batch[6].to(device),  # mind the switched order
+                                                          gold_energy=batch[5].to(device),  # mind the switched order
+                                                          utterance_embedding=style_embedding,
+                                                          lang_ids=batch[8].to(device),
+                                                          return_mels=True)
                     train_losses_this_epoch.append(train_loss.item())
 
+                    if step_counter % 5 == 0:
+                        style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
+                        style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                     batch_of_spectrogram_lengths=batch[3].to(device))
+                        # due to the random windows we take, the two style embedding batches should be slightly different.
+                        # But the difference should be minimal, thus we use the barlow twins objective to make them more
+                        # similar and reduce redundancy within the embedding vectors.
+                        bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
+                        bt_cycle_dist = bt_cycle_dist * 0.01  # this can disrupt convergence if the scale is too large.
+                        # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
+                        bt_losses_this_epoch.append(bt_cycle_dist.item())
+                        train_loss = train_loss + bt_cycle_dist
+
                 else:
-                    # ================================================
-                    # = PHASE 2:     cycle objective is added        =
-                    # ================================================
+                    # =======================================================================================================
+                    # = PHASE 2: cycle consistency is added as objective function and the embedding function remains stable =
+                    # =======================================================================================================
                     style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                        batch_of_spectrogram_lengths=batch[3].to(device)).detach()
                     train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
@@ -230,6 +249,11 @@ def train_loop(net,
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
+            if step_counter == phase_1_steps:
+                # entering phase 2
+                for param in style_embedding_function.parameters():
+                    param.requires_grad = False
+                print("Style Embedding Function is now frozen!")
             scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
@@ -242,12 +266,13 @@ def train_loop(net,
             default_embedding = style_embedding_function(batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
                                                          batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "step_counter": step_counter,
-                "scaler"      : scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                "default_emb" : default_embedding,
+                "model"         : net.state_dict(),
+                "optimizer"     : optimizer.state_dict(),
+                "step_counter"  : step_counter,
+                "scaler"        : scaler.state_dict(),
+                "scheduler"     : scheduler.state_dict(),
+                "default_emb"   : default_embedding,
+                "style_emb_func": style_embedding_function.state_dict()
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
@@ -256,6 +281,8 @@ def train_loop(net,
                 return
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        if len(bt_losses_this_epoch) != 0:
+            print("BT Loss:            {}".format(sum(bt_losses_this_epoch) / len(bt_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))

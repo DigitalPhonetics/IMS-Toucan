@@ -30,6 +30,7 @@ def train_loop(net,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
+               path_to_embed_model,
                resume=False,
                warmup_steps=4000):
     # ============
@@ -54,7 +55,6 @@ def train_loop(net,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
     optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
-    optimizer.add_param_group({"params": style_embedding_function.parameters()})
     grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if resume:

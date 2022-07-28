@@ -1,10 +1,14 @@
+"""
+This is the setup with which the embedding model is trained. After the embedding model has been trained, it is only used in a frozen state.
+"""
+
 import random
 
 import torch
 from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop_with_embed import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
