@@ -20,7 +20,7 @@ class Visualizer:
         Args:
             sr: The sampling rate of the audios you want to visualize.
         """
-        self.tsne = TSNE(n_jobs=-1, learning_rate="auto", init="pca", verbose=1, n_iter_without_progress=10000, n_iter=20000)
+        self.tsne = TSNE(n_jobs=-1, learning_rate="auto", init="pca", verbose=1, n_iter_without_progress=20000, n_iter=60000)
         self.pca = PCA(n_components=2)
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device, model_id=model_id)
         self.model_id = model_id

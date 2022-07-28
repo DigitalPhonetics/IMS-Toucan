@@ -8,8 +8,8 @@ if __name__ == '__main__':
     # they are part of the code now that autoformat doesn't sort them alphabetically.
     # =================================================
     # remember to call run_weight_averaging.py before to prepare the inference checkpoint file
-    model_id = "LibriGST_new"
-    name_of_output_dir = "audios/test_new"
+    model_id = "emoi"
+    name_of_output_dir = "audios/test_emo"
     # =================================================
 
     tts = InferenceFastSpeech2(device="cpu", model_name=model_id)

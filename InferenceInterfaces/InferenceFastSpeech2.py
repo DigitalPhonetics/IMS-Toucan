@@ -74,7 +74,11 @@ class InferenceFastSpeech2(torch.nn.Module):
             self.prototypical_noise = None
             self.update_noise_profile()
 
-    def set_utterance_embedding(self, path_to_reference_audio):
+    def set_utterance_embedding(self, path_to_reference_audio="", embedding=None):
+        if embedding is not None:
+            self.default_utterance_embedding = embedding.squeeze().to(self.device)
+            return
+        assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
         if sr != self.audio_preprocessor.sr:
             self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)

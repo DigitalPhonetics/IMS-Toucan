@@ -54,13 +54,29 @@ def visualize_ravdess(model_id):
 
 
 def visualize_speakers_and_emotions(model_id):
+    # small emotion test
+    # vs = Visualizer(model_id=model_id)
+    # ltf = dict()
+    # for speaker in os.listdir("audios/emotions"):
+    #    ltf[speaker] = list()
+    #    for audio_file in os.listdir(f"audios/emotions/{speaker}"):
+    #        ltf[speaker].append(f"audios/emotions/{speaker}/{audio_file}")
+    # vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Embeddings by Emotion")
+
+    # iemocap
     vs = Visualizer(model_id=model_id)
-    ltf = dict()
-    for speaker in os.listdir("audios/emotions"):
-        ltf[speaker] = list()
-        for audio_file in os.listdir(f"audios/emotions/{speaker}"):
-            ltf[speaker].append(f"audios/emotions/{speaker}/{audio_file}")
+    ltf = {"neu": [], "sad": [], "ang": [], "hap": []}
+    with open("audios/IEMOCAP/iemocap_full_dataset.csv", "r", encoding="utf8") as f:
+        lines = f.read().split("\n")
+    for line in lines:
+        if line.strip() != "":
+            if line.split(",")[3] in ["neu", "sad", "ang", "hap"] and line.split(",")[1] == "script" \
+                    and line.split(",")[0] == "1" and line.split(",")[-2] == "3":
+                ltf[line.split(",")[3]].append(f"audios/IEMOCAP/{line.split(',')[-1].split('/')[-2]}/{line.split(',')[-1].split('/')[-1]}")
+    print(ltf)
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Embeddings by Emotion")
+
+    # multiling speakers
     vs = Visualizer(model_id=model_id)
     ltf = dict()
     for speaker in os.listdir("audios/speakers"):
