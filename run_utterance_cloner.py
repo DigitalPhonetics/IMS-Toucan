@@ -160,39 +160,12 @@ class UtteranceCloner:
         if clone_speaker_identity:
             self.tts.default_utterance_embedding = prev_speaker_embedding.to(self.device)  # return to normal
 
-    def biblical_accurate_angel_mode(self,
-                                     path_to_reference_audio,
-                                     reference_transcription,
-                                     filename_of_result,
-                                     list_of_speaker_references_for_ensemble,
-                                     lang="de"):
-        prev_speaker_embedding = self.tts.default_utterance_embedding.clone().detach()
-
-        duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(reference_transcription,
-                                                                                                 path_to_reference_audio,
-                                                                                                 lang=lang)
-        self.tts.set_language(lang)
-        start_sil = torch.zeros([silence_frames_start * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
-        end_sil = torch.zeros([silence_frames_end * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
-        list_of_cloned_speeches = list()
-        for path in list_of_speaker_references_for_ensemble:
-            self.tts.set_utterance_embedding(path_to_reference_audio=path)
-            list_of_cloned_speeches.append(self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy))
-        cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
-        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
-        sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=48000)
-        self.tts.default_utterance_embedding = prev_speaker_embedding.to(self.device)  # return to normal
-
 
 if __name__ == '__main__':
     uc = UtteranceCloner(model_id="Meta", device="cuda" if torch.cuda.is_available() else "cpu")
 
-    uc.biblical_accurate_angel_mode(path_to_reference_audio="audios/test.wav",
-                                    reference_transcription="Hello world, this is a test.",
-                                    filename_of_result="audios/test_cloned_angelic.wav",
-                                    list_of_speaker_references_for_ensemble=["audios/speaker_references_for_testing/female_high_voice.wav",
-                                                                             "audios/speaker_references_for_testing/female_mid_voice.wav",
-                                                                             "audios/speaker_references_for_testing/male_low_voice.wav",
-                                                                             "audios/LibriTTS/174/168635/174_168635_000019_000001.wav",
-                                                                             "audios/test.wav"],
-                                    lang="en")
+    uc.clone_utterance(path_to_reference_audio="audios/test.wav",
+                       reference_transcription="Hello world, this is a test.",
+                       filename_of_result="audios/test_cloned.wav",
+                       clone_speaker_identity=False,
+                       lang="en")

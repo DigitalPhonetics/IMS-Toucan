@@ -18,6 +18,3 @@ pretrained_models/
 .vscode/
 split/
 singing/
-app.py
-*.db
-reference_audios/

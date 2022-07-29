@@ -56,6 +56,10 @@ if __name__ == '__main__':
         print("Need to provide path to checkpoint to fine-tune from!")
         sys.exit()
 
+    if args.finetune and "hifigan" in args.pipeline:
+        print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
+        sys.exit()
+
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
                                  resume_checkpoint=args.resume_checkpoint,
                                  resume=args.resume,

@@ -49,7 +49,7 @@ separated to keep the code clean, simple and minimal as the development progress
   multilingual data to benefit less resource-rich languages.
 - We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to
   fine-tune a model with very little data in almost any language. The last two contributions are described in
-  [our paper that we have presented at the ACL 2022]([https://arxiv.org/abs/2203.03191](https://aclanthology.org/2022.acl-long.472/))!
+  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)!
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
   objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner).
@@ -94,9 +94,9 @@ virtual environment is displayed. The commands below show everything you need to
 conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
 
 pip install --no-cache-dir -r requirements.txt
-
-pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
 ```
+
+The models are implemented and tested with PyTorch 1.9.0. Other versions (especially more recent ones) will most likely also work, I'm not aware of anything relevant that breaks backwards compatibility. To install torch 1.9.0, use the command appropriate for your system from [this link to the official PyTorch installation instructions](https://pytorch.org/get-started/previous-versions/#v190). 
 
 #### Speaker Embedding
 
@@ -333,11 +333,10 @@ cool with it. Thank you for reading.
 ### Adding Articulatory Features and Meta-Learning Pretraining
 
 ```
-@inproceedings{lux2022language,
-  title={Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features},
-  author={Florian Lux and Thang Vu},
-  booktitle={Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)},
-  pages={6858--6868},
-  year={2022}
+@article{lux2022laml,
+  title={{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
+  author={Florian Lux and Ngoc Thang Vu},
+  year={2022},
+  journal={arXiv preprint arXiv:2203.03191},
 }
 ```
