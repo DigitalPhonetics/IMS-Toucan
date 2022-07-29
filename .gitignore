@@ -23,5 +23,4 @@ gradio*
 *.pyc
 *.png
 *.pdf
-*.pt
 Models
