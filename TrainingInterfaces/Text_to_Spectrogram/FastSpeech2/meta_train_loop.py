@@ -161,7 +161,8 @@ def train_loop(net,
             # ==============================
             net.eval()
             style_embedding_function.eval()
-            default_embedding = style_embedding_function(batch_of_spectrograms=datasets[0][0][2].to(device).to(device)).squeeze()
+            default_embedding = style_embedding_function(batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
+                                                         batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print(f"\nTotal Steps: {step}")
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             if len(cycle_losses_total) != 0:
@@ -169,9 +170,9 @@ def train_loop(net,
             train_losses_total = list()
             cycle_losses_total = list()
             torch.save({
-                "model": net.state_dict(),
-                "optimizer": optimizer.state_dict(),
-                "scaler": grad_scaler.state_dict(),
+                "model"         : net.state_dict(),
+                "optimizer"     : optimizer.state_dict(),
+                "scaler"        : grad_scaler.state_dict(),
                 "scheduler": scheduler.state_dict(),
                 "step_counter"  : step,
                 "default_emb"   : default_embedding,
