@@ -108,8 +108,8 @@ def train_loop(net,
                     # we sum the loss for each task, as we would do for the
                     # second order regular MAML, but we do it only over one
                     # step (i.e. iterations of inner loop = 1)
-                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device))
-
+                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                               batch_of_spectrogram_lengths=batch[3].unsqueeze(0).to(device))
                     train_loss = train_loss + net(text_tensors=batch[0].to(device),
                                                   text_lengths=batch[1].to(device),
                                                   gold_speech=batch[2].to(device),
@@ -122,7 +122,8 @@ def train_loop(net,
                                                   return_mels=False)
                 else:
                     # PHASE 2
-                    style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device)).detach()
+                    style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                       batch_of_spectrogram_lengths=batch[3].unsqueeze(0).to(device)).detach()
                     _train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
                                                            text_lengths=batch[1].to(device),
                                                            gold_speech=batch[2].to(device),
@@ -134,7 +135,8 @@ def train_loop(net,
                                                            lang_ids=batch[8].to(device),
                                                            return_mels=True)
                     train_loss = train_loss + _train_loss
-                    style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms)
+                    style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                            batch_of_spectrogram_lengths=batch[3].unsqueeze(0).to(device))
                     cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
                     cycle_dist = cycle_dist * 30
                     cycle_loss = cycle_loss + cycle_dist

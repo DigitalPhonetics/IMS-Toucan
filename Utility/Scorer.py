@@ -73,7 +73,7 @@ class AlignmentScorer:
 
 class TTSScorer:
 
-    def __init__(self, path_to_fastspeech_model, device):
+    def __init__(self, path_to_fastspeech_model, device, path_to_embedding_checkpoint="Models/Embedding/embedding_function.pt"):
         self.path_to_score = dict()
         self.path_to_id = dict()
         self.device = device
@@ -90,8 +90,9 @@ class TTSScorer:
             except RuntimeError:
                 self.tts = FastSpeech2(lang_embs=None, utt_embed_dim=None)
                 self.tts.load_state_dict(weights)
-        self.style_embedding_function = StyleEmbedding()
-        self.style_embedding_function.load_state_dict(checkpoint["style_emb_func"])
+        self.style_embedding_function = StyleEmbedding().to(device)
+        check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
+        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.tts.to(self.device)
         self.style_embedding_function.to(device)
         self.nans_removed = False
