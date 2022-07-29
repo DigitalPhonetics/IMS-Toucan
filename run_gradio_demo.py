@@ -2,7 +2,11 @@ import gradio as gr
 import numpy as np
 import torch
 
+from InferenceInterfaces.Controllability.GAN import GanWrapper
 from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
+
+PATH_DATASET = '/mount/arbeitsdaten/synthesis/luxfn/EmbedToucan/embedding_vectors_as_list_emoGST.pt'
+PATH_WGAN = '/home/users0/tillipl/simtech/code/GAN-Speaker-Embedding/models/27-07-2022-15-38-42_wgan'
 
 
 def float2pcm(sig, dtype='int16'):
@@ -26,24 +30,37 @@ class TTS_Interface:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = InferenceFastSpeech2(device=self.device, model_name="EmoGST")
+        self.wgan = GanWrapper(PATH_DATASET, PATH_WGAN)
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
-            "English"   : "en",
-            "German"    : "de",
-            "Greek"     : "el",
-            "Spanish"   : "es",
-            "Finnish"   : "fi",
-            "Russian"   : "ru",
-            "Hungarian" : "hu",
-            "Dutch"     : "nl",
-            "French"    : "fr",
-            'Polish'    : "pl",
+            "English": "en",
+            "German": "de",
+            "Greek": "el",
+            "Spanish": "es",
+            "Finnish": "fi",
+            "Russian": "ru",
+            "Hungarian": "hu",
+            "Dutch": "nl",
+            "French": "fr",
+            'Polish': "pl",
             'Portuguese': "pt",
-            'Italian'   : "it",
-            }
+            'Italian': "it",
+        }
 
-    def read(self, prompt, language, accent, emb_slider_1, emb_slider_2, emb_slider_3, emb_slider_4, emb_slider_5, emb_slider_6):
+    def read(self,
+             prompt,
+             language,
+             accent,
+             duration_scaling_factor,
+             pitch_variance_scale,
+             energy_variance_scale,
+             emb_slider_1,
+             emb_slider_2,
+             emb_slider_3,
+             emb_slider_4,
+             emb_slider_5,
+             emb_slider_6):
         language = language.split()[0]
         accent = accent.split()[0]
         if self.current_language != language:
@@ -53,7 +70,8 @@ class TTS_Interface:
             self.model.set_accent_language(self.language_id_lookup[accent])
             self.current_accent = accent
 
-        embedding = None  # <-- MODIFY THIS
+        controllability_vector = torch.tensor([emb_slider_1, emb_slider_2, emb_slider_3, emb_slider_4, emb_slider_5, emb_slider_6], dtype=torch.float32)
+        embedding = self.wgan.modify_embed(controllability_vector)
         self.model.set_utterance_embedding(embedding=embedding)
 
         phones = self.model.text2phone.get_phone_string(prompt)
@@ -84,7 +102,11 @@ class TTS_Interface:
                 prompt = "Il tuo input era troppo lungo. Per favore, prova un testo più corto o dividilo in più parti."
             phones = self.model.text2phone.get_phone_string(prompt)
 
-        wav = self.model(phones)
+        wav = self.model(phones,
+                         input_is_phones=True,
+                         duration_scaling_factor=duration_scaling_factor,
+                         pitch_variance_scale=pitch_variance_scale,
+                         energy_variance_scale=energy_variance_scale)
         return 48000, float2pcm(wav.cpu().numpy())
 
 
@@ -118,12 +140,15 @@ if __name__ == '__main__':
                                                      'Polish Accent',
                                                      'Portuguese Accent',
                                                      'Italian Accent'], type="value", default='English Accent', label="Select the Accent of the Speaker"),
-                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
-                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
-                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
-                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
-                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
-                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET")],
+                                 gr.inputs.Slider(minimum=0.5, maximum=1.5, step=0.1, default=1.0, label="Duration Scale"),
+                                 gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0, label="Pitch Variance"),
+                                 gr.inputs.Slider(minimum=-0.0, maximum=2.0, step=0.1, default=1.0, label="Energy Variance"),
+                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Gender"),
+                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Angry Emotion?"),
+                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Noise?"),
+                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
+                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET"),
+                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="DON'T KNOW WHAT IT DOES YET")],
                          outputs=gr.outputs.Audio(type="numpy", label=None),
                          layout="vertical",
                          title="Controllable Embeddings",
