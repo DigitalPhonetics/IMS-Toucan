@@ -157,6 +157,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = text
         else:
             phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True)
+        phones = phones.replace("ɚ","ə").replace("ᵻ","ɨ")
         if view:
             print("Phonemes: \n{}\n".format(phones))
         phones_vector = list()

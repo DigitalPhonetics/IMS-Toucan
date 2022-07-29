@@ -28,7 +28,8 @@ class AlignerDataset(Dataset):
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu",
-                 phone_input=False):
+                 phone_input=False,
+                 allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             if cut_silences:
@@ -63,7 +64,8 @@ class AlignerDataset(Dataset):
                                   cut_silences,
                                   verbose,
                                   "cpu",
-                                  phone_input),
+                                  phone_input,
+                                  allow_unknown_symbols),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -114,7 +116,8 @@ class AlignerDataset(Dataset):
                               cut_silences,
                               verbose,
                               device,
-                              phone_input):
+                              phone_input,
+                              allow_unknown_symbols):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
@@ -147,8 +150,9 @@ class AlignerDataset(Dataset):
             try:
                 cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
             except KeyError:
-                tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
-                continue  # we skip sentences with unknown symbols
+                cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                if not allow_unknown_symbols:
+                    continue  # we skip sentences with unknown symbols
 
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
