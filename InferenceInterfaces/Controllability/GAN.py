@@ -25,7 +25,7 @@ class GanWrapper:
 
         return gan
     
-    def compute_controllability(self, n_samples=50000):
+    def compute_controllability(self, n_samples=500000):
         samples_generated, intermediate, z = self.wgan.sample_generator(num_samples=n_samples, nograd=True, return_intermediate=True)
         samples_generated = samples_generated.cpu()
         intermediate = intermediate.cpu()
