@@ -7,6 +7,8 @@ from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
 
 PATH_DATASET = 'embedding_vectors_as_list_emoGST_200k_vectors.pt'
 PATH_WGAN = 'Models/Embedding/embedding_gan.pt'
+# PATH_DATASET = '/mount/arbeitsdaten/synthesis/luxfn/EmbedToucan/embedding_vectors_as_list_emoGST.pt'
+# PATH_WGAN = '/home/users0/tillipl/simtech/code/GAN-Speaker-Embedding/models/01-08-2022-11-39-12_wgan'
 
 
 def float2pcm(sig, dtype='int16'):
