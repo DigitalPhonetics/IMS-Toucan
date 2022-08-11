@@ -211,11 +211,11 @@ class ArticulatoryCombinedTextFrontend:
             else:
                 if handle_missing:
                     try:
-                        phones_vector.append(self.phone_to_vector[char])
+                        phones_vector.append(self.phone_to_vector[char].copy())
                     except KeyError:
                         print("unknown phoneme: {}".format(char))
                 else:
-                    phones_vector.append(self.phone_to_vector[char])  # leave error handling to elsewhere
+                    phones_vector.append(self.phone_to_vector[char].copy())  # leave error handling to elsewhere
 
                 if stressed_flag:
                     stressed_flag = False
