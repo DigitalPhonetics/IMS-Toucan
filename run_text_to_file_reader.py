@@ -64,5 +64,4 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("audios", exist_ok=True)
 
-    read_texts(model_id="MetaNew", sentence="I wonder, how stable is the speaker embedding?.", filename="audios/1.wav", device=exec_device, language="en",
-               speaker_reference="audios/LibriTTS/175/123036/175_123036_000003_000001.wav")
+    read_texts(model_id="MetaNew", sentence="This is a sentence meant for testing", filename="audios/1.wav", device=exec_device, language="en")

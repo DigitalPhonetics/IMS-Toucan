@@ -18,6 +18,8 @@ class UtteranceCloner:
 
     def __init__(self, model_id, device):
         self.tts = InferenceFastSpeech2(device=device, model_name=model_id)
+        self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
+        self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.device = device
         acoustic_checkpoint_path = os.path.join("Models", "Aligner", "aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"]
@@ -40,10 +42,12 @@ class UtteranceCloner:
         energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
         dc = DurationCalculator(reduction_factor=1)
         wave, sr = sf.read(ref_audio_path)
-        tf = ArticulatoryCombinedTextFrontend(language=lang)
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
+        if self.tf.language != lang:
+            self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+        if self.ap.sr != sr:
+            self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         try:
-            norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            norm_wave = self.ap.audio_to_wave_tensor(normalize=True, audio=wave)
         except ValueError:
             print('Something went wrong, the reference wave might be too short.')
             raise RuntimeError
@@ -55,8 +59,8 @@ class UtteranceCloner:
         norm_wave = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
-        text = tf.string_to_tensor(transcript, handle_missing=False).squeeze(0)
-        melspec = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1)
+        text = self.tf.string_to_tensor(transcript, handle_missing=False).squeeze(0)
+        melspec = self.ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1)
         melspec_length = torch.LongTensor([len(melspec)]).numpy()
 
         if on_line_fine_tune:
@@ -65,10 +69,10 @@ class UtteranceCloner:
             tokens = list()  # we need an ID sequence for training rather than a sequence of phonological features
             for vector in text:
                 if vector[19] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
-                    for phone in tf.phone_to_vector:
-                        if vector.numpy().tolist()[11:] == tf.phone_to_vector[phone][11:]:
-                            # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
-                            tokens.append(tf.phone_to_id[phone])
+                    for phone in self.tf.phone_to_vector:
+                        if vector.numpy().tolist()[11:-2] == self.tf.phone_to_vector[phone][11:-2]:
+                            # the first 10 and last 2 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                            tokens.append(self.tf.phone_to_id[phone])
                             # this is terribly inefficient, but it's fine
                             break
             tokens = torch.LongTensor(tokens).squeeze().to(self.device)
