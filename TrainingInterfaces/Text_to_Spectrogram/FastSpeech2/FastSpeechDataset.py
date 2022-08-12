@@ -5,7 +5,6 @@ import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from Preprocessing.ProsodicConditionExtractor import ProsodicConditionExtractor
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
@@ -67,7 +66,6 @@ class FastSpeechDataset(Dataset):
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
-            pros_cond_ext = ProsodicConditionExtractor(sr=16000, device=device)
 
             for index in tqdm(range(len(dataset))):
                 norm_wave = norm_waves[index]
@@ -85,7 +83,7 @@ class FastSpeechDataset(Dataset):
                 text_without_word_boundaries = list()
                 indexes_of_word_boundaries = list()
                 for phoneme_index, vector in enumerate(text):
-                    if vector[19] == 0:
+                    if vector[21] == 0:
                         text_without_word_boundaries.append(vector.numpy().tolist())
                     else:
                         indexes_of_word_boundaries.append(phoneme_index)
@@ -132,11 +130,7 @@ class FastSpeechDataset(Dataset):
                                       durations=cached_duration.unsqueeze(0),
                                       durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                try:
-                    prosodic_condition = pros_cond_ext.extract_condition_from_reference_wave(norm_wave, already_normalized=True).cpu()
-                except RuntimeError:
-                    # if there is an audio without any voiced segments whatsoever we have to skip it.
-                    continue
+                prosodic_condition = None
 
                 self.datapoints.append([dataset[index][0],
                                         dataset[index][1],

@@ -40,7 +40,7 @@ class AlignmentScorer:
             melspec = dataset[index][2]
             text_without_word_boundaries = list()
             for phoneme_index, vector in enumerate(text):
-                if vector[19] == 0:
+                if vector[21] == 0:
                     text_without_word_boundaries.append(vector.numpy().tolist())
             matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
             _, ctc_loss = self.aligner.inference(mel=melspec.to(self.device),

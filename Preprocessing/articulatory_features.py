@@ -844,88 +844,88 @@ def generate_feature_table():
     value_to_index = {
         # MODIFIER
         # -- stress: modified by the previous symbol
-        "stressed"       : 0,
+        "stressed"           : 0,
         # -- tone: modified by the following symbol
-        "very-high-tone" : 1,
-        "high-tone"      : 2,
-        "mid-tone"       : 3,
-        "low-tone"       : 4,
-        "very-low-tone"  : 5,
-        "rising-tone"    : 6,
-        "falling-tone"   : 7,
-        "peaking-tone"   : 60,  # added retrospectively, thus the unordered index
-        "dipping-tone"   : 61,  # added retrospectively, thus the unordered index
+        "very-high-tone"     : 1,
+        "high-tone"          : 2,
+        "mid-tone"           : 3,
+        "low-tone"           : 4,
+        "very-low-tone"      : 5,
+        "rising-tone"        : 6,
+        "falling-tone"       : 7,
+        "peaking-tone"       : 8,
+        "dipping-tone"       : 9,
         # -- lengthening: modified by the following symbol
-        "lengthened"     : 8,
-        "half-length"    : 9,
-        "shortened"      : 10,
+        "lengthened"         : 10,
+        "half-length"        : 11,
+        "shortened"          : 12,
 
         # CATEGORIES
-        "consonant"      : 11,
-        "vowel"          : 12,
-        "phoneme"        : 13,
+        "consonant"          : 13,
+        "vowel"              : 14,
+        "phoneme"            : 15,
 
         # NON-SPEECH-MARKERS
-        "silence": 14,
-        "end of sentence": 15,
-        "questionmark": 16,
-        "exclamationmark": 17,
-        "fullstop": 18,
-        "word-boundary": 19,
+        "silence"            : 16,
+        "end of sentence"    : 17,
+        "questionmark"       : 18,
+        "exclamationmark"    : 19,
+        "fullstop"           : 20,
+        "word-boundary"      : 21,
 
         # PLACE
-        "dental": 20,
-        "postalveolar": 21,
-        "velar": 22,
-        "palatal": 23,
-        "glottal": 24,
-        "uvular": 25,
-        "labiodental": 26,
-        "labial-velar": 27,
-        "alveolar": 28,
-        "bilabial": 29,
-        "alveolopalatal": 30,
-        "retroflex": 31,
-        "pharyngal": 32,
-        "epiglottal": 33,
+        "dental"             : 22,
+        "postalveolar"       : 23,
+        "velar"              : 24,
+        "palatal"            : 25,
+        "glottal"            : 26,
+        "uvular"             : 27,
+        "labiodental"        : 28,
+        "labial-velar"       : 29,
+        "alveolar"           : 30,
+        "bilabial"           : 31,
+        "alveolopalatal"     : 32,
+        "retroflex"          : 33,
+        "pharyngal"          : 34,
+        "epiglottal"         : 35,
 
         # TONGUE POSITION
-        "central": 34,
-        "back": 35,
-        "front_central": 36,
-        "front": 37,
-        "central_back": 38,
+        "central"            : 36,
+        "back"               : 37,
+        "front_central"      : 38,
+        "front"              : 39,
+        "central_back"       : 40,
 
         # MOUTH OPENNESS
-        "mid": 39,
-        "close-mid": 40,
-        "close": 41,
-        "open-mid": 42,
-        "close_close-mid": 43,
-        "open-mid_open": 44,
-        "open": 45,
+        "mid"                : 41,
+        "close-mid"          : 42,
+        "close"              : 43,
+        "open-mid"           : 44,
+        "close_close-mid"    : 45,
+        "open-mid_open"      : 46,
+        "open"               : 47,
 
         # MOUTH SHAPE
-        "rounded": 46,
-        "unrounded": 47,
+        "rounded"            : 48,
+        "unrounded"          : 49,
 
         # MANNER
-        "plosive": 48,
-        "nasal": 49,
-        "approximant": 50,
-        "trill": 51,
-        "flap": 52,
-        "fricative": 53,
-        "lateral-approximant": 54,
-        "implosive": 55,
-        "vibrant": 56,
-        "click": 57,
+        "plosive"            : 50,
+        "nasal"              : 51,
+        "approximant"        : 52,
+        "trill"              : 53,
+        "flap"               : 54,
+        "fricative"          : 55,
+        "lateral-approximant": 56,
+        "implosive"          : 57,
+        "vibrant"            : 58,
+        "click"              : 59,
 
         # TYPE
-        "unvoiced": 58,
-        "voiced": 59,
+        "unvoiced"           : 60,
+        "voiced"             : 61,
 
-    }
+        }
 
     phone_to_vector = dict()
     for ipa in ipa_to_phonemefeats:

@@ -68,9 +68,9 @@ class UtteranceCloner:
             steps = 10
             tokens = list()  # we need an ID sequence for training rather than a sequence of phonological features
             for vector in text:
-                if vector[19] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
+                if vector[21] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
                     for phone in self.tf.phone_to_vector:
-                        if vector.numpy().tolist()[11:-2] == self.tf.phone_to_vector[phone][11:-2]:
+                        if vector.numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
                             # the first 10 and last 2 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
                             tokens.append(self.tf.phone_to_id[phone])
                             # this is terribly inefficient, but it's fine
@@ -97,7 +97,7 @@ class UtteranceCloner:
         text_without_word_boundaries = list()
         indexes_of_word_boundaries = list()
         for phoneme_index, vector in enumerate(text):
-            if vector[19] == 0:
+            if vector[21] == 0:
                 text_without_word_boundaries.append(vector.numpy().tolist())
             else:
                 indexes_of_word_boundaries.append(phoneme_index)
