@@ -105,9 +105,9 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                     continue
                 if emotion not in label_to_filelist:
                     label_to_filelist[emotion] = list()
-                if os.path.isdir(os.path.join(root, speaker, emotion)):
-                    for audio_file in os.listdir(os.path.join(root, speaker, emotion)):
-                        label_to_filelist[emotion].append(os.path.join(root, speaker, emotion, audio_file))
+                if os.path.isdir(os.path.join(root, speaker, emo)):
+                    for audio_file in os.listdir(os.path.join(root, speaker, emo)):
+                        label_to_filelist[emotion].append(os.path.join(root, speaker, emo, audio_file))
 
     # add RAVDESS
     root = "/mount/resources/speech/corpora/RAVDESS"
@@ -131,11 +131,11 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                         emotion = "surprised"
                     else:
                         continue
-
                     if emotion not in label_to_filelist:
                         label_to_filelist[emotion] = list()
                     label_to_filelist[emotion].append(os.path.join(root, speaker, audio_file))
     print(label_to_filelist.keys())
+
     emo_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(emo_data, device=device)
     torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/emotion_embedding_function.pt")
@@ -160,7 +160,64 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
     random.seed(131714)
     torch.random.manual_seed(131714)
     speaker_data = Dataset()
-    label_to_filelist = {"peter": ["test.wav"]}
+    label_to_filelist = dict()
+
+    # add hui_others
+    root = "/mount/resources/speech/corpora/HUI_German/others"
+    for speaker in os.listdir(root):
+        label_to_filelist[speaker] = list()
+        spk_root = f"{root}/{speaker}"
+        for el in os.listdir(spk_root):
+            if os.path.isdir(os.path.join(spk_root, el)):
+                with open(os.path.join(spk_root, el, "metadata.csv"), "r", encoding="utf8") as file:
+                    lookup = file.read()
+                for line in lookup.split("\n"):
+                    if line.strip() != "":
+                        wav_path = os.path.join(spk_root, el, "wavs", line.split("|")[0] + ".wav")
+                        if os.path.exists(wav_path):
+                            label_to_filelist[speaker].append(wav_path)
+
+    # add a little of Nancy
+    label_to_filelist["Nancy"] = list()
+    root = "/mount/resources/speech/corpora/NancyKrebs"
+    with open(os.path.join(root, "metadata.csv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n")[:500]:
+        if line.strip() != "":
+            wav_path = os.path.join(root, "wav", line.split("|")[0] + ".wav")
+            if os.path.exists(wav_path):
+                label_to_filelist["Nancy"].append(wav_path)
+
+    # add LibriTTS
+    path_train = "/mount/resources/speech/corpora/LibriTTS/all_clean"
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    wav_file = file.split(".")[0] + ".wav"
+                    label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, wav_file))
+
+    # add ESDS
+    root = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
+    for speaker in os.listdir(root):
+        if os.path.isdir(os.path.join(root, speaker)):
+            if speaker not in label_to_filelist:
+                label_to_filelist[speaker] = list()
+            for emo in os.listdir(os.path.join(root, speaker)):
+                if os.path.isdir(os.path.join(root, speaker, emo)):
+                    for audio_file in os.listdir(os.path.join(root, speaker, emo)):
+                        label_to_filelist[speaker].append(os.path.join(root, speaker, emo, audio_file))
+
+    # add RAVDESS
+    root = "/mount/resources/speech/corpora/RAVDESS"
+    for speaker in os.listdir(root):
+        if os.path.isdir(os.path.join(root, speaker)):
+            if speaker not in label_to_filelist:
+                label_to_filelist[speaker] = list()
+            for audio_file in os.listdir(os.path.join(root, speaker)):
+                label_to_filelist[speaker].append(os.path.join(root, speaker, audio_file))
+
     speaker_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(speaker_data, device=device)
     torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/speaker_embedding_function.pt")
@@ -169,7 +226,7 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
 def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_function.pt"):
     # initialize losses
     contrastive_loss = TripletLoss(margin=1.0)
-    non_contrastive_loss = BarlowTwinsLoss()
+    non_contrastive_loss = BarlowTwinsLoss().to(device)
 
     # load model
     embed = StyleEmbedding()
@@ -187,9 +244,9 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
         for _ in range(32):  # effective batchsize through gradient accumulation. Just for more stable updates,
             # computationally slow, but simple to code, and it's still more than fast enough for a one-off script.
             anchor, positive, negative = dataset.sample_triplet()
-            anchor_emb = embed(anchor.unsqueeze(0), torch.LongTensor([len(anchor)]).unsqueeze(0))
-            positive_emb = embed(positive.unsqueeze(0), torch.LongTensor([len(positive)]).unsqueeze(0))
-            negative_emb = embed(negative.unsqueeze(0), torch.LongTensor([len(negative)]).unsqueeze(0))
+            anchor_emb = embed(anchor.unsqueeze(0).to(device), torch.LongTensor([len(anchor)]).unsqueeze(0).to(device))
+            positive_emb = embed(positive.unsqueeze(0).to(device), torch.LongTensor([len(positive)]).unsqueeze(0).to(device))
+            negative_emb = embed(negative.unsqueeze(0).to(device), torch.LongTensor([len(negative)]).unsqueeze(0).to(device))
             losses.append(contrastive_loss(anchor_emb, positive_emb, negative_emb) + (0.1 * non_contrastive_loss(anchor_emb, positive_emb)))
         loss = sum(losses) / len(losses)
         losses = list()
