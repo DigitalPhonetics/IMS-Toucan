@@ -211,8 +211,6 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
             for emo in os.listdir(os.path.join(root, speaker)):
                 if os.path.isdir(os.path.join(root, speaker, emo)):
                     for audio_file in os.listdir(os.path.join(root, speaker, emo)):
-                        if len(label_to_filelist[speaker]) > 15:
-                            break
                         label_to_filelist[speaker].append(os.path.join(root, speaker, emo, audio_file))
 
     # add RAVDESS
@@ -221,8 +219,6 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
         label_to_filelist[speaker] = list()
         if os.path.isdir(os.path.join(root, speaker)):
             for audio_file in os.listdir(os.path.join(root, speaker)):
-                if len(label_to_filelist[speaker]) > 15:
-                    break
                 label_to_filelist[speaker].append(os.path.join(root, speaker, audio_file))
 
     speaker_data.add_dataset(label_to_filelist)
