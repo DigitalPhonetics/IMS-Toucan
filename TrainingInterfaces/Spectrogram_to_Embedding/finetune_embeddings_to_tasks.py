@@ -25,15 +25,14 @@ class Dataset:
 
     def add_dataset(self, label_to_filelist):
         for label in label_to_filelist:
-            for filelist in label_to_filelist[label]:
-                for file in filelist:
-                    wav, sr = soundfile.read(file)
-                    if sr != self.ap.sr:
-                        self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
-                    spec = self.ap.audio_to_mel_spec_tensor(wav, normalize=True)
-                    if label not in self.label_to_specs:
-                        self.label_to_specs[label] = list()
-                    self.label_to_specs[label].append(spec)
+            for file in tqdm(label_to_filelist[label]):
+                wav, sr = soundfile.read(file)
+                if sr != self.ap.sr:
+                    self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
+                spec = self.ap.audio_to_mel_spec_tensor(wav, normalize=True)
+                if label not in self.label_to_specs:
+                    self.label_to_specs[label] = list()
+                self.label_to_specs[label].append(spec)
 
     def sample_triplet(self):
         """
@@ -64,7 +63,65 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
     random.seed(131714)
     torch.random.manual_seed(131714)
     emo_data = Dataset()
-    label_to_filelist = {"happy": ["test.wav"]}
+    label_to_filelist = dict()
+
+    # add aesdd
+    root = "mount/resources/speech/corpora/ActedEmotionalSpeechDynamicDatabase"
+    for emotion in os.listdir(root):
+        if emotion != "Tools and Documentation":
+            if emotion not in label_to_filelist:
+                label_to_filelist[emotion] = list()
+            for audio_file in os.listdir(os.path.join(root, emotion)):
+                label_to_filelist[emotion].append(os.path.join(root, emotion, audio_file))
+
+    # add ADEPT
+    root = "mount/resources/speech/corpora/ADEPT/wav_44khz/emotion"
+    for emotion in os.listdir(root):
+        if emotion != "Tools and Documentation":
+            if emotion not in label_to_filelist:
+                label_to_filelist[emotion] = list()
+            for audio_file in os.listdir(os.path.join(root, emotion)):
+                label_to_filelist[emotion].append(os.path.join(root, emotion, audio_file))
+
+    # add ESDS
+    root = "mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
+    for speaker in os.listdir(root):
+        if os.path.isdir(os.path.join(root, speaker)):
+            for emotion in os.listdir(os.path.join(root, speaker)):
+                if emotion != "Tools and Documentation":
+                    if emotion not in label_to_filelist:
+                        label_to_filelist[emotion] = list()
+                    if os.path.isdir(os.path.join(root, speaker, emotion)):
+                        for audio_file in os.listdir(os.path.join(root, speaker, emotion)):
+                            label_to_filelist[emotion].append(os.path.join(root, speaker, emotion, audio_file))
+
+    # add RAVDESS
+    root = "mount/resources/speech/corpora/RAVDESS"
+    for speaker in os.listdir(root):
+        if os.path.isdir(os.path.join(root, speaker)):
+            for audio_file in os.listdir(os.path.join(root, speaker)):
+                if audio_file.split("-")[1] == "01":
+                    if audio_file.split("-")[2] == "01":
+                        emotion = "neutral"
+                    elif audio_file.split("-")[2] == "03":
+                        emotion = "happy"
+                    elif audio_file.split("-")[2] == "04":
+                        emotion = "sad"
+                    elif audio_file.split("-")[2] == "05":
+                        emotion = "angry"
+                    elif audio_file.split("-")[2] == "06":
+                        emotion = "fear"
+                    elif audio_file.split("-")[2] == "07":
+                        emotion = "disgust"
+                    elif audio_file.split("-")[2] == "08":
+                        emotion = "surprised"
+                    else:
+                        continue
+
+                    if emotion not in label_to_filelist:
+                        label_to_filelist[emotion] = list()
+                    label_to_filelist[emotion].append(os.path.join(root, speaker, audio_file))
+    print(label_to_filelist.keys())
     emo_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(emo_data, device=device)
     torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/emotion_embedding_function.pt")
