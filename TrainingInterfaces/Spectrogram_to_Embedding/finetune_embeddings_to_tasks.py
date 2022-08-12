@@ -92,7 +92,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                 elif emo == "Neutral":
                     emotion = "neutral"
                 elif emo == "Happy":
-                    emotion = "happiness"
+                    emotion = "joy"
                 elif emo == "Angry":
                     emotion = "anger"
                 elif emo == "Surprise":
@@ -114,9 +114,9 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                     if audio_file.split("-")[2] == "01":
                         emotion = "neutral"
                     elif audio_file.split("-")[2] == "03":
-                        emotion = "happiness"
+                        emotion = "joy"
                     elif audio_file.split("-")[2] == "04":
-                        emotion = "sad"
+                        emotion = "sadness"
                     elif audio_file.split("-")[2] == "05":
                         emotion = "anger"
                     elif audio_file.split("-")[2] == "06":
