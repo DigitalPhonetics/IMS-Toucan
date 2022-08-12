@@ -1,8 +1,7 @@
 """
 This script is meant to load a general embedding
-checkpoint and then finetune it to 3 task specific
-models: 1 for speakers, 1 for emotion and 1 for
-sound quality
+checkpoint and then finetune it to 2 task specific
+models: One for speakers and one for emotion.
 """
 import os
 import random
@@ -66,7 +65,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
     label_to_filelist = dict()
 
     # add aesdd
-    root = "mount/resources/speech/corpora/ActedEmotionalSpeechDynamicDatabase"
+    root = "/mount/resources/speech/corpora/ActedEmotionalSpeechDynamicDatabase"
     for emotion in os.listdir(root):
         if emotion != "Tools and Documentation":
             if emotion not in label_to_filelist:
@@ -75,7 +74,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                 label_to_filelist[emotion].append(os.path.join(root, emotion, audio_file))
 
     # add ADEPT
-    root = "mount/resources/speech/corpora/ADEPT/wav_44khz/emotion"
+    root = "/mount/resources/speech/corpora/ADEPT/wav_44khz/emotion"
     for emotion in os.listdir(root):
         if emotion != "Tools and Documentation":
             if emotion not in label_to_filelist:
@@ -84,7 +83,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                 label_to_filelist[emotion].append(os.path.join(root, emotion, audio_file))
 
     # add ESDS
-    root = "mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
+    root = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
     for speaker in os.listdir(root):
         if os.path.isdir(os.path.join(root, speaker)):
             for emotion in os.listdir(os.path.join(root, speaker)):
@@ -96,7 +95,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                             label_to_filelist[emotion].append(os.path.join(root, speaker, emotion, audio_file))
 
     # add RAVDESS
-    root = "mount/resources/speech/corpora/RAVDESS"
+    root = "/mount/resources/speech/corpora/RAVDESS"
     for speaker in os.listdir(root):
         if os.path.isdir(os.path.join(root, speaker)):
             for audio_file in os.listdir(os.path.join(root, speaker)):
@@ -150,30 +149,6 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
     speaker_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(speaker_data, device=device)
     torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/speaker_embedding_function.pt")
-
-
-def finetune_model_quality(gpu_id, resume_checkpoint, resume, finetune, model_dir):
-    """
-    finetune model on data with different room acoustics, microphones, noises etc.
-    arguments are there for compatibility, but unused.
-    """
-    if gpu_id == "cpu":
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
-        device = torch.device("cpu")
-
-    else:
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
-        device = torch.device("cuda")
-
-    torch.manual_seed(131714)
-    random.seed(131714)
-    torch.random.manual_seed(131714)
-    quali_data = Dataset()
-    label_to_filelist = {"church": ["test.wav"]}
-    quali_data.add_dataset(label_to_filelist)
-    finetuned_model = finetune_model(quali_data, device=device)
-    torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/quality_embedding_function.pt")
 
 
 def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_function"):

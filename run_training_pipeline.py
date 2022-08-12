@@ -2,7 +2,6 @@ import argparse
 import sys
 
 from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_emotion
-from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_quality
 from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_speaker
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_EmoGST import run as gst
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
@@ -20,7 +19,6 @@ pipeline_dict = {
     "gst"             : gst,
     "spk"             : finetune_model_speaker,
     "emo"             : finetune_model_emotion,
-    "qlt"             : finetune_model_quality
     }
 
 if __name__ == '__main__':
