@@ -8,6 +8,7 @@ import random
 
 import soundfile
 import torch
+from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -32,7 +33,7 @@ class Dataset:
                     continue
                 if sr != self.ap.sr:
                     self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
-                spec = self.ap.audio_to_mel_spec_tensor(wav, normalize=True)
+                spec = self.ap.audio_to_mel_spec_tensor(wav, normalize=True).transpose(0, 1)
                 if label not in self.label_to_specs:
                     self.label_to_specs[label] = list()
                 self.label_to_specs[label].append(spec)
@@ -239,20 +240,49 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
     optimizer.add_param_group({"params": non_contrastive_loss.parameters()})
 
     # train loop
-    losses = list()
     for step in tqdm(range(50000)):
-        for _ in range(32):  # effective batchsize through gradient accumulation. Just for more stable updates,
-            # computationally slow, but simple to code, and it's still more than fast enough for a one-off script.
+        anchors = list()
+        anchor_lens = list()
+        positives = list()
+        positive_lens = list()
+        negatives = list()
+        negative_lens = list()
+
+        # build a batch (I know this is slower than using a torch dataset, but it's sufficient and a bit quicker to implement.)
+        for _ in range(32):
             anchor, positive, negative = dataset.sample_triplet()
-            anchor_emb = embed(anchor.unsqueeze(0).to(device), torch.LongTensor([len(anchor)]).unsqueeze(0).to(device))
-            positive_emb = embed(positive.unsqueeze(0).to(device), torch.LongTensor([len(positive)]).unsqueeze(0).to(device))
-            negative_emb = embed(negative.unsqueeze(0).to(device), torch.LongTensor([len(negative)]).unsqueeze(0).to(device))
-            losses.append(contrastive_loss(anchor_emb, positive_emb, negative_emb) + (0.1 * non_contrastive_loss(anchor_emb, positive_emb)))
-        loss = sum(losses) / len(losses)
-        losses = list()
+            anchors.append(anchor)
+            anchor_lens.append(torch.LongTensor([len(anchor)]))
+            positives.append(positive)
+            positive_lens.append(torch.LongTensor([len(positive)]))
+            negatives.append(negative)
+            negative_lens.append(torch.LongTensor([len(negative)]))
+
+        # collate and pad
+        anchor = pad_sequence(anchors, batch_first=True)
+        anchor_len = torch.stack(anchor_lens)
+        positive = pad_sequence(positives, batch_first=True)
+        positive_len = torch.stack(positive_lens)
+        negative = pad_sequence(negatives, batch_first=True)
+        negative_len = torch.stack(negative_lens)
+
+        # embed
+        anchor_emb = embed(anchor.to(device), anchor_len.to(device))
+        positive_emb = embed(positive.to(device), positive_len.to(device))
+        negative_emb = embed(negative.to(device), negative_len.to(device))
+
+        # calculate loss on embeddings and update
+        con_loss = contrastive_loss(anchor_emb, positive_emb, negative_emb)
+        non_con_loss = 0.1 * non_contrastive_loss(anchor_emb, positive_emb)
+        loss = con_loss + non_con_loss
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+
+        # log
         if step % 500 == 0:
-            print(loss.item())
+            print(f"\nStep: {step}")
+            print(f"Contrastive:     {con_loss.item()}")
+            print(f"Non-Contrastive: {non_con_loss.item()}")
+
     return embed
