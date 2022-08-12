@@ -187,9 +187,9 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
         for _ in range(32):  # effective batchsize through gradient accumulation. Just for more stable updates,
             # computationally slow, but simple to code, and it's still more than fast enough for a one-off script.
             anchor, positive, negative = dataset.sample_triplet()
-            anchor_emb = embed(anchor, len(anchor))
-            positive_emb = embed(positive, len(positive))
-            negative_emb = embed(negative, len(negative))
+            anchor_emb = embed(anchor.unsqueeze(0), torch.LongTensor([len(anchor)]).unsqueeze(0))
+            positive_emb = embed(positive.unsqueeze(0), torch.LongTensor([len(positive)]).unsqueeze(0))
+            negative_emb = embed(negative.unsqueeze(0), torch.LongTensor([len(negative)]).unsqueeze(0))
             losses.append(contrastive_loss(anchor_emb, positive_emb, negative_emb) + (0.1 * non_contrastive_loss(anchor_emb, positive_emb)))
         loss = sum(losses) / len(losses)
         losses = list()
