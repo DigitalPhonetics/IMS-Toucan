@@ -176,6 +176,8 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
                     if line.strip() != "":
                         wav_path = os.path.join(spk_root, el, "wavs", line.split("|")[0] + ".wav")
                         if os.path.exists(wav_path):
+                            if len(label_to_filelist[speaker]) > 15:
+                                break
                             label_to_filelist[speaker].append(wav_path)
 
     # add a little of Nancy
@@ -183,7 +185,7 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
     root = "/mount/resources/speech/corpora/NancyKrebs"
     with open(os.path.join(root, "metadata.csv"), "r", encoding="utf8") as file:
         lookup = file.read()
-    for line in lookup.split("\n")[:500]:
+    for line in lookup.split("\n")[:100]:
         if line.strip() != "":
             wav_path = os.path.join(root, "wav", line.split("|")[0] + ".wav")
             if os.path.exists(wav_path):
@@ -197,26 +199,30 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
             for file in os.listdir(os.path.join(path_train, speaker, chapter)):
                 if file.endswith("normalized.txt"):
                     wav_file = file.split(".")[0] + ".wav"
+                    if len(label_to_filelist[speaker]) > 15:
+                        break
                     label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, wav_file))
 
     # add ESDS
     root = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
     for speaker in os.listdir(root):
+        label_to_filelist[speaker] = list()
         if os.path.isdir(os.path.join(root, speaker)):
-            if speaker not in label_to_filelist:
-                label_to_filelist[speaker] = list()
             for emo in os.listdir(os.path.join(root, speaker)):
                 if os.path.isdir(os.path.join(root, speaker, emo)):
                     for audio_file in os.listdir(os.path.join(root, speaker, emo)):
+                        if len(label_to_filelist[speaker]) > 15:
+                            break
                         label_to_filelist[speaker].append(os.path.join(root, speaker, emo, audio_file))
 
     # add RAVDESS
     root = "/mount/resources/speech/corpora/RAVDESS"
     for speaker in os.listdir(root):
+        label_to_filelist[speaker] = list()
         if os.path.isdir(os.path.join(root, speaker)):
-            if speaker not in label_to_filelist:
-                label_to_filelist[speaker] = list()
             for audio_file in os.listdir(os.path.join(root, speaker)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
                 label_to_filelist[speaker].append(os.path.join(root, speaker, audio_file))
 
     speaker_data.add_dataset(label_to_filelist)
