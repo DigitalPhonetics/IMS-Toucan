@@ -24,3 +24,22 @@ def off_diagonal(x):
     n, m = x.shape
     assert n == m
     return x.flatten()[:-1].view(n - 1, n + 1)[:, 1:].flatten()
+
+
+class TripletLoss(torch.nn.Module):
+
+    def __init__(self, margin):
+        super().__init__()
+        self.cosine_similarity = torch.nn.CosineSimilarity()
+        self.margin = margin
+
+    def forward(self,
+                anchor_embeddings,
+                positive_embeddings,
+                negative_embeddings):
+        positive_distance = 1 - self.cosine_similarity(anchor_embeddings, positive_embeddings)
+        negative_distance = 1 - self.cosine_similarity(anchor_embeddings, negative_embeddings)
+
+        losses = torch.max(positive_distance - negative_distance + self.margin,
+                           torch.full_like(positive_distance, 0))
+        return torch.mean(losses)

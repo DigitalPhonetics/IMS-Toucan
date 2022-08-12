@@ -15,8 +15,8 @@ from tqdm import tqdm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from Utility.BarlowTwinsLoss import BarlowTwinsLoss
 from Utility.WarmupScheduler import WarmupScheduler
+from Utility.diverse_losses import BarlowTwinsLoss
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
