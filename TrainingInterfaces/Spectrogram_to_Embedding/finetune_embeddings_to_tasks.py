@@ -86,13 +86,24 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
     root = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
     for speaker in os.listdir(root):
         if os.path.isdir(os.path.join(root, speaker)):
-            for emotion in os.listdir(os.path.join(root, speaker)):
-                if emotion != "Tools and Documentation":
-                    if emotion not in label_to_filelist:
-                        label_to_filelist[emotion] = list()
-                    if os.path.isdir(os.path.join(root, speaker, emotion)):
-                        for audio_file in os.listdir(os.path.join(root, speaker, emotion)):
-                            label_to_filelist[emotion].append(os.path.join(root, speaker, emotion, audio_file))
+            for emo in os.listdir(os.path.join(root, speaker)):
+                if emo == "Sad":
+                    emotion = "sadness"
+                elif emo == "Neutral":
+                    emotion = "neutral"
+                elif emo == "Happy":
+                    emotion = "happiness"
+                elif emo == "Angry":
+                    emotion = "anger"
+                elif emo == "Surprise":
+                    emotion = "surprised"
+                else:
+                    continue
+                if emotion not in label_to_filelist:
+                    label_to_filelist[emotion] = list()
+                if os.path.isdir(os.path.join(root, speaker, emotion)):
+                    for audio_file in os.listdir(os.path.join(root, speaker, emotion)):
+                        label_to_filelist[emotion].append(os.path.join(root, speaker, emotion, audio_file))
 
     # add RAVDESS
     root = "/mount/resources/speech/corpora/RAVDESS"
@@ -103,11 +114,11 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
                     if audio_file.split("-")[2] == "01":
                         emotion = "neutral"
                     elif audio_file.split("-")[2] == "03":
-                        emotion = "happy"
+                        emotion = "happiness"
                     elif audio_file.split("-")[2] == "04":
                         emotion = "sad"
                     elif audio_file.split("-")[2] == "05":
-                        emotion = "angry"
+                        emotion = "anger"
                     elif audio_file.split("-")[2] == "06":
                         emotion = "fear"
                     elif audio_file.split("-")[2] == "07":
