@@ -25,7 +25,11 @@ class Dataset:
     def add_dataset(self, label_to_filelist):
         for label in label_to_filelist:
             for file in tqdm(label_to_filelist[label]):
-                wav, sr = soundfile.read(file)
+                try:
+                    wav, sr = soundfile.read(file)
+                except RuntimeError:
+                    print(f"bad file: {file}")
+                    continue
                 if sr != self.ap.sr:
                     self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
                 spec = self.ap.audio_to_mel_spec_tensor(wav, normalize=True)
