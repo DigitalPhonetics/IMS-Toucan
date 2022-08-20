@@ -1,5 +1,5 @@
 import os
-
+import random
 
 def build_path_to_transcript_dict_mls_italian():
     lang = "italian"
@@ -462,7 +462,7 @@ def build_path_to_transcript_dict_nvidia_hifitts():
                 if line.strip() != "":
                     transcripts.append(json.loads(line))
 
-    for transcript in transcripts:
+    for transcript in random.sample(transcripts, 20000):  # we only take 20k samples from this one
         path = transcript["audio_filepath"]
         norm_text = transcript["text_normalized"]
         path_to_transcript[f"{root}/{path}"] = norm_text
