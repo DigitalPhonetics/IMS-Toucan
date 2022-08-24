@@ -1,18 +1,17 @@
-import random
-
 import torch
 import torch.multiprocessing
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDatasetBuilder import AlignerDatasetBuilder
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.meta_train_loop import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_samples=False):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_samples=False, generate_all_aligner_caches=False):
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data similar to how it is showcased in
@@ -35,6 +34,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     os.makedirs(meta_save_dir, exist_ok=True)
 
     print("Preparing")
+
+    if generate_all_aligner_caches:
+        build_all_aligner_dataset_caches(torch.device("cuda"))
+
     english_datasets = list()
     german_datasets = list()
     greek_datasets = list()
@@ -186,6 +189,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     datasets.append(ConcatDataset(chinese_datasets))
     datasets.append(ConcatDataset(vietnamese_datasets))
 
+    if generate_all_aligner_caches:
+        return
+
     if remove_faulty_samples:
         find_and_remove_faulty_samples(net=FastSpeech2(lang_embs=100),
                                        datasets=english_datasets +
@@ -251,3 +257,126 @@ def find_and_remove_faulty_samples(net,
                 print(f"NAN DETECTED: {dataset_index}, {datapoint_index}")
                 nan_ids.append(datapoint_index)
         datasets[dataset_index].remove_samples(nan_ids)
+
+
+def build_all_aligner_dataset_caches(device):
+    factory = AlignerDatasetBuilder(device=device)
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_nancy(),
+                        corpus_dir=os.path.join("Corpora", "Nancy"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                        corpus_dir=os.path.join("Corpora", "LJSpeech"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                        corpus_dir=os.path.join("Corpora", "libri_all_clean"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_vctk(),
+                        corpus_dir=os.path.join("Corpora", "vctk"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+                        corpus_dir=os.path.join("Corpora", "hifi"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
+                        corpus_dir=os.path.join("Corpora", "ravdess"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_ESDS(),
+                        corpus_dir=os.path.join("Corpora", "esds"),
+                        lang="en")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_karlsson(),
+                        corpus_dir=os.path.join("Corpora", "Karlsson"),
+                        lang="de")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_eva(),
+                        corpus_dir=os.path.join("Corpora", "Eva"),
+                        lang="de")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_hokus(),
+                        corpus_dir=os.path.join("Corpora", "Hokus"),
+                        lang="de")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_bernd(),
+                        corpus_dir=os.path.join("Corpora", "Bernd"),
+                        lang="de")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_hui_others(),
+                        corpus_dir=os.path.join("Corpora", "hui_others"),
+                        lang="de")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_thorsten(),
+                        corpus_dir=os.path.join("Corpora", "Thorsten"),
+                        lang="de")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10el(),
+                        corpus_dir=os.path.join("Corpora", "meta_Greek"),
+                        lang="el")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                        corpus_dir=os.path.join("Corpora", "spanish_blizzard"),
+                        lang="es")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10es(),
+                        corpus_dir=os.path.join("Corpora", "meta_Spanish"),
+                        lang="es")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+                        corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                        lang="es")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10fi(),
+                        corpus_dir=os.path.join("Corpora", "meta_Finnish"),
+                        lang="fi")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10ru(),
+                        corpus_dir=os.path.join("Corpora", "meta_Russian"),
+                        lang="ru")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10hu(),
+                        corpus_dir=os.path.join("Corpora", "meta_Hungarian"),
+                        lang="hu")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10nl(),
+                        corpus_dir=os.path.join("Corpora", "meta_Dutch"),
+                        lang="nl")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
+                        corpus_dir=os.path.join("Corpora", "mls_dutch"),
+                        lang="nl")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10fr(),
+                        corpus_dir=os.path.join("Corpora", "meta_French"),
+                        lang="fr")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_french(),
+                        corpus_dir=os.path.join("Corpora", "mls_french"),
+                        lang="fr")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+                        corpus_dir=os.path.join("Corpora", "mls_porto"),
+                        lang="pt")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+                        corpus_dir=os.path.join("Corpora", "mls_polish"),
+                        lang="pl")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+                        corpus_dir=os.path.join("Corpora", "mls_italian"),
+                        lang="it")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_css10cmn(),
+                        corpus_dir=os.path.join("Corpora", "css10_chinese"),
+                        lang="cmn")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_aishell3(),
+                        corpus_dir=os.path.join("Corpora", "aishell3"),
+                        lang="cmn")
+
+    factory.build_cache(transcript_dict=build_path_to_transcript_dict_vietTTS(),
+                        corpus_dir=os.path.join("Corpora", "vietTTS"),
+                        lang="vi")
