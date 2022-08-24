@@ -1,5 +1,5 @@
 import os
-
+import random
 
 def build_path_to_transcript_dict_mls_italian():
     lang = "italian"
@@ -44,7 +44,7 @@ def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
     path_to_transcript = dict()
     with open(os.path.join(root, "transcripts.txt"), "r", encoding="utf8") as file:
         lookup = file.read()
-    for line in lookup.split("\n"):
+    for line in random.sample(lookup.split("\n"), 20000):  # we only take 20k samples from these corpora because they are too huge for our servers
         if line.strip() != "":
             norm_transcript = line.split("\t")[1]
             wav_folders = line.split("\t")[0].split("_")
