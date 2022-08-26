@@ -1,40 +1,51 @@
 import os
 import random
 
+
+def limit_to_n(path_to_transcript_dict, n=30000):
+    limited_dict = dict()
+    if len(path_to_transcript_dict.keys()) > n:
+        for key in random.sample(list(path_to_transcript_dict.keys()), n):
+            limited_dict[key] = path_to_transcript_dict[key]
+        return limited_dict
+    else:
+        return path_to_transcript_dict
+
+
 def build_path_to_transcript_dict_mls_italian():
     lang = "italian"
     root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
-    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_multi_ling_librispeech_template(root=root))
 
 
 def build_path_to_transcript_dict_mls_french():
     lang = "french"
     root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
-    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_multi_ling_librispeech_template(root=root))
 
 
 def build_path_to_transcript_dict_mls_dutch():
     lang = "dutch"
     root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
-    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_multi_ling_librispeech_template(root=root))
 
 
 def build_path_to_transcript_dict_mls_polish():
     lang = "polish"
     root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
-    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_multi_ling_librispeech_template(root=root))
 
 
 def build_path_to_transcript_dict_mls_spanish():
     lang = "spanish"
     root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
-    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_multi_ling_librispeech_template(root=root))
 
 
 def build_path_to_transcript_dict_mls_portuguese():
     lang = "portuguese"
     root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
-    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_multi_ling_librispeech_template(root=root))
 
 
 def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
@@ -44,7 +55,7 @@ def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
     path_to_transcript = dict()
     with open(os.path.join(root, "transcripts.txt"), "r", encoding="utf8") as file:
         lookup = file.read()
-    for line in random.sample(lookup.split("\n"), 20000):  # we only take 20k samples from these corpora because they are too huge for our servers
+    for line in lookup.split("\n"):
         if line.strip() != "":
             norm_transcript = line.split("\t")[1]
             wav_folders = line.split("\t")[0].split("_")
@@ -53,32 +64,32 @@ def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
                 path_to_transcript[wav_path] = norm_transcript
             else:
                 print(f"not found: {wav_path}")
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_karlsson():
     root = "/mount/resources/speech/corpora/HUI_German/Karlsson"
-    return build_path_to_transcript_dict_hui_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_hui_template(root=root))
 
 
 def build_path_to_transcript_dict_eva():
     root = "/mount/resources/speech/corpora/HUI_German/Eva"
-    return build_path_to_transcript_dict_hui_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_hui_template(root=root))
 
 
 def build_path_to_transcript_dict_bernd():
     root = "/mount/resources/speech/corpora/HUI_German/Bernd"
-    return build_path_to_transcript_dict_hui_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_hui_template(root=root))
 
 
 def build_path_to_transcript_dict_friedrich():
     root = "/mount/resources/speech/corpora/HUI_German/Friedrich"
-    return build_path_to_transcript_dict_hui_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_hui_template(root=root))
 
 
 def build_path_to_transcript_dict_hokus():
     root = "/mount/resources/speech/corpora/HUI_German/Hokus"
-    return build_path_to_transcript_dict_hui_template(root=root)
+    return limit_to_n(build_path_to_transcript_dict_hui_template(root=root))
 
 
 def build_path_to_transcript_dict_hui_others():
@@ -86,7 +97,7 @@ def build_path_to_transcript_dict_hui_others():
     pttd = dict()
     for speaker in os.listdir(root):
         pttd.update(build_path_to_transcript_dict_hui_template(root=f"{root}/{speaker}"))
-    return pttd
+    return limit_to_n(pttd)
 
 
 def build_path_to_transcript_dict_hui_template(root):
@@ -104,7 +115,7 @@ def build_path_to_transcript_dict_hui_template(root):
                     wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
                     if os.path.exists(wav_path):
                         path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_elizabeth():
@@ -120,7 +131,7 @@ def build_path_to_transcript_dict_elizabeth():
                     wav_path = os.path.join(root, el, "wavs", line.split("|")[0] + ".wav")
                     if os.path.exists(wav_path):
                         path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_nancy():
@@ -134,7 +145,7 @@ def build_path_to_transcript_dict_nancy():
             wav_path = os.path.join(root, "wav", line.split("|")[0] + ".wav")
             if os.path.exists(wav_path):
                 path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_integration_test():
@@ -148,7 +159,7 @@ def build_path_to_transcript_dict_integration_test():
             wav_path = os.path.join(root, "wav", line.split("|")[0] + ".wav")
             if os.path.exists(wav_path):
                 path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_hokuspokus():
@@ -159,7 +170,7 @@ def build_path_to_transcript_dict_hokuspokus():
                 transcript = tf.read()
             wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(".txt") + ".wav"
             path_to_transcript[wav_path] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_fluxsing():
@@ -173,7 +184,7 @@ def build_path_to_transcript_dict_fluxsing():
             wav_path = os.path.join(root, line.split("|")[0])
             if os.path.exists(wav_path):
                 path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_vctk():
@@ -186,7 +197,7 @@ def build_path_to_transcript_dict_vctk():
                 wav_path = f"/mount/resources/speech/corpora/VCTK/wav48_silence_trimmed/{transcript_dir}/" + transcript_file.rstrip(".txt") + "_mic2.flac"
                 if os.path.exists(wav_path):
                     path_to_transcript[wav_path] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_libritts():
@@ -200,7 +211,7 @@ def build_path_to_transcript_dict_libritts():
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_libritts_all_clean():
@@ -214,7 +225,7 @@ def build_path_to_transcript_dict_libritts_all_clean():
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_libritts_other500():
@@ -228,7 +239,7 @@ def build_path_to_transcript_dict_libritts_other500():
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_libritts_asr_other500(label_file):
@@ -249,7 +260,7 @@ def build_path_to_transcript_dict_libritts_asr_other500(label_file):
                         path_to_transcript[os.path.join(path_train, speaker, chapter, file)] = audio_handle_to_transcript[file.split(".")[0]]
                     except KeyError:
                         print(f"Problem with {file}, no transcription found!")
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_libritts_asr(label_file):
@@ -270,23 +281,25 @@ def build_path_to_transcript_dict_libritts_asr(label_file):
                         path_to_transcript[os.path.join(path_train, speaker, chapter, file)] = audio_handle_to_transcript[file.split(".")[0]]
                     except KeyError:
                         print(f"Problem with {file}, no transcription found!")
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_libritts_asr_out():
-    return build_path_to_transcript_dict_libritts_asr("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-bpe100.txt")
+    return limit_to_n(build_path_to_transcript_dict_libritts_asr("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-bpe100.txt"))
 
 
 def build_path_to_transcript_dict_libritts_asr_phn():
-    return build_path_to_transcript_dict_libritts_asr("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-phn-bpe100.txt")
+    return limit_to_n(build_path_to_transcript_dict_libritts_asr("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-phn-bpe100.txt"))
 
 
 def build_path_to_transcript_dict_libritts_asr_out_500():
-    return build_path_to_transcript_dict_libritts_asr_other500("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-bpe100.txt")
+    return limit_to_n(
+        build_path_to_transcript_dict_libritts_asr_other500("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-bpe100.txt"))
 
 
 def build_path_to_transcript_dict_libritts_asr_phn_500():
-    return build_path_to_transcript_dict_libritts_asr_other500("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-phn-bpe100.txt")
+    return limit_to_n(
+        build_path_to_transcript_dict_libritts_asr_other500("/mount/arbeitsdaten45/projekte/asr-4/denisopl/tmp/libritts_train_600_tts-phn-bpe100.txt"))
 
 
 def build_path_to_transcript_dict_ljspeech():
@@ -296,7 +309,7 @@ def build_path_to_transcript_dict_ljspeech():
             transcript = tf.read()
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_att_hack():
@@ -307,7 +320,7 @@ def build_path_to_transcript_dict_att_hack():
                 transcript = tf.read()
             wav_path = "/mount/resources/speech/corpora/FrenchExpressive/wav/" + transcript_file.rstrip(".txt") + ".wav"
             path_to_transcript[wav_path] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10de():
@@ -318,7 +331,7 @@ def build_path_to_transcript_dict_css10de():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript["/mount/resources/speech/corpora/CSS10/german/" + line.split("|")[0]] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10cmn():
@@ -329,7 +342,7 @@ def build_path_to_transcript_dict_css10cmn():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript["/mount/resources/speech/corpora/CSS10/chinese/" + line.split("|")[0]] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_vietTTS():
@@ -343,7 +356,7 @@ def build_path_to_transcript_dict_vietTTS():
             audio_path = parsed_line[0]
             transcript = parsed_line[1]
             path_to_transcript[os.path.join(root, audio_path + ".wav")] = transcript.strip()
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_thorsten():
@@ -354,7 +367,7 @@ def build_path_to_transcript_dict_thorsten():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10el():
@@ -366,7 +379,7 @@ def build_path_to_transcript_dict_css10el():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10nl():
@@ -378,7 +391,7 @@ def build_path_to_transcript_dict_css10nl():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10fi():
@@ -390,7 +403,7 @@ def build_path_to_transcript_dict_css10fi():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10ru():
@@ -402,7 +415,7 @@ def build_path_to_transcript_dict_css10ru():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10hu():
@@ -414,7 +427,7 @@ def build_path_to_transcript_dict_css10hu():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10es():
@@ -426,7 +439,7 @@ def build_path_to_transcript_dict_css10es():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_css10fr():
@@ -438,7 +451,7 @@ def build_path_to_transcript_dict_css10fr():
     for line in trans_lines:
         if line.strip() != "":
             path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_nvidia_hifitts():
@@ -462,12 +475,12 @@ def build_path_to_transcript_dict_nvidia_hifitts():
                 if line.strip() != "":
                     transcripts.append(json.loads(line))
 
-    for transcript in random.sample(transcripts, 20000):  # we only take 20k samples from this one
+    for transcript in transcripts:
         path = transcript["audio_filepath"]
         norm_text = transcript["text_normalized"]
         path_to_transcript[f"{root}/{path}"] = norm_text
 
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_spanish_blizzard_train():
@@ -481,7 +494,7 @@ def build_path_to_transcript_dict_spanish_blizzard_train():
             wav_path = os.path.join(root, "train_wav", line.split("\t")[0] + ".wav")
             if os.path.exists(wav_path):
                 path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_3xljspeech():
@@ -491,7 +504,7 @@ def build_path_to_transcript_dict_3xljspeech():
             transcript = tf.read()
         wav_path = "/mount/arbeitsdaten/synthesis/attention_projects/LJSpeech_3xlong_stripped/wav_long/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
-    return path_to_transcript
+    return limit_to_n(path_to_transcript)
 
 
 def build_path_to_transcript_dict_aishell3():
@@ -505,7 +518,7 @@ def build_path_to_transcript_dict_aishell3():
             audio_file = f"{root}/wav/{parsed_line[0][:7]}/{parsed_line[0]}.wav"
             kanji = parsed_line[2]
             path_to_transcript_dict[audio_file] = kanji
-    return path_to_transcript_dict
+    return limit_to_n(path_to_transcript_dict)
 
 
 def build_path_to_transcript_dict_VIVOS_viet():
@@ -518,7 +531,7 @@ def build_path_to_transcript_dict_VIVOS_viet():
             parsed_line = transcript.split(" ")
             audio_file = f"{root}/waves/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
             path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:]).lower()
-    return path_to_transcript_dict
+    return limit_to_n(path_to_transcript_dict)
 
 
 def build_path_to_transcript_dict_RAVDESS():
@@ -530,7 +543,7 @@ def build_path_to_transcript_dict_RAVDESS():
                 path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Kids are talking by the door."
             else:
                 path_to_transcript_dict[os.path.join(root, speaker_dir, audio_file)] = "Dogs are sitting by the door."
-    return path_to_transcript_dict
+    return limit_to_n(path_to_transcript_dict)
 
 
 def build_path_to_transcript_dict_ESDS():
@@ -546,4 +559,4 @@ def build_path_to_transcript_dict_ESDS():
                         filename, text, emo_dir = line.split("\t")
                         filename = speaker_dir + "_" + filename.split("_")[1]
                         path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
-    return path_to_transcript_dict
+    return limit_to_n(path_to_transcript_dict)

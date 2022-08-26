@@ -338,7 +338,7 @@ class ArticulatoryCombinedTextFrontend:
             replacements = replacements + [
                 ('\u02C8', ""),  # primary stress
                 ('\u02D0', ""),  # lengthened
-                ('\u02D1', ""),  # half length
+                ('\u02D1', ""),  # half-length
                 ('\u0306', ""),  # shortened
                 ("˥", ""),  # very high tone
                 ("˦", ""),  # high tone
