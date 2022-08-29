@@ -12,6 +12,6 @@ alignment_scorer.score(path_to_aligner_dataset="Corpora/IntegrationTest/aligner_
 alignment_scorer.show_samples_with_highest_loss(20)
 
 tts_scorer = TTSScorer(path_to_fastspeech_model="Models/FastSpeech2_IntegrationTest/best.pt", device="cpu")
-tts_scorer.score(path_to_fastspeech_dataset="Corpora/IntegrationTest/fast_train_cache.pt", lang_id="en")
+tts_scorer.score(path_to_fastspeech_dataset="Corpora/IntegrationTest/", lang_id="en")
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(20)
