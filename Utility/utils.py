@@ -30,7 +30,11 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
         checkpoint_list.sort(reverse=False)
         checkpoints_to_delete = [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:-keep]]
         for old_checkpoint in checkpoints_to_delete:
-            os.remove(os.path.join(old_checkpoint))
+            try:
+                os.remove(os.path.join(old_checkpoint))
+            except OSError:
+                print("Could not delete checkpoint: "+os.path.join(old_checkpoint))
+                pass
 
 
 def get_most_recent_checkpoint(checkpoint_dir, verbose=True):
