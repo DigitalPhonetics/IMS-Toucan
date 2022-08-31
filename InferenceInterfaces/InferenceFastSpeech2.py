@@ -128,7 +128,8 @@ class InferenceFastSpeech2(torch.nn.Module):
                 durations=None,
                 pitch=None,
                 energy=None,
-                input_is_phones=False):
+                input_is_phones=False,
+                pause_duration_scaling_factor=1.0):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -151,7 +152,8 @@ class InferenceFastSpeech2(torch.nn.Module):
                                                            lang_id=self.lang_id,
                                                            duration_scaling_factor=duration_scaling_factor,
                                                            pitch_variance_scale=pitch_variance_scale,
-                                                           energy_variance_scale=energy_variance_scale)
+                                                           energy_variance_scale=energy_variance_scale,
+                                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
         if view:

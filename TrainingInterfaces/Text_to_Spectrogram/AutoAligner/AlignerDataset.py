@@ -21,7 +21,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=30,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
+                 loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
@@ -171,8 +171,8 @@ class AlignerDataset(Dataset):
         for vector in text_vector:
             if vector[21] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
                 for phone in self.tf.phone_to_vector:
-                    if vector.numpy().tolist()[11:] == self.tf.phone_to_vector[phone][11:]:
-                        # the first 10 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                    if vector.numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
+                        # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
                         tokens.append(self.tf.phone_to_id[phone])
                         # this is terribly inefficient, but it's fine
                         break

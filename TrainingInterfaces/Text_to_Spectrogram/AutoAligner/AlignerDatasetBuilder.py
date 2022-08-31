@@ -22,7 +22,7 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 class AlignerDatasetBuilder(Dataset):
 
     def __init__(self,
-                 loading_processes=30,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
+                 loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,

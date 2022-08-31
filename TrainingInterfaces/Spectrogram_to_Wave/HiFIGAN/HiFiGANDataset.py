@@ -20,7 +20,7 @@ class HiFiGANDataset(Dataset):
                  cache_dir,
                  desired_samplingrate=48000,
                  samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
-                 loading_processes=40,
+                 loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                  use_random_corruption=False):
         os.makedirs(cache_dir, exist_ok=True)
         self.use_random_corruption = use_random_corruption

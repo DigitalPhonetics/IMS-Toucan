@@ -141,7 +141,7 @@ class FastSpeech2(torch.nn.Module, ABC):
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
                  is_inference=False, duration_scaling_factor=1.0, utterance_embedding=None, lang_ids=None,
-                 pitch_variance_scale=1.0, energy_variance_scale=1.0):
+                 pitch_variance_scale=1.0, energy_variance_scale=1.0, pause_duration_scaling_factor=1.0):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -181,6 +181,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                 if phoneme_vector[59] == 0:
                     pitch_predictions[0][phoneme_index] = 0.0
                     energy_predictions[0][phoneme_index] = 0.0
+                if phoneme_vector[16] == 1 and pause_duration_scaling_factor != 1.0:
+                    duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
@@ -195,6 +197,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                 if phoneme_vector[59] == 0:
                     pitch_predictions[phoneme_index] = 0.0
                     energy_predictions[phoneme_index] = 0.0
+                if phoneme_vector[16] == 1 and pause_duration_scaling_factor != 1.0:
+                    duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
@@ -233,7 +237,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                 lang_id=None,
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
-                energy_variance_scale=1.0):
+                energy_variance_scale=1.0,
+                pause_duration_scaling_factor=1.0):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
@@ -255,6 +260,8 @@ class FastSpeech2(torch.nn.Module, ABC):
             energy_variance_scale: reasonable values are 0.6 < scale < 1.4.
                                    1.0 means no scaling happens, higher values increase variance of the energy curve,
                                    lower values decrease variance of the energy curve.
+            pause_duration_scaling_factor: reasonable values are 0.6 < scale < 1.4.
+                                   scales the durations of pauses on top of the regular duration scaling
 
         Returns:
             mel spectrogram
@@ -287,7 +294,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                lang_ids=lang_id,
                                                                                                duration_scaling_factor=duration_scaling_factor,
                                                                                                pitch_variance_scale=pitch_variance_scale,
-                                                                                               energy_variance_scale=energy_variance_scale)
+                                                                                               energy_variance_scale=energy_variance_scale,
+                                                                                               pause_duration_scaling_factor=pause_duration_scaling_factor)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]

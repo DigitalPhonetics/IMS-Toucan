@@ -71,7 +71,7 @@ class UtteranceCloner:
                 if vector[21] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
                     for phone in self.tf.phone_to_vector:
                         if vector.numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
-                            # the first 10 and last 2 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                            # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
                             tokens.append(self.tf.phone_to_id[phone])
                             # this is terribly inefficient, but it's fine
                             break

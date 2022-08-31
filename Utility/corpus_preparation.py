@@ -8,7 +8,8 @@ from Utility.path_to_transcript_dicts import *
 
 
 def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device):
-    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, loading_processes=35, cut_silences=True, device=device)
+    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, loading_processes=os.cpu_count() if os.cpu_count() is not None else 30, cut_silences=True,
+                          device=device)
 
 
 def prepare_fastspeech_corpus(transcript_dict,

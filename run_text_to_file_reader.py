@@ -64,4 +64,4 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     os.makedirs("audios", exist_ok=True)
 
-    read_texts(model_id="MetaNew", sentence="This is a sentence meant for testing", filename="audios/1.wav", device=exec_device, language="en")
+    read_texts(model_id="Meta", sentence="This is a sentence meant for testing", filename="audios/1.wav", device=exec_device, language="en")
