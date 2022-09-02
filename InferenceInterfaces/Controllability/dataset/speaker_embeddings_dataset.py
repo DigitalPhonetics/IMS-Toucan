@@ -1,12 +1,14 @@
-import torch
-import numpy as np
 import os
+
+import numpy as np
+import torch
+
 
 class SpeakerEmbeddingsDataset(torch.utils.data.Dataset):
 
     def __init__(self, feature_path, device, mode='utterance'):
         super(SpeakerEmbeddingsDataset, self).__init__()
-        
+
         modes = ['utterance', 'speaker']
         assert mode in modes, f'mode: {mode} is not supported'
         if mode == 'utterance':
@@ -46,9 +48,9 @@ class SpeakerEmbeddingsDataset(torch.utils.data.Dataset):
     def set_labels(self, labels):
         self.y_old = self.y
         self.y = torch.full(size=(len(self),), fill_value=labels).to(self.device)
-        #if isinstance(labels, int) or isinstance(labels, float):
+        # if isinstance(labels, int) or isinstance(labels, float):
         #    self.y = torch.full(size=len(self), fill_value=labels)
-        #elif len(labels) == len(self):
+        # elif len(labels) == len(self):
         #    self.y = torch.tensor(labels)
 
     def _load_features(self, feature_path):
@@ -58,13 +60,13 @@ class SpeakerEmbeddingsDataset(torch.utils.data.Dataset):
                 vectors = torch.stack(vectors)
 
             self.mean = torch.mean(vectors)
-            self.std  = torch.std(vectors)
+            self.std = torch.std(vectors)
             return vectors, torch.zeros(vectors.size(0))
-        else:    
-            vectors = torch.load(feature_path / 'speaker_vectors.pt', map_location=self.device)
+        else:
+            vectors = torch.load(feature_path, map_location=self.device)
 
         self.mean = torch.mean(vectors)
-        self.std  = torch.std(vectors)
+        self.std = torch.std(vectors)
 
         spk2idx = {}
         with open(feature_path / f'{self.mode}2idx', 'r') as f:
@@ -75,7 +77,7 @@ class SpeakerEmbeddingsDataset(torch.utils.data.Dataset):
 
         speakers, indices = zip(*spk2idx.items())
 
-        if (feature_path / 'utt2spk').exists(): # spk2idx contains utt_ids not speaker_ids
+        if (feature_path / 'utt2spk').exists():  # spk2idx contains utt_ids not speaker_ids
             utt2spk = {}
             with open(feature_path / 'utt2spk', 'r') as f:
                 for line in f:

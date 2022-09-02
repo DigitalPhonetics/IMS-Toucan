@@ -1,6 +1,8 @@
-from InferenceInterfaces.Controllability.dataset.speaker_embeddings_dataset import SpeakerEmbeddingsDataset
 import torch
+
+from InferenceInterfaces.Controllability.dataset.speaker_embeddings_dataset import SpeakerEmbeddingsDataset
 from InferenceInterfaces.Controllability.wgan.init_wgan import create_wgan
+
 
 class GanWrapper:
     def __init__(self, path_dataset, path_wgan) -> None:
@@ -16,7 +18,7 @@ class GanWrapper:
         self.z = self.wgan.G.module.sample_latent(1, 32)
 
     def load_model(self, path):
-        gan_checkpoint = torch.load(path)
+        gan_checkpoint = torch.load(path, map_location="cpu")
         gan_parameters = gan_checkpoint['model_parameters']
         gan = create_wgan(parameters=gan_parameters, device=self.device)
         

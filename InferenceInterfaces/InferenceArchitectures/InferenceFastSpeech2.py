@@ -178,9 +178,9 @@ class FastSpeech2(torch.nn.Module, ABC):
                 energy_predictions = gold_energy
 
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
-                if phoneme_vector[59] == 0:
+                if phoneme_vector[61] == 0:
+                    # this means the phoneme is unvoiced
                     pitch_predictions[0][phoneme_index] = 0.0
-                    energy_predictions[0][phoneme_index] = 0.0
                 if phoneme_vector[16] == 1 and pause_duration_scaling_factor != 1.0:
                     duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
