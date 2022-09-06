@@ -12,6 +12,7 @@ import torch
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import get_language_id
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
@@ -40,7 +41,7 @@ class AlignmentScorer:
             melspec = dataset[index][2]
             text_without_word_boundaries = list()
             for phoneme_index, vector in enumerate(text):
-                if vector[21] == 0:
+                if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
                     text_without_word_boundaries.append(vector.numpy().tolist())
             matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
             _, ctc_loss = self.aligner.inference(mel=melspec.to(self.device),

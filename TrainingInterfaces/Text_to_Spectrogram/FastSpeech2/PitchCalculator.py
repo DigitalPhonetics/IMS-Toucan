@@ -10,6 +10,8 @@ import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
 
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
+
 
 class Parselmouth(torch.nn.Module):
     """
@@ -110,8 +112,7 @@ class Parselmouth(torch.nn.Module):
         # find tokens that are not voiced and set pitch to 0
         if text is not None:
             for i, vector in enumerate(text):
-                if vector[61] == 0:
-                    # idx 61 corresponds to 'voiced' feature
+                if vector[get_feature_to_index_lookup()["voiced"]] == 0:
                     x_avg[i] = torch.tensor(0.0)
 
         return torch.stack(x_avg)

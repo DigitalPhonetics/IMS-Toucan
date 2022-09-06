@@ -11,6 +11,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
@@ -345,7 +346,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    utterance_embedding=utterance_embedding.unsqueeze(0),
                                                                                                    lang_ids=lang_id)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
-            if phoneme_vector[61] == 0:
+            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
         self.train()
         if return_duration_pitch_energy:

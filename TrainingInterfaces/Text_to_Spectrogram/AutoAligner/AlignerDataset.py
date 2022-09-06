@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 
 
 class AlignerDataset(Dataset):
@@ -169,7 +170,8 @@ class AlignerDataset(Dataset):
         text_vector = self.datapoints[index][0]
         tokens = list()
         for vector in text_vector:
-            if vector[21] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
+            if vector[get_feature_to_index_lookup()[
+                "word-boundary"]] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
                 for phone in self.tf.phone_to_vector:
                     if vector.numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
                         # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup

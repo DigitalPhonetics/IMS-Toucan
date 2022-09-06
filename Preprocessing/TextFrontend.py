@@ -9,6 +9,7 @@ from phonemizer.backend import EspeakBackend
 from pypinyin import pinyin
 
 from Preprocessing.articulatory_features import generate_feature_table
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Preprocessing.articulatory_features import get_phone_to_id
 
 
@@ -191,40 +192,40 @@ class ArticulatoryCombinedTextFrontend:
             # affects previous phoneme -----------------
             elif char == '\u02D0':
                 # lengthened
-                phones_vector[-1][10] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["lengthened"]] = 1
             elif char == '\u02D1':
                 # half length
-                phones_vector[-1][11] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["half-length"]] = 1
             elif char == '\u0306':
                 # shortened
-                phones_vector[-1][12] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["shortened"]] = 1
             elif char == "˥":
                 # very high tone
-                phones_vector[-1][1] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["very-high-tone"]] = 1
             elif char == "˦":
                 # high tone
-                phones_vector[-1][2] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["high-tone"]] = 1
             elif char == "˧":
                 # mid tone
-                phones_vector[-1][3] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["mid-tone"]] = 1
             elif char == "˨":
                 # low tone
-                phones_vector[-1][4] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["low-tone"]] = 1
             elif char == "˩":
                 # very low tone
-                phones_vector[-1][5] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["very-low-tone"]] = 1
             elif char == "⭧":
                 # rising tone
-                phones_vector[-1][6] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["rising-tone"]] = 1
             elif char == "⭨":
                 # falling tone
-                phones_vector[-1][7] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["falling-tone"]] = 1
             elif char == "⮁":
                 # peaking tone
-                phones_vector[-1][8] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["peaking-tone"]] = 1
             elif char == "⮃":
                 # dipping tone
-                phones_vector[-1][9] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["dipping-tone"]] = 1
             else:
                 if handle_missing:
                     try:
@@ -236,7 +237,7 @@ class ArticulatoryCombinedTextFrontend:
 
                 if stressed_flag:
                     stressed_flag = False
-                    phones_vector[-1][0] = 1
+                    phones_vector[-1][get_feature_to_index_lookup()["stressed"]] = 1
 
         return torch.Tensor(phones_vector, device=device)
 

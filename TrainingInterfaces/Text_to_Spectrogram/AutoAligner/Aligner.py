@@ -13,6 +13,7 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 
 
 class BatchNormConv(nn.Module):
@@ -99,7 +100,8 @@ class Aligner(torch.nn.Module):
         if not train:
             tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             for vector in tokens:
-                if vector[21] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
+                if vector[get_feature_to_index_lookup()[
+                    "word-boundary"]] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
                     for phone in self.tf.phone_to_vector:
                         if vector.cpu().numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
                             # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup

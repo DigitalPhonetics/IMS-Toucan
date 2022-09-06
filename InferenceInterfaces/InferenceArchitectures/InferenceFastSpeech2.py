@@ -7,6 +7,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
@@ -178,10 +179,10 @@ class FastSpeech2(torch.nn.Module, ABC):
                 energy_predictions = gold_energy
 
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
-                if phoneme_vector[61] == 0:
+                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                     # this means the phoneme is unvoiced
                     pitch_predictions[0][phoneme_index] = 0.0
-                if phoneme_vector[16] == 1 and pause_duration_scaling_factor != 1.0:
+                if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
                     duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
@@ -194,9 +195,9 @@ class FastSpeech2(torch.nn.Module, ABC):
             duration_predictions = self.duration_predictor(encoded_texts, duration_masks)
 
             for phoneme_index, phoneme_vector in enumerate(text_tensors):
-                if phoneme_vector[61] == 0:
+                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                     pitch_predictions[phoneme_index] = 0.0
-                if phoneme_vector[16] == 1 and pause_duration_scaling_factor != 1.0:
+                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1 and pause_duration_scaling_factor != 1.0:
                     duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
             energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)

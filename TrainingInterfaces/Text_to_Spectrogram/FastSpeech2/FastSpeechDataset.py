@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import get_language_id
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
@@ -83,7 +84,7 @@ class FastSpeechDataset(Dataset):
                 text_without_word_boundaries = list()
                 indexes_of_word_boundaries = list()
                 for phoneme_index, vector in enumerate(text):
-                    if vector[21] == 0:
+                    if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
                         text_without_word_boundaries.append(vector.numpy().tolist())
                     else:
                         indexes_of_word_boundaries.append(phoneme_index)
