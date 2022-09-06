@@ -57,6 +57,7 @@ class TTS_Interface:
              language,
              accent,
              duration_scaling_factor,
+             pause_duration_scaling_factor,
              pitch_variance_scale,
              energy_variance_scale,
              emb_slider_1,
@@ -114,7 +115,8 @@ class TTS_Interface:
                          input_is_phones=True,
                          duration_scaling_factor=duration_scaling_factor,
                          pitch_variance_scale=pitch_variance_scale,
-                         energy_variance_scale=energy_variance_scale)
+                         energy_variance_scale=energy_variance_scale,
+                         pause_duration_scaling_factor=pause_duration_scaling_factor)
         return 48000, float2pcm(wav.cpu().numpy())
 
 
@@ -154,14 +156,15 @@ if __name__ == '__main__':
                                                      'Chinese Accent',
                                                      'Vietnamese Accent'], type="value", default='English Accent', label="Select the Accent of the Speaker"),
                                  gr.inputs.Slider(minimum=0.5, maximum=1.5, step=0.1, default=1.0, label="Duration Scale"),
+                                 gr.inputs.Slider(minimum=0.0, maximum=2.5, step=0.1, default=1.0, label="Pause Duration Scale"),
                                  gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0, label="Pitch Variance Scale"),
-                                 gr.inputs.Slider(minimum=-0.0, maximum=2.0, step=0.1, default=1.0, label="Energy Variance Scale"),
-                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Femininity / Masculinity"),
-                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Arousal"),
-                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Emphasized High / Low Frequencies"),
-                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Compression / Sibilance"),
-                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Microphone Characteristics / Clarity"),
-                                 gr.inputs.Slider(minimum=-100.0, maximum=100.0, step=0.1, default=0.0, label="Valence / Pitch Shift")],
+                                 gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0, label="Energy Variance Scale"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="Femininity / Masculinity"),
+                                 gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0, label="Arousal"),
+                                 gr.inputs.Slider(minimum=-20.0, maximum=20.0, step=0.1, default=0.0, label="Emphasized High / Low Frequencies"),
+                                 gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Compression / Sibilance"),
+                                 gr.inputs.Slider(minimum=-25.0, maximum=25.0, step=0.1, default=0.0, label="Microphone Characteristics / Clarity"),
+                                 gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Age")],
                          outputs=gr.outputs.Audio(type="numpy", label=None),
                          layout="vertical",
                          title="Controllable Embeddings",
