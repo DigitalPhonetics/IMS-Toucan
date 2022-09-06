@@ -128,7 +128,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_dec_kernel_size,
-                                 utt_embed=utt_embed_dim)
+                                 utt_embed=None)
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.postnet = PostNet(idim=idim,
                                odim=odim,
@@ -217,7 +217,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             h_masks = self._source_mask(olens_in)
         else:
             h_masks = None
-        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding=utterance_embedding)  # (B, Lmax, adim)
+        zs, _ = self.decoder(encoded_texts, h_masks)  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)

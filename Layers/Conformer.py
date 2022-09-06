@@ -5,6 +5,7 @@ Taken from ESPNet
 import torch
 
 from Layers.Attention import RelPositionMultiHeadedAttention
+from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -65,9 +66,11 @@ class Conformer(torch.nn.Module):
 
         self.normalize_before = normalize_before
         if utt_embed is not None:
-            self.embedding_expansion = torch.nn.Linear(utt_embed, attention_dim)
+            self.spk_embedding_expansion = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
+            self.emo_embedding_expansion = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
+            self.lang_embedding_expansion = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=attention_dim)
 
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
@@ -89,7 +92,12 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
 
-    def forward(self, xs, masks, utterance_embedding=None, lang_ids=None):
+    def forward(self,
+                xs,
+                masks,
+                utterance_spk_embedding=None,
+                utterance_emo_embedding=None,
+                lang_ids=None):
         """
         Encode input sequence.
         Args:
@@ -107,7 +115,7 @@ class Conformer(torch.nn.Module):
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
-            xs = xs + lang_embs  # offset the phoneme distribution of a language
+            xs = self.lang_embedding_expansion(x=xs, speaker_embedding=lang_embs)  # offset the phoneme distribution of a language
 
         xs = self.pos_enc(xs)
 
@@ -118,11 +126,9 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             xs = self.after_norm(xs)
 
-        if utterance_embedding is not None:
-            xs = self._integrate_with_utt_embed_encoder(xs, utterance_embedding)
+        if utterance_spk_embedding is not None:
+            xs = self.spk_embedding_expansion(x=xs, speaker_embedding=utterance_spk_embedding)
+        if utterance_emo_embedding is not None:
+            xs = self.emo_embedding_expansion(x=xs, speaker_embedding=utterance_emo_embedding)
 
         return xs, masks
-
-    def _integrate_with_utt_embed_encoder(self, hs, utt_embeddings):
-        expanded_embeddings = self.embedding_expansion(utt_embeddings).unsqueeze(1)
-        return hs + expanded_embeddings

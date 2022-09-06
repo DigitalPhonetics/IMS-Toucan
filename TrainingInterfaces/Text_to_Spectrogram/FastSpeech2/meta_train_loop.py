@@ -1,5 +1,3 @@
-import random
-
 import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
@@ -19,6 +17,8 @@ from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
+
+# TODO  adapt to double embedding
 
 def train_loop(net,
                datasets,
