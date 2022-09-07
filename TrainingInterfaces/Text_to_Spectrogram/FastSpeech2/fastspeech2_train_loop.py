@@ -277,7 +277,12 @@ def train_loop(net,
                 "default_emo_emb": default_emo_embedding,
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
-            plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_spk_emb=default_spk_embedding,
+            plot_progress_spec(net,
+                               device,
+                               save_dir=save_directory,
+                               step=step_counter,
+                               lang=lang,
+                               default_spk_emb=default_spk_embedding,
                                default_emo_emb=default_emo_embedding)
             if step_counter > steps:
                 # DONE

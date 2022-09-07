@@ -18,8 +18,6 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
-# TODO  adapt to double embedding
-
 def train_loop(net,
                datasets,
                device,
@@ -30,7 +28,8 @@ def train_loop(net,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
-               path_to_embed_model,
+               path_to_spk_embed_model="Models/Embedding/speaker_embedding_function.pt",
+               path_to_emo_embed_model="Models/Embedding/emotion_embedding_function.pt",
                resume=False,
                warmup_steps=4000):
     # ============
@@ -39,10 +38,15 @@ def train_loop(net,
     steps = phase_1_steps + phase_2_steps
 
     net = net.to(device)
-    style_embedding_function = StyleEmbedding().to(device)
-    check_dict = torch.load(path_to_embed_model, map_location=device)
-    style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.requires_grad_(False)
+    spk_style_embedding_function = StyleEmbedding().to(device)
+    check_dict = torch.load(path_to_spk_embed_model, map_location=device)
+    spk_style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+    spk_style_embedding_function.requires_grad_(False)
+
+    emo_style_embedding_function = StyleEmbedding().to(device)
+    check_dict = torch.load(path_to_emo_embed_model, map_location=device)
+    emo_style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+    emo_style_embedding_function.requires_grad_(False)
 
     cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')
 
@@ -108,8 +112,12 @@ def train_loop(net,
                     # we sum the loss for each task, as we would do for the
                     # second order regular MAML, but we do it only over one
                     # step (i.e. iterations of inner loop = 1)
-                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                               batch_of_spectrogram_lengths=batch[3].to(device))
+                    spk_style_embedding = spk_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                       batch_of_spectrogram_lengths=batch[3].to(device))
+
+                    emo_style_embedding = emo_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                       batch_of_spectrogram_lengths=batch[3].to(device))
+
                     train_loss = train_loss + net(text_tensors=batch[0].to(device),
                                                   text_lengths=batch[1].to(device),
                                                   gold_speech=batch[2].to(device),
@@ -117,13 +125,18 @@ def train_loop(net,
                                                   gold_durations=batch[4].to(device),
                                                   gold_pitch=batch[6].to(device),  # mind the switched order
                                                   gold_energy=batch[5].to(device),  # mind the switched order
-                                                  utterance_embedding=style_embedding,
+                                                  utterance_spk_embedding=spk_style_embedding,
+                                                  utterance_emo_embedding=emo_style_embedding,
                                                   lang_ids=batch[8].to(device),
                                                   return_mels=False)
                 else:
                     # PHASE 2
-                    style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                       batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                    spk_style_embedding_of_gold = spk_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                               batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+
+                    emo_style_embedding_of_gold = emo_style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                                               batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+
                     _train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
                                                            text_lengths=batch[1].to(device),
                                                            gold_speech=batch[2].to(device),
@@ -131,14 +144,21 @@ def train_loop(net,
                                                            gold_durations=batch[4].to(device),
                                                            gold_pitch=batch[6].to(device),  # mind the switched order
                                                            gold_energy=batch[5].to(device),  # mind the switched order
-                                                           utterance_embedding=style_embedding_of_gold,
+                                                           utterance_spk_embedding=spk_style_embedding,
+                                                           utterance_emo_embedding=emo_style_embedding,
                                                            lang_ids=batch[8].to(device),
                                                            return_mels=True)
                     train_loss = train_loss + _train_loss
-                    style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
-                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
-                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold)
-                    cycle_dist = cycle_dist * 30
+
+                    spk_style_embedding_of_predicted = spk_style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                                    batch_of_spectrogram_lengths=batch[3].to(device))
+
+                    emo_style_embedding_of_predicted = emo_style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                                    batch_of_spectrogram_lengths=batch[3].to(device))
+
+                    cycle_dist = cycle_consistency_objective(spk_style_embedding_of_predicted, spk_style_embedding_of_gold) * 300
+                    cycle_dist += cycle_consistency_objective(emo_style_embedding_of_predicted, emo_style_embedding_of_gold) * 300
+
                     cycle_loss = cycle_loss + cycle_dist
 
         # then we directly update our meta-parameters without
@@ -160,9 +180,12 @@ def train_loop(net,
             # Enough steps for some insights
             # ==============================
             net.eval()
-            style_embedding_function.eval()
-            default_embedding = style_embedding_function(batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
-                                                         batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+            spk_style_embedding_function.eval()
+            emo_style_embedding_function.eval()
+            default_spk_embedding = spk_style_embedding_function(batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
+                                                                 batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+            default_emo_embedding = emo_style_embedding_function(batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
+                                                                 batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print(f"\nTotal Steps: {step}")
             print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             if len(cycle_losses_total) != 0:
@@ -170,12 +193,13 @@ def train_loop(net,
             train_losses_total = list()
             cycle_losses_total = list()
             torch.save({
-                "model"         : net.state_dict(),
-                "optimizer"     : optimizer.state_dict(),
-                "scaler"        : grad_scaler.state_dict(),
-                "scheduler": scheduler.state_dict(),
-                "step_counter"  : step,
-                "default_emb"   : default_embedding,
+                "model"          : net.state_dict(),
+                "optimizer"      : optimizer.state_dict(),
+                "scaler"         : grad_scaler.state_dict(),
+                "scheduler"      : scheduler.state_dict(),
+                "step_counter"   : step,
+                "default_spk_emb": default_spk_embedding,
+                "default_emo_emb": default_emo_embedding,
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
@@ -184,13 +208,21 @@ def train_loop(net,
                                lang="en",
                                save_dir=save_directory,
                                step=step,
-                               default_embed=default_embedding)
+                               default_spk_emb=default_spk_embedding,
+                               default_emo_emb=default_emo_embedding)
             net.train()
-            style_embedding_function.train()
+            spk_style_embedding_function.train()
+            emo_style_embedding_function.train()
 
 
 @torch.inference_mode()
-def plot_progress_spec(net, device, save_dir, step, lang, default_embed):
+def plot_progress_spec(net,
+                       device,
+                       save_dir,
+                       step,
+                       lang,
+                       default_spk_emb,
+                       default_emo_emb):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = ""
     if lang == "en":
@@ -224,7 +256,8 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_embed):
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     spec, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                    return_duration_pitch_energy=True,
-                                                   utterance_embedding=default_embed,
+                                                   utterance_spk_embedding=default_spk_emb,
+                                                   utterance_emo_embedding=default_emo_emb,
                                                    lang_id=get_language_id(lang).to(device))
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
