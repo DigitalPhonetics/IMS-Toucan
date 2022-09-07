@@ -2,8 +2,6 @@
 This is basically an integration test
 """
 
-import random
-
 import torch
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2

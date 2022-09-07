@@ -1,12 +1,8 @@
-"""
-This is the setup with which the embedding model is trained. After the embedding model has been trained, it is only used in a frozen state.
-"""
-
 import torch
 from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop_with_embed import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
@@ -30,7 +26,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_EmoGST")
+        save_dir = os.path.join("Models", "FastSpeech2_Controllable")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
@@ -79,4 +75,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                warmup_steps=4000,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
-               resume=resume)
+               resume=resume,
+               phase_1_steps=50000,
+               phase_2_steps=50000)

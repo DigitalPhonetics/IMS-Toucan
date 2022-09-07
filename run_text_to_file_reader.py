@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
+from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
 
 
 def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None):

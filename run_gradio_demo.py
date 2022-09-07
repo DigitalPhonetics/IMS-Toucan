@@ -3,12 +3,7 @@ import numpy as np
 import torch
 
 from InferenceInterfaces.Controllability.GAN import GanWrapper
-from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
-
-PATH_DATASET = 'embedding_vectors_as_list_emoGST_200k_vectors.pt'
-PATH_WGAN = 'Models/Embedding/embedding_gan.pt'
-# PATH_DATASET = '/mount/arbeitsdaten/synthesis/luxfn/EmbedToucan/embedding_vectors_as_list_emoGST.pt'
-# PATH_WGAN = '/home/users0/tillipl/simtech/code/GAN-Speaker-Embedding/models/01-08-2022-11-39-12_wgan'
+from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
 
 
 def float2pcm(sig, dtype='int16'):
@@ -32,7 +27,8 @@ class TTS_Interface:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = InferenceFastSpeech2(device=self.device, model_name="Meta")
-        self.wgan = GanWrapper(PATH_DATASET, PATH_WGAN)
+        self.spk_wgan = GanWrapper('embedding_vectors_as_list_emoGST_200k_vectors.pt', 'Models/Embedding/embedding_gan.pt')  # use new models once available
+        self.emo_wgan = GanWrapper('embedding_vectors_as_list_emoGST_200k_vectors.pt', 'Models/Embedding/embedding_gan.pt')  # use new models once available
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
@@ -60,12 +56,18 @@ class TTS_Interface:
              pause_duration_scaling_factor,
              pitch_variance_scale,
              energy_variance_scale,
-             emb_slider_1,
-             emb_slider_2,
-             emb_slider_3,
-             emb_slider_4,
-             emb_slider_5,
-             emb_slider_6):
+             spk_emb_slider_1,
+             spk_emb_slider_2,
+             spk_emb_slider_3,
+             spk_emb_slider_4,
+             spk_emb_slider_5,
+             spk_emb_slider_6,
+             emo_emb_slider_1,
+             emo_emb_slider_2,
+             emo_emb_slider_3,
+             emo_emb_slider_4,
+             emo_emb_slider_5,
+             emo_emb_slider_6):
         language = language.split()[0]
         accent = accent.split()[0]
         if self.current_language != language:
@@ -75,9 +77,13 @@ class TTS_Interface:
             self.model.set_accent_language(self.language_id_lookup[accent])
             self.current_accent = accent
 
-        controllability_vector = torch.tensor([emb_slider_1, emb_slider_2, emb_slider_3, emb_slider_4, emb_slider_5, emb_slider_6], dtype=torch.float32)
-        embedding = self.wgan.modify_embed(controllability_vector)
-        self.model.set_utterance_embedding(embedding=embedding)
+        controllability_vector_spk = torch.tensor([spk_emb_slider_1, spk_emb_slider_2, spk_emb_slider_3, spk_emb_slider_4, spk_emb_slider_5, spk_emb_slider_6],
+                                                  dtype=torch.float32)
+        controllability_vector_emo = torch.tensor([emo_emb_slider_1, emo_emb_slider_2, emo_emb_slider_3, emo_emb_slider_4, emo_emb_slider_5, emo_emb_slider_6],
+                                                  dtype=torch.float32)
+        spk_embedding = self.spk_wgan.modify_embed(controllability_vector_spk)
+        emo_embedding = self.emo_wgan.modify_embed(controllability_vector_emo)
+        self.model.set_utterance_embedding(spk_embedding=spk_embedding, emo_embedding=emo_embedding)
 
         phones = self.model.text2phone.get_phone_string(prompt)
         if len(phones) > 1800:
@@ -164,7 +170,14 @@ if __name__ == '__main__':
                                  gr.inputs.Slider(minimum=-20.0, maximum=20.0, step=0.1, default=0.0, label="Emphasized High / Low Frequencies"),
                                  gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Compression / Sibilance"),
                                  gr.inputs.Slider(minimum=-25.0, maximum=25.0, step=0.1, default=0.0, label="Microphone Characteristics / Clarity"),
-                                 gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Age")],
+                                 gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Age"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="unknown"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="unknown"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="unknown"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="unknown"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="unknown"),
+                                 gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="unknown")
+                                 ],
                          outputs=gr.outputs.Audio(type="numpy", label=None),
                          layout="vertical",
                          title="Controllable Embeddings",

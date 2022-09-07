@@ -9,10 +9,10 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class ProsodicConditionExtractor:
 
-    def __init__(self, sr, device=torch.device("cpu")):
+    def __init__(self, sr, device=torch.device("cpu"), path_to_model="Models/Embedding/speaker_embedding_function.pt"):
         self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         self.embed = StyleEmbedding()
-        check_dict = torch.load("Models/Embedding/speaker_embedding_function.pt", map_location="cpu")
+        check_dict = torch.load(path_to_model, map_location="cpu")
         self.embed.load_state_dict(check_dict["style_emb_func"])
         self.embed.to(device)
         self.sr = sr

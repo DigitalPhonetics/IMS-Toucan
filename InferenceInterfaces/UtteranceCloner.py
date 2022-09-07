@@ -5,7 +5,7 @@ import torch
 from torch.optim import SGD
 from tqdm import tqdm
 
-from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
+from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -33,7 +33,7 @@ class UtteranceCloner:
                                                   verbose=False)
         (self.get_speech_timestamps, _, _, _, _) = utils
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
-        # this to false globally during model loading rather than using inference mode or no_grad
+        # this to false globally during model loading rather than using inference_mode or no_grad
 
     def extract_prosody(self, transcript, ref_audio_path, lang="de", on_line_fine_tune=True):
         acoustic_model = Aligner()
@@ -152,7 +152,8 @@ class UtteranceCloner:
                         clone_speaker_identity=True,
                         lang="de"):
         if clone_speaker_identity:
-            prev_speaker_embedding = self.tts.default_utterance_embedding.clone().detach()
+            prev_speaker_embedding = self.tts.default_utterance_speaker_embedding.clone().detach()
+            prev_emotion_embedding = self.tts.default_utterance_emotionr_embedding.clone().detach()
             self.tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
         duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(reference_transcription,
                                                                                                  path_to_reference_audio,
@@ -164,7 +165,8 @@ class UtteranceCloner:
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
         sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=48000)
         if clone_speaker_identity:
-            self.tts.default_utterance_embedding = prev_speaker_embedding.to(self.device)  # return to normal
+            self.tts.default_utterance_speaker_embedding = prev_speaker_embedding.to(self.device)  # return to normal
+            self.tts.default_utterance_emotion_embedding = prev_emotion_embedding.to(self.device)  # return to normal
 
     def biblical_accurate_angel_mode(self,
                                      path_to_reference_audio,
@@ -172,8 +174,8 @@ class UtteranceCloner:
                                      filename_of_result,
                                      list_of_speaker_references_for_ensemble,
                                      lang="de"):
-        prev_speaker_embedding = self.tts.default_utterance_embedding.clone().detach()
-
+        prev_speaker_embedding = self.tts.default_utterance_speaker_embedding.clone().detach()
+        prev_emotion_embedding = self.tts.default_utterance_emotionr_embedding.clone().detach()
         duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(reference_transcription,
                                                                                                  path_to_reference_audio,
                                                                                                  lang=lang)
@@ -187,4 +189,5 @@ class UtteranceCloner:
         cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
         sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=48000)
-        self.tts.default_utterance_embedding = prev_speaker_embedding.to(self.device)  # return to normal
+        self.tts.default_utterance_speaker_embedding = prev_speaker_embedding.to(self.device)  # return to normal
+        self.tts.default_utterance_emotion_embedding = prev_emotion_embedding.to(self.device)  # return to normal

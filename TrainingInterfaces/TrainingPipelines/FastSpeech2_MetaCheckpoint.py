@@ -15,7 +15,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data similar to how it is showcased in
-    # FastSpeech2_finetune_to_German.py
+    # FastSpeech2_finetuning_example.py
 
     torch.manual_seed(131714)
     random.seed(131714)

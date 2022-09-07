@@ -74,7 +74,11 @@ class AlignmentScorer:
 
 class TTSScorer:
 
-    def __init__(self, path_to_fastspeech_model, device, path_to_embedding_checkpoint="Models/Embedding/embedding_function.pt"):
+    def __init__(self,
+                 path_to_fastspeech_model,
+                 device,
+                 path_to_speaker_embedding_checkpoint="Models/Embedding/speaker_embedding_function.pt",
+                 path_to_emotion_embedding_checkpoint="Models/Embedding/emotion_embedding_function.pt"):
         self.path_to_score = dict()
         self.path_to_id = dict()
         self.device = device
@@ -91,11 +95,15 @@ class TTSScorer:
             except RuntimeError:
                 self.tts = FastSpeech2(lang_embs=None, utt_embed_dim=None)
                 self.tts.load_state_dict(weights)
-        self.style_embedding_function = StyleEmbedding().to(device)
-        check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
-        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        self.speaker_style_embedding_function = StyleEmbedding().to(device)
+        self.emotion_style_embedding_function = StyleEmbedding().to(device)
+        check_dict_spk = torch.load(path_to_speaker_embedding_checkpoint, map_location=device)
+        check_dict_emo = torch.load(path_to_emotion_embedding_checkpoint, map_location=device)
+        self.speaker_style_embedding_function.load_state_dict(check_dict_spk["style_emb_func"])
+        self.emotion_style_embedding_function.load_state_dict(check_dict_emo["style_emb_func"])
         self.tts.to(self.device)
-        self.style_embedding_function.to(device)
+        self.speaker_style_embedding_function.to(device)
+        self.emotion_style_embedding_function.to(device)
         self.nans_removed = False
         self.nan_indexes = list()
         self.current_dset = None
@@ -108,8 +116,10 @@ class TTSScorer:
         self.current_dset = dataset
         for index in tqdm(range(len(dataset.datapoints))):
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
-            style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
-                                                            batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
+            speaker_style_embedding = self.speaker_style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
+                                                                            batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
+            emotion_style_embedding = self.emotion_style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
+                                                                            batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
             loss = self.tts(text_tensors=text.unsqueeze(0).to(self.device),
                             text_lengths=text_len.to(self.device),
                             gold_speech=spec.unsqueeze(0).to(self.device),
@@ -117,7 +127,8 @@ class TTSScorer:
                             gold_durations=duration.unsqueeze(0).to(self.device),
                             gold_pitch=pitch.unsqueeze(0).to(self.device),
                             gold_energy=energy.unsqueeze(0).to(self.device),
-                            utterance_embedding=style_embedding.to(self.device),
+                            utterance_spk_embedding=speaker_style_embedding.to(self.device),
+                            utterance_emo_embedding=emotion_style_embedding.to(self.device),
                             lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
                             return_mels=False)
             if torch.isnan(loss):

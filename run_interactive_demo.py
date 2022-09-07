@@ -4,7 +4,7 @@ import warnings
 
 import torch
 
-from InferenceInterfaces.InferenceFastSpeech2 import InferenceFastSpeech2
+from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning)
