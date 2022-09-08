@@ -221,6 +221,78 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
             for audio_file in os.listdir(os.path.join(root, speaker)):
                 label_to_filelist[speaker].append(os.path.join(root, speaker, audio_file))
 
+    # add MLS it
+    lang = "italian"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train/audio"
+    path_train = root
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
+                label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, file))
+
+    # add MLS fr
+    lang = "french"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train/audio"
+    path_train = root
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
+                label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, file))
+
+    # add MLS dt
+    lang = "dutch"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train/audio"
+    path_train = root
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
+                label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, file))
+
+    # add MLS pl
+    lang = "polish"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train/audio"
+    path_train = root
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
+                label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, file))
+
+    # add MLS sp
+    lang = "spanish"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train/audio"
+    path_train = root
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
+                label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, file))
+
+    # add MLS pt
+    lang = "portuguese"
+    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train/audio"
+    path_train = root
+    for speaker in os.listdir(path_train):
+        label_to_filelist[speaker] = list()
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if len(label_to_filelist[speaker]) > 15:
+                    break
+                label_to_filelist[speaker].append(os.path.join(path_train, speaker, chapter, file))
+
     speaker_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(speaker_data, device=device)
     torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/speaker_embedding_function.pt")
