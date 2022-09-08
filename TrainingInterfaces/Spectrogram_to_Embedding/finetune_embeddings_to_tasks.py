@@ -24,8 +24,8 @@ class Dataset:
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000)
 
     def add_dataset(self, label_to_filelist):
-        for label in label_to_filelist:
-            for file in tqdm(label_to_filelist[label]):
+        for label in tqdm(label_to_filelist):
+            for file in label_to_filelist[label]:
                 try:
                     wav, sr = soundfile.read(file)
                 except RuntimeError:
