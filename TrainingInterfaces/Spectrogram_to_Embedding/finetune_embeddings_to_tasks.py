@@ -313,8 +313,11 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
     optimizer = torch.optim.Adam(embed.parameters(), lr=0.001)
     optimizer.add_param_group({"params": non_contrastive_loss.parameters()})
 
+    con_losses = list()
+    non_con_losses = list()
+
     # train loop
-    for step in tqdm(range(100000)):
+    for step in tqdm(range(50000)):
         anchors = list()
         anchor_lens = list()
         positives = list()
@@ -347,7 +350,12 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
 
         # calculate loss on embeddings and update
         con_loss = contrastive_loss(anchor_emb, positive_emb, negative_emb)
-        non_con_loss = non_contrastive_loss(anchor_emb, positive_emb)
+        con_losses.append(con_loss.item())
+        if step % 10 == 0:
+            non_con_loss = non_contrastive_loss(anchor_emb, positive_emb)
+            non_con_losses.append(non_con_loss.item())
+        else:
+            non_con_loss = 0.0
         loss = con_loss + non_con_loss
         optimizer.zero_grad()
         loss.backward()
@@ -356,7 +364,9 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
         # log
         if step % 1000 == 0:
             print(f"\nStep: {step}")
-            print(f"Contrastive:     {con_loss.item()}")
-            print(f"Non-Contrastive: {non_con_loss.item()}")
+            print(f"Contrastive:     {sum(con_losses) / len(con_losses)}")
+            print(f"Non-Contrastive: {sum(non_con_losses) / len(non_con_losses)}")
+            con_losses = list()
+            non_con_losses = list()
 
     return embed
