@@ -36,6 +36,8 @@ class AlignmentScorer:
         datapoints = torch.load(path_to_aligner_dataset, map_location='cpu')
         dataset = datapoints[0]
         filepaths = datapoints[3]
+        self.nans = list()
+        self.path_to_score = dict()
         for index in tqdm(range(len(dataset))):
             text = dataset[index][0]
             melspec = dataset[index][2]
@@ -79,10 +81,11 @@ class TTSScorer:
                  device,
                  path_to_speaker_embedding_checkpoint="Models/Embedding/speaker_embedding_function.pt",
                  path_to_emotion_embedding_checkpoint="Models/Embedding/emotion_embedding_function.pt"):
+        self.device = device
         self.path_to_score = dict()
         self.path_to_id = dict()
-        self.device = device
         self.nans = list()
+        self.nan_indexes = list()
         self.tts = FastSpeech2()
         checkpoint = torch.load(path_to_fastspeech_model, map_location='cpu')
         weights = checkpoint["model"]
@@ -105,7 +108,6 @@ class TTSScorer:
         self.speaker_style_embedding_function.to(device)
         self.emotion_style_embedding_function.to(device)
         self.nans_removed = False
-        self.nan_indexes = list()
         self.current_dset = None
 
     def score(self, path_to_fastspeech_dataset, lang_id):
@@ -114,6 +116,10 @@ class TTSScorer:
         """
         dataset = prepare_fastspeech_corpus(dict(), path_to_fastspeech_dataset, lang_id)
         self.current_dset = dataset
+        self.nans = list()
+        self.nan_indexes = list()
+        self.path_to_score = dict()
+        self.path_to_id = dict()
         for index in tqdm(range(len(dataset.datapoints))):
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
             speaker_style_embedding = self.speaker_style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
