@@ -27,7 +27,7 @@ class TTSWebUI:
     def __init__(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = InferenceFastSpeech2(device=self.device, model_name="Controllable")
-        self.wgan = GanWrapper('embedding_vectors_as_list_emoGST_200k_vectors.pt', 'Models/Embedding/embedding_gan.pt')
+        self.wgan = GanWrapper('Models/Embedding/embedding_gan.pt')
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
