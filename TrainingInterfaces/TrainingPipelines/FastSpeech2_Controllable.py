@@ -31,6 +31,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets = list()
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+                                              corpus_dir=os.path.join("Corpora", "Nancy"),
+                                              lang="en"))
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
                                               corpus_dir=os.path.join("Corpora", "ravdess"),
                                               lang="en",
                                               ctc_selection=False))
@@ -46,10 +50,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
                                               corpus_dir=os.path.join("Corpora", "vctk"),
-                                              lang="en"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "Nancy"),
                                               lang="en"))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
