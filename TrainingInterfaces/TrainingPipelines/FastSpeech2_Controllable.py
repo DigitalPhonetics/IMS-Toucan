@@ -49,10 +49,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                               lang="en"))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "hifi"),
-                                              lang="en"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
                                               corpus_dir=os.path.join("Corpora", "Nancy"),
                                               lang="en"))
 

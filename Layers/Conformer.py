@@ -3,9 +3,9 @@ Taken from ESPNet
 """
 
 import torch
+import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
-from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -66,11 +66,10 @@ class Conformer(torch.nn.Module):
 
         self.normalize_before = normalize_before
         if utt_embed is not None:
-            self.spk_embedding_expansion = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
-            self.emo_embedding_expansion = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
+            self.hs_spk_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
+            self.hs_emo_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
-            self.lang_embedding_expansion = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=attention_dim)
 
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
@@ -115,7 +114,7 @@ class Conformer(torch.nn.Module):
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
-            xs = self.lang_embedding_expansion(x=xs, speaker_embedding=lang_embs)  # offset the phoneme distribution of a language
+            xs = xs + lang_embs  # offset phoneme representation by language specific offset
 
         xs = self.pos_enc(xs)
 
@@ -127,8 +126,20 @@ class Conformer(torch.nn.Module):
             xs = self.after_norm(xs)
 
         if utterance_spk_embedding is not None:
-            xs = self.spk_embedding_expansion(x=xs, speaker_embedding=utterance_spk_embedding)
+            xs = self._integrate_with_utt_spk_embed(hs=xs, utt_embeddings=utterance_spk_embedding)
         if utterance_emo_embedding is not None:
-            xs = self.emo_embedding_expansion(x=xs, speaker_embedding=utterance_emo_embedding)
+            xs = self._integrate_with_utt_emo_embed(hs=xs, utt_embeddings=utterance_emo_embedding)
 
         return xs, masks
+
+    def _integrate_with_utt_spk_embed(self, hs, utt_embeddings):
+        # concat hidden states with spk embeds and then apply projection
+        speaker_embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_spk_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        return hs
+
+    def _integrate_with_utt_emo_embed(self, hs, utt_embeddings):
+        # concat hidden states with spk embeds and then apply projection
+        speaker_embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_emo_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        return hs
