@@ -47,15 +47,10 @@ class InferenceFastSpeech2(torch.nn.Module):
         #################################
         #  load mel to style models     #
         #################################
-        self.emotion_style_embedding_function = StyleEmbedding()
-        check_dict = torch.load("Models/Embedding/speaker_embedding_function.pt", map_location="cpu")
-        self.emotion_style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        self.emotion_style_embedding_function.to(self.device)
-
-        self.speaker_style_embedding_function = StyleEmbedding()
-        check_dict = torch.load("Models/Embedding/emotion_embedding_function.pt", map_location="cpu")
-        self.speaker_style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        self.speaker_style_embedding_function.to(self.device)
+        self.style_embedding_function = StyleEmbedding()
+        check_dict = torch.load("Models/Embedding/embedding_function.pt", map_location="cpu")
+        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        self.style_embedding_function.to(self.device)
 
         ################################
         #  load mel to wave model      #
@@ -65,8 +60,7 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #  set defaults                #
         ################################
-        self.default_utterance_speaker_embedding = checkpoint["default_spk_emb"].to(self.device)
-        self.default_utterance_emotion_embedding = checkpoint["default_emo_emb"].to(self.device)
+        self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -76,13 +70,9 @@ class InferenceFastSpeech2(torch.nn.Module):
             self.lang_id = None
         self.to(torch.device(device))
 
-    def set_utterance_embedding(self, path_to_reference_audio="", spk_embedding=None, emo_embedding=None):
-        self.set_speaker_embedding(path_to_reference_audio=path_to_reference_audio, embedding=spk_embedding)
-        self.set_emotion_embedding(path_to_reference_audio=path_to_reference_audio, embedding=emo_embedding)
-
-    def set_speaker_embedding(self, path_to_reference_audio="", embedding=None):
+    def set_utterance_embedding(self, path_to_reference_audio="", embedding=None):
         if embedding is not None:
-            self.default_utterance_speaker_embedding = embedding.squeeze().to(self.device)
+            self.default_utterance_embedding = embedding.squeeze().to(self.device)
             return
         assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
@@ -90,21 +80,10 @@ class InferenceFastSpeech2(torch.nn.Module):
             self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
         spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
-        self.default_utterance_speaker_embedding = self.speaker_style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
+        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
+                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
 
-    def set_emotion_embedding(self, path_to_reference_audio="", embedding=None):
-        if embedding is not None:
-            self.default_utterance_emotion_embedding = embedding.squeeze().to(self.device)
-            return
-        assert os.path.exists(path_to_reference_audio)
-        wave, sr = soundfile.read(path_to_reference_audio)
-        if sr != self.audio_preprocessor.sr:
-            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
-        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
-        spec_len = torch.LongTensor([len(spec)])
-        self.default_utterance_emotion_embedding = self.emotion_style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
+
 
     def set_language(self, lang_id):
         """
@@ -148,8 +127,7 @@ class InferenceFastSpeech2(torch.nn.Module):
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
-                                                           utterance_spk_embedding=self.default_utterance_speaker_embedding,
-                                                           utterance_emo_embedding=self.default_utterance_emotion_embedding,
+                                                           utterance_embedding=self.default_utterance_embedding,
                                                            durations=durations,
                                                            pitch=pitch,
                                                            energy=energy,

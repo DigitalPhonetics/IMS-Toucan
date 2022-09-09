@@ -48,8 +48,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None,
-                 lang_embs=None):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -66,8 +65,7 @@ class Conformer(torch.nn.Module):
 
         self.normalize_before = normalize_before
         if utt_embed is not None:
-            self.hs_spk_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
-            self.hs_emo_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
+            self.hs_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -94,8 +92,7 @@ class Conformer(torch.nn.Module):
     def forward(self,
                 xs,
                 masks,
-                utterance_spk_embedding=None,
-                utterance_emo_embedding=None,
+                utterance_embedding=None,
                 lang_ids=None):
         """
         Encode input sequence.
@@ -125,21 +122,13 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             xs = self.after_norm(xs)
 
-        if utterance_spk_embedding is not None:
-            xs = self._integrate_with_utt_spk_embed(hs=xs, utt_embeddings=utterance_spk_embedding)
-        if utterance_emo_embedding is not None:
-            xs = self._integrate_with_utt_emo_embed(hs=xs, utt_embeddings=utterance_emo_embedding)
+        if utterance_embedding is not None:
+            xs = self._integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding)
 
         return xs, masks
 
-    def _integrate_with_utt_spk_embed(self, hs, utt_embeddings):
+    def _integrate_with_utt_embed(self, hs, utt_embeddings):
         # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_spk_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
-        return hs
-
-    def _integrate_with_utt_emo_embed(self, hs, utt_embeddings):
-        # concat hidden states with spk embeds and then apply projection
-        speaker_embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emo_emb_projection(torch.cat([hs, speaker_embeddings_expanded], dim=-1))
+        embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
         return hs

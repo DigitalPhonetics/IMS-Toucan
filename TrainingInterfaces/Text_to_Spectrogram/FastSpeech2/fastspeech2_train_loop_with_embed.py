@@ -1,7 +1,5 @@
 """
-Train this to get a fundamental embedding function.
-Then finetune the embeddings towards specific tasks, as is done in the embedding finetuning script.
-Finally train another TTS that uses the finetuned embeddings to maximise controllability.
+Train this to get the fundamental embedding function.
 """
 
 import os

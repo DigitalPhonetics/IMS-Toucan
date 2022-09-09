@@ -174,8 +174,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                 gold_durations,
                 gold_pitch,
                 gold_energy,
-                utterance_spk_embedding,
-                utterance_emo_embedding,
+                utterance_embedding,
                 return_mels=False,
                 lang_ids=None):
         """
@@ -201,8 +200,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy,
-                                                                        utterance_spk_embedding=utterance_spk_embedding,
-                                                                        utterance_emo_embedding=utterance_emo_embedding,
+                                                                        utterance_embedding=utterance_embedding,
                                                                         is_inference=False, lang_ids=lang_ids)
 
         # modify mod part of groundtruth (speaking pace)
@@ -229,8 +227,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  gold_energy=None,
                  is_inference=False,
                  alpha=1.0,
-                 utterance_spk_embedding=None,
-                 utterance_emo_embedding=None,
+                 utterance_embedding=None,
                  lang_ids=None):
 
         if not self.multilingual_model:
@@ -242,8 +239,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_spk_embedding=utterance_spk_embedding,
-                                        utterance_emo_embedding=utterance_emo_embedding, lang_ids=lang_ids)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
@@ -307,8 +303,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                   energy=None,
                   alpha=1.0,
                   use_teacher_forcing=False,
-                  utterance_spk_embedding=None,
-                  utterance_emo_embedding=None,
+                  utterance_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None):
         """
@@ -350,8 +345,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    gold_durations=ds,
                                                                                                    gold_pitch=ps,
                                                                                                    gold_energy=es,
-                                                                                                   utterance_spk_embedding=utterance_spk_embedding.unsqueeze(0),
-                                                                                                   utterance_emo_embedding=utterance_emo_embedding.unsqueeze(0),
+                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(0),
                                                                                                    lang_ids=lang_id)  # (1, L, odim)
         else:
             before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
@@ -359,8 +353,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    ys,
                                                                                                    is_inference=True,
                                                                                                    alpha=alpha,
-                                                                                                   utterance_spk_embedding=utterance_spk_embedding.unsqueeze(0),
-                                                                                                   utterance_emo_embedding=utterance_emo_embedding.unsqueeze(0),
+                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(0),
                                                                                                    lang_ids=lang_id)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:

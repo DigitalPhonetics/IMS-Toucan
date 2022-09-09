@@ -141,24 +141,21 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
-                 is_inference=False, duration_scaling_factor=1.0, utterance_spk_embedding=None,
-                 utterance_emo_embedding=None, lang_ids=None,
+                 is_inference=False, duration_scaling_factor=1.0, utterance_embedding=None, lang_ids=None,
                  pitch_variance_scale=1.0, energy_variance_scale=1.0, pause_duration_scaling_factor=1.0):
 
         if not self.multilingual_model:
             lang_ids = None
 
         if not self.multispeaker_model:
-            utterance_spk_embedding = None
-            utterance_emo_embedding = None
+            utterance_embedding = None
 
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
         encoded_texts, _ = self.encoder(text_tensors,
                                         text_masks,
-                                        utterance_spk_embedding=utterance_spk_embedding,
-                                        utterance_emo_embedding=utterance_emo_embedding,
+                                        utterance_embedding=utterance_embedding,
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
@@ -238,8 +235,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                 durations=None,
                 pitch=None,
                 energy=None,
-                utterance_spk_embedding=None,
-                utterance_emo_embedding=None,
+                utterance_embedding=None,
                 return_duration_pitch_energy=False,
                 lang_id=None,
                 duration_scaling_factor=1.0,
@@ -297,8 +293,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                is_inference=True,
                                                                                                gold_pitch=pitch,
                                                                                                gold_energy=energy,
-                                                                                               utterance_spk_embedding=utterance_spk_embedding.unsqueeze(0),
-                                                                                               utterance_emo_embedding=utterance_emo_embedding.unsqueeze(0),
+                                                                                               utterance_embedding=utterance_embedding.unsqueeze(0),
                                                                                                lang_ids=lang_id,
                                                                                                duration_scaling_factor=duration_scaling_factor,
                                                                                                pitch_variance_scale=pitch_variance_scale,
