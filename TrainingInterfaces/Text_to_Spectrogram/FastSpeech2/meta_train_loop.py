@@ -42,7 +42,7 @@ def train_loop(net,
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.requires_grad_(False)
 
-    cycle_consistency_objective = torch.nn.MSELoss(reduction='mean')
+    cycle_consistency_objective = torch.nn.CosineEmbeddingLoss(reduction='mean')
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loaders = list()
@@ -132,7 +132,7 @@ def train_loop(net,
                                                            gold_durations=batch[4].to(device),
                                                            gold_pitch=batch[6].to(device),  # mind the switched order
                                                            gold_energy=batch[5].to(device),  # mind the switched order
-                                                           utterance_embedding=style_embedding,
+                                                           utterance_embedding=style_embedding_of_gold,
                                                            lang_ids=batch[8].to(device),
                                                            return_mels=True)
                     train_loss = train_loss + _train_loss
@@ -140,8 +140,9 @@ def train_loop(net,
                     style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                             batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    cycle_dist = cycle_consistency_objective(style_embedding_of_predicted, style_embedding_of_gold) * 300
-
+                    cycle_dist = cycle_consistency_objective(input1=style_embedding_of_predicted,
+                                                             input2=style_embedding_of_gold,
+                                                             target=torch.ones(size=style_embedding_of_predicted.size().to(device))) * 30
                     cycle_loss = cycle_loss + cycle_dist
 
         # then we directly update our meta-parameters without
