@@ -83,8 +83,6 @@ class InferenceFastSpeech2(torch.nn.Module):
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
                                                                          spec_len.unsqueeze(0).to(self.device)).squeeze()
 
-
-
     def set_language(self, lang_id):
         """
         The id parameter actually refers to the shorthand. This has become ambiguous with the introduction of the actual language IDs
