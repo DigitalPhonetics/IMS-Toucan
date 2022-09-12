@@ -224,7 +224,7 @@ def train_loop(net,
 
                     cycle_dist = cycle_consistency_objective(input1=style_embedding_of_predicted,
                                                              input2=style_embedding_of_gold,
-                                                             target=torch.ones(size=style_embedding_of_predicted.size().to(device))) * 30
+                                                             target=torch.ones(size=(style_embedding_of_gold.size(0),)).to(device)) * 30
 
                     train_losses_this_epoch.append(train_loss.item())
                     cycle_losses_this_epoch.append(cycle_dist.item())

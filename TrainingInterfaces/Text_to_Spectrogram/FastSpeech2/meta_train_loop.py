@@ -142,7 +142,7 @@ def train_loop(net,
 
                     cycle_dist = cycle_consistency_objective(input1=style_embedding_of_predicted,
                                                              input2=style_embedding_of_gold,
-                                                             target=torch.ones(size=style_embedding_of_predicted.size().to(device))) * 30
+                                                             target=torch.ones(size=(style_embedding_of_gold.size(0),)).to(device)) * 30
                     cycle_loss = cycle_loss + cycle_dist
 
         # then we directly update our meta-parameters without
