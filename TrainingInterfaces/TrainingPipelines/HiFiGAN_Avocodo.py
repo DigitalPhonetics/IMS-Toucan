@@ -12,9 +12,7 @@ from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.hifigan_train_loop import tr
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, resume, model_dir):
-    use_wandb = os.path.isfile("Utility/wandb.key")
-
+def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")

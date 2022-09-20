@@ -13,7 +13,7 @@ from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     "meta"            : meta_fast,
-    "hifi_combined"   : hifigan_combined,
+    "hificodo"        : hifigan_combined,
     "aligner"         : aligner,
     "fine_ger"        : fine_ger,
     "integration_test": integration_test,
@@ -56,6 +56,11 @@ if __name__ == '__main__':
                         help="Directory where the checkpoints should be saved to.",
                         default=None)
 
+    parser.add_argument('--wandb',
+                        action="store_true",
+                        help="Whether to use weigths and biases to track training runs. Requires you to run wandb login and place your auth key before.",
+                        default=False)
+
     args = parser.parse_args()
 
     if args.finetune and args.resume_checkpoint is None:
@@ -70,4 +75,5 @@ if __name__ == '__main__':
                                  resume_checkpoint=args.resume_checkpoint,
                                  resume=args.resume,
                                  finetune=args.finetune,
-                                 model_dir=args.model_save_dir)
+                                 model_dir=args.model_save_dir,
+                                 use_wandb=args.wandb)

@@ -14,13 +14,11 @@ from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_samples=False, generate_all_aligner_caches=False):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, remove_faulty_samples=False, generate_all_aligner_caches=False):
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data similar to how it is showcased in
     # FastSpeech2_finetuning_example.py
-
-    use_wandb = os.path.isfile("Utility/wandb.key")
 
     torch.manual_seed(131714)
     random.seed(131714)

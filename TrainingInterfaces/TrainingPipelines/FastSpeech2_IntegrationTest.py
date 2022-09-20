@@ -13,7 +13,7 @@ from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -22,8 +22,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         device = torch.device("cuda")
-
-    use_wandb = os.path.isfile("Utility/wandb.key")
 
     torch.manual_seed(131714)
     random.seed(131714)
