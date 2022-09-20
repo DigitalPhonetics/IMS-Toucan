@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
 import torch.multiprocessing
+import wandb
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -90,6 +91,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
     plt.close()
+    return os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png")
 
 
 def collate_and_pad(batch):
@@ -119,7 +121,8 @@ def train_loop(net,
                fine_tune=False,
                resume=False,
                phase_1_steps=100000,
-               phase_2_steps=100000):
+               phase_2_steps=100000,
+               use_wandb=False):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -145,6 +148,7 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+    style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
 
     cycle_consistency_objective = torch.nn.CosineEmbeddingLoss(reduction='mean')
@@ -242,7 +246,6 @@ def train_loop(net,
             scheduler.step()
 
         net.eval()
-        style_embedding_function.eval()
         if epoch % epochs_per_save == 0:
             default_embedding = style_embedding_function(batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
                                                          batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
@@ -255,12 +258,15 @@ def train_loop(net,
                 "default_emb" : default_embedding,
                 }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
-            plot_progress_spec(net,
-                               device,
-                               save_dir=save_directory,
-                               step=step_counter,
-                               lang=lang,
-                               default_emb=default_embedding)
+            path_to_most_recent_plot = plot_progress_spec(net,
+                                                          device,
+                                                          save_dir=save_directory,
+                                                          step=step_counter,
+                                                          lang=lang,
+                                                          default_emb=default_embedding)
+            wandb.log({
+                "progress_plot": wandb.Image(path_to_most_recent_plot)
+                })
             if step_counter > steps:
                 # DONE
                 return
@@ -270,5 +276,10 @@ def train_loop(net,
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
+        wandb.log({
+            "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
+            "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
+            "epoch"           : epoch,
+            "steps"           : step_counter,
+            })
         net.train()
-        style_embedding_function.train()

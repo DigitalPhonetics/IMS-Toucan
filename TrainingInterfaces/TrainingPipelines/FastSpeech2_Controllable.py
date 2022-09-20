@@ -1,4 +1,7 @@
+import time
+
 import torch
+import wandb
 from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
@@ -16,6 +19,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         device = torch.device("cuda")
+
+    use_wandb = os.path.isfile("Utility/wandb.key")
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -58,7 +63,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
     train_set = ConcatDataset(datasets)
 
     model = FastSpeech2(lang_embs=None)
-
+    if use_wandb:
+        wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
+        wandb.watch(model, log_graph=True)
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,
@@ -73,4 +80,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                fine_tune=finetune,
                resume=resume,
                phase_1_steps=150000,
-               phase_2_steps=50000)
+               phase_2_steps=50000,
+               use_wandb=use_wandb)
+    if use_wandb:
+        wandb.finish()

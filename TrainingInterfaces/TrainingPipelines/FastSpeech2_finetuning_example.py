@@ -1,4 +1,7 @@
+import time
+
 import torch
+import wandb
 from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
@@ -16,6 +19,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         device = torch.device("cuda")
+
+    use_wandb = os.path.isfile("Utility/wandb.key")
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -39,9 +44,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                                               lang="de"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
 
     train_set = ConcatDataset(datasets)
-
+    model = FastSpeech2()
+    if use_wandb:
+        wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
+        wandb.watch(model, log_graph=True)
     print("Training model")
-    train_loop(net=FastSpeech2(),
+    train_loop(net=model,
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
@@ -56,4 +64,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume):
                fine_tune=True if resume_checkpoint is None else finetune,
                resume=resume,
                phase_1_steps=50000,
-               phase_2_steps=50000)
+               phase_2_steps=50000,
+               use_wandb=use_wandb)
+    if use_wandb:
+        wandb.finish()

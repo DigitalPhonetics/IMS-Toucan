@@ -316,5 +316,5 @@ def to_device(m, x):
     else:
         raise TypeError(
             "Expected torch.nn.Module or torch.tensor, " f"bot got: {type(m)}"
-        )
+            )
     return x.to(device)

@@ -2,6 +2,7 @@ import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
+import wandb
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
@@ -18,6 +19,97 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 
+@torch.inference_mode()
+def plot_progress_spec(net,
+                       device,
+                       save_dir,
+                       step,
+                       lang,
+                       default_emb
+                       ):
+    tf = ArticulatoryCombinedTextFrontend(language=lang)
+    sentence = ""
+    if lang == "en":
+        sentence = "This is a complex sentence, it even has a pause!"
+    elif lang == "de":
+        sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
+    elif lang == "el":
+        sentence = "Αυτή είναι μια σύνθετη πρόταση, έχει ακόμη και παύση!"
+    elif lang == "es":
+        sentence = "Esta es una oración compleja, ¡incluso tiene una pausa!"
+    elif lang == "fi":
+        sentence = "Tämä on monimutkainen lause, sillä on jopa tauko!"
+    elif lang == "ru":
+        sentence = "Это сложное предложение, в нем даже есть пауза!"
+    elif lang == "hu":
+        sentence = "Ez egy összetett mondat, még szünet is van benne!"
+    elif lang == "nl":
+        sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
+    elif lang == "fr":
+        sentence = "C'est une phrase complexe, elle a même une pause !"
+    elif lang == "pt":
+        sentence = "Esta é uma frase complexa, tem até uma pausa!"
+    elif lang == "pl":
+        sentence = "To jest zdanie złożone, ma nawet pauzę!"
+    elif lang == "it":
+        sentence = "Questa è una frase complessa, ha anche una pausa!"
+    elif lang == "cmn":
+        sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
+    elif lang == "vi":
+        sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
+    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
+    spec, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                   return_duration_pitch_energy=True,
+                                                   utterance_embedding=default_emb,
+                                                   lang_id=get_language_id(lang).to(device))
+    spec = spec.transpose(0, 1).to("cpu").numpy()
+    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+    if not os.path.exists(os.path.join(save_dir, "spec")):
+        os.makedirs(os.path.join(save_dir, "spec"))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
+    lbd.specshow(spec,
+                 ax=ax,
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    ax.yaxis.set_visible(False)
+    ax.set_xticks(duration_splits, minor=True)
+    ax.xaxis.grid(True, which='minor')
+    ax.set_xticks(label_positions, minor=False)
+    phones = tf.get_phone_string(sentence, for_plot_labels=True)
+    ax.set_xticklabels(phones)
+    word_boundaries = list()
+    for label_index, word_boundary in enumerate(phones):
+        if word_boundary == "|":
+            word_boundaries.append(label_positions[label_index])
+    ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+    ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+    pitch_array = pitch.cpu().numpy()
+    for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+        if pitch_array[pitch_index] > 0.001:
+            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid", linewidth=0.5)
+    ax.set_title(sentence)
+    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png"))
+    plt.clf()
+    plt.close()
+    return os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png")
+
+
+def collate_and_pad(batch):
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+            torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
+            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
+            None,
+            torch.stack([datapoint[8] for datapoint in batch]))
+
+
 def train_loop(net,
                datasets,
                device,
@@ -30,7 +122,8 @@ def train_loop(net,
                path_to_checkpoint,
                path_to_embed_model="Models/Embedding/embedding_function.pt",
                resume=False,
-               warmup_steps=4000):
+               warmup_steps=4000,
+               use_wandb=False):
     # ============
     # Preparations
     # ============
@@ -40,6 +133,7 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+    style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
 
     cycle_consistency_objective = torch.nn.CosineEmbeddingLoss(reduction='mean')
@@ -164,11 +258,10 @@ def train_loop(net,
             # Enough steps for some insights
             # ==============================
             net.eval()
-            style_embedding_function.eval()
             default_embedding = style_embedding_function(batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
                                                          batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print(f"\nTotal Steps: {step}")
-            print(f"Total Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
+            print(f"Spectrogram Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             train_losses_total = list()
@@ -183,102 +276,16 @@ def train_loop(net,
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
-            plot_progress_spec(net=net,
-                               device=device,
-                               lang="en",
-                               save_dir=save_directory,
-                               step=step,
-                               default_emb=default_embedding
-                               )
+            path_to_most_recent_plot = plot_progress_spec(net=net,
+                                                          device=device,
+                                                          lang="en",
+                                                          save_dir=save_directory,
+                                                          step=step,
+                                                          default_emb=default_embedding)
+            wandb.log({
+                "spectrogram_loss": round(sum(train_losses_total) / len(train_losses_total), 3),
+                "cycle_loss"      : round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(cycle_losses_total) != 0 else 0.0,
+                "steps"           : step,
+                "progress_plot"   : wandb.Image(path_to_most_recent_plot)
+                })
             net.train()
-            style_embedding_function.train()
-
-
-@torch.inference_mode()
-def plot_progress_spec(net,
-                       device,
-                       save_dir,
-                       step,
-                       lang,
-                       default_emb
-                       ):
-    tf = ArticulatoryCombinedTextFrontend(language=lang)
-    sentence = ""
-    if lang == "en":
-        sentence = "This is a complex sentence, it even has a pause!"
-    elif lang == "de":
-        sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
-    elif lang == "el":
-        sentence = "Αυτή είναι μια σύνθετη πρόταση, έχει ακόμη και παύση!"
-    elif lang == "es":
-        sentence = "Esta es una oración compleja, ¡incluso tiene una pausa!"
-    elif lang == "fi":
-        sentence = "Tämä on monimutkainen lause, sillä on jopa tauko!"
-    elif lang == "ru":
-        sentence = "Это сложное предложение, в нем даже есть пауза!"
-    elif lang == "hu":
-        sentence = "Ez egy összetett mondat, még szünet is van benne!"
-    elif lang == "nl":
-        sentence = "Dit is een complexe zin, er zit zelfs een pauze in!"
-    elif lang == "fr":
-        sentence = "C'est une phrase complexe, elle a même une pause !"
-    elif lang == "pt":
-        sentence = "Esta é uma frase complexa, tem até uma pausa!"
-    elif lang == "pl":
-        sentence = "To jest zdanie złożone, ma nawet pauzę!"
-    elif lang == "it":
-        sentence = "Questa è una frase complessa, ha anche una pausa!"
-    elif lang == "cmn":
-        sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
-    elif lang == "vi":
-        sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
-    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, pitch, energy = net.inference(text=phoneme_vector,
-                                                   return_duration_pitch_energy=True,
-                                                   utterance_embedding=default_emb,
-                                                   lang_id=get_language_id(lang).to(device))
-    spec = spec.transpose(0, 1).to("cpu").numpy()
-    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-    if not os.path.exists(os.path.join(save_dir, "spec")):
-        os.makedirs(os.path.join(save_dir, "spec"))
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
-    lbd.specshow(spec,
-                 ax=ax,
-                 sr=16000,
-                 cmap='GnBu',
-                 y_axis='mel',
-                 x_axis=None,
-                 hop_length=256)
-    ax.yaxis.set_visible(False)
-    ax.set_xticks(duration_splits, minor=True)
-    ax.xaxis.grid(True, which='minor')
-    ax.set_xticks(label_positions, minor=False)
-    phones = tf.get_phone_string(sentence, for_plot_labels=True)
-    ax.set_xticklabels(phones)
-    word_boundaries = list()
-    for label_index, word_boundary in enumerate(phones):
-        if word_boundary == "|":
-            word_boundaries.append(label_positions[label_index])
-    ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    pitch_array = pitch.cpu().numpy()
-    for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
-        if pitch_array[pitch_index] > 0.001:
-            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid", linewidth=0.5)
-    ax.set_title(sentence)
-    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png"))
-    plt.clf()
-    plt.close()
-
-
-def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
-    return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
-            None,
-            torch.stack([datapoint[8] for datapoint in batch]))

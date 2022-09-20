@@ -1,5 +1,8 @@
+import time
+
 import torch
 import torch.multiprocessing
+import wandb
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
@@ -16,6 +19,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data similar to how it is showcased in
     # FastSpeech2_finetuning_example.py
+
+    use_wandb = os.path.isfile("Utility/wandb.key")
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -210,8 +215,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                                                 vietnamese_datasets,
                                        device=torch.device("cuda"),
                                        path_to_checkpoint=resume_checkpoint)
-
-    train_loop(net=FastSpeech2(),
+    model = FastSpeech2()
+    if use_wandb:
+        wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
+        wandb.watch(model, log_graph=True)
+    train_loop(net=model,
                device=torch.device("cuda"),
                datasets=datasets,
                batch_size=4,
@@ -222,7 +230,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, remove_faulty_sa
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model="Models/Embedding/embedding_function.pt",
-               resume=resume)
+               resume=resume,
+               use_wandb=use_wandb)
+    if use_wandb:
+        wandb.finish()
 
 
 @torch.inference_mode()

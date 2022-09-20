@@ -24,3 +24,5 @@ gradio*
 *.png
 *.pdf
 Models
+
+wandb.key

@@ -3,6 +3,7 @@ import torch
 from InferenceInterfaces.Controllability.wgan.resnet_init import init_resnet
 from InferenceInterfaces.Controllability.wgan.wgan_qc import WassersteinGanQuadraticCost
 
+
 def create_wgan(parameters, device, optimizer='adam'):
     if parameters['model'] == "resnet":
         generator, discriminator = init_resnet(parameters)
@@ -18,17 +19,17 @@ def create_wgan(parameters, device, optimizer='adam'):
 
     criterion = torch.nn.MSELoss()
 
-    gan = WassersteinGanQuadraticCost(generator, 
-                                      discriminator, 
-                                      optimizer_g, 
-                                      optimizer_d, 
-                                      criterion=criterion, 
-                                      data_dimensions=parameters['data_dim'], 
-                                      epochs=parameters['epochs'], 
-                                      batch_size=parameters['batch_size'], 
-                                      device=device, 
-                                      n_max_iterations=parameters['n_max_iterations'], 
+    gan = WassersteinGanQuadraticCost(generator,
+                                      discriminator,
+                                      optimizer_g,
+                                      optimizer_d,
+                                      criterion=criterion,
+                                      data_dimensions=parameters['data_dim'],
+                                      epochs=parameters['epochs'],
+                                      batch_size=parameters['batch_size'],
+                                      device=device,
+                                      n_max_iterations=parameters['n_max_iterations'],
                                       use_cuda=torch.cuda.is_available(),
                                       gamma=parameters['gamma'])
-    
+
     return gan

@@ -1,19 +1,20 @@
-import logging
 import os
 import time
-from datetime import datetime
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from cvxopt import matrix, solvers, sparse, spmatrix
+from cvxopt import matrix
+from cvxopt import solvers
+from cvxopt import sparse
+from cvxopt import spmatrix
 from torch.autograd import grad as torch_grad
-from torchvision.utils import make_grid
 from tqdm import tqdm
 
 
 class WassersteinGanQuadraticCost():
+
     def __init__(self, generator, discriminator, gen_optimizer, dis_optimizer, criterion, epochs, n_max_iterations,
                  data_dimensions,
                  batch_size, device, gamma=0.1, K=-1, milestones=[150000, 250000], lr_anneal=1.0, use_cuda=False):
@@ -22,10 +23,10 @@ class WassersteinGanQuadraticCost():
         self.D = discriminator
         self.D_opt = dis_optimizer
         self.losses = {
-            'D': [], 
+            'D' : [],
             'WD': [],
-            'G': []
-        }
+            'G' : []
+            }
         self.num_steps = 0
         self.gen_steps = 0
         self.use_cuda = use_cuda
@@ -198,7 +199,7 @@ class WassersteinGanQuadraticCost():
         fake = self.G(z)
         output_fake = self.D(fake)
         output_F_mean_after = output_fake.mean(0).view(1)
-        
+
         self.losses['G'].append(float(output_F_mean_after.data))
 
         output_F_mean_after.backward(self.mone)
@@ -212,7 +213,7 @@ class WassersteinGanQuadraticCost():
             images = data[0]
             speaker_ids = data[1]
             self.num_steps += 1
-            #self.tensorboard_counter += 1
+            # self.tensorboard_counter += 1
             if self.gen_steps >= self.n_max_iterations:
                 return
             self._critic_deep_regression_(images)
@@ -221,7 +222,6 @@ class WassersteinGanQuadraticCost():
             D_loss_avg = np.average(self.losses['D'])
             G_loss_avg = np.average(self.losses['G'])
             wd_avg = np.average(self.losses['WD'])
-
 
     def train(self, data_loader, writer, experiment=None):
         self.G.train()
@@ -268,10 +268,10 @@ class WassersteinGanQuadraticCost():
         name = '%s_%s' % (timestampStr, 'wgan')
         model_filename = os.path.join(model_path, name)
         torch.save({
-            'generator_state_dict': self.G.state_dict(),
-            'critic_state_dict': self.D.state_dict(),
-            'gen_optimizer_state_dict': self.G_opt.state_dict(),
+            'generator_state_dict'       : self.G.state_dict(),
+            'critic_state_dict'          : self.D.state_dict(),
+            'gen_optimizer_state_dict'   : self.G_opt.state_dict(),
             'critic_optimizer_state_dict': self.D_opt.state_dict(),
-            'model_parameters': model_parameters,
-            'iterations': self.num_steps
-        }, model_filename)
+            'model_parameters'           : model_parameters,
+            'iterations'                 : self.num_steps
+            }, model_filename)

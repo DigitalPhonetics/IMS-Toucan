@@ -4,14 +4,15 @@ import time
 import auraloss
 import torch
 import torch.multiprocessing
+import wandb
 from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.AdversarialLosses import DiscriminatorAdversarialLoss
-from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.AdversarialLosses import GeneratorAdversarialLoss
-from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.FeatureMatchingLoss import FeatureMatchLoss
-from TrainingInterfaces.Spectrogram_to_Wave.HiFIGAN.MelSpectrogramLoss import MelSpectrogramLoss
+from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.AdversarialLosses import DiscriminatorAdversarialLoss
+from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.AdversarialLosses import GeneratorAdversarialLoss
+from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.FeatureMatchingLoss import FeatureMatchLoss
+from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.MelSpectrogramLoss import MelSpectrogramLoss
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
@@ -28,7 +29,9 @@ def train_loop(generator,
                # the idea is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
                resume=False,
                use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
-               generator_steps_per_discriminator_step=3
+               generator_steps_per_discriminator_step=3,
+               generator_warmup=30000,
+               use_wandb=False
                ):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
@@ -107,21 +110,21 @@ def train_loop(generator,
                 signal_processing_losses.append(signal_loss.item())
             d_outs = d(pred_wave)
             d_gold_outs = d(gold_wave)
-            if step_counter > 30000:  # a little bit of warmup helps, but it's not that important
+            if step_counter > generator_warmup:  # a little bit of warmup helps, but it's not that important
                 adversarial_loss = generator_adv_criterion(d_outs)
             else:
                 adversarial_loss = torch.tensor([0.0]).to(device)
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 40.0 + adversarial_loss * 4.0 + feature_matching_loss * 0.5 + signal_loss
+            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 15.0 + feature_matching_loss + signal_loss
             if torch.isnan(generator_total_loss):
                 print("Loss turned to NaN, aborting so the progress is not overwritten. The GAN possibly collapsed.")
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
-            mel_losses.append(mel_loss.item() * 40.0)
-            feat_match_losses.append(feature_matching_loss.item() * 0.5)
-            adversarial_losses.append(adversarial_loss.item() * 4.0)
+            mel_losses.append(mel_loss.item() * 30.0)
+            feat_match_losses.append(feature_matching_loss.item())
+            adversarial_losses.append(adversarial_loss.item() * 15.0)
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
             scheduler_g.step()
@@ -132,7 +135,7 @@ def train_loop(generator,
             ############################
 
             # wasserstein seems appropriate, because the discriminator learns much much quicker
-            if step_counter > 30000 and step_counter % generator_steps_per_discriminator_step == 0:
+            if step_counter > generator_warmup and step_counter % generator_steps_per_discriminator_step == 0:
                 d_outs = d(pred_wave.detach())  # have to recompute unfortunately due to autograd behaviour
                 d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
                 discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
@@ -150,14 +153,14 @@ def train_loop(generator,
 
         if epoch % epochs_per_save == 0:
             torch.save({
-                "generator": g.state_dict(),
-                "discriminator": d.state_dict(),
-                "generator_optimizer": optimizer_g.state_dict(),
+                "generator"              : g.state_dict(),
+                "discriminator"          : d.state_dict(),
+                "generator_optimizer"    : optimizer_g.state_dict(),
                 "discriminator_optimizer": optimizer_d.state_dict(),
-                "generator_scheduler": scheduler_g.state_dict(),
+                "generator_scheduler"    : scheduler_g.state_dict(),
                 "discriminator_scheduler": scheduler_d.state_dict(),
-                "step_counter": step_counter
-            }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+                "step_counter"           : step_counter
+                }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(model_save_dir, keep=5)
 
         print("Epoch:              {}".format(epoch + 1))
@@ -169,5 +172,14 @@ def train_loop(generator,
         if use_signal_processing_losses:
             print("    SigProc Loss:   {}".format(round(sum(signal_processing_losses) / len(signal_processing_losses), 3)))
         print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
-        if step_counter > 30000:  # a little bit of warmup helps, but it's not that important
+        if step_counter > generator_warmup:  # a little bit of warmup helps, but it's not that important
             print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
+        wandb.log({
+            "G_mel_loss"              : round(sum(mel_losses) / len(mel_losses), 3),
+            "G_feature_matching_loss" : round(sum(feat_match_losses) / len(feat_match_losses), 3),
+            "G_signal_processing_loss": round(sum(signal_processing_losses) / len(signal_processing_losses), 3) if use_signal_processing_losses else 0.0,
+            "G_adversarial_loss"      : round(sum(adversarial_losses) / len(adversarial_losses), 3),
+            "D_discriminator_loss"    : round(sum(discriminator_losses) / len(discriminator_losses), 3) if step_counter > generator_warmup else 0.0,
+            "epoch"                   : epoch + 1,
+            "steps"                   : step_counter,
+            })
