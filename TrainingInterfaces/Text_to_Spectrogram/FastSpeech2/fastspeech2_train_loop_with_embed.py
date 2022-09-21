@@ -286,9 +286,10 @@ def train_loop(net,
                 }, os.path.join(save_directory, "embedding_function.pt"))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net, device, save_dir=save_directory, step=step_counter, lang=lang, default_emb=default_embedding)
-            wandb.log({
-                "progress_plot": wandb.Image(path_to_most_recent_plot)
-                })
+            if use_wandb:
+                wandb.log({
+                    "progress_plot": wandb.Image(path_to_most_recent_plot)
+                    })
             if step_counter > steps:
                 # DONE
                 return
@@ -300,11 +301,12 @@ def train_loop(net,
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
-        wandb.log({
-            "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
-            "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
-            "epoch"           : epoch,
-            "steps"           : step_counter,
-            })
+        if use_wandb:
+            wandb.log({
+                "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
+                "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
+                "epoch"           : epoch,
+                "steps"           : step_counter,
+                })
         net.train()
         style_embedding_function.train()

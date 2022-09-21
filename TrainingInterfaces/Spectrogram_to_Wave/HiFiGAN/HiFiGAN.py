@@ -9,6 +9,8 @@ import copy
 
 import torch
 import torch.nn.functional as F
+from torch.nn import Conv1d
+from torch.nn.utils import weight_norm
 
 from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 from TrainingInterfaces.Spectrogram_to_Wave.Avocodo.AvocodoDiscriminators import MultiCoMBDiscriminator
@@ -22,7 +24,7 @@ class HiFiGANGenerator(torch.nn.Module):
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(8, 6, 4, 4),
+                 upsample_scales=(8, 6, 4, 4),  # CAREFUL: Avocodo assumes that there are always 4 upsample scales, because it takes intermediate results.
                  upsample_kernel_sizes=(16, 12, 8, 8),
                  resblock_kernel_sizes=(3, 7, 11),
                  resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],
@@ -39,8 +41,8 @@ class HiFiGANGenerator(torch.nn.Module):
             channels (int): Number of hidden representation channels.
             kernel_size (int): Kernel size of initial and final conv layer.
             upsample_scales (list): List of upsampling scales.
-            upsample_kernel_sizes (list): List of kernal sizes for upsampling layers.
-            resblock_kernal_sizes (list): List of kernal sizes for residual blocks.
+            upsample_kernel_sizes (list): List of kernel sizes for upsampling layers.
+            resblock_kernel_sizes (list): List of kernel sizes for residual blocks.
             resblock_dilations (list): List of dilation list for residual blocks.
             use_additional_convs (bool): Whether to use additional conv layers in residual blocks.
             bias (bool): Whether to add bias parameter in convolution layers.
@@ -91,6 +93,9 @@ class HiFiGANGenerator(torch.nn.Module):
                             1,
                             padding=(kernel_size - 1) // 2, ), torch.nn.Tanh(), )
 
+        self.out_proj_x1 = weight_norm(Conv1d(512 // 4, 1, 7, 1, padding=3))
+        self.out_proj_x2 = weight_norm(Conv1d(512 // 8, 1, 7, 1, padding=3))
+
         # apply weight norm
         self.apply_weight_norm()
 
@@ -106,6 +111,8 @@ class HiFiGANGenerator(torch.nn.Module):
             
         Returns:
             Tensor: Output tensor (B, out_channels, T).
+            Tensor: intermediate result
+            Tensor: another intermediate result
         """
         c = self.input_conv(c)
         for i in range(self.num_upsamples):
@@ -114,9 +121,13 @@ class HiFiGANGenerator(torch.nn.Module):
             for j in range(self.num_blocks):
                 cs += self.blocks[i * self.num_blocks + j](c)
             c = cs / self.num_blocks
+            if i == 1:
+                x1 = self.out_proj_x1(c)
+            elif i == 2:
+                x2 = self.out_proj_x2(c)
         c = self.output_conv(c)
 
-        return c
+        return c, x2, x1
 
     def reset_parameters(self):
         """
@@ -710,17 +721,23 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
         self.mcmbd = MultiCoMBDiscriminator(kernels, channels, groups, strides)
         self.msbd = MultiSubBandDiscriminator(tkernels, fkernel, tchannels, fchannels, tstrides, fstride, tdilations, fdilations, tsubband, n, m, freq_init_ch)
 
-    def forward(self, x):
+    def forward(self, wave, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
         """
         Calculate forward propagation.
 
         Args:
-            x (Tensor): Input noise signal (B, 1, T).
+            wave: The predicted or gold waveform
+            intermediate_wave_upsampled_twice: the wave before the final upsampling in the generator
+            intermediate_wave_upsampled_once: the wave before the second final upsampling in the generator
 
         Returns:
             List: List of lists of each discriminator outputs,
                 which consists of each layer output tensors.
         """
-        msd_outs = self.msd(x)
-        mpd_outs = self.mpd(x)
-        return msd_outs + mpd_outs
+        msd_outs = self.msd(wave)
+        mpd_outs = self.mpd(wave)
+        mcmbd_outs = self.mcmbd(wave_final=wave,
+                                wave_downsampled_once=intermediate_wave_upsampled_twice,
+                                wave_downsampled_twice=intermediate_wave_upsampled_once)
+        msbd_outs = self.msbd(wave)
+        return msd_outs + mpd_outs + mcmbd_outs + msbd_outs

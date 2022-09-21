@@ -102,13 +102,15 @@ def train_loop(generator,
 
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
-            pred_wave = g(melspec)
+            pred_wave, intermediate_wave_upsampled_twice, intermediate_wave_upsampled_once = g(melspec)
             signal_loss = torch.tensor([0.0]).to(device)
             if use_signal_processing_losses:
                 for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
                 signal_processing_losses.append(signal_loss.item())
-            d_outs = d(pred_wave)
+            d_outs = d(wave=pred_wave,
+                       intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
+                       intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
             d_gold_outs = d(gold_wave)
             if step_counter > generator_warmup:  # a little bit of warmup helps, but it's not that important
                 adversarial_loss = generator_adv_criterion(d_outs)
@@ -136,7 +138,9 @@ def train_loop(generator,
 
             # wasserstein seems appropriate, because the discriminator learns much much quicker
             if step_counter > generator_warmup and step_counter % generator_steps_per_discriminator_step == 0:
-                d_outs = d(pred_wave.detach())  # have to recompute unfortunately due to autograd behaviour
+                d_outs = d(wave=pred_wave.detach(),
+                           intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice.detach(),
+                           intermediate_wave_upsampled_once=intermediate_wave_upsampled_once.detach())
                 d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
                 discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
                 optimizer_d.zero_grad()
@@ -174,12 +178,13 @@ def train_loop(generator,
         print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
         if step_counter > generator_warmup:  # a little bit of warmup helps, but it's not that important
             print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
-        wandb.log({
-            "G_mel_loss"              : round(sum(mel_losses) / len(mel_losses), 3),
-            "G_feature_matching_loss" : round(sum(feat_match_losses) / len(feat_match_losses), 3),
-            "G_signal_processing_loss": round(sum(signal_processing_losses) / len(signal_processing_losses), 3) if use_signal_processing_losses else 0.0,
-            "G_adversarial_loss"      : round(sum(adversarial_losses) / len(adversarial_losses), 3),
-            "D_discriminator_loss"    : round(sum(discriminator_losses) / len(discriminator_losses), 3) if step_counter > generator_warmup else 0.0,
-            "epoch"                   : epoch + 1,
-            "steps"                   : step_counter,
-            })
+        if use_wandb:
+            wandb.log({
+                "G_mel_loss"              : round(sum(mel_losses) / len(mel_losses), 3),
+                "G_feature_matching_loss" : round(sum(feat_match_losses) / len(feat_match_losses), 3),
+                "G_signal_processing_loss": round(sum(signal_processing_losses) / len(signal_processing_losses), 3) if use_signal_processing_losses else 0.0,
+                "G_adversarial_loss"      : round(sum(adversarial_losses) / len(adversarial_losses), 3),
+                "D_discriminator_loss"    : round(sum(discriminator_losses) / len(discriminator_losses), 3) if step_counter > generator_warmup else 0.0,
+                "epoch"                   : epoch + 1,
+                "steps"                   : step_counter,
+                })

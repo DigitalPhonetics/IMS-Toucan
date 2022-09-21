@@ -303,59 +303,56 @@ class MultiCoMBDiscriminator(torch.nn.Module):
         self.pqmf_2 = PQMF(N=2, taps=256, cutoff=0.25, beta=10.0)
         self.pqmf_4 = PQMF(N=4, taps=192, cutoff=0.13, beta=10.0)
 
-    def forward(self, x, x_hat, x2_hat, x1_hat):
-        y = []
-        y_hat = []
-        fmap = []
-        fmap_hat = []
+    def forward(self, wave_final, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
 
-        p3, p3_fmap = self.combd_3(x)
-        y.append(p3)
-        fmap.append(p3_fmap)
+        if intermediate_wave_upsampled_twice is not None and intermediate_wave_upsampled_once is not None:
+            # get features of generated wave
+            features_of_predicted = []
 
-        p3_hat, p3_fmap_hat = self.combd_3(x_hat)
-        y_hat.append(p3_hat)
-        fmap_hat.append(p3_fmap_hat)
+            p3_hat, p3_fmap_hat = self.combd_3(wave_final)
+            features_of_predicted.append(p3_fmap_hat)
 
-        x2_ = self.pqmf_2(x)[:, :1, :]  # Select first band
-        x1_ = self.pqmf_4(x)[:, :1, :]  # Select first band
+            x2_hat_ = self.pqmf_2(wave_final)[:, :1, :]
+            x1_hat_ = self.pqmf_4(wave_final)[:, :1, :]
 
-        x2_hat_ = self.pqmf_2(x_hat)[:, :1, :]
-        x1_hat_ = self.pqmf_4(x_hat)[:, :1, :]
+            _, p2_fmap_hat_ = self.combd_2(intermediate_wave_upsampled_twice)
+            features_of_predicted.append(p2_fmap_hat_)
 
-        p2_, p2_fmap_ = self.combd_2(x2_)
-        y.append(p2_)
-        fmap.append(p2_fmap_)
+            _, p1_fmap_hat_ = self.combd_1(intermediate_wave_upsampled_once)
+            features_of_predicted.append(p1_fmap_hat_)
 
-        p2_hat_, p2_fmap_hat_ = self.combd_2(x2_hat)
-        y_hat.append(p2_hat_)
-        fmap_hat.append(p2_fmap_hat_)
+            _, p2_fmap_hat = self.combd_2(x2_hat_)
+            features_of_predicted.append(p2_fmap_hat)
 
-        p1_, p1_fmap_ = self.combd_1(x1_)
-        y.append(p1_)
-        fmap.append(p1_fmap_)
+            _, p1_fmap_hat = self.combd_1(x1_hat_)
+            features_of_predicted.append(p1_fmap_hat)
 
-        p1_hat_, p1_fmap_hat_ = self.combd_1(x1_hat)
-        y_hat.append(p1_hat_)
-        fmap_hat.append(p1_fmap_hat_)
+            return features_of_predicted
 
-        p2, p2_fmap = self.combd_2(x2_)
-        y.append(p2)
-        fmap.append(p2_fmap)
+        else:
+            # get features of gold wave
 
-        p2_hat, p2_fmap_hat = self.combd_2(x2_hat_)
-        y_hat.append(p2_hat)
-        fmap_hat.append(p2_fmap_hat)
+            features_of_gold = []
 
-        p1, p1_fmap = self.combd_1(x1_)
-        y.append(p1)
-        fmap.append(p1_fmap)
+            p3, p3_fmap = self.combd_3(wave_final)
+            features_of_gold.append(p3_fmap)
 
-        p1_hat, p1_fmap_hat = self.combd_1(x1_hat_)
-        y_hat.append(p1_hat)
-        fmap_hat.append(p1_fmap_hat)
+            x2_ = self.pqmf_2(wave_final)[:, :1, :]  # Select first band
+            x1_ = self.pqmf_4(wave_final)[:, :1, :]  # Select first band
 
-        return y, y_hat, fmap, fmap_hat
+            p2_, p2_fmap_ = self.combd_2(x2_)
+            features_of_gold.append(p2_fmap_)
+
+            p1_, p1_fmap_ = self.combd_1(x1_)
+            features_of_gold.append(p1_fmap_)
+
+            p2, p2_fmap = self.combd_2(x2_)
+            features_of_gold.append(p2_fmap)
+
+            p1, p1_fmap = self.combd_1(x1_)
+            features_of_gold.append(p1_fmap)
+
+            return features_of_gold
 
 
 class MultiSubBandDiscriminator(torch.nn.Module):
@@ -382,52 +379,30 @@ class MultiSubBandDiscriminator(torch.nn.Module):
         self.pqmf_n = PQMF(N=n, taps=256, cutoff=0.03, beta=10.0)
         self.pqmf_m = PQMF(N=m, taps=256, cutoff=0.1, beta=9.0)
 
-    def forward(self, x, x_hat):
-        fmap = []
+    def forward(self, wave):
         fmap_hat = []
-        y = []
-        y_hat = []
 
         # Time analysis
-        xn = self.pqmf_n(x)
-        xn_hat = self.pqmf_n(x_hat)
+        xn_hat = self.pqmf_n(wave)
 
-        q3, feat_q3 = self.tsbd3(xn[:, :self.tsubband3, :])
         q3_hat, feat_q3_hat = self.tsbd3(xn_hat[:, :self.tsubband3, :])
-        y.append(q3)
-        y_hat.append(q3_hat)
-        fmap.append(feat_q3)
         fmap_hat.append(feat_q3_hat)
 
-        q2, feat_q2 = self.tsbd2(xn[:, :self.tsubband2, :])
         q2_hat, feat_q2_hat = self.tsbd2(xn_hat[:, :self.tsubband2, :])
-        y.append(q2)
-        y_hat.append(q2_hat)
-        fmap.append(feat_q2)
         fmap_hat.append(feat_q2_hat)
 
-        q1, feat_q1 = self.tsbd1(xn[:, :self.tsubband1, :])
         q1_hat, feat_q1_hat = self.tsbd1(xn_hat[:, :self.tsubband1, :])
-        y.append(q1)
-        y_hat.append(q1_hat)
-        fmap.append(feat_q1)
         fmap_hat.append(feat_q1_hat)
 
         # Frequency analysis
-        xm = self.pqmf_m(x)
-        xm_hat = self.pqmf_m(x_hat)
+        xm_hat = self.pqmf_m(wave)
 
-        xm = xm.transpose(-2, -1)
         xm_hat = xm_hat.transpose(-2, -1)
 
-        q4, feat_q4 = self.fsbd(xm)
         q4_hat, feat_q4_hat = self.fsbd(xm_hat)
-        y.append(q4)
-        y_hat.append(q4_hat)
-        fmap.append(feat_q4)
         fmap_hat.append(feat_q4_hat)
 
-        return y, y_hat, fmap, fmap_hat
+        return fmap_hat
 
 
 def feature_loss(fmap_r, fmap_g):
