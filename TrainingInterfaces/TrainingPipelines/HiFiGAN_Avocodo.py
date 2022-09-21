@@ -71,7 +71,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
         file_lists.append(random.sample(list(build_path_to_transcript_dict_spanish_blizzard_train().keys()), 500))
         file_lists.append(random.sample(list(build_path_to_transcript_dict_aishell3().keys()), 1500))
         file_lists.append(random.sample(list(build_path_to_transcript_dict_VIVOS_viet().keys()), 500))
-        file_lists.append(random.sample(list(build_path_to_transcript_dict_RAVDESS().keys()), 1500))
+        file_lists.append(random.sample(list(build_path_to_transcript_dict_RAVDESS().keys()), 500))
         file_lists.append(random.sample(list(build_path_to_transcript_dict_ESDS().keys()), 1500))
 
         datasets = list()

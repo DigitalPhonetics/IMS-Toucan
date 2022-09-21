@@ -10,7 +10,6 @@ import copy
 import torch
 import torch.nn.functional as F
 from torch.nn import Conv1d
-from torch.nn.utils import weight_norm
 
 from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 from TrainingInterfaces.Spectrogram_to_Wave.Avocodo.AvocodoDiscriminators import MultiCoMBDiscriminator
@@ -93,8 +92,8 @@ class HiFiGANGenerator(torch.nn.Module):
                             1,
                             padding=(kernel_size - 1) // 2, ), torch.nn.Tanh(), )
 
-        self.out_proj_x1 = weight_norm(Conv1d(512 // 4, 1, 7, 1, padding=3))
-        self.out_proj_x2 = weight_norm(Conv1d(512 // 8, 1, 7, 1, padding=3))
+        self.out_proj_x1 = Conv1d(512 // 4, 1, 7, 1, padding=3)
+        self.out_proj_x2 = Conv1d(512 // 8, 1, 7, 1, padding=3)
 
         # apply weight norm
         self.apply_weight_norm()
@@ -737,7 +736,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
         msd_outs = self.msd(wave)
         mpd_outs = self.mpd(wave)
         mcmbd_outs = self.mcmbd(wave_final=wave,
-                                wave_downsampled_once=intermediate_wave_upsampled_twice,
-                                wave_downsampled_twice=intermediate_wave_upsampled_once)
+                                intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
+                                intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
         msbd_outs = self.msbd(wave)
         return msd_outs + mpd_outs + mcmbd_outs + msbd_outs
