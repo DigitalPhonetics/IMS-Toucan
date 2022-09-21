@@ -290,9 +290,6 @@ def train_loop(net,
                 wandb.log({
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
                     })
-            if step_counter > steps:
-                # DONE
-                return
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(bt_losses_this_epoch) != 0:
@@ -305,8 +302,12 @@ def train_loop(net,
             wandb.log({
                 "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
                 "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
+                "barlowtwins_loss": sum(bt_losses_this_epoch) / len(bt_losses_this_epoch) if len(bt_losses_this_epoch) != 0 else 0.0,
                 "epoch"           : epoch,
                 "steps"           : step_counter,
                 })
+        if step_counter > steps and epoch % epochs_per_save == 0:
+            # DONE
+            return
         net.train()
         style_embedding_function.train()
