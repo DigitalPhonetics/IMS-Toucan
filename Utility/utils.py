@@ -22,8 +22,11 @@ def cumsum_durations(durations):
 def delete_old_checkpoints(checkpoint_dir, keep=5):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
-        if el.endswith(".pt") and el != "best.pt":
-            checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+        if el.endswith(".pt"):
+            try:
+                checkpoint_list.append(int(el.replace("checkpoint_", "").replace(".pt", "")))
+            except ValueError:
+                pass
     if len(checkpoint_list) <= keep:
         return
     else:
