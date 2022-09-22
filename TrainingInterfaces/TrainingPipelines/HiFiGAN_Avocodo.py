@@ -92,7 +92,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
         if run_id == 0:
             if use_wandb:
                 wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
-            train_loop(batch_size=32,
+            train_loop(batch_size=24,
                        epochs=20,
                        generator=generator,
                        discriminator=discriminator,
@@ -105,7 +105,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
                        use_signal_processing_losses=False,
                        use_wandb=use_wandb)
         else:
-            train_loop(batch_size=32,
+            train_loop(batch_size=24,
                        epochs=20,
                        generator=generator,
                        discriminator=discriminator,
