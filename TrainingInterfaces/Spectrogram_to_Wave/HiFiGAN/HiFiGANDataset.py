@@ -11,6 +11,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.AudioPreprocessor import to_mono
 
 
 class HiFiGANDataset(Dataset):
@@ -62,6 +63,7 @@ class HiFiGANDataset(Dataset):
     def cache_builder_process(self, path_split):
         for path in tqdm(path_split):
             wave, sr = sf.read(path)
+            wave = to_mono(wave)
             if (len(wave) / sr) > ((self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
                 if not self.needs_resampling:

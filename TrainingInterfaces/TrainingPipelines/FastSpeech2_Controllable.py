@@ -63,7 +63,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb):
     model = FastSpeech2(lang_embs=None)
     if use_wandb:
         wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
-        wandb.watch(model, log_graph=True)
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,

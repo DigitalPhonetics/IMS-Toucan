@@ -9,6 +9,16 @@ import torch
 from torchaudio.transforms import Resample
 
 
+def to_mono(x):
+    """
+    make sure we deal with a 1D array
+    """
+    if len(x.shape) == 2:
+        return lb.to_mono(numpy.transpose(x))
+    else:
+        return x
+
+
 class AudioPreprocessor:
 
     def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False, device="cpu", fmax_for_spec=8000):
@@ -66,15 +76,6 @@ class AudioPreprocessor:
             print("Audio might be too short to cut silences from front and back.")
         return audio
 
-    def to_mono(self, x):
-        """
-        make sure we deal with a 1D array
-        """
-        if len(x.shape) == 2:
-            return lb.to_mono(numpy.transpose(x))
-        else:
-            return x
-
     def normalize_loudness(self, audio):
         """
         normalize the amplitudes according to
@@ -120,7 +121,7 @@ class AudioPreprocessor:
         one function to apply them all in an
         order that makes sense.
         """
-        audio = self.to_mono(audio)
+        audio = to_mono(audio)
         audio = self.normalize_loudness(audio)
         audio = torch.Tensor(audio).to(self.device)
         audio = self.resample(audio)
@@ -135,7 +136,7 @@ class AudioPreprocessor:
         cleaned version.
         """
         fig, ax = plt.subplots(nrows=2, ncols=1)
-        unclean_audio_mono = self.to_mono(unclean_audio)
+        unclean_audio_mono = to_mono(unclean_audio)
         unclean_spec = self.audio_to_mel_spec_tensor(unclean_audio_mono, normalize=False).numpy()
         clean_spec = self.audio_to_mel_spec_tensor(unclean_audio_mono, normalize=True).numpy()
         lbd.specshow(unclean_spec, sr=self.sr, cmap='GnBu', y_axis='mel', ax=ax[0], x_axis='time')

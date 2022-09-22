@@ -89,10 +89,9 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
         discriminator = AvocodoHiFiGANJointDiscriminator()
 
         print("Training model")
-        if use_wandb:
-            wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
-            wandb.watch(generator, log_graph=True)
         if run_id == 0:
+            if use_wandb:
+                wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
             train_loop(batch_size=32,
                        epochs=20,
                        generator=generator,
