@@ -103,30 +103,37 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave, intermediate_wave_upsampled_twice, intermediate_wave_upsampled_once = g(melspec)
-            signal_loss = torch.tensor([0.0]).to(device)
+
+            mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
+            generator_total_loss = mel_loss * 30.0
+
             if use_signal_processing_losses:
+                signal_loss = torch.tensor([0.0]).to(device)
                 for sl in signal_processing_loss_functions:
                     signal_loss += sl(pred_wave, gold_wave)
+                generator_total_loss = generator_total_loss + signal_loss
                 signal_processing_losses.append(signal_loss.item())
-            d_outs = d(wave=pred_wave,
-                       intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
-                       intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
-            d_gold_outs = d(gold_wave)
-            if step_counter > generator_warmup:  # a little bit of warmup helps, but it's not that important
+
+            if step_counter > generator_warmup:  # a bit of warmup helps, but it's not that important
+                d_outs = d(wave=pred_wave,
+                           intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
+                           intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
                 adversarial_loss = generator_adv_criterion(d_outs)
-            else:
-                adversarial_loss = torch.tensor([0.0]).to(device)
-            mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
-            feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
-            generator_total_loss = mel_loss * 30.0 + adversarial_loss * 15.0 + feature_matching_loss + signal_loss
+                adversarial_losses.append(adversarial_loss.item() * 15.0)
+                generator_total_loss = generator_total_loss + adversarial_loss * 15.0
+
+                d_gold_outs = d(gold_wave)
+                feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
+                feat_match_losses.append(feature_matching_loss.item())
+                generator_total_loss = generator_total_loss + feature_matching_loss
+
             if torch.isnan(generator_total_loss):
                 print("Loss turned to NaN, aborting so the progress is not overwritten. The GAN possibly collapsed.")
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
             mel_losses.append(mel_loss.item() * 30.0)
-            feat_match_losses.append(feature_matching_loss.item())
-            adversarial_losses.append(adversarial_loss.item() * 15.0)
+
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
             scheduler_g.step()
@@ -156,6 +163,7 @@ def train_loop(generator,
         ##########################
 
         if epoch % epochs_per_save == 0:
+            g.eval()
             torch.save({
                 "generator"              : g.state_dict(),
                 "discriminator"          : d.state_dict(),
@@ -165,26 +173,26 @@ def train_loop(generator,
                 "discriminator_scheduler": scheduler_d.state_dict(),
                 "step_counter"           : step_counter
                 }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+            g.train()
             delete_old_checkpoints(model_save_dir, keep=5)
 
-        print("Epoch:              {}".format(epoch + 1))
-        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Steps:              {}".format(step_counter))
-        print("Generator Loss:     {}".format(round(sum(generator_losses) / len(generator_losses), 3)))
-        print("    Mel Loss:       {}".format(round(sum(mel_losses) / len(mel_losses), 3)))
-        print("    FeatMatch Loss: {}".format(round(sum(feat_match_losses) / len(feat_match_losses), 3)))
-        if use_signal_processing_losses:
-            print("    SigProc Loss:   {}".format(round(sum(signal_processing_losses) / len(signal_processing_losses), 3)))
-        print("    Adv Loss:       {}".format(round(sum(adversarial_losses) / len(adversarial_losses), 3)))
-        if step_counter > generator_warmup:  # a little bit of warmup helps, but it's not that important
-            print("Discriminator Loss: {}".format(round(sum(discriminator_losses) / len(discriminator_losses), 3)))
+        # LOGGING
+        log_dict = dict()
+        log_dict["Steps"] = step_counter
+        log_dict["Generator Loss"] = round(sum(generator_losses) / len(generator_losses), 3)
+        log_dict["Mel Loss"] = round(sum(mel_losses) / len(mel_losses), 3)
+        if len(feat_match_losses) > 0:
+            log_dict["Feature Matching Loss"]: round(sum(feat_match_losses) / len(feat_match_losses), 3)
+        if len(signal_processing_losses) > 0:
+            log_dict["Signal Processing Loss"]: round(sum(signal_processing_losses) / len(signal_processing_losses), 3)
+        if len(adversarial_losses) > 0:
+            log_dict["Adversarial Loss"]: round(sum(adversarial_losses) / len(adversarial_losses), 3)
+        if len(discriminator_losses) > 0:
+            log_dict["Discriminator Loss"]: round(sum(discriminator_losses) / len(discriminator_losses), 3)
+
+        print("Time elapsed for this run:   {} Minutes".format(round((time.time() - start_time) / 60)))
+        for key in log_dict:
+            print(f"{key}: {log_dict[key]}")
+
         if use_wandb:
-            wandb.log({
-                "G_mel_loss"              : round(sum(mel_losses) / len(mel_losses), 3),
-                "G_feature_matching_loss" : round(sum(feat_match_losses) / len(feat_match_losses), 3),
-                "G_signal_processing_loss": round(sum(signal_processing_losses) / len(signal_processing_losses), 3) if use_signal_processing_losses else 0.0,
-                "G_adversarial_loss"      : round(sum(adversarial_losses) / len(adversarial_losses), 3),
-                "D_discriminator_loss"    : round(sum(discriminator_losses) / len(discriminator_losses), 3) if step_counter > generator_warmup else 0.0,
-                "epoch"                   : epoch + 1,
-                "steps"                   : step_counter,
-                })
+            wandb.log(log_dict)
