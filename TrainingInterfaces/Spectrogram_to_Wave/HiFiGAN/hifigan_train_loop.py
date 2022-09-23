@@ -182,13 +182,13 @@ def train_loop(generator,
         log_dict["Generator Loss"] = round(sum(generator_losses) / len(generator_losses), 3)
         log_dict["Mel Loss"] = round(sum(mel_losses) / len(mel_losses), 3)
         if len(feat_match_losses) > 0:
-            log_dict["Feature Matching Loss"]: round(sum(feat_match_losses) / len(feat_match_losses), 3)
+            log_dict["Feature Matching Loss"] = round(sum(feat_match_losses) / len(feat_match_losses), 3)
         if len(signal_processing_losses) > 0:
-            log_dict["Signal Processing Loss"]: round(sum(signal_processing_losses) / len(signal_processing_losses), 3)
+            log_dict["Signal Processing Loss"] = round(sum(signal_processing_losses) / len(signal_processing_losses), 3)
         if len(adversarial_losses) > 0:
-            log_dict["Adversarial Loss"]: round(sum(adversarial_losses) / len(adversarial_losses), 3)
+            log_dict["Adversarial Loss"] = round(sum(adversarial_losses) / len(adversarial_losses), 3)
         if len(discriminator_losses) > 0:
-            log_dict["Discriminator Loss"]: round(sum(discriminator_losses) / len(discriminator_losses), 3)
+            log_dict["Discriminator Loss"] = round(sum(discriminator_losses) / len(discriminator_losses), 3)
 
         print("Time elapsed for this run:   {} Minutes".format(round((time.time() - start_time) / 60)))
         for key in log_dict:
