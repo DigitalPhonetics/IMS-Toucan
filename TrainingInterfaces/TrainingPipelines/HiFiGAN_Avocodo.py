@@ -117,5 +117,5 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
                        resume=True,
                        use_signal_processing_losses=False,
                        use_wandb=use_wandb)
-        if use_wandb:
-            wandb.finish()
+    if use_wandb:
+        wandb.finish()
