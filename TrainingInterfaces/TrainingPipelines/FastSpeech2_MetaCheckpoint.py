@@ -14,7 +14,7 @@ from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, remove_faulty_samples=False, generate_all_aligner_caches=False):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, remove_faulty_samples=False, generate_all_aligner_caches=False):
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data similar to how it is showcased in
@@ -215,7 +215,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, remov
                                        path_to_checkpoint=resume_checkpoint)
     model = FastSpeech2()
     if use_wandb:
-        wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
+        wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is not None else None,
+                   id=wandb_resume_id,  # this is None if not specified in the command line arguments.
+                   resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
                device=torch.device("cuda"),
                datasets=datasets,

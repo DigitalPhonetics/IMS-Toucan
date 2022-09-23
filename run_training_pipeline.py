@@ -61,6 +61,11 @@ if __name__ == '__main__':
                         help="Whether to use weigths and biases to track training runs. Requires you to run wandb login and place your auth key before.",
                         default=False)
 
+    parser.add_argument('--wandb_resume_id',
+                        type=str,
+                        help="ID of a stopped wandb run to continue tracking",
+                        default=None)
+
     args = parser.parse_args()
 
     if args.finetune and args.resume_checkpoint is None:
@@ -76,4 +81,5 @@ if __name__ == '__main__':
                                  resume=args.resume,
                                  finetune=args.finetune,
                                  model_dir=args.model_save_dir,
-                                 use_wandb=args.wandb)
+                                 use_wandb=args.wandb,
+                                 wandb_resume_id=args.wandb_resume_id)

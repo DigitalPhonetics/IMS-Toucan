@@ -12,8 +12,8 @@ class MelSpectrogram(torch.nn.Module):
 
     def __init__(self,
                  fs=48000,
-                 fft_size=1536,
-                 hop_size=384,
+                 fft_size=3072,
+                 hop_size=768,
                  win_length=None,
                  window="hann",
                  num_mels=100,

@@ -12,7 +12,7 @@ from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.hifigan_train_loop import tr
 from Utility.path_to_transcript_dicts import *
 
 
-def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
+def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb_resume_id):
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
@@ -91,7 +91,9 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb):
         print("Training model")
         if run_id == 0:
             if use_wandb:
-                wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}")
+                wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is not None else None,
+                           id=wandb_resume_id,  # this is None if not specified in the command line arguments.
+                           resume="must" if wandb_resume_id is not None else None)
             train_loop(batch_size=24,
                        epochs=20,
                        generator=generator,
