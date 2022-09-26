@@ -71,6 +71,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         }
 
     # sampling multiple times from the dataset, because it's too big to fit all at once
+    train_set = None
     for run_id in range(1000):
         print("Preparing new data...")
         file_lists_for_this_run_combined = list()
