@@ -77,6 +77,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         for file_list in full_lists_to_sample_sizes:
             file_lists_for_this_run_combined += random.sample(file_list, full_lists_to_sample_sizes[file_list])
 
+        del train_set
         train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined, use_random_corruption=False)
 
         generator = HiFiGANGenerator()

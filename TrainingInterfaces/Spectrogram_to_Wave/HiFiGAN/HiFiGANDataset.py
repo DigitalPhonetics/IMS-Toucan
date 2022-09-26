@@ -19,7 +19,7 @@ class HiFiGANDataset(Dataset):
                  list_of_paths,
                  desired_samplingrate=48000,
                  samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
-                 loading_processes=1,  # with the current setup, less is more, because spawning new processes has a huge overhead
+                 loading_processes=30,  # with the current setup, less is more, because spawning new processes has a huge overhead
                  use_random_corruption=False):
         self.use_random_corruption = use_random_corruption
         self.samples_per_segment = samples_per_segment
