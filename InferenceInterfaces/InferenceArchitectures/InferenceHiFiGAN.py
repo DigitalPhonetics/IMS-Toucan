@@ -58,11 +58,12 @@ class HiFiGANGenerator(torch.nn.Module):
                             1,
                             padding=(kernel_size - 1) // 2, ),
             torch.nn.Tanh(), )
-        if use_weight_norm:
-            self.apply_weight_norm()
 
         self.out_proj_x1 = Conv1d(512 // 4, 1, 7, 1, padding=3)
         self.out_proj_x2 = Conv1d(512 // 8, 1, 7, 1, padding=3)
+
+        if use_weight_norm:
+            self.apply_weight_norm()
 
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["generator"])
 

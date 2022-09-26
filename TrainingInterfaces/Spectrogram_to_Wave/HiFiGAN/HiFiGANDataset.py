@@ -1,5 +1,4 @@
 import math
-import os
 import random
 from multiprocessing import Manager
 from multiprocessing import Process
@@ -18,26 +17,22 @@ class HiFiGANDataset(Dataset):
 
     def __init__(self,
                  list_of_paths,
-                 cache_dir,
                  desired_samplingrate=48000,
                  samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
-                 loading_processes=5,  # with the current setup, less is more
+                 loading_processes=1,  # with the current setup, less is more, because spawning new processes has a huge overhead
                  use_random_corruption=False):
-        os.makedirs(cache_dir, exist_ok=True)
         self.use_random_corruption = use_random_corruption
         self.samples_per_segment = samples_per_segment
         self.desired_samplingrate = desired_samplingrate
-        self.melspec_ap = AudioPreprocessor(input_sr=desired_samplingrate, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
-        # hop length of spec loss must be same as the product of the upscale factors
+        self.melspec_ap = AudioPreprocessor(input_sr=self.desired_samplingrate,
+                                            output_sr=16000,
+                                            melspec_buckets=80,
+                                            hop_length=256,
+                                            n_fft=1024,
+                                            cut_silence=False)
+        # hop length of spec loss should be same as the product of the upscale factors
         # samples per segment must be a multiple of hop length of spec loss
 
-        _, self._orig_sr = sf.read(list_of_paths[0])
-        #  ^ this is the reason why we must create individual
-        # datasets and then concat them. If we just did all
-        # datasets at once, there could be multiple sampling
-        # rates.
-
-        self.needs_resampling = self._orig_sr != self.desired_samplingrate
         if loading_processes == 1:
             self.waves = list()
             self.cache_builder_process(list_of_paths)
@@ -66,10 +61,10 @@ class HiFiGANDataset(Dataset):
             wave = to_mono(wave)
             if (len(wave) / sr) > ((self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
                 # catch files that are too short to apply meaningful signal processing
-                if not self.needs_resampling:
+                if sr == self.desired_samplingrate:
                     self.waves.append(wave)
                 else:
-                    self.waves.append(librosa.resample(y=wave, orig_sr=self._orig_sr, target_sr=self.desired_samplingrate))
+                    self.waves.append(librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate))
 
     def __getitem__(self, index):
         """
@@ -77,7 +72,7 @@ class HiFiGANDataset(Dataset):
         All audio segments have to be cut to the same length,
         according to the NeurIPS reference implementation.
 
-        return a pair of cleaned audio and corresponding spectrogram as if it was predicted by the TTS
+        return a pair of high-red audio and corresponding low-res spectrogram as if it was predicted by the TTS
         """
         max_audio_start = len(self.waves[index]) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)

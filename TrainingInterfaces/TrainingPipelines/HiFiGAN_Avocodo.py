@@ -3,7 +3,6 @@ import time
 
 import torch
 import wandb
-from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import AvocodoHiFiGANJointDiscriminator
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
@@ -74,15 +73,11 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     # sampling multiple times from the dataset, because it's too big to fit all at once
     for run_id in range(1000):
         print("Preparing new data...")
-        file_lists = list()
+        file_lists_for_this_run_combined = list()
         for file_list in full_lists_to_sample_sizes:
-            file_lists.append(random.sample(file_list, full_lists_to_sample_sizes[file_list]))
+            file_lists_for_this_run_combined + random.sample(file_list, full_lists_to_sample_sizes[file_list])
 
-        datasets = list()
-
-        for index, file_list in enumerate(file_lists):
-            datasets.append(HiFiGANDataset(list_of_paths=file_list, cache_dir=f"Corpora/{index}", use_random_corruption=False))
-        train_set = ConcatDataset(datasets)
+        train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined, use_random_corruption=False)
 
         generator = HiFiGANGenerator()
         generator.reset_parameters()

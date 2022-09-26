@@ -49,7 +49,7 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     return [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:n]]
 
 
-def average_checkpoints(list_of_checkpoint_paths, load_func, model_type):
+def average_checkpoints(list_of_checkpoint_paths, load_func):
     # COLLECT CHECKPOINTS
     if list_of_checkpoint_paths is None or len(list_of_checkpoint_paths) == 0:
         return None
@@ -101,13 +101,13 @@ def make_best_in_all(n=3):
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
                 if checkpoint_paths is None:
                     continue
-                averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan, model_type="vocoder")
+                averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
                 save_model_for_use(model=averaged_model, name=f"Models/{model_dir}/best.pt", dict_name="generator")
             elif "FastSpeech2" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
                 if checkpoint_paths is None:
                     continue
-                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast, model_type="tts")
+                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
                 save_model_for_use(model=averaged_model, default_embed=default_embed, name=f"Models/{model_dir}/best.pt")
 
 
