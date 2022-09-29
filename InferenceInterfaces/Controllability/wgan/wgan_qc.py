@@ -13,11 +13,10 @@ from torch.autograd import grad as torch_grad
 from tqdm import tqdm
 
 
-class WassersteinGanQuadraticCost():
+class WassersteinGanQuadraticCost:
 
     def __init__(self, generator, discriminator, gen_optimizer, dis_optimizer, criterion, epochs, n_max_iterations,
-                 data_dimensions,
-                 batch_size, device, gamma=0.1, K=-1, milestones=[150000, 250000], lr_anneal=1.0, use_cuda=False):
+                 data_dimensions, batch_size, device, gamma=0.1, K=-1, milestones=[150000, 250000], lr_anneal=1.0):
         self.G = generator
         self.G_opt = gen_optimizer
         self.D = discriminator
@@ -29,7 +28,6 @@ class WassersteinGanQuadraticCost():
             }
         self.num_steps = 0
         self.gen_steps = 0
-        self.use_cuda = use_cuda
         self.epochs = epochs
         self.n_max_iterations = n_max_iterations
         # put in the shape of a dataset sample
@@ -47,9 +45,8 @@ class WassersteinGanQuadraticCost():
         self.Kr = np.sqrt(self.K)
         self.LAMBDA = 2 * self.Kr * gamma * 2
 
-        if self.use_cuda:
-            self.G = nn.DataParallel(self.G.cuda())
-            self.D = nn.DataParallel(self.D.cuda())
+        self.G = nn.DataParallel(self.G.to(self.device))
+        self.D = nn.DataParallel(self.D.to(self.device))
 
         self.schedulerD = self._build_lr_scheduler_(self.D_opt, milestones, lr_anneal)
         self.schedulerG = self._build_lr_scheduler_(self.G_opt, milestones, lr_anneal)
@@ -129,8 +126,7 @@ class WassersteinGanQuadraticCost():
         return RegLoss
 
     def _critic_deep_regression_(self, images, opt_iterations=1):
-        if self.use_cuda:
-            images = images.cuda()
+        images = images.to(self.device)
 
         for p in self.D.parameters():  # reset requires_grad
             p.requires_grad = True  # they are set to False below in netG update
@@ -245,8 +241,7 @@ class WassersteinGanQuadraticCost():
             latent_samples = self.G.module.sample_latent(num_samples, self.G.module.z_dim)
         else:
             latent_samples = self.G.sample_latent(num_samples, self.G.z_dim)
-        if self.use_cuda:
-            latent_samples = latent_samples.cuda()
+        latent_samples = latent_samples.to(self.device)
         if nograd:
             with torch.no_grad():
                 generated_data = self.G(latent_samples, return_intermediate=return_intermediate)

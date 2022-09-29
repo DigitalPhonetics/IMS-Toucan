@@ -18,6 +18,9 @@ class GanWrapper:
         self.U = self.compute_controllability()
         self.z = self.wgan.G.module.sample_latent(1, 32)
 
+    def reset_default_latent(self):
+        self.z = self.wgan.G.module.sample_latent(1, 32)
+
     def load_model(self, path):
         gan_checkpoint = torch.load(path, map_location="cpu")
 

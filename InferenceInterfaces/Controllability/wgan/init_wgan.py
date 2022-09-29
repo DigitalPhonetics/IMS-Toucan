@@ -29,7 +29,6 @@ def create_wgan(parameters, device, optimizer='adam'):
                                       batch_size=parameters['batch_size'],
                                       device=device,
                                       n_max_iterations=parameters['n_max_iterations'],
-                                      use_cuda=torch.cuda.is_available(),
                                       gamma=parameters['gamma'])
 
     return gan
