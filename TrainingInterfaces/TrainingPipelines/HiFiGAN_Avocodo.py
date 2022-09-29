@@ -71,12 +71,14 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         }
 
     # sampling multiple times from the dataset, because it's too big to fit all at once
+    train_set = None
     for run_id in range(1000):
         print("Preparing new data...")
         file_lists_for_this_run_combined = list()
         for file_list in full_lists_to_sample_sizes:
-            file_lists_for_this_run_combined + random.sample(file_list, full_lists_to_sample_sizes[file_list])
+            file_lists_for_this_run_combined += random.sample(file_list, full_lists_to_sample_sizes[file_list])
 
+        del train_set
         train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined, use_random_corruption=False)
 
         generator = HiFiGANGenerator()
