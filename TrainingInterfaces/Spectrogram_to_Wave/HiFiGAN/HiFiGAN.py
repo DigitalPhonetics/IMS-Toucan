@@ -6,13 +6,12 @@
 
 
 import torch
-import torch.jit as jit
 from torch.nn import Conv1d
 
 from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 
 
-class HiFiGANGenerator(jit.ScriptModule):
+class HiFiGANGenerator(torch.nn.Module):
 
     def __init__(self,
                  in_channels=80,
@@ -97,7 +96,6 @@ class HiFiGANGenerator(jit.ScriptModule):
         # reset parameters
         self.reset_parameters()
 
-    @jit.script_method
     def forward(self, c):
         """
         Calculate forward propagation.
@@ -180,4 +178,3 @@ class HiFiGANGenerator(jit.ScriptModule):
             c = (c - self.mean) / self.scale
         c = self.forward(c.transpose(1, 0).unsqueeze(0))
         return c.squeeze(0).transpose(1, 0)
-

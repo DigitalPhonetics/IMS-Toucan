@@ -7,7 +7,6 @@
 import copy
 
 import torch
-import torch.jit as jit
 import torch.nn.functional as F
 
 from TrainingInterfaces.Spectrogram_to_Wave.Avocodo.AvocodoDiscriminators import MultiCoMBDiscriminator
@@ -471,7 +470,7 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
         return msd_outs + mpd_outs
 
 
-class AvocodoHiFiGANJointDiscriminator(jit.ScriptModule):
+class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
 
     def __init__(self,
                  # Multi-scale discriminator related
@@ -549,7 +548,6 @@ class AvocodoHiFiGANJointDiscriminator(jit.ScriptModule):
         self.mcmbd = MultiCoMBDiscriminator(kernels, channels, groups, strides)
         self.msbd = MultiSubBandDiscriminator(tkernels, fkernel, tchannels, fchannels, tstrides, fstride, tdilations, fdilations, tsubband, n, m, freq_init_ch)
 
-    @jit.script_method
     def forward(self, wave, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
         """
         Calculate forward propagation.

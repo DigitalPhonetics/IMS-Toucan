@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = "Models/Avocodo"
+        model_save_dir = "Models/Avocodo_reballanced"
     os.makedirs(model_save_dir, exist_ok=True)
 
     # sampling multiple times from the dataset, because it's too big to fit all at once
@@ -76,9 +76,8 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
 
     generator = HiFiGANGenerator()
     generator.reset_parameters()
-    jit_compiled_generator = torch.jit.trace(generator, torch.rand((80, 50)))
+    jit_compiled_generator = torch.jit.trace(generator, torch.rand([24, 80, 32]))
     discriminator = AvocodoHiFiGANJointDiscriminator()
-    jit_compiled_discriminator = torch.jit.trace(discriminator, (torch.rand((1, 48000)), torch.rand((1, 48000)), torch.rand((1, 48000))))
 
     print("Training model")
     if use_wandb:
@@ -88,10 +87,10 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     train_loop(batch_size=24,
                epochs=80000,
                generator=jit_compiled_generator,
-               discriminator=jit_compiled_discriminator,
+               discriminator=discriminator,
                train_dataset=train_set,
                device=device,
-               epochs_per_save=2,
+               epochs_per_save=1,
                model_save_dir=model_save_dir,
                path_to_checkpoint=resume_checkpoint,
                resume=resume,
