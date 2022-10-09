@@ -1,4 +1,5 @@
 import torch
+from torch.nn import Conv1d
 
 from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 
@@ -58,6 +59,9 @@ class HiFiGANGenerator(torch.nn.Module):
                             padding=(kernel_size - 1) // 2, ),
             torch.nn.Tanh(), )
 
+        self.out_proj_x1 = Conv1d(512 // 4, 1, 7, 1, padding=3)
+        self.out_proj_x2 = Conv1d(512 // 8, 1, 7, 1, padding=3)
+
         if use_weight_norm:
             self.apply_weight_norm()
 
@@ -74,7 +78,7 @@ class HiFiGANGenerator(torch.nn.Module):
                 cs = cs + self.blocks[i * self.num_blocks + j](c)
             c = cs / self.num_blocks
         c = self.output_conv(c)
-        return c.squeeze(0).squeeze(0)
+        return c.squeeze()
 
     def remove_weight_norm(self):
         def _remove_weight_norm(m):

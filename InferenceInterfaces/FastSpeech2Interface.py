@@ -55,7 +55,8 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = HiFiGANGenerator(path_to_weights=os.path.join("Models", "HiFiGAN_combined", "best.pt")).to(torch.device(device))
+        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=os.path.join("Models", "Avocodo", "best.pt")), torch.rand((80, 50))).to(
+            torch.device(device))
 
         ################################
         #  set defaults                #

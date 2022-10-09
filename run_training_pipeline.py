@@ -9,6 +9,7 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifigan_combined
+from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_low_RAM import run as hifigan_combined_low_ram
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
@@ -21,6 +22,7 @@ pipeline_dict = {
     "spk"             : finetune_model_speaker,
     "emo"             : finetune_model_emotion,
     "control"         : control,
+    "low_ram_avocodo" : hifigan_combined_low_ram,
     }
 
 if __name__ == '__main__':

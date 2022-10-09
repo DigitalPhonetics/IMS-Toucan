@@ -36,7 +36,7 @@ def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
     print("selecting checkpoints...")
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
-        if el.endswith(".pt") and el != "best.pt":
+        if el.endswith(".pt") and el.startswith("checkpoint_"):
             try:
                 checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
             except RuntimeError:
@@ -97,7 +97,7 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
 def make_best_in_all(n=3):
     for model_dir in os.listdir("Models"):
         if os.path.isdir(f"Models/{model_dir}"):
-            if "HiFiGAN" in model_dir:
+            if "HiFiGAN" in model_dir or "Avocodo" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
                 if checkpoint_paths is None:
                     continue

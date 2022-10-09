@@ -216,6 +216,7 @@ def train_loop(net,
                                                   return_mels=False)
                 else:
                     # PHASE 2
+                    style_embedding_function.eval()
                     style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                        batch_of_spectrogram_lengths=batch[3].to(device)).detach()
 
@@ -230,7 +231,7 @@ def train_loop(net,
                                                            lang_ids=batch[8].to(device),
                                                            return_mels=True)
                     train_loss = train_loss + _train_loss
-
+                    style_embedding_function.train()
                     style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                             batch_of_spectrogram_lengths=batch[3].to(device))
 
@@ -253,7 +254,7 @@ def train_loop(net,
         grad_scaler.update()
         scheduler.step()
 
-        if step % steps_per_checkpoint == 0:
+        if step % steps_per_checkpoint == 0 and step != 0:
             # ==============================
             # Enough steps for some insights
             # ==============================
@@ -264,8 +265,6 @@ def train_loop(net,
             print(f"Spectrogram Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
-            train_losses_total = list()
-            cycle_losses_total = list()
             torch.save({
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
@@ -289,4 +288,6 @@ def train_loop(net,
                     "steps"           : step,
                     "progress_plot"   : wandb.Image(path_to_most_recent_plot)
                     })
+            train_losses_total = list()
+            cycle_losses_total = list()
             net.train()

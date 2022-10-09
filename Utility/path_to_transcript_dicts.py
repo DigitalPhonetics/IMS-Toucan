@@ -560,3 +560,13 @@ def build_path_to_transcript_dict_ESDS():
                         filename = speaker_dir + "_" + filename.split("_")[1]
                         path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
     return limit_to_n(path_to_transcript_dict)
+
+
+def build_file_list_singing_voice_audio_database():
+    root = "/mount/resources/speech/corpora/singing_voice_audio_dataset/monophonic"
+    file_list = list()
+    for corw in os.listdir(root):
+        for singer in os.path.join(root, corw):
+            for audio in os.path.join(root, corw, singer):
+                file_list.append(os.path.join(root, corw, singer, audio))
+    return file_list

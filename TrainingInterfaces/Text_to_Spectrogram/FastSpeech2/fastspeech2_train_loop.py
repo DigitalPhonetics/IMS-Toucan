@@ -210,6 +210,7 @@ def train_loop(net,
                     # ================================================
                     # = PHASE 2:     cycle objective is added        =
                     # ================================================
+                    style_embedding_function.eval()
                     style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                        batch_of_spectrogram_lengths=batch[3].to(device)).detach()
 
@@ -223,6 +224,7 @@ def train_loop(net,
                                                           utterance_embedding=style_embedding_of_gold,
                                                           lang_ids=batch[8].to(device),
                                                           return_mels=True)
+                    style_embedding_function.train()
                     style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
                                                                             batch_of_spectrogram_lengths=batch[3].to(device))
 

@@ -29,7 +29,7 @@ def train_loop(generator,
                # the idea is to only load a subset of data that fits in the RAM, then train for some epochs, then load new data and continue and so on.
                resume=False,
                use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
-               generator_steps_per_discriminator_step=3,
+               generator_steps_per_discriminator_step=4,
                generator_warmup=30000,
                use_wandb=False
                ):
@@ -42,7 +42,7 @@ def train_loop(generator,
     mel_l1 = MelSpectrogramLoss().to(device)
     feat_match_criterion = FeatureMatchLoss().to(device)
     discriminator_adv_criterion = DiscriminatorAdversarialLoss().to(device)
-    generator_adv_criterion = GeneratorAdversarialLoss().to(device)
+    generator_adv_criterion = GeneratorAdversarialLoss(average_by_discriminators=False).to(device)
 
     signal_processing_loss_functions = list()
     if use_signal_processing_losses:
@@ -54,9 +54,9 @@ def train_loop(generator,
     g.train()
     d.train()
     optimizer_g = torch.optim.RAdam(g.parameters(), betas=(0.5, 0.9), lr=0.001, weight_decay=0.0)
-    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
+    scheduler_g = MultiStepLR(optimizer_g, gamma=0.5, milestones=[500000, 1000000, 1200000, 1400000])
     optimizer_d = torch.optim.RAdam(d.parameters(), betas=(0.5, 0.9), lr=0.0005, weight_decay=0.0)
-    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[200000, 400000, 600000, 800000])
+    scheduler_d = MultiStepLR(optimizer_d, gamma=0.5, milestones=[500000, 1000000, 1200000, 1400000])
 
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size,
@@ -105,7 +105,7 @@ def train_loop(generator,
             pred_wave, intermediate_wave_upsampled_twice, intermediate_wave_upsampled_once = g(melspec)
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
-            generator_total_loss = mel_loss * 30.0
+            generator_total_loss = mel_loss * 40.0  # 5 less than the Avocodo Paper
 
             if use_signal_processing_losses:
                 signal_loss = torch.tensor([0.0]).to(device)
@@ -114,25 +114,25 @@ def train_loop(generator,
                 generator_total_loss = generator_total_loss + signal_loss
                 signal_processing_losses.append(signal_loss.item())
 
-            if step_counter > generator_warmup:  # a bit of warmup helps, but it's not that important
+            if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
                 d_outs = d(wave=pred_wave,
                            intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
                            intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
                 adversarial_loss = generator_adv_criterion(d_outs)
-                adversarial_losses.append(adversarial_loss.item() * 15.0)
-                generator_total_loss = generator_total_loss + adversarial_loss * 15.0
+                adversarial_losses.append(adversarial_loss.item())
+                generator_total_loss = generator_total_loss + adversarial_loss
 
                 d_gold_outs = d(gold_wave)
                 feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
                 feat_match_losses.append(feature_matching_loss.item())
-                generator_total_loss = generator_total_loss + feature_matching_loss
+                generator_total_loss = generator_total_loss + feature_matching_loss * 2  # according to Avocodo Paper
 
             if torch.isnan(generator_total_loss):
                 print("Loss turned to NaN, aborting so the progress is not overwritten. The GAN possibly collapsed.")
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
-            mel_losses.append(mel_loss.item() * 30.0)
+            mel_losses.append(mel_loss.item())
 
             torch.nn.utils.clip_grad_norm_(g.parameters(), 10.0)
             optimizer_g.step()
@@ -143,7 +143,6 @@ def train_loop(generator,
             #       Discriminator      #
             ############################
 
-            # wasserstein seems appropriate, because the discriminator learns much much quicker
             if step_counter > generator_warmup and step_counter % generator_steps_per_discriminator_step == 0:
                 d_outs = d(wave=pred_wave.detach(),
                            intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice.detach(),
