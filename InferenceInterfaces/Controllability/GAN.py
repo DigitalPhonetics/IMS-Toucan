@@ -5,8 +5,8 @@ from InferenceInterfaces.Controllability.wgan.init_wgan import create_wgan
 
 class GanWrapper:
 
-    def __init__(self, path_wgan):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    def __init__(self, path_wgan, device):
+        self.device = device
         self.path_wgan = path_wgan
 
         self.mean = None
@@ -47,7 +47,7 @@ class GanWrapper:
 
     def get_original_embed(self):
         self.wgan.G.eval()
-        embed_original = self.wgan.G.module.forward(self.z.cuda())
+        embed_original = self.wgan.G.module.forward(self.z.to(self.device))
 
         embed_original = inverse_normalize(
             embed_original.cpu(),
@@ -59,7 +59,7 @@ class GanWrapper:
     def modify_embed(self, x):
         self.wgan.G.eval()
         z_new = self.z.squeeze() + torch.matmul(self.U.solution.t(), x)
-        embed_modified = self.wgan.G.module.forward(z_new.unsqueeze(0).cuda())
+        embed_modified = self.wgan.G.module.forward(z_new.unsqueeze(0).to(self.device))
         embed_modified = inverse_normalize(
             embed_modified.cpu(),
             self.mean.cpu().unsqueeze(0),

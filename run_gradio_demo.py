@@ -110,4 +110,4 @@ class TTSWebUI:
 
 
 if __name__ == '__main__':
-    TTSWebUI(gpu_id=0)
+    TTSWebUI(gpu_id="cpu")
