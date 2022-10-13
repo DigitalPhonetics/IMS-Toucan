@@ -1,11 +1,14 @@
 import math
 import random
+from multiprocessing import Manager
+from multiprocessing import Process
 
 import librosa
 import numpy
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.AudioPreprocessor import to_mono
@@ -17,6 +20,7 @@ class HiFiGANDataset(Dataset):
                  list_of_paths,
                  desired_samplingrate=48000,
                  samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
+                 loading_processes=30,
                  use_random_corruption=False):
         self.use_random_corruption = use_random_corruption
         self.samples_per_segment = samples_per_segment
@@ -29,8 +33,31 @@ class HiFiGANDataset(Dataset):
                                             cut_silence=False)
         # hop length of spec loss should be same as the product of the upscale factors
         # samples per segment must be a multiple of hop length of spec loss
-        self.paths = list_of_paths
-        print("{} eligible audios found".format(len(self.paths)))
+        if loading_processes == 1:
+            self.waves = list()
+            self.cache_builder_process(list_of_paths)
+        else:
+            resource_manager = Manager()
+            self.waves = resource_manager.list()
+            # make processes
+            path_splits = list()
+            process_list = list()
+            for i in range(loading_processes):
+                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(
+                    list_of_paths) // loading_processes])
+            for path_split in path_splits:
+                process_list.append(Process(target=self.cache_builder_process, args=(path_split,), daemon=True))
+                process_list[-1].start()
+            for process in process_list:
+                process.join()
+        self.waves = list(self.waves)
+        print("{} eligible audios found".format(len(self.waves)))
+
+    def cache_builder_process(self, path_split):
+        for path in tqdm(path_split):
+            wave, sr = sf.read(path)
+            wave = to_mono(wave)
+            self.waves.append((wave, sr))
 
     def __getitem__(self, index):
         """
@@ -40,18 +67,16 @@ class HiFiGANDataset(Dataset):
 
         return a pair of high-red audio and corresponding low-res spectrogram as if it was predicted by the TTS
         """
-        path = self.paths[index]
-        wave, sr = sf.read(path)  # this makes it so the disk is accessed way too much, but very efficient on the RAM
-        wave = to_mono(wave)
+        wave, sr = self.waves[index]
         while (len(wave) / sr) < (
                 (self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
             # catch files that are too short to apply meaningful signal processing and make them longer
             wave = numpy.concatenate([wave, numpy.zeros(shape=1000), wave])
             # add some true silence in the mix, so the vocoder is exposed to that as well during training
         if sr == self.desired_samplingrate:
-            wave = torch.tensor(wave)
+            wave = torch.Tensor(wave)
         else:
-            wave = torch.tensor(librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate))
+            wave = torch.Tensor(librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate))
 
         max_audio_start = len(wave) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)

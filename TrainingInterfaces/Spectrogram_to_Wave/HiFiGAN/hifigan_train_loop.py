@@ -63,7 +63,7 @@ def train_loop(generator,
                               num_workers=32,
                               pin_memory=True,
                               drop_last=True,
-                              prefetch_factor=8,
+                              prefetch_factor=6,
                               persistent_workers=True)
 
     if resume:
