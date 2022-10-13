@@ -94,12 +94,12 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                            id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                            resume="must" if wandb_resume_id is None else None)
             train_loop(batch_size=24,
-                       epochs=20,
+                       epochs=40,
                        generator=jit_compiled_generator,
                        discriminator=discriminator,
                        train_dataset=train_set,
                        device=device,
-                       epochs_per_save=2,
+                       epochs_per_save=1,
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=resume_checkpoint,
                        resume=resume,
@@ -107,12 +107,12 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                        use_wandb=use_wandb)
         else:
             train_loop(batch_size=24,
-                       epochs=20,
+                       epochs=40,
                        generator=jit_compiled_generator,
                        discriminator=discriminator,
                        train_dataset=train_set,
                        device=device,
-                       epochs_per_save=2,
+                       epochs_per_save=1,
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=None,
                        resume=True,

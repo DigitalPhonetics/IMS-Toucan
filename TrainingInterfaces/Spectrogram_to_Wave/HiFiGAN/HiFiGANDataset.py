@@ -1,13 +1,11 @@
 import math
 import random
-from multiprocessing import Manager
-from multiprocessing import Process
 
 import librosa
+import numpy
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
-from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.AudioPreprocessor import to_mono
@@ -19,7 +17,6 @@ class HiFiGANDataset(Dataset):
                  list_of_paths,
                  desired_samplingrate=48000,
                  samples_per_segment=24576,  # = 8192 * 3, as I used 8192 for 16kHz previously
-                 loading_processes=30,  # with the current setup, less is more, because spawning new processes has a huge overhead
                  use_random_corruption=False):
         self.use_random_corruption = use_random_corruption
         self.samples_per_segment = samples_per_segment
@@ -32,39 +29,8 @@ class HiFiGANDataset(Dataset):
                                             cut_silence=False)
         # hop length of spec loss should be same as the product of the upscale factors
         # samples per segment must be a multiple of hop length of spec loss
-
-        if loading_processes == 1:
-            self.waves = list()
-            self.cache_builder_process(list_of_paths)
-        else:
-            resource_manager = Manager()
-            self.waves = resource_manager.list()
-            # make processes
-            path_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                path_splits.append(list_of_paths[i * len(list_of_paths) // loading_processes:(i + 1) * len(list_of_paths) // loading_processes])
-            for path_split in path_splits:
-                process_list.append(Process(target=self.cache_builder_process, args=(path_split,), daemon=True))
-                process_list[-1].start()
-            for process in process_list:
-                process.join()
-        numpy_waves = list(self.waves)
-        self.waves = list()
-        for wave in numpy_waves:
-            self.waves.append(torch.Tensor(wave))
-        print("{} eligible audios found".format(len(self.waves)))
-
-    def cache_builder_process(self, path_split):
-        for path in tqdm(path_split):
-            wave, sr = sf.read(path)
-            wave = to_mono(wave)
-            if (len(wave) / sr) > ((self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
-                # catch files that are too short to apply meaningful signal processing
-                if sr == self.desired_samplingrate:
-                    self.waves.append(wave)
-                else:
-                    self.waves.append(librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate))
+        self.paths = list_of_paths
+        print("{} eligible audios found".format(len(self.paths)))
 
     def __getitem__(self, index):
         """
@@ -74,9 +40,22 @@ class HiFiGANDataset(Dataset):
 
         return a pair of high-red audio and corresponding low-res spectrogram as if it was predicted by the TTS
         """
-        max_audio_start = len(self.waves[index]) - self.samples_per_segment
+        path = self.paths[index]
+        wave, sr = sf.read(path)  # this makes it so the disk is accessed way too much, but very efficient on the RAM
+        wave = to_mono(wave)
+        while (len(wave) / sr) < (
+                (self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
+            # catch files that are too short to apply meaningful signal processing and make them longer
+            wave = numpy.concatenate([wave, numpy.zeros(shape=1000), wave])
+            # add some true silence in the mix, so the vocoder is exposed to that as well during training
+        if sr == self.desired_samplingrate:
+            wave = torch.tensor(wave)
+        else:
+            wave = torch.tensor(librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate))
+
+        max_audio_start = len(wave) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
-        segment = self.waves[index][audio_start: audio_start + self.samples_per_segment]
+        segment = wave[audio_start: audio_start + self.samples_per_segment]
 
         if random.random() < 0.1 and self.use_random_corruption:
             # apply distortion to random samples with a 10% chance
@@ -85,18 +64,21 @@ class HiFiGANDataset(Dataset):
             noise_power = noise.norm(p=2)
             scale = math.sqrt(math.e) * noise_power / speech_power  # signal to noise ratio of 5db
             noisy_segment = (scale * segment + noise) / 2
-            resampled_segment = self.melspec_ap.resample(noisy_segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+            resampled_segment = self.melspec_ap.resample(
+                noisy_segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
         else:
-            resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+            resampled_segment = self.melspec_ap.resample(
+                segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
         try:
             melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
                                                                explicit_sampling_rate=16000,
                                                                normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
-        except librosa.util.exceptions.ParameterError:  # seems like sometimes adding noise and then resampling can introduce overflows which cause errors.
+        except librosa.util.exceptions.ParameterError:
+            # seems like sometimes adding noise and then resampling can introduce overflows which cause errors.
             melspec = self.melspec_ap.audio_to_mel_spec_tensor(self.melspec_ap.resample(segment).float(),
                                                                explicit_sampling_rate=16000,
                                                                normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
         return segment, melspec
 
     def __len__(self):
-        return len(self.waves)
+        return len(self.paths)
