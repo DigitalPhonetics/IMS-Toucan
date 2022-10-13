@@ -21,7 +21,7 @@ class StyleEmbedding(torch.nn.Module):
         super().__init__()
         self.gst = StyleEncoder()
 
-    def forward(self, batch_of_spectrograms, batch_of_spectrogram_lengths):
+    def forward(self, batch_of_spectrograms, batch_of_spectrogram_lengths, return_all_outs=False):
         """
         Args:
             batch_of_spectrograms: b is the batch axis, 80 features per timestep
@@ -31,6 +31,7 @@ class StyleEmbedding(torch.nn.Module):
                                           what the true length is, since they are
                                           all padded to the length of the longest
                                           element in the batch (b, 1)
+            return_all_outs: boolean indicating whether the output will be used for a feature matching loss
         Returns:
             batch of 128 dimensional embeddings (b,128)
         """
@@ -56,7 +57,7 @@ class StyleEmbedding(torch.nn.Module):
                 list_of_specs.append(spec)
 
         batch_of_spectrograms_unified_length = torch.stack(list_of_specs, dim=0)
-        return self.gst(batch_of_spectrograms_unified_length)
+        return self.gst(batch_of_spectrograms_unified_length, return_all_outs=return_all_outs)
 
 
 if __name__ == '__main__':

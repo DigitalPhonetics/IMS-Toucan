@@ -151,8 +151,6 @@ def train_loop(net,
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
 
-    cycle_consistency_objective = torch.nn.CosineEmbeddingLoss(reduction='mean')
-
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
@@ -211,8 +209,10 @@ def train_loop(net,
                     # = PHASE 2:     cycle objective is added        =
                     # ================================================
                     style_embedding_function.eval()
-                    style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                       batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                    style_embedding_of_gold, out_list_gold = style_embedding_function(
+                        batch_of_spectrograms=batch[2].to(device),
+                        batch_of_spectrogram_lengths=batch[3].to(device),
+                        return_all_outs=True)
 
                     train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
                                                           text_lengths=batch[1].to(device),
@@ -221,16 +221,20 @@ def train_loop(net,
                                                           gold_durations=batch[4].to(device),
                                                           gold_pitch=batch[6].to(device),  # mind the switched order
                                                           gold_energy=batch[5].to(device),  # mind the switched order
-                                                          utterance_embedding=style_embedding_of_gold,
+                                                          utterance_embedding=style_embedding_of_gold.detach(),
                                                           lang_ids=batch[8].to(device),
                                                           return_mels=True)
                     style_embedding_function.train()
-                    style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
-                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
+                    style_embedding_of_predicted, out_list_predicted = style_embedding_function(
+                        batch_of_spectrograms=output_spectrograms,
+                        batch_of_spectrogram_lengths=batch[3].to(device),
+                        return_all_outs=True)
 
-                    cycle_dist = cycle_consistency_objective(input1=style_embedding_of_predicted,
-                                                             input2=style_embedding_of_gold,
-                                                             target=torch.ones(size=(style_embedding_of_gold.size(0),)).to(device)) * 30
+                    cycle_dist = 0
+                    for out_gold, out_pred in zip(out_list_gold, out_list_predicted):
+                        # essentially feature matching, as is often done in vocoder training,
+                        # since we're essentially dealing with a discriminator here.
+                        cycle_dist = cycle_dist + torch.nn.functional.l1_loss(out_pred, out_gold.detach())
 
                     train_losses_this_epoch.append(train_loss.item())
                     cycle_losses_this_epoch.append(cycle_dist.item())

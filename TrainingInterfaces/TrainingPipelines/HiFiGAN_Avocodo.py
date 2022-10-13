@@ -32,7 +32,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         model_save_dir = "Models/Avocodo_reballanced"
     os.makedirs(model_save_dir, exist_ok=True)
 
-    # sampling multiple times from the dataset, because it's too big to fit all at once
     print("Preparing new data...")
     file_lists_for_this_run_combined = list()
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_mls_italian().keys())
@@ -72,7 +71,8 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
 
-    train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined, use_random_corruption=False)
+    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 300000),
+                               use_random_corruption=False)
 
     generator = HiFiGANGenerator()
     generator.reset_parameters()
@@ -81,9 +81,10 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
 
     print("Training model")
     if use_wandb:
-        wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
-                   id=wandb_resume_id,  # this is None if not specified in the command line arguments.
-                   resume="must" if wandb_resume_id is None else None)
+        wandb.init(
+            name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
+            id=wandb_resume_id,  # this is None if not specified in the command line arguments.
+            resume="must" if wandb_resume_id is None else None)
     train_loop(batch_size=24,
                epochs=80000,
                generator=jit_compiled_generator,

@@ -57,9 +57,10 @@ class StyleEncoder(torch.nn.Module):
                                    gst_token_dim=gst_token_dim,
                                    gst_heads=gst_heads, )
 
-    def forward(self, speech: torch.Tensor) -> torch.Tensor:
+    def forward(self, speech, return_all_outs=False):
         """Calculate forward propagation.
         Args:
+            return_all_outs: return list of all layer's outputs
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
         Returns:
             Tensor: Style token embeddings (B, token_dim).
@@ -67,6 +68,8 @@ class StyleEncoder(torch.nn.Module):
         ref_embs = self.ref_enc(speech)
         style_embs = self.stl(ref_embs)
 
+        if return_all_outs:
+            return style_embs, [ref_embs] + [style_embs]
         return style_embs
 
 
@@ -134,7 +137,7 @@ class ReferenceEncoder(torch.nn.Module):
         gru_in_units *= conv_out_chans
         self.gru = torch.nn.GRU(gru_in_units, gru_units, gru_layers, batch_first=True)
 
-    def forward(self, speech: torch.Tensor) -> torch.Tensor:
+    def forward(self, speech):
         """Calculate forward propagation.
         Args:
             speech (Tensor): Batch of padded target features (B, Lmax, idim).
@@ -188,7 +191,7 @@ class StyleTokenLayer(torch.nn.Module):
                                         n_feat=gst_token_dim,
                                         dropout_rate=dropout_rate, )
 
-    def forward(self, ref_embs: torch.Tensor) -> torch.Tensor:
+    def forward(self, ref_embs):
         """Calculate forward propagation.
         Args:
             ref_embs (Tensor): Reference embeddings (B, ref_embed_dim).
@@ -203,7 +206,6 @@ class StyleTokenLayer(torch.nn.Module):
         style_embs = self.mha(ref_embs, gst_embs, gst_embs, None)
 
         return style_embs.squeeze(1)
-
 
 class MultiHeadedAttention(BaseMultiHeadedAttention):
     """Multi head attention module with different input dimension."""

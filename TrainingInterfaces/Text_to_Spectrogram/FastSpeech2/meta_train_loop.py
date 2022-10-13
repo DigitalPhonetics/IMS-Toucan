@@ -89,7 +89,8 @@ def plot_progress_spec(net,
     pitch_array = pitch.cpu().numpy()
     for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
         if pitch_array[pitch_index] > 0.001:
-            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid", linewidth=0.5)
+            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid",
+                      linewidth=0.5)
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}_{lang}.png"))
     plt.clf()
@@ -135,8 +136,6 @@ def train_loop(net,
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
-
-    cycle_consistency_objective = torch.nn.CosineEmbeddingLoss(reduction='mean')
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loaders = list()
@@ -217,8 +216,10 @@ def train_loop(net,
                 else:
                     # PHASE 2
                     style_embedding_function.eval()
-                    style_embedding_of_gold = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                       batch_of_spectrogram_lengths=batch[3].to(device)).detach()
+                    style_embedding_of_gold, out_list_gold = style_embedding_function(
+                        batch_of_spectrograms=batch[2].to(device),
+                        batch_of_spectrogram_lengths=batch[3].to(device),
+                        return_all_outs=True)
 
                     _train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
                                                            text_lengths=batch[1].to(device),
@@ -227,17 +228,22 @@ def train_loop(net,
                                                            gold_durations=batch[4].to(device),
                                                            gold_pitch=batch[6].to(device),  # mind the switched order
                                                            gold_energy=batch[5].to(device),  # mind the switched order
-                                                           utterance_embedding=style_embedding_of_gold,
+                                                           utterance_embedding=style_embedding_of_gold.detach(),
                                                            lang_ids=batch[8].to(device),
                                                            return_mels=True)
                     train_loss = train_loss + _train_loss
                     style_embedding_function.train()
-                    style_embedding_of_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
-                                                                            batch_of_spectrogram_lengths=batch[3].to(device))
+                    style_embedding_of_predicted, out_list_predicted = style_embedding_function(
+                        batch_of_spectrograms=output_spectrograms,
+                        batch_of_spectrogram_lengths=batch[3].to(device),
+                        return_all_outs=True)
 
-                    cycle_dist = cycle_consistency_objective(input1=style_embedding_of_predicted,
-                                                             input2=style_embedding_of_gold,
-                                                             target=torch.ones(size=(style_embedding_of_gold.size(0),)).to(device)) * 30
+                    cycle_dist = 0
+                    for out_gold, out_pred in zip(out_list_gold, out_list_predicted):
+                        # essentially feature matching, as is often done in vocoder training,
+                        # since we're essentially dealing with a discriminator here.
+                        cycle_dist = cycle_dist + torch.nn.functional.l1_loss(out_pred, out_gold.detach())
+
                     cycle_loss = cycle_loss + cycle_dist
 
         # then we directly update our meta-parameters without
@@ -259,20 +265,21 @@ def train_loop(net,
             # Enough steps for some insights
             # ==============================
             net.eval()
-            default_embedding = style_embedding_function(batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
-                                                         batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+            default_embedding = style_embedding_function(
+                batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
+                batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print(f"\nTotal Steps: {step}")
             print(f"Spectrogram Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "scaler"      : grad_scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
+                "model":        net.state_dict(),
+                "optimizer":    optimizer.state_dict(),
+                "scaler":       grad_scaler.state_dict(),
+                "scheduler":    scheduler.state_dict(),
                 "step_counter": step,
-                "default_emb" : default_embedding,
-                },
+                "default_emb":  default_embedding,
+            },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net=net,
@@ -284,10 +291,11 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "spectrogram_loss": round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "cycle_loss"      : round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(cycle_losses_total) != 0 else 0.0,
-                    "steps"           : step,
-                    "progress_plot"   : wandb.Image(path_to_most_recent_plot)
-                    })
+                    "cycle_loss":       round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(
+                        cycle_losses_total) != 0 else 0.0,
+                    "steps":            step,
+                    "progress_plot":    wandb.Image(path_to_most_recent_plot)
+                })
             train_losses_total = list()
             cycle_losses_total = list()
             net.train()
