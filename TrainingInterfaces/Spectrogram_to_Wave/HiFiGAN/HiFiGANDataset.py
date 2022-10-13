@@ -106,4 +106,4 @@ class HiFiGANDataset(Dataset):
         return segment, melspec
 
     def __len__(self):
-        return len(self.paths)
+        return len(self.waves)
