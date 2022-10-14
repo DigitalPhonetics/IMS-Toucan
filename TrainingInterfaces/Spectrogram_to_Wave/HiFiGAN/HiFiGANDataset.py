@@ -55,9 +55,12 @@ class HiFiGANDataset(Dataset):
 
     def cache_builder_process(self, path_split):
         for path in tqdm(path_split):
-            wave, sr = sf.read(path)
-            wave = to_mono(wave)
-            self.waves.append((wave, sr))
+            try:
+                wave, sr = sf.read(path)
+                wave = to_mono(wave)
+                self.waves.append((wave, sr))
+            except RuntimeError:
+                print(f"Problem with the following path: {path}")
 
     def __getitem__(self, index):
         """
