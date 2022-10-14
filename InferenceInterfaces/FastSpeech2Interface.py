@@ -36,18 +36,20 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         self.use_lang_id = True
         try:
-            self.phone2mel = FastSpeech2(weights=checkpoint["model"]).to(torch.device(device))  # multi speaker multi language
+            self.phone2mel = FastSpeech2(weights=checkpoint["model"])  # multi speaker multi language
         except RuntimeError:
             try:
                 self.use_lang_id = False
-                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None).to(torch.device(device))  # multi speaker single language
+                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None).to(torch.device(device))  # single speaker
+                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+        self.phone2mel = self.phone2mel.to(torch.device(device))
 
         #################################
         #  load mel to style models     #
         #################################
         self.style_embedding_function = StyleEmbedding()
+        self.style_embedding_function.eval()
         check_dict = torch.load("Models/Embedding/embedding_function.pt", map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)

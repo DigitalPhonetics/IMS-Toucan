@@ -66,6 +66,6 @@ if __name__ == '__main__':
 
     read_texts(model_id="Controllable",
                sentence="This is a sentence meant for testing, whether the new vocoder works the way I hope it does!",
-               filename="audios/11.wav",
+               filename="audios/12.wav",
                device=exec_device,
                language="en")

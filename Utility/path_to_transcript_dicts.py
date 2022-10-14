@@ -566,7 +566,7 @@ def build_file_list_singing_voice_audio_database():
     root = "/mount/resources/speech/corpora/singing_voice_audio_dataset/monophonic"
     file_list = list()
     for corw in os.listdir(root):
-        for singer in os.path.join(root, corw):
-            for audio in os.path.join(root, corw, singer):
+        for singer in os.listdir(os.path.join(root, corw)):
+            for audio in os.listdir(os.path.join(root, corw, singer)):
                 file_list.append(os.path.join(root, corw, singer, audio))
     return file_list

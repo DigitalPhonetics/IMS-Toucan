@@ -1,5 +1,3 @@
-from abc import ABC
-
 import torch
 
 from Layers.Conformer import Conformer
@@ -12,7 +10,7 @@ from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
 
-class FastSpeech2(torch.nn.Module, ABC):
+class FastSpeech2(torch.nn.Module):
 
     def __init__(self,  # network structure related
                  weights,
