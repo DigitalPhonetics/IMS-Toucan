@@ -4,15 +4,6 @@ IMS Toucan is a toolkit for teaching, training and using state-of-the-art Speech
 **Institute for Natural Language Processing (IMS), University of Stuttgart, Germany**. Everything is pure Python and
 PyTorch based to keep it as simple and beginner-friendly, yet powerful as possible.
 
-The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
-[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of
-[HiFiGAN](https://arxiv.org/abs/2010.05646) are taken from
-the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
-which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
-
-For a version of the toolkit that includes TransformerTTS, Tacotron 2 or MelGAN, check out the other branches. They are
-separated to keep the code clean, simple and minimal as the development progresses.
-
 ---
 
 ## Demonstration 🦚
@@ -33,6 +24,7 @@ separated to keep the code clean, simple and minimal as the development progress
 
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
+[You can also design the voice of a speaker who doesn't exist on Huggingface🤗 DUMMY LINK FOR NOW](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
 
 ---
 
@@ -49,33 +41,40 @@ separated to keep the code clean, simple and minimal as the development progress
   multilingual data to benefit less resource-rich languages.
 - We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to
   fine-tune a model with very little data in almost any language. The last two contributions are described in
-  [our paper that we will present at the ACL 2022](https://arxiv.org/abs/2203.03191)!
+  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
   objective, inspired by
   [this implementation](https://github.com/as-ideas/DeepForcedAligner).
-- By conditioning the TTS on an ensemble of speaker embeddings as well as an embedding lookup table for language
-  embeddings, multi-lingual and multi-speaker models are possible.
-- We experimented with encoder designs and found one that allows speakers and languages to be very disentangled, so you
-  can use any speaker in any language, regardless of the language that the speakers themselves are speaking.
-- Exactly cloning the speaking style of a reference utterance is also possible and it works in conjunction with
-  everything else!
-  So any utterance in any language spoken by any speaker can be replicated and controlled to allow for maximum
-  customizability. We apply this to literary studies.
 
 ### 2022
 
 - We reworked our input representation to now include tone, lengthening and primary stress. All phonemes in the IPA
   standard are now supported, so you can train on **any** language, as long as you have a way to convert text to IPA. We
   also include word-boundary pseudo-tokens which are only visible to the text encoder.
+- By conditioning the TTS on speaker and language embeddings in a specific way, multi-lingual and multi-speaker models
+  are possible. You can use any speaker in any language, regardless of the language that the speakers themselves are
+  speaking. We will present a paper on this at AACL 2022!
+- Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with
+  everything else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
+  present a paper on this at SLT 2022. We apply this to literary studies and anonymization of a speaker, while
+  preserving everything but their voice. We presented papers on those two applications at Interspeech 2022!
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
-- [Temporary Note] If you have models from before May 2022, they have become incompatible with the current state of the
-  toolkit. Also you might need to upgrade your version of the phonemizer dependency and espeak-ng.
+- You can now use weights and biases to keep track of your training runs by setting the --wandb flag when launching a
+  training run.
+- We upgraded our vocoder from HiFiGAN to the recently published Avocodo.
+- We now use a self-supervised embedding function based on GST, but with a special training procedure to allow for very
+  rich speaker conditioning.
+- We trained a GAN to sample from this new embeddingspace. This allows us to speak in voices of speakers that do not
+  exist. We also found a way to make the sampling process very controllable using intuitive sliders. Check out our
+  newest demo on Huggingface to try it yourself!
 
 ### Pretrained models are available!
 
-Pretrained checkpoints for our massively multi-lingual model and the self-contained aligner are available in the
-[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases).
+Pretrained checkpoints for our massively multi-lingual model, the self-contained aligner, the embedding function, the
+vocoder and the embedding GAN are available in the
+[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). A convenient download script will shortly be
+available.
 
 ---
 
@@ -85,10 +84,11 @@ Pretrained checkpoints for our massively multi-lingual model and the self-contai
 
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you can get by without GPU).
-Navigate to the directory you have cloned. We are going to create and activate a
+Navigate to the directory you have cloned. We recommend creating and activating a
 [conda virtual environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
 to install the basic requirements into. After creating the environment, the command you need to use to activate the
-virtual environment is displayed. The commands below show everything you need to do.
+virtual environment is displayed. The commands below show everything you need to do. If you don't have a GPU, remove the
+cuda part from the torch installation line.
 
 ```
 conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
@@ -97,14 +97,6 @@ pip install --no-cache-dir -r requirements.txt
 
 pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
 ```
-
-#### Speaker Embedding
-
-We use an ensemble of [Speechbrain's ECAPA-TDNN](https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb)
-and [Speechbrain's x-Vector](https://huggingface.co/speechbrain/spkrec-xvect-voxceleb) as the speaker conditioning.
-
-In the current version of the toolkit no further action should be required. When you are using multispeaker for the
-first time, it requires an internet connection to (automatically) download the pretrained models though.
 
 #### espeak-ng
 
@@ -124,32 +116,32 @@ active development, there are frequent updates, which can actually benefit your 
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. Go into the release section and
-download the aligner model, the HiFiGAN model and the multi-lingual-multi-speaker FastSpeech2 model. Place them in
-*Models/Aligner/aligner.pt*, *Models/HiFiGAN_combined/best.pt* and *Models/FastSpeech2_Meta/best.pt*.
+You don't need to use pretrained models, but it can speed things up tremendously. We will add a script in the near
+future that downloads them automatically from the GitHub release page and puts them into the appropriate directories.
 
 ---
 
 ## Creating a new Pipeline 🦆
 
-To create a new pipeline to train a HiFiGAN vocoder, you only need a set of audio files. To create a new pipeline for a
+To create a new pipeline to train an Avocodo vocoder, you only need a set of audio files. To create a new pipeline for a
 FastSpeech 2, you need audio files, corresponding text labels, and an already trained Aligner model to estimate the
 duration information that FastSpeech 2 needs as input.
 
-### Build a HiFi-GAN Pipeline
+### Build an Avocodo Pipeline
 
-In the directory called
-*Utility* there is a file called
-*file_lists.py*. In this file you should write a function that returns a list of all the absolute paths to each of the
-audio files in your dataset as strings.
+This should not be necessary, because we provide a pretrained model and one of the key benefits of vocoders in general
+is how incredibly speaker independent they are. But in case you want to train your own anyway, here are the
+instructions: In the directory called
+You will need a function to return the list of all the absolute paths to each of the
+audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for FastSpeech 2
+training, you can simply take the keys of the dict and transform them into a list.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has HiFiGAN in its name. We
-will use this as reference and only make the necessary changes to use the new dataset. Import the function you have just
-written as
-*get_file_list*. Now look out for a variable called
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Avocodo in its name. We
+will use this as reference and only make the necessary changes to use the new dataset. Look out for a variable called
 *model_save_dir*. This is the default directory that checkpoints will be saved into, unless you specify another one when
-calling the training script. Change it to whatever you like.
+calling the training script. Change it to whatever you like. Then pass the list of paths to the instanciation of the
+Dataset.
 
 Now you need to add your newly created pipeline to the pipeline dictionary in the file
 *run_training_pipeline.py* in the top level of the toolkit. In this file, import the
@@ -238,9 +230,9 @@ cuda memory errors. Decreasing the batchsize may also require you to use a small
 should make it so that the training remains mostly stable.
 
 Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
-data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. Training will stop
-after 500,000 for FastSpeech 2, and after 2,500,000 steps for HiFiGAN. Depending on the machine and configuration you
-are using this will take multiple days, so verify that everything works on small tests before running the big thing. If
+data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. The amount of
+training steps highly depends on the data you are using, but 1,000,000 is usually pretty good for Avocodo and 200,000 is
+pretty good for FastSpeech 2. The fewer data you have, the fewer steps you should take to prevent overfitting issues. If
 you want to stop earlier, just kill the process, since everything is daemonic all the child-processes should die with
 it. In case there are some ghost-processes left behind, you can use the following command to find them and kill them
 manually.
@@ -261,7 +253,7 @@ significantly, so you should do this and then use the
 
 ## Using a trained Model for Inference 🦢
 
-You can load your trained models using an inference interace. Simply instanciate it with the proper directory handle
+You can load your trained models using an inference interface. Simply instanciate it with the proper directory handle
 identifying the model you want to use, the rest should work out in the background. You might want to set a language
 embedding or a speaker embedding. The methods for that should be self-explanatory.
 
@@ -304,14 +296,21 @@ Here are a few points that were brought up by users:
   completely meaningless.
 - Loss turns to `NaN` - The default learning rates work on clean data. If your data is less clean, try using the scorer
   to find problematic samples, or reduce the learning rate. The most common problem is there being pauses in the speech,
-  but nothing that hints at them in the text. That's why ASR corpora, which leave out punctuation are usually difficult
+  but nothing that hints at them in the text. That's why ASR corpora, which leave out punctuation, are usually difficult
   to use for TTS.
 
 ---
 
-This toolkit has been written by Florian Lux (except for the pytorch modules taken
-from [ESPnet](https://github.com/espnet/espnet) and
-[ParallelWaveGAN](https://github.com/kan-bayashi/ParallelWaveGAN), as mentioned above), so if you come across problems
+The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
+[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of
+[HiFiGAN](https://arxiv.org/abs/2010.05646) are taken from
+the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
+which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
+
+For a version of the toolkit that includes TransformerTTS, Tacotron 2 or MelGAN, check out the other branches. They are
+separated to keep the code clean, simple and minimal as the development progresses.
+
+This toolkit has been written by Florian Lux, if you come across problems
 or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
 cool with it. Thank you for reading.
 
@@ -321,22 +320,49 @@ cool with it. Thank you for reading.
 
 ```
 @inproceedings{lux2021toucan,
-  title={{The IMS Toucan system for the Blizzard Challenge 2021}},
-  author={Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
-  year={2021},
-  booktitle={Proc. Blizzard Challenge Workshop},
-  volume={2021},
-  publisher={{Speech Synthesis SIG}}
+  year         = 2021,
+  title        = {{The IMS Toucan system for the Blizzard Challenge 2021}},
+  author       = {Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
+  booktitle    = {{Proc. Blizzard Challenge Workshop}},
+  publisher    = {Speech Synthesis SIG},
+  volume       = 2021
 }
 ```
 
 ### Adding Articulatory Features and Meta-Learning Pretraining
 
 ```
-@article{lux2022laml,
-  title={{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
-  author={Florian Lux and Ngoc Thang Vu},
-  year={2022},
-  journal={arXiv preprint arXiv:2203.03191},
+@inproceedings{lux2022laml,
+  year         = 2022,
+  title        = {{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
+  author       = {Florian Lux and Ngoc Thang Vu},
+  booktitle    = {{Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics}},
+  pages        = {6858--6868}
+}
+```
+
+### Adding Exact Prosody-Cloning Capabilities
+
+(accepted, not yet published)
+
+```
+@inproceedings{lux2022cloning,
+  year         = 2022,
+  title        = {{Exact Prosody Cloning in Zero-Shot Multispeaker Text-to-Speech}},
+  author       = {Lux, Florian and Koch, Julia and Vu, Ngoc Thang},
+  booktitle    = {{Proc. IEEE SLT}}
+}
+```
+
+### Adding Language Embeddings and Word Boundaries
+
+(accepted, not yet published)
+
+```
+@inproceedings{lux2022lrms,
+  year         = 2022,
+  title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
+  author       = {Florian Lux and Julia Koch and Ngoc Thang Vu},
+  booktitle    = {{Proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics}},
 }
 ```

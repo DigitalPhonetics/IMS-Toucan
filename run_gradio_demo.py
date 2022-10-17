@@ -22,7 +22,7 @@ def float2pcm(sig, dtype='int16'):
 
 class TTSWebUI:
 
-    def __init__(self, gpu_id="cpu"):
+    def __init__(self, gpu_id="cpu", title="Controllable Embeddings", article=""):
         self.controllable_ui = ControllableInterface(gpu_id=gpu_id)
         self.iface = gr.Interface(fn=self.read,
                                   inputs=[gr.inputs.Textbox(lines=2,
@@ -62,21 +62,28 @@ class TTSWebUI:
                                           gr.inputs.Slider(minimum=0.5, maximum=1.5, step=0.1, default=1.0, label="Duration Scale"),
                                           gr.inputs.Slider(minimum=0.0, maximum=2.5, step=0.1, default=1.0, label="Pause Duration Scale"),
                                           gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0, label="Pitch Variance Scale"),
-                                          gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0, label="Energy Variance Scale"),
-                                          gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0, label="Femininity / Masculinity"),
-                                          gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0, label="Arousal"),
-                                          gr.inputs.Slider(minimum=-20.0, maximum=20.0, step=0.1, default=0.0, label="Emphasized High / Low Frequencies"),
-                                          gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Compression / Sibilance"),
-                                          gr.inputs.Slider(minimum=-25.0, maximum=25.0, step=0.1, default=0.0, label="Microphone Characteristics / Clarity"),
-                                          gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0, label="Age")
+                                          gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0,
+                                                           label="Energy Variance Scale"),
+                                          gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0,
+                                                           label="Femininity / Masculinity"),
+                                          gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0,
+                                                           label="Arousal"),
+                                          gr.inputs.Slider(minimum=-20.0, maximum=20.0, step=0.1, default=0.0,
+                                                           label="Emphasized High / Low Frequencies"),
+                                          gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0,
+                                                           label="Compression / Sibilance"),
+                                          gr.inputs.Slider(minimum=-25.0, maximum=25.0, step=0.1, default=0.0,
+                                                           label="Microphone Characteristics / Clarity"),
+                                          gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0,
+                                                           label="Age")
                                           ],
                                   outputs=gr.outputs.Audio(type="numpy", label=None),
                                   layout="vertical",
-                                  title="Controllable Embeddings",
+                                  title=title,
                                   theme="default",
                                   allow_flagging="never",
                                   allow_screenshot=False,
-                                  article="")
+                                  article=article)
         self.iface.launch(enable_queue=True)
 
     def read(self,
