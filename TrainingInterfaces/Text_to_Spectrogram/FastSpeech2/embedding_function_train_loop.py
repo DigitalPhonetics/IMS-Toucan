@@ -125,7 +125,7 @@ def train_loop(net,
                path_to_checkpoint=None,
                fine_tune=False,
                resume=False,
-               steps=400000,
+               steps=500000,
                use_wandb=False):
     """
     Args:

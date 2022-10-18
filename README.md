@@ -14,7 +14,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [Cloning prosody across speakers](https://toucanprosodycloningdemo.github.io)
 
-[Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/).
+[Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/)
 
 ### Interactive Demos
 
@@ -39,12 +39,12 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
   spectrograms as input, but produces 48kHz waveforms.
 - We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
   multilingual data to benefit less resource-rich languages.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you should be able to
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can
   fine-tune a model with very little data in almost any language. The last two contributions are described in
   [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
   objective, inspired by
-  [this implementation](https://github.com/as-ideas/DeepForcedAligner).
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
 
 ### 2022
 
@@ -56,13 +56,12 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
   speaking. We will present a paper on this at AACL 2022!
 - Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with
   everything else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
-  present a paper on this at SLT 2022. We apply this to literary studies and anonymization of a speaker, while
-  preserving everything but their voice. We presented papers on those two applications at Interspeech 2022!
+  present a paper on this at SLT 2022. We apply this
+  to [literary studies on poetry and presented a paper on this at Interspeech 2022!](https://arxiv.org/abs/2207.05549)
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
-- You can now use weights and biases to keep track of your training runs by setting the --wandb flag when launching a
-  training run.
-- We upgraded our vocoder from HiFiGAN to the recently published Avocodo.
+- You can now use [weights & biases](https://wandb.ai/site) to keep track of your training runs, if you want.
+- We upgraded our vocoder from HiFiGAN to the recently published [Avocodo](https://arxiv.org/abs/2206.13404).
 - We now use a self-supervised embedding function based on GST, but with a special training procedure to allow for very
   rich speaker conditioning.
 - We trained a GAN to sample from this new embeddingspace. This allows us to speak in voices of speakers that do not
@@ -219,6 +218,10 @@ fine-tuning for any new model that you train to significantly reduce training ti
 --finetune (if this is present, the provided checkpoint will be fine-tuned on the data from this pipeline)
 
 --model_save_dir <path to a directory where the checkpoints should be saved>
+
+--wandb (if this is present, the logs will be synchronized to your weights&biases account, if you are logged in on the command line)
+
+--wandb_resume_id <the id of the run you want to resume, if you are using weights&biases (you can find the id in the URL of the run)>
 ```
 
 After every epoch, some logs will be written to the console. If the loss becomes NaN, you'll need to use a smaller
