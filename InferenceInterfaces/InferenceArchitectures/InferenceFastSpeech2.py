@@ -83,12 +83,16 @@ class FastSpeech2(torch.nn.Module):
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                     torch.nn.Tanh(),
                                     torch.nn.Linear(100, adim))
-        self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits, num_blocks=elayers,
+        self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits,
+                                 num_blocks=elayers,
                                  input_layer=embed, dropout_rate=transformer_enc_dropout_rate,
-                                 positional_dropout_rate=transformer_enc_positional_dropout_rate, attention_dropout_rate=transformer_enc_attn_dropout_rate,
+                                 positional_dropout_rate=transformer_enc_positional_dropout_rate,
+                                 attention_dropout_rate=transformer_enc_attn_dropout_rate,
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
+                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+                                 macaron_style=use_macaron_style_in_conformer,
+                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size,
+                                 zero_triu=False,
                                  utt_embed=utt_embed_dim, lang_embs=lang_embs)
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
@@ -136,11 +140,20 @@ class FastSpeech2(torch.nn.Module):
                                use_batch_norm=use_batch_norm,
                                dropout_rate=postnet_dropout_rate)
         self.load_state_dict(weights)
+        self.eval()
 
-    def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
-                 gold_durations=None, gold_pitch=None, gold_energy=None,
-                 is_inference=False, duration_scaling_factor=1.0, utterance_embedding=None, lang_ids=None,
-                 pitch_variance_scale=1.0, energy_variance_scale=1.0, pause_duration_scaling_factor=1.0):
+    def _forward(self,
+                 text_tensors,
+                 text_lens,
+                 gold_durations=None,
+                 gold_pitch=None,
+                 gold_energy=None,
+                 duration_scaling_factor=1.0,
+                 utterance_embedding=None,
+                 lang_ids=None,
+                 pitch_variance_scale=1.0,
+                 energy_variance_scale=1.0,
+                 pause_duration_scaling_factor=1.0):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -169,55 +182,33 @@ class FastSpeech2(torch.nn.Module):
         else:
             energy_predictions = self.energy_predictor(encoded_texts, duration_masks.unsqueeze(-1))
 
-        if is_inference:
-            if gold_durations is not None:
-                duration_predictions = gold_durations
-            else:
-                duration_predictions = self.duration_predictor.inference(encoded_texts, duration_masks)
-            if gold_pitch is not None:
-                pitch_predictions = gold_pitch
-            if gold_energy is not None:
-                energy_predictions = gold_energy
-
-            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
-                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    # this means the phoneme is unvoiced
-                    pitch_predictions[0][phoneme_index] = 0.0
-                if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
-                    duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
-            pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
-            energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
-
-            pitch_embeddings = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
-            energy_embeddings = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
-            encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
+        if gold_durations is not None:
+            duration_predictions = gold_durations
         else:
-            duration_predictions = self.duration_predictor(encoded_texts, duration_masks)
+            duration_predictions = self.duration_predictor.inference(encoded_texts, duration_masks)
+        duration_predictions = torch.round(duration_predictions.float() * duration_scaling_factor).long()
+        if gold_pitch is not None:
+            pitch_predictions = gold_pitch
+        if gold_energy is not None:
+            energy_predictions = gold_energy
 
-            for phoneme_index, phoneme_vector in enumerate(text_tensors):
-                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    pitch_predictions[phoneme_index] = 0.0
-                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1 and pause_duration_scaling_factor != 1.0:
-                    duration_predictions[0][phoneme_index] = torch.round(duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
-            pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
-            energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
+        for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
+            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
+                # this means the phoneme is unvoiced
+                pitch_predictions[0][phoneme_index] = 0.0
+            if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
+                duration_predictions[0][phoneme_index] = torch.round(
+                    duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
+        pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
+        energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
-            # use groundtruth to clone
-            pitch_embeddings = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            energy_embeddings = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
-            encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
+        pitch_embeddings = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+        energy_embeddings = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+        encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
+        encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
 
         # forward decoder
-        if speech_lens is not None and not is_inference:
-            if self.reduction_factor > 1:
-                olens_in = speech_lens.new([olen // self.reduction_factor for olen in speech_lens])
-            else:
-                olens_in = speech_lens
-            h_masks = self._source_mask(olens_in)
-        else:
-            h_masks = None
+        h_masks = None
         zs, _ = self.decoder(encoded_texts, h_masks)  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
@@ -226,10 +217,9 @@ class FastSpeech2(torch.nn.Module):
 
         return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
 
-    @torch.no_grad()
+    @torch.inference_mode()
     def forward(self,
                 text,
-                speech=None,
                 durations=None,
                 pitch=None,
                 energy=None,
@@ -245,7 +235,6 @@ class FastSpeech2(torch.nn.Module):
 
         Args:
             text: input sequence of vectorized phonemes
-            speech: feature sequence to extract style from (not used for now, placeholder for future plans)
             durations: durations to be used (optional, if not provided, they will be predicted)
             pitch: token-averaged pitch curve to be used (optional, if not provided, it will be predicted)
             energy: token-averaged energy curve to be used (optional, if not provided, it will be predicted)
@@ -268,13 +257,8 @@ class FastSpeech2(torch.nn.Module):
             mel spectrogram
 
         """
-        self.eval()
         # setup batch axis
         ilens = torch.tensor([text.shape[0]], dtype=torch.long, device=text.device)
-        if speech is not None:
-            gold_speech = speech.unsqueeze(0).to(text.device)
-        else:
-            gold_speech = None
         if durations is not None:
             durations = durations.unsqueeze(0).to(text.device)
         if pitch is not None:
@@ -284,20 +268,21 @@ class FastSpeech2(torch.nn.Module):
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
-        before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(text.unsqueeze(0),
-                                                                                               ilens,
-                                                                                               gold_speech=gold_speech,
-                                                                                               gold_durations=durations,
-                                                                                               is_inference=True,
-                                                                                               gold_pitch=pitch,
-                                                                                               gold_energy=energy,
-                                                                                               utterance_embedding=utterance_embedding.unsqueeze(0),
-                                                                                               lang_ids=lang_id,
-                                                                                               duration_scaling_factor=duration_scaling_factor,
-                                                                                               pitch_variance_scale=pitch_variance_scale,
-                                                                                               energy_variance_scale=energy_variance_scale,
-                                                                                               pause_duration_scaling_factor=pause_duration_scaling_factor)
-        self.train()
+        before_outs, \
+        after_outs, \
+        d_outs, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           ilens,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0),
+                                           lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
