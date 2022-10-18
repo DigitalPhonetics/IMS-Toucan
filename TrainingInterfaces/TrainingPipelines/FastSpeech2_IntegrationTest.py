@@ -8,7 +8,7 @@ import torch
 import wandb
 
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.fastspeech2_train_loop_with_embed import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.embedding_function_train_loop import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
@@ -55,12 +55,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                lang="en",
                lr=0.001,
                epochs_per_save=1,
-               warmup_steps=2000,
+               warmup_steps=500,
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume,
-               phase_1_steps=500,
-               phase_2_steps=500,
+               steps=1000,
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

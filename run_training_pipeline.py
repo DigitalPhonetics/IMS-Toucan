@@ -4,7 +4,7 @@ import sys
 from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_emotion
 from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_speaker
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Controllable import run as control
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_EmoGST import run as gst
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Embedding import run as gst
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
