@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = "Models/Avocodo_reballanced"
+        model_save_dir = "Models/Avocodo_reballanced_feat_match"
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -71,7 +71,8 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
 
-    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 300000), use_random_corruption=False)
+    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 200000),
+                               use_random_corruption=False)
 
     generator = HiFiGANGenerator()
     generator.reset_parameters()

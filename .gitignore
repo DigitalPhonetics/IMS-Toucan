@@ -10,6 +10,7 @@ pretrained_models/
 split/
 singing/
 toucan_conda_venv/
+venv/
 
 *_graph
 app.py

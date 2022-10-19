@@ -10,8 +10,8 @@ import torch.nn.functional as F
 class FeatureMatchLoss(torch.nn.Module):
 
     def __init__(self,
-                 average_by_layers=False,
-                 average_by_discriminators=False,
+                 average_by_layers=True,
+                 average_by_discriminators=True,
                  include_final_outputs=False, ):
         super().__init__()
         self.average_by_layers = average_by_layers
@@ -20,13 +20,13 @@ class FeatureMatchLoss(torch.nn.Module):
 
     def forward(self, feats_hat, feats):
         """
-        Calcualate feature matching loss.
+        Calculate feature matching loss.
 
         Args:
             feats_hat (list): List of list of discriminator outputs
-                calcuated from generator outputs.
+                calculated from generator outputs.
             feats (list): List of list of discriminator outputs
-                calcuated from groundtruth.
+                calculated from groundtruth.
 
         Returns:
             Tensor: Feature matching loss value.
@@ -40,9 +40,9 @@ class FeatureMatchLoss(torch.nn.Module):
             for j, (feat_hat_, feat_) in enumerate(zip(feats_hat_, feats_)):
                 feat_match_loss_ = feat_match_loss + F.l1_loss(feat_hat_, feat_.detach())
             if self.average_by_layers:
-                feat_match_loss_ /= j + 1
+                feat_match_loss_ = feat_match_loss / (j + 1)
             feat_match_loss = feat_match_loss + feat_match_loss_
         if self.average_by_discriminators:
-            feat_match_loss /= i + 1
+            feat_match_loss = feat_match_loss / (i + 1)
 
         return feat_match_loss
