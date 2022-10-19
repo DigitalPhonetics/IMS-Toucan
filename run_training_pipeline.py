@@ -13,17 +13,17 @@ from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_low_RAM import run as 
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "meta"            : meta_fast,
-    "hificodo"        : hifigan_combined,
-    "aligner"         : aligner,
-    "fine_ger"        : fine_ger,
+    "meta":             meta_fast,
+    "hificodo":         hifigan_combined,
+    "aligner":          aligner,
+    "fine_ger":         fine_ger,
     "integration_test": integration_test,
-    "gst"             : gst,
-    "spk"             : finetune_model_speaker,
-    "emo"             : finetune_model_emotion,
-    "control"         : control,
-    "low_ram_avocodo" : hifigan_combined_low_ram,
-    }
+    "gst":              gst,
+    "spk":              finetune_model_speaker,
+    "emo":              finetune_model_emotion,
+    "control":          control,
+    "low_ram_avocodo":  hifigan_combined_low_ram,
+}
 
 if __name__ == '__main__':
 
@@ -72,10 +72,6 @@ if __name__ == '__main__':
 
     if args.finetune and args.resume_checkpoint is None:
         print("Need to provide path to checkpoint to fine-tune from!")
-        sys.exit()
-
-    if args.finetune and "hifigan" in args.pipeline:
-        print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,

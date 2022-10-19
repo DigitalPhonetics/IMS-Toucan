@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = "Models/Avocodo_reballanced_feat_match"
+        model_save_dir = "Models/Avocodo_feat_match"
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -96,6 +96,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                path_to_checkpoint=resume_checkpoint,
                resume=resume,
                use_signal_processing_losses=False,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               finetune=finetune)
     if use_wandb:
         wandb.finish()

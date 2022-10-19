@@ -30,7 +30,8 @@ def train_loop(generator,
                use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
                generator_steps_per_discriminator_step=4,
                generator_warmup=30000,
-               use_wandb=False
+               use_wandb=False,
+               finetune=False
                ):
     torch.backends.cudnn.benchmark = True
     # we have fixed input sizes, so we can enable benchmark mode
@@ -70,13 +71,15 @@ def train_loop(generator,
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=model_save_dir)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
-        optimizer_g.load_state_dict(check_dict["generator_optimizer"])
-        optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
-        scheduler_g.load_state_dict(check_dict["generator_scheduler"])
-        scheduler_d.load_state_dict(check_dict["discriminator_scheduler"])
+
+        if not finetune:
+            optimizer_g.load_state_dict(check_dict["generator_optimizer"])
+            optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
+            scheduler_g.load_state_dict(check_dict["generator_scheduler"])
+            scheduler_d.load_state_dict(check_dict["discriminator_scheduler"])
+            d.load_state_dict(check_dict["discriminator"])
+            step_counter = check_dict["step_counter"]
         g.load_state_dict(check_dict["generator"])
-        d.load_state_dict(check_dict["discriminator"])
-        step_counter = check_dict["step_counter"]
 
     start_time = time.time()
 
@@ -163,14 +166,14 @@ def train_loop(generator,
         if epoch % epochs_per_save == 0:
             g.eval()
             torch.save({
-                "generator"              : g.state_dict(),
-                "discriminator"          : d.state_dict(),
-                "generator_optimizer"    : optimizer_g.state_dict(),
+                "generator":               g.state_dict(),
+                "discriminator":           d.state_dict(),
+                "generator_optimizer":     optimizer_g.state_dict(),
                 "discriminator_optimizer": optimizer_d.state_dict(),
-                "generator_scheduler"    : scheduler_g.state_dict(),
+                "generator_scheduler":     scheduler_g.state_dict(),
                 "discriminator_scheduler": scheduler_d.state_dict(),
-                "step_counter"           : step_counter
-                }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+                "step_counter":            step_counter
+            }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             g.train()
             delete_old_checkpoints(model_save_dir, keep=5)
 

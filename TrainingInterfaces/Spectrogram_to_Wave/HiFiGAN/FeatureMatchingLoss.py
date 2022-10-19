@@ -23,10 +23,10 @@ class FeatureMatchLoss(torch.nn.Module):
         Calculate feature matching loss.
 
         Args:
-            feats_hat (list): List of list of discriminator outputs
+            feats_hat (list): List of lists of discriminator outputs
                 calculated from generator outputs.
-            feats (list): List of list of discriminator outputs
-                calculated from groundtruth.
+            feats (list): List of lists of discriminator outputs
+                calculated from ground-truth.
 
         Returns:
             Tensor: Feature matching loss value.
@@ -38,11 +38,11 @@ class FeatureMatchLoss(torch.nn.Module):
                 feats_hat_ = feats_hat_[:-1]
                 feats_ = feats_[:-1]
             for j, (feat_hat_, feat_) in enumerate(zip(feats_hat_, feats_)):
-                feat_match_loss_ = feat_match_loss + F.l1_loss(feat_hat_, feat_.detach())
+                feat_match_loss_ += F.l1_loss(feat_hat_, feat_.detach())
             if self.average_by_layers:
-                feat_match_loss_ = feat_match_loss / (j + 1)
-            feat_match_loss = feat_match_loss + feat_match_loss_
+                feat_match_loss_ /= j + 1
+            feat_match_loss += feat_match_loss_
         if self.average_by_discriminators:
-            feat_match_loss = feat_match_loss / (i + 1)
+            feat_match_loss /= i + 1
 
         return feat_match_loss
