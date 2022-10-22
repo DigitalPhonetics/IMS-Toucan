@@ -28,7 +28,7 @@ def train_loop(generator,
                epochs=100,
                resume=False,
                use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
-               generator_steps_per_discriminator_step=4,
+               generator_steps_per_discriminator_step=2,
                generator_warmup=30000,
                use_wandb=False,
                finetune=False
@@ -107,7 +107,7 @@ def train_loop(generator,
             pred_wave, intermediate_wave_upsampled_twice, intermediate_wave_upsampled_once = g(melspec)
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
-            generator_total_loss = mel_loss * 40.0  # 5 less than the Avocodo Paper
+            generator_total_loss = mel_loss * 30.0  # 15 less than the Avocodo Paper
 
             if use_signal_processing_losses:
                 signal_loss = torch.tensor([0.0]).to(device)

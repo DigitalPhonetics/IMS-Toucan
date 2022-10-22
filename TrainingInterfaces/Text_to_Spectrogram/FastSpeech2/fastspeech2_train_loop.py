@@ -86,7 +86,8 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     pitch_array = pitch.cpu().numpy()
     for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
         if pitch_array[pitch_index] > 0.001:
-            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid", linewidth=0.5)
+            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid",
+                      linewidth=0.5)
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
@@ -190,7 +191,8 @@ def train_loop(net,
                     # =        PHASE 1: no cycle objective          =
                     # ===============================================
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                               batch_of_spectrogram_lengths=batch[3].to(device))
+                                                               batch_of_spectrogram_lengths=batch[3].to(device),
+                                                               return_only_refs=True)
 
                     train_loss = net(text_tensors=batch[0].to(device),
                                      text_lengths=batch[1].to(device),
@@ -212,7 +214,8 @@ def train_loop(net,
                     style_embedding_of_gold, out_list_gold = style_embedding_function(
                         batch_of_spectrograms=batch[2].to(device),
                         batch_of_spectrogram_lengths=batch[3].to(device),
-                        return_all_outs=True)
+                        return_all_outs=True,
+                        return_only_refs=True)
 
                     train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
                                                           text_lengths=batch[1].to(device),
@@ -228,7 +231,8 @@ def train_loop(net,
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
                         batch_of_spectrograms=output_spectrograms,
                         batch_of_spectrogram_lengths=batch[3].to(device),
-                        return_all_outs=True)
+                        return_all_outs=True,
+                        return_only_refs=True)
 
                     cycle_dist = 0
                     for out_gold, out_pred in zip(out_list_gold, out_list_predicted):
@@ -253,16 +257,17 @@ def train_loop(net,
 
         net.eval()
         if epoch % epochs_per_save == 0:
-            default_embedding = style_embedding_function(batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
-                                                         batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+            default_embedding = style_embedding_function(
+                batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+                batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
+                "model":        net.state_dict(),
+                "optimizer":    optimizer.state_dict(),
                 "step_counter": step_counter,
-                "scaler"      : scaler.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                "default_emb" : default_embedding,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                "scaler":       scaler.state_dict(),
+                "scheduler":    scheduler.state_dict(),
+                "default_emb":  default_embedding,
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net,
                                                           device,
@@ -273,7 +278,7 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
-                    })
+                })
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
@@ -283,10 +288,11 @@ def train_loop(net,
         if use_wandb:
             wandb.log({
                 "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
-                "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
-                "epoch"           : epoch,
-                "steps"           : step_counter,
-                })
+                "cycle_loss":       sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
+                    cycle_losses_this_epoch) != 0 else 0.0,
+                "epoch":            epoch,
+                "steps":            step_counter,
+            })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
             return

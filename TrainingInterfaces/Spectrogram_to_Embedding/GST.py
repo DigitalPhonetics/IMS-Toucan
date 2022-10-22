@@ -41,7 +41,7 @@ class StyleEncoder(torch.nn.Module):
             conv_stride: int = 2,
             gru_layers: int = 1,
             gru_units: int = 128,
-            ):
+    ):
         """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
 
@@ -57,18 +57,23 @@ class StyleEncoder(torch.nn.Module):
                                    gst_token_dim=gst_token_dim,
                                    gst_heads=gst_heads, )
 
-    def forward(self, speech, return_all_outs=False):
+    def forward(self, speech, return_all_outs=False, return_only_ref=False):
         """Calculate forward propagation.
         Args:
+            return_only_ref: whether to return only the reference encoder output
             return_all_outs: return list of all layer's outputs
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
         Returns:
             Tensor: Style token embeddings (B, token_dim).
         """
         ref_embs = self.ref_enc(speech)
+        if return_only_ref and not return_all_outs:
+            return ref_embs
         style_embs = self.stl(ref_embs)
 
         if return_all_outs:
+            if return_only_ref:
+                return ref_embs, [ref_embs] + [style_embs]
             return style_embs, [ref_embs] + [style_embs]
         return style_embs
 
@@ -101,13 +106,14 @@ class ReferenceEncoder(torch.nn.Module):
             conv_stride: int = 2,
             gru_layers: int = 1,
             gru_units: int = 128,
-            ):
+    ):
         """Initialize reference encoder module."""
         super(ReferenceEncoder, self).__init__()
 
         # check hyperparameters are valid
         assert conv_kernel_size % 2 == 1, "kernel size must be odd."
-        assert (len(conv_chans_list) == conv_layers), "the number of conv layers and length of channels list must be the same."
+        assert (
+                len(conv_chans_list) == conv_layers), "the number of conv layers and length of channels list must be the same."
 
         convs = []
         padding = (conv_kernel_size - 1) // 2
@@ -178,7 +184,7 @@ class StyleTokenLayer(torch.nn.Module):
             gst_token_dim: int = 128,
             gst_heads: int = 4,
             dropout_rate: float = 0.0,
-            ):
+    ):
         """Initialize style token layer module."""
         super(StyleTokenLayer, self).__init__()
 
@@ -206,6 +212,7 @@ class StyleTokenLayer(torch.nn.Module):
         style_embs = self.mha(ref_embs, gst_embs, gst_embs, None)
 
         return style_embs.squeeze(1)
+
 
 class MultiHeadedAttention(BaseMultiHeadedAttention):
     """Multi head attention module with different input dimension."""

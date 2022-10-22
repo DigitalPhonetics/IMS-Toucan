@@ -11,7 +11,7 @@ class FeatureMatchLoss(torch.nn.Module):
 
     def __init__(self,
                  average_by_layers=True,
-                 average_by_discriminators=True,
+                 average_by_discriminators=False,
                  include_final_outputs=False, ):
         super().__init__()
         self.average_by_layers = average_by_layers

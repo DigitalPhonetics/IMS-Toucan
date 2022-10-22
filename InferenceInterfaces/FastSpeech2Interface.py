@@ -84,7 +84,8 @@ class InferenceFastSpeech2(torch.nn.Module):
         spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
+                                                                         spec_len.unsqueeze(0).to(self.device),
+                                                                         return_only_refs=True).squeeze()
 
     def set_language(self, lang_id):
         """

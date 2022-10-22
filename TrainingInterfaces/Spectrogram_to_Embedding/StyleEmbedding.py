@@ -21,9 +21,14 @@ class StyleEmbedding(torch.nn.Module):
         super().__init__()
         self.gst = StyleEncoder()
 
-    def forward(self, batch_of_spectrograms, batch_of_spectrogram_lengths, return_all_outs=False):
+    def forward(self,
+                batch_of_spectrograms,
+                batch_of_spectrogram_lengths,
+                return_all_outs=False,
+                return_only_refs=False):
         """
         Args:
+            return_only_refs: return reference embedding instead of mixed style tokens
             batch_of_spectrograms: b is the batch axis, 80 features per timestep
                                    and l time-steps, which may include padding
                                    for most elements in the batch (b, l, 80)
@@ -57,7 +62,9 @@ class StyleEmbedding(torch.nn.Module):
                 list_of_specs.append(spec)
 
         batch_of_spectrograms_unified_length = torch.stack(list_of_specs, dim=0)
-        return self.gst(batch_of_spectrograms_unified_length, return_all_outs=return_all_outs)
+        return self.gst(batch_of_spectrograms_unified_length,
+                        return_all_outs=return_all_outs,
+                        return_only_ref=return_only_refs)
 
 
 if __name__ == '__main__':
@@ -65,4 +72,6 @@ if __name__ == '__main__':
     print(f"GST parameter count: {sum(p.numel() for p in style_emb.gst.parameters() if p.requires_grad)}")
 
     seq_length = 142
-    print(style_emb(torch.randn(5, seq_length, 80), torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)
+    print(style_emb(torch.randn(5, seq_length, 80),
+                    torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length]),
+                    return_only_refs=True).shape)
