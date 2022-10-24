@@ -30,6 +30,10 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ## New Features 🐣
 
+### MODELS ASSOCIATED WITH CURRENT STATE OF THE CODE WILL BE RELEASED IN THE NEXT DAYS
+
+The current models in the release section work with the associated code in the release, there have been some backward compatibility breaking changes recently.
+
 ### 2021
 
 - We officially introduced IMS Toucan in
