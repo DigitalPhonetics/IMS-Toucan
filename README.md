@@ -323,7 +323,7 @@ cool with it. Thank you for reading.
 
 ## Citation 🐧
 
-### Introduction of the Toolkit
+### Introduction of the Toolkit [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v1.0)
 
 ```
 @inproceedings{lux2021toucan,
@@ -336,7 +336,7 @@ cool with it. Thank you for reading.
 }
 ```
 
-### Adding Articulatory Features and Meta-Learning Pretraining
+### Adding Articulatory Features and Meta-Learning Pretraining [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v1.1)
 
 ```
 @inproceedings{lux2022laml,
@@ -348,7 +348,7 @@ cool with it. Thank you for reading.
 }
 ```
 
-### Adding Exact Prosody-Cloning Capabilities
+### Adding Exact Prosody-Cloning Capabilities [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.2)
 
 (accepted, not yet published)
 
@@ -361,7 +361,7 @@ cool with it. Thank you for reading.
 }
 ```
 
-### Adding Language Embeddings and Word Boundaries
+### Adding Language Embeddings and Word Boundaries [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.2)
 
 (accepted, not yet published)
 
