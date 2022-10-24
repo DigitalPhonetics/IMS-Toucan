@@ -8,8 +8,8 @@ import torch
 import wandb
 from torch.utils.data import ConcatDataset
 
+from TrainingInterfaces.Spectrogram_to_Embedding.embedding_function_train_loop import train_loop
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.embedding_function_train_loop import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 

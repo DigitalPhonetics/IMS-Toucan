@@ -200,12 +200,14 @@ def train_loop(net,
 
                 if step_counter % 5 == 0:
                     style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                 batch_of_spectrogram_lengths=batch[3].to(device))
+                                                                 batch_of_spectrogram_lengths=batch[3].to(device),
+                                                                 return_only_refs=True)
                     style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                 batch_of_spectrogram_lengths=batch[3].to(device))
+                                                                 batch_of_spectrogram_lengths=batch[3].to(device),
+                                                                 return_only_refs=True)
                     # due to the random windows we take, the two style embedding batches should be slightly different.
                     # But the difference should be minimal, thus we use the barlow twins objective to make them more
-                    # similar and reduce redundancy within the embedding vectors.
+                    # similar and reduce redundancy within the reference embedding vectors.
                     bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
                     bt_cycle_dist = bt_cycle_dist * 0.01  # this can disrupt convergence if the scale is too large.
                     # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
