@@ -32,7 +32,8 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ### MODELS ASSOCIATED WITH CURRENT STATE OF THE CODE WILL BE RELEASED IN THE NEXT DAYS
 
-The current models in the release section work with the associated code in the release, there have been some backward compatibility breaking changes recently.
+The current models in the release section work with the associated code in the release, there have been some backward
+compatibility breaking changes recently.
 
 ### 2021
 
@@ -61,7 +62,7 @@ The current models in the release section work with the associated code in the r
 - Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with
   everything else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
   present a paper on this at SLT 2022. We apply this
-  to [literary studies on poetry and presented a paper on this at Interspeech 2022!](https://arxiv.org/abs/2207.05549)
+  to [literary studies on poetry and presented a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
 - You can now use [weights & biases](https://wandb.ai/site) to keep track of your training runs, if you want.

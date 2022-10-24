@@ -27,7 +27,7 @@ class TTSWebUI:
         self.iface = gr.Interface(fn=self.read,
                                   inputs=[gr.inputs.Textbox(lines=2,
                                                             placeholder="write what you want the synthesis to read here...",
-                                                            default="This is a sentence that we can control through discovery of primary directions!",
+                                                            default="With every sun that sets, I am feeling more, like a stranger on a foreign shore.",
                                                             label="Text input"),
                                           gr.inputs.Dropdown(['English Text',
                                                               'German Text',

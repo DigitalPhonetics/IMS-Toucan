@@ -201,8 +201,7 @@ def train_loop(net,
                     # step (i.e. iterations of inner loop = 1)
 
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                               batch_of_spectrogram_lengths=batch[3].to(device),
-                                                               return_only_refs=True)
+                                                               batch_of_spectrogram_lengths=batch[3].to(device))
 
                     train_loss = train_loss + net(text_tensors=batch[0].to(device),
                                                   text_lengths=batch[1].to(device),
@@ -220,8 +219,7 @@ def train_loop(net,
                     style_embedding_of_gold, out_list_gold = style_embedding_function(
                         batch_of_spectrograms=batch[2].to(device),
                         batch_of_spectrogram_lengths=batch[3].to(device),
-                        return_all_outs=True,
-                        return_only_refs=True)
+                        return_all_outs=True)
 
                     _train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
                                                            text_lengths=batch[1].to(device),
@@ -238,8 +236,7 @@ def train_loop(net,
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
                         batch_of_spectrograms=output_spectrograms,
                         batch_of_spectrogram_lengths=batch[3].to(device),
-                        return_all_outs=True,
-                        return_only_refs=True)
+                        return_all_outs=True)
 
                     cycle_dist = 0
                     for out_gold, out_pred in zip(out_list_gold, out_list_predicted):
