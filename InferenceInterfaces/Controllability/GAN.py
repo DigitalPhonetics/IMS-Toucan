@@ -16,7 +16,13 @@ class GanWrapper:
         self.load_model(path_wgan)
 
         self.U = self.compute_controllability()
-        self.z = self.wgan.G.module.sample_latent(1, 32)
+        self.z_list = list()
+        for _ in range(1100):
+            self.z_list.append(self.wgan.G.module.sample_latent(1, 32))
+        self.z = self.z_list[0]
+
+    def set_latent(self, seed):
+        self.z = self.z = self.z_list[seed]
 
     def reset_default_latent(self):
         self.z = self.wgan.G.module.sample_latent(1, 32)
@@ -53,7 +59,7 @@ class GanWrapper:
             embed_original.cpu(),
             self.mean.cpu().unsqueeze(0),
             self.std.cpu().unsqueeze(0)
-            )
+        )
         return embed_original
 
     def modify_embed(self, x):
@@ -64,7 +70,7 @@ class GanWrapper:
             embed_modified.cpu(),
             self.mean.cpu().unsqueeze(0),
             self.std.cpu().unsqueeze(0)
-            )
+        )
         return embed_modified
 
 

@@ -1,3 +1,5 @@
+import random
+
 import gradio as gr
 import numpy as np
 
@@ -60,6 +62,9 @@ class TTSWebUI:
                                                               'Vietnamese Accent'], type="value",
                                                              default='English Accent',
                                                              label="Select the Accent of the Speaker"),
+                                          gr.inputs.Slider(minimum=0, maximum=1000, step=1,
+                                                           default=random.randint(0, 1000),
+                                                           label="Random Seed for the artificial Voice"),
                                           gr.inputs.Slider(minimum=0.5, maximum=1.5, step=0.1, default=1.0,
                                                            label="Duration Scale"),
                                           gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0,
@@ -72,12 +77,6 @@ class TTSWebUI:
                                                            label="Femininity / Masculinity"),
                                           gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0,
                                                            label="Arousal"),
-                                          gr.inputs.Slider(minimum=-20.0, maximum=20.0, step=0.1, default=0.0,
-                                                           label="Emphasized High / Low Frequencies"),
-                                          gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0,
-                                                           label="Compression / Sibilance"),
-                                          gr.inputs.Slider(minimum=-25.0, maximum=25.0, step=0.1, default=0.0,
-                                                           label="Microphone Characteristics / Clarity"),
                                           gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0,
                                                            label="Age")
                                           ],
@@ -94,28 +93,24 @@ class TTSWebUI:
              prompt,
              language,
              accent,
+             voice_seed,
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
              energy_variance_scale,
              emb_slider_1,
              emb_slider_2,
-             emb_slider_3,
-             emb_slider_4,
-             emb_slider_5,
              emb_slider_6):
         sr, wav = self.controllable_ui.read(prompt,
                                             language,
                                             accent,
+                                            voice_seed,
                                             duration_scaling_factor,
                                             pause_duration_scaling_factor,
                                             pitch_variance_scale,
                                             energy_variance_scale,
                                             emb_slider_1,
                                             emb_slider_2,
-                                            emb_slider_3,
-                                            emb_slider_4,
-                                            emb_slider_5,
                                             emb_slider_6)
         return sr, float2pcm(wav.cpu().numpy())
 

@@ -40,15 +40,13 @@ class ControllableInterface:
              prompt,
              language,
              accent,
+             voice_seed,
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
              energy_variance_scale,
              emb_slider_1,
              emb_slider_2,
-             emb_slider_3,
-             emb_slider_4,
-             emb_slider_5,
              emb_slider_6,
              ):
         language = language.split()[0]
@@ -60,8 +58,10 @@ class ControllableInterface:
             self.model.set_accent_language(self.language_id_lookup[accent])
             self.current_accent = accent
 
+        self.wgan.set_latent(voice_seed)
+
         controllability_vector = torch.tensor(
-            [emb_slider_1, emb_slider_2, emb_slider_3, emb_slider_4, emb_slider_5, emb_slider_6], dtype=torch.float32)
+            [emb_slider_1, emb_slider_2, 0.0, 0.0, 0.0, emb_slider_6], dtype=torch.float32)
         embedding = self.wgan.modify_embed(controllability_vector)
         self.model.set_utterance_embedding(embedding=embedding)
 
