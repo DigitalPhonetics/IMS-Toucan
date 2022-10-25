@@ -3,6 +3,8 @@ import os
 
 import librosa.display as lbd
 import matplotlib.pyplot as plt
+import numpy
+import pyloudnorm as pyln
 import sounddevice
 import soundfile
 import torch
@@ -28,6 +30,7 @@ class InferenceFastSpeech2(torch.nn.Module):
                                                 config_allow_defaults=True,
                                                 post_filter=True)
             self.enhancer = self.enhancer.to(self.device).eval()
+            self.loudnorm_meter = pyln.Meter(48000, block_size=0.200)
 
         ################################
         #   build text to phone        #
@@ -156,6 +159,14 @@ class InferenceFastSpeech2(torch.nn.Module):
             wave = self.mel2wav(mel)
             if self.use_enhancement:
                 wave = enhance(self.enhancer, self.df, wave.unsqueeze(0), pad=True).squeeze()
+                try:
+                    loudness = self.loudnorm_meter.integrated_loudness(wave.cpu().numpy())
+                    loud_normed = pyln.normalize.loudness(wave.cpu().numpy(), loudness, -30.0)
+                    peak = numpy.amax(numpy.abs(loud_normed))
+                    wave = torch.Tensor(numpy.divide(loud_normed, peak))
+                except ValueError:
+                    # if the audio is too short, a value error will arise
+                    pass
 
         if view:
             from Utility.utils import cumsum_durations

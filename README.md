@@ -24,16 +24,11 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
-[You can also design the voice of a speaker who doesn't exist on Huggingface🤗 DUMMY LINK FOR NOW](https://huggingface.co/spaces/Flux9665/IMS-Toucan)
+[You can also design the voice of a speaker who doesn't exist on Huggingface🤗](https://huggingface.co/spaces/Flux9665/ThisSpeakerDoesNotExist)
 
 ---
 
 ## New Features 🐣
-
-### MODELS ASSOCIATED WITH CURRENT STATE OF THE CODE WILL BE RELEASED IN THE NEXT DAYS
-
-The current models in the release section work with the associated code in the release, there have been some backward
-compatibility breaking changes recently.
 
 ### 2021
 
@@ -58,10 +53,10 @@ compatibility breaking changes recently.
   also include word-boundary pseudo-tokens which are only visible to the text encoder.
 - By conditioning the TTS on speaker and language embeddings in a specific way, multi-lingual and multi-speaker models
   are possible. You can use any speaker in any language, regardless of the language that the speakers themselves are
-  speaking. We will present a paper on this at AACL 2022!
+  speaking. We will present [a paper on this at AACL 2022](https://arxiv.org/abs/2210.12223)!
 - Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with
   everything else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
-  present a paper on this at SLT 2022. We apply this
+  present [a paper on this at SLT 2022](https://arxiv.org/abs/2206.12229). We apply this
   to [literary studies on poetry and presented a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
@@ -77,8 +72,9 @@ compatibility breaking changes recently.
 
 Pretrained checkpoints for our massively multi-lingual model, the self-contained aligner, the embedding function, the
 vocoder and the embedding GAN are available in the
-[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). A convenient download script will shortly be
-available.
+[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). Run the ```run_model_downloader.py``` script
+to automatically download them from the release page and put them into their appropriate locations with appropriate
+names.
 
 ---
 
@@ -113,15 +109,16 @@ apt-get install espeak-ng
 ```
 
 For other systems, e.g. Windows, they provide a convenient .msi installer file
-[on their github release page](https://github.com/espeak-ng/espeak-ng/releases). After installation on non-linux
+[on their GitHub release page](https://github.com/espeak-ng/espeak-ng/releases). After installation on non-linux
 systems, you'll also need to tell the phonemizer library where to find your espeak installation, which is discussed in
 [this issue](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718). Since the project is still in
 active development, there are frequent updates, which can actually benefit your use significantly.
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. We will add a script in the near
-future that downloads them automatically from the GitHub release page and puts them into the appropriate directories.
+You don't need to use pretrained models, but it can speed things up tremendously. Run the ```run_model_downloader.py```
+script to automatically download them from the release page and put them into their appropriate locations with
+appropriate names.
 
 ---
 
