@@ -8,7 +8,8 @@ import pyloudnorm as pyln
 import sounddevice
 import soundfile
 import torch
-from df.enhance import enhance, init_df
+from df.enhance import enhance
+from df.enhance import init_df
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
@@ -158,7 +159,7 @@ class InferenceFastSpeech2(torch.nn.Module):
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
             if self.use_enhancement:
-                wave = enhance(self.enhancer, self.df, wave.unsqueeze(0), pad=True).squeeze()
+                wave = enhance(self.enhancer, self.df, wave.unsqueeze(0).cpu(), pad=True).squeeze()
                 try:
                     loudness = self.loudnorm_meter.integrated_loudness(wave.cpu().numpy())
                     loud_normed = pyln.normalize.loudness(wave.cpu().numpy(), loudness, -30.0)
