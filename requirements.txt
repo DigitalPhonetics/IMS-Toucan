@@ -27,3 +27,4 @@ wandb~=0.13.3
 scikit-learn~=1.1.0
 auraloss~=0.2.2
 cvxopt~=1.3.0
+deepfilternet

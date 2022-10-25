@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sounddevice
 import soundfile
 import torch
+from df.enhance import enhance, init_df
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
@@ -17,9 +18,16 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en"):
+    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=True):
         super().__init__()
         self.device = device
+        self.use_enhancement = use_enhancement
+        if self.use_enhancement:
+            self.enhancer, self.df, _ = init_df(log_file=None,
+                                                log_level="NONE",
+                                                config_allow_defaults=True,
+                                                post_filter=True)
+            self.enhancer = self.enhancer.to(self.device).eval()
 
         ################################
         #   build text to phone        #
@@ -40,9 +48,11 @@ class InferenceFastSpeech2(torch.nn.Module):
         except RuntimeError:
             try:
                 self.use_lang_id = False
-                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
+                self.phone2mel = FastSpeech2(weights=checkpoint["model"],
+                                             lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None,
+                                             utt_embed_dim=None)  # single speaker
         self.phone2mel = self.phone2mel.to(torch.device(device))
 
         #################################
@@ -57,14 +67,16 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=os.path.join("Models", "Avocodo", "best.pt")), torch.rand((80, 50))).to(
+        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=os.path.join("Models", "Avocodo", "best.pt")),
+                                       torch.rand((80, 50))).to(
             torch.device(device))
 
         ################################
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
-        self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
+        self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True,
+                                                    device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
         if self.use_lang_id:
@@ -80,7 +92,8 @@ class InferenceFastSpeech2(torch.nn.Module):
         assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
         if sr != self.audio_preprocessor.sr:
-            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
+            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True,
+                                                        device=self.device)
         spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
@@ -126,7 +139,8 @@ class InferenceFastSpeech2(torch.nn.Module):
                                    lower values decrease variance of the energy curve.
         """
         with torch.inference_mode():
-            phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
+            phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(
+                torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
@@ -140,6 +154,9 @@ class InferenceFastSpeech2(torch.nn.Module):
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
+            if self.use_enhancement:
+                wave = enhance(self.enhancer, self.df, wave.unsqueeze(0), pad=True).squeeze()
+
         if view:
             from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
@@ -167,7 +184,8 @@ class InferenceFastSpeech2(torch.nn.Module):
             pitch_array = pitch.cpu().numpy()
             for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
                 if pitch_array[pitch_index] != 0:
-                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid", linewidth=0.5)
+                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
+                                 linestyles="solid", linewidth=0.5)
             ax[0].set_title(text)
             plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()
