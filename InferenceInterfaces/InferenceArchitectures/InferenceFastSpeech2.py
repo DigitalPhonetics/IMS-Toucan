@@ -68,7 +68,7 @@ class FastSpeech2(torch.nn.Module):
                  duration_predictor_dropout_rate=0.2,
                  postnet_dropout_rate=0.5,
                  # additional features
-                 utt_embed_dim=128,
+                 utt_embed_dim=256,
                  lang_embs=1000):
         super().__init__()
         self.idim = idim

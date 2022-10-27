@@ -3,9 +3,9 @@ Taken from ESPNet
 """
 
 import torch
-import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
+from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -65,7 +65,7 @@ class Conformer(torch.nn.Module):
 
         self.normalize_before = normalize_before
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
+            self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -98,7 +98,7 @@ class Conformer(torch.nn.Module):
         Encode input sequence.
         Args:
             utterance_embedding: embedding containing lots of conditioning signals
-            step: indicator for when to start updating the embedding function
+            lang_ids: ids of the languages per sample in the batch
             xs (torch.Tensor): Input tensor (#batch, time, idim).
             masks (torch.Tensor): Mask tensor (#batch, time).
         Returns:
@@ -128,7 +128,4 @@ class Conformer(torch.nn.Module):
         return xs, masks
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        # concat hidden states with spk embeds and then apply projection
-        embeddings_expanded = F.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
-        return hs
+        return self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings)

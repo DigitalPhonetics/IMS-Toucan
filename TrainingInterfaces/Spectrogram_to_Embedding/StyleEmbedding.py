@@ -74,4 +74,4 @@ if __name__ == '__main__':
     seq_length = 142
     print(style_emb(torch.randn(5, seq_length, 80),
                     torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length]),
-                    return_only_refs=True).shape)
+                    return_only_refs=False).shape)

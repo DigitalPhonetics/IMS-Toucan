@@ -3,7 +3,7 @@ import torch
 from InferenceInterfaces.UtteranceCloner import UtteranceCloner
 
 if __name__ == '__main__':
-    uc = UtteranceCloner(model_id="LibriGST_new", device="cuda" if torch.cuda.is_available() else "cpu")
+    uc = UtteranceCloner(model_id="Meta", device="cuda" if torch.cuda.is_available() else "cpu")
 
     uc.clone_utterance(path_to_reference_audio="audios/test.wav",
                        reference_transcription="Hello world, this is a test.",
