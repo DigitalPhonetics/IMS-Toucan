@@ -145,7 +145,7 @@ def train_loop(net,
     """
     net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
-    bt_loss = BarlowTwinsLoss().to(device)
+    bt_loss = BarlowTwinsLoss(vector_dimensions=256).to(device)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
