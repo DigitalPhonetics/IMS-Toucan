@@ -79,16 +79,14 @@ class StyleEncoder(torch.nn.Module):
         return style_embs
 
     def calculate_ada4_regularization_loss(self):
-        loss = 0.0
-
-        for emb1_index in range(self.num_tokens):
-            print(emb1_index)
-            for emb2_index in range(self.num_tokens):
-                if emb1_index != emb2_index:
-                    loss = loss + ((1 / (self.num_tokens * (self.num_tokens - 1))) * torch.nn.functional.cosine_similarity(self.stl.gst_embs[emb1_index],
-                                                                                                                           self.stl.gst_embs[emb2_index],
-                                                                                                                           dim=0))
-        return loss
+        losses = [((1 / (self.num_tokens * (self.num_tokens - 1))) * torch.nn.functional.cosine_similarity(self.stl.gst_embs[emb1_index],
+                                                                                                           self.stl.gst_embs[emb2_index],
+                                                                                                           dim=0))
+                  if emb1_index != emb2_index else 0
+                  for emb1_index in range(self.num_tokens)
+                  for emb2_index in range(self.num_tokens)]
+        # list comprehensions are slightly faster in python than unrolling the list, even though that would make it much more readable
+        return sum(losses)
 
 
 class ReferenceEncoder(torch.nn.Module):
