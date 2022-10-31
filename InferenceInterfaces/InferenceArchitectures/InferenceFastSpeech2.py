@@ -130,7 +130,7 @@ class FastSpeech2(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_dec_kernel_size,
-                                 utt_embed=None)
+                                 utt_embed=utt_embed_dim)
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.postnet = PostNet(idim=idim,
                                odim=odim,

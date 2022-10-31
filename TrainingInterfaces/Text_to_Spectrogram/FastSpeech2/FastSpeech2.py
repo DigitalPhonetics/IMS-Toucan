@@ -151,7 +151,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  attention_dropout_rate=transformer_dec_attn_dropout_rate, normalize_before=decoder_normalize_before,
                                  concat_after=decoder_concat_after, positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_dec_kernel_size,
-                                 utt_embed=None)
+                                 utt_embed=utt_embed_dim)
 
         # define final projection
         self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
