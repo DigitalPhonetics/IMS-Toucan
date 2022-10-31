@@ -21,7 +21,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=True):
+    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=False):
         super().__init__()
         self.device = device
         self.use_enhancement = use_enhancement
@@ -244,25 +244,19 @@ class InferenceFastSpeech2(torch.nn.Module):
                 if not silent:
                     print("Now synthesizing: {}".format(text))
                 if wav is None:
-                    if durations is not None:
-                        durations = durations.to(self.device)
-                    if pitch is not None:
-                        pitch = pitch.to(self.device)
-                    if energy is not None:
-                        energy = energy.to(self.device)
                     wav = self(text,
-                               durations=durations,
-                               pitch=pitch,
-                               energy=energy,
+                               durations=durations.to(self.device) if durations is not None else None,
+                               pitch=pitch.to(self.device) if pitch is not None else None,
+                               energy=energy.to(self.device) if energy is not None else None,
                                duration_scaling_factor=duration_scaling_factor,
                                pitch_variance_scale=pitch_variance_scale,
                                energy_variance_scale=energy_variance_scale).cpu()
                     wav = torch.cat((wav, silence), 0)
                 else:
                     wav = torch.cat((wav, self(text,
-                                               durations=durations.to(self.device),
-                                               pitch=pitch.to(self.device),
-                                               energy=energy.to(self.device),
+                                               durations=durations.to(self.device) if durations is not None else None,
+                                               pitch=pitch.to(self.device) if pitch is not None else None,
+                                               energy=energy.to(self.device) if energy is not None else None,
                                                duration_scaling_factor=duration_scaling_factor,
                                                pitch_variance_scale=pitch_variance_scale,
                                                energy_variance_scale=energy_variance_scale).cpu()), 0)

@@ -46,7 +46,10 @@ class StyleEmbedding(torch.nn.Module):
         list_of_specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):
             spec = batch_of_spectrograms[index][:spec_length]
-            current_spec_length = spec_length.cpu().item()
+            # double the length at least once, then check
+            repeat_factor = math.ceil((window_size * 2) / spec_length)
+            spec = spec.repeat((repeat_factor, 1))
+            current_spec_length = len(spec)
             if current_spec_length < window_size:
                 # make it longer
                 repeat_factor = math.ceil((window_size * 2) / spec_length)
@@ -75,3 +78,4 @@ if __name__ == '__main__':
     print(style_emb(torch.randn(5, seq_length, 80),
                     torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length]),
                     return_only_refs=False).shape)
+    print(style_emb.gst.calculate_ada4_regularization_loss())

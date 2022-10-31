@@ -279,7 +279,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             h_masks = self._source_mask(olens_in)
         else:
             h_masks = None
-        zs, _ = self.decoder(encoded_texts, h_masks)  # (B, Lmax, adim)
+        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)

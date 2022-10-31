@@ -182,6 +182,7 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         bt_losses_this_epoch = list()
+        reg_losses_this_epoch = list()
         for batch in tqdm(train_loader):
             with autocast():
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
@@ -198,7 +199,7 @@ def train_loop(net,
                                                       return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
 
-                if step_counter % 5 == 0:
+                if step_counter % 100 == 0:
                     style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                  batch_of_spectrogram_lengths=batch[3].to(device),
                                                                  return_only_refs=True)
@@ -209,10 +210,14 @@ def train_loop(net,
                     # But the difference should be minimal, thus we use the barlow twins objective to make them more
                     # similar and reduce redundancy within the reference embedding vectors.
                     bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                    bt_cycle_dist = bt_cycle_dist * 0.01  # this can disrupt convergence if the scale is too large.
+                    bt_cycle_dist = bt_cycle_dist * 0.001  # this can disrupt convergence if the scale is too large.
                     # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
                     bt_losses_this_epoch.append(bt_cycle_dist.item())
                     train_loss = train_loss + bt_cycle_dist
+                if step_counter % 1000 == 0:
+                    reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
+                    train_loss = train_loss + reg_loss
+                    reg_losses_this_epoch.append(reg_loss.item())
 
             optimizer.zero_grad()
 
@@ -249,11 +254,13 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
-                })
+                    })
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(bt_losses_this_epoch) != 0:
             print("BT Loss:            {}".format(sum(bt_losses_this_epoch) / len(bt_losses_this_epoch)))
+        if len(reg_losses_this_epoch) != 0:
+            print("reg Loss:           {}".format(sum(reg_losses_this_epoch) / len(reg_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
         if use_wandb:
@@ -261,9 +268,10 @@ def train_loop(net,
                 "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
                 "barlowtwins_loss": sum(bt_losses_this_epoch) / len(bt_losses_this_epoch) if len(
                     bt_losses_this_epoch) != 0 else 0.0,
-                "epoch":            epoch,
-                "steps":            step_counter,
-            })
+                "basis_reg_loss"  : sum(reg_losses_this_epoch) / len(reg_losses_this_epoch) if len(
+                    reg_losses_this_epoch) != 0 else 0.0,
+                "Steps"           : step_counter,
+                })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
             return

@@ -291,11 +291,11 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "spectrogram_loss": round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "cycle_loss":       round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(
+                    "cycle_loss"      : round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(
                         cycle_losses_total) != 0 else 0.0,
-                    "steps":            step,
-                    "progress_plot":    wandb.Image(path_to_most_recent_plot)
-                })
+                    "Steps"           : step,
+                    "progress_plot"   : wandb.Image(path_to_most_recent_plot)
+                    })
             train_losses_total = list()
             cycle_losses_total = list()
             net.train()

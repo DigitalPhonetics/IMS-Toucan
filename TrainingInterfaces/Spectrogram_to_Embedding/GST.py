@@ -25,34 +25,35 @@ class StyleEncoder(torch.nn.Module):
             Kernel size of conv layers in the reference encoder.
         conv_stride (int, optional):
             Stride size of conv layers in the reference encoder.
-        lstm_layers (int, optional): The number of GRU layers in the reference encoder.
-        lstm_units (int, optional): The number of GRU units in the reference encoder.
+        gst_layers (int, optional): The number of GRU layers in the reference encoder.
+        gst_units (int, optional): The number of GRU units in the reference encoder.
     """
 
     def __init__(
             self,
             idim: int = 80,
-            gst_tokens: int = 10,
+            gst_tokens: int = 3000,
             gst_token_dim: int = 256,
             gst_heads: int = 8,
             conv_layers: int = 8,
             conv_chans_list=(32, 32, 64, 64, 128, 128, 256, 256),
             conv_kernel_size: int = 3,
             conv_stride: int = 2,
-            lstm_layers: int = 2,
-            lstm_units: int = 256,
+            gst_layers: int = 2,
+            gst_units: int = 256,
             ):
         """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
 
+        self.num_tokens = gst_tokens
         self.ref_enc = ReferenceEncoder(idim=idim,
                                         conv_layers=conv_layers,
                                         conv_chans_list=conv_chans_list,
                                         conv_kernel_size=conv_kernel_size,
                                         conv_stride=conv_stride,
-                                        lstm_layers=lstm_layers,
-                                        lstm_units=lstm_units, )
-        self.stl = StyleTokenLayer(ref_embed_dim=lstm_units,
+                                        gst_layers=gst_layers,
+                                        gst_units=gst_units, )
+        self.stl = StyleTokenLayer(ref_embed_dim=gst_units,
                                    gst_tokens=gst_tokens,
                                    gst_token_dim=gst_token_dim,
                                    gst_heads=gst_heads, )
@@ -77,6 +78,18 @@ class StyleEncoder(torch.nn.Module):
             return style_embs, [ref_embs] + [style_embs]
         return style_embs
 
+    def calculate_ada4_regularization_loss(self):
+        loss = 0.0
+
+        for emb1_index in range(self.num_tokens):
+            print(emb1_index)
+            for emb2_index in range(self.num_tokens):
+                if emb1_index != emb2_index:
+                    loss = loss + ((1 / (self.num_tokens * (self.num_tokens - 1))) * torch.nn.functional.cosine_similarity(self.stl.gst_embs[emb1_index],
+                                                                                                                           self.stl.gst_embs[emb2_index],
+                                                                                                                           dim=0))
+        return loss
+
 
 class ReferenceEncoder(torch.nn.Module):
     """Reference encoder module.
@@ -93,8 +106,8 @@ class ReferenceEncoder(torch.nn.Module):
             Kernel size of conv layers in the reference encoder.
         conv_stride (int, optional):
             Stride size of conv layers in the reference encoder.
-        lstm_layers (int, optional): The number of GRU layers in the reference encoder.
-        lstm_units (int, optional): The number of GRU units in the reference encoder.
+        gst_layers (int, optional): The number of GRU layers in the reference encoder.
+        gst_units (int, optional): The number of GRU units in the reference encoder.
     """
 
     def __init__(
@@ -104,8 +117,8 @@ class ReferenceEncoder(torch.nn.Module):
             conv_chans_list=(32, 32, 64, 64, 128, 128),
             conv_kernel_size: int = 3,
             conv_stride: int = 2,
-            lstm_layers: int = 1,
-            lstm_units: int = 128,
+            gst_layers: int = 1,
+            gst_units: int = 128,
             ):
         """Initialize reference encoder module."""
         super(ReferenceEncoder, self).__init__()
@@ -137,28 +150,28 @@ class ReferenceEncoder(torch.nn.Module):
         self.padding = padding
 
         # get the number of GRU input units
-        lstm_in_units = idim
+        gst_in_units = idim
         for i in range(conv_layers):
-            lstm_in_units = (lstm_in_units - conv_kernel_size + 2 * padding) // conv_stride + 1
-        lstm_in_units *= conv_out_chans
-        self.lstm = torch.nn.LSTM(lstm_in_units, lstm_units, lstm_layers, batch_first=True)
+            gst_in_units = (gst_in_units - conv_kernel_size + 2 * padding) // conv_stride + 1
+        gst_in_units *= conv_out_chans
+        self.gst = torch.nn.GRU(gst_in_units, gst_units, gst_layers, batch_first=True)
 
     def forward(self, speech):
         """Calculate forward propagation.
         Args:
             speech (Tensor): Batch of padded target features (B, Lmax, idim).
         Returns:
-            Tensor: Reference embedding (B, lstm_units)
+            Tensor: Reference embedding (B, gst_units)
         """
         batch_size = speech.size(0)
         xs = speech.unsqueeze(1)  # (B, 1, Lmax, idim)
         hs = self.convs(xs).transpose(1, 2)  # (B, Lmax', conv_out_chans, idim')
         # NOTE(kan-bayashi): We need to care the length?
         time_length = hs.size(1)
-        hs = hs.contiguous().view(batch_size, time_length, -1)  # (B, Lmax', lstm_units)
-        self.lstm.flatten_parameters()
-        _, ref_embs = self.lstm(hs)  # (lstm_layers, batch_size, lstm_units)
-        ref_embs = ref_embs[0][-1]  # (batch_size, lstm_units)
+        hs = hs.contiguous().view(batch_size, time_length, -1)  # (B, Lmax', gst_units)
+        self.gst.flatten_parameters()
+        _, ref_embs = self.gst(hs)  # (gst_layers, batch_size, gst_units)
+        ref_embs = ref_embs[-1]  # (batch_size, gst_units)
 
         return ref_embs
 
@@ -184,7 +197,7 @@ class StyleTokenLayer(torch.nn.Module):
             gst_token_dim: int = 128,
             gst_heads: int = 4,
             dropout_rate: float = 0.0,
-    ):
+            ):
         """Initialize style token layer module."""
         super(StyleTokenLayer, self).__init__()
 

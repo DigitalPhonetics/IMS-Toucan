@@ -285,11 +285,10 @@ def train_loop(net,
         if use_wandb:
             wandb.log({
                 "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
-                "cycle_loss":       sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
+                "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
                     cycle_losses_this_epoch) != 0 else 0.0,
-                "epoch":            epoch,
-                "steps":            step_counter,
-            })
+                "Steps"           : step_counter,
+                })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
             return

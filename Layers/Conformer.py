@@ -8,7 +8,6 @@ from Layers.Attention import RelPositionMultiHeadedAttention
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
-from Layers.LayerNorm import LayerNorm
 from Layers.MultiLayeredConv1d import MultiLayeredConv1d
 from Layers.MultiSequential import repeat
 from Layers.PositionalEncoding import RelPositionalEncoding
@@ -86,8 +85,6 @@ class Conformer(torch.nn.Module):
                                                                      positionwise_layer(*positionwise_layer_args) if macaron_style else None,
                                                                      convolution_layer(*convolution_layer_args) if use_cnn_module else None, dropout_rate,
                                                                      normalize_before, concat_after))
-        if self.normalize_before:
-            self.after_norm = LayerNorm(attention_dim)
 
     def forward(self,
                 xs,
@@ -119,13 +116,6 @@ class Conformer(torch.nn.Module):
         if isinstance(xs, tuple):
             xs = xs[0]
 
-        if self.normalize_before:
-            xs = self.after_norm(xs)
-
-        if utterance_embedding is not None:
-            xs = self._integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding)
+        self.hs_emb_projection(x=xs, speaker_embedding=utterance_embedding)
 
         return xs, masks
-
-    def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        return self.hs_emb_projection(x=hs, speaker_embedding=utt_embeddings)
