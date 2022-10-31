@@ -21,12 +21,12 @@ class ConditionalLayerNorm(nn.Module):
         if isinstance(normal_shape, int):
             self.normal_shape = normal_shape
         self.speaker_embedding_dim = speaker_embedding_dim
-        self.W_scale = nn.ModuleList([nn.Linear(self.speaker_embedding_dim, self.normal_shape),
-                                      nn.Tanh(),
-                                      nn.Linear(self.normal_shape, self.normal_shape)])
-        self.W_bias = nn.ModuleList([nn.Linear(self.speaker_embedding_dim, self.normal_shape),
+        self.W_scale = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.normal_shape),
                                      nn.Tanh(),
-                                     nn.Linear(self.normal_shape, self.normal_shape)])
+                                     nn.Linear(self.normal_shape, self.normal_shape))
+        self.W_bias = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.normal_shape),
+                                    nn.Tanh(),
+                                    nn.Linear(self.normal_shape, self.normal_shape))
         self.reset_parameters()
 
     def reset_parameters(self):
