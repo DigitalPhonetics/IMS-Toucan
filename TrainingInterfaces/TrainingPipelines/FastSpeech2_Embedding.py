@@ -37,25 +37,25 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
                                               corpus_dir=os.path.join("Corpora", "ravdess"),
                                               lang="en",
                                               ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
                                               corpus_dir=os.path.join("Corpora", "esds"),
                                               lang="en",
                                               ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
                                               corpus_dir=os.path.join("Corpora", "libri_all_clean"),
                                               lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                               corpus_dir=os.path.join("Corpora", "Nancy"),
                                               lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
                                               corpus_dir=os.path.join("Corpora", "LJSpeech"),
                                               lang="en"))
 

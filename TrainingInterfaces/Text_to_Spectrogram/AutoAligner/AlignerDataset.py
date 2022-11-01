@@ -99,6 +99,8 @@ class AlignerDataset(Dataset):
                     self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
 
             # save to cache
+            if len(self.datapoints) == 0:
+                raise RuntimeError
             torch.save((self.datapoints, norm_waves, self.speaker_embeddings, filepaths), os.path.join(cache_dir, "aligner_train_cache.pt"))
         else:
             # just load the datapoints from cache
