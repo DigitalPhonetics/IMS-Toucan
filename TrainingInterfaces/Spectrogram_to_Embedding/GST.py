@@ -79,22 +79,21 @@ class StyleEncoder(torch.nn.Module):
         return style_embs
 
     def calculate_ada4_regularization_loss(self):
-        combination_part_1 = None
-        combination_part_2 = None
-        for emb1_index in range(self.num_tokens):
-            for emb2_index in range(self.num_tokens):
-                if emb1_index != emb2_index:
-                    if combination_part_1 is None:
-                        combination_part_1 = self.stl.gst_embs[emb1_index]
-                    else:
-                        combination_part_1 = torch.cat((combination_part_1, self.stl.gst_embs[emb1_index]), dim=0)
-                    if combination_part_2 is None:
-                        combination_part_2 = self.stl.gst_embs[emb2_index]
-                    else:
-                        combination_part_2 = torch.cat((combination_part_2, self.stl.gst_embs[emb2_index]), dim=0)
-
+        combination_part_1, combination_part_2 = build_combination_vectors(num_tokens=self.num_tokens, embeddings=self.stl.gst_embs)
         loss = torch.nn.functional.cosine_similarity(combination_part_1, combination_part_2, dim=0)
         return loss
+
+
+def build_combination_vectors(num_tokens, embeddings):
+    combinations_part_1 = list()
+    combinations_part_2 = list()
+    for emb1_index in range(num_tokens):
+        print(emb1_index)
+        for emb2_index in range(num_tokens):
+            if emb1_index != emb2_index:
+                combinations_part_1.append(embeddings[emb1_index])
+                combinations_part_2.append(embeddings[emb2_index])
+    return torch.cat(combinations_part_1, dim=0), torch.cat(combinations_part_2, dim=0)
 
 
 class ReferenceEncoder(torch.nn.Module):
