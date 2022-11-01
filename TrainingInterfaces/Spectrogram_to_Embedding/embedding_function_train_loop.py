@@ -183,6 +183,21 @@ def train_loop(net,
         train_losses_this_epoch = list()
         bt_losses_this_epoch = list()
         reg_losses_this_epoch = list()
+
+        # first, the computationally very expensive style token regularization loss to spread out the vectors
+        print("calculating the style token regularization loss. This will take a while.")
+        reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
+        reg_losses_this_epoch.append(reg_loss.item())
+        optimizer.zero_grad()
+        scaler.scale(reg_loss).backward()
+        scaler.unscale_(optimizer)
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+        scaler.step(optimizer)
+        scaler.update()
+        del reg_loss
+
+        # then the rest
+        optimizer.zero_grad()
         for batch in tqdm(train_loader):
             with autocast():
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
@@ -214,13 +229,8 @@ def train_loop(net,
                     # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
                     bt_losses_this_epoch.append(bt_cycle_dist.item())
                     train_loss = train_loss + bt_cycle_dist
-                if step_counter % 1000 == 0:
-                    reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
-                    train_loss = train_loss + reg_loss
-                    reg_losses_this_epoch.append(reg_loss.item())
 
             optimizer.zero_grad()
-
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
@@ -237,17 +247,17 @@ def train_loop(net,
                 batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
             torch.save({
-                "model":          net.state_dict(),
-                "optimizer":      optimizer.state_dict(),
-                "step_counter":   step_counter,
-                "scaler":         scaler.state_dict(),
-                "scheduler":      scheduler.state_dict(),
-                "default_emb":    default_embedding,
+                "model"         : net.state_dict(),
+                "optimizer"     : optimizer.state_dict(),
+                "step_counter"  : step_counter,
+                "scaler"        : scaler.state_dict(),
+                "scheduler"     : scheduler.state_dict(),
+                "default_emb"   : default_embedding,
                 "style_emb_func": style_embedding_function.state_dict()
-            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             torch.save({
                 "style_emb_func": style_embedding_function.state_dict()
-            }, os.path.join(save_directory, "embedding_function.pt"))
+                }, os.path.join(save_directory, "embedding_function.pt"))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net, device, save_dir=save_directory, step=step_counter,
                                                           lang=lang, default_emb=default_embedding)
