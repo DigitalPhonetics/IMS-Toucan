@@ -88,7 +88,6 @@ def build_combination_vectors(num_tokens, embeddings):
     combinations_part_1 = list()
     combinations_part_2 = list()
     for emb1_index in range(num_tokens):
-        print(emb1_index)
         for emb2_index in range(num_tokens):
             if emb1_index != emb2_index:
                 combinations_part_1.append(embeddings[emb1_index])
