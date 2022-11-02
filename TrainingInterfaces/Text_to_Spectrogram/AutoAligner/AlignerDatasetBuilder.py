@@ -138,7 +138,11 @@ class AlignerDatasetBuilder(Dataset):
             if self.path_to_transcript_dict[path].strip() == "":
                 continue
 
-            wave, sr = sf.read(path)
+            try:
+                wave, sr = sf.read(path)
+            except:
+                print(f"Problem with an audio file: {path}")
+                continue
             dur_in_seconds = len(wave) / sr
             if not (min_len <= dur_in_seconds <= max_len):
                 if verbose:
@@ -146,7 +150,8 @@ class AlignerDatasetBuilder(Dataset):
                 continue
             try:
                 with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
+                    warnings.simplefilter(
+                        "ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
                     norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
             except ValueError:
                 continue

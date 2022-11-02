@@ -12,7 +12,8 @@ def visualize_random_speakers(generate=False):
         # first we generate a bunch of audios with random speaker embeddings
         if not len(os.listdir("audios/random_speakers/")) != 0:
             os.makedirs("audios/random_speakers/", exist_ok=True)
-            read_texts_as_ensemble(model_id="Libri", sentence="Hi, I am a completely random speaker that probably doesn't exist!",
+            read_texts_as_ensemble(model_id="Meta",
+                                   sentence="Hi, I am a completely random speaker that probably doesn't exist!",
                                    filename="audios/random_speakers/libri", amount=100)
 
     # then we visualize those audios
@@ -25,37 +26,42 @@ def visualize_random_speakers(generate=False):
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of TTS with random Condition")
 
 
-def visualize_libritts(model_id):
-    vs = Visualizer(model_id=model_id)
+def visualize_libritts(save_file_path):
+    vs = Visualizer()
     ltf = dict()
     for speaker in os.listdir("audios/LibriTTS"):
-        ltf[speaker] = list()
-        for book in os.listdir(f"audios/LibriTTS/{speaker}"):
-            for audio_file in os.listdir(f"audios/LibriTTS/{speaker}/{book}"):
-                ltf[speaker].append(f"audios/LibriTTS/{speaker}/{book}/{audio_file}")
-    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Some LibriTTS Embeddings - {model_id}")
+        if os.path.isdir(f"audios/LibriTTS/{speaker}"):
+            ltf[speaker] = list()
+            for book in os.listdir(f"audios/LibriTTS/{speaker}"):
+                for audio_file in os.listdir(f"audios/LibriTTS/{speaker}/{book}"):
+                    if audio_file.endswith(".wav"):
+                        ltf[speaker].append(f"audios/LibriTTS/{speaker}/{book}/{audio_file}")
+                    if len(ltf[speaker]) > 5:
+                        break
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Some LibriTTS Embeddings",
+                                    save_file_path=save_file_path)
 
 
-def visualize_ravdess(model_id):
-    vs = Visualizer(model_id=model_id)
+def visualize_ravdess():
+    vs = Visualizer()
     ltf = dict()
     for speaker in os.listdir("audios/RAVDESS_male"):
         ltf[speaker] = list()
         for audio_file in os.listdir(f"audios/RAVDESS_male/{speaker}"):
             ltf[speaker].append(f"audios/RAVDESS_male/{speaker}/{audio_file}")
-    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"RAVDESS Male Embeddings - {model_id}")
-    vs = Visualizer(model_id=model_id)
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"RAVDESS Male Embeddings")
+    vs = Visualizer()
     ltf = dict()
     for speaker in os.listdir("audios/RAVDESS_female"):
         ltf[speaker] = list()
         for audio_file in os.listdir(f"audios/RAVDESS_female/{speaker}"):
             ltf[speaker].append(f"audios/RAVDESS_female/{speaker}/{audio_file}")
-    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"RAVDESS Female Embeddings - {model_id}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"RAVDESS Female Embeddings")
 
 
-def visualize_speakers_and_emotions(model_id):
+def visualize_speakers_and_emotions():
     # small emotion test
-    # vs = Visualizer(model_id=model_id)
+    # vs = Visualizer()
     # ltf = dict()
     # for speaker in os.listdir("audios/emotions"):
     #    ltf[speaker] = list()
@@ -64,7 +70,7 @@ def visualize_speakers_and_emotions(model_id):
     # vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Embeddings by Emotion")
 
     # iemocap
-    vs = Visualizer(model_id=model_id)
+    vs = Visualizer()
     ltf = {"neu": [], "sad": [], "ang": [], "hap": []}
     with open("audios/IEMOCAP/iemocap_full_dataset.csv", "r", encoding="utf8") as f:
         lines = f.read().split("\n")
@@ -77,7 +83,7 @@ def visualize_speakers_and_emotions(model_id):
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Embeddings by Emotion")
 
     # multiling speakers
-    vs = Visualizer(model_id=model_id)
+    vs = Visualizer()
     ltf = dict()
     for speaker in os.listdir("audios/speakers"):
         ltf[speaker] = list()
@@ -159,4 +165,4 @@ def check_same_params(model1, model2):
 
 
 if __name__ == '__main__':
-    visualize_speakers_and_emotions(model_id="LibriGST_new")
+    visualize_libritts("libri_speakers_plotted.png")

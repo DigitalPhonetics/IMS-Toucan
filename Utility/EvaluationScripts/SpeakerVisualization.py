@@ -1,13 +1,10 @@
-import matplotlib
+import numpy
 import soundfile as sf
 import torch
 from matplotlib import cm
 from matplotlib import pyplot as plt
-
-matplotlib.use("tkAgg")
-from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-import numpy
+from sklearn.manifold import TSNE
 from tqdm import tqdm
 
 from Preprocessing.GSTExtractor import ProsodicConditionExtractor
@@ -15,19 +12,20 @@ from Preprocessing.GSTExtractor import ProsodicConditionExtractor
 
 class Visualizer:
 
-    def __init__(self, sr=48000, device="cpu", model_id="Meta"):
+    def __init__(self, sr=48000, device="cpu"):
         """
         Args:
             sr: The sampling rate of the audios you want to visualize.
         """
-        self.tsne = TSNE(n_jobs=-1, learning_rate="auto", init="pca", verbose=1, n_iter_without_progress=20000, n_iter=60000)
-        self.pca = PCA(n_components=2)
+        self.tsne = TSNE(n_jobs=-1, learning_rate="auto", init="pca", verbose=1, n_iter_without_progress=20000,
+                         n_iter=60000)
+        self.pca = PCA(n_components=40)
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
-        self.model_id = model_id
         self.device = device
         self.sr = sr
 
-    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None, include_pca=False, legend=True, colors=None):
+    def visualize_speaker_embeddings(self, label_to_filepaths, title_of_plot, save_file_path=None, include_pca=False,
+                                     legend=True, colors=None):
         label_list = list()
         embedding_list = list()
         ordered_labels = sorted(list(label_to_filepaths.keys()))
@@ -38,16 +36,19 @@ class Visualizer:
                     if len(wave) / sr < 1:
                         continue
                     if self.sr != sr:
-                        print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
-                              "creating a new condition extractor. Results will be correct, but if there are too many cases "
-                              "of changing samplingrate, this will run very slowly.")
+                        print(
+                            "One of the Audios you included doesn't match the sampling rate of this visualizer object, "
+                            "creating a new condition extractor. Results will be correct, but if there are too many cases "
+                            "of changing samplingrate, this will run very slowly.")
                         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=self.device)
                         self.sr = sr
-                    embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().detach().numpy())
+                    embedding_list.append(
+                        self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze().detach().numpy())
                     label_list.append(label)
         embeddings_as_array = numpy.array(embedding_list)
 
-        dimensionality_reduced_embeddings_tsne = self.tsne.fit_transform(embeddings_as_array)
+        dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
+        dimensionality_reduced_embeddings_tsne = self.tsne.fit_transform(dimensionality_reduced_embeddings_pca)
         self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_tsne,
                               labels=label_list,
                               title=title_of_plot + " t-SNE" if include_pca else title_of_plot,
@@ -101,7 +102,7 @@ class Visualizer:
             plt.show()
         plt.close()
 
-    def calculate_spk_sim(self, reference_path, comparisons, model_id):
+    def calculate_spk_sim(self, reference_path, comparisons):
         embedding_list = list()
         for filepath in tqdm(comparisons):
             wave, sr = sf.read(filepath)
@@ -111,7 +112,7 @@ class Visualizer:
                 print("One of the Audios you included doesn't match the sampling rate of this visualizer object, "
                       "creating a new condition extractor. Results will be correct, but if there are too many cases "
                       "of changing samplingrate, this will run very slowly.")
-                self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, model_id=model_id)
+                self.pros_cond_ext = ProsodicConditionExtractor(sr=sr)
                 self.sr = sr
             embedding_list.append(self.pros_cond_ext.extract_condition_from_reference_wave(wave).squeeze())
 
