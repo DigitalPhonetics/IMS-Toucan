@@ -1,5 +1,3 @@
-import random
-
 import gradio as gr
 import numpy as np
 
@@ -29,7 +27,7 @@ class TTSWebUI:
         self.iface = gr.Interface(fn=self.read,
                                   inputs=[gr.inputs.Textbox(lines=2,
                                                             placeholder="write what you want the synthesis to read here...",
-                                                            default="While I nodded, nearly napping, suddenly there came a tapping, \nAs of some one gently rapping, rapping at my chamber door.",
+                                                            default="What I cannot create, I do not understand.",
                                                             label="Text input"),
                                           gr.inputs.Dropdown(['English Text',
                                                               'German Text',
@@ -63,7 +61,7 @@ class TTSWebUI:
                                                              default='English Accent',
                                                              label="Select the Accent of the Speaker"),
                                           gr.inputs.Slider(minimum=0, maximum=1000, step=1,
-                                                           default=random.randint(0, 1000),
+                                                           default=279,
                                                            label="Random Seed for the artificial Voice"),
                                           gr.inputs.Slider(minimum=0.5, maximum=1.5, step=0.1, default=1.0,
                                                            label="Duration Scale"),
