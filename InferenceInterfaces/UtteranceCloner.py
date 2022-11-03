@@ -66,7 +66,7 @@ class UtteranceCloner:
 
         if on_line_fine_tune:
             # we fine-tune the aligner for a couple steps using SGD. This makes cloning pretty slow, but the results are greatly improved.
-            steps = 10
+            steps = 5
             tokens = list()  # we need an ID sequence for training rather than a sequence of phonological features
             for vector in text:
                 if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
