@@ -21,7 +21,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=True):
+    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=False):
         super().__init__()
         self.device = device
         self.use_enhancement = use_enhancement
