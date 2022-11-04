@@ -279,21 +279,13 @@ class FastSpeech2(torch.nn.Module, ABC):
             h_masks = self._source_mask(olens_in)
         else:
             h_masks = None
-        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
+        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding.detach())  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
 
         return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
-
-    def batch_inference(self, texts, text_lens, utt_emb):
-        _, after_outs, d_outs, _, _ = self._forward(texts,
-                                                    text_lens,
-                                                    None,
-                                                    is_inference=True,
-                                                    alpha=1.0)
-        return after_outs, d_outs
 
     def inference(self,
                   text,
