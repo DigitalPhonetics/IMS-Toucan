@@ -32,7 +32,7 @@ class StyleEncoder(torch.nn.Module):
     def __init__(
             self,
             idim: int = 80,
-            gst_tokens: int = 3000,
+            gst_tokens: int = 2000,
             gst_token_dim: int = 256,
             gst_heads: int = 8,
             conv_layers: int = 8,
@@ -41,7 +41,7 @@ class StyleEncoder(torch.nn.Module):
             conv_stride: int = 2,
             gst_layers: int = 2,
             gst_units: int = 256,
-            ):
+    ):
         """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
 
@@ -79,20 +79,13 @@ class StyleEncoder(torch.nn.Module):
         return style_embs
 
     def calculate_ada4_regularization_loss(self):
-        combination_part_1, combination_part_2 = build_combination_vectors(num_tokens=self.num_tokens, embeddings=self.stl.gst_embs)
-        loss = torch.nn.functional.cosine_similarity(combination_part_1, combination_part_2, dim=0)
-        return loss
-
-
-def build_combination_vectors(num_tokens, embeddings):
-    combinations_part_1 = list()
-    combinations_part_2 = list()
-    for emb1_index in range(num_tokens):
-        for emb2_index in range(num_tokens):
-            if emb1_index != emb2_index:
-                combinations_part_1.append(embeddings[emb1_index])
-                combinations_part_2.append(embeddings[emb2_index])
-    return torch.cat(combinations_part_1, dim=0), torch.cat(combinations_part_2, dim=0)
+        losses = list()
+        for emb1_index in range(self.num_tokens):
+            for emb2_index in range(emb1_index + 1, self.num_tokens):
+                if emb1_index != emb2_index:
+                    losses.append(torch.nn.functional.cosine_similarity(self.stl.gst_embs[emb1_index],
+                                                                        self.stl.gst_embs[emb2_index], dim=0))
+        return sum(losses)
 
 
 class ReferenceEncoder(torch.nn.Module):
@@ -123,7 +116,7 @@ class ReferenceEncoder(torch.nn.Module):
             conv_stride: int = 2,
             gst_layers: int = 1,
             gst_units: int = 128,
-            ):
+    ):
         """Initialize reference encoder module."""
         super(ReferenceEncoder, self).__init__()
 
@@ -201,7 +194,7 @@ class StyleTokenLayer(torch.nn.Module):
             gst_token_dim: int = 128,
             gst_heads: int = 4,
             dropout_rate: float = 0.0,
-            ):
+    ):
         """Initialize style token layer module."""
         super(StyleTokenLayer, self).__init__()
 

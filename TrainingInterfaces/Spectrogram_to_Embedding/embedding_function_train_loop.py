@@ -214,7 +214,7 @@ def train_loop(net,
                                                       return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
 
-                if step_counter % 100 == 0:
+                if step_counter % 3000 == 0:
                     style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                  batch_of_spectrogram_lengths=batch[3].to(device),
                                                                  return_only_refs=True)
@@ -225,7 +225,7 @@ def train_loop(net,
                     # But the difference should be minimal, thus we use the barlow twins objective to make them more
                     # similar and reduce redundancy within the reference embedding vectors.
                     bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                    bt_cycle_dist = bt_cycle_dist * 0.001  # this can disrupt convergence if the scale is too large.
+                    bt_cycle_dist = bt_cycle_dist * 0.0001  # this can disrupt convergence if the scale is too large.
                     # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
                     bt_losses_this_epoch.append(bt_cycle_dist.item())
                     train_loss = train_loss + bt_cycle_dist
