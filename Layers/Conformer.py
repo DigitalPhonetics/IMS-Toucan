@@ -8,6 +8,7 @@ from Layers.Attention import RelPositionMultiHeadedAttention
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
+from Layers.LayerNorm import LayerNorm
 from Layers.MultiLayeredConv1d import MultiLayeredConv1d
 from Layers.MultiSequential import repeat
 from Layers.PositionalEncoding import RelPositionalEncoding
@@ -63,8 +64,11 @@ class Conformer(torch.nn.Module):
             raise ValueError("unknown input_layer: " + input_layer)
 
         self.normalize_before = normalize_before
+        self.utt_embed = utt_embed
         if utt_embed is not None:
             self.hs_emb_projection = ConditionalLayerNorm(normal_shape=attention_dim, speaker_embedding_dim=utt_embed)
+        else:
+            self.output_norm = LayerNorm(attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -116,6 +120,9 @@ class Conformer(torch.nn.Module):
         if isinstance(xs, tuple):
             xs = xs[0]
 
-        self.hs_emb_projection(x=xs, speaker_embedding=utterance_embedding)
+        if self.utt_embed:
+            xs = self.hs_emb_projection(x=xs, speaker_embedding=utterance_embedding)
+        else:
+            xs = self.output_norm(xs)
 
         return xs, masks

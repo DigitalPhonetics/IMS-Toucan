@@ -255,19 +255,19 @@ class FastSpeech2(torch.nn.Module, ABC):
             energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
 
         if is_inference:
-            d_outs = self.duration_predictor.inference(encoded_texts, d_masks)  # (B, Tmax)
+            predicted_durations = self.duration_predictor.inference(encoded_texts, d_masks)  # (B, Tmax)
             # use prediction in inference
-            p_embs = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
-            e_embs = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + e_embs + p_embs
-            encoded_texts = self.length_regulator(encoded_texts, d_outs, alpha)  # (B, Lmax, adim)
+            embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+            embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+            encoded_texts = self.length_regulator(encoded_texts, predicted_durations, alpha)  # (B, Lmax, adim)
         else:
-            d_outs = self.duration_predictor(encoded_texts, d_masks)
+            predicted_durations = self.duration_predictor(encoded_texts, d_masks)
 
             # use groundtruth in training
-            p_embs = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            e_embs = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + e_embs + p_embs
+            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward decoder
@@ -279,13 +279,13 @@ class FastSpeech2(torch.nn.Module, ABC):
             h_masks = self._source_mask(olens_in)
         else:
             h_masks = None
-        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding.detach())  # (B, Lmax, adim)
+        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
 
-        return before_outs, after_outs, d_outs, pitch_predictions, energy_predictions
+        return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
 
     def inference(self,
                   text,
