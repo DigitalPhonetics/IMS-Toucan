@@ -116,4 +116,4 @@ if __name__ == '__main__':
                filename="audios/the_raven.wav",
                device=exec_device,
                language="en",
-               speaker_reference="audios/RAVDESS_female/Actor_04/03-01-06-02-01-02-04.wav")
+               speaker_reference=None)

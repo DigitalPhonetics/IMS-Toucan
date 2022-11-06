@@ -122,4 +122,4 @@ def show_all_models_params():
 
 if __name__ == '__main__':
     show_all_models_params()
-    make_best_in_all(n=3)
+    make_best_in_all(n=1)

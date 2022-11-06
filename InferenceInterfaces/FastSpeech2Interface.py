@@ -10,6 +10,13 @@ import soundfile
 import torch
 from df.enhance import enhance
 from df.enhance import init_df
+from pedalboard import Compressor
+from pedalboard import HighShelfFilter
+from pedalboard import HighpassFilter
+from pedalboard import LowpassFilter
+from pedalboard import NoiseGate
+from pedalboard import PeakFilter
+from pedalboard import Pedalboard
 
 from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
 from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
@@ -21,9 +28,21 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=False):
+    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=False, use_signalprocessing=True):
         super().__init__()
         self.device = device
+        self.use_signalprocessing = use_signalprocessing
+        if self.use_signalprocessing:
+            self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
+                                               HighShelfFilter(cutoff_frequency_hz=8000, gain_db=5.0),
+                                               LowpassFilter(cutoff_frequency_hz=17000),
+                                               PeakFilter(cutoff_frequency_hz=150, gain_db=5.0),
+                                               PeakFilter(cutoff_frequency_hz=220, gain_db=-5.0),
+                                               PeakFilter(cutoff_frequency_hz=900, gain_db=-5.0),
+                                               PeakFilter(cutoff_frequency_hz=3200, gain_db=-5.0),
+                                               PeakFilter(cutoff_frequency_hz=7500, gain_db=-5.0),
+                                               NoiseGate(),
+                                               Compressor(ratio=3.0)])
         self.use_enhancement = use_enhancement
         if self.use_enhancement:
             self.enhancer, self.df, _ = init_df(log_file=None,
@@ -158,6 +177,8 @@ class InferenceFastSpeech2(torch.nn.Module):
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
+            if self.use_signalprocessing:
+                wave = torch.Tensor(self.effects(wave.cpu().numpy(), 48000))
             if self.use_enhancement:
                 wave = enhance(self.enhancer, self.df, wave.unsqueeze(0).cpu(), pad=True).squeeze()
                 try:
