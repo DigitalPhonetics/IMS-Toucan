@@ -255,48 +255,6 @@ class ArticulatoryCombinedTextFrontend:
         # languages use different tones denoted by different numbering
         # systems. At this point in the script, it is attempted to unify
         # them all to the tones in the IPA standard.
-        if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
-            """
-            handling for the espeak use-case
-            
-            phones = phones.replace(".", "")  # no idea why espeak puts dots everywhere for Chinese
-            
-            # fix for a bug in espeak that ignores the second target in multi-target tones in mandarin, as proposed by GitHub user @GodEase
-            phones = ' '.join([re.sub(r'[1-5ɜ]', u[-1], p) for p, u in zip(phones.split(), utt.split())])
-
-            # unfortunately the pypinyin package gives us only the unique characters instead of the base characters with modifiers,
-            # so we have to do every vowel separately  ̌ ́ ̄ ̀
-
-            # handle flat tone
-            phones = phones.replace("ā", "˥")
-            phones = phones.replace("ē", "˥")
-            phones = phones.replace("ī", "˥")
-            phones = phones.replace("ō", "˥")
-            phones = phones.replace("ū", "˥")
-            phones = phones.replace("ǖ", "˥")
-            # handle rising tone
-            phones = phones.replace("á", "˧˥")
-            phones = phones.replace("é", "˧˥")
-            phones = phones.replace("í", "˧˥")
-            phones = phones.replace("ó", "˧˥")
-            phones = phones.replace("ú", "˧˥")
-            phones = phones.replace("ǘ", "˧˥")
-            # handle dip tone
-            phones = phones.replace("ǎ", "˨˩˦")
-            phones = phones.replace("ĕ", "˨˩˦")
-            phones = phones.replace("ǐ", "˨˩˦")
-            phones = phones.replace("ǒ", "˨˩˦")
-            phones = phones.replace("ǔ", "˨˩˦")
-            phones = phones.replace("ǚ", "˨˩˦")
-            # handle falling tone
-            phones = phones.replace("à", "˥˩")
-            phones = phones.replace("è", "˥˩")
-            phones = phones.replace("ì", "˥˩")
-            phones = phones.replace("ò", "˥˩")
-            phones = phones.replace("ù", "˥˩")
-            phones = phones.replace("ǜ", "˥˩")
-            """
-
         if self.g2p_lang == "vi":
             phones = phones.replace('1', "˧")
             phones = phones.replace('2', "˨˩")
