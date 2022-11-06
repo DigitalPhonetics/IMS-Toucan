@@ -5,6 +5,7 @@ import re
 import sys
 
 import torch
+from dragonmapper.transcriptions import pinyin_to_ipa
 from phonemizer.backend import EspeakBackend
 from pypinyin import pinyin
 
@@ -245,21 +246,15 @@ class ArticulatoryCombinedTextFrontend:
         # expand abbreviations
         utt = self.expand_abbreviations(text)
         # phonemize
-        phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
+        if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
+            phones = pinyin_to_ipa(utt)
+        else:
+            phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
 
         # Unfortunately tonal languages don't agree on the tone, most tonal
         # languages use different tones denoted by different numbering
         # systems. At this point in the script, it is attempted to unify
         # them all to the tones in the IPA standard.
-        if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
-            phones = phones.replace(".", "")  # no idea why espeak puts dots everywhere for Chinese
-            phones = phones.replace('1', "˥")
-            phones = phones.replace('2', "˧˥")
-            phones = phones.replace('ɜ', "˨˩")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
-            phones = phones.replace('3', "˨˩")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
-            phones = phones.replace('4', "˦˩")
-            phones = phones.replace('5', "˧")
-            phones = phones.replace('0', "˧")
         if self.g2p_lang == "vi":
             phones = phones.replace('1', "˧")
             phones = phones.replace('2', "˨˩")
@@ -279,6 +274,7 @@ class ArticulatoryCombinedTextFrontend:
         replacements = [
             # punctuation in languages with non-latin script
             ("。", "."),
+            ("，", ","),
             ("【", '"'),
             ("】", '"'),
             ("、", ","),
@@ -288,6 +284,8 @@ class ArticulatoryCombinedTextFrontend:
             ("“", '"'),
             ("”", '"'),
             ("؛", ","),
+            ("《", '"'),
+            ("》", '"'),
             # latin script punctuation
             ("/", " "),
             ("—", ""),
@@ -456,8 +454,8 @@ if __name__ == '__main__':
 
     tf = ArticulatoryCombinedTextFrontend(language="cmn")
     tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
-    tf.string_to_tensor("李绅 《悯农》    锄禾日当午，    汗滴禾下土。    谁知盘中餐，    粒粒皆辛苦。", view=True)
-    tf.string_to_tensor("巴	拔	把	爸	吧", view=True)
+    tf.string_to_tensor("李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。", view=True)
+    tf.string_to_tensor("巴 拔 把 爸 吧", view=True)
 
     tf = ArticulatoryCombinedTextFrontend(language="vi")
     tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
