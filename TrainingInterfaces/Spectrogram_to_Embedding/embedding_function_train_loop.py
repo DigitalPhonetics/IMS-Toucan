@@ -184,17 +184,18 @@ def train_loop(net,
         bt_losses_this_epoch = list()
         reg_losses_this_epoch = list()
 
-        # first, the computationally very expensive style token regularization loss to spread out the vectors
-        print("calculating the style token regularization loss. This will take a while.")
-        reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
-        reg_losses_this_epoch.append(reg_loss.item())
-        optimizer.zero_grad()
-        scaler.scale(reg_loss).backward()
-        scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-        scaler.step(optimizer)
-        scaler.update()
-        del reg_loss
+        if step_counter < 80000:
+            # first, the computationally very expensive style token regularization loss to spread out the vectors
+            print("calculating the style token regularization loss. This will take a while.")
+            reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
+            reg_losses_this_epoch.append(reg_loss.item())
+            optimizer.zero_grad()
+            scaler.scale(reg_loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+            scaler.step(optimizer)
+            scaler.update()
+            del reg_loss
 
         # then the rest
         optimizer.zero_grad()
