@@ -39,8 +39,11 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
 def get_most_recent_checkpoint(checkpoint_dir, verbose=True):
     checkpoint_list = list()
     for el in os.listdir(checkpoint_dir):
-        if el.endswith(".pt") and el != "best.pt":
-            checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+        if el.endswith(".pt") and el != "best.pt" and el != "embedding_function.pt":
+            try:
+                checkpoint_list.append(int(el.split(".")[0].split("_")[1]))
+            except ValueError:
+                pass
     if len(checkpoint_list) == 0:
         print("No previous checkpoints found, cannot reload.")
         return None
