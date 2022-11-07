@@ -129,7 +129,7 @@ class ArticulatoryCombinedTextFrontend:
                 print("Created a Polish Text-Frontend")
 
         elif language == "cmn":
-            self.g2p_lang = "cmn-latn-pinyin"  # in older versions of espeak this shorthand was zh
+            self.g2p_lang = "cmn"  # we don't use espeak for this case
             self.expand_abbreviations = convert_kanji_to_pinyin_mandarin
             if not silent:
                 print("Created a Mandarin-Chinese Text-Frontend")
@@ -158,11 +158,12 @@ class ArticulatoryCombinedTextFrontend:
             print("Language not supported yet")
             sys.exit()
 
-        self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
-                                                punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
-                                                preserve_punctuation=True,
-                                                language_switch='remove-flags',
-                                                with_stress=self.use_stress)
+        if self.g2p_lang != "cmn" or self.g2p_lang != "cmn-latn-pinyin":
+            self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
+                                                    punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                    preserve_punctuation=True,
+                                                    language_switch='remove-flags',
+                                                    with_stress=self.use_stress)
 
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
