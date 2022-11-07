@@ -62,6 +62,7 @@ def read_contrastive_focus_sentences(model_id, device):
 
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"running on {exec_device}")
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id="Meta",

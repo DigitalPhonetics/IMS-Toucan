@@ -85,18 +85,19 @@ names.
 To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you can get by without GPU).
 Navigate to the directory you have cloned. We recommend creating and activating a
-[conda virtual environment](https://conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)
-to install the basic requirements into. After creating the environment, the command you need to use to activate the
-virtual environment is displayed. The commands below show everything you need to do. If you don't have a GPU, remove the
-cuda part from the torch installation line.
+[virtual environment](https://docs.python.org/3/library/venv.html)
+to install the basic requirements into. The commands below summarize everything you need to do.
 
 ```
-conda create --prefix ./toucan_conda_venv --no-default-packages python=3.8
+python -m venv <path_to_where_you_want_your_env_to_be>
+
+source <path_to_where_you_want_your_env_to_be>/bin/activate
 
 pip install --no-cache-dir -r requirements.txt
-
-pip install torch==1.10.1+cu111 torchvision==0.11.2+cu111 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
 ```
+
+Run the second line everytime you start using the tool again to activate the virtual environment again, if you e.g.
+logged out in the meantime.
 
 #### espeak-ng
 
