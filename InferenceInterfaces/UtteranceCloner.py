@@ -18,7 +18,7 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import P
 class UtteranceCloner:
 
     def __init__(self, model_id, device):
-        self.tts = InferenceFastSpeech2(device=device, model_name=model_id)
+        self.tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.device = device

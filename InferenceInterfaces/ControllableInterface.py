@@ -15,7 +15,7 @@ class ControllableInterface:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = InferenceFastSpeech2(device=self.device, model_name="Meta")
+        self.model = InferenceFastSpeech2(device=self.device, tts_model_path="Meta")
         self.wgan = GanWrapper('Models/Embedding/embedding_gan.pt', device=self.device)
         self.current_language = "English"
         self.current_accent = "English"

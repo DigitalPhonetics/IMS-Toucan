@@ -28,9 +28,19 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 
 class InferenceFastSpeech2(torch.nn.Module):
 
-    def __init__(self, device="cpu", model_name="Meta", language="en", use_enhancement=False, use_signalprocessing=True):
+    def __init__(self,
+                 device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
+                 tts_model_path="Models/FastSpeech2_Meta/best.pt",  # path to the fastspeech checkpoint or just a shorthand if run standalone
+                 vocoder_model_path="Models/Avocodo/best.pt",  # path to the hifigan/avocodo checkpoint
+                 language="en",  # initial language of the model, can be changed later with the setter methods
+                 use_enhancement=False,  # if you are using very low quality training data, you can use this to post-process your output
+                 use_signalprocessing=True  # some subtle effects that are frequently used in podcasting
+                 ):
         super().__init__()
         self.device = device
+        if not tts_model_path.endswith(".pt"):
+            # default to shorthand system
+            tts_model_path = os.path.join("Models", f"FastSpeech2_{tts_model_path}", "best.pt")
         self.use_signalprocessing = use_signalprocessing
         if self.use_signalprocessing:
             self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
@@ -60,7 +70,7 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #   load weights               #
         ################################
-        checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
+        checkpoint = torch.load(tts_model_path, map_location='cpu')
 
         ################################
         #   load phone to mel model    #
@@ -90,7 +100,7 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=os.path.join("Models", "Avocodo", "best.pt")),
+        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=vocoder_model_path),
                                        torch.rand((80, 50))).to(
             torch.device(device))
 
@@ -178,7 +188,11 @@ class InferenceFastSpeech2(torch.nn.Module):
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
             if self.use_signalprocessing:
-                wave = torch.Tensor(self.effects(wave.cpu().numpy(), 48000))
+                try:
+                    wave = torch.Tensor(self.effects(wave.cpu().numpy(), 48000))
+                except ValueError:
+                    # if the audio is too short, a value error might arise
+                    pass
             if self.use_enhancement:
                 wave = enhance(self.enhancer, self.df, wave.unsqueeze(0).cpu(), pad=True).squeeze()
                 try:

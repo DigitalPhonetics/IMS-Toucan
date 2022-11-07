@@ -6,7 +6,7 @@ from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
 
 
 def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None):
-    tts = InferenceFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
@@ -20,7 +20,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu", language=
     """
     for this function, the filename should NOT contain the .wav ending, it's added automatically
     """
-    tts = InferenceFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if type(sentence) == str:
         sentence = [sentence]
@@ -30,7 +30,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu", language=
 
 
 def read_harvard_sentences(model_id, device):
-    tts = InferenceFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
 
     with open("Utility/test_sentences_combined_3.txt", "r", encoding="utf8") as f:
         sents = f.read().split("\n")
@@ -50,7 +50,7 @@ def read_harvard_sentences(model_id, device):
 
 
 def read_contrastive_focus_sentences(model_id, device):
-    tts = InferenceFastSpeech2(device=device, model_name=model_id)
+    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
 
     with open("Utility/contrastive_focus_test_sentences.txt", "r", encoding="utf8") as f:
         sents = f.read().split("\n")
