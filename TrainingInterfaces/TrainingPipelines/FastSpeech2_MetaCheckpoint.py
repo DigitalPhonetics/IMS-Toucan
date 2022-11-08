@@ -166,7 +166,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       lang="it"))
 
     chinese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn(),
-                                                      corpus_dir=os.path.join("Corpora", "css10_chinese"),
+                                                      corpus_dir=os.path.join("Corpora", "meta_chinese"),
                                                       lang="cmn"))
 
     chinese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_aishell3(),
