@@ -287,6 +287,12 @@ class ArticulatoryCombinedTextFrontend:
             ("؛", ","),
             ("《", '"'),
             ("》", '"'),
+            ("？", "?"),
+            ("！", "!"),
+            (" ：", ":"),
+            (" ；", ";"),
+            ("－", "-"),
+            ("·", " "),
             # latin script punctuation
             ("/", " "),
             ("—", ""),
