@@ -160,14 +160,17 @@ class AlignerDataset(Dataset):
             norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
+
             try:
-                cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(
-                    0).cpu().numpy()
-            except KeyError:
-                cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(
-                    0).cpu().numpy()
-                if not allow_unknown_symbols:
-                    continue  # we skip sentences with unknown symbols
+                try:
+                    cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                except KeyError:
+                    cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                    if not allow_unknown_symbols:
+                        continue  # we skip sentences with unknown symbols
+            except ValueError:
+                # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
+                continue
 
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
