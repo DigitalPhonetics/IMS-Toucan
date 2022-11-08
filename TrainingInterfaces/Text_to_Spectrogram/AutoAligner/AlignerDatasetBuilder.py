@@ -173,6 +173,9 @@ class AlignerDatasetBuilder(Dataset):
             except ValueError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
+            except KeyError:
+                # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
+                continue
 
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
