@@ -94,17 +94,17 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
     print("...done!")
 
 
-def make_best_in_all(n=3):
+def make_best_in_all():
     for model_dir in os.listdir("Models"):
         if os.path.isdir(f"Models/{model_dir}"):
             if "HiFiGAN" in model_dir or "Avocodo" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=5)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
                 save_model_for_use(model=averaged_model, name=f"Models/{model_dir}/best.pt", dict_name="generator")
             elif "FastSpeech2" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=2)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
@@ -118,8 +118,11 @@ def count_parameters(net):
 def show_all_models_params():
     from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
     print("Number of (trainable) Parameters in FastSpeech2: {}".format(count_parameters(FastSpeech2())))
+    from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+    print("Number of (trainable) Parameters in GST: {}".format(count_parameters(StyleEmbedding())))
+    from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
+    print("Number of (trainable) Parameters in the HiFiGAN Generator: {}".format(count_parameters(HiFiGANGenerator())))
 
 
 if __name__ == '__main__':
-    show_all_models_params()
-    make_best_in_all(n=1)
+    make_best_in_all()
