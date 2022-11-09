@@ -39,8 +39,8 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
   spectrograms as input, but produces 48kHz waveforms.
 - We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
   multilingual data to benefit less resource-rich languages.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can
-  fine-tune a model with very little data in almost any language. The last two contributions are described in
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
+  with very little data in almost any language. The last two contributions are described in
   [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
 - We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
   objective, inspired by
@@ -54,8 +54,8 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 - By conditioning the TTS on speaker and language embeddings in a specific way, multi-lingual and multi-speaker models
   are possible. You can use any speaker in any language, regardless of the language that the speakers themselves are
   speaking. We will present [a paper on this at AACL 2022](https://arxiv.org/abs/2210.12223)!
-- Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with
-  everything else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
+- Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with everything
+  else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
   present [a paper on this at SLT 2022](https://arxiv.org/abs/2206.12229). We apply this
   to [literary studies on poetry and presented a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
@@ -97,7 +97,9 @@ pip install --no-cache-dir -r requirements.txt
 ```
 
 Run the second line everytime you start using the tool again to activate the virtual environment again, if you e.g.
-logged out in the meantime.
+logged out in the meantime. To make use of a GPU, you don't need to do anything else on a Linux machine. On a Windows
+machine, have a look at [the official PyTorch website](https://pytorch.org/) for the install-command that enables GPU
+support.
 
 #### espeak-ng
 
@@ -133,10 +135,9 @@ duration information that FastSpeech 2 needs as input.
 
 This should not be necessary, because we provide a pretrained model and one of the key benefits of vocoders in general
 is how incredibly speaker independent they are. But in case you want to train your own anyway, here are the
-instructions: In the directory called
-You will need a function to return the list of all the absolute paths to each of the
-audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for FastSpeech 2
-training, you can simply take the keys of the dict and transform them into a list.
+instructions: In the directory called You will need a function to return the list of all the absolute paths to each of
+the audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for FastSpeech
+2 training, you can simply take the keys of the dict and transform them into a list.
 
 Then go to the directory
 *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Avocodo in its name. We
@@ -316,9 +317,9 @@ which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan
 For a version of the toolkit that includes TransformerTTS, Tacotron 2 or MelGAN, check out the other branches. They are
 separated to keep the code clean, simple and minimal as the development progresses.
 
-This toolkit has been written by Florian Lux, if you come across problems
-or questions, feel free to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something
-cool with it. Thank you for reading.
+This toolkit has been written by Florian Lux, if you come across problems or questions, feel free
+to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something cool with it. Thank you
+for reading.
 
 ## Citation 🐧
 
