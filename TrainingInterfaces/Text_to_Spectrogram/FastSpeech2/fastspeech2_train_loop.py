@@ -253,6 +253,7 @@ def train_loop(net,
             scheduler.step()
 
         net.eval()
+        style_embedding_function.eval()
         if epoch % epochs_per_save == 0:
             default_embedding = style_embedding_function(
                 batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),

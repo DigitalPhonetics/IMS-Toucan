@@ -265,6 +265,7 @@ def train_loop(net,
             # Enough steps for some insights
             # ==============================
             net.eval()
+            style_embedding_function.eval()
             default_embedding = style_embedding_function(
                 batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
@@ -273,13 +274,13 @@ def train_loop(net,
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             torch.save({
-                "model":        net.state_dict(),
-                "optimizer":    optimizer.state_dict(),
-                "scaler":       grad_scaler.state_dict(),
-                "scheduler":    scheduler.state_dict(),
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
+                "scaler"      : grad_scaler.state_dict(),
+                "scheduler"   : scheduler.state_dict(),
                 "step_counter": step,
-                "default_emb":  default_embedding,
-            },
+                "default_emb" : default_embedding,
+                },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net=net,
