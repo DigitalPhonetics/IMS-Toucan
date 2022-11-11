@@ -38,7 +38,7 @@ def visualize_libritts(save_file_path):
                         ltf[speaker].append(f"audios/LibriTTS/{speaker}/{book}/{audio_file}")
                     if len(ltf[speaker]) > 5:
                         break
-    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=f"Some LibriTTS Embeddings",
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot=None,
                                     save_file_path=save_file_path)
 
 

@@ -3,8 +3,9 @@ import soundfile as sf
 import torch
 from matplotlib import cm
 from matplotlib import pyplot as plt
-from sklearn.decomposition import PCA
+from mpl_toolkits import mplot3d
 from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from Preprocessing.GSTExtractor import ProsodicConditionExtractor
@@ -17,9 +18,10 @@ class Visualizer:
         Args:
             sr: The sampling rate of the audios you want to visualize.
         """
-        self.tsne = TSNE(n_jobs=-1, learning_rate="auto", init="pca", verbose=1, n_iter_without_progress=20000,
-                         n_iter=60000)
-        self.pca = PCA(n_components=40)
+        mplot3d
+        plt.rcParams["figure.figsize"] = (10, 10)
+        self.scaler = StandardScaler()
+        self.reduction = TSNE(n_components=3, learning_rate="auto", n_iter=1000000, n_iter_without_progress=3000, init="pca")
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.device = device
         self.sr = sr
@@ -47,23 +49,13 @@ class Visualizer:
                     label_list.append(label)
         embeddings_as_array = numpy.array(embedding_list)
 
-        dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
-        dimensionality_reduced_embeddings_tsne = self.tsne.fit_transform(dimensionality_reduced_embeddings_pca)
-        self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_tsne,
+        dimensionality_reduced_embeddings_LDA = self.reduction.fit_transform(X=self.scaler.fit_transform(embeddings_as_array))
+        self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_LDA,
                               labels=label_list,
-                              title=title_of_plot + " t-SNE" if include_pca else title_of_plot,
+                              title=title_of_plot,
                               save_file_path=save_file_path,
                               legend=legend,
                               colors=colors)
-
-        if include_pca:
-            dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
-            self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_pca,
-                                  labels=label_list,
-                                  title=title_of_plot + " PCA",
-                                  save_file_path=save_file_path,
-                                  legend=legend,
-                                  colors=colors)
 
     def _plot_embeddings(self, projected_data, labels, title, save_file_path, legend, colors):
         if colors is None:
@@ -74,28 +66,36 @@ class Visualizer:
 
         labels_to_points_x = dict()
         labels_to_points_y = dict()
+        labels_to_points_z = dict()
         for label in labels:
             labels_to_points_x[label] = list()
             labels_to_points_y[label] = list()
+            labels_to_points_z[label] = list()
         for index, label in enumerate(labels):
             labels_to_points_x[label].append(projected_data[index][0])
             labels_to_points_y[label].append(projected_data[index][1])
+            labels_to_points_z[label].append(projected_data[index][2])
 
-        fig, ax = plt.subplots()
+        ax = plt.axes(projection='3d')
+
         for label in sorted(list(set(labels))):
             x = numpy.array(labels_to_points_x[label])
             y = numpy.array(labels_to_points_y[label])
-            ax.scatter(x=x,
-                       y=y,
-                       c=label_to_color[label],
-                       label=label,
-                       alpha=0.9)
+            z = numpy.array(labels_to_points_z[label])
+            ax.scatter3D(xs=x,
+                         ys=y,
+                         zs=z,
+                         c=label_to_color[label],
+                         label=label,
+                         alpha=0.9)
         if legend:
             ax.legend()
-        fig.tight_layout()
-        ax.axis('off')
-        fig.subplots_adjust(top=0.9, bottom=0.0, right=1.0, left=0.0)
         ax.set_title(title)
+
+        for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
+            axis.set_ticklabels([])
+            axis.set_pane_color((0.98, 0.98, 0.98))
+
         if save_file_path is not None:
             plt.savefig(save_file_path)
         else:

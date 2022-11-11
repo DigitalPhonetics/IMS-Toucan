@@ -34,7 +34,7 @@ class InferenceFastSpeech2(torch.nn.Module):
                  vocoder_model_path="Models/Avocodo/best.pt",  # path to the hifigan/avocodo checkpoint
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  use_enhancement=False,  # if you are using very low quality training data, you can use this to post-process your output
-                 use_signalprocessing=True  # some subtle effects that are frequently used in podcasting
+                 use_signalprocessing=False  # some subtle effects that are frequently used in podcasting
                  ):
         super().__init__()
         self.device = device
@@ -46,13 +46,13 @@ class InferenceFastSpeech2(torch.nn.Module):
             self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
                                                HighShelfFilter(cutoff_frequency_hz=8000, gain_db=5.0),
                                                LowpassFilter(cutoff_frequency_hz=17000),
-                                               PeakFilter(cutoff_frequency_hz=150, gain_db=5.0),
-                                               PeakFilter(cutoff_frequency_hz=220, gain_db=-5.0),
-                                               PeakFilter(cutoff_frequency_hz=900, gain_db=-5.0),
-                                               PeakFilter(cutoff_frequency_hz=3200, gain_db=-5.0),
-                                               PeakFilter(cutoff_frequency_hz=7500, gain_db=-5.0),
+                                               PeakFilter(cutoff_frequency_hz=150, gain_db=2.0),
+                                               PeakFilter(cutoff_frequency_hz=220, gain_db=-2.0),
+                                               PeakFilter(cutoff_frequency_hz=900, gain_db=-2.0),
+                                               PeakFilter(cutoff_frequency_hz=3200, gain_db=-2.0),
+                                               PeakFilter(cutoff_frequency_hz=7500, gain_db=-2.0),
                                                NoiseGate(),
-                                               Compressor(ratio=3.0)])
+                                               Compressor(ratio=2.0)])
         self.use_enhancement = use_enhancement
         if self.use_enhancement:
             self.enhancer, self.df, _ = init_df(log_file=None,
