@@ -24,6 +24,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     random.seed(131714)
     torch.random.manual_seed(131714)
 
+    # IF YOU'RE ADDING A NEW LANGUAGE, YOU MIGHT NEED TO ADD HANDLING FOR IT IN Preprocessing/TextFrontend.py
+
     print("Preparing")
 
     if model_dir is not None:
@@ -46,8 +48,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
-            id=wandb_resume_id,  # this is None if not specified in the command line arguments.
-            resume="must" if wandb_resume_id is not None else None)
+            id=wandb_resume_id, resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
                train_dataset=train_set,

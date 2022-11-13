@@ -152,11 +152,12 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Farsi Text-Frontend")
 
-        # remember to also update get_language_id() below when adding something here
 
         else:
             print("Language not supported yet")
             sys.exit()
+
+        # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
         if self.g2p_lang != "cmn" or self.g2p_lang != "cmn-latn-pinyin":
             self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
@@ -168,6 +169,41 @@ class ArticulatoryCombinedTextFrontend:
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
+
+    @staticmethod
+    def get_example_sentence(lang):
+        if lang == "en":
+            return "This is a complex sentence, it even has a pause!"
+        elif lang == "de":
+            return "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
+        elif lang == "el":
+            return "Αυτή είναι μια σύνθετη πρόταση, έχει ακόμη και παύση!"
+        elif lang == "es":
+            return "Esta es una oración compleja, ¡incluso tiene una pausa!"
+        elif lang == "fi":
+            return "Tämä on monimutkainen lause, sillä on jopa tauko!"
+        elif lang == "ru":
+            return "Это сложное предложение, в нем даже есть пауза!"
+        elif lang == "hu":
+            return "Ez egy összetett mondat, még szünet is van benne!"
+        elif lang == "nl":
+            return "Dit is een complexe zin, er zit zelfs een pauze in!"
+        elif lang == "fr":
+            return "C'est une phrase complexe, elle a même une pause !"
+        elif lang == "pt":
+            return "Esta é uma frase complexa, tem até uma pausa!"
+        elif lang == "pl":
+            return "To jest zdanie złożone, ma nawet pauzę!"
+        elif lang == "it":
+            return "Questa è una frase complessa, ha anche una pausa!"
+        elif lang == "cmn":
+            return "这是一个复杂的句子，它甚至包含一个停顿。"
+        elif lang == "vi":
+            return "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
+        else:
+            print(f"No example sentence specified for the language: {lang}\n "
+                  f"Please specify an example sentence in the get_example_sentence function in Preprocessing/TextFrontend to track your progress.")
+            return None
 
     def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True, input_phonemes=False):
         """
@@ -409,11 +445,6 @@ def english_text_expansion(text):
 
 
 def convert_kanji_to_pinyin_mandarin(text):
-    # somehow the phonemizer looses the tone information, but
-    # after the conversion to pinyin it is still there. Maybe
-    # we need a better conversion from pinyin to IPA that
-    # includes tone symbols if espeak-ng doesn't do a good job
-    # on this.
     return " ".join([x[0] for x in pinyin(text)])
 
 

@@ -4,7 +4,7 @@ import torch
 from matplotlib import cm
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
-from sklearn.manifold import TSNE
+from sklearn.decomposition import KernelPCA
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
@@ -21,7 +21,7 @@ class Visualizer:
         mplot3d
         plt.rcParams["figure.figsize"] = (10, 10)
         self.scaler = StandardScaler()
-        self.reduction = TSNE(n_components=3, learning_rate="auto", n_iter=1000000, n_iter_without_progress=3000, init="pca")
+        self.reduction = KernelPCA(n_components=3, kernel="sigmoid", fit_inverse_transform=True)
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.device = device
         self.sr = sr
@@ -49,8 +49,8 @@ class Visualizer:
                     label_list.append(label)
         embeddings_as_array = numpy.array(embedding_list)
 
-        dimensionality_reduced_embeddings_LDA = self.reduction.fit_transform(X=self.scaler.fit_transform(embeddings_as_array))
-        self._plot_embeddings(projected_data=dimensionality_reduced_embeddings_LDA,
+        dimensionality_reduced_embeddings = self.scaler.fit_transform(self.reduction.fit_transform(X=self.scaler.fit_transform(embeddings_as_array)))
+        self._plot_embeddings(projected_data=dimensionality_reduced_embeddings,
                               labels=label_list,
                               title=title_of_plot,
                               save_file_path=save_file_path,
