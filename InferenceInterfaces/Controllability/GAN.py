@@ -37,7 +37,7 @@ class GanWrapper:
         self.mean = gan_checkpoint["dataset_mean"]
         self.std = gan_checkpoint["dataset_std"]
 
-    def compute_controllability(self, n_samples=500000):
+    def compute_controllability(self, n_samples=5000):
         _, intermediate, z = self.wgan.sample_generator(num_samples=n_samples, nograd=True, return_intermediate=True)
         intermediate = intermediate.cpu()
         z = z.cpu()
