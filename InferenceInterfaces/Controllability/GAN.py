@@ -34,8 +34,8 @@ class GanWrapper:
         self.wgan.G.load_state_dict(gan_checkpoint['generator_state_dict'])
         self.wgan.D.load_state_dict(gan_checkpoint['critic_state_dict'])
 
-        self.mean = gan_checkpoint["mean"]
-        self.std = gan_checkpoint["std"]
+        self.mean = gan_checkpoint["dataset_mean"]
+        self.std = gan_checkpoint["dataset_std"]
 
     def compute_controllability(self, n_samples=500000):
         _, intermediate, z = self.wgan.sample_generator(num_samples=n_samples, nograd=True, return_intermediate=True)
