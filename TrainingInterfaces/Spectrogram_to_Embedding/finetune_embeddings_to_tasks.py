@@ -142,7 +142,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
     torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/emotion_embedding_function.pt")
 
 
-def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_dir):
+def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_dir, use_wandb):
     """
     finetune model on data with different speakers
     arguments are there for compatibility, but unused.
