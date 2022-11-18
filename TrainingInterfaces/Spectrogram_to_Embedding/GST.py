@@ -1,7 +1,6 @@
 # Copyright 2020 Nagoya University (Tomoki Hayashi)
 #  Apache 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
 
-
 import torch
 
 from Layers.Attention import MultiHeadedAttention as BaseMultiHeadedAttention
@@ -163,10 +162,10 @@ class ReferenceEncoder(torch.nn.Module):
         batch_size = speech.size(0)
         xs = speech.unsqueeze(1)  # (B, 1, Lmax, idim)
         hs = self.convs(xs).transpose(1, 2)  # (B, Lmax', conv_out_chans, idim')
-        # NOTE(kan-bayashi): We need to care the length?
         time_length = hs.size(1)
         hs = hs.contiguous().view(batch_size, time_length, -1)  # (B, Lmax', gst_units)
         self.gst.flatten_parameters()
+        # pack_padded_sequence(hs, speech_lens, enforce_sorted=False, batch_first=True)
         _, ref_embs = self.gst(hs)  # (gst_layers, batch_size, gst_units)
         ref_embs = ref_embs[-1]  # (batch_size, gst_units)
 

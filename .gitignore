@@ -3,6 +3,7 @@ tensorboard_logs/
 Corpora/
 Models/
 audios/
+Preprocessing/glottolog/
 apex/
 pretrained_models/
 .tmp/
@@ -25,4 +26,3 @@ gradio*
 *.pyc
 *.png
 *.pdf
-Models
