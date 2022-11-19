@@ -17,7 +17,6 @@ from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.WarmupScheduler import WarmupScheduler
-from Utility.diverse_losses import BarlowTwinsLoss
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec
@@ -68,7 +67,6 @@ def train_loop(net,
     """
     net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
-    bt_loss = BarlowTwinsLoss(vector_dimensions=256).to(device)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -83,7 +81,6 @@ def train_loop(net,
     step_counter = 0
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     optimizer.add_param_group({"params": style_embedding_function.parameters()})
-    optimizer.add_param_group({"params": bt_loss.parameters()})
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -104,7 +101,6 @@ def train_loop(net,
         epoch += 1
         optimizer.zero_grad()
         train_losses_this_epoch = list()
-        bt_losses_this_epoch = list()
         reg_losses_this_epoch = list()
 
         if step_counter < 80000:
@@ -138,22 +134,6 @@ def train_loop(net,
                                                       return_mels=True)
                 train_losses_this_epoch.append(train_loss.item())
 
-                if step_counter % 3000 == 0:
-                    style_embedding_1 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                 batch_of_spectrogram_lengths=batch[3].to(device),
-                                                                 return_only_refs=True)
-                    style_embedding_2 = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                                 batch_of_spectrogram_lengths=batch[3].to(device),
-                                                                 return_only_refs=True)
-                    # due to the random windows we take, the two style embedding batches should be slightly different.
-                    # But the difference should be minimal, thus we use the barlow twins objective to make them more
-                    # similar and reduce redundancy within the reference embedding vectors.
-                    bt_cycle_dist = bt_loss(style_embedding_1, style_embedding_2)
-                    bt_cycle_dist = bt_cycle_dist * 0.0001  # this can disrupt convergence if the scale is too large.
-                    # If the embedding function changes more rapidly than the TTS can adapt to it, we run into issues.
-                    bt_losses_this_epoch.append(bt_cycle_dist.item())
-                    train_loss = train_loss + bt_cycle_dist
-
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
             del train_loss
@@ -171,28 +151,26 @@ def train_loop(net,
                 batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
             torch.save({
-                "model"         : net.state_dict(),
-                "optimizer"     : optimizer.state_dict(),
-                "step_counter"  : step_counter,
-                "scaler"        : scaler.state_dict(),
-                "scheduler"     : scheduler.state_dict(),
-                "default_emb"   : default_embedding,
+                "model":          net.state_dict(),
+                "optimizer":      optimizer.state_dict(),
+                "step_counter":   step_counter,
+                "scaler":         scaler.state_dict(),
+                "scheduler":      scheduler.state_dict(),
+                "default_emb":    default_embedding,
                 "style_emb_func": style_embedding_function.state_dict()
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             torch.save({
                 "style_emb_func": style_embedding_function.state_dict()
-                }, os.path.join(save_directory, "embedding_function.pt"))
+            }, os.path.join(save_directory, "embedding_function.pt"))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net, device, save_dir=save_directory, step=step_counter,
                                                           lang=lang, default_emb=default_embedding)
             if use_wandb:
                 wandb.log({
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
-                    })
+                })
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        if len(bt_losses_this_epoch) != 0:
-            print("BT Loss:            {}".format(sum(bt_losses_this_epoch) / len(bt_losses_this_epoch)))
         if len(reg_losses_this_epoch) != 0:
             print("reg Loss:           {}".format(sum(reg_losses_this_epoch) / len(reg_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
@@ -200,12 +178,10 @@ def train_loop(net,
         if use_wandb:
             wandb.log({
                 "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
-                "barlowtwins_loss": sum(bt_losses_this_epoch) / len(bt_losses_this_epoch) if len(
-                    bt_losses_this_epoch) != 0 else 0.0,
-                "basis_reg_loss"  : sum(reg_losses_this_epoch) / len(reg_losses_this_epoch) if len(
+                "basis_reg_loss":   sum(reg_losses_this_epoch) / len(reg_losses_this_epoch) if len(
                     reg_losses_this_epoch) != 0 else 0.0,
-                "Steps"           : step_counter,
-                })
+                "Steps":            step_counter,
+            })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
             return

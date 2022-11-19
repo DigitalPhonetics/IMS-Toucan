@@ -1,7 +1,6 @@
 import argparse
 import sys
 
-from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_emotion
 from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_speaker
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Controllable import run as control
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Embedding import run as gst
@@ -20,7 +19,6 @@ pipeline_dict = {
     "integration_test": integration_test,
     "gst":              gst,
     "spk":              finetune_model_speaker,
-    "emo":              finetune_model_emotion,
     "control":          control,
     "low_ram_avocodo":  hifigan_combined_low_ram,
 }
