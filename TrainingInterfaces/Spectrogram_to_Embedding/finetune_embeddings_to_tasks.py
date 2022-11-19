@@ -317,7 +317,7 @@ def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_fu
     non_con_losses = list()
 
     # train loop
-    for step in tqdm(range(50000)):
+    for step in tqdm(range(10000)):
         anchors = list()
         anchor_lens = list()
         positives = list()
