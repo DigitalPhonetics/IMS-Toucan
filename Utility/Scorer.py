@@ -156,7 +156,7 @@ class TTSScorer:
         for index, path in enumerate(sorted(self.path_to_score, key=self.path_to_score.get, reverse=True)):
             if index < n or n == -1:
                 print(f"Loss: {round(self.path_to_score[path], 3)} - Path: {path}")
-            print("\n\n")
+        print("\n\n")
 
     def remove_samples_with_highest_loss(self, n=10):
         if self.current_dset is None:
