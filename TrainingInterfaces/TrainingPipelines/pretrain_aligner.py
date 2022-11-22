@@ -24,38 +24,32 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_portuguese().items(), 20000)),
-                                           # take only 20k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
                                            corpus_dir=os.path.join("Corpora", "mls_porto"),
                                            lang="pt",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_polish().items(), 20000)),
-                                           # take only 20k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
                                            corpus_dir=os.path.join("Corpora", "mls_polish"),
                                            lang="pl",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_spanish().items(), 12000)),
-                                           # take only 12k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
                                            corpus_dir=os.path.join("Corpora", "mls_spanish"),
                                            lang="es",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_french().items(), 12000)),
-                                           # take only 12k samples from this, since the corpus is way too big
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
                                            corpus_dir=os.path.join("Corpora", "mls_french"),
                                            lang="fr",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_italian().items(), 20000)),
-                                           # take only 20k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
                                            corpus_dir=os.path.join("Corpora", "mls_italian"),
                                            lang="it",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_mls_dutch().items(), 12000)),
-                                           # take only 12k samples from this, since the corpus is way too big
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
                                            corpus_dir=os.path.join("Corpora", "mls_dutch"),
                                            lang="nl",
                                            device=device))
@@ -115,14 +109,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang="en",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_vctk().items(), 20000)),
-                                           # take only 20k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
                                            corpus_dir=os.path.join("Corpora", "vctk"),
                                            lang="en",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_nvidia_hifitts().items(), 20000)),
-                                           # take only 20k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
                                            corpus_dir=os.path.join("Corpora", "hifi"),
                                            lang="en",
                                            device=device))
@@ -137,14 +129,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang="de",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_hokus().items(), 10000)),
-                                           # take only 10k samples from this
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
                                            corpus_dir=os.path.join("Corpora", "Hokus"),
                                            lang="de",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_bernd().items(), 12000)),
-                                           # take only 12k samples from this, since the corpus is way too big,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
                                            corpus_dir=os.path.join("Corpora", "Bernd"),
                                            lang="de",
                                            device=device))
@@ -154,8 +144,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang="de",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=dict(random.sample(build_path_to_transcript_dict_thorsten().items(), 12000)),
-                                           # take only 12k samples from this, since the corpus is not that high quality,
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
                                            corpus_dir=os.path.join("Corpora", "Thorsten"),
                                            lang="de",
                                            device=device))
