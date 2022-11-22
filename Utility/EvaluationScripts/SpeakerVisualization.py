@@ -4,7 +4,7 @@ import torch
 from matplotlib import cm
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
-from sklearn.decomposition import KernelPCA
+from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
@@ -21,7 +21,7 @@ class Visualizer:
         mplot3d
         plt.rcParams["figure.figsize"] = (10, 10)
         self.scaler = StandardScaler()
-        self.reduction = KernelPCA(n_components=3, kernel="sigmoid", fit_inverse_transform=True)
+        self.reduction = TSNE(n_components=2)
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.device = device
         self.sr = sr
@@ -66,35 +66,25 @@ class Visualizer:
 
         labels_to_points_x = dict()
         labels_to_points_y = dict()
-        labels_to_points_z = dict()
         for label in labels:
             labels_to_points_x[label] = list()
             labels_to_points_y[label] = list()
-            labels_to_points_z[label] = list()
         for index, label in enumerate(labels):
             labels_to_points_x[label].append(projected_data[index][0])
             labels_to_points_y[label].append(projected_data[index][1])
-            labels_to_points_z[label].append(projected_data[index][2])
 
-        ax = plt.axes(projection='3d')
-
+        fig, ax = plt.subplots()
         for label in sorted(list(set(labels))):
             x = numpy.array(labels_to_points_x[label])
             y = numpy.array(labels_to_points_y[label])
-            z = numpy.array(labels_to_points_z[label])
-            ax.scatter3D(xs=x,
-                         ys=y,
-                         zs=z,
-                         c=label_to_color[label],
-                         label=label,
-                         alpha=0.9)
+            ax.scatter(x=x,
+                       y=y,
+                       c=label_to_color[label],
+                       label=label,
+                       alpha=0.9)
         if legend:
             ax.legend()
         ax.set_title(title)
-
-        for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-            axis.set_ticklabels([])
-            axis.set_pane_color((0.98, 0.98, 0.98))
 
         if save_file_path is not None:
             plt.savefig(save_file_path)
