@@ -97,12 +97,14 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  utt_embed_dim=256,
-                 lang_embs=1000):
+                 lang_embs=8000,
+                 variational=False):
         super().__init__()
 
         # store hyperparameters
         self.idim = idim
         self.odim = odim
+        self.adim = adim
         self.eos = 1
         self.reduction_factor = reduction_factor
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
@@ -110,6 +112,11 @@ class FastSpeech2(torch.nn.Module, ABC):
         self.use_scaled_pos_enc = use_scaled_pos_enc
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.variational = variational
+        if self.variational:
+            self.eps = None
+            self.fc_mu = torch.nn.Linear(self.adim, self.adim)
+            self.fc_var = torch.nn.Linear(self.adim, self.adim)
 
         # define encoder
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
@@ -270,6 +277,11 @@ class FastSpeech2(torch.nn.Module, ABC):
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
+        if self.variational:
+            # sample from distribution instead of holding a fixed vector. TODO This also requires adjustments to the loss!
+            self.reset_eps()
+            encoded_texts = self.reparameterize(self.fc_mu(encoded_texts), self.fc_var(encoded_texts))
+
         # forward decoder
         if speech_lens is not None and not is_inference:
             if self.reduction_factor > 1:
@@ -373,3 +385,12 @@ class FastSpeech2(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
+    def reparameterize(self, mu, log_var):
+        """generate a random disteribution w.r.t. the mu and log_var from the embedding space."""
+        eps = self.eps.repeat(log_var.size(1))
+        std = log_var.mul(0.5).exp_()
+        return eps.mul(std).add_(mu)
+
+    def reset_eps(self):
+        self.eps = torch.autograd.Variable(torch.FloatTensor(self.adim).normal_())
