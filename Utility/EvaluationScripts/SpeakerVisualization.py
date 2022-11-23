@@ -21,7 +21,12 @@ class Visualizer:
         mplot3d
         plt.rcParams["figure.figsize"] = (10, 10)
         self.scaler = StandardScaler()
-        self.reduction = TSNE(n_components=2)
+        self.reduction = TSNE(n_components=2,
+                              learning_rate="auto",
+                              n_iter=9999999,
+                              n_iter_without_progress=40000,
+                              init="pca",
+                              n_jobs=-1)
         self.pros_cond_ext = ProsodicConditionExtractor(sr=sr, device=device)
         self.device = device
         self.sr = sr
@@ -49,7 +54,8 @@ class Visualizer:
                     label_list.append(label)
         embeddings_as_array = numpy.array(embedding_list)
 
-        dimensionality_reduced_embeddings = self.scaler.fit_transform(self.reduction.fit_transform(X=self.scaler.fit_transform(embeddings_as_array)))
+        dimensionality_reduced_embeddings = self.scaler.fit_transform(
+            self.reduction.fit_transform(X=self.scaler.fit_transform(embeddings_as_array)))
         self._plot_embeddings(projected_data=dimensionality_reduced_embeddings,
                               labels=label_list,
                               title=title_of_plot,

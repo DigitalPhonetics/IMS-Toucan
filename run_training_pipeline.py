@@ -2,10 +2,11 @@ import argparse
 import sys
 
 from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_speaker
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Controllable import run as control
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_Embedding import run as gst
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_NoVar import run as novar
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_Var import run as var
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_low_RAM import run as hifigan_combined_low_ram
@@ -19,8 +20,9 @@ pipeline_dict = {
     "integration_test": integration_test,
     "gst":              gst,
     "spk":              finetune_model_speaker,
-    "control":          control,
     "low_ram_avocodo":  hifigan_combined_low_ram,
+    "var":              var,
+    "novar":            novar
 }
 
 if __name__ == '__main__':
