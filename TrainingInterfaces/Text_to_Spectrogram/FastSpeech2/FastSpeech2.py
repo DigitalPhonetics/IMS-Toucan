@@ -412,7 +412,7 @@ class FastSpeech2(torch.nn.Module, ABC):
             initialize(self, init_type)
 
     def reparameterize(self, mu, log_var):
-        """generate a random disteribution w.r.t. the mu and log_var from the embedding space."""
+        """generate a random distribution w.r.t. the mu and log_var from the embedding space."""
         eps = self.eps.unsqueeze(0).repeat(log_var.size(1), 1).to(log_var.device)
         std = log_var.mul(0.5).exp_()
         return eps.mul(std).add_(mu)
