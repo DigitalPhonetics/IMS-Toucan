@@ -223,12 +223,29 @@ class FastSpeech2(torch.nn.Module, ABC):
         # Texts include EOS token from the teacher model already in this version
 
         # forward propagation
-        before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech,
-                                                                        speech_lengths,
-                                                                        gold_durations, gold_pitch, gold_energy,
-                                                                        utterance_embedding=utterance_embedding,
-                                                                        is_inference=False, lang_ids=lang_ids)
-
+        fs_outs = self._forward(text_tensors,
+                                text_lengths,
+                                gold_speech,
+                                speech_lengths,
+                                gold_durations,
+                                gold_pitch,
+                                gold_energy,
+                                utterance_embedding=utterance_embedding,
+                                is_inference=False,
+                                lang_ids=lang_ids)
+        if self.variational:
+            before_outs, \
+            after_outs, \
+            d_outs, \
+            p_outs, \
+            e_outs, \
+            kl_divergence = fs_outs
+        else:
+            before_outs, \
+            after_outs, \
+            d_outs, \
+            p_outs, \
+            e_outs = fs_outs
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
             speech_lengths = speech_lengths.new([olen - olen % self.reduction_factor for olen in speech_lengths])
@@ -241,6 +258,8 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                          es=gold_energy,
                                                                          ilens=text_lengths, olens=speech_lengths)
         loss = l1_loss + duration_loss + pitch_loss + energy_loss
+        if self.variational:
+            loss = loss + kl_divergence
 
         if return_mels:
             return loss, after_outs
@@ -301,9 +320,9 @@ class FastSpeech2(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         if self.variational:
-            # sample from distribution instead of holding a fixed vector. TODO This also requires adjustments to the loss!
+            # sample from distribution instead of holding a fixed vector.
             self.reset_eps()
-            encoded_texts = self.reparameterize(self.fc_mu(encoded_texts), self.fc_var(encoded_texts))
+            encoded_texts, kl_loss = self.reparameterize(self.fc_mu(encoded_texts), self.fc_var(encoded_texts))
 
         # forward decoder
         if speech_lens is not None and not is_inference:
@@ -320,7 +339,10 @@ class FastSpeech2(torch.nn.Module, ABC):
         # postnet -> (B, Lmax//r * r, odim)
         after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
 
-        return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
+        if is_inference or not self.variational:
+            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
+        else:
+            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, kl_loss
 
     def inference(self,
                   text,
@@ -329,7 +351,6 @@ class FastSpeech2(torch.nn.Module, ABC):
                   pitch=None,
                   energy=None,
                   alpha=1.0,
-                  use_teacher_forcing=False,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None):
@@ -363,27 +384,17 @@ class FastSpeech2(torch.nn.Module, ABC):
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
 
-        if use_teacher_forcing:
-            # use groundtruth of duration, pitch, and energy
-            ds, ps, es = d.unsqueeze(0), p.unsqueeze(0), e.unsqueeze(0)
-            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
-                                                                                                   ilens,
-                                                                                                   ys,
-                                                                                                   gold_durations=ds,
-                                                                                                   gold_pitch=ps,
-                                                                                                   gold_energy=es,
-                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(
-                                                                                                       0),
-                                                                                                   lang_ids=lang_id)  # (1, L, odim)
-        else:
-            before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
-                                                                                                   ilens,
-                                                                                                   ys,
-                                                                                                   is_inference=True,
-                                                                                                   alpha=alpha,
-                                                                                                   utterance_embedding=utterance_embedding.unsqueeze(
-                                                                                                       0),
-                                                                                                   lang_ids=lang_id)  # (1, L, odim)
+        before_outs, \
+        after_outs, \
+        d_outs, \
+        pitch_predictions, \
+        energy_predictions = self._forward(xs,
+                                           ilens,
+                                           ys,
+                                           is_inference=True,
+                                           alpha=alpha,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0),
+                                           lang_ids=lang_id)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
@@ -415,7 +426,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         """generate a random distribution w.r.t. the mu and log_var from the embedding space."""
         eps = self.eps.unsqueeze(0).repeat(log_var.size(1), 1).to(log_var.device)
         std = log_var.mul(0.5).exp_()
-        return eps.mul(std).add_(mu)
+        kl_loss = (std ** 2 + mu ** 2 - torch.log(std) - 1 / 2).sum()
+        return eps.mul(std).add_(mu), kl_loss
 
     def reset_eps(self):
         self.eps = torch.autograd.Variable(torch.FloatTensor(self.adim).normal_())
