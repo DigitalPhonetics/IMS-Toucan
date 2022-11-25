@@ -18,8 +18,8 @@ from pedalboard import NoiseGate
 from pedalboard import PeakFilter
 from pedalboard import Pedalboard
 
-from InferenceInterfaces.InferenceArchitectures.InferenceFastSpeech2 import FastSpeech2
-from InferenceInterfaces.InferenceArchitectures.InferenceHiFiGAN import HiFiGANGenerator
+from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
+from InferenceInterfaces.InferenceArchitectures.InferencePortaSpeech import FastSpeech2
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id

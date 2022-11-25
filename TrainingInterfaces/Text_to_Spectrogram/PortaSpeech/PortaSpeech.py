@@ -1,26 +1,24 @@
-"""
-Taken from ESPNet
-"""
-
 from abc import ABC
 
 import torch
+import torch.distributions as dist
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
 
-class FastSpeech2(torch.nn.Module, ABC):
+class PortaSpeech(torch.nn.Module, ABC):
     """
-    FastSpeech 2 module.
+    PortaSpeech 2 module, which is basically just a FastSpeech 2 module, but with an improved decoder and the PostNet is a flow.
 
     This is a module of FastSpeech 2 described in FastSpeech 2: Fast and
     High-Quality End-to-End Text to Speech. Instead of quantized pitch and
@@ -31,6 +29,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         https://arxiv.org/abs/2006.04558
         https://arxiv.org/abs/2006.06873
         https://arxiv.org/pdf/2005.08100
+        https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf
 
     """
 
@@ -42,25 +41,15 @@ class FastSpeech2(torch.nn.Module, ABC):
                  aheads=4,
                  elayers=6,
                  eunits=1536,
-                 dlayers=6,
-                 dunits=1536,
-                 postnet_layers=5,
-                 postnet_chans=256,
-                 postnet_filts=5,
-                 positionwise_layer_type="conv1d",
                  positionwise_conv_kernel_size=1,
                  use_scaled_pos_enc=True,
-                 use_batch_norm=True,
                  encoder_normalize_before=True,
-                 decoder_normalize_before=True,
                  encoder_concat_after=False,
-                 decoder_concat_after=False,
                  reduction_factor=1,
-                 # encoder / decoder
+                 # encoder
                  use_macaron_style_in_conformer=True,
                  use_cnn_in_conformer=True,
                  conformer_enc_kernel_size=7,
-                 conformer_dec_kernel_size=31,
                  # duration predictor
                  duration_predictor_layers=2,
                  duration_predictor_chans=256,
@@ -85,11 +74,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  transformer_enc_dropout_rate=0.2,
                  transformer_enc_positional_dropout_rate=0.2,
                  transformer_enc_attn_dropout_rate=0.2,
-                 transformer_dec_dropout_rate=0.2,
-                 transformer_dec_positional_dropout_rate=0.2,
-                 transformer_dec_attn_dropout_rate=0.2,
                  duration_predictor_dropout_rate=0.2,
-                 postnet_dropout_rate=0.5,
                  init_type="xavier_uniform",
                  init_enc_alpha=1.0,
                  init_dec_alpha=1.0,
@@ -159,25 +144,34 @@ class FastSpeech2(torch.nn.Module, ABC):
         # define length regulator
         self.length_regulator = LengthRegulator()
 
-        self.decoder = Conformer(idim=0, attention_dim=adim, attention_heads=aheads, linear_units=dunits,
-                                 num_blocks=dlayers, input_layer=None,
-                                 dropout_rate=transformer_dec_dropout_rate,
-                                 positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                                 attention_dropout_rate=transformer_dec_attn_dropout_rate,
-                                 normalize_before=decoder_normalize_before,
-                                 concat_after=decoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=conformer_dec_kernel_size,
-                                 utt_embed=utt_embed_dim)
+        # decoder is a VAE
+        self.decoder = FVAE(
+            c_in_out=self.out_dims,
+            hidden_size=hparams['fvae_enc_dec_hidden'], c_latent=hparams['latent_size'],
+            kernel_size=hparams['fvae_kernel_size'],
+            enc_n_layers=hparams['fvae_enc_n_layers'],
+            dec_n_layers=hparams['fvae_dec_n_layers'],
+            c_cond=self.hidden_size,
+            use_prior_flow=hparams['use_prior_flow'],
+            flow_hidden=hparams['prior_flow_hidden'],
+            flow_kernel_size=hparams['prior_flow_kernel_size'],
+            flow_n_steps=hparams['prior_flow_n_blocks'],
+            strides=[hparams['fvae_strides']],
+            encoder_type=hparams['fvae_encoder_type'],
+            decoder_type=hparams['fvae_decoder_type'],
+            )
 
-        # define final projection
-        self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
-
-        # define postnet
-        self.postnet = PostNet(idim=idim, odim=odim, n_layers=postnet_layers, n_chans=postnet_chans,
-                               n_filts=postnet_filts, use_batch_norm=use_batch_norm,
-                               dropout_rate=postnet_dropout_rate)
+        # post net is realized as a flow
+        self.post_flow = Glow(
+            80, hparams['post_glow_hidden'], hparams['post_glow_kernel_size'], 1,
+            hparams['post_glow_n_blocks'], hparams['post_glow_n_block_layers'],
+            n_split=4, n_sqz=2,
+            gin_channels=cond_hs,
+            share_cond_layers=hparams['post_share_cond_layers'],
+            share_wn_layers=hparams['share_wn_layers'],
+            sigmoid_scale=hparams['sigmoid_scale']
+            )
+        self.prior_dist = dist.Normal(0, 1)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)

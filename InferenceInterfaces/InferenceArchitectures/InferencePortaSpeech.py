@@ -69,8 +69,7 @@ class FastSpeech2(torch.nn.Module):
                  postnet_dropout_rate=0.5,
                  # additional features
                  utt_embed_dim=256,
-                 lang_embs=8000,
-                 variational=False):
+                 lang_embs=8000):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -81,11 +80,6 @@ class FastSpeech2(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_pos_enc
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
-        self.variational = variational
-        if self.variational:
-            self.eps = None
-            self.fc_mu = torch.nn.Linear(self.adim, self.adim)
-            self.fc_var = torch.nn.Linear(self.adim, self.adim)
 
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                     torch.nn.Tanh(),
@@ -214,11 +208,6 @@ class FastSpeech2(torch.nn.Module):
         encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
         encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
 
-        if self.variational:
-            # sample from distribution instead of holding a fixed vector. TODO This also requires adjustments to the loss!
-            self.reset_eps()
-            encoded_texts = self.reparameterize(self.fc_mu(encoded_texts), self.fc_var(encoded_texts))
-
         # forward decoder
         h_masks = None
         zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
@@ -302,15 +291,6 @@ class FastSpeech2(torch.nn.Module):
     def _source_mask(self, ilens):
         x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
         return x_masks.unsqueeze(-2)
-
-    def reparameterize(self, mu, log_var):
-        """generate a random distribution w.r.t. the mu and log_var from the embedding space."""
-        eps = self.eps.unsqueeze(0).repeat(log_var.size(1), 1).to(log_var.device)
-        std = log_var.mul(0.5).exp_()
-        return eps.mul(std).add_(mu)
-
-    def reset_eps(self):
-        self.eps = torch.autograd.Variable(torch.FloatTensor(self.adim).normal_())
 
 
 def _scale_variance(sequence, scale):
