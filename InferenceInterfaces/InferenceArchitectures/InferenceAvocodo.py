@@ -12,17 +12,16 @@ class HiFiGANGenerator(torch.nn.Module):
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(8, 6, 4, 4),
-                 upsample_kernel_sizes=(16, 12, 8, 8),
+                 upsample_scales=(8, 6, 4, 2),
+                 upsample_kernel_sizes=(16, 12, 8, 4),
                  resblock_kernel_sizes=(3, 7, 11),
-                 resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],
+                 resblock_dilations=((1, 3, 5), (1, 3, 5), (1, 3, 5)),
                  use_additional_convs=True,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1},
                  use_weight_norm=True, ):
         super().__init__()
-        assert kernel_size % 2 == 1, "Kernal size must be odd number."
+        assert kernel_size % 2 == 1, "Kernel size must be odd number."
         assert len(upsample_scales) == len(upsample_kernel_sizes)
         assert len(resblock_dilations) == len(resblock_kernel_sizes)
         self.num_upsamples = len(upsample_kernel_sizes)
@@ -36,7 +35,7 @@ class HiFiGANGenerator(torch.nn.Module):
         self.blocks = torch.nn.ModuleList()
         for i in range(len(upsample_kernel_sizes)):
             self.upsamples += [
-                torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
+                torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)({"negative_slope": 0.1}),
                                     torch.nn.ConvTranspose1d(channels // (2 ** i),
                                                              channels // (2 ** (i + 1)),
                                                              upsample_kernel_sizes[i],
@@ -49,7 +48,7 @@ class HiFiGANGenerator(torch.nn.Module):
                                               bias=bias,
                                               use_additional_convs=use_additional_convs,
                                               nonlinear_activation=nonlinear_activation,
-                                              nonlinear_activation_params=nonlinear_activation_params, )]
+                                              nonlinear_activation_params={"negative_slope": 0.1}, )]
         self.output_conv = torch.nn.Sequential(
             torch.nn.LeakyReLU(),
             torch.nn.Conv1d(channels // (2 ** (i + 1)),

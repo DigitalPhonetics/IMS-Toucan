@@ -25,7 +25,6 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
                  max_downsample_channels=1024,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1},
                  use_weight_norm=True,
                  use_spectral_norm=False, ):
         """
@@ -63,7 +62,7 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
                                                                (kernel_sizes[0], 1),
                                                                (downsample_scale, 1),
                                                                padding=((kernel_sizes[0] - 1) // 2, 0), ),
-                                               getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params), )]
+                                               getattr(torch.nn, nonlinear_activation)({"negative_slope": 0.1}), )]
             in_chs = out_chs
             # NOTE(kan-bayashi): Use downsample_scale + 1?
             out_chs = min(out_chs * 4, max_downsample_channels)

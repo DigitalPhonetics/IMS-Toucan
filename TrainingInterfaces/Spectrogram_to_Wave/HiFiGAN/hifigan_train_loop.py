@@ -1,7 +1,6 @@
 import os
 import time
 
-import auraloss
 import torch
 import torch.multiprocessing
 import wandb
@@ -27,7 +26,6 @@ def train_loop(generator,
                batch_size=32,
                epochs=100,
                resume=False,
-               use_signal_processing_losses=False,  # https://github.com/csteinmetz1/auraloss remember to cite if used
                generator_steps_per_discriminator_step=3,
                generator_warmup=30000,
                use_wandb=False,
@@ -43,11 +41,6 @@ def train_loop(generator,
     feat_match_criterion = FeatureMatchLoss().to(device)
     discriminator_adv_criterion = DiscriminatorAdversarialLoss().to(device)
     generator_adv_criterion = GeneratorAdversarialLoss(average_by_discriminators=False).to(device)
-
-    signal_processing_loss_functions = list()
-    if use_signal_processing_losses:
-        signal_processing_loss_functions.append(auraloss.time.SNRLoss().to(device))
-        signal_processing_loss_functions.append(auraloss.time.SISDRLoss().to(device))
 
     g = generator.to(device)
     d = discriminator.to(device)
@@ -108,13 +101,6 @@ def train_loop(generator,
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             generator_total_loss = mel_loss * 45.0  # according to the Avocodo Paper
-
-            if use_signal_processing_losses:
-                signal_loss = torch.tensor([0.0]).to(device)
-                for sl in signal_processing_loss_functions:
-                    signal_loss += sl(pred_wave, gold_wave)
-                generator_total_loss = generator_total_loss + signal_loss
-                signal_processing_losses.append(signal_loss.item())
 
             if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
                 d_outs = d(wave=pred_wave,

@@ -18,14 +18,13 @@ class HiFiGANGenerator(torch.nn.Module):
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
-                 upsample_scales=(8, 6, 4, 4),  # CAREFUL: Avocodo assumes that there are always 4 upsample scales, because it takes intermediate results.
-                 upsample_kernel_sizes=(16, 12, 8, 8),
+                 upsample_scales=(8, 6, 4, 2),  # CAREFUL: Avocodo assumes that there are always 4 upsample scales, because it takes intermediate results.
+                 upsample_kernel_sizes=(16, 12, 8, 4),
                  resblock_kernel_sizes=(3, 7, 11),
-                 resblock_dilations=[(1, 3, 5), (1, 3, 5), (1, 3, 5)],
+                 resblock_dilations=((1, 3, 5), (1, 3, 5), (1, 3, 5)),
                  use_additional_convs=True,
                  bias=True,
-                 nonlinear_activation="LeakyReLU",
-                 nonlinear_activation_params={"negative_slope": 0.1}):
+                 nonlinear_activation="LeakyReLU"):
         """
         Initialize HiFiGANGenerator module.
         
@@ -63,7 +62,7 @@ class HiFiGANGenerator(torch.nn.Module):
         self.upsamples = torch.nn.ModuleList()
         self.blocks = torch.nn.ModuleList()
         for i in range(len(upsample_kernel_sizes)):
-            self.upsamples += [torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
+            self.upsamples += [torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)({"negative_slope": 0.1}),
                                                    torch.nn.ConvTranspose1d(channels // (2 ** i),
                                                                             channels // (2 ** (i + 1)),
                                                                             upsample_kernel_sizes[i],
@@ -76,7 +75,7 @@ class HiFiGANGenerator(torch.nn.Module):
                                               bias=bias,
                                               use_additional_convs=use_additional_convs,
                                               nonlinear_activation=nonlinear_activation,
-                                              nonlinear_activation_params=nonlinear_activation_params, )]
+                                              nonlinear_activation_params={"negative_slope": 0.1}, )]
         self.output_conv = torch.nn.Sequential(
             # NOTE(kan-bayashi): follow official implementation but why
             #   using different slope parameter here? (0.1 vs. 0.01)

@@ -104,7 +104,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=resume_checkpoint,
                        resume=resume,
-                       use_signal_processing_losses=False,
                        use_wandb=use_wandb,
                        finetune=finetune)
         else:
@@ -118,7 +117,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                        model_save_dir=model_save_dir,
                        path_to_checkpoint=None,
                        resume=True,
-                       use_signal_processing_losses=False,
                        use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

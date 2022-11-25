@@ -3,7 +3,7 @@ import os
 import torch
 
 from InferenceInterfaces.Controllability.GAN import GanWrapper
-from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
+from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
 
 
 class ControllableInterface:
@@ -15,7 +15,7 @@ class ControllableInterface:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = InferenceFastSpeech2(device=self.device, tts_model_path="Meta")
+        self.model = PortaSpeechInterface(device=self.device, tts_model_path="Meta")
         self.wgan = GanWrapper('Models/Embedding/embedding_gan.pt', device=self.device)
         self.current_language = "English"
         self.current_accent = "English"
@@ -103,4 +103,4 @@ class ControllableInterface:
                          pitch_variance_scale=pitch_variance_scale,
                          energy_variance_scale=energy_variance_scale,
                          pause_duration_scaling_factor=pause_duration_scaling_factor)
-        return 48000, wav
+        return 24000, wav

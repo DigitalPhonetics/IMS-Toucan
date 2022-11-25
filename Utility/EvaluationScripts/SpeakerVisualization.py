@@ -13,7 +13,7 @@ from Preprocessing.GSTExtractor import ProsodicConditionExtractor
 
 class Visualizer:
 
-    def __init__(self, sr=48000, device="cpu"):
+    def __init__(self, sr=24000, device="cpu"):
         """
         Args:
             sr: The sampling rate of the audios you want to visualize.

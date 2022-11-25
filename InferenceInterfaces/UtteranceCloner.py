@@ -5,7 +5,7 @@ import torch
 from torch.optim import SGD
 from tqdm import tqdm
 
-from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
+from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -18,7 +18,7 @@ from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import P
 class UtteranceCloner:
 
     def __init__(self, model_id, device):
-        self.tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
+        self.tts = PortaSpeechInterface(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.device = device
@@ -163,7 +163,7 @@ class UtteranceCloner:
         cloned_speech = self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=48000)
+            sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=24000)
         if clone_speaker_identity:
             self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
         return cloned_utt.cpu().numpy()
@@ -188,6 +188,6 @@ class UtteranceCloner:
         cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=48000)
+            sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=24000)
         self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
         return cloned_utt.cpu().numpy()

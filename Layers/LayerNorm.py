@@ -14,11 +14,11 @@ class LayerNorm(torch.nn.LayerNorm):
         dim (int): Dimension to be normalized.
     """
 
-    def __init__(self, nout, dim=-1):
+    def __init__(self, nout, dim=-1, eps=1e-12):
         """
         Construct an LayerNorm object.
         """
-        super(LayerNorm, self).__init__(nout, eps=1e-12)
+        super(LayerNorm, self).__init__(nout, eps=eps)
         self.dim = dim
 
     def forward(self, x):

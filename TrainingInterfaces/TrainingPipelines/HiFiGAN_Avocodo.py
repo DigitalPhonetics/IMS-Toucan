@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = "Models/Avocodo_feat_match"
+        model_save_dir = "Models/Avocodo"
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -71,7 +71,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
 
-    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 200000),
+    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 300000),
                                use_random_corruption=False)
 
     generator = HiFiGANGenerator()
@@ -85,7 +85,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=24,
+    train_loop(batch_size=32,
                epochs=80000,
                generator=jit_compiled_generator,
                discriminator=discriminator,
@@ -95,7 +95,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                model_save_dir=model_save_dir,
                path_to_checkpoint=resume_checkpoint,
                resume=resume,
-               use_signal_processing_losses=False,
                use_wandb=use_wandb,
                finetune=finetune)
     if use_wandb:
