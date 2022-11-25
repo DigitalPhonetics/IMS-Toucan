@@ -50,6 +50,7 @@ class HiFiGANGenerator(torch.nn.Module):
         assert kernel_size % 2 == 1, "Kernel size must be odd number."
         assert len(upsample_scales) == len(upsample_kernel_sizes)
         assert len(resblock_dilations) == len(resblock_kernel_sizes)
+        nonlinear_activation_params = {"negative_slope": 0.1}
 
         # define modules
         self.num_upsamples = len(upsample_kernel_sizes)
@@ -62,7 +63,7 @@ class HiFiGANGenerator(torch.nn.Module):
         self.upsamples = torch.nn.ModuleList()
         self.blocks = torch.nn.ModuleList()
         for i in range(len(upsample_kernel_sizes)):
-            self.upsamples += [torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)({"negative_slope": 0.1}),
+            self.upsamples += [torch.nn.Sequential(getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params),
                                                    torch.nn.ConvTranspose1d(channels // (2 ** i),
                                                                             channels // (2 ** (i + 1)),
                                                                             upsample_kernel_sizes[i],
@@ -75,7 +76,7 @@ class HiFiGANGenerator(torch.nn.Module):
                                               bias=bias,
                                               use_additional_convs=use_additional_convs,
                                               nonlinear_activation=nonlinear_activation,
-                                              nonlinear_activation_params={"negative_slope": 0.1}, )]
+                                              nonlinear_activation_params=nonlinear_activation_params, )]
         self.output_conv = torch.nn.Sequential(
             # NOTE(kan-bayashi): follow official implementation but why
             #   using different slope parameter here? (0.1 vs. 0.01)
