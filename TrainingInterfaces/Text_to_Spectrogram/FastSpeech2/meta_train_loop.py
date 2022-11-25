@@ -1,3 +1,5 @@
+import os
+
 import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
@@ -14,6 +16,7 @@ from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.path_to_transcript_dicts import *
+from Utility.storage_config import MODELS_DIR
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -121,7 +124,7 @@ def train_loop(net,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
-               path_to_embed_model="Models/Embedding/embedding_function.pt",
+               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                resume=False,
                warmup_steps=4000,
                use_wandb=False):

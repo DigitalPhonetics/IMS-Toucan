@@ -8,6 +8,7 @@ import torch
 
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+from Utility.storage_config import MODELS_DIR
 
 
 def load_net_fast(path):
@@ -95,20 +96,20 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
 
 
 def make_best_in_all(n=3):
-    for model_dir in os.listdir("Models"):
-        if os.path.isdir(f"Models/{model_dir}"):
+    for model_dir in os.listdir(MODELS_DIR):
+        if os.path.isdir(os.path.join(MODELS_DIR, model_dir)):
             if "HiFiGAN" in model_dir or "Avocodo" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=n)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
-                save_model_for_use(model=averaged_model, name=f"Models/{model_dir}/best.pt", dict_name="generator")
+                save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
             elif "FastSpeech2" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=f"Models/{model_dir}", n=n)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=n)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, name=f"Models/{model_dir}/best.pt")
+                save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
 
 
 def count_parameters(net):

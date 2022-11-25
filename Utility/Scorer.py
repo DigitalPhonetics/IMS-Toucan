@@ -7,6 +7,7 @@ can help you find outliers in the audio part of text-audio pairs.
 """
 
 import math
+import os
 
 import torch
 from tqdm import tqdm
@@ -17,6 +18,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.storage_config import MODELS_DIR
 
 
 class AlignmentScorer:
@@ -79,7 +81,7 @@ class TTSScorer:
     def __init__(self,
                  path_to_fastspeech_model,
                  device,
-                 path_to_embedding_checkpoint="Models/Embedding/embedding_function.pt"
+                 path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")
                  ):
         self.device = device
         self.path_to_score = dict()

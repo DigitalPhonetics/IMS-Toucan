@@ -4,6 +4,7 @@ import torch
 
 from InferenceInterfaces.Controllability.GAN import GanWrapper
 from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
+from Utility.storage_config import MODELS_DIR
 
 
 class ControllableInterface:
@@ -16,7 +17,7 @@ class ControllableInterface:
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = InferenceFastSpeech2(device=self.device, model_name="Meta")
-        self.wgan = GanWrapper('Models/Embedding/embedding_gan.pt', device=self.device)
+        self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
