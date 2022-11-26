@@ -147,7 +147,7 @@ class CoMBD(torch.nn.Module):
 
     def __init__(self, filters, kernels, groups, strides, use_spectral_norm=False):
         super(CoMBD, self).__init__()
-        norm_f = weight_norm if use_spectral_norm == False else spectral_norm
+        norm_f = weight_norm if not use_spectral_norm else spectral_norm
         self.convs = nn.ModuleList()
         init_channel = 1
         for i, (f, k, g, s) in enumerate(zip(filters, kernels, groups, strides)):

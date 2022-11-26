@@ -536,7 +536,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                  tsubband=[6, 11, 16],
                  n=16,
                  m=64,
-                 freq_init_ch=384):
+                 freq_init_ch=192):
         super().__init__()
         self.msd = HiFiGANMultiScaleDiscriminator(scales=scales,
                                                   downsample_pooling=scale_downsample_pooling,

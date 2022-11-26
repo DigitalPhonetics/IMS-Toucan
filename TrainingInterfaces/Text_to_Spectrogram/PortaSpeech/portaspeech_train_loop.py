@@ -46,6 +46,7 @@ def train_loop(net,
                resume=False,
                phase_1_steps=100000,
                phase_2_steps=100000,
+               phase_3_steps=100000,
                use_wandb=False):
     """
     Args:
@@ -62,11 +63,12 @@ def train_loop(net,
         batch_size: How many elements should be loaded at once
         epochs_per_save: how many epochs to train in between checkpoints
         phase_1_steps: how many steps to train before using any of the cycle objectives
-        phase_2_steps: how many steps to train using the cycle objectives
+        phase_2_steps: how many steps to train together with the post net
+        phase_3_steps: how many steps to train using the cycle objectives
         path_to_embed_model: path to the pretrained embedding function
     """
 
-    steps = phase_1_steps + phase_2_steps
+    steps = phase_1_steps + phase_2_steps + phase_3_steps
 
     net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
@@ -107,6 +109,11 @@ def train_loop(net,
         optimizer.zero_grad()
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
+        l1_losses_total = list()
+        duration_losses_total = list()
+        pitch_losses_total = list()
+        energy_losses_total = list()
+        kl_losses_total = list()
         for batch in tqdm(train_loader):
             with autocast():
                 if step_counter <= phase_1_steps:
@@ -116,38 +123,63 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    train_loss = net(text_tensors=batch[0].to(device),
-                                     text_lengths=batch[1].to(device),
-                                     gold_speech=batch[2].to(device),
-                                     speech_lengths=batch[3].to(device),
-                                     gold_durations=batch[4].to(device),
-                                     gold_pitch=batch[6].to(device),  # mind the switched order
-                                     gold_energy=batch[5].to(device),  # mind the switched order
-                                     utterance_embedding=style_embedding,
-                                     lang_ids=batch[8].to(device),
-                                     return_mels=False)
+                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss = net(text_tensors=batch[0].to(device),
+                                                                                   text_lengths=batch[1].to(device),
+                                                                                   gold_speech=batch[2].to(device),
+                                                                                   speech_lengths=batch[3].to(device),
+                                                                                   gold_durations=batch[4].to(device),
+                                                                                   gold_pitch=batch[6].to(device),  # mind the switched order
+                                                                                   gold_energy=batch[5].to(device),  # mind the switched order
+                                                                                   utterance_embedding=style_embedding,
+                                                                                   lang_ids=batch[8].to(device),
+                                                                                   return_mels=False)
+                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
+                    train_losses_this_epoch.append(train_loss.item())
+
+                elif step_counter <= phase_2_steps:
+                    # ===============================================
+                    # =        PHASE 2: flow post net is added      =
+                    # ===============================================
+                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                               batch_of_spectrogram_lengths=batch[3].to(device))
+
+                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss = net(text_tensors=batch[0].to(device),
+                                                                                   text_lengths=batch[1].to(device),
+                                                                                   gold_speech=batch[2].to(device),
+                                                                                   speech_lengths=batch[3].to(device),
+                                                                                   gold_durations=batch[4].to(device),
+                                                                                   gold_pitch=batch[6].to(device),  # mind the switched order
+                                                                                   gold_energy=batch[5].to(device),  # mind the switched order
+                                                                                   utterance_embedding=style_embedding,
+                                                                                   lang_ids=batch[8].to(device),
+                                                                                   return_mels=False)
+                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
                     train_losses_this_epoch.append(train_loss.item())
 
                 else:
-                    # ================================================
-                    # = PHASE 2:     cycle objective is added        =
-                    # ================================================
+                    # ======================================================
+                    # =       PHASE 3:     cycle objective is added        =
+                    # ======================================================
                     style_embedding_function.eval()
                     style_embedding_of_gold, out_list_gold = style_embedding_function(
                         batch_of_spectrograms=batch[2].to(device),
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                          text_lengths=batch[1].to(device),
-                                                          gold_speech=batch[2].to(device),
-                                                          speech_lengths=batch[3].to(device),
-                                                          gold_durations=batch[4].to(device),
-                                                          gold_pitch=batch[6].to(device),  # mind the switched order
-                                                          gold_energy=batch[5].to(device),  # mind the switched order
-                                                          utterance_embedding=style_embedding_of_gold.detach(),
-                                                          lang_ids=batch[8].to(device),
-                                                          return_mels=True)
+                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                                                                        text_lengths=batch[1].to(device),
+                                                                                                        gold_speech=batch[2].to(device),
+                                                                                                        speech_lengths=batch[3].to(device),
+                                                                                                        gold_durations=batch[4].to(device),
+                                                                                                        gold_pitch=batch[6].to(device),
+                                                                                                        # mind the switched order
+                                                                                                        gold_energy=batch[5].to(device),
+                                                                                                        # mind the switched order
+                                                                                                        utterance_embedding=style_embedding_of_gold.detach(),
+                                                                                                        lang_ids=batch[8].to(device),
+                                                                                                        return_mels=True)
+                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
+
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
                         batch_of_spectrograms=output_spectrograms,
@@ -163,6 +195,12 @@ def train_loop(net,
                     train_losses_this_epoch.append(train_loss.item())
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
+
+                l1_losses_total.append(l1_loss.item())
+                duration_losses_total.append(duration_loss.item())
+                pitch_losses_total.append(pitch_loss.item())
+                energy_losses_total.append(energy_loss.item())
+                kl_losses_total.append(kl_loss.item())
 
             optimizer.zero_grad()
 
@@ -201,17 +239,21 @@ def train_loop(net,
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
                     })
         print("Epoch:              {}".format(epoch))
-        print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "spectrogram_loss": sum(train_losses_this_epoch) / len(train_losses_this_epoch),
-                "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
-                    cycle_losses_this_epoch) != 0 else 0.0,
-                "Steps"           : step_counter,
+                "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
+                "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3),
+                "cycle_loss"   : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
+                "Steps"        : step_counter,
                 })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
