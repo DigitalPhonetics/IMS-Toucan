@@ -1,25 +1,23 @@
 import argparse
 import sys
 
-from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_speaker
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_Embedding import run as gst
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
-from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifigan_combined
-from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_low_RAM import run as hifigan_combined_low_ram
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as fs_integration_test
+from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_codo
+from TrainingInterfaces.TrainingPipelines.JointEmbeddingFunction import run as embedding
+from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
+from TrainingInterfaces.TrainingPipelines.PortaSpeech_MetaCheckpoint import run as meta
+from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "meta":             meta_fast,
-    "hificodo":         hifigan_combined,
-    "aligner":          aligner,
-    "fine_ger":         fine_ger,
-    "integration_test": integration_test,
-    "gst":              gst,
-    "spk":              finetune_model_speaker,
-    "low_ram_avocodo": hifigan_combined_low_ram
-}
+    "meta"     : meta,
+    "embedding": embedding,
+    "hifi_codo": hifi_codo,
+    "aligner"  : aligner,
+    "fine_ex"  : fine_tuning_example,
+    "fs_it"    : fs_integration_test,
+    "ps_it"    : ps_integration_test,
+    }
 
 if __name__ == '__main__':
 

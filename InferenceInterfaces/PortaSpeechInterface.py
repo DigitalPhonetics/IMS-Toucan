@@ -19,7 +19,7 @@ from pedalboard import PeakFilter
 from pedalboard import Pedalboard
 
 from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
-from InferenceInterfaces.InferenceArchitectures.InferencePortaSpeech import FastSpeech2
+from InferenceInterfaces.InferenceArchitectures.InferencePortaSpeech import PortaSpeech
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
@@ -40,7 +40,7 @@ class PortaSpeechInterface(torch.nn.Module):
         self.device = device
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
-            tts_model_path = os.path.join("Models", f"FastSpeech2_{tts_model_path}", "best.pt")
+            tts_model_path = os.path.join("Models", f"PortaSpeech_{tts_model_path}", "best.pt")
         self.use_signalprocessing = use_signalprocessing
         if self.use_signalprocessing:
             self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
@@ -77,14 +77,14 @@ class PortaSpeechInterface(torch.nn.Module):
         ################################
         self.use_lang_id = True
         try:
-            self.phone2mel = FastSpeech2(weights=checkpoint["model"])  # multi speaker multi language
+            self.phone2mel = PortaSpeech(weights=checkpoint["model"])  # multi speaker multi language
         except RuntimeError:
             try:
                 self.use_lang_id = False
-                self.phone2mel = FastSpeech2(weights=checkpoint["model"],
+                self.phone2mel = PortaSpeech(weights=checkpoint["model"],
                                              lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = FastSpeech2(weights=checkpoint["model"], lang_embs=None,
+                self.phone2mel = PortaSpeech(weights=checkpoint["model"], lang_embs=None,
                                              utt_embed_dim=None)  # single speaker
         self.phone2mel = self.phone2mel.to(torch.device(device))
 

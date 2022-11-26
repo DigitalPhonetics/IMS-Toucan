@@ -8,8 +8,8 @@ from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDatasetBuilder import AlignerDatasetBuilder
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.meta_train_loop import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.portaspeech_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 
@@ -196,7 +196,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         return
 
     if remove_faulty_samples:
-        find_and_remove_faulty_samples(net=FastSpeech2(lang_embs=100),
+        find_and_remove_faulty_samples(net=PortaSpeech(),
                                        datasets=english_datasets +
                                                 german_datasets +
                                                 greek_datasets +
@@ -213,7 +213,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                 vietnamese_datasets,
                                        device=torch.device("cuda"),
                                        path_to_checkpoint=resume_checkpoint)
-    model = FastSpeech2()
+    model = PortaSpeech()
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -226,6 +226,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=meta_save_dir,
                phase_1_steps=50000,
                phase_2_steps=50000,
+               phase_3_steps=50000,
                steps_per_checkpoint=1000,
                lr=0.001,
                path_to_checkpoint=resume_checkpoint,

@@ -10,7 +10,7 @@ from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
 
-class FastSpeech2(torch.nn.Module):
+class PortaSpeech(torch.nn.Module):
 
     def __init__(self,  # network structure related
                  weights,
