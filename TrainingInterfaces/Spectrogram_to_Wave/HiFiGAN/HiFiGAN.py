@@ -24,7 +24,8 @@ class HiFiGANGenerator(torch.nn.Module):
                  resblock_dilations=((1, 3, 5), (1, 3, 5), (1, 3, 5)),
                  use_additional_convs=True,
                  bias=True,
-                 nonlinear_activation="LeakyReLU"):
+                 nonlinear_activation="LeakyReLU",
+                 nonlinear_activation_params={"negative_slope": 0.1}):
         """
         Initialize HiFiGANGenerator module.
         
@@ -50,7 +51,6 @@ class HiFiGANGenerator(torch.nn.Module):
         assert kernel_size % 2 == 1, "Kernel size must be odd number."
         assert len(upsample_scales) == len(upsample_kernel_sizes)
         assert len(resblock_dilations) == len(resblock_kernel_sizes)
-        nonlinear_activation_params = {"negative_slope": 0.1}
 
         # define modules
         self.num_upsamples = len(upsample_kernel_sizes)
