@@ -63,7 +63,7 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
                                                                (kernel_sizes[0], 1),
                                                                (downsample_scale, 1),
                                                                padding=((kernel_sizes[0] - 1) // 2, 0), ),
-                                               getattr(torch.nn, nonlinear_activation)(nonlinear_activation_params), )]
+                                               getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params), )]
             in_chs = out_chs
             # NOTE(kan-bayashi): Use downsample_scale + 1?
             out_chs = min(out_chs * 4, max_downsample_channels)
