@@ -10,7 +10,7 @@ from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import
 class FVAEEncoder(nn.Module):
 
     def __init__(self, c_in, hidden_size, c_latent, kernel_size,
-                 n_layers, c_cond=0, p_dropout=0, strides=[4], nn_type='wn'):
+                 n_layers, c_cond=0, p_dropout=0, strides=[4]):
         super().__init__()
         self.strides = strides
         self.hidden_size = hidden_size
@@ -44,7 +44,7 @@ class FVAEEncoder(nn.Module):
 class FVAEDecoder(nn.Module):
 
     def __init__(self, c_latent, hidden_size, out_channels, kernel_size,
-                 n_layers, c_cond=0, p_dropout=0, strides=[4], nn_type='wn'):
+                 n_layers, c_cond=0, p_dropout=0, strides=[4]):
         super().__init__()
         self.strides = strides
         self.hidden_size = hidden_size
@@ -72,8 +72,7 @@ class FVAE(nn.Module):
     def __init__(self,
                  c_in_out, hidden_size, c_latent,
                  kernel_size, enc_n_layers, dec_n_layers, c_cond, strides,
-                 use_prior_flow, flow_hidden=None, flow_kernel_size=None, flow_n_steps=None,
-                 encoder_type='wn', decoder_type='wn'):
+                 use_prior_flow, flow_hidden=None, flow_kernel_size=None, flow_n_steps=None):
         super(FVAE, self).__init__()
         self.strides = strides
         self.hidden_size = hidden_size
@@ -87,12 +86,12 @@ class FVAE(nn.Module):
                 for i, s in enumerate(strides)
                 ])
         self.encoder = FVAEEncoder(c_in_out, hidden_size, c_latent, kernel_size,
-                                   enc_n_layers, c_cond, strides=strides, nn_type=encoder_type)
+                                   enc_n_layers, c_cond, strides=strides)
         if use_prior_flow:
             self.prior_flow = ResFlow(
                 c_latent, flow_hidden, flow_kernel_size, flow_n_steps, 4, c_cond=c_cond)
         self.decoder = FVAEDecoder(c_latent, hidden_size, c_in_out, kernel_size,
-                                   dec_n_layers, c_cond, strides=strides, nn_type=decoder_type)
+                                   dec_n_layers, c_cond, strides=strides)
         self.prior_dist = dist.Normal(0, 1)
 
     def forward(self, x=None, nonpadding=None, cond=None, infer=False, noise_scale=1.0):

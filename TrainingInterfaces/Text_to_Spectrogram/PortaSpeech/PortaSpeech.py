@@ -146,30 +146,34 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # decoder is a VAE
         self.decoder = FVAE(
-            c_in_out=self.out_dims,
-            hidden_size=hparams['fvae_enc_dec_hidden'], c_latent=hparams['latent_size'],
-            kernel_size=hparams['fvae_kernel_size'],
-            enc_n_layers=hparams['fvae_enc_n_layers'],
-            dec_n_layers=hparams['fvae_dec_n_layers'],
-            c_cond=self.hidden_size,
-            use_prior_flow=hparams['use_prior_flow'],
-            flow_hidden=hparams['prior_flow_hidden'],
-            flow_kernel_size=hparams['prior_flow_kernel_size'],
-            flow_n_steps=hparams['prior_flow_n_blocks'],
-            strides=[hparams['fvae_strides']],
-            encoder_type=hparams['fvae_encoder_type'],
-            decoder_type=hparams['fvae_decoder_type'],
+            c_in_out=self.odim,
+            hidden_size=384,  # fvae_enc_dec_hidden (original 192 in paper)
+            c_latent=16,  # latent_size
+            kernel_size=5,  # fvae_kernel_size
+            enc_n_layers=8,  # fvae_enc_n_layers
+            dec_n_layers=4,  # fvae_dec_n_layers
+            c_cond=self.adim,
+            use_prior_flow=True,  # use_prior_flow
+            flow_hidden=64,  # prior_flow_hidden
+            flow_kernel_size=3,  # prior_flow_kernel_size
+            flow_n_steps=4,  # prior_flow_n_blocks
+            strides=[4],  # fvae_strides
             )
 
         # post net is realized as a flow
         self.post_flow = Glow(
-            80, hparams['post_glow_hidden'], hparams['post_glow_kernel_size'], 1,
-            hparams['post_glow_n_blocks'], hparams['post_glow_n_block_layers'],
-            n_split=4, n_sqz=2,
-            gin_channels=cond_hs,
-            share_cond_layers=hparams['post_share_cond_layers'],
-            share_wn_layers=hparams['share_wn_layers'],
-            sigmoid_scale=hparams['sigmoid_scale']
+            80,
+            384,  # post_glow_hidden  (original 192 in paper)
+            3,  # post_glow_kernel_size
+            1,
+            12,  # post_glow_n_blocks
+            3,  # post_glow_n_block_layers
+            n_split=4,
+            n_sqz=2,
+            gin_channels=0,
+            share_cond_layers=False,  # post_share_cond_layers
+            share_wn_layers=4,  # share_wn_layers
+            sigmoid_scale=False  # sigmoid_scale
             )
         self.prior_dist = dist.Normal(0, 1)
 

@@ -1,10 +1,11 @@
 import numpy as np
 import scipy
 import torch
-from modules.commons.wavenet import WN
-from modules.tts.glow import utils
 from torch import nn
 from torch.nn import functional as F
+
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech import glow_utils
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.wavenet import WN
 
 
 class ActNorm(nn.Module):
@@ -64,7 +65,7 @@ class InvConvNear(nn.Module):
         self.n_sqz = n_sqz
         self.no_jacobian = no_jacobian
 
-        w_init = torch.qr(torch.FloatTensor(self.n_split, self.n_split).normal_())[0]
+        w_init = torch.linalg.qr(torch.FloatTensor(self.n_split, self.n_split).normal_(), 'complete')[0]
         if torch.det(w_init) < 0:
             w_init[:, 0] = -1 * w_init[:, 0]
         self.lu = lu
@@ -338,9 +339,9 @@ class Glow(nn.Module):
         if return_hiddens:
             hs = []
         if self.n_sqz > 1:
-            x, x_mask_ = utils.squeeze(x, x_mask, self.n_sqz)
+            x, x_mask_ = glow_utils.squeeze(x, x_mask, self.n_sqz)
             if g is not None:
-                g, _ = utils.squeeze(g, x_mask, self.n_sqz)
+                g, _ = glow_utils.squeeze(g, x_mask, self.n_sqz)
             x_mask = x_mask_
         if self.share_cond_layers and g is not None:
             g = self.cond_layer(g)
@@ -350,7 +351,7 @@ class Glow(nn.Module):
                 hs.append(x)
             logdet_tot += logdet
         if self.n_sqz > 1:
-            x, x_mask = utils.unsqueeze(x, x_mask, self.n_sqz)
+            x, x_mask = glow_utils.unsqueeze(x, x_mask, self.n_sqz)
         if return_hiddens:
             return x, logdet_tot, hs
         return x, logdet_tot
