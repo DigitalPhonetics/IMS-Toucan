@@ -328,8 +328,6 @@ class PortaSpeech(torch.nn.Module, ABC):
             pitch (Tensor, optional): Groundtruth of token-averaged pitch (T + 1, 1).
             energy (Tensor, optional): Groundtruth of token-averaged energy (T + 1, 1).
             alpha (float, optional): Alpha to control the speed.
-            use_teacher_forcing (bool, optional): Whether to use teacher forcing.
-                If true, groundtruth of duration, pitch and energy will be used.
             return_duration_pitch_energy: whether to return the list of predicted durations for nicer plotting
 
         Returns:

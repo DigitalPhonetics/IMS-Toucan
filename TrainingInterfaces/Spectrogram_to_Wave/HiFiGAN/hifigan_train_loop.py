@@ -84,7 +84,6 @@ def train_loop(generator,
         mel_losses = list()
         feat_match_losses = list()
         adversarial_losses = list()
-        signal_processing_losses = list()
 
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
@@ -97,15 +96,13 @@ def train_loop(generator,
 
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
-            pred_wave, intermediate_wave_upsampled_twice, intermediate_wave_upsampled_once = g(melspec)
+            pred_wave = g(melspec)
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             generator_total_loss = mel_loss * 45.0  # according to the Avocodo Paper
 
             if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
-                d_outs = d(wave=pred_wave,
-                           intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
-                           intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
+                d_outs = d(wave=pred_wave)
                 adversarial_loss = generator_adv_criterion(d_outs)
                 adversarial_losses.append(adversarial_loss.item())
                 generator_total_loss = generator_total_loss + adversarial_loss * 2  # based on own experience
@@ -132,9 +129,7 @@ def train_loop(generator,
             ############################
 
             if step_counter > generator_warmup and step_counter % generator_steps_per_discriminator_step == 0:
-                d_outs = d(wave=pred_wave.detach(),
-                           intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice.detach(),
-                           intermediate_wave_upsampled_once=intermediate_wave_upsampled_once.detach())
+                d_outs = d(wave=pred_wave.detach())
                 d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
                 discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
                 optimizer_d.zero_grad()
@@ -170,8 +165,6 @@ def train_loop(generator,
         log_dict["Mel Loss"] = round(sum(mel_losses) / len(mel_losses), 3)
         if len(feat_match_losses) > 0:
             log_dict["Feature Matching Loss"] = round(sum(feat_match_losses) / len(feat_match_losses), 3)
-        if len(signal_processing_losses) > 0:
-            log_dict["Signal Processing Loss"] = round(sum(signal_processing_losses) / len(signal_processing_losses), 3)
         if len(adversarial_losses) > 0:
             log_dict["Adversarial Loss"] = round(sum(adversarial_losses) / len(adversarial_losses), 3)
         if len(discriminator_losses) > 0:

@@ -9,7 +9,6 @@ import copy
 import torch
 import torch.nn.functional as F
 
-from TrainingInterfaces.Spectrogram_to_Wave.Avocodo.AvocodoDiscriminators import MultiCoMBDiscriminator
 from TrainingInterfaces.Spectrogram_to_Wave.Avocodo.AvocodoDiscriminators import MultiSubBandDiscriminator
 
 
@@ -509,13 +508,6 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                      "use_weight_norm"            : True,
                      "use_spectral_norm"          : False,
                      },
-                 # CoMB discriminator related
-                 kernels=[[7, 11, 11, 11, 11, 5],
-                          [11, 21, 21, 21, 21, 5],
-                          [15, 41, 41, 41, 41, 5]],
-                 channels=[16, 64, 256, 1024, 1024, 1024],
-                 groups=[1, 4, 16, 64, 256, 1],
-                 strides=[1, 1, 4, 4, 4, 1],
                  # Sub-Band discriminator related
                  tkernels=[7, 5, 3],
                  fkernel=5,
@@ -545,17 +537,14 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                                                   follow_official_norm=follow_official_norm, )
         self.mpd = HiFiGANMultiPeriodDiscriminator(periods=periods,
                                                    discriminator_params=period_discriminator_params, )
-        self.mcmbd = MultiCoMBDiscriminator(kernels, channels, groups, strides)
         self.msbd = MultiSubBandDiscriminator(tkernels, fkernel, tchannels, fchannels, tstrides, fstride, tdilations, fdilations, tsubband, n, m, freq_init_ch)
 
-    def forward(self, wave, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
+    def forward(self, wave):
         """
         Calculate forward propagation.
 
         Args:
             wave: The predicted or gold waveform
-            intermediate_wave_upsampled_twice: the wave before the final upsampling in the generator
-            intermediate_wave_upsampled_once: the wave before the second final upsampling in the generator
 
         Returns:
             List: List of lists of each discriminator outputs,
@@ -563,8 +552,5 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
         """
         msd_outs = self.msd(wave)
         mpd_outs = self.mpd(wave)
-        mcmbd_outs = self.mcmbd(wave_final=wave,
-                                intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
-                                intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
         msbd_outs = self.msbd(wave)
-        return msd_outs + mpd_outs + mcmbd_outs + msbd_outs
+        return msd_outs + mpd_outs + msbd_outs
