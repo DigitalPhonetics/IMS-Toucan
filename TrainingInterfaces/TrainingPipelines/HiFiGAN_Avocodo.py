@@ -1,4 +1,4 @@
-import os.path
+import os
 import time
 
 import torch
@@ -9,6 +9,7 @@ from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGANDataset import HiFiGA
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.hifigan_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
+from Utility.storage_config import MODELS_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb_resume_id):
@@ -29,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = "Models/Avocodo_feat_match"
+        model_save_dir = os.path.join(MODELS_DIR, "Avocodo_feat_match")
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")

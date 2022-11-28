@@ -17,6 +17,7 @@ from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Utility.storage_config import MODELS_DIR
 
 
 class AlignerDatasetBuilder(Dataset):
@@ -52,7 +53,10 @@ class AlignerDatasetBuilder(Dataset):
         self.device = device
         self.speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                            run_opts={"device": str(device)},
-                                                                           savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+                                                                           savedir=os.path.join(
+                                                                            MODELS_DIR, 
+                                                                            "SpeakerEmbedding", 
+                                                                            "speechbrain_speaker_embedding_ecapa"))
 
     def build_cache(self,
                     transcript_dict,

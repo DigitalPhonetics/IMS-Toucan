@@ -15,6 +15,7 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.diverse_losses import BarlowTwinsLoss
 from Utility.diverse_losses import TripletLoss
+from Utility.storage_config import MODELS_DIR
 
 
 class Dataset:
@@ -139,7 +140,7 @@ def finetune_model_emotion(gpu_id, resume_checkpoint, resume, finetune, model_di
 
     emo_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(emo_data, device=device)
-    torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/emotion_embedding_function.pt")
+    torch.save({"style_emb_func": finetuned_model.state_dict()}, os.path.join(MODELS_DIR, "Embedding", "emotion_embedding_function.pt"))
 
 
 def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_dir):
@@ -295,10 +296,10 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
 
     speaker_data.add_dataset(label_to_filelist)
     finetuned_model = finetune_model(speaker_data, device=device)
-    torch.save({"style_emb_func": finetuned_model.state_dict()}, "Models/Embedding/speaker_embedding_function.pt")
+    torch.save({"style_emb_func": finetuned_model.state_dict()}, os.path.join(MODELS_DIR, "Embedding", "speaker_embedding_function.pt"))
 
 
-def finetune_model(dataset, device, path_to_embed="Models/Embedding/embedding_function.pt"):
+def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")):
     # initialize losses
     contrastive_loss = TripletLoss(margin=1.0)
     non_contrastive_loss = BarlowTwinsLoss().to(device)

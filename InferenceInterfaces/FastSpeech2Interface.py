@@ -17,6 +17,7 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from Utility.storage_config import MODELS_DIR
 
 
 class InferenceFastSpeech2(torch.nn.Module):
@@ -41,7 +42,7 @@ class InferenceFastSpeech2(torch.nn.Module):
         ################################
         #   load weights               #
         ################################
-        checkpoint = torch.load(os.path.join("Models", f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
+        checkpoint = torch.load(os.path.join(MODELS_DIR, f"FastSpeech2_{model_name}", "best.pt"), map_location='cpu')
 
         ################################
         #   load phone to mel model    #
@@ -64,14 +65,14 @@ class InferenceFastSpeech2(torch.nn.Module):
         #################################
         self.style_embedding_function = StyleEmbedding()
         self.style_embedding_function.eval()
-        check_dict = torch.load("Models/Embedding/embedding_function.pt", map_location="cpu")
+        check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
 
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=os.path.join("Models", "Avocodo", "best.pt")),
+        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=os.path.join(MODELS_DIR, "Avocodo", "best.pt")),
                                        torch.rand((80, 50))).to(
             torch.device(device))
 

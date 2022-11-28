@@ -2,6 +2,7 @@
 This is the setup with which the embedding model is trained. After the embedding model has been trained, it is only used in a frozen state.
 """
 
+import os
 import time
 
 import torch
@@ -12,6 +13,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.embedding_function_train_loop i
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
+from Utility.storage_config import MODELS_DIR, PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
@@ -33,30 +35,30 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_Embedding")
+        save_dir = os.path.join(MODELS_DIR, "FastSpeech2_Embedding")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "ravdess"),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
                                               lang="en",
                                               ctc_selection=False))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "esds"),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
                                               lang="en",
                                               ctc_selection=False))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "libri_all_clean"),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
                                               lang="en"))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "Nancy"),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                               lang="en"))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "LJSpeech"),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                               lang="en"))
 
     # for the next iteration, we should add an augmented noisy version of e.g. Nancy,

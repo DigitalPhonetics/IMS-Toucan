@@ -5,10 +5,11 @@ import warnings
 import torch
 
 from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
+from Utility.storage_config import MODELS_DIR
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning)
-    available_models = os.listdir("Models")
+    available_models = os.listdir(MODELS_DIR)
     available_fastspeech_models = list()
     for model in available_models:
         if model.startswith("FastSpeech2_"):
