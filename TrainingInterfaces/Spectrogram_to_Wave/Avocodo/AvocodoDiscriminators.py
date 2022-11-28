@@ -7,6 +7,7 @@ adapted 2022, Florian Lux
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from scipy import signal as sig
 from torch.nn import Conv1d
@@ -18,6 +19,66 @@ def get_padding(kernel_size, dilation=1):
     return int((kernel_size * dilation - dilation) / 2)
 
 
+class MultiCoMBDiscriminator(torch.nn.Module):
+
+    def __init__(self, kernels, channels, groups, strides):
+        super(MultiCoMBDiscriminator, self).__init__()
+        self.combd_1 = CoMBD(filters=channels, kernels=kernels[0], groups=groups, strides=strides)
+        self.combd_2 = CoMBD(filters=channels, kernels=kernels[1], groups=groups, strides=strides)
+        self.combd_3 = CoMBD(filters=channels, kernels=kernels[2], groups=groups, strides=strides)
+
+        self.pqmf_2 = PQMF(N=2, taps=256, cutoff=0.25, beta=10.0)
+        self.pqmf_4 = PQMF(N=8, taps=192, cutoff=0.13, beta=10.0)
+
+    def forward(self, wave_final, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
+
+        if intermediate_wave_upsampled_twice is not None and intermediate_wave_upsampled_once is not None:
+            # get features of generated wave
+            features_of_predicted = []
+
+            _, p3_fmap_hat = self.combd_3(wave_final)
+            features_of_predicted.append(p3_fmap_hat)
+
+            x2_hat_ = self.pqmf_2(wave_final)[:, :1, :]
+            x1_hat_ = self.pqmf_4(wave_final)[:, :1, :]
+
+            _, p2_fmap_hat_ = self.combd_2(intermediate_wave_upsampled_twice)
+            features_of_predicted.append(p2_fmap_hat_)
+
+            _, p1_fmap_hat_ = self.combd_1(intermediate_wave_upsampled_once)
+            features_of_predicted.append(p1_fmap_hat_)
+
+            _, p2_fmap_hat = self.combd_2(x2_hat_)
+            features_of_predicted.append(p2_fmap_hat)
+
+            _, p1_fmap_hat = self.combd_1(x1_hat_)
+            features_of_predicted.append(p1_fmap_hat)
+
+            return features_of_predicted
+
+        else:
+            # get features of gold wave
+            features_of_gold = []
+
+            _, p3_fmap = self.combd_3(wave_final)
+            features_of_gold.append(p3_fmap)
+
+            x2_ = self.pqmf_2(wave_final)[:, :1, :]  # Select first band
+            x1_ = self.pqmf_4(wave_final)[:, :1, :]  # Select first band
+
+            _, p2_fmap_ = self.combd_2(x2_)
+            features_of_gold.append(p2_fmap_)
+
+            _, p1_fmap_ = self.combd_1(x1_)
+            features_of_gold.append(p1_fmap_)
+
+            _, p2_fmap = self.combd_2(x2_)
+            features_of_gold.append(p2_fmap)
+
+            _, p1_fmap = self.combd_1(x1_)
+            features_of_gold.append(p1_fmap)
+
+            return features_of_gold
 
 
 class MultiSubBandDiscriminator(torch.nn.Module):
@@ -81,9 +142,6 @@ class MultiSubBandDiscriminator(torch.nn.Module):
         return fmap_hat
 
 
-
-<<<<<<< HEAD
-=======
 class CoMBD(torch.nn.Module):
 
     def __init__(self, filters, kernels, groups, strides, use_spectral_norm=False):
@@ -108,7 +166,6 @@ class CoMBD(torch.nn.Module):
         return x, fmap
 
 
->>>>>>> parent of 8b8da33... improve logging and fix discriminator for new frequency
 class MDC(torch.nn.Module):
 
     def __init__(self, in_channel, channel, kernel, stride, dilations, use_spectral_norm=False):

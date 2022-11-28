@@ -58,6 +58,9 @@ class HiFiGANGenerator(torch.nn.Module):
                             padding=(kernel_size - 1) // 2, ),
             torch.nn.Tanh(), )
 
+        self.out_proj_x1 = torch.nn.Conv1d(512 // 4, 1, 7, 1, padding=3)
+        self.out_proj_x2 = torch.nn.Conv1d(512 // 8, 1, 7, 1, padding=3)
+
         if use_weight_norm:
             self.apply_weight_norm()
 
