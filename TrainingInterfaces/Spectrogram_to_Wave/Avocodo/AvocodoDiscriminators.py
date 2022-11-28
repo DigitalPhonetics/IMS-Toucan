@@ -82,6 +82,33 @@ class MultiSubBandDiscriminator(torch.nn.Module):
 
 
 
+<<<<<<< HEAD
+=======
+class CoMBD(torch.nn.Module):
+
+    def __init__(self, filters, kernels, groups, strides, use_spectral_norm=False):
+        super(CoMBD, self).__init__()
+        norm_f = weight_norm if use_spectral_norm == False else spectral_norm
+        self.convs = nn.ModuleList()
+        init_channel = 1
+        for i, (f, k, g, s) in enumerate(zip(filters, kernels, groups, strides)):
+            self.convs.append(norm_f(Conv1d(init_channel, f, k, s, padding=get_padding(k, 1), groups=g)))
+            init_channel = f
+        self.conv_post = norm_f(Conv1d(filters[-1], 1, 3, 1, padding=get_padding(3, 1)))
+
+    def forward(self, x):
+        fmap = []
+        for l in self.convs:
+            x = l(x)
+            x = F.leaky_relu(x, 0.1)
+            fmap.append(x)
+        x = self.conv_post(x)
+        # fmap.append(x)
+        x = torch.flatten(x, 1, -1)
+        return x, fmap
+
+
+>>>>>>> parent of 8b8da33... improve logging and fix discriminator for new frequency
 class MDC(torch.nn.Module):
 
     def __init__(self, in_channel, channel, kernel, stride, dilations, use_spectral_norm=False):

@@ -45,6 +45,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  use_scaled_pos_enc=True,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
+                 reduction_factor=1,
                  # encoder
                  use_macaron_style_in_conformer=True,
                  use_cnn_in_conformer=True,
@@ -89,6 +90,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.odim = odim
         self.adim = adim
         self.eos = 1
+        self.reduction_factor = reduction_factor
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
         self.use_scaled_pos_enc = use_scaled_pos_enc
@@ -228,6 +230,9 @@ class PortaSpeech(torch.nn.Module, ABC):
         d_outs, \
         p_outs, \
         e_outs = fs_outs
+        # modify mod part of groundtruth (speaking pace)
+        if self.reduction_factor > 1:
+            speech_lengths = speech_lengths.new([olen - olen % self.reduction_factor for olen in speech_lengths])
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
@@ -236,10 +241,11 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                                          ds=gold_durations, ps=gold_pitch,
                                                                          es=gold_energy,
                                                                          ilens=text_lengths, olens=speech_lengths)
+        loss = l1_loss + duration_loss + pitch_loss + energy_loss
 
         if return_mels:
-            return l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, after_outs
-        return l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss
+            return loss, after_outs
+        return loss
 
     def _forward(self,
                  text_tensors,
@@ -296,15 +302,19 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward decoder
-        #  x=None, nonpadding=None, cond=None, infer=False, noise_scale=1.0
-        #        x: [B, C_in_out, T]
-        #        nonpadding: [B, 1, T]
-        #        cond: [B, C_g, T]
-        zs, _ = self.decoder(x=encoded_texts.transpose(1, 2), nonpadding=text_lens, cond=utterance_embedding, infer=False, noise_scale=1.0)  # (B, Lmax, adim)
+        if speech_lens is not None and not is_inference:
+            if self.reduction_factor > 1:
+                olens_in = speech_lens.new([olen // self.reduction_factor for olen in speech_lens])
+            else:
+                olens_in = speech_lens
+            h_masks = self._source_mask(olens_in)
+        else:
+            h_masks = None
+        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
         before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
 
         # postnet -> (B, Lmax//r * r, odim)
-        after_outs = before_outs + self.post_flow(before_outs.transpose(1, 2)).transpose(1, 2)
+        after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
 
         return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
 

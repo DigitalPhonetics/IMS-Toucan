@@ -32,6 +32,7 @@ class PortaSpeech(torch.nn.Module):
                  decoder_normalize_before=True,
                  encoder_concat_after=False,
                  decoder_concat_after=False,
+                 reduction_factor=1,
                  # encoder / decoder
                  use_macaron_style_in_conformer=True,
                  use_cnn_in_conformer=True,
@@ -73,6 +74,7 @@ class PortaSpeech(torch.nn.Module):
         self.idim = idim
         self.odim = odim
         self.adim = adim
+        self.reduction_factor = reduction_factor
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
         self.use_scaled_pos_enc = use_scaled_pos_enc
@@ -130,7 +132,7 @@ class PortaSpeech(torch.nn.Module):
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_dec_kernel_size,
                                  utt_embed=utt_embed_dim)
-        self.feat_out = torch.nn.Linear(adim, odim)
+        self.feat_out = torch.nn.Linear(adim, odim * reduction_factor)
         self.postnet = PostNet(idim=idim,
                                odim=odim,
                                n_layers=postnet_layers,
