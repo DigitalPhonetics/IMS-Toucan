@@ -31,7 +31,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "FastSpeech2_Meta")
+    base_dir = os.path.join(MODELS_DIR, "PortaSpeech_Meta")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -224,7 +224,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     train_loop(net=model,
                device=torch.device("cuda"),
                datasets=datasets,
-               batch_size=4,
+               batch_size=32,
                save_directory=meta_save_dir,
                phase_1_steps=50000,
                phase_2_steps=50000,

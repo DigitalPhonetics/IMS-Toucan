@@ -34,7 +34,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "FastSpeech2_IntegrationTest")
+        save_dir = os.path.join(MODELS_DIR, "PortaSpeech_IntegrationTest")
     os.makedirs(save_dir, exist_ok=True)
 
     train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),

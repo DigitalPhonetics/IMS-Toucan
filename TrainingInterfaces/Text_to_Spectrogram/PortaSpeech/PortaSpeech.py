@@ -191,7 +191,10 @@ class PortaSpeech(torch.nn.Module, ABC):
                 gold_energy,
                 utterance_embedding,
                 return_mels=False,
-                lang_ids=None):
+                lang_ids=None,
+                run_glow=False,  # requires warmup, so we don't use it from the start
+                use_posterior=False  # requires warmup, so we don't use it from the start
+                ):
         """
         Calculate forward propagation.
 
@@ -213,7 +216,12 @@ class PortaSpeech(torch.nn.Module, ABC):
         # Texts include EOS token from the teacher model already in this version
 
         # forward propagation
-        fs_outs = self._forward(text_tensors,
+        before_outs, \
+        after_outs, \
+        d_outs, \
+        p_outs, \
+        e_outs, \
+        kl_loss = self._forward(text_tensors,
                                 text_lengths,
                                 gold_speech,
                                 speech_lengths,
@@ -222,12 +230,9 @@ class PortaSpeech(torch.nn.Module, ABC):
                                 gold_energy,
                                 utterance_embedding=utterance_embedding,
                                 is_inference=False,
-                                lang_ids=lang_ids)
-        before_outs, \
-        after_outs, \
-        d_outs, \
-        p_outs, \
-        e_outs = fs_outs
+                                use_posterior=use_posterior,
+                                lang_ids=lang_ids,
+                                run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
@@ -250,6 +255,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                  gold_pitch=None,
                  gold_energy=None,
                  is_inference=False,
+                 run_glow=False,
+                 use_posterior=False,
                  alpha=1.0,
                  utterance_embedding=None,
                  lang_ids=None):
@@ -260,7 +267,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         if not self.multispeaker_model:
             utterance_embedding = None
 
-        # forward encoder
+        # forward text encoder
         text_masks = self._source_mask(text_lens)
 
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding,
@@ -288,25 +295,37 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, predicted_durations, alpha)  # (B, Lmax, adim)
         else:
             predicted_durations = self.duration_predictor(encoded_texts, d_masks)
-
             # use groundtruth in training
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
-        # forward decoder
-        #  x=None, nonpadding=None, cond=None, infer=False, noise_scale=1.0
-        #        x: [B, C_in_out, T]
-        #        nonpadding: [B, 1, T]
-        #        cond: [B, C_g, T]
-        zs, _ = self.decoder(x=encoded_texts.transpose(1, 2), nonpadding=text_lens, cond=utterance_embedding, infer=False, noise_scale=1.0)  # (B, Lmax, adim)
-        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
+        # forward VAE decoder
+        target_non_padding_mask = make_non_pad_mask(xs=speech_lens)
+        if is_inference:
+            z = self.decoder(cond=encoded_texts.transpose(1, 2),
+                             infer=is_inference)  # (B, Lmax, adim)
+        else:
+            z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,
+                                                        nonpadding=target_non_padding_mask,
+                                                        cond=encoded_texts.transpose(1, 2),
+                                                        infer=is_inference)  # (B, Lmax, adim)
+            if not use_posterior:
+                z = torch.randn_like(z)
 
-        # postnet -> (B, Lmax//r * r, odim)
-        after_outs = before_outs + self.post_flow(before_outs.transpose(1, 2)).transpose(1, 2)
+        before_outs = self.decoder.decoder(z, nonpadding=speech_lens, cond=encoded_texts).transpose(1, 2)
 
-        return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
+        # forward flow post-net
+        if run_glow:
+            after_outs = before_outs + self.post_flow(before_outs.transpose(1, 2)).transpose(1, 2)  # postnet -> (B, Lmax, odim)
+        else:
+            after_outs = before_outs
+
+        if not is_inference:
+            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, kl_loss
+        else:
+            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
 
     def inference(self,
                   text,
@@ -317,7 +336,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                   alpha=1.0,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
-                  lang_id=None):
+                  lang_id=None,
+                  run_glow=False):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -356,6 +376,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            ilens,
                                            ys,
                                            is_inference=True,
+                                           run_glow=run_glow,
                                            alpha=alpha,
                                            utterance_embedding=utterance_embedding.unsqueeze(0),
                                            lang_ids=lang_id)  # (1, L, odim)

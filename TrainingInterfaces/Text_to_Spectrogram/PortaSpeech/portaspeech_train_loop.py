@@ -47,7 +47,8 @@ def train_loop(net,
                phase_1_steps=100000,
                phase_2_steps=100000,
                phase_3_steps=100000,
-               use_wandb=False):
+               use_wandb=False,
+               kl_start_steps=10000):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -133,8 +134,10 @@ def train_loop(net,
                                                                                    utterance_embedding=style_embedding,
                                                                                    lang_ids=batch[8].to(device),
                                                                                    return_mels=False)
-                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
-                    train_losses_this_epoch.append(train_loss.item())
+                    if step_counter < kl_start_steps:
+                        train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss
+                    else:
+                        train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
 
                 elif step_counter <= phase_2_steps:
                     # ===============================================
@@ -153,8 +156,10 @@ def train_loop(net,
                                                                                    utterance_embedding=style_embedding,
                                                                                    lang_ids=batch[8].to(device),
                                                                                    return_mels=False)
-                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
-                    train_losses_this_epoch.append(train_loss.item())
+                    if step_counter < kl_start_steps:
+                        train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss
+                    else:
+                        train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
 
                 else:
                     # ======================================================
@@ -178,7 +183,10 @@ def train_loop(net,
                                                                                                         utterance_embedding=style_embedding_of_gold.detach(),
                                                                                                         lang_ids=batch[8].to(device),
                                                                                                         return_mels=True)
-                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
+                    if step_counter < kl_start_steps:
+                        train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss
+                    else:
+                        train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -192,10 +200,10 @@ def train_loop(net,
                         # since we're essentially dealing with a discriminator here.
                         cycle_dist = cycle_dist + torch.nn.functional.l1_loss(out_pred, out_gold.detach())
 
-                    train_losses_this_epoch.append(train_loss.item())
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
 
+                train_losses_this_epoch.append(train_loss.item())
                 l1_losses_total.append(l1_loss.item())
                 duration_losses_total.append(duration_loss.item())
                 pitch_losses_total.append(pitch_loss.item())
