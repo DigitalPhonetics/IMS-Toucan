@@ -12,6 +12,8 @@ from TrainingInterfaces.Spectrogram_to_Embedding.embedding_function_train_loop i
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
+from Utility.storage_config import MODELS_DIR
+from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
@@ -33,30 +35,31 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join("Models", "FastSpeech2_Embedding")
+        save_dir = os.path.join(MODELS_DIR, "FastSpeech2_Embedding")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
-                                              corpus_dir=os.path.join("Corpora", "ravdess"),
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
                                               lang="en",
                                               ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
-                                              corpus_dir=os.path.join("Corpora", "esds"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
                                               lang="en",
                                               ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
-                                              corpus_dir=os.path.join("Corpora", "libri_all_clean"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
                                               lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
-                                              corpus_dir=os.path.join("Corpora", "Nancy"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                               lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
-                                              corpus_dir=os.path.join("Corpora", "LJSpeech"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                               lang="en"))
 
     # for the next iteration, we should add an augmented noisy version of e.g. Nancy,

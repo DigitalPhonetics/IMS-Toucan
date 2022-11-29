@@ -14,6 +14,7 @@ from tqdm import tqdm
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from Utility.storage_config import MODELS_DIR
 
 
 class AlignerDataset(Dataset):
@@ -94,7 +95,10 @@ class AlignerDataset(Dataset):
             self.speaker_embeddings = list()
             speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                           run_opts={"device": str(device)},
-                                                                          savedir="Models/SpeakerEmbedding/speechbrain_speaker_embedding_ecapa")
+                                                                          savedir=os.path.join(
+                                                                              MODELS_DIR,
+                                                                              "Embedding",
+                                                                              "speechbrain_speaker_embedding_ecapa"))
             with torch.no_grad():
                 for wave in tqdm(norm_waves):
                     self.speaker_embeddings.append(
@@ -191,8 +195,8 @@ class AlignerDataset(Dataset):
         text_vector = self.datapoints[index][0]
         tokens = list()
         for vector in text_vector:
-            if vector[get_feature_to_index_lookup()[
-                "word-boundary"]] == 0:  # we don't include word boundaries when performing alignment, since they are not always present in audio.
+            if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
+                # we don't include word boundaries when performing alignment, since they are not always present in audio.
                 for phone in self.tf.phone_to_vector:
                     if vector.numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
                         # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup

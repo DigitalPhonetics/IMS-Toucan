@@ -7,6 +7,7 @@ can help you find outliers in the audio part of text-audio pairs.
 """
 
 import math
+import os
 
 import torch
 from tqdm import tqdm
@@ -15,8 +16,9 @@ from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2 import FastSpeech2
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
 from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.storage_config import MODELS_DIR
 
 
 class AlignmentScorer:
@@ -77,26 +79,26 @@ class AlignmentScorer:
 class TTSScorer:
 
     def __init__(self,
-                 path_to_fastspeech_model,
+                 path_to_portaspeech_model,
                  device,
-                 path_to_embedding_checkpoint="Models/Embedding/embedding_function.pt"
+                 path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")
                  ):
         self.device = device
         self.path_to_score = dict()
         self.path_to_id = dict()
         self.nans = list()
         self.nan_indexes = list()
-        self.tts = FastSpeech2()
-        checkpoint = torch.load(path_to_fastspeech_model, map_location='cpu')
+        self.tts = PortaSpeech()
+        checkpoint = torch.load(path_to_portaspeech_model, map_location='cpu')
         weights = checkpoint["model"]
         try:
             self.tts.load_state_dict(weights)
         except RuntimeError:
             try:
-                self.tts = FastSpeech2(lang_embs=None)
+                self.tts = PortaSpeech(lang_embs=None)
                 self.tts.load_state_dict(weights)
             except RuntimeError:
-                self.tts = FastSpeech2(lang_embs=None, utt_embed_dim=None)
+                self.tts = PortaSpeech(lang_embs=None, utt_embed_dim=None)
                 self.tts.load_state_dict(weights)
         self.style_embedding_function = StyleEmbedding().to(device)
         check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
@@ -106,11 +108,11 @@ class TTSScorer:
         self.nans_removed = False
         self.current_dset = None
 
-    def score(self, path_to_fastspeech_dataset, lang_id):
+    def score(self, path_to_portaspeech_dataset, lang_id):
         """
         call this to update the path_to_score dict with scores for this dataset
         """
-        dataset = prepare_fastspeech_corpus(dict(), path_to_fastspeech_dataset, lang_id)
+        dataset = prepare_fastspeech_corpus(dict(), path_to_portaspeech_dataset, lang_id)
         self.current_dset = dataset
         self.nans = list()
         self.nan_indexes = list()
@@ -156,7 +158,7 @@ class TTSScorer:
         for index, path in enumerate(sorted(self.path_to_score, key=self.path_to_score.get, reverse=True)):
             if index < n or n == -1:
                 print(f"Loss: {round(self.path_to_score[path], 3)} - Path: {path}")
-            print("\n\n")
+        print("\n\n")
 
     def remove_samples_with_highest_loss(self, n=10):
         if self.current_dset is None:

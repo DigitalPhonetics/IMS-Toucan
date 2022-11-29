@@ -59,7 +59,7 @@ class GanWrapper:
             embed_original.cpu(),
             self.mean.cpu().unsqueeze(0),
             self.std.cpu().unsqueeze(0)
-        )
+            )
         return embed_original
 
     def modify_embed(self, x):
@@ -70,7 +70,7 @@ class GanWrapper:
             embed_modified.cpu(),
             self.mean.cpu().unsqueeze(0),
             self.std.cpu().unsqueeze(0)
-        )
+            )
         return embed_modified
 
 

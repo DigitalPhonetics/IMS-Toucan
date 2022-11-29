@@ -13,6 +13,7 @@ from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
+from Utility.storage_config import MODELS_DIR
 
 
 class UtteranceCloner:
@@ -22,7 +23,7 @@ class UtteranceCloner:
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.device = device
-        acoustic_checkpoint_path = os.path.join("Models", "Aligner", "aligner.pt")
+        acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"]
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio

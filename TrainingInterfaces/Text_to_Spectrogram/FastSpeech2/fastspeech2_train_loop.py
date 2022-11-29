@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.WarmupScheduler import WarmupScheduler
+from Utility.storage_config import MODELS_DIR
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec
@@ -41,7 +42,7 @@ def train_loop(net,
                lr=0.0001,
                warmup_steps=4000,
                path_to_checkpoint=None,
-               path_to_embed_model="Models/Embedding/embedding_function.pt",
+               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=False,
                resume=False,
                phase_1_steps=100000,

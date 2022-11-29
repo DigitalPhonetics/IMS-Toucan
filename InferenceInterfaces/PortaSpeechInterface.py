@@ -24,6 +24,7 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from Utility.storage_config import MODELS_DIR
 
 
 class PortaSpeechInterface(torch.nn.Module):
@@ -31,7 +32,7 @@ class PortaSpeechInterface(torch.nn.Module):
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path="Models/PortaSpeech_Meta/best.pt",  # path to the fastspeech checkpoint or just a shorthand if run standalone
-                 vocoder_model_path="Models/Avocodo/best.pt",  # path to the hifigan/avocodo checkpoint
+                 vocoder_model_path=None,  # path to the hifigan/avocodo checkpoint
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  use_enhancement=False,  # if you are using very low quality training data, you can use this to post-process your output
                  use_signalprocessing=False  # some subtle effects that are frequently used in podcasting
@@ -40,7 +41,9 @@ class PortaSpeechInterface(torch.nn.Module):
         self.device = device
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
-            tts_model_path = os.path.join("Models", f"PortaSpeech_{tts_model_path}", "best.pt")
+            tts_model_path = os.path.join(MODELS_DIR, f"PortaSpeech_{tts_model_path}", "best.pt")
+        if vocoder_model_path is not None:
+            vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
         self.use_signalprocessing = use_signalprocessing
         if self.use_signalprocessing:
             self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
@@ -93,16 +96,14 @@ class PortaSpeechInterface(torch.nn.Module):
         #################################
         self.style_embedding_function = StyleEmbedding()
         self.style_embedding_function.eval()
-        check_dict = torch.load("Models/Embedding/embedding_function.pt", map_location="cpu")
+        check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
 
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=vocoder_model_path),
-                                       torch.rand((80, 50))).to(
-            torch.device(device))
+        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=vocoder_model_path), torch.rand((80, 50))).to(torch.device(device))
 
         ################################
         #  set defaults                #

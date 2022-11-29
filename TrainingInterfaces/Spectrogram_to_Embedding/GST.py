@@ -40,7 +40,7 @@ class StyleEncoder(torch.nn.Module):
             conv_stride: int = 2,
             gst_layers: int = 2,
             gst_units: int = 256,
-    ):
+            ):
         """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
 
@@ -115,7 +115,7 @@ class ReferenceEncoder(torch.nn.Module):
             conv_stride: int = 2,
             gst_layers: int = 1,
             gst_units: int = 128,
-    ):
+            ):
         """Initialize reference encoder module."""
         super(ReferenceEncoder, self).__init__()
 
@@ -193,7 +193,7 @@ class StyleTokenLayer(torch.nn.Module):
             gst_token_dim: int = 128,
             gst_heads: int = 4,
             dropout_rate: float = 0.0,
-    ):
+            ):
         """Initialize style token layer module."""
         super(StyleTokenLayer, self).__init__()
 

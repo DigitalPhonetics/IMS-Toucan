@@ -117,6 +117,12 @@ systems, you'll also need to tell the phonemizer library where to find your espe
 [this issue](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718). Since the project is still in
 active development, there are frequent updates, which can actually benefit your use significantly.
 
+#### Storage configuration
+
+If you don't want the pretrained and trained models as well as the data resulting from preprocessing your datasets to be
+stored in the default subfolders, you can first set corresponding directories globally by editing *
+Utility/storage_config.py* to suit your needs (the path can be relative to the repository root directory or absolute).
+
 #### Pretrained Models
 
 You don't need to use pretrained models, but it can speed things up tremendously. Run the ```run_model_downloader.py```

@@ -2,11 +2,11 @@ import os
 
 import torch
 
-from InferenceInterfaces.FastSpeech2Interface import InferenceFastSpeech2
+from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
 
 
 def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None):
-    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
+    tts = PortaSpeechInterface(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
@@ -20,7 +20,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu", language=
     """
     for this function, the filename should NOT contain the .wav ending, it's added automatically
     """
-    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
+    tts = PortaSpeechInterface(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if type(sentence) == str:
         sentence = [sentence]
@@ -30,7 +30,7 @@ def read_texts_as_ensemble(model_id, sentence, filename, device="cpu", language=
 
 
 def read_harvard_sentences(model_id, device):
-    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
+    tts = PortaSpeechInterface(device=device, tts_model_path=model_id)
 
     with open("Utility/test_sentences_combined_3.txt", "r", encoding="utf8") as f:
         sents = f.read().split("\n")
@@ -45,17 +45,6 @@ def read_harvard_sentences(model_id, device):
     output_dir = "audios/harvard_06_{}".format(model_id)
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
-    for index, sent in enumerate(sents):
-        tts.read_to_file(text_list=[sent], file_location=output_dir + "/{}.wav".format(index))
-
-
-def read_contrastive_focus_sentences(model_id, device):
-    tts = InferenceFastSpeech2(device=device, tts_model_path=model_id)
-
-    with open("Utility/contrastive_focus_test_sentences.txt", "r", encoding="utf8") as f:
-        sents = f.read().split("\n")
-    output_dir = "audios/focus_{}".format(model_id)
-    os.makedirs(output_dir, exist_ok=True)
     for index, sent in enumerate(sents):
         tts.read_to_file(text_list=[sent], file_location=output_dir + "/{}.wav".format(index))
 

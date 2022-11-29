@@ -4,6 +4,7 @@ import torch
 
 from InferenceInterfaces.Controllability.GAN import GanWrapper
 from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
+from Utility.storage_config import MODELS_DIR
 
 
 class ControllableInterface:
@@ -16,25 +17,25 @@ class ControllableInterface:
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = PortaSpeechInterface(device=self.device, tts_model_path="Meta")
-        self.wgan = GanWrapper('Models/Embedding/embedding_gan.pt', device=self.device)
+        self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
-            "English":    "en",
-            "German":     "de",
-            "Greek":      "el",
-            "Spanish":    "es",
-            "Finnish":    "fi",
-            "Russian":    "ru",
-            "Hungarian":  "hu",
-            "Dutch":      "nl",
-            "French":     "fr",
-            'Polish':     "pl",
+            "English"   : "en",
+            "German"    : "de",
+            "Greek"     : "el",
+            "Spanish"   : "es",
+            "Finnish"   : "fi",
+            "Russian"   : "ru",
+            "Hungarian" : "hu",
+            "Dutch"     : "nl",
+            "French"    : "fr",
+            'Polish'    : "pl",
             'Portuguese': "pt",
-            'Italian':    "it",
-            'Chinese':    "cmn",
+            'Italian'   : "it",
+            'Chinese'   : "cmn",
             'Vietnamese': "vi",
-        }
+            }
 
     def read(self,
              prompt,
@@ -67,9 +68,7 @@ class ControllableInterface:
 
         phones = self.model.text2phone.get_phone_string(prompt)
         if len(phones) > 1800:
-            if language == "English":
-                prompt = "Your input was too long. Please try either a shorter text or split it into several parts."
-            elif language == "German":
+            if language == "German":
                 prompt = "Deine Eingabe war zu lang. Bitte versuche es entweder mit einem kürzeren Text oder teile ihn in mehrere Teile auf."
             elif language == "Greek":
                 prompt = "Η εισήγησή σας ήταν πολύ μεγάλη. Παρακαλώ δοκιμάστε είτε ένα μικρότερο κείμενο είτε χωρίστε το σε διάφορα μέρη."
@@ -95,6 +94,14 @@ class ControllableInterface:
                 prompt = "你的输入太长了。请尝试使用较短的文本或将其拆分为多个部分。"
             elif language == 'Vietnamese':
                 prompt = "Đầu vào của bạn quá dài. Vui lòng thử một văn bản ngắn hơn hoặc chia nó thành nhiều phần."
+            else:
+                prompt = "Your input was too long. Please try either a shorter text or split it into several parts."
+                if self.current_language != "English":
+                    self.model.set_phonemizer_language(self.language_id_lookup["English"])
+                    self.current_language = "English"
+                if self.current_accent != "English":
+                    self.model.set_accent_language(self.language_id_lookup["English"])
+                    self.current_accent = "English"
             phones = self.model.text2phone.get_phone_string(prompt)
 
         wav = self.model(phones,

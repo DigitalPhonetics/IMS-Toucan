@@ -2,6 +2,7 @@ import json
 
 
 class SimilaritySolver:
+
     def __init__(self):
         self.lang_1_to_lang_2_to_tree_dist = load_json_from_path('lang_1_to_lang_2_to_tree_dist.json')
         self.lang_1_to_lang_2_to_map_dist = load_json_from_path('lang_1_to_lang_2_to_map_dist.json')

@@ -1,4 +1,8 @@
+import os
+import time
+
 import torch
+import torch.multiprocessing
 import torch.multiprocessing
 import wandb
 from torch.cuda.amp import GradScaler
@@ -9,7 +13,6 @@ from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.WarmupScheduler import WarmupScheduler
-from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec
@@ -29,26 +32,45 @@ def collate_and_pad(batch):
 
 
 def train_loop(net,
-               datasets,
+               train_dataset,
                device,
                save_directory,
-               batch_size,
-               phase_1_steps,
-               phase_2_steps,
-               steps_per_checkpoint,
-               lr,
-               path_to_checkpoint,
+               batch_size=32,
+               epochs_per_save=1,
                lang="en",
-               path_to_embed_model="Models/Embedding/embedding_function.pt",
-               resume=False,
+               lr=0.0001,
                warmup_steps=4000,
+               path_to_checkpoint=None,
+               path_to_embed_model="Models/Embedding/embedding_function.pt",
+               fine_tune=False,
+               resume=False,
+               phase_1_steps=100000,
+               phase_2_steps=100000,
+               phase_3_steps=100000,
                use_wandb=False):
-    # ============
-    # Preparations
-    # ============
-    steps = phase_1_steps + phase_2_steps
-    net = net.to(device)
+    """
+    Args:
+        resume: whether to resume from the most recent checkpoint
+        warmup_steps: how long the learning rate should increase before it reaches the specified value
+        lr: The initial learning rate for the optimiser
+        path_to_checkpoint: reloads a checkpoint to continue training from there
+        fine_tune: whether to load everything from a checkpoint, or only the model parameters
+        lang: language of the synthesis
+        net: Model to train
+        train_dataset: Pytorch Dataset Object for train data
+        device: Device to put the loaded tensors on
+        save_directory: Where to save the checkpoints
+        batch_size: How many elements should be loaded at once
+        epochs_per_save: how many epochs to train in between checkpoints
+        phase_1_steps: how many steps to train before using any of the cycle objectives
+        phase_2_steps: how many steps to train together with the post net
+        phase_3_steps: how many steps to train using the cycle objectives
+        path_to_embed_model: path to the pretrained embedding function
+    """
 
+    steps = phase_1_steps + phase_2_steps + phase_3_steps
+
+    net = net.to(device)
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
@@ -56,100 +78,108 @@ def train_loop(net,
     style_embedding_function.requires_grad_(False)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
-    train_loaders = list()
-    train_iters = list()
-    for dataset in datasets:
-        train_loaders.append(DataLoader(batch_size=batch_size,
-                                        dataset=dataset,
-                                        drop_last=True,
-                                        num_workers=4,
-                                        pin_memory=True,
-                                        shuffle=True,
-                                        prefetch_factor=5,
-                                        collate_fn=collate_and_pad,
-                                        persistent_workers=True))
-        train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.RAdam(net.parameters(), lr=lr, eps=1.0e-06, weight_decay=0.0)
-    grad_scaler = GradScaler()
-    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-    if resume:
-        previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
-        if previous_checkpoint is not None:
-            path_to_checkpoint = previous_checkpoint
-        else:
-            raise RuntimeError(f"No checkpoint found that can be resumed from in {save_directory}")
+    train_loader = DataLoader(batch_size=batch_size,
+                              dataset=train_dataset,
+                              drop_last=True,
+                              num_workers=8,
+                              pin_memory=True,
+                              shuffle=True,
+                              prefetch_factor=8,
+                              collate_fn=collate_and_pad,
+                              persistent_workers=True)
     step_counter = 0
-    train_losses_total = list()
-    cycle_losses_total = list()
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
+    scaler = GradScaler()
+    epoch = 0
+    if resume:
+        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
-        check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
+        check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
-        if resume:
+        if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
-            step_counter = check_dict["step_counter"]
-            grad_scaler.load_state_dict(check_dict["scaler"])
             scheduler.load_state_dict(check_dict["scheduler"])
-            if step_counter > steps:
-                print("Desired steps already reached in loaded checkpoint.")
-                return
-
-    net.train()
-    # =============================
-    # Actual train loop starts here
-    # =============================
-    for step in tqdm(range(step_counter, steps)):
-        batches = []
-        for index in random.sample(list(range(len(datasets))), len(datasets)):
-            # we get one batch for each task (i.e. language in this case) in a randomized order
-            try:
-                batch = next(train_iters[index])
-                batches.append(batch)
-            except StopIteration:
-                train_iters[index] = iter(train_loaders[index])
-                batch = next(train_iters[index])
-                batches.append(batch)
-        train_loss = 0.0
-        cycle_loss = 0.0
-        for batch in batches:
+            step_counter = check_dict["step_counter"]
+            scaler.load_state_dict(check_dict["scaler"])
+    start_time = time.time()
+    while True:
+        net.train()
+        epoch += 1
+        optimizer.zero_grad()
+        train_losses_this_epoch = list()
+        cycle_losses_this_epoch = list()
+        l1_losses_total = list()
+        duration_losses_total = list()
+        pitch_losses_total = list()
+        energy_losses_total = list()
+        kl_losses_total = list()
+        for batch in tqdm(train_loader):
             with autocast():
-                if step <= phase_1_steps:
-                    # PHASE 1
-                    # we sum the loss for each task, as we would do for the
-                    # second order regular MAML, but we do it only over one
-                    # step (i.e. iterations of inner loop = 1)
-
+                if step_counter <= phase_1_steps:
+                    # ===============================================
+                    # =        PHASE 1: no cycle objective          =
+                    # ===============================================
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    train_loss = train_loss + net(text_tensors=batch[0].to(device),
-                                                  text_lengths=batch[1].to(device),
-                                                  gold_speech=batch[2].to(device),
-                                                  speech_lengths=batch[3].to(device),
-                                                  gold_durations=batch[4].to(device),
-                                                  gold_pitch=batch[6].to(device),  # mind the switched order
-                                                  gold_energy=batch[5].to(device),  # mind the switched order
-                                                  utterance_embedding=style_embedding,
-                                                  lang_ids=batch[8].to(device),
-                                                  return_mels=False)
+                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss = net(text_tensors=batch[0].to(device),
+                                                                                   text_lengths=batch[1].to(device),
+                                                                                   gold_speech=batch[2].to(device),
+                                                                                   speech_lengths=batch[3].to(device),
+                                                                                   gold_durations=batch[4].to(device),
+                                                                                   gold_pitch=batch[6].to(device),  # mind the switched order
+                                                                                   gold_energy=batch[5].to(device),  # mind the switched order
+                                                                                   utterance_embedding=style_embedding,
+                                                                                   lang_ids=batch[8].to(device),
+                                                                                   return_mels=False)
+                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
+                    train_losses_this_epoch.append(train_loss.item())
+
+                elif step_counter <= phase_2_steps:
+                    # ===============================================
+                    # =        PHASE 2: flow post net is added      =
+                    # ===============================================
+                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                               batch_of_spectrogram_lengths=batch[3].to(device))
+
+                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss = net(text_tensors=batch[0].to(device),
+                                                                                   text_lengths=batch[1].to(device),
+                                                                                   gold_speech=batch[2].to(device),
+                                                                                   speech_lengths=batch[3].to(device),
+                                                                                   gold_durations=batch[4].to(device),
+                                                                                   gold_pitch=batch[6].to(device),  # mind the switched order
+                                                                                   gold_energy=batch[5].to(device),  # mind the switched order
+                                                                                   utterance_embedding=style_embedding,
+                                                                                   lang_ids=batch[8].to(device),
+                                                                                   return_mels=False)
+                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
+                    train_losses_this_epoch.append(train_loss.item())
+
                 else:
-                    # PHASE 2
+                    # ======================================================
+                    # =       PHASE 3:     cycle objective is added        =
+                    # ======================================================
                     style_embedding_function.eval()
                     style_embedding_of_gold, out_list_gold = style_embedding_function(
                         batch_of_spectrograms=batch[2].to(device),
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    _train_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                           text_lengths=batch[1].to(device),
-                                                           gold_speech=batch[2].to(device),
-                                                           speech_lengths=batch[3].to(device),
-                                                           gold_durations=batch[4].to(device),
-                                                           gold_pitch=batch[6].to(device),  # mind the switched order
-                                                           gold_energy=batch[5].to(device),  # mind the switched order
-                                                           utterance_embedding=style_embedding_of_gold.detach(),
-                                                           lang_ids=batch[8].to(device),
-                                                           return_mels=True)
-                    train_loss = train_loss + _train_loss
+                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                                                                        text_lengths=batch[1].to(device),
+                                                                                                        gold_speech=batch[2].to(device),
+                                                                                                        speech_lengths=batch[3].to(device),
+                                                                                                        gold_durations=batch[4].to(device),
+                                                                                                        gold_pitch=batch[6].to(device),
+                                                                                                        # mind the switched order
+                                                                                                        gold_energy=batch[5].to(device),
+                                                                                                        # mind the switched order
+                                                                                                        utterance_embedding=style_embedding_of_gold.detach(),
+                                                                                                        lang_ids=batch[8].to(device),
+                                                                                                        return_mels=True)
+                    train_loss = l1_loss + duration_loss + pitch_loss + energy_loss + kl_loss
+
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
                         batch_of_spectrograms=output_spectrograms,
@@ -162,59 +192,70 @@ def train_loop(net,
                         # since we're essentially dealing with a discriminator here.
                         cycle_dist = cycle_dist + torch.nn.functional.l1_loss(out_pred, out_gold.detach())
 
-                    cycle_loss = cycle_loss + cycle_dist
+                    train_losses_this_epoch.append(train_loss.item())
+                    cycle_losses_this_epoch.append(cycle_dist.item())
+                    train_loss = train_loss + cycle_dist
 
-        # then we directly update our meta-parameters without
-        # the need for any task specific parameters
-        train_losses_total.append(train_loss.item())
-        if cycle_loss != 0.0:
-            cycle_losses_total.append(cycle_loss.item())
-        optimizer.zero_grad()
-        train_loss = train_loss + cycle_loss
-        grad_scaler.scale(train_loss).backward()
-        grad_scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-        grad_scaler.step(optimizer)
-        grad_scaler.update()
-        scheduler.step()
+                l1_losses_total.append(l1_loss.item())
+                duration_losses_total.append(duration_loss.item())
+                pitch_losses_total.append(pitch_loss.item())
+                energy_losses_total.append(energy_loss.item())
+                kl_losses_total.append(kl_loss.item())
 
-        if step % steps_per_checkpoint == 0 and step != 0:
-            # ==============================
-            # Enough steps for some insights
-            # ==============================
-            net.eval()
-            style_embedding_function.eval()
+            optimizer.zero_grad()
+
+            scaler.scale(train_loss).backward()
+            del train_loss
+            step_counter += 1
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+            scaler.step(optimizer)
+            scaler.update()
+            scheduler.step()
+
+        net.eval()
+        style_embedding_function.eval()
+        if epoch % epochs_per_save == 0:
             default_embedding = style_embedding_function(
-                batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
-                batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
-            print(f"\nTotal Steps: {step}")
-            print(f"Spectrogram Loss: {round(sum(train_losses_total) / len(train_losses_total), 3)}")
-            if len(cycle_losses_total) != 0:
-                print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
+                batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+                batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
             torch.save({
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
-                "scaler"      : grad_scaler.state_dict(),
+                "step_counter": step_counter,
+                "scaler"      : scaler.state_dict(),
                 "scheduler"   : scheduler.state_dict(),
-                "step_counter": step,
                 "default_emb" : default_embedding,
-                },
-                os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
+                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
-            path_to_most_recent_plot = plot_progress_spec(net=net,
-                                                          device=device,
-                                                          lang=lang,
+            path_to_most_recent_plot = plot_progress_spec(net,
+                                                          device,
                                                           save_dir=save_directory,
-                                                          step=step,
+                                                          step=step_counter,
+                                                          lang=lang,
                                                           default_emb=default_embedding)
             if use_wandb:
                 wandb.log({
-                    "spectrogram_loss": round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "cycle_loss"      : round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(
-                        cycle_losses_total) != 0 else 0.0,
-                    "Steps"           : step,
-                    "progress_plot"   : wandb.Image(path_to_most_recent_plot)
+                    "progress_plot": wandb.Image(path_to_most_recent_plot)
                     })
-            train_losses_total = list()
-            cycle_losses_total = list()
-            net.train()
+        print("Epoch:              {}".format(epoch))
+        print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        if len(cycle_losses_this_epoch) != 0:
+            print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
+        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
+        print("Steps:              {}".format(step_counter))
+        if use_wandb:
+            wandb.log({
+                "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
+                "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3),
+                "cycle_loss"   : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
+                "Steps"        : step_counter,
+                })
+        if step_counter > steps and epoch % epochs_per_save == 0:
+            # DONE
+            return
+        net.train()
