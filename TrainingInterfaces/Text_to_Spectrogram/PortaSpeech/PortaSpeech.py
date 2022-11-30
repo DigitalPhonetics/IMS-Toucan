@@ -235,7 +235,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                   is_inference=False,
                                   use_posterior=use_posterior,
                                   lang_ids=lang_ids,
-                                run_glow=run_glow)
+                                  run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
@@ -305,7 +305,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward VAE decoder
-        target_non_padding_mask = make_non_pad_mask(xs=speech_lens)
+        target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device)
         if is_inference:
             z = self.decoder(cond=encoded_texts.transpose(1, 2),
                              infer=is_inference)  # (B, Lmax, adim)
