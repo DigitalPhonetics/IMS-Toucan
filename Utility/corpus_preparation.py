@@ -31,34 +31,37 @@ def prepare_fastspeech_corpus(transcript_dict,
 
     Skips parts that have been done before.
     """
-    if fine_tune_aligner:
-        aligner_dir = os.path.join(corpus_dir, "Aligner")
-        if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
-            aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
-            if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):
-                train_aligner(train_dataset=aligner_datapoints,
-                              device=torch.device("cuda"),
-                              save_directory=aligner_dir,
-                              steps=(len(aligner_datapoints) * 5) // 32,
-                              batch_size=32,
-                              path_to_checkpoint=os.path.join(MODELS_DIR, "Aligner", "aligner.pt"),
-                              fine_tune=True,
-                              debug_img_path=aligner_dir,
-                              resume=False,
-                              use_reconstruction=use_reconstruction)
-            else:
-                train_aligner(train_dataset=aligner_datapoints,
-                              device=torch.device("cuda"),
-                              save_directory=aligner_dir,
-                              steps=(len(aligner_datapoints) * 50) // 32,
-                              batch_size=32,
-                              path_to_checkpoint=None,
-                              fine_tune=False,
-                              debug_img_path=aligner_dir,
-                              resume=False,
-                              use_reconstruction=use_reconstruction)
+    if not os.path.exists(os.path.join(corpus_dir, "fast_train_cache.pt")):
+        if fine_tune_aligner:
+            aligner_dir = os.path.join(corpus_dir, "Aligner")
+            if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
+                aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
+                if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):
+                    train_aligner(train_dataset=aligner_datapoints,
+                                  device=torch.device("cuda"),
+                                  save_directory=aligner_dir,
+                                  steps=(len(aligner_datapoints) * 5) // 32,
+                                  batch_size=32,
+                                  path_to_checkpoint=os.path.join(MODELS_DIR, "Aligner", "aligner.pt"),
+                                  fine_tune=True,
+                                  debug_img_path=aligner_dir,
+                                  resume=False,
+                                  use_reconstruction=use_reconstruction)
+                else:
+                    train_aligner(train_dataset=aligner_datapoints,
+                                  device=torch.device("cuda"),
+                                  save_directory=aligner_dir,
+                                  steps=(len(aligner_datapoints) * 50) // 32,
+                                  batch_size=32,
+                                  path_to_checkpoint=None,
+                                  fine_tune=False,
+                                  debug_img_path=aligner_dir,
+                                  resume=False,
+                                  use_reconstruction=use_reconstruction)
+        else:
+            aligner_dir = os.path.join(MODELS_DIR, "Aligner")
     else:
-        aligner_dir = os.path.join(MODELS_DIR, "Aligner")
+        aligner_dir = None
     return FastSpeechDataset(transcript_dict,
                              acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
                              cache_dir=corpus_dir,
