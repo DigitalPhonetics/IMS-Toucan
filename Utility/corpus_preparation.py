@@ -34,6 +34,8 @@ def prepare_fastspeech_corpus(transcript_dict,
     if not os.path.exists(os.path.join(corpus_dir, "fast_train_cache.pt")):
         if fine_tune_aligner:
             aligner_dir = os.path.join(corpus_dir, "Aligner")
+            aligner_loc = os.path.join(corpus_dir, "Aligner", "aligner.pt")
+
             if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
                 aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
                 if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):
@@ -59,11 +61,11 @@ def prepare_fastspeech_corpus(transcript_dict,
                                   resume=False,
                                   use_reconstruction=use_reconstruction)
         else:
-            aligner_dir = os.path.join(MODELS_DIR, "Aligner")
+            aligner_loc = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
     else:
-        aligner_dir = None
+        aligner_loc = None
     return FastSpeechDataset(transcript_dict,
-                             acoustic_checkpoint_path=os.path.join(aligner_dir, "aligner.pt"),
+                             acoustic_checkpoint_path=aligner_loc,
                              cache_dir=corpus_dir,
                              device=torch.device("cuda"),
                              lang=lang,
