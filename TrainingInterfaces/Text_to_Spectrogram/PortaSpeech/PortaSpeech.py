@@ -305,19 +305,19 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward VAE decoder
-        target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device)
+        target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
         if is_inference:
             z = self.decoder(cond=encoded_texts.transpose(1, 2),
-                             infer=is_inference)  # (B, Lmax, adim)
+                             infer=is_inference)
         else:
-            z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,
+            z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,  # [B, 80, T]
                                                         nonpadding=target_non_padding_mask,
                                                         cond=encoded_texts.transpose(1, 2),
-                                                        infer=is_inference)  # (B, Lmax, adim)
+                                                        infer=is_inference)
             if not use_posterior:
                 z = torch.randn_like(z)
 
-        before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts).transpose(1, 2)
+        before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         # forward flow post-net
         if run_glow:

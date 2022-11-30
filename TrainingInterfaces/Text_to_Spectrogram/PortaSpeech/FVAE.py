@@ -105,7 +105,7 @@ class FVAE(nn.Module):
             nonpadding = 1
         cond_sqz = self.g_pre_net(cond)
         if not infer:
-            z_q, m_q, logs_q, nonpadding_sqz = self.encoder(x, nonpadding, cond_sqz)
+            z_q, m_q, logs_q, nonpadding_sqz = self.encoder(x.transpose(1, 2), nonpadding, cond_sqz)
             q_dist = dist.Normal(m_q, logs_q.exp())
             if self.use_prior_flow:
                 logqx = q_dist.log_prob(z_q)

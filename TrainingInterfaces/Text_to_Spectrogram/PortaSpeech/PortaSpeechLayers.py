@@ -141,7 +141,7 @@ class ConditionalConvBlocks(ConvBlocks):
         x = super(ConditionalConvBlocks, self).forward(x)  # input needs to be BTC
         if self.is_BTC_:
             x = x.transpose(1, 2)
-        return
+        return x
 
 
 class FlipLayer(nn.Module):
