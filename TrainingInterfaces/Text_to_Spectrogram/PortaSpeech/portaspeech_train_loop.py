@@ -115,6 +115,7 @@ def train_loop(net,
         energy_losses_total = list()
         kl_losses_total = list()
         for batch in tqdm(train_loader):
+            train_loss = 0.0
             with autocast():
                 if step_counter <= phase_1_steps:
                     # ===============================================

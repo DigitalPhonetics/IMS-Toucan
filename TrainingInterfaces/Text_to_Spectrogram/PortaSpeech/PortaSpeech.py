@@ -238,6 +238,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                   run_glow=run_glow)
 
         # calculate loss
+        gold_speech = self.cut_to_multiple_of_n(gold_speech)
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
                                                                          d_outs=d_outs, p_outs=p_outs,
                                                                          e_outs=e_outs, ys=gold_speech,
@@ -305,12 +306,19 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward VAE decoder
-        target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
+        target_non_padding_mask = 1
         if is_inference:
             z = self.decoder(cond=encoded_texts.transpose(1, 2),
                              infer=is_inference)
         else:
-            z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,  # [B, 80, T]
+
+            gold_speech = self.cut_to_multiple_of_n(gold_speech)
+            encoded_texts = self.cut_to_multiple_of_n(encoded_texts)
+
+            speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
+
+            target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
+            z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,  # [B, T, 80]
                                                         nonpadding=target_non_padding_mask,
                                                         cond=encoded_texts.transpose(1, 2),
                                                         infer=is_inference)
@@ -322,11 +330,11 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward flow post-net
         if run_glow:
             if is_inference:
-                after_outs = before_outs + self.run_post_glow(tgt_mels=gold_speech,
+                after_outs = before_outs + self.run_post_glow(tgt_mels=None,
                                                               infer=is_inference,
                                                               mel_out=before_outs,
                                                               encoded_texts=encoded_texts,
-                                                              tgt_nonpadding=target_non_padding_mask)  # postnet -> (B, Lmax, odim)
+                                                              tgt_nonpadding=None)  # postnet -> (B, Lmax, odim)
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
@@ -447,3 +455,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
+    def cut_to_multiple_of_n(self, x, n=4, seq_dim=1):
+        max_frames = x.shape[seq_dim] // n * n
+        return x[:, :max_frames]
