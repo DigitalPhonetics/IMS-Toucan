@@ -306,14 +306,13 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
         # forward VAE decoder
-        target_non_padding_mask = 1
+        target_non_padding_mask = None
         if is_inference:
             z = self.decoder(cond=encoded_texts.transpose(1, 2),
                              infer=is_inference)
         else:
 
             gold_speech = self.cut_to_multiple_of_n(gold_speech)
-            encoded_texts = self.cut_to_multiple_of_n(encoded_texts)
 
             speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
 
@@ -325,6 +324,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             if not use_posterior:
                 z = torch.randn_like(z)
 
+        encoded_texts = self.cut_to_multiple_of_n(encoded_texts)
         before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         # forward flow post-net

@@ -61,8 +61,12 @@ class FVAEDecoder(nn.Module):
 
     def forward(self, x, nonpadding, cond):
         x = self.pre_net(x)
-        x = x * nonpadding
-        x = self.nn(x, nonpadding=nonpadding, cond=cond) * nonpadding
+        if nonpadding is None:
+            mask_padding = 1
+        else:
+            mask_padding = nonpadding
+        x = x * mask_padding
+        x = self.nn(x, nonpadding=nonpadding, cond=cond) * mask_padding
         x = self.out_proj(x)
         return x
 
