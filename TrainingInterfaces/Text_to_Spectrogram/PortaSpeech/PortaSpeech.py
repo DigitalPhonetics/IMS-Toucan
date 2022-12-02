@@ -160,7 +160,7 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # post net is realized as a flow
         self.post_flow = Glow(
-            odim + adim,
+            odim,
             192,  # post_glow_hidden  (original 192 in paper)
             3,  # post_glow_kernel_size
             1,
@@ -175,7 +175,8 @@ class PortaSpeech(torch.nn.Module, ABC):
             )
         self.prior_dist = dist.Normal(0, 1)
 
-        self.g_proj = torch.nn.Conv1d(odim, odim, 5, padding=2)
+        self.g_proj = torch.nn.Conv1d(odim + adim, odim, 5, padding=2)
+        self.glow_enabled = False
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
@@ -328,13 +329,15 @@ class PortaSpeech(torch.nn.Module, ABC):
         before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         # forward flow post-net
+        after_outs = None
         if run_glow:
+            self.glow_enabled = True
             if is_inference:
-                after_outs = before_outs + self.run_post_glow(tgt_mels=None,
-                                                              infer=is_inference,
-                                                              mel_out=before_outs,
-                                                              encoded_texts=encoded_texts,
-                                                              tgt_nonpadding=None)  # postnet -> (B, Lmax, odim)
+                after_outs = self.run_post_glow(tgt_mels=None,
+                                                infer=is_inference,
+                                                mel_out=before_outs,
+                                                encoded_texts=encoded_texts,
+                                                tgt_nonpadding=None)  # postnet -> (B, Lmax, odim)
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
@@ -342,7 +345,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                encoded_texts=encoded_texts,
                                                tgt_nonpadding=target_non_padding_mask)  # postnet -> (B, Lmax, odim)
         else:
-            after_outs = before_outs
             glow_loss = None
 
         if not is_inference:
@@ -360,8 +362,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                   alpha=1.0,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
-                  lang_id=None,
-                  run_glow=False):
+                  lang_id=None):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -398,7 +399,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            ilens,
                                            ys,
                                            is_inference=True,
-                                           run_glow=run_glow,
+                                           run_glow=self.glow_enabled,
                                            alpha=alpha,
                                            utterance_embedding=utterance_embedding.unsqueeze(0),
                                            lang_ids=lang_id)  # (1, L, odim)
@@ -406,6 +407,8 @@ class PortaSpeech(torch.nn.Module, ABC):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
         self.train()
+        if not self.glow_enabled:
+            after_outs = before_outs
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
@@ -418,12 +421,11 @@ class PortaSpeech(torch.nn.Module, ABC):
         g = self.g_proj(g)
         prior_dist = self.prior_dist
         if not infer:
-            nonpadding = tgt_nonpadding.transpose(1, 2)
-            y_lengths = nonpadding.sum(-1)
+            y_lengths = tgt_nonpadding.sum(-1)
             if detach_postflow_input:
                 g = g.detach()
             tgt_mels = tgt_mels.transpose(1, 2)
-            z_postflow, ldj = self.post_flow(tgt_mels, nonpadding, g=g)
+            z_postflow, ldj = self.post_flow(tgt_mels, tgt_nonpadding, g=g)
             ldj = ldj / y_lengths / 80
             postflow_loss = -prior_dist.log_prob(z_postflow).mean() - ldj.mean()
             if torch.isnan(postflow_loss):

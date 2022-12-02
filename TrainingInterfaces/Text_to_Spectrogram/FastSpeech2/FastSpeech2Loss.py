@@ -126,8 +126,13 @@ class FastSpeech2Loss(torch.nn.Module):
             energy_loss = (energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum())
 
         if self.include_portaspeech_losses:
-            ssim_loss_value = ssim_loss(after_outs, ys)
-            mse_loss_value = mse_loss(after_outs, ys)
+            ssim_loss_value = ssim_loss(before_outs, ys)
+            if after_outs is not None:
+                ssim_loss_value = ssim_loss_value + ssim_loss(after_outs, ys)
+            mse_loss_value = mse_loss(before_outs, ys)
+            if after_outs is not None:
+                mse_loss_value = mse_loss_value + mse_loss(after_outs, ys)
+
             return l1_loss, ssim_loss_value, mse_loss_value, duration_loss, pitch_loss, energy_loss
         else:
             return l1_loss, duration_loss, pitch_loss, energy_loss
