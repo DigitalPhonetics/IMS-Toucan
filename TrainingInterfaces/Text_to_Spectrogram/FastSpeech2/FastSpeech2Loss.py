@@ -3,15 +3,45 @@ Taken from ESPNet
 """
 
 import torch
+import torch.nn.functional as F
 
 from Layers.DurationPredictor import DurationPredictorLoss
-from Utility.diverse_losses import SSIM
+from Utility.diverse_losses import ssim
 from Utility.utils import make_non_pad_mask
+
+
+def weights_nonzero_speech(target):
+    # target : B x T x mel
+    # Assign weight 1.0 to all labels except for padding (id=0).
+    dim = target.size(-1)
+    return target.abs().sum(-1, keepdim=True).ne(0).float().repeat(1, 1, dim)
+
+
+def mse_loss(decoder_output, target):
+    # decoder_output : B x T x n_mel
+    # target : B x T x n_mel
+    assert decoder_output.shape == target.shape
+    mse_loss = F.mse_loss(decoder_output, target, reduction='none')
+    weights = weights_nonzero_speech(target)
+    mse_loss = (mse_loss * weights).sum() / weights.sum()
+    return mse_loss
+
+
+def ssim_loss(decoder_output, target, bias=6.0):
+    # decoder_output : B x T x n_mel
+    # target : B x T x n_mel
+    assert decoder_output.shape == target.shape
+    weights = weights_nonzero_speech(target)
+    decoder_output = decoder_output[:, None] + bias
+    target = target[:, None] + bias
+    ssim_loss = 1 - ssim(decoder_output, target, size_average=False)
+    ssim_loss = (ssim_loss * weights).sum() / weights.sum()
+    return ssim_loss
 
 
 class FastSpeech2Loss(torch.nn.Module):
 
-    def __init__(self, use_masking=True, use_weighted_masking=False):
+    def __init__(self, use_masking=True, use_weighted_masking=False, include_portaspeech_losses=False):
         """
             use_masking (bool):
                 Whether to apply masking for padded part in loss calculation.
@@ -29,7 +59,7 @@ class FastSpeech2Loss(torch.nn.Module):
         self.l1_criterion = torch.nn.L1Loss(reduction=reduction)
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.duration_criterion = DurationPredictorLoss(reduction=reduction)
-        self.ssim_criterion = SSIM()
+        self.include_portaspeech_losses = include_portaspeech_losses
 
     def forward(self, after_outs, before_outs, d_outs, p_outs, e_outs, ys,
                 ds, ps, es, ilens, olens, ):
@@ -95,6 +125,9 @@ class FastSpeech2Loss(torch.nn.Module):
             pitch_loss = pitch_loss.mul(pitch_weights).masked_select(pitch_masks).sum()
             energy_loss = (energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum())
 
-        ssim_loss = self.ssim_criterion(after_outs, ys)
-
-        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss
+        if self.include_portaspeech_losses:
+            ssim_loss_value = ssim_loss(after_outs, ys)
+            mse_loss_value = mse_loss(after_outs, ys)
+            return l1_loss, ssim_loss_value, mse_loss_value, duration_loss, pitch_loss, energy_loss
+        else:
+            return l1_loss, duration_loss, pitch_loss, energy_loss
