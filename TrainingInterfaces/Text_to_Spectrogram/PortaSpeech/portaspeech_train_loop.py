@@ -44,9 +44,9 @@ def train_loop(net,
                path_to_embed_model="Models/Embedding/embedding_function.pt",
                fine_tune=False,
                resume=False,
-               phase_1_steps=100000,
+               phase_1_steps=200000,
                phase_2_steps=100000,
-               postnet_start_steps=5000,
+               postnet_start_steps=16000,
                use_wandb=False,
                kl_start_steps=10000):
     """
@@ -110,10 +110,12 @@ def train_loop(net,
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
         l1_losses_total = list()
+        ssim_losses_total = list()
         duration_losses_total = list()
         pitch_losses_total = list()
         energy_losses_total = list()
         kl_losses_total = list()
+        glow_losses_total = list()
         for batch in tqdm(train_loader):
             train_loss = 0.0
             with autocast():
@@ -124,18 +126,20 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(text_tensors=batch[0].to(device),
-                                                                                              text_lengths=batch[1].to(device),
-                                                                                              gold_speech=batch[2].to(device),
-                                                                                              speech_lengths=batch[3].to(device),
-                                                                                              gold_durations=batch[4].to(device),
-                                                                                              gold_pitch=batch[6].to(device),  # mind the switched order
-                                                                                              gold_energy=batch[5].to(device),  # mind the switched order
-                                                                                              utterance_embedding=style_embedding,
-                                                                                              lang_ids=batch[8].to(device),
-                                                                                              return_mels=False,
-                                                                                              run_glow=step_counter > postnet_start_steps)
-                    train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss
+                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(text_tensors=batch[0].to(device),
+                                                                                                         text_lengths=batch[1].to(device),
+                                                                                                         gold_speech=batch[2].to(device),
+                                                                                                         speech_lengths=batch[3].to(device),
+                                                                                                         gold_durations=batch[4].to(device),
+                                                                                                         gold_pitch=batch[6].to(device),
+                                                                                                         # mind the switched order
+                                                                                                         gold_energy=batch[5].to(device),
+                                                                                                         # mind the switched order
+                                                                                                         utterance_embedding=style_embedding,
+                                                                                                         lang_ids=batch[8].to(device),
+                                                                                                         return_mels=False,
+                                                                                                         run_glow=step_counter > postnet_start_steps)
+                    train_loss = train_loss + l1_loss + ssim_loss + duration_loss + pitch_loss + energy_loss
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
                     if step_counter > kl_start_steps:
@@ -152,19 +156,21 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
-                                                                                                                   text_lengths=batch[1].to(device),
-                                                                                                                   gold_speech=batch[2].to(device),
-                                                                                                                   speech_lengths=batch[3].to(device),
-                                                                                                                   gold_durations=batch[4].to(device),
-                                                                                                                   gold_pitch=batch[6].to(device),
-                                                                                                                   # mind the switched order
-                                                                                                                   gold_energy=batch[5].to(device),
-                                                                                                                   # mind the switched order
-                                                                                                                   utterance_embedding=style_embedding_of_gold.detach(),
-                                                                                                                   lang_ids=batch[8].to(device),
-                                                                                                                   return_mels=True,
-                                                                                                                   run_glow=step_counter > postnet_start_steps)
+                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(text_tensors=batch[0].to(device),
+                                                                                                                              text_lengths=batch[1].to(device),
+                                                                                                                              gold_speech=batch[2].to(device),
+                                                                                                                              speech_lengths=batch[3].to(
+                                                                                                                                  device),
+                                                                                                                              gold_durations=batch[4].to(
+                                                                                                                                  device),
+                                                                                                                              gold_pitch=batch[6].to(device),
+                                                                                                                              # mind the switched order
+                                                                                                                              gold_energy=batch[5].to(device),
+                                                                                                                              # mind the switched order
+                                                                                                                              utterance_embedding=style_embedding_of_gold.detach(),
+                                                                                                                              lang_ids=batch[8].to(device),
+                                                                                                                              return_mels=True,
+                                                                                                                              run_glow=step_counter > postnet_start_steps)
                     train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
@@ -188,10 +194,12 @@ def train_loop(net,
 
                 train_losses_this_epoch.append(train_loss.item())
                 l1_losses_total.append(l1_loss.item())
+                ssim_losses_total.append(ssim_loss.item())
                 duration_losses_total.append(duration_loss.item())
                 pitch_losses_total.append(pitch_loss.item())
                 energy_losses_total.append(energy_loss.item())
                 kl_losses_total.append(kl_loss.item())
+                glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
 
@@ -239,10 +247,12 @@ def train_loop(net,
             wandb.log({
                 "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
                 "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                "ssim_loss"    : round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                 "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                 "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
                 "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3),
+                "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3),
                 "cycle_loss"   : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else 0.0,
                 "Steps"        : step_counter,
                 })

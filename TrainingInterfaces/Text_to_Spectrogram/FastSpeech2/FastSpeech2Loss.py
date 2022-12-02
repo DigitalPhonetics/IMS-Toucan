@@ -93,4 +93,6 @@ class FastSpeech2Loss(torch.nn.Module):
             pitch_loss = pitch_loss.mul(pitch_weights).masked_select(pitch_masks).sum()
             energy_loss = (energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum())
 
-        return l1_loss, duration_loss, pitch_loss, energy_loss
+        ssim_loss = l1_loss  # TODO add actual SSIM loss here
+
+        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss

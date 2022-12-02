@@ -145,7 +145,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         # decoder is a VAE
         self.decoder = FVAE(
             c_in_out=self.odim,
-            hidden_size=384,  # fvae_enc_dec_hidden (original 192 in paper)
+            hidden_size=192,  # fvae_enc_dec_hidden (original 192 in paper)
             c_latent=16,  # latent_size
             kernel_size=5,  # fvae_kernel_size
             enc_n_layers=8,  # fvae_enc_n_layers
@@ -160,15 +160,15 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # post net is realized as a flow
         self.post_flow = Glow(
-            80,
-            384,  # post_glow_hidden  (original 192 in paper)
+            odim + adim,
+            192,  # post_glow_hidden  (original 192 in paper)
             3,  # post_glow_kernel_size
             1,
             12,  # post_glow_n_blocks
             3,  # post_glow_n_block_layers
             n_split=4,
             n_sqz=2,
-            gin_channels=0,
+            gin_channels=odim,
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,  # share_wn_layers
             sigmoid_scale=False  # sigmoid_scale
@@ -239,16 +239,16 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # calculate loss
         gold_speech = self.cut_to_multiple_of_n(gold_speech)
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
-                                                                         d_outs=d_outs, p_outs=p_outs,
-                                                                         e_outs=e_outs, ys=gold_speech,
-                                                                         ds=gold_durations, ps=gold_pitch,
-                                                                         es=gold_energy,
-                                                                         ilens=text_lengths, olens=speech_lengths)
+        l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
+                                                                                    d_outs=d_outs, p_outs=p_outs,
+                                                                                    e_outs=e_outs, ys=gold_speech,
+                                                                                    ds=gold_durations, ps=gold_pitch,
+                                                                                    es=gold_energy,
+                                                                                    ilens=text_lengths, olens=speech_lengths)
 
         if return_mels:
-            return l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, after_outs
-        return l1_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss
+            return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, after_outs
+        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss
 
     def _forward(self,
                  text_tensors,
@@ -410,7 +410,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
 
-    def run_post_glow(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, detach_postflow_input=False):
+    def run_post_glow(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, detach_postflow_input=True):
         x_recon = mel_out.transpose(1, 2)
         g = x_recon
         B, _, T = g.shape
