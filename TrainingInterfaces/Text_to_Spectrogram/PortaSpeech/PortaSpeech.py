@@ -181,7 +181,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
 
         # define criterion
-        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
+        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, include_portaspeech_losses=True)
 
     def forward(self,
                 text_tensors,
