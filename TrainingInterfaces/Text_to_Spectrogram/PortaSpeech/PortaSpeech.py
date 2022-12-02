@@ -328,7 +328,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 z = torch.randn_like(z)
 
         encoded_texts = self.cut_to_multiple_of_n(encoded_texts)
-        before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
+        before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts.transpose(1, 2).detach()).transpose(1, 2)
 
         # forward flow post-net
         after_outs = None
@@ -344,7 +344,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
                                                mel_out=before_outs,
-                                               encoded_texts=encoded_texts,
+                                               encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=target_non_padding_mask)  # postnet -> (B, Lmax, odim)
         else:
             glow_loss = None

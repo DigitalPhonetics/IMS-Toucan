@@ -147,7 +147,7 @@ def train_loop(net,
                                                                                                                return_mels=False,
                                                                                                                run_glow=step_counter > postnet_start_steps)
 
-                train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss + pitch_loss + energy_loss
+                train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step_counter > postnet_start_steps:
                     train_loss = train_loss + glow_loss
                 if step_counter > kl_start_steps:
@@ -177,7 +177,7 @@ def train_loop(net,
                     return_mels=True,
                     run_glow=step_counter > postnet_start_steps)
 
-                train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss + pitch_loss + energy_loss
+                train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step_counter > postnet_start_steps:
                     train_loss = train_loss + glow_loss
                 if step_counter > kl_start_steps:
