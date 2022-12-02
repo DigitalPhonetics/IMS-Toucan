@@ -5,6 +5,7 @@ Taken from ESPNet
 import torch
 
 from Layers.DurationPredictor import DurationPredictorLoss
+from Utility.diverse_losses import SSIM
 from Utility.utils import make_non_pad_mask
 
 
@@ -28,6 +29,7 @@ class FastSpeech2Loss(torch.nn.Module):
         self.l1_criterion = torch.nn.L1Loss(reduction=reduction)
         self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.duration_criterion = DurationPredictorLoss(reduction=reduction)
+        self.ssim_criterion = SSIM()
 
     def forward(self, after_outs, before_outs, d_outs, p_outs, e_outs, ys,
                 ds, ps, es, ilens, olens, ):
@@ -93,6 +95,6 @@ class FastSpeech2Loss(torch.nn.Module):
             pitch_loss = pitch_loss.mul(pitch_weights).masked_select(pitch_masks).sum()
             energy_loss = (energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum())
 
-        ssim_loss = l1_loss  # TODO add actual SSIM loss here
+        ssim_loss = self.ssim_criterion(after_outs, ys)
 
         return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss

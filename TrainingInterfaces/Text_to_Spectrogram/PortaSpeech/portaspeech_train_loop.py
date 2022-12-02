@@ -171,7 +171,7 @@ def train_loop(net,
                                                                                                                               lang_ids=batch[8].to(device),
                                                                                                                               return_mels=True,
                                                                                                                               run_glow=step_counter > postnet_start_steps)
-                    train_loss = train_loss + l1_loss + duration_loss + pitch_loss + energy_loss
+                    train_loss = train_loss + l1_loss + ssim_loss + duration_loss + pitch_loss + energy_loss
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
                     if step_counter > kl_start_steps:
@@ -199,7 +199,8 @@ def train_loop(net,
                 pitch_losses_total.append(pitch_loss.item())
                 energy_losses_total.append(energy_loss.item())
                 kl_losses_total.append(kl_loss.item())
-                glow_losses_total.append(glow_loss.item())
+                if glow_loss is not None:
+                    glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
 

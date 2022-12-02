@@ -122,7 +122,6 @@ def train_loop(net,
                         batches.append(batch)
         batch = collate_and_pad(batches)
         train_loss = 0.0
-        cycle_loss = 0.0
         with autocast():
             if step <= phase_1_steps:
                 # PHASE 1
@@ -192,11 +191,11 @@ def train_loop(net,
                     # since we're essentially dealing with a discriminator here.
                     cycle_dist = cycle_dist + torch.nn.functional.l1_loss(out_pred, out_gold.detach())
 
-                cycle_loss = cycle_loss + cycle_dist
+                train_loss = train_loss + cycle_dist
+                cycle_losses_total.append(cycle_dist.item())
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
-        train_loss = train_loss + cycle_loss
 
         train_losses_total.append(train_loss.item())
         l1_losses_total.append(l1_loss.item())
@@ -205,9 +204,8 @@ def train_loop(net,
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
         kl_losses_total.append(kl_loss.item())
-        glow_losses_total.append(glow_loss.item())
-        if cycle_loss != 0.0:
-            cycle_losses_total.append(cycle_loss.item())
+        if glow_loss is not None:
+            glow_losses_total.append(glow_loss.item())
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
