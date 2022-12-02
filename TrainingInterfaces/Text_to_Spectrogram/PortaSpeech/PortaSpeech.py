@@ -248,6 +248,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                                                               ilens=text_lengths, olens=speech_lengths)
 
         if return_mels:
+            if after_outs is None:
+                after_outs = before_outs
             return l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, after_outs
         return l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss
 
