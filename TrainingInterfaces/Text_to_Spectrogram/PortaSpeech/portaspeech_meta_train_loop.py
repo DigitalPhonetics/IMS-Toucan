@@ -257,9 +257,9 @@ def train_loop(net,
                     "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                     "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                     "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                    "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3),
-                    "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3),
-                    "cycle_loss"   : round(sum(cycle_losses_total) / len(cycle_losses_total), 3) if len(cycle_losses_total) != 0 else 0.0,
+                    "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3) if len(kl_losses_total) != 0 else None,
+                    "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
+                    "cycle_loss"   : sum(cycle_losses_total) / len(cycle_losses_total) if len(cycle_losses_total) != 0 else None,
                     "Steps"        : step,
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
                     })
