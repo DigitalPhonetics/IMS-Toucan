@@ -93,7 +93,7 @@ class FVAE(nn.Module):
                                    dec_n_layers, c_cond, strides=strides)
         self.prior_dist = dist.Normal(0, 1)
 
-    def forward(self, x=None, nonpadding=None, cond=None, infer=False, noise_scale=0.8):
+    def forward(self, x=None, nonpadding=None, cond=None, infer=False, noise_scale=1.0):
         """
         :param x: [B, C_in_out, T]
         :param nonpadding: [B, 1, T]
