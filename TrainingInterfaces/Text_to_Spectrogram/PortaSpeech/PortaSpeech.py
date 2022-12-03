@@ -241,7 +241,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                   run_glow=run_glow)
 
         # calculate loss
-        gold_speech = self.cut_to_multiple_of_n(gold_speech)
+        gold_speech = cut_to_multiple_of_n(gold_speech)
         l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
                                                                                               d_outs=d_outs, p_outs=p_outs,
                                                                                               e_outs=e_outs, ys=gold_speech,
@@ -317,7 +317,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                              infer=is_inference)
         else:
 
-            gold_speech = self.cut_to_multiple_of_n(gold_speech)
+            gold_speech = cut_to_multiple_of_n(gold_speech)
 
             speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
 
