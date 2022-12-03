@@ -37,7 +37,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  # network structure related
                  idim=62,
                  odim=80,
-                 adim=384,
+                 adim=256,
                  aheads=4,
                  elayers=6,
                  eunits=1536,
@@ -149,7 +149,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             c_latent=16,  # latent_size
             kernel_size=5,  # fvae_kernel_size
             enc_n_layers=8,  # fvae_enc_n_layers
-            dec_n_layers=4,  # fvae_dec_n_layers
+            dec_n_layers=8,  # fvae_dec_n_layers
             c_cond=self.adim,
             use_prior_flow=True,  # use_prior_flow
             flow_hidden=64,  # prior_flow_hidden
@@ -159,6 +159,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             )
 
         # post net is realized as a flow
+        gin_channels = 192
         self.post_flow = Glow(
             odim,
             192,  # post_glow_hidden  (original 192 in paper)
@@ -168,14 +169,14 @@ class PortaSpeech(torch.nn.Module, ABC):
             3,  # post_glow_n_block_layers
             n_split=4,
             n_sqz=2,
-            gin_channels=odim,
+            gin_channels=gin_channels,
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,  # share_wn_layers
             sigmoid_scale=False  # sigmoid_scale
             )
         self.prior_dist = dist.Normal(0, 1)
 
-        self.g_proj = torch.nn.Conv1d(odim + adim, odim, 5, padding=2)
+        self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
         self.glow_enabled = False
 
         # initialize parameters
