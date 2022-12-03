@@ -15,6 +15,11 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
 
+def cut_to_multiple_of_n(x, n=4, seq_dim=1):
+    max_frames = x.shape[seq_dim] // n * n
+    return x[:, :max_frames]
+
+
 @torch.inference_mode()
 def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     tf = ArticulatoryCombinedTextFrontend(language=lang)

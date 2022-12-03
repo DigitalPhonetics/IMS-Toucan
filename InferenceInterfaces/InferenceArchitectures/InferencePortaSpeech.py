@@ -1,11 +1,14 @@
 import torch
+import torch.distributions as dist
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
+from Utility.utils import cut_to_multiple_of_n
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
@@ -16,27 +19,18 @@ class PortaSpeech(torch.nn.Module):
                  weights,
                  idim=62,
                  odim=80,
-                 adim=384,
+                 adim=256,
                  aheads=4,
                  elayers=6,
                  eunits=1536,
-                 dlayers=6,
-                 dunits=1536,
-                 postnet_layers=5,
-                 postnet_chans=256,
-                 postnet_filts=5,
                  positionwise_conv_kernel_size=1,
                  use_scaled_pos_enc=True,
-                 use_batch_norm=True,
                  encoder_normalize_before=True,
-                 decoder_normalize_before=True,
                  encoder_concat_after=False,
-                 decoder_concat_after=False,
                  # encoder / decoder
                  use_macaron_style_in_conformer=True,
                  use_cnn_in_conformer=True,
                  conformer_enc_kernel_size=7,
-                 conformer_dec_kernel_size=31,
                  # duration predictor
                  duration_predictor_layers=2,
                  duration_predictor_chans=256,
@@ -61,14 +55,11 @@ class PortaSpeech(torch.nn.Module):
                  transformer_enc_dropout_rate=0.2,
                  transformer_enc_positional_dropout_rate=0.2,
                  transformer_enc_attn_dropout_rate=0.2,
-                 transformer_dec_dropout_rate=0.2,
-                 transformer_dec_positional_dropout_rate=0.2,
-                 transformer_dec_attn_dropout_rate=0.2,
                  duration_predictor_dropout_rate=0.2,
-                 postnet_dropout_rate=0.5,
                  # additional features
                  utt_embed_dim=256,
-                 lang_embs=8000):
+                 lang_embs=8000,
+                 glow_enabled=True):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -114,30 +105,42 @@ class PortaSpeech(torch.nn.Module):
                                                                 padding=(energy_embed_kernel_size - 1) // 2),
                                                 torch.nn.Dropout(energy_embed_dropout))
         self.length_regulator = LengthRegulator()
-        self.decoder = Conformer(idim=0,
-                                 attention_dim=adim,
-                                 attention_heads=aheads,
-                                 linear_units=dunits,
-                                 num_blocks=dlayers,
-                                 input_layer=None,
-                                 dropout_rate=transformer_dec_dropout_rate,
-                                 positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                                 attention_dropout_rate=transformer_dec_attn_dropout_rate,
-                                 normalize_before=decoder_normalize_before,
-                                 concat_after=decoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=conformer_dec_kernel_size,
-                                 utt_embed=utt_embed_dim)
-        self.feat_out = torch.nn.Linear(adim, odim)
-        self.postnet = PostNet(idim=idim,
-                               odim=odim,
-                               n_layers=postnet_layers,
-                               n_chans=postnet_chans,
-                               n_filts=postnet_filts,
-                               use_batch_norm=use_batch_norm,
-                               dropout_rate=postnet_dropout_rate)
+        # decoder is a VAE
+        self.decoder = FVAE(
+            c_in_out=self.odim,
+            hidden_size=192,  # fvae_enc_dec_hidden (original 192 in paper)
+            c_latent=16,  # latent_size
+            kernel_size=5,  # fvae_kernel_size
+            enc_n_layers=8,  # fvae_enc_n_layers
+            dec_n_layers=8,  # fvae_dec_n_layers
+            c_cond=self.adim,
+            use_prior_flow=True,  # use_prior_flow
+            flow_hidden=64,  # prior_flow_hidden
+            flow_kernel_size=3,  # prior_flow_kernel_size
+            flow_n_steps=4,  # prior_flow_n_blocks
+            strides=[4],  # fvae_strides
+            )
+
+        # post net is realized as a flow
+        gin_channels = 192
+        self.post_flow = Glow(
+            odim,
+            192,  # post_glow_hidden  (original 192 in paper)
+            3,  # post_glow_kernel_size
+            1,
+            12,  # post_glow_n_blocks
+            3,  # post_glow_n_block_layers
+            n_split=4,
+            n_sqz=2,
+            gin_channels=gin_channels,
+            share_cond_layers=False,  # post_share_cond_layers
+            share_wn_layers=4,  # share_wn_layers
+            sigmoid_scale=False  # sigmoid_scale
+            )
+        self.prior_dist = dist.Normal(0, 1)
+
+        self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
+        self.glow_enabled = glow_enabled
         self.load_state_dict(weights)
         self.eval()
 
@@ -206,13 +209,21 @@ class PortaSpeech(torch.nn.Module):
         encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
         encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
 
-        # forward decoder
-        h_masks = None
-        zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
-        before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
+        # forward VAE decoder
+        z = self.decoder(cond=encoded_texts.transpose(1, 2), infer=True)
 
-        # postnet -> (B, Lmax//r * r, odim)
-        after_outs = before_outs + self.postnet(before_outs.transpose(1, 2)).transpose(1, 2)
+        encoded_texts = cut_to_multiple_of_n(encoded_texts)
+        before_outs = self.decoder.decoder(z, nonpadding=None, cond=encoded_texts.transpose(1, 2).detach()).transpose(1, 2)
+
+        # forward flow post-net
+        if self.glow_enabled:
+            after_outs = self.run_post_glow(tgt_mels=None,
+                                            infer=True,
+                                            mel_out=before_outs,
+                                            encoded_texts=encoded_texts,
+                                            tgt_nonpadding=None)
+        else:
+            after_outs = before_outs
 
         return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
 
@@ -289,6 +300,17 @@ class PortaSpeech(torch.nn.Module):
     def _source_mask(self, ilens):
         x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
         return x_masks.unsqueeze(-2)
+
+    def store_inverse_all(self):
+        def remove_weight_norm(m):
+            try:
+                if hasattr(m, 'store_inverse'):
+                    m.store_inverse()
+                torch.nn.utils.remove_weight_norm(m)
+            except ValueError:  # this module didn't have weight norm
+                return
+
+        self.apply(remove_weight_norm)
 
 
 def _scale_variance(sequence, scale):

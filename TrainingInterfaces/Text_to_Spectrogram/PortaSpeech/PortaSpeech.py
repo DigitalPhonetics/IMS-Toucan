@@ -11,6 +11,7 @@ from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
+from Utility.utils import cut_to_multiple_of_n
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
@@ -328,7 +329,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             if not use_posterior:
                 z = torch.randn_like(z)
 
-        encoded_texts = self.cut_to_multiple_of_n(encoded_texts)
+        encoded_texts = cut_to_multiple_of_n(encoded_texts)
         before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask, cond=encoded_texts.transpose(1, 2).detach()).transpose(1, 2)
 
         # forward flow post-net
@@ -460,7 +461,3 @@ class PortaSpeech(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
-
-    def cut_to_multiple_of_n(self, x, n=4, seq_dim=1):
-        max_frames = x.shape[seq_dim] // n * n
-        return x[:, :max_frames]

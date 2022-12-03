@@ -30,12 +30,20 @@ from Utility.storage_config import MODELS_DIR
 class PortaSpeechInterface(torch.nn.Module):
 
     def __init__(self,
-                 device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
-                 tts_model_path="Models/PortaSpeech_Meta/best.pt",  # path to the fastspeech checkpoint or just a shorthand if run standalone
-                 vocoder_model_path=None,  # path to the hifigan/avocodo checkpoint
-                 language="en",  # initial language of the model, can be changed later with the setter methods
-                 use_enhancement=False,  # if you are using very low quality training data, you can use this to post-process your output
-                 use_signalprocessing=False  # some subtle effects that are frequently used in podcasting
+                 device="cpu",
+                 # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
+                 tts_model_path=os.path.join(MODELS_DIR, f"PortaSpeech_Meta", "best.pt"),
+                 # path to the PortaSpeech checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=None,
+                 # path to the hifigan/avocodo checkpoint
+                 language="en",
+                 # initial language of the model, can be changed later with the setter methods
+                 use_enhancement=False,
+                 # if you are using very low quality training data, you can use this to post-process your output
+                 use_signalprocessing=False,
+                 # some subtle effects that are frequently used in podcasting
+                 use_post_glow=True
+                 # whether to use the PostNet, as it is only trained after a large amount of steps, so it might still be random in preliminary checkpoints
                  ):
         super().__init__()
         self.device = device
@@ -80,15 +88,19 @@ class PortaSpeechInterface(torch.nn.Module):
         ################################
         self.use_lang_id = True
         try:
-            self.phone2mel = PortaSpeech(weights=checkpoint["model"])  # multi speaker multi language
+            self.phone2mel = PortaSpeech(weights=checkpoint["model"], glow_enabled=use_post_glow)  # multi speaker multi language
         except RuntimeError:
             try:
                 self.use_lang_id = False
                 self.phone2mel = PortaSpeech(weights=checkpoint["model"],
-                                             lang_embs=None)  # multi speaker single language
+                                             lang_embs=None,
+                                             glow_enabled=use_post_glow)  # multi speaker single language
             except RuntimeError:
                 self.phone2mel = PortaSpeech(weights=checkpoint["model"], lang_embs=None,
-                                             utt_embed_dim=None)  # single speaker
+                                             utt_embed_dim=None,
+                                             glow_enabled=use_post_glow)  # single speaker
+        with torch.no_grad():
+            self.phone2mel.store_inverse_all()
         self.phone2mel = self.phone2mel.to(torch.device(device))
 
         #################################
