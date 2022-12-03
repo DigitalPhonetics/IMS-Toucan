@@ -155,7 +155,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             use_prior_flow=True,  # use_prior_flow
             flow_hidden=64,  # prior_flow_hidden
             flow_kernel_size=3,  # prior_flow_kernel_size
-            flow_n_steps=4,  # prior_flow_n_blocks
+            flow_n_steps=22,  # prior_flow_n_blocks
             strides=[4],  # fvae_strides
             )
 

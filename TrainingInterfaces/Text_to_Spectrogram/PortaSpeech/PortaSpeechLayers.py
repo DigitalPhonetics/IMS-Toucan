@@ -184,7 +184,7 @@ class ResFlow(nn.Module):
                  hidden_size,
                  kernel_size,
                  n_flow_layers,
-                 n_flow_steps=4,
+                 n_flow_steps=22,
                  c_cond=0,
                  nn_type='wn'):
         super().__init__()
