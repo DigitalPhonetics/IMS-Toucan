@@ -312,6 +312,32 @@ class PortaSpeech(torch.nn.Module):
 
         self.apply(remove_weight_norm)
 
+    def run_post_glow(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, detach_postflow_input=True):
+        x_recon = mel_out.transpose(1, 2)
+        g = x_recon
+        B, _, T = g.shape
+        g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
+        g = self.g_proj(g)
+        prior_dist = self.prior_dist
+        if not infer:
+            y_lengths = tgt_nonpadding.sum(-1)
+            if detach_postflow_input:
+                g = g.detach()
+            tgt_mels = tgt_mels.transpose(1, 2)
+            z_postflow, ldj = self.post_flow(tgt_mels, tgt_nonpadding, g=g)
+            ldj = ldj / y_lengths / 80
+            postflow_loss = -prior_dist.log_prob(z_postflow).mean() - ldj.mean()
+            if torch.isnan(postflow_loss):
+                print("postflow loss is NaN, skipping postflow this step")
+                return 0.0
+            else:
+                return postflow_loss
+        else:
+            nonpadding = torch.ones_like(x_recon[:, :1, :])
+            z_post = torch.randn(x_recon.shape).to(g.device) * 0.8
+            x_recon, _ = self.post_flow(z_post, nonpadding, g, reverse=True)
+            return x_recon.transpose(1, 2)
+
 
 def _scale_variance(sequence, scale):
     if scale == 1.0:
