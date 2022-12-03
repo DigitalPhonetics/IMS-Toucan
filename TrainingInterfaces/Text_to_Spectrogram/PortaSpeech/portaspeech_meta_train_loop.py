@@ -18,13 +18,13 @@ from Utility.utils import plot_progress_spec
 
 def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
-    return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
+    return (pad_sequence([datapoint[0].squeeze() for datapoint in batch], batch_first=True),
+            torch.stack([datapoint[1] for datapoint in batch]),
+            pad_sequence([datapoint[2].squeeze() for datapoint in batch], batch_first=True),
+            torch.stack([datapoint[3] for datapoint in batch]),
+            pad_sequence([datapoint[4].squeeze() for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[5].squeeze() for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[6].squeeze() for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]))
 
@@ -122,6 +122,16 @@ def train_loop(net,
                         batch = next(train_iters[index])
                         batches.append(batch)
         batch = collate_and_pad(batches)
+
+        text_tensors = batch[0].to(device)
+        text_lengths = batch[1].squeeze().to(device)
+        gold_speech = batch[2].to(device)
+        speech_lengths = batch[3].squeeze().to(device)
+        gold_durations = batch[4].to(device)
+        gold_pitch = batch[6].unsqueeze(-1).to(device)  # mind the switched order
+        gold_energy = batch[5].unsqueeze(-1).to(device)  # mind the switched order
+        lang_ids = batch[8].squeeze(1).to(device)
+
         train_loss = 0.0
         with autocast():
             if step <= phase_1_steps:
@@ -133,17 +143,15 @@ def train_loop(net,
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
 
-                l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(text_tensors=batch[0].to(device),
-                                                                                                               text_lengths=batch[1].to(device),
-                                                                                                               gold_speech=batch[2].to(device),
-                                                                                                               speech_lengths=batch[3].to(device),
-                                                                                                               gold_durations=batch[4].to(device),
-                                                                                                               gold_pitch=batch[6].to(device),
-                                                                                                               # mind the switched order
-                                                                                                               gold_energy=batch[5].to(device),
-                                                                                                               # mind the switched order
+                l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(text_tensors=text_tensors,
+                                                                                                               text_lengths=text_lengths,
+                                                                                                               gold_speech=gold_speech,
+                                                                                                               speech_lengths=speech_lengths,
+                                                                                                               gold_durations=gold_durations,
+                                                                                                               gold_pitch=gold_pitch,
+                                                                                                               gold_energy=gold_energy,
                                                                                                                utterance_embedding=style_embedding,
-                                                                                                               lang_ids=batch[8].to(device),
+                                                                                                               lang_ids=lang_ids,
                                                                                                                return_mels=False,
                                                                                                                run_glow=step_counter > postnet_start_steps)
 
@@ -157,25 +165,21 @@ def train_loop(net,
                 # PHASE 2
                 # cycle objective is added to make sure the embedding function is given adequate attention
                 style_embedding_function.eval()
-                style_embedding_of_gold, out_list_gold = style_embedding_function(
-                    batch_of_spectrograms=batch[2].to(device),
-                    batch_of_spectrogram_lengths=batch[3].to(device),
-                    return_all_outs=True)
+                style_embedding_of_gold, out_list_gold = style_embedding_function(batch_of_spectrograms=gold_speech,
+                                                                                  batch_of_spectrogram_lengths=speech_lengths,
+                                                                                  return_all_outs=True)
 
-                l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(
-                    text_tensors=batch[0].to(device),
-                    text_lengths=batch[1].to(device),
-                    gold_speech=batch[2].to(device),
-                    speech_lengths=batch[3].to(device),
-                    gold_durations=batch[4].to(device),
-                    gold_pitch=batch[6].to(device),
-                    # mind the switched order
-                    gold_energy=batch[5].to(device),
-                    # mind the switched order
-                    utterance_embedding=style_embedding_of_gold.detach(),
-                    lang_ids=batch[8].to(device),
-                    return_mels=True,
-                    run_glow=step_counter > postnet_start_steps)
+                l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(text_tensors=text_tensors,
+                                                                                                                                    text_lengths=text_lengths,
+                                                                                                                                    gold_speech=gold_speech,
+                                                                                                                                    speech_lengths=speech_lengths,
+                                                                                                                                    gold_durations=gold_durations,
+                                                                                                                                    gold_pitch=gold_pitch,
+                                                                                                                                    gold_energy=gold_energy,
+                                                                                                                                    utterance_embedding=style_embedding,
+                                                                                                                                    lang_ids=lang_ids,
+                                                                                                                                    return_mels=True,
+                                                                                                                                    run_glow=step_counter > postnet_start_steps)
 
                 train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step_counter > postnet_start_steps:
@@ -184,10 +188,9 @@ def train_loop(net,
                     train_loss = train_loss + kl_loss
 
                 style_embedding_function.train()
-                style_embedding_of_predicted, out_list_predicted = style_embedding_function(
-                    batch_of_spectrograms=output_spectrograms,
-                    batch_of_spectrogram_lengths=batch[3].to(device),
-                    return_all_outs=True)
+                style_embedding_of_predicted, out_list_predicted = style_embedding_function(batch_of_spectrograms=output_spectrograms,
+                                                                                            batch_of_spectrogram_lengths=speech_lengths,
+                                                                                            return_all_outs=True)
 
                 cycle_dist = 0
                 for out_gold, out_pred in zip(out_list_gold, out_list_predicted):

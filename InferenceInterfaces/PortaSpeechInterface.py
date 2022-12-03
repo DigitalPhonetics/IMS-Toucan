@@ -107,7 +107,6 @@ class PortaSpeechInterface(torch.nn.Module):
         #  load mel to style models     #
         #################################
         self.style_embedding_function = StyleEmbedding()
-        self.style_embedding_function.eval()
         check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
@@ -125,6 +124,7 @@ class PortaSpeechInterface(torch.nn.Module):
                                                     device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
+        self.style_embedding_function.eval()
         if self.use_lang_id:
             self.lang_id = get_language_id(language)
         else:
