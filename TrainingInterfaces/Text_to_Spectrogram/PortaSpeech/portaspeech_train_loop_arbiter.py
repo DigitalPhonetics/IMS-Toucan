@@ -40,11 +40,11 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                                path_to_embed_model=path_to_embed_model,
                                fine_tune=fine_tune,
                                resume=resume,
-                               phase_1_steps=len(datasets[0]) // batch_size * 5,
+                               phase_1_steps=((len(datasets[0]) // batch_size) * 5) - 1,
                                phase_2_steps=0,
-                               use_wandb=use_wandb,
+                               use_wandb=False,
                                kl_start_steps=kl_start_steps,
-                               postnet_start_steps=postnet_start_steps)
+                               postnet_start_steps=((len(datasets[0]) // batch_size) * 5) - ((len(datasets[0]) // batch_size) // 2))
         multi_language_loop(net=net,
                             datasets=datasets,
                             device=device,
