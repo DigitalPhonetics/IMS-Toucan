@@ -51,6 +51,7 @@ def train_loop(net,
     # ============
     steps = phase_1_steps + phase_2_steps
     net = net.to(device)
+    net.glow_enabled = False
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
