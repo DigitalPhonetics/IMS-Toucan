@@ -42,7 +42,7 @@ class PortaSpeechInterface(torch.nn.Module):
                  # if you are using very low quality training data, you can use this to post-process your output
                  use_signalprocessing=False,
                  # some subtle effects that are frequently used in podcasting
-                 use_post_glow=True
+                 use_post_glow=False
                  # whether to use the PostNet, as it is only trained after a large amount of steps, so it might still be random in preliminary checkpoints
                  ):
         super().__init__()
@@ -96,7 +96,8 @@ class PortaSpeechInterface(torch.nn.Module):
                                              lang_embs=None,
                                              glow_enabled=use_post_glow)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = PortaSpeech(weights=checkpoint["model"], lang_embs=None,
+                self.phone2mel = PortaSpeech(weights=checkpoint["model"],
+                                             lang_embs=None,
                                              utt_embed_dim=None,
                                              glow_enabled=use_post_glow)  # single speaker
         with torch.no_grad():
@@ -120,8 +121,7 @@ class PortaSpeechInterface(torch.nn.Module):
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
-        self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True,
-                                                    device=self.device)
+        self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.style_embedding_function.eval()
@@ -138,13 +138,11 @@ class PortaSpeechInterface(torch.nn.Module):
         assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
         if sr != self.audio_preprocessor.sr:
-            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True,
-                                                        device=self.device)
+            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
         spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                         spec_len.unsqueeze(0).to(
-                                                                             self.device)).squeeze()
+                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
 
     def set_language(self, lang_id):
         """
@@ -185,8 +183,7 @@ class PortaSpeechInterface(torch.nn.Module):
                                    lower values decrease variance of the energy curve.
         """
         with torch.inference_mode():
-            phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(
-                torch.device(self.device))
+            phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
@@ -197,7 +194,8 @@ class PortaSpeechInterface(torch.nn.Module):
                                                            duration_scaling_factor=duration_scaling_factor,
                                                            pitch_variance_scale=pitch_variance_scale,
                                                            energy_variance_scale=energy_variance_scale,
-                                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
+                                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                                           device=self.device)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
             if self.use_signalprocessing:

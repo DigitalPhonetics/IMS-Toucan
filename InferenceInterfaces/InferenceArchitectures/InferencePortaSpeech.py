@@ -19,7 +19,7 @@ class PortaSpeech(torch.nn.Module):
                  weights,
                  idim=62,
                  odim=80,
-                 adim=256,
+                 adim=384,
                  aheads=4,
                  elayers=6,
                  eunits=1536,
@@ -155,7 +155,8 @@ class PortaSpeech(torch.nn.Module):
                  lang_ids=None,
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
-                 pause_duration_scaling_factor=1.0):
+                 pause_duration_scaling_factor=1.0,
+                 device=None):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -217,11 +218,9 @@ class PortaSpeech(torch.nn.Module):
 
         # forward flow post-net
         if self.glow_enabled:
-            after_outs = self.run_post_glow(tgt_mels=None,
-                                            infer=True,
-                                            mel_out=before_outs,
+            after_outs = self.run_post_glow(mel_out=before_outs,
                                             encoded_texts=encoded_texts,
-                                            tgt_nonpadding=None)
+                                            device=device)
         else:
             after_outs = before_outs
 
@@ -239,7 +238,8 @@ class PortaSpeech(torch.nn.Module):
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
-                pause_duration_scaling_factor=1.0):
+                pause_duration_scaling_factor=1.0,
+                device=None):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
@@ -292,7 +292,8 @@ class PortaSpeech(torch.nn.Module):
                                            duration_scaling_factor=duration_scaling_factor,
                                            pitch_variance_scale=pitch_variance_scale,
                                            energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                           device=device)
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
@@ -312,31 +313,16 @@ class PortaSpeech(torch.nn.Module):
 
         self.apply(remove_weight_norm)
 
-    def run_post_glow(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, detach_postflow_input=True):
+    def run_post_glow(self, mel_out, encoded_texts, device):
         x_recon = mel_out.transpose(1, 2)
         g = x_recon
         B, _, T = g.shape
         g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
         g = self.g_proj(g)
-        prior_dist = self.prior_dist
-        if not infer:
-            y_lengths = tgt_nonpadding.sum(-1)
-            if detach_postflow_input:
-                g = g.detach()
-            tgt_mels = tgt_mels.transpose(1, 2)
-            z_postflow, ldj = self.post_flow(tgt_mels, tgt_nonpadding, g=g)
-            ldj = ldj / y_lengths / 80
-            postflow_loss = -prior_dist.log_prob(z_postflow).mean() - ldj.mean()
-            if torch.isnan(postflow_loss):
-                print("postflow loss is NaN, skipping postflow this step")
-                return 0.0
-            else:
-                return postflow_loss
-        else:
-            nonpadding = torch.ones_like(x_recon[:, :1, :])
-            z_post = torch.randn(x_recon.shape).to(g.device) * 0.8
-            x_recon, _ = self.post_flow(z_post, nonpadding, g, reverse=True)
-            return x_recon.transpose(1, 2)
+        nonpadding = torch.ones_like(x_recon[:, :1, :])
+        z_post = torch.randn(x_recon.shape).to(device) * 0.8
+        x_recon, _ = self.post_flow(z_post, nonpadding, g, reverse=True)
+        return x_recon.transpose(1, 2)
 
 
 def _scale_variance(sequence, scale):

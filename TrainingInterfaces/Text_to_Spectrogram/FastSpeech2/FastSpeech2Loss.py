@@ -3,7 +3,6 @@ Taken from ESPNet
 """
 
 import torch
-import torch.nn.functional as F
 
 from Layers.DurationPredictor import DurationPredictorLoss
 from Utility.diverse_losses import ssim
@@ -15,16 +14,6 @@ def weights_nonzero_speech(target):
     # Assign weight 1.0 to all labels except for padding (id=0).
     dim = target.size(-1)
     return target.abs().sum(-1, keepdim=True).ne(0).float().repeat(1, 1, dim)
-
-
-def mse_loss(decoder_output, target):
-    # decoder_output : B x T x n_mel
-    # target : B x T x n_mel
-    assert decoder_output.shape == target.shape
-    mse_loss = F.mse_loss(decoder_output, target, reduction='none')
-    weights = weights_nonzero_speech(target)
-    mse_loss = (mse_loss * weights).sum() / weights.sum()
-    return mse_loss
 
 
 def ssim_loss(decoder_output, target, bias=6.0):
@@ -57,7 +46,6 @@ class FastSpeech2Loss(torch.nn.Module):
         # define criterions
         reduction = "none" if self.use_weighted_masking else "mean"
         self.l1_criterion = torch.nn.L1Loss(reduction=reduction)
-        self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.duration_criterion = DurationPredictorLoss(reduction=reduction)
         self.include_portaspeech_losses = include_portaspeech_losses
 
@@ -129,10 +117,7 @@ class FastSpeech2Loss(torch.nn.Module):
             ssim_loss_value = ssim_loss(before_outs, ys)
             if after_outs is not None:
                 ssim_loss_value = ssim_loss_value + ssim_loss(after_outs, ys)
-            mse_loss_value = mse_loss(before_outs, ys)
-            if after_outs is not None:
-                mse_loss_value = mse_loss_value + mse_loss(after_outs, ys)
 
-            return l1_loss, ssim_loss_value, mse_loss_value, duration_loss, pitch_loss, energy_loss
+            return l1_loss, ssim_loss_value, duration_loss, pitch_loss, energy_loss
         else:
             return l1_loss, duration_loss, pitch_loss, energy_loss

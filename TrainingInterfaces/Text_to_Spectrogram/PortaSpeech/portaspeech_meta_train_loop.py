@@ -10,7 +10,6 @@ from tqdm import tqdm
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.path_to_transcript_dicts import *
-from Utility.storage_config import MODELS_DIR
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec
@@ -39,13 +38,13 @@ def train_loop(net,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
-               lang="en",
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
-               resume=False,
-               warmup_steps=4000,
-               use_wandb=False,
-               kl_start_steps=10000,
-               postnet_start_steps=160000):
+               lang,
+               path_to_embed_model,
+               resume,
+               warmup_steps,
+               use_wandb,
+               kl_start_steps,
+               postnet_start_steps):
     # ============
     # Preparations
     # ============
@@ -86,7 +85,6 @@ def train_loop(net,
     train_losses_total = list()
     l1_losses_total = list()
     ssim_losses_total = list()
-    mse_losses_total = list()
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
@@ -144,19 +142,19 @@ def train_loop(net,
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
 
-                l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(text_tensors=text_tensors,
-                                                                                                               text_lengths=text_lengths,
-                                                                                                               gold_speech=gold_speech,
-                                                                                                               speech_lengths=speech_lengths,
-                                                                                                               gold_durations=gold_durations,
-                                                                                                               gold_pitch=gold_pitch,
-                                                                                                               gold_energy=gold_energy,
-                                                                                                               utterance_embedding=style_embedding,
-                                                                                                               lang_ids=lang_ids,
-                                                                                                               return_mels=False,
-                                                                                                               run_glow=step_counter > postnet_start_steps)
+                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(text_tensors=text_tensors,
+                                                                                                     text_lengths=text_lengths,
+                                                                                                     gold_speech=gold_speech,
+                                                                                                     speech_lengths=speech_lengths,
+                                                                                                     gold_durations=gold_durations,
+                                                                                                     gold_pitch=gold_pitch,
+                                                                                                     gold_energy=gold_energy,
+                                                                                                     utterance_embedding=style_embedding,
+                                                                                                     lang_ids=lang_ids,
+                                                                                                     return_mels=False,
+                                                                                                     run_glow=step_counter > postnet_start_steps)
 
-                train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
+                train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step_counter > postnet_start_steps:
                     train_loss = train_loss + glow_loss
                 if step_counter > kl_start_steps:
@@ -170,19 +168,19 @@ def train_loop(net,
                                                                                   batch_of_spectrogram_lengths=speech_lengths,
                                                                                   return_all_outs=True)
 
-                l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(text_tensors=text_tensors,
-                                                                                                                                    text_lengths=text_lengths,
-                                                                                                                                    gold_speech=gold_speech,
-                                                                                                                                    speech_lengths=speech_lengths,
-                                                                                                                                    gold_durations=gold_durations,
-                                                                                                                                    gold_pitch=gold_pitch,
-                                                                                                                                    gold_energy=gold_energy,
-                                                                                                                                    utterance_embedding=style_embedding,
-                                                                                                                                    lang_ids=lang_ids,
-                                                                                                                                    return_mels=True,
-                                                                                                                                    run_glow=step_counter > postnet_start_steps)
+                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(text_tensors=text_tensors,
+                                                                                                                          text_lengths=text_lengths,
+                                                                                                                          gold_speech=gold_speech,
+                                                                                                                          speech_lengths=speech_lengths,
+                                                                                                                          gold_durations=gold_durations,
+                                                                                                                          gold_pitch=gold_pitch,
+                                                                                                                          gold_energy=gold_energy,
+                                                                                                                          utterance_embedding=style_embedding,
+                                                                                                                          lang_ids=lang_ids,
+                                                                                                                          return_mels=True,
+                                                                                                                          run_glow=step_counter > postnet_start_steps)
 
-                train_loss = train_loss + l1_loss + ssim_loss + mse_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
+                train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step_counter > postnet_start_steps:
                     train_loss = train_loss + glow_loss
                 if step_counter > kl_start_steps:
@@ -208,7 +206,6 @@ def train_loop(net,
         train_losses_total.append(train_loss.item())
         l1_losses_total.append(l1_loss.item())
         ssim_losses_total.append(ssim_loss.item())
-        mse_losses_total.append(mse_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
@@ -257,7 +254,6 @@ def train_loop(net,
                     "total_loss"   : round(sum(train_losses_total) / len(train_losses_total), 3),
                     "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
                     "ssim_loss"    : round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
-                    "mse_loss"     : round(sum(mse_losses_total) / len(mse_losses_total), 3),
                     "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                     "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                     "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
@@ -271,7 +267,6 @@ def train_loop(net,
             cycle_losses_total = list()
             l1_losses_total = list()
             ssim_losses_total = list()
-            mse_losses_total = list()
             duration_losses_total = list()
             pitch_losses_total = list()
             energy_losses_total = list()

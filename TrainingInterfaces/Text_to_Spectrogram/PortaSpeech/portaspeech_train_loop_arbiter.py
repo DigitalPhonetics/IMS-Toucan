@@ -12,7 +12,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                steps_per_checkpoint=1000,  # how many steps should be trained before a checkpoint is created. This is only relevant for the multilingual case,
                # the monolingual case will do this once per epoch, regardless of the steps.
                path_to_checkpoint=None,  # path to a trained checkpoint to either continue training or fine-tune from.
-               lr=0.0001,  # learning rate of the model.
+               lr=0.002,  # learning rate of the model.
                path_to_embed_model="Models/Embedding/embedding_function.pt",  # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
                warmup_steps=4000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
@@ -20,31 +20,12 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                batch_size=32,  # how many samples to put into one batch. Higher batchsize is more stable, but requires more VRAM.
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
-               phase_1_steps=200000,  # without cycle consistency objective.
+               phase_1_steps=250000,  # without cycle consistency objective.
                phase_2_steps=150000,  # with cycle consistency objective.
                kl_start_steps=10000,  # use kl loss after this many steps
                postnet_start_steps=100000,  # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
-               pretrain_on_mono=False  # when using the meta train loop, a short pretraining phase in the beginning can help avoid NaNs
                ):
     if len(datasets) > 1:
-        if pretrain_on_mono and not resume and path_to_checkpoint is None:
-            mono_language_loop(net=net,  # the reference to train will be updated in this loop for 5 epochs before it will be passed to the meta loop
-                               train_dataset=datasets[0],
-                               device=device,
-                               save_directory=save_directory,
-                               batch_size=batch_size,
-                               lang=eval_lang,
-                               lr=lr,
-                               warmup_steps=warmup_steps,
-                               path_to_checkpoint=path_to_checkpoint,
-                               path_to_embed_model=path_to_embed_model,
-                               fine_tune=fine_tune,
-                               resume=resume,
-                               phase_1_steps=((len(datasets[0]) // batch_size) * 5) - 1,
-                               phase_2_steps=0,
-                               use_wandb=False,
-                               kl_start_steps=kl_start_steps,
-                               postnet_start_steps=((len(datasets[0]) // batch_size) * 5) - ((len(datasets[0]) // batch_size) // 2))
         multi_language_loop(net=net,
                             datasets=datasets,
                             device=device,

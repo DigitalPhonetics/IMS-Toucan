@@ -38,7 +38,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  # network structure related
                  idim=62,
                  odim=80,
-                 adim=256,
+                 adim=384,
                  aheads=4,
                  elayers=6,
                  eunits=1536,
@@ -242,18 +242,18 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # calculate loss
         gold_speech = cut_to_multiple_of_n(gold_speech)
-        l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
-                                                                                              d_outs=d_outs, p_outs=p_outs,
-                                                                                              e_outs=e_outs, ys=gold_speech,
-                                                                                              ds=gold_durations, ps=gold_pitch,
-                                                                                              es=gold_energy,
-                                                                                              ilens=text_lengths, olens=speech_lengths)
+        l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
+                                                                                    d_outs=d_outs, p_outs=p_outs,
+                                                                                    e_outs=e_outs, ys=gold_speech,
+                                                                                    ds=gold_durations, ps=gold_pitch,
+                                                                                    es=gold_energy,
+                                                                                    ilens=text_lengths, olens=speech_lengths)
 
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
-            return l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, after_outs
-        return l1_loss, ssim_loss, mse_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss
+            return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, after_outs
+        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss
 
     def _forward(self,
                  text_tensors,
