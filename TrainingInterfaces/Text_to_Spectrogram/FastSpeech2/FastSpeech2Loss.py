@@ -46,6 +46,7 @@ class FastSpeech2Loss(torch.nn.Module):
         # define criterions
         reduction = "none" if self.use_weighted_masking else "mean"
         self.l1_criterion = torch.nn.L1Loss(reduction=reduction)
+        self.mse_criterion = torch.nn.MSELoss(reduction=reduction)
         self.duration_criterion = DurationPredictorLoss(reduction=reduction)
         self.include_portaspeech_losses = include_portaspeech_losses
 
