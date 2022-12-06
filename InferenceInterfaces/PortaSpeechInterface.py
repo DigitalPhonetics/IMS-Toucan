@@ -42,7 +42,7 @@ class PortaSpeechInterface(torch.nn.Module):
                  # if you are using very low quality training data, you can use this to post-process your output
                  use_signalprocessing=False,
                  # some subtle effects that are frequently used in podcasting
-                 use_post_glow=False
+                 use_post_glow=True
                  # whether to use the PostNet, as it is only trained after a large amount of steps, so it might still be random in preliminary checkpoints
                  ):
         super().__init__()
