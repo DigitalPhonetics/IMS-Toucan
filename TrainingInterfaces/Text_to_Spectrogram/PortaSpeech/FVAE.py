@@ -17,12 +17,8 @@ class FVAEEncoder(nn.Module):
         if np.prod(strides) == 1:
             self.pre_net = nn.Conv1d(c_in, hidden_size, kernel_size=1)
         else:
-            self.pre_net = nn.Sequential(*[
-                nn.Conv1d(c_in, hidden_size, kernel_size=s * 2, stride=s, padding=s // 2)
-                if i == 0 else
-                nn.Conv1d(hidden_size, hidden_size, kernel_size=s * 2, stride=s, padding=s // 2)
-                for i, s in enumerate(strides)
-                ])
+            self.pre_net = nn.Sequential(*[nn.Conv1d(c_in, hidden_size, kernel_size=s * 2, stride=s, padding=s // 2) if i == 0 else
+                                           nn.Conv1d(hidden_size, hidden_size, kernel_size=s * 2, stride=s, padding=s // 2) for i, s in enumerate(strides)])
         self.nn = WN(hidden_size, kernel_size, 1, n_layers, c_cond, p_dropout)
         self.out_proj = nn.Conv1d(hidden_size, c_latent * 2, 1)
         self.latent_channels = c_latent
@@ -45,12 +41,8 @@ class FVAEDecoder(nn.Module):
         super().__init__()
         self.strides = strides
         self.hidden_size = hidden_size
-        self.pre_net = nn.Sequential(*[
-            nn.ConvTranspose1d(c_latent, hidden_size, kernel_size=s, stride=s)
-            if i == 0 else
-            nn.ConvTranspose1d(hidden_size, hidden_size, kernel_size=s, stride=s)
-            for i, s in enumerate(strides)
-            ])
+        self.pre_net = nn.Sequential(*[nn.ConvTranspose1d(c_latent, hidden_size, kernel_size=s, stride=s) if i == 0 else
+                                       nn.ConvTranspose1d(hidden_size, hidden_size, kernel_size=s, stride=s) for i, s in enumerate(strides)])
         self.nn = WN(hidden_size, kernel_size, 1, n_layers, c_cond, p_dropout)
         self.out_proj = nn.Conv1d(hidden_size, out_channels, 1)
 
@@ -80,17 +72,11 @@ class FVAE(nn.Module):
         if np.prod(strides) == 1:
             self.g_pre_net = nn.Conv1d(c_cond, c_cond, kernel_size=1)
         else:
-            self.g_pre_net = nn.Sequential(*[
-                nn.Conv1d(c_cond, c_cond, kernel_size=s * 2, stride=s, padding=s // 2)
-                for i, s in enumerate(strides)
-                ])
-        self.encoder = FVAEEncoder(c_in_out, hidden_size, c_latent, kernel_size,
-                                   enc_n_layers, c_cond, strides=strides)
+            self.g_pre_net = nn.Sequential(*[nn.Conv1d(c_cond, c_cond, kernel_size=s * 2, stride=s, padding=s // 2) for i, s in enumerate(strides)])
+        self.encoder = FVAEEncoder(c_in_out, hidden_size, c_latent, kernel_size, enc_n_layers, c_cond, strides=strides)
         if use_prior_flow:
-            self.prior_flow = ResFlow(
-                c_latent, flow_hidden, flow_kernel_size, flow_n_steps, 4, c_cond=c_cond)
-        self.decoder = FVAEDecoder(c_latent, hidden_size, c_in_out, kernel_size,
-                                   dec_n_layers, c_cond, strides=strides)
+            self.prior_flow = ResFlow(c_latent, flow_hidden, flow_kernel_size, flow_n_steps, 4, c_cond=c_cond)
+        self.decoder = FVAEDecoder(c_latent, hidden_size, c_in_out, kernel_size, dec_n_layers, c_cond, strides=strides)
         self.prior_dist = dist.Normal(0, 1)
 
     def forward(self, x=None, nonpadding=None, cond=None, infer=False, noise_scale=1.0):
@@ -108,7 +94,8 @@ class FVAE(nn.Module):
             q_dist = dist.Normal(m_q, logs_q.exp())
             if self.use_prior_flow:
                 logqx = q_dist.log_prob(z_q)
-                z_p = self.prior_flow(z_q, nonpadding_sqz, cond_sqz)
+                z_p = self.prior_flow(z_q, nonpadding_sqz, cond_sqz)  # we have to be careful, because this can sometimes produce numbers <= 0,
+                # which leads to an undefined log, which in turn triggers an error.
                 logpx = self.prior_dist.log_prob(z_p)
                 loss_kl = ((logqx - logpx) * nonpadding_sqz).sum() / nonpadding_sqz.sum() / logqx.shape[1]
             else:

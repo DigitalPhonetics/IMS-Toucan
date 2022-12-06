@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from Layers.LayerNorm import LayerNorm
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.wavenet import WN
 
 
 class LambdaLayer(nn.Module):
@@ -162,9 +163,12 @@ class CouplingLayer(nn.Module):
         self.c_half = c_in // 2
 
         self.pre = nn.Conv1d(self.c_half, hidden_size, 1)
-        self.enc = ConditionalConvBlocks(
-            hidden_size, c_in_g, hidden_size, None, kernel_size,
-            layers_in_block=1, is_BTC=False, num_layers=n_layers)
+        if nn_type == 'wn':
+            self.enc = WN(hidden_size, kernel_size, 1, n_layers, p_dropout=p_dropout, c_cond=c_in_g)
+        elif nn_type == 'conv':
+            self.enc = ConditionalConvBlocks(
+                hidden_size, c_in_g, hidden_size, None, kernel_size,
+                layers_in_block=1, is_BTC=False, num_layers=n_layers)
         self.post = nn.Conv1d(hidden_size, self.c_half, 1)
 
     def forward(self, x, nonpadding, cond=None, reverse=False):
@@ -190,8 +194,7 @@ class ResFlow(nn.Module):
         super().__init__()
         self.flows = nn.ModuleList()
         for i in range(n_flow_steps):
-            self.flows.append(
-                CouplingLayer(c_in, hidden_size, kernel_size, n_flow_layers, c_in_g=c_cond, nn_type=nn_type))
+            self.flows.append(CouplingLayer(c_in, hidden_size, kernel_size, n_flow_layers, c_in_g=c_cond, nn_type=nn_type))
             self.flows.append(FlipLayer())
 
     def forward(self, x, nonpadding, cond=None, reverse=False):
