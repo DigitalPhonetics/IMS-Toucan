@@ -178,7 +178,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.prior_dist = dist.Normal(0, 1)
 
         self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
-        self.glow_enabled = False
+        self.glow_enabled = True
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
@@ -334,22 +334,19 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # forward flow post-net
         after_outs = None
-        if run_glow:
-            self.glow_enabled = True
-            if is_inference:
-                after_outs = self.run_post_glow(tgt_mels=None,
-                                                infer=is_inference,
-                                                mel_out=before_outs,
-                                                encoded_texts=encoded_texts,
-                                                tgt_nonpadding=None)  # postnet -> (B, Lmax, odim)
-            else:
-                glow_loss = self.run_post_glow(tgt_mels=gold_speech,
-                                               infer=is_inference,
-                                               mel_out=before_outs,
-                                               encoded_texts=encoded_texts.detach(),
-                                               tgt_nonpadding=target_non_padding_mask)  # postnet -> (B, Lmax, odim)
+
+        if is_inference:
+            after_outs = self.run_post_glow(tgt_mels=None,
+                                            infer=is_inference,
+                                            mel_out=before_outs,
+                                            encoded_texts=encoded_texts,
+                                            tgt_nonpadding=None)
         else:
-            glow_loss = None
+            glow_loss = self.run_post_glow(tgt_mels=gold_speech,
+                                           infer=is_inference,
+                                           mel_out=before_outs if run_glow else before_outs.detach(),
+                                           encoded_texts=encoded_texts.detach(),
+                                           tgt_nonpadding=target_non_padding_mask)
 
         if not is_inference:
             return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, kl_loss, glow_loss
