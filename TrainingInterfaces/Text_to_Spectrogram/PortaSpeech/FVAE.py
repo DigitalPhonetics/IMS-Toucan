@@ -96,6 +96,7 @@ class FVAE(nn.Module):
                 logqx = q_dist.log_prob(z_q)
                 z_p = self.prior_flow(z_q, nonpadding_sqz, cond_sqz)  # we have to be careful, because this can sometimes produce numbers <= 0,
                 # which leads to an undefined log, which in turn triggers an error.
+                z_p = torch.clamp(z_p, min=1e-6, max=1e12)
                 logpx = self.prior_dist.log_prob(z_p)
                 loss_kl = ((logqx - logpx) * nonpadding_sqz).sum() / nonpadding_sqz.sum() / logqx.shape[1]
             else:
