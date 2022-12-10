@@ -6,18 +6,20 @@ from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_cod
 from TrainingInterfaces.TrainingPipelines.JointEmbeddingFunction import run as embedding
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_MetaCheckpoint import run as meta
+from TrainingInterfaces.TrainingPipelines.PortaSpeech_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "meta"     : meta,
+    "meta":      meta,
     "embedding": embedding,
     "hifi_codo": hifi_codo,
-    "aligner"  : aligner,
-    "fine_ex"  : fine_tuning_example,
-    "fs_it"    : fs_integration_test,
-    "ps_it"    : ps_integration_test,
-    }
+    "aligner":   aligner,
+    "fine_ex":   fine_tuning_example,
+    "fs_it":     fs_integration_test,
+    "ps_it":     ps_integration_test,
+    "nancy":     nancy,
+}
 
 if __name__ == '__main__':
 

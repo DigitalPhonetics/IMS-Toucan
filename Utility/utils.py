@@ -21,7 +21,7 @@ def cut_to_multiple_of_n(x, n=4, seq_dim=1):
 
 
 @torch.inference_mode()
-def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
+def plot_progress_spec(net, device, save_dir, step, lang, default_emb, before_and_after_postnet=False):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
@@ -31,40 +31,119 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
                                                    return_duration_pitch_energy=True,
                                                    utterance_embedding=default_emb,
                                                    lang_id=get_language_id(lang).to(device))
-    spec = spec.transpose(0, 1).to("cpu").numpy()
-    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-    if not os.path.exists(os.path.join(save_dir, "spec")):
-        os.makedirs(os.path.join(save_dir, "spec"))
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
-    lbd.specshow(spec,
-                 ax=ax,
-                 sr=16000,
-                 cmap='GnBu',
-                 y_axis='mel',
-                 x_axis=None,
-                 hop_length=256)
-    ax.yaxis.set_visible(False)
-    ax.set_xticks(duration_splits, minor=True)
-    ax.xaxis.grid(True, which='minor')
-    ax.set_xticks(label_positions, minor=False)
-    phones = tf.get_phone_string(sentence, for_plot_labels=True)
-    ax.set_xticklabels(phones)
-    word_boundaries = list()
-    for label_index, word_boundary in enumerate(phones):
-        if word_boundary == "|":
-            word_boundaries.append(label_positions[label_index])
-    ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    pitch_array = pitch.cpu().numpy()
-    for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
-        if pitch_array[pitch_index] > 0.001:
-            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue", linestyles="solid",
-                      linewidth=0.5)
-    ax.set_title(sentence)
-    plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}.png"))
-    plt.clf()
-    plt.close()
-    return os.path.join(os.path.join(save_dir, "spec"), f"{step}.png")
+    if before_and_after_postnet:
+        # PortaSpeech case, because there it's more interesting
+        spec_before, spec_after = spec
+
+        spec = spec_before.transpose(0, 1).to("cpu").numpy()
+        duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+        if not os.path.exists(os.path.join(save_dir, "spec")):
+            os.makedirs(os.path.join(save_dir, "spec"))
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
+        lbd.specshow(spec,
+                     ax=ax,
+                     sr=16000,
+                     cmap='GnBu',
+                     y_axis='mel',
+                     x_axis=None,
+                     hop_length=256)
+        ax.yaxis.set_visible(False)
+        ax.set_xticks(duration_splits, minor=True)
+        ax.xaxis.grid(True, which='minor')
+        ax.set_xticks(label_positions, minor=False)
+        phones = tf.get_phone_string(sentence, for_plot_labels=True)
+        ax.set_xticklabels(phones)
+        word_boundaries = list()
+        for label_index, word_boundary in enumerate(phones):
+            if word_boundary == "|":
+                word_boundaries.append(label_positions[label_index])
+        ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        pitch_array = pitch.cpu().numpy()
+        for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+            if pitch_array[pitch_index] > 0.001:
+                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
+                          linestyles="solid",
+                          linewidth=0.5)
+        ax.set_title(sentence)
+        plt.savefig(os.path.join(os.path.join(save_dir, "spec_before"), f"{step}.png"))
+        plt.clf()
+        plt.close()
+
+        spec = spec_after.transpose(0, 1).to("cpu").numpy()
+        duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+        if not os.path.exists(os.path.join(save_dir, "spec")):
+            os.makedirs(os.path.join(save_dir, "spec"))
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
+        lbd.specshow(spec,
+                     ax=ax,
+                     sr=16000,
+                     cmap='GnBu',
+                     y_axis='mel',
+                     x_axis=None,
+                     hop_length=256)
+        ax.yaxis.set_visible(False)
+        ax.set_xticks(duration_splits, minor=True)
+        ax.xaxis.grid(True, which='minor')
+        ax.set_xticks(label_positions, minor=False)
+        phones = tf.get_phone_string(sentence, for_plot_labels=True)
+        ax.set_xticklabels(phones)
+        word_boundaries = list()
+        for label_index, word_boundary in enumerate(phones):
+            if word_boundary == "|":
+                word_boundaries.append(label_positions[label_index])
+        ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        pitch_array = pitch.cpu().numpy()
+        for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+            if pitch_array[pitch_index] > 0.001:
+                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
+                          linestyles="solid",
+                          linewidth=0.5)
+        ax.set_title(sentence)
+        plt.savefig(os.path.join(os.path.join(save_dir, "spec_after"), f"{step}.png"))
+        plt.clf()
+        plt.close()
+        return os.path.join(os.path.join(save_dir, "spec_before"), f"{step}.png"), os.path.join(
+            os.path.join(save_dir, "spec_after"), f"{step}.png")
+
+    else:
+        # FastSpeech case, standard
+        spec = spec.transpose(0, 1).to("cpu").numpy()
+        duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+        if not os.path.exists(os.path.join(save_dir, "spec")):
+            os.makedirs(os.path.join(save_dir, "spec"))
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
+        lbd.specshow(spec,
+                     ax=ax,
+                     sr=16000,
+                     cmap='GnBu',
+                     y_axis='mel',
+                     x_axis=None,
+                     hop_length=256)
+        ax.yaxis.set_visible(False)
+        ax.set_xticks(duration_splits, minor=True)
+        ax.xaxis.grid(True, which='minor')
+        ax.set_xticks(label_positions, minor=False)
+        phones = tf.get_phone_string(sentence, for_plot_labels=True)
+        ax.set_xticklabels(phones)
+        word_boundaries = list()
+        for label_index, word_boundary in enumerate(phones):
+            if word_boundary == "|":
+                word_boundaries.append(label_positions[label_index])
+        ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        pitch_array = pitch.cpu().numpy()
+        for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+            if pitch_array[pitch_index] > 0.001:
+                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
+                          linestyles="solid",
+                          linewidth=0.5)
+        ax.set_title(sentence)
+        plt.savefig(os.path.join(os.path.join(save_dir, "spec"), f"{step}.png"))
+        plt.clf()
+        plt.close()
+        return os.path.join(os.path.join(save_dir, "spec"), f"{step}.png")
 
 
 def cumsum_durations(durations):
