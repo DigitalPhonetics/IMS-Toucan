@@ -71,7 +71,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb, before_an
 
         spec = spec_after.transpose(0, 1).to("cpu").numpy()
         duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-        os.makedirs(os.path.join(save_dir, "spec_after"))
+        os.makedirs(os.path.join(save_dir, "spec_after"), exist_ok=True)
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
         lbd.specshow(spec,
                      ax=ax,
