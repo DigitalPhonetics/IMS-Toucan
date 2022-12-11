@@ -91,12 +91,11 @@ class FVAE(nn.Module):
         cond_sqz = self.g_pre_net(cond)
         if not infer:
             z_q, m_q, logs_q, nonpadding_sqz = self.encoder(x.transpose(1, 2), nonpadding, cond_sqz)
-            q_dist = dist.Normal(m_q, torch.clamp(logs_q.exp(), min=-1e9, max=1e9))
+            q_dist = dist.Normal(m_q, logs_q.exp())
             if self.use_prior_flow:
                 logqx = q_dist.log_prob(z_q)
                 z_p = self.prior_flow(z_q, nonpadding_sqz, cond_sqz)  # we have to be careful, because this can sometimes produce numbers <= 0,
-                # or NaNs, which leads to an undefined log, which in turn triggers an error.
-                z_p = torch.clamp(z_p, min=1e-6, max=1e12)
+                # or NaNs, which leads to an undefined log, which in turn triggers an error
                 logpx = self.prior_dist.log_prob(z_p)
                 loss_kl = ((logqx - logpx) * nonpadding_sqz).sum() / nonpadding_sqz.sum() / logqx.shape[1]
             else:
