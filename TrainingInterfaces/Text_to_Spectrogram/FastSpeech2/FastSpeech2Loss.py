@@ -92,10 +92,14 @@ class FastSpeech2Loss(torch.nn.Module):
         # calculate loss
         l1_loss = self.l1_criterion(before_outs, ys)
         if after_outs is not None:
-            l1_loss += self.l1_criterion(after_outs, ys)
+            l1_loss = l1_loss + self.l1_criterion(after_outs, ys)
         duration_loss = self.duration_criterion(d_outs, ds)
         pitch_loss = self.mse_criterion(p_outs, ps)
         energy_loss = self.mse_criterion(e_outs, es)
+        if self.include_portaspeech_losses:
+            ssim_loss_value = ssim_loss(before_outs, ys)
+            if after_outs is not None:
+                ssim_loss_value = ssim_loss_value + ssim_loss(after_outs, ys)
 
         # make weighted mask and apply it
         if self.use_weighted_masking:
@@ -108,6 +112,8 @@ class FastSpeech2Loss(torch.nn.Module):
 
             # apply weight
             l1_loss = l1_loss.mul(out_weights).masked_select(out_masks).sum()
+            if self.include_portaspeech_losses:
+                ssim_loss_value = ssim_loss_value.mul(out_weights).masked_select(out_masks).sum()
             duration_loss = (duration_loss.mul(duration_weights).masked_select(duration_masks).sum())
             pitch_masks = duration_masks.unsqueeze(-1)
             pitch_weights = duration_weights.unsqueeze(-1)
@@ -115,10 +121,6 @@ class FastSpeech2Loss(torch.nn.Module):
             energy_loss = (energy_loss.mul(pitch_weights).masked_select(pitch_masks).sum())
 
         if self.include_portaspeech_losses:
-            ssim_loss_value = ssim_loss(before_outs, ys)
-            if after_outs is not None:
-                ssim_loss_value = ssim_loss_value + ssim_loss(after_outs, ys)
-
             return l1_loss, ssim_loss_value, duration_loss, pitch_loss, energy_loss
         else:
             return l1_loss, duration_loss, pitch_loss, energy_loss
