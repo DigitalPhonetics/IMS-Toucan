@@ -3,13 +3,9 @@ import os
 
 import librosa.display as lbd
 import matplotlib.pyplot as plt
-import numpy
-import pyloudnorm as pyln
 import sounddevice
 import soundfile
 import torch
-from df.enhance import enhance
-from df.enhance import init_df
 from pedalboard import Compressor
 from pedalboard import HighShelfFilter
 from pedalboard import HighpassFilter
@@ -38,8 +34,6 @@ class PortaSpeechInterface(torch.nn.Module):
                  # path to the hifigan/avocodo checkpoint
                  language="en",
                  # initial language of the model, can be changed later with the setter methods
-                 use_enhancement=False,
-                 # if you are using very low quality training data, you can use this to post-process your output
                  use_signalprocessing=False,
                  # some subtle effects that are frequently used in podcasting
                  use_post_glow=True
@@ -64,14 +58,6 @@ class PortaSpeechInterface(torch.nn.Module):
                                                PeakFilter(cutoff_frequency_hz=7500, gain_db=-2.0),
                                                NoiseGate(),
                                                Compressor(ratio=2.0)])
-        self.use_enhancement = use_enhancement
-        if self.use_enhancement:
-            self.enhancer, self.df, _ = init_df(log_file=None,
-                                                log_level="NONE",
-                                                config_allow_defaults=True,
-                                                post_filter=True)
-            self.enhancer = self.enhancer.to(self.device).eval()
-            self.loudnorm_meter = pyln.Meter(24000, block_size=0.200)
 
         ################################
         #   build text to phone        #
@@ -203,16 +189,6 @@ class PortaSpeechInterface(torch.nn.Module):
                     wave = torch.Tensor(self.effects(wave.cpu().numpy(), 24000))
                 except ValueError:
                     # if the audio is too short, a value error might arise
-                    pass
-            if self.use_enhancement:
-                wave = enhance(self.enhancer, self.df, wave.unsqueeze(0).cpu(), pad=True).squeeze()
-                try:
-                    loudness = self.loudnorm_meter.integrated_loudness(wave.cpu().numpy())
-                    loud_normed = pyln.normalize.loudness(wave.cpu().numpy(), loudness, -30.0)
-                    peak = numpy.amax(numpy.abs(loud_normed))
-                    wave = torch.Tensor(numpy.divide(loud_normed, peak))
-                except ValueError:
-                    # if the audio is too short, a value error will arise
                     pass
 
         if view:
