@@ -86,7 +86,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=lr, betas=(0.9, 0.98), eps=1e-9)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
