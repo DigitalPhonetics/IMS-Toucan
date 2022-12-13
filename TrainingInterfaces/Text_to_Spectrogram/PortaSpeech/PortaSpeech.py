@@ -360,6 +360,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 gold_speech = cut_to_multiple_of_n(gold_speech)
                 encoded_texts = cut_to_multiple_of_n(encoded_texts)
                 speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
+                target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
 
             if speech_lens is not None and not is_inference:
                 h_masks = self._source_mask(speech_lens)
@@ -367,7 +368,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                 h_masks = None
             zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
             before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
-            target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
             kl_loss = torch.Tensor([0.0])
 
         # forward flow post-net
