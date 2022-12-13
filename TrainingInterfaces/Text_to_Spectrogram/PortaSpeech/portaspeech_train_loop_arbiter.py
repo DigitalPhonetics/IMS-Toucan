@@ -29,7 +29,10 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                phase_1_steps=250000,  # without cycle consistency objective.
                phase_2_steps=150000,  # with cycle consistency objective.
                kl_start_steps=6000,  # use kl loss after this many steps
-               postnet_start_steps=100000,  # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
+               postnet_start_steps=100000,
+               # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
+               encoder_pretraining_steps=50000,
+               # how many steps the regular fastspeech decoder is used before the VAE decoder is used
                ):
     if len(datasets) > 1:
         multi_language_loop(net=net,
@@ -48,7 +51,8 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                             warmup_steps=warmup_steps,
                             use_wandb=use_wandb,
                             kl_start_steps=kl_start_steps,
-                            postnet_start_steps=postnet_start_steps)
+                            postnet_start_steps=postnet_start_steps,
+                            encoder_pretraining_steps=encoder_pretraining_steps)
     else:
         mono_language_loop(net=net,
                            train_dataset=datasets[0],
@@ -66,4 +70,5 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                            phase_2_steps=phase_2_steps,
                            use_wandb=use_wandb,
                            kl_start_steps=kl_start_steps,
-                           postnet_start_steps=postnet_start_steps)
+                           postnet_start_steps=postnet_start_steps,
+                           encoder_pretraining_steps=encoder_pretraining_steps)

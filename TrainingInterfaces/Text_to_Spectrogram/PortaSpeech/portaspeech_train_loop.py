@@ -47,7 +47,8 @@ def train_loop(net,
                phase_2_steps,
                postnet_start_steps,
                use_wandb,
-               kl_start_steps):
+               kl_start_steps,
+               encoder_pretraining_steps):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -137,13 +138,12 @@ def train_loop(net,
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
-                        run_glow=step_counter > postnet_start_steps)
+                        run_glow=step_counter > postnet_start_steps,
+                        use_vae_decoder=step_counter > encoder_pretraining_steps)
                     train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                     train_loss = train_loss + glow_loss
                     if step_counter > kl_start_steps:
                         train_loss = train_loss + kl_loss
-
-
                 else:
                     # ======================================================
                     # =       PHASE 2:     cycle objective is added        =
@@ -158,10 +158,8 @@ def train_loop(net,
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
-                        speech_lengths=batch[3].to(
-                            device),
-                        gold_durations=batch[4].to(
-                            device),
+                        speech_lengths=batch[3].to(device),
+                        gold_durations=batch[4].to(device),
                         gold_pitch=batch[6].to(device),
                         # mind the switched order
                         gold_energy=batch[5].to(device),
@@ -169,7 +167,8 @@ def train_loop(net,
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
                         return_mels=True,
-                        run_glow=step_counter > postnet_start_steps)
+                        run_glow=step_counter > postnet_start_steps,
+                        use_vae_decoder=step_counter > encoder_pretraining_steps)
                     train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                     train_loss = train_loss + glow_loss
                     if step_counter > kl_start_steps:

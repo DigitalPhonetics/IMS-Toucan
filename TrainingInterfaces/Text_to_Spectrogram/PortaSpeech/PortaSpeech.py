@@ -217,7 +217,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                 return_mels=False,
                 lang_ids=None,
                 run_glow=False,  # requires warmup, so we don't use it from the start
-                use_posterior=True  # may require warmup
+                use_posterior=True,  # may require warmup
+                use_vae_decoder=False
                 ):
         """
         Calculate forward propagation.
@@ -257,7 +258,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                                   is_inference=False,
                                   use_posterior=use_posterior,
                                   lang_ids=lang_ids,
-                                  run_glow=run_glow)
+                                  run_glow=run_glow,
+                                  use_vae_decoder=use_vae_decoder)
 
         # calculate loss
         gold_speech = cut_to_multiple_of_n(gold_speech)
@@ -370,21 +372,21 @@ class PortaSpeech(torch.nn.Module, ABC):
             before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
             kl_loss = torch.Tensor([0.0])
 
-        # forward flow post-net
         after_outs = None
-
-        if is_inference:
-            after_outs = self.run_post_glow(tgt_mels=None,
-                                            infer=is_inference,
-                                            mel_out=before_outs,
-                                            encoded_texts=encoded_texts,
-                                            tgt_nonpadding=None)
-        else:
-            glow_loss = self.run_post_glow(tgt_mels=gold_speech,
-                                           infer=is_inference,
-                                           mel_out=before_outs if run_glow else before_outs.detach(),
-                                           encoded_texts=encoded_texts.detach(),
-                                           tgt_nonpadding=target_non_padding_mask)
+        if run_glow:
+            # forward flow post-net
+            if is_inference:
+                after_outs = self.run_post_glow(tgt_mels=None,
+                                                infer=is_inference,
+                                                mel_out=before_outs,
+                                                encoded_texts=encoded_texts,
+                                                tgt_nonpadding=None)
+            else:
+                glow_loss = self.run_post_glow(tgt_mels=gold_speech,
+                                               infer=is_inference,
+                                               mel_out=before_outs if run_glow else before_outs.detach(),
+                                               encoded_texts=encoded_texts.detach(),
+                                               tgt_nonpadding=target_non_padding_mask)
 
         if not is_inference:
             return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, kl_loss, glow_loss
@@ -446,7 +448,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
         self.train()
-        if not self.glow_enabled:
+        if after_outs is None:
             after_outs = before_outs
         if return_duration_pitch_energy:
             return (before_outs[0], after_outs[0]), d_outs[0], pitch_predictions[0], energy_predictions[0]

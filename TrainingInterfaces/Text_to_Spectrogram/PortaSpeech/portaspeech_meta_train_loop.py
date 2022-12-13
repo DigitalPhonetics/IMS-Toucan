@@ -44,7 +44,8 @@ def train_loop(net,
                warmup_steps,
                use_wandb,
                kl_start_steps,
-               postnet_start_steps):
+               postnet_start_steps,
+               encoder_pretraining_steps):
     # ============
     # Preparations
     # ============
@@ -153,7 +154,8 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=False,
-                    run_glow=step_counter > postnet_start_steps)
+                    run_glow=step_counter > postnet_start_steps,
+                    use_vae_decoder=step_counter > encoder_pretraining_steps)
 
                 train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step_counter > postnet_start_steps:
@@ -180,7 +182,8 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=True,
-                    run_glow=step_counter > postnet_start_steps)
+                    run_glow=step_counter > postnet_start_steps,
+                    use_vae_decoder=step_counter > encoder_pretraining_steps)
 
                 train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 train_loss = train_loss + glow_loss
