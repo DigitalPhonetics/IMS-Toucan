@@ -364,7 +364,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
             before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
             target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
-            kl_loss = torch.Tensor(0.0)
+            kl_loss = torch.Tensor([0.0])
 
         # forward flow post-net
         after_outs = None
