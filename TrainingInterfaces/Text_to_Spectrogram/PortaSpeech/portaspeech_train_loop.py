@@ -141,8 +141,9 @@ def train_loop(net,
                         run_glow=step_counter > postnet_start_steps,
                         use_vae_decoder=step_counter > encoder_pretraining_steps)
                     train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
-                    train_loss = train_loss + glow_loss
-                    if step_counter > kl_start_steps:
+                    if step_counter > postnet_start_steps:
+                        train_loss = train_loss + glow_loss
+                    if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
                         train_loss = train_loss + kl_loss
                 else:
                     # ======================================================
@@ -170,8 +171,9 @@ def train_loop(net,
                         run_glow=step_counter > postnet_start_steps,
                         use_vae_decoder=step_counter > encoder_pretraining_steps)
                     train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
-                    train_loss = train_loss + glow_loss
-                    if step_counter > kl_start_steps:
+                    if step_counter > postnet_start_steps:
+                        train_loss = train_loss + glow_loss
+                    if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
                         train_loss = train_loss + kl_loss
 
                     style_embedding_function.train()
