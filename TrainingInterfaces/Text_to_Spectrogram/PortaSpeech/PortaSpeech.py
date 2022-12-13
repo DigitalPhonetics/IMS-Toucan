@@ -387,6 +387,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                mel_out=before_outs if run_glow else before_outs.detach(),
                                                encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=target_non_padding_mask)
+        else:
+            glow_loss = torch.Tensor([0.0])
 
         if not is_inference:
             return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, kl_loss, glow_loss
