@@ -341,7 +341,6 @@ class PortaSpeech(torch.nn.Module, ABC):
             else:
 
                 gold_speech = cut_to_multiple_of_n(gold_speech)
-
                 speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
 
                 target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
@@ -357,6 +356,9 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
         else:
             # forward fastspeech decoder instead, because the VAE likes to turn to NaNs if left on its own
+            gold_speech = cut_to_multiple_of_n(gold_speech)
+            speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
+
             if speech_lens is not None and not is_inference:
                 h_masks = self._source_mask(speech_lens)
             else:
