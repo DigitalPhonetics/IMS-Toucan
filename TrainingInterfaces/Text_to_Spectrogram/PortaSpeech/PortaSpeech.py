@@ -157,7 +157,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             flow_kernel_size=3,  # prior_flow_kernel_size
             flow_n_steps=6,  # prior_flow_n_blocks
             strides=[4],  # fvae_strides
-            )
+        )
 
         # post net is realized as a flow
         gin_channels = 192
@@ -174,17 +174,36 @@ class PortaSpeech(torch.nn.Module, ABC):
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,  # share_wn_layers
             sigmoid_scale=False  # sigmoid_scale
-            )
+        )
         self.prior_dist = dist.Normal(0, 1)
 
         self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
         self.glow_enabled = True
 
+        # fastspeech decoder for testing and early training stages
+        self.decoder = Conformer(idim=0,
+                                 attention_dim=adim,
+                                 attention_heads=aheads,
+                                 linear_units=1536,
+                                 num_blocks=6,
+                                 input_layer=None,
+                                 dropout_rate=0.2,
+                                 positional_dropout_rate=0.2,
+                                 attention_dropout_rate=0.2,
+                                 normalize_before=True,
+                                 concat_after=False,
+                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer,
+                                 cnn_module_kernel=31,
+                                 utt_embed=utt_embed_dim)
+        self.feat_out = torch.nn.Linear(adim, odim)
+
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
 
         # define criterion
-        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking, include_portaspeech_losses=True)
+        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking,
+                                         include_portaspeech_losses=True)
 
     def forward(self,
                 text_tensors,
@@ -242,12 +261,14 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # calculate loss
         gold_speech = cut_to_multiple_of_n(gold_speech)
-        l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs, before_outs=before_outs,
+        l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
+                                                                                    before_outs=before_outs,
                                                                                     d_outs=d_outs, p_outs=p_outs,
                                                                                     e_outs=e_outs, ys=gold_speech,
                                                                                     ds=gold_durations, ps=gold_pitch,
                                                                                     es=gold_energy,
-                                                                                    ilens=text_lengths, olens=speech_lengths)
+                                                                                    ilens=text_lengths,
+                                                                                    olens=speech_lengths)
 
         if return_mels:
             if after_outs is None:
@@ -268,7 +289,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                  use_posterior=True,
                  alpha=1.0,
                  utterance_embedding=None,
-                 lang_ids=None):
+                 lang_ids=None,
+                 use_vae_decoder=False):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -310,28 +332,39 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
-        # forward VAE decoder
-        target_non_padding_mask = None
-        if is_inference:
-            z = self.decoder(cond=encoded_texts.transpose(1, 2),
-                             infer=is_inference)
+        if use_vae_decoder:
+            # forward VAE decoder
+            target_non_padding_mask = None
+            if is_inference:
+                z = self.decoder(cond=encoded_texts.transpose(1, 2),
+                                 infer=is_inference)
+            else:
+
+                gold_speech = cut_to_multiple_of_n(gold_speech)
+
+                speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
+
+                target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
+                z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,  # [B, T, 80]
+                                                            nonpadding=target_non_padding_mask,
+                                                            cond=encoded_texts.transpose(1, 2),
+                                                            infer=is_inference)
+                if not use_posterior:
+                    z = torch.randn_like(z)
+
+            encoded_texts = cut_to_multiple_of_n(encoded_texts)
+            before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask,
+                                               cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
         else:
-
-            gold_speech = cut_to_multiple_of_n(gold_speech)
-
-            speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
-
+            # forward fastspeech decoder instead, because the VAE likes to turn to NaNs if left on its own
+            if speech_lens is not None and not is_inference:
+                h_masks = self._source_mask(speech_lens)
+            else:
+                h_masks = None
+            zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
+            before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
             target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
-            z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,  # [B, T, 80]
-                                                        nonpadding=target_non_padding_mask,
-                                                        cond=encoded_texts.transpose(1, 2),
-                                                        infer=is_inference)
-            if not use_posterior:
-                z = torch.randn_like(z)
-
-        encoded_texts = cut_to_multiple_of_n(encoded_texts)
-        before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask,
-                                           cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
+            kl_loss = torch.Tensor(0.0)
 
         # forward flow post-net
         after_outs = None
