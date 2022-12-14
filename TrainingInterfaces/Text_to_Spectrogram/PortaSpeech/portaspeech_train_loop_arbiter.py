@@ -34,6 +34,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                encoder_pretraining_steps=50000,
                # how many steps the regular fastspeech decoder is used before the VAE decoder is used
                ):
+    assert kl_start_steps >= encoder_pretraining_steps  # otherwise, it is assumed that a mistake has been made because this makes little sense
     if len(datasets) > 1:
         multi_language_loop(net=net,
                             datasets=datasets,

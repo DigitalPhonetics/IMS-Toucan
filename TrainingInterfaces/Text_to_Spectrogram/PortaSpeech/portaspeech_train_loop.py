@@ -217,14 +217,18 @@ def train_loop(net,
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
-            "model":        net.state_dict(),
-            "optimizer":    optimizer.state_dict(),
+            "model"       : net.state_dict(),
+            "optimizer"   : optimizer.state_dict(),
             "step_counter": step_counter,
-            "scaler":       scaler.state_dict(),
-            "scheduler":    scheduler.state_dict(),
-            "default_emb":  default_embedding,
-        }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            "scaler"      : scaler.state_dict(),
+            "scheduler"   : scheduler.state_dict(),
+            "default_emb" : default_embedding,
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
+        if step_counter > encoder_pretraining_steps:
+            net.vae_decoder_enabled = True
+        if step_counter > postnet_start_steps:
+            net.glow_enabled = True
         path_to_most_recent_plot_before, \
         path_to_most_recent_plot_after = plot_progress_spec(net,
                                                             device,
@@ -236,8 +240,8 @@ def train_loop(net,
         if use_wandb:
             wandb.log({
                 "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
-                "progress_plot_after":  wandb.Image(path_to_most_recent_plot_after)
-            })
+                "progress_plot_after" : wandb.Image(path_to_most_recent_plot_after)
+                })
         print("Epoch:              {}".format(epoch))
         print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
@@ -246,20 +250,20 @@ def train_loop(net,
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "total_loss":    round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
-                "l1_loss":       round(sum(l1_losses_total) / len(l1_losses_total), 3),
-                "ssim_loss":     round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
+                "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                "ssim_loss"    : round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
-                "pitch_loss":    round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
-                "energy_loss":   round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                "kl_loss":       round(sum(kl_losses_total) / len(kl_losses_total), 3) if len(
+                "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3) if len(
                     kl_losses_total) != 0 else None,
-                "glow_loss":     round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
+                "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                     glow_losses_total) != 0 else None,
-                "cycle_loss":    sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
+                "cycle_loss"   : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
                     cycle_losses_this_epoch) != 0 else None,
-                "Steps":         step_counter,
-            })
+                "Steps"        : step_counter,
+                })
         if step_counter > steps:
             # DONE
             return

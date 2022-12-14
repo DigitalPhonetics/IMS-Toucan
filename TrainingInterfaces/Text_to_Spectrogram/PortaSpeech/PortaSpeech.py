@@ -174,11 +174,12 @@ class PortaSpeech(torch.nn.Module, ABC):
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,  # share_wn_layers
             sigmoid_scale=False  # sigmoid_scale
-        )
+            )
         self.prior_dist = dist.Normal(0, 1)
 
         self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
-        self.glow_enabled = True
+        self.glow_enabled = False
+        self.vae_decoder_enabled = False
 
         # fastspeech decoder for testing and early training stages
         self.decoder = Conformer(idim=0,
@@ -443,6 +444,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            ys,
                                            is_inference=True,
                                            run_glow=self.glow_enabled,
+                                           use_vae_decoder=self.vae_decoder_enabled,
                                            alpha=alpha,
                                            utterance_embedding=utterance_embedding.unsqueeze(0),
                                            lang_ids=lang_id)  # (1, L, odim)
