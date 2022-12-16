@@ -161,7 +161,7 @@ def train_loop(net,
                 if step_counter > postnet_start_steps:
                     train_loss = train_loss + glow_loss
                 if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
-                    train_loss = train_loss + kl_loss
+                    train_loss = train_loss + kl_loss * 0.4
 
             else:
                 # PHASE 2
@@ -188,7 +188,7 @@ def train_loop(net,
                 train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 train_loss = train_loss + glow_loss
                 if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
-                    train_loss = train_loss + kl_loss
+                    train_loss = train_loss + kl_loss * 0.4
 
                 style_embedding_function.train()
                 style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -219,7 +219,7 @@ def train_loop(net,
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 0.8, error_if_nonfinite=False)
         grad_scaler.step(optimizer)
         grad_scaler.update()
         scheduler.step()

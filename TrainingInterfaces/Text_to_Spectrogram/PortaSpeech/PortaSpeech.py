@@ -385,7 +385,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
-                                               mel_out=before_outs if run_glow else before_outs.detach(),
+                                               mel_out=before_outs.detach(),
                                                encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=target_non_padding_mask)
         else:
