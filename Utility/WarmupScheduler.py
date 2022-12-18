@@ -52,5 +52,5 @@ class PortaSpeechWarmupScheduler(_LRScheduler):
 
     def get_lr(self):
         step_num = self.last_epoch + 1
-        warmup = min(step_num / self.warmup_updates, 1.0)
+        warmup = min(step_num / self.warmup_steps, 1.0)
         return [max(lr * warmup, 1e-7) for lr in self.base_lrs]
