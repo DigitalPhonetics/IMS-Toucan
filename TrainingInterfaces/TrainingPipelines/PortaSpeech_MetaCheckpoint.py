@@ -229,9 +229,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                resume=resume,
-               use_wandb=use_wandb,
-               encoder_pretraining_steps=-1,
-               kl_start_steps=20000)
+               use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()
 

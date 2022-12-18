@@ -8,7 +8,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from Utility.WarmupScheduler import WarmupScheduler
+from Utility.WarmupScheduler import PortaSpeechWarmupScheduler as WarmupScheduler
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -44,8 +44,8 @@ def train_loop(net,
                warmup_steps,
                use_wandb,
                kl_start_steps,
-               postnet_start_steps,
-               encoder_pretraining_steps):
+               postnet_start_steps
+               ):
     # ============
     # Preparations
     # ============
@@ -73,7 +73,9 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
+                                  betas=(0.9, 0.98), eps=1e-9)
+    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
     grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if resume:
@@ -109,6 +111,8 @@ def train_loop(net,
     # Actual train loop starts here
     # =============================
     for step in tqdm(range(step_counter, steps)):
+        optimizer.zero_grad()
+        optimizer_postflow.zero_grad()
         batches = []
         while len(batches) < batch_size:
             for index in random.sample(list(range(len(datasets))), len(datasets)):
@@ -154,13 +158,12 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=False,
-                    run_glow=step > postnet_start_steps,
-                    use_vae_decoder=step > encoder_pretraining_steps)
+                    run_glow=step > postnet_start_steps)
 
                 train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step > postnet_start_steps:
                     train_loss = train_loss + glow_loss
-                if step > kl_start_steps and step > encoder_pretraining_steps:
+                if step > kl_start_steps:
                     train_loss = train_loss + kl_loss * 0.05
 
             else:
@@ -182,13 +185,12 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=True,
-                    run_glow=step > postnet_start_steps,
-                    use_vae_decoder=step > encoder_pretraining_steps)
+                    run_glow=step > postnet_start_steps)
 
                 train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                 if step > postnet_start_steps:
                     train_loss = train_loss + glow_loss
-                if step > kl_start_steps and step > encoder_pretraining_steps:
+                if step > kl_start_steps:
                     train_loss = train_loss + kl_loss * min(0.05 + 0.00001 * (step - kl_start_steps),
                                                             0.2)  # linear increase over 15k steps
 
@@ -219,10 +221,15 @@ def train_loop(net,
         kl_losses_total.append(kl_loss.item())
         glow_losses_total.append(glow_loss.item())
         optimizer.zero_grad()
+        optimizer_postflow.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
+        if step > postnet_start_steps:
+            grad_scaler.unscale_(optimizer_postflow)
         torch.nn.utils.clip_grad_norm_(net.parameters(), 0.8, error_if_nonfinite=False)
         grad_scaler.step(optimizer)
+        if step > postnet_start_steps:
+            grad_scaler.step(optimizer_postflow)
         grad_scaler.update()
         scheduler.step()
 
@@ -249,8 +256,6 @@ def train_loop(net,
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
-            if step_counter > encoder_pretraining_steps:
-                net.vae_decoder_enabled = True
             if step_counter > postnet_start_steps:
                 net.glow_enabled = True
             path_to_most_recent_plot_before, \

@@ -14,7 +14,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                # how many steps should be trained before a checkpoint is created. This is only relevant for the multilingual case,
                # the monolingual case will do this once per epoch, regardless of the steps.
                path_to_checkpoint=None,  # path to a trained checkpoint to either continue training or fine-tune from.
-               lr=0.0001,  # learning rate of the model.
+               lr=0.0002,  # learning rate of the model.
                path_to_embed_model="Models/Embedding/embedding_function.pt",
                # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
@@ -28,15 +28,12 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                phase_1_steps=250000,  # without cycle consistency objective.
                phase_2_steps=150000,  # with cycle consistency objective.
-               kl_start_steps=15000,  # use kl loss after this many steps
-               postnet_start_steps=100000,
+               kl_start_steps=20000,  # use kl loss after this many steps
+               postnet_start_steps=160000,
                # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
-               encoder_pretraining_steps=5000,
-               # how many steps the regular fastspeech decoder is used before the VAE decoder is used
                ):
     if type(datasets) != list:
         datasets = [datasets]
-    assert kl_start_steps >= encoder_pretraining_steps  # otherwise, it is assumed that a mistake has been made because this makes little sense
     if len(datasets) > 1:
         multi_language_loop(net=net,
                             datasets=datasets,
@@ -54,8 +51,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                             warmup_steps=warmup_steps,
                             use_wandb=use_wandb,
                             kl_start_steps=kl_start_steps,
-                            postnet_start_steps=postnet_start_steps,
-                            encoder_pretraining_steps=encoder_pretraining_steps)
+                            postnet_start_steps=postnet_start_steps)
     else:
         mono_language_loop(net=net,
                            train_dataset=datasets[0],
@@ -73,5 +69,4 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                            phase_2_steps=phase_2_steps,
                            use_wandb=use_wandb,
                            kl_start_steps=kl_start_steps,
-                           postnet_start_steps=postnet_start_steps,
-                           encoder_pretraining_steps=encoder_pretraining_steps)
+                           postnet_start_steps=postnet_start_steps)

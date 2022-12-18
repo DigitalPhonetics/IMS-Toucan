@@ -12,7 +12,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from Utility.WarmupScheduler import WarmupScheduler
+from Utility.WarmupScheduler import PortaSpeechWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec
@@ -47,8 +47,8 @@ def train_loop(net,
                phase_2_steps,
                postnet_start_steps,
                use_wandb,
-               kl_start_steps,
-               encoder_pretraining_steps):
+               kl_start_steps
+               ):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -80,14 +80,16 @@ def train_loop(net,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=8,
+                              num_workers=12,
                               pin_memory=True,
                               shuffle=True,
                               prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
+                                  betas=(0.9, 0.98), eps=1e-9)
+    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -106,6 +108,7 @@ def train_loop(net,
         net.train()
         epoch += 1
         optimizer.zero_grad()
+        optimizer_postflow.zero_grad()
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
         l1_losses_total = list()
@@ -138,12 +141,11 @@ def train_loop(net,
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
-                        run_glow=step_counter > postnet_start_steps,
-                        use_vae_decoder=step_counter > encoder_pretraining_steps)
+                        run_glow=step_counter > postnet_start_steps)
                     train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
-                    if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
+                    if step_counter > kl_start_steps:
                         train_loss = train_loss + kl_loss * min(0.05 + 0.00001 * (step_counter - kl_start_steps),
                                                                 0.2)  # linear increase over 15k steps
                 else:
@@ -169,12 +171,11 @@ def train_loop(net,
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
                         return_mels=True,
-                        run_glow=step_counter > postnet_start_steps,
-                        use_vae_decoder=step_counter > encoder_pretraining_steps)
+                        run_glow=step_counter > postnet_start_steps)
                     train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
-                    if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
+                    if step_counter > kl_start_steps:
                         train_loss = train_loss + kl_loss * min(0.05 + 0.00001 * (step_counter - kl_start_steps),
                                                                 0.2)  # linear increase over 15k steps
 
@@ -203,13 +204,18 @@ def train_loop(net,
                 glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
+            optimizer_postflow.zero_grad()
 
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
             scaler.unscale_(optimizer)
+            if step_counter > postnet_start_steps:
+                scaler.unscale_(optimizer_postflow)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 0.8, error_if_nonfinite=False)
             scaler.step(optimizer)
+            if step_counter > postnet_start_steps:
+                scaler.step(optimizer_postflow)
             scaler.update()
             scheduler.step()
 
@@ -227,8 +233,6 @@ def train_loop(net,
             "default_emb" : default_embedding,
             }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
-        if step_counter > encoder_pretraining_steps:
-            net.vae_decoder_enabled = True
         if step_counter > postnet_start_steps:
             net.glow_enabled = True
         path_to_most_recent_plot_before, \
