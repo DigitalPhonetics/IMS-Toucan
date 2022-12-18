@@ -140,11 +140,12 @@ def train_loop(net,
                         return_mels=False,
                         run_glow=step_counter > postnet_start_steps,
                         use_vae_decoder=step_counter > encoder_pretraining_steps)
-                    train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
+                    train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
                     if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
-                        train_loss = train_loss + kl_loss * 0.4
+                        train_loss = train_loss + kl_loss * min(0.05 + 0.00001 * (step_counter - kl_start_steps),
+                                                                0.2)  # linear increase over 15k steps
                 else:
                     # ======================================================
                     # =       PHASE 2:     cycle objective is added        =
@@ -170,11 +171,12 @@ def train_loop(net,
                         return_mels=True,
                         run_glow=step_counter > postnet_start_steps,
                         use_vae_decoder=step_counter > encoder_pretraining_steps)
-                    train_loss = train_loss + l1_loss + ssim_loss + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
+                    train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + glow_loss
                     if step_counter > kl_start_steps and step_counter > encoder_pretraining_steps:
-                        train_loss = train_loss + kl_loss * 0.4
+                        train_loss = train_loss + kl_loss * min(0.05 + 0.00001 * (step_counter - kl_start_steps),
+                                                                0.2)  # linear increase over 15k steps
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
