@@ -28,7 +28,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                phase_1_steps=250000,  # without cycle consistency objective.
                phase_2_steps=150000,  # with cycle consistency objective.
-               kl_start_steps=20000,  # use kl loss after this many steps
+               kl_start_steps=6000,  # use kl loss after this many steps
                postnet_start_steps=160000,
                # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
                ):

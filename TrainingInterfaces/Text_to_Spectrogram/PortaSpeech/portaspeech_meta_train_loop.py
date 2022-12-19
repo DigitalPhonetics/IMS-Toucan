@@ -160,11 +160,18 @@ def train_loop(net,
                     return_mels=False,
                     run_glow=step > postnet_start_steps)
 
-                train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
+                train_loss = train_loss + \
+                             l1_loss + \
+                             ssim_loss + \
+                             duration_loss + \
+                             pitch_loss + \
+                             energy_loss
                 if step > postnet_start_steps:
-                    train_loss = train_loss + glow_loss
+                    train_loss = train_loss + \
+                                 glow_loss
                 if step > kl_start_steps:
-                    train_loss = train_loss + kl_loss * 0.05
+                    train_loss = train_loss + \
+                                 kl_loss * min(0.001 + 0.00001 * ((step_counter - kl_start_steps) % 22000), 0.02)
 
             else:
                 # PHASE 2
@@ -187,12 +194,17 @@ def train_loop(net,
                     return_mels=True,
                     run_glow=step > postnet_start_steps)
 
-                train_loss = train_loss + l1_loss + ssim_loss * 50 + duration_loss * 4 + pitch_loss * 4 + energy_loss * 4
+                train_loss = train_loss + \
+                             l1_loss + \
+                             ssim_loss + \
+                             duration_loss + \
+                             pitch_loss + \
+                             energy_loss
                 if step > postnet_start_steps:
                     train_loss = train_loss + glow_loss
                 if step > kl_start_steps:
-                    train_loss = train_loss + kl_loss * min(0.05 + 0.00001 * (step - kl_start_steps),
-                                                            0.2)  # linear increase over 15k steps
+                    train_loss = train_loss + \
+                                 kl_loss * min(0.001 + 0.00001 * ((step_counter - kl_start_steps) % 22000), 0.02)
 
                 style_embedding_function.train()
                 style_embedding_of_predicted, out_list_predicted = style_embedding_function(
