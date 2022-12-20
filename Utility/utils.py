@@ -21,6 +21,10 @@ def cut_to_multiple_of_n(x, n=4, return_diff=False, seq_dim=1):
         return x[:, :max_frames], x.shape[seq_dim] - max_frames
     return x[:, :max_frames]
 
+def kl_beta(step_counter, kl_cyclic_warmup_steps):
+    # cyclic annealing schedule for the kl loss
+    return min((1 / (kl_cyclic_warmup_steps // 2)) * (step_counter % kl_cyclic_warmup_steps), 1.0)
+
 
 @torch.inference_mode()
 def plot_progress_spec(net, device, save_dir, step, lang, default_emb, before_and_after_postnet=False):

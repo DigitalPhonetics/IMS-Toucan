@@ -28,7 +28,9 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                phase_1_steps=250000,  # without cycle consistency objective.
                phase_2_steps=150000,  # with cycle consistency objective.
-               kl_start_steps=6000,  # use kl loss after this many steps
+               kl_cyclic_warmup_steps=22000,
+               # kl loss linearly increases until half of this and then stays at full for another half before it drops
+               # down again and starts the warmup again.
                postnet_start_steps=160000,
                # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
                ):
@@ -50,7 +52,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                             resume=resume,
                             warmup_steps=warmup_steps,
                             use_wandb=use_wandb,
-                            kl_start_steps=kl_start_steps,
+                            kl_cyclic_warmup_steps=kl_cyclic_warmup_steps,
                             postnet_start_steps=postnet_start_steps)
     else:
         mono_language_loop(net=net,
@@ -68,5 +70,5 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                            phase_1_steps=phase_1_steps,
                            phase_2_steps=phase_2_steps,
                            use_wandb=use_wandb,
-                           kl_start_steps=kl_start_steps,
+                           kl_cyclic_warmup_steps=kl_cyclic_warmup_steps,
                            postnet_start_steps=postnet_start_steps)

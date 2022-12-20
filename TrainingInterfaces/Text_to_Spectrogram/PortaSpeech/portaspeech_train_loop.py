@@ -15,6 +15,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 from Utility.WarmupScheduler import PortaSpeechWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
+from Utility.utils import kl_beta
 from Utility.utils import plot_progress_spec
 
 
@@ -47,7 +48,7 @@ def train_loop(net,
                phase_2_steps,
                postnet_start_steps,
                use_wandb,
-               kl_start_steps
+               kl_cyclic_warmup_steps
                ):
     """
     Args:
@@ -148,12 +149,11 @@ def train_loop(net,
                                  duration_loss + \
                                  pitch_loss + \
                                  energy_loss
+                    train_loss = train_loss + \
+                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_cyclic_warmup_steps)
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + \
                                      glow_loss
-                    if step_counter > kl_start_steps:
-                        train_loss = train_loss + \
-                                     kl_loss * min(0.001 + 0.00001 * ((step_counter - kl_start_steps) % 22000), 0.02)
 
                 else:
                     # ======================================================
@@ -188,10 +188,8 @@ def train_loop(net,
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + \
                                      glow_loss
-                    if step_counter > kl_start_steps:
-                        train_loss = train_loss + \
-                                     kl_loss * min(0.001 + 0.00001 * ((step_counter - kl_start_steps) % 22000), 0.02)
-                        # cyclic schedule for KL div. beta is very small like this, but it seems overpowering otherwise
+                    train_loss = train_loss + \
+                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_cyclic_warmup_steps)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
