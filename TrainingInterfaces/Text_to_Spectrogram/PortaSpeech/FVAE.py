@@ -3,8 +3,8 @@ import torch
 import torch.distributions as dist
 from torch import nn
 
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import ConditionalConvBlocks
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import ResFlow
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.wavenet import WN
 
 
 class FVAEEncoder(nn.Module):
@@ -19,7 +19,7 @@ class FVAEEncoder(nn.Module):
         else:
             self.pre_net = nn.Sequential(*[nn.Conv1d(c_in, hidden_size, kernel_size=s * 2, stride=s, padding=s // 2) if i == 0 else
                                            nn.Conv1d(hidden_size, hidden_size, kernel_size=s * 2, stride=s, padding=s // 2) for i, s in enumerate(strides)])
-        self.nn = WN(hidden_size, kernel_size, 1, n_layers, c_cond, p_dropout)
+        self.nn = ConditionalConvBlocks(hidden_size, c_cond, hidden_size, None, kernel_size, layers_in_block=2, is_BTC=False, num_layers=n_layers)
         self.out_proj = nn.Conv1d(hidden_size, c_latent * 2, 1)
         self.latent_channels = c_latent
 
@@ -43,7 +43,7 @@ class FVAEDecoder(nn.Module):
         self.hidden_size = hidden_size
         self.pre_net = nn.Sequential(*[nn.ConvTranspose1d(c_latent, hidden_size, kernel_size=s, stride=s) if i == 0 else
                                        nn.ConvTranspose1d(hidden_size, hidden_size, kernel_size=s, stride=s) for i, s in enumerate(strides)])
-        self.nn = WN(hidden_size, kernel_size, 1, n_layers, c_cond, p_dropout)
+        self.nn = ConditionalConvBlocks(hidden_size, c_cond, hidden_size, [1] * n_layers, kernel_size, layers_in_block=2, is_BTC=False)
         self.out_proj = nn.Conv1d(hidden_size, out_channels, 1)
 
     def forward(self, x, nonpadding, cond):

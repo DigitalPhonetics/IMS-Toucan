@@ -15,7 +15,7 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
 
-def cut_to_multiple_of_n(x, n=4, return_diff=False, seq_dim=1):
+def cut_to_multiple_of_n(x, n=2, return_diff=False, seq_dim=1):
     max_frames = x.shape[seq_dim] // n * n
     if return_diff:
         return x[:, :max_frames], x.shape[seq_dim] - max_frames

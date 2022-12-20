@@ -156,14 +156,14 @@ class PortaSpeech(torch.nn.Module, ABC):
             flow_hidden=64,  # prior_flow_hidden
             flow_kernel_size=3,  # prior_flow_kernel_size
             flow_n_steps=6,  # prior_flow_n_blocks
-            strides=[4],  # fvae_strides
-        )
+            strides=[2],  # fvae_strides (4 in the paper, this has to be the same as the default n for the cutting function)
+            )
 
         # post net is realized as a flow
         gin_channels = 192
         self.post_flow = Glow(
             odim,
-            192,  # post_glow_hidden  (original 192 in paper)
+            256,  # post_glow_hidden  (original 192 in paper)
             3,  # post_glow_kernel_size
             1,
             12,  # post_glow_n_blocks
