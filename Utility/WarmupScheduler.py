@@ -32,4 +32,25 @@ class WarmupScheduler(_LRScheduler):
 
     def get_lr(self):
         step_num = self.last_epoch + 1
-        return [lr * self.warmup_steps ** 0.5 * min(step_num ** -0.5, step_num * self.warmup_steps ** -1.5) for lr in self.base_lrs]
+        return [lr * self.warmup_steps ** 0.5 * min(step_num ** -0.5, step_num * self.warmup_steps ** -1.5) for lr in
+                self.base_lrs]
+
+
+class PortaSpeechWarmupScheduler(_LRScheduler):
+    """
+    A warmup scheduler similar to https://github.com/NATSpeech/NATSpeech/blob/main/utils/nn/schedulers.py
+    """
+
+    def __init__(self, optimizer, warmup_steps=25000, last_epoch=-1):
+        self.warmup_steps = warmup_steps
+        # __init__() must be invoked before setting field
+        # because step() is also invoked in __init__()
+        super().__init__(optimizer, last_epoch)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(warmup_steps={self.warmup_steps})"
+
+    def get_lr(self):
+        step_num = self.last_epoch + 1
+        warmup = min(step_num / self.warmup_steps, 1.0)
+        return [max(lr * warmup, 1e-7) for lr in self.base_lrs]

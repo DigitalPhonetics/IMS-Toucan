@@ -144,7 +144,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.length_regulator = LengthRegulator()
 
         # decoder is a VAE
-        self.decoder = FVAE(
+        self.vae_decoder = FVAE(
             c_in_out=self.odim,
             hidden_size=192,  # fvae_enc_dec_hidden (original 192 in paper)
             c_latent=16,  # latent_size
@@ -179,25 +179,6 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
         self.glow_enabled = False
-        self.vae_decoder_enabled = False
-
-        # fastspeech decoder for testing and early training stages
-        self.decoder = Conformer(idim=0,
-                                 attention_dim=adim,
-                                 attention_heads=aheads,
-                                 linear_units=1536,
-                                 num_blocks=6,
-                                 input_layer=None,
-                                 dropout_rate=0.2,
-                                 positional_dropout_rate=0.2,
-                                 attention_dropout_rate=0.2,
-                                 normalize_before=True,
-                                 concat_after=False,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer, use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=31,
-                                 utt_embed=utt_embed_dim)
-        self.feat_out = torch.nn.Linear(adim, odim)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
@@ -219,7 +200,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                 lang_ids=None,
                 run_glow=False,  # requires warmup, so we don't use it from the start
                 use_posterior=True,  # may require warmup
-                use_vae_decoder=False
                 ):
         """
         Calculate forward propagation.
@@ -259,8 +239,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                   is_inference=False,
                                   use_posterior=use_posterior,
                                   lang_ids=lang_ids,
-                                  run_glow=run_glow,
-                                  use_vae_decoder=use_vae_decoder)
+                                  run_glow=run_glow)
 
         # calculate loss
         gold_speech = cut_to_multiple_of_n(gold_speech)
@@ -292,8 +271,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  use_posterior=True,
                  alpha=1.0,
                  utterance_embedding=None,
-                 lang_ids=None,
-                 use_vae_decoder=False):
+                 lang_ids=None):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -335,43 +313,25 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
-        if use_vae_decoder:
-            # forward VAE decoder
-            target_non_padding_mask = None
-            if is_inference:
-                z = self.decoder(cond=encoded_texts.transpose(1, 2),
+        # forward VAE decoder
+        target_non_padding_mask = None
+        if is_inference:
+            z = self.vae_decoder(cond=encoded_texts.transpose(1, 2),
                                  infer=is_inference)
-            else:
-
-                gold_speech = cut_to_multiple_of_n(gold_speech)
-                speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
-
-                target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
-                z, kl_loss, z_p, m_q, logs_q = self.decoder(x=gold_speech,  # [B, T, 80]
+        else:
+            gold_speech = cut_to_multiple_of_n(gold_speech)
+            speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
+            target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
+            z, kl_loss, z_p, m_q, logs_q = self.vae_decoder(x=gold_speech,  # [B, T, 80]
                                                             nonpadding=target_non_padding_mask,
                                                             cond=encoded_texts.transpose(1, 2),
                                                             infer=is_inference)
-                if not use_posterior:
-                    z = torch.randn_like(z)
+            if not use_posterior:
+                z = torch.randn_like(z)
 
-            encoded_texts = cut_to_multiple_of_n(encoded_texts)
-            before_outs = self.decoder.decoder(z, nonpadding=target_non_padding_mask,
+        encoded_texts = cut_to_multiple_of_n(encoded_texts)
+        before_outs = self.vae_decoder.decoder(z, nonpadding=target_non_padding_mask,
                                                cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
-        else:
-            # forward fastspeech decoder instead, because the VAE likes to turn to NaNs if left on its own
-            if not is_inference:
-                gold_speech = cut_to_multiple_of_n(gold_speech)
-                encoded_texts = cut_to_multiple_of_n(encoded_texts)
-                speech_lens[speech_lens > gold_speech.size(1)] = gold_speech.size(1)
-                target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
-
-            if speech_lens is not None and not is_inference:
-                h_masks = self._source_mask(speech_lens)
-            else:
-                h_masks = None
-            zs, _ = self.decoder(encoded_texts, h_masks, utterance_embedding)  # (B, Lmax, adim)
-            before_outs = self.feat_out(zs).view(zs.size(0), -1, self.odim)  # (B, Lmax, odim)
-            kl_loss = torch.Tensor([0.0])
 
         after_outs = None
         if run_glow:
@@ -385,7 +345,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
-                                               mel_out=before_outs if run_glow else before_outs.detach(),
+                                               mel_out=before_outs,
                                                encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=target_non_padding_mask)
         else:
@@ -444,7 +404,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            ys,
                                            is_inference=True,
                                            run_glow=self.glow_enabled,
-                                           use_vae_decoder=self.vae_decoder_enabled,
                                            alpha=alpha,
                                            utterance_embedding=utterance_embedding.unsqueeze(0),
                                            lang_ids=lang_id)  # (1, L, odim)
