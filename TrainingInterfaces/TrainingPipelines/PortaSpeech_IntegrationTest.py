@@ -64,6 +64,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                phase_2_steps=500,
                use_wandb=use_wandb,
                kl_cyclic_warmup_steps=10,
-               postnet_start_steps=50)
+               postnet_start_steps=500)
     if use_wandb:
         wandb.finish()

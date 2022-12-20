@@ -84,7 +84,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                batch_size=12,  # YOU MIGHT GET OUT OF MEMORY ISSUES ON SMALL GPUs, IF SO, DECREASE THIS.
                eval_lang="de",  # THE LANGUAGE YOUR PROGRESS PLOTS WILL BE MADE IN
-               lr=0.0001,
+               lr=0.00005,
                warmup_steps=500,
                # DOWNLOAD THIS INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY
                path_to_checkpoint=os.path.join(MODELS_DIR, "PortaSpeech_Meta",
@@ -93,8 +93,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=True if resume_checkpoint is None else finetune,
                resume=resume,
                phase_1_steps=5000,
-               phase_2_steps=100,
-               kl_cyclic_warmup_steps=0,
+               phase_2_steps=1000,
+               kl_cyclic_warmup_steps=100,
                postnet_start_steps=4000,
                use_wandb=use_wandb)
     if use_wandb:
