@@ -48,7 +48,7 @@ def train_loop(net,
                phase_2_steps,
                postnet_start_steps,
                use_wandb,
-               kl_cyclic_warmup_steps
+               kl_warmup_steps
                ):
     """
     Args:
@@ -150,7 +150,7 @@ def train_loop(net,
                                  pitch_loss + \
                                  energy_loss
                     train_loss = train_loss + \
-                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_cyclic_warmup_steps)
+                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_warmup_steps)
                     if step_counter > postnet_start_steps:
                         train_loss = train_loss + \
                                      glow_loss
@@ -189,7 +189,7 @@ def train_loop(net,
                         train_loss = train_loss + \
                                      glow_loss
                     train_loss = train_loss + \
-                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_cyclic_warmup_steps)
+                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_warmup_steps)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -224,7 +224,7 @@ def train_loop(net,
             scaler.unscale_(optimizer)
             if step_counter > postnet_start_steps:
                 scaler.unscale_(optimizer_postflow)
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 0.8, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
             if step_counter > postnet_start_steps:
                 scaler.step(optimizer_postflow)

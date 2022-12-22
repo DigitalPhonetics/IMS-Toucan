@@ -100,43 +100,57 @@ class PortaSpeech(torch.nn.Module, ABC):
         embed = torch.nn.Sequential(torch.nn.Linear(idim, 100),
                                     torch.nn.Tanh(),
                                     torch.nn.Linear(100, adim))
-        self.encoder = Conformer(idim=idim, attention_dim=adim, attention_heads=aheads, linear_units=eunits,
+        self.encoder = Conformer(idim=idim,
+                                 attention_dim=adim,
+                                 attention_heads=aheads,
+                                 linear_units=eunits,
                                  num_blocks=elayers,
-                                 input_layer=embed, dropout_rate=transformer_enc_dropout_rate,
+                                 input_layer=embed,
+                                 dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate,
                                  attention_dropout_rate=transformer_enc_attn_dropout_rate,
-                                 normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
+                                 normalize_before=encoder_normalize_before,
+                                 concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size,
+                                 use_cnn_module=use_cnn_in_conformer,
+                                 cnn_module_kernel=conformer_enc_kernel_size,
                                  zero_triu=False,
-                                 utt_embed=utt_embed_dim, lang_embs=lang_embs)
+                                 utt_embed=utt_embed_dim,
+                                 lang_embs=lang_embs)
 
         # define duration predictor
-        self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
+        self.duration_predictor = DurationPredictor(idim=adim,
+                                                    n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate, )
 
         # define pitch predictor
-        self.pitch_predictor = VariancePredictor(idim=adim, n_layers=pitch_predictor_layers,
+        self.pitch_predictor = VariancePredictor(idim=adim,
+                                                 n_layers=pitch_predictor_layers,
                                                  n_chans=pitch_predictor_chans,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout)
         # continuous pitch + FastPitch style avg
         self.pitch_embed = torch.nn.Sequential(
-            torch.nn.Conv1d(in_channels=1, out_channels=adim, kernel_size=pitch_embed_kernel_size,
+            torch.nn.Conv1d(in_channels=1,
+                            out_channels=adim,
+                            kernel_size=pitch_embed_kernel_size,
                             padding=(pitch_embed_kernel_size - 1) // 2),
             torch.nn.Dropout(pitch_embed_dropout))
 
         # define energy predictor
-        self.energy_predictor = VariancePredictor(idim=adim, n_layers=energy_predictor_layers,
+        self.energy_predictor = VariancePredictor(idim=adim,
+                                                  n_layers=energy_predictor_layers,
                                                   n_chans=energy_predictor_chans,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout)
         # continuous energy + FastPitch style avg
         self.energy_embed = torch.nn.Sequential(
-            torch.nn.Conv1d(in_channels=1, out_channels=adim, kernel_size=energy_embed_kernel_size,
+            torch.nn.Conv1d(in_channels=1,
+                            out_channels=adim,
+                            kernel_size=energy_embed_kernel_size,
                             padding=(energy_embed_kernel_size - 1) // 2),
             torch.nn.Dropout(energy_embed_dropout))
 
@@ -156,7 +170,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             flow_hidden=64,  # prior_flow_hidden
             flow_kernel_size=3,  # prior_flow_kernel_size
             flow_n_steps=6,  # prior_flow_n_blocks
-            strides=[2],  # fvae_strides (4 in the paper, this has to be the same as the default n for the cutting function)
+            strides=[4],  # fvae_strides (4 in the paper, this has to be the same as the default n for the cutting function)
             )
 
         # post net is realized as a flow
@@ -334,6 +348,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         after_outs = None
+
         if run_glow:
             # forward flow post-net
             if is_inference:
