@@ -8,7 +8,6 @@ from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
-from Utility.utils import cut_to_multiple_of_n
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
@@ -213,7 +212,6 @@ class PortaSpeech(torch.nn.Module):
         # forward VAE decoder
         z = self.decoder(cond=encoded_texts.transpose(1, 2), infer=True)
 
-        encoded_texts = cut_to_multiple_of_n(encoded_texts)
         before_outs = self.decoder.decoder(z, nonpadding=None, cond=encoded_texts.transpose(1, 2).detach()).transpose(1, 2)
 
         # forward flow post-net

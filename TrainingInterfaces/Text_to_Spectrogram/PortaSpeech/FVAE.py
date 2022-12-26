@@ -97,8 +97,7 @@ class FVAE(nn.Module):
                 z_p = self.prior_flow(z_q, nonpadding_sqz, cond_sqz)
                 # we have to be careful, because this can sometimes produce numbers <= 0,
                 # or NaNs, which leads to an undefined log, which in turn triggers an error
-                z_p_nonzero = torch.nn.functional.relu(z_p)
-                logpx = self.prior_dist.log_prob(z_p_nonzero)
+                logpx = self.prior_dist.log_prob(z_p)
                 loss_kl = ((logqx - logpx) * nonpadding_sqz).sum() / nonpadding_sqz.sum() / logqx.shape[1]
             else:
                 loss_kl = torch.distributions.kl_divergence(q_dist, self.prior_dist)

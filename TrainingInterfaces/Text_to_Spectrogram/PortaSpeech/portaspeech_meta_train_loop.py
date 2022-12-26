@@ -13,6 +13,7 @@ from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import kl_beta
+from Utility.utils import pad_to_multiple_of_n
 from Utility.utils import plot_progress_spec
 
 
@@ -20,7 +21,7 @@ def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
     return (pad_sequence([datapoint[0].squeeze() for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]),
-            pad_sequence([datapoint[2].squeeze() for datapoint in batch], batch_first=True),
+            pad_to_multiple_of_n(pad_sequence([datapoint[2].squeeze() for datapoint in batch], batch_first=True)),
             torch.stack([datapoint[3] for datapoint in batch]),
             pad_sequence([datapoint[4].squeeze() for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5].squeeze() for datapoint in batch], batch_first=True),

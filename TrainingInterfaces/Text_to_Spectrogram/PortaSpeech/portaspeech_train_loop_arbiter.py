@@ -1,4 +1,5 @@
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.portaspeech_meta_train_loop import train_loop as multi_language_loop
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.portaspeech_meta_train_loop import \
+    train_loop as multi_language_loop
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.portaspeech_train_loop import train_loop as mono_language_loop
 
 
@@ -14,11 +15,11 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                # how many steps should be trained before a checkpoint is created. This is only relevant for the multilingual case,
                # the monolingual case will do this once per epoch, regardless of the steps.
                path_to_checkpoint=None,  # path to a trained checkpoint to either continue training or fine-tune from.
-               lr=0.00005,  # learning rate of the model.
+               lr=0.0005,  # learning rate of the model.
                path_to_embed_model="Models/Embedding/embedding_function.pt",
                # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
-               warmup_steps=8000,
+               warmup_steps=4000,
                # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,
                # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
@@ -28,9 +29,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                phase_1_steps=250000,  # without cycle consistency objective.
                phase_2_steps=150000,  # with cycle consistency objective.
-               kl_warmup_steps=6000,
-               # kl loss linearly increases until half of this and then stays at full for another half before it drops
-               # down again and starts the warmup again.
+               kl_warmup_steps=6000,  # kl loss linearly increases until this many steps
                postnet_start_steps=160000,
                # use post net after this many steps (value taken from PortaSpeech paper, it seems pretty high though)
                ):

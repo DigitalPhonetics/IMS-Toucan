@@ -15,11 +15,18 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
 
-def cut_to_multiple_of_n(x, n=2, return_diff=False, seq_dim=1):
+def cut_to_multiple_of_n(x, n=4, return_diff=False, seq_dim=1):
     max_frames = x.shape[seq_dim] // n * n
     if return_diff:
         return x[:, :max_frames], x.shape[seq_dim] - max_frames
     return x[:, :max_frames]
+
+
+def pad_to_multiple_of_n(x, n=4, seq_dim=1, pad_value=0):
+    max_frames = ((x.shape[seq_dim] // n) + 1) * n
+    diff = max_frames - x.shape[seq_dim]
+    return torch.nn.functional.pad(x, [0, 0, 0, diff, 0, 0], mode="constant", value=pad_value)
+
 
 def kl_beta(step_counter, kl_warmup_steps):
     return min((1 / (kl_warmup_steps // 2)) * step_counter, 1.0) * 0.001
@@ -172,7 +179,8 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
         return
     else:
         checkpoint_list.sort(reverse=False)
-        checkpoints_to_delete = [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in checkpoint_list[:-keep]]
+        checkpoints_to_delete = [os.path.join(checkpoint_dir, "checkpoint_{}.pt".format(step)) for step in
+                                 checkpoint_list[:-keep]]
         for old_checkpoint in checkpoints_to_delete:
             os.remove(os.path.join(old_checkpoint))
 
@@ -463,5 +471,5 @@ def to_device(m, x):
     else:
         raise TypeError(
             "Expected torch.nn.Module or torch.tensor, " f"bot got: {type(m)}"
-            )
+        )
     return x.to(device)
