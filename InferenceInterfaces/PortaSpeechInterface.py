@@ -36,7 +36,7 @@ class PortaSpeechInterface(torch.nn.Module):
                  # initial language of the model, can be changed later with the setter methods
                  use_signalprocessing=False,
                  # some subtle effects that are frequently used in podcasting
-                 use_post_glow=True
+                 use_post_glow=False
                  # whether to use the PostNet, as it is only trained after a large amount of steps, so it might still be random in preliminary checkpoints
                  ):
         super().__init__()
