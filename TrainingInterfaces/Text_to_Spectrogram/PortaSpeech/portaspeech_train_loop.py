@@ -12,11 +12,9 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from Utility.WarmupScheduler import PortaSpeechWarmupScheduler as WarmupScheduler
+from Utility.WarmupScheduler import WarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
-from Utility.utils import kl_beta
-from Utility.utils import pad_to_multiple_of_n
 from Utility.utils import plot_progress_spec
 
 
@@ -24,7 +22,7 @@ def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_to_multiple_of_n(pad_sequence([datapoint[2] for datapoint in batch], batch_first=True)),
+            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
@@ -47,9 +45,7 @@ def train_loop(net,
                resume,
                phase_1_steps,
                phase_2_steps,
-               postnet_start_steps,
                use_wandb,
-               kl_warmup_steps
                ):
     """
     Args:
@@ -89,9 +85,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
-                                  betas=(0.9, 0.98), eps=1e-9)
-    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -110,7 +104,6 @@ def train_loop(net,
         net.train()
         epoch += 1
         optimizer.zero_grad()
-        optimizer_postflow.zero_grad()
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
         l1_losses_total = list()
@@ -118,7 +111,6 @@ def train_loop(net,
         duration_losses_total = list()
         pitch_losses_total = list()
         energy_losses_total = list()
-        kl_losses_total = list()
         glow_losses_total = list()
         for batch in tqdm(train_loader):
             train_loss = 0.0
@@ -130,7 +122,7 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss = net(
+                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -142,19 +134,14 @@ def train_loop(net,
                         # mind the switched order
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
-                        return_mels=False,
-                        run_glow=step_counter > postnet_start_steps)
+                        return_mels=False)
                     train_loss = train_loss + \
                                  l1_loss + \
-                                 ssim_loss + \
+                                 ssim_loss * 40 + \
                                  duration_loss + \
                                  pitch_loss + \
-                                 energy_loss
-                    train_loss = train_loss + \
-                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_warmup_steps)
-                    if step_counter > postnet_start_steps:
-                        train_loss = train_loss + \
-                                     glow_loss
+                                 energy_loss + \
+                                 glow_loss
 
                 else:
                     # ======================================================
@@ -166,7 +153,7 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, output_spectrograms = net(
+                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -178,19 +165,14 @@ def train_loop(net,
                         # mind the switched order
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
-                        return_mels=True,
-                        run_glow=step_counter > postnet_start_steps)
+                        return_mels=True)
                     train_loss = train_loss + \
                                  l1_loss + \
-                                 ssim_loss + \
+                                 ssim_loss * 40 + \
                                  duration_loss + \
                                  pitch_loss + \
-                                 energy_loss
-                    if step_counter > postnet_start_steps:
-                        train_loss = train_loss + \
-                                     glow_loss
-                    train_loss = train_loss + \
-                                 torch.clamp(kl_loss, min=0.0) * kl_beta(step_counter, kl_warmup_steps)
+                                 energy_loss + \
+                                 glow_loss
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -213,22 +195,15 @@ def train_loop(net,
                 duration_losses_total.append(duration_loss.item())
                 pitch_losses_total.append(pitch_loss.item())
                 energy_losses_total.append(energy_loss.item())
-                kl_losses_total.append(kl_loss.item())
                 glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
-            optimizer_postflow.zero_grad()
-
             scaler.scale(train_loss).backward()
             del train_loss
             step_counter += 1
             scaler.unscale_(optimizer)
-            if step_counter > postnet_start_steps:
-                scaler.unscale_(optimizer_postflow)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             scaler.step(optimizer)
-            if step_counter > postnet_start_steps:
-                scaler.step(optimizer_postflow)
             scaler.update()
             scheduler.step()
 
@@ -246,8 +221,6 @@ def train_loop(net,
             "default_emb":  default_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
-        if step_counter > postnet_start_steps:
-            net.glow_enabled = True
         path_to_most_recent_plot_before, \
         path_to_most_recent_plot_after = plot_progress_spec(net,
                                                             device,
@@ -275,8 +248,6 @@ def train_loop(net,
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                 "pitch_loss":    round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                 "energy_loss":   round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                "kl_loss":       round(sum(kl_losses_total) / len(kl_losses_total), 3) if len(
-                    kl_losses_total) != 0 else None,
                 "glow_loss":     round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                     glow_losses_total) != 0 else None,
                 "cycle_loss":    sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(

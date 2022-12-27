@@ -8,7 +8,6 @@ from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
-from Utility.utils import cut_to_multiple_of_n
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
@@ -217,8 +216,6 @@ class PortaSpeech(torch.nn.Module):
         energy_embeddings = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
         encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
         encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
-
-        encoded_texts = cut_to_multiple_of_n(encoded_texts)
 
         # forward VAE decoder
         z = self.vae_decoder(cond=encoded_texts.transpose(1, 2), infer=True)

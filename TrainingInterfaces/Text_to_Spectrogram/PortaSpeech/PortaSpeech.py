@@ -9,12 +9,11 @@ from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import ConvBlocks
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
-from Utility.utils import pad_to_multiple_of_n
 
 
 class PortaSpeech(torch.nn.Module, ABC):
@@ -157,24 +156,28 @@ class PortaSpeech(torch.nn.Module, ABC):
         # define length regulator
         self.length_regulator = LengthRegulator()
 
-        # decoder is a VAE
-        self.vae_decoder = FVAE(
-            c_in_out=self.odim,
-            hidden_size=192,  # fvae_enc_dec_hidden (original 192 in paper)
-            c_latent=16,  # latent_size
-            kernel_size=5,  # fvae_kernel_size
-            enc_n_layers=8,  # fvae_enc_n_layers
-            dec_n_layers=8,  # fvae_dec_n_layers
-            c_cond=self.adim,
-            use_prior_flow=True,  # use_prior_flow
-            flow_hidden=64,  # prior_flow_hidden
-            flow_kernel_size=3,  # prior_flow_kernel_size
-            flow_n_steps=6,  # prior_flow_n_blocks
-            strides=[4],  # fvae_strides (4 in the paper, this has to be the same as the default n for the cutting function)
-            )
+        # decoder is just a bunch of conv blocks, the postnet does the heavy lifting.
+        # It's not perfect, but with the pitch and energy embeddings, as well as the
+        # explicit durations, we don't really need that much expressive power in the decoding.
+        self.decoder = ConvBlocks(
+            hidden_size=adim,
+            out_dims=adim,
+            dilations=[1] * 12,
+            kernel_size=5,
+            norm_type='ln',
+            layers_in_block=2,
+            c_multiple=2,
+            dropout=0.3,
+            ln_eps=1e-5,
+            init_weights=False,
+            is_BTC=True,
+            num_layers=None,
+            post_net_kernel=3
+        )
+        self.out_proj = torch.nn.Conv1d(adim, odim, 1)
 
         # post net is realized as a flow
-        gin_channels = 192
+        gin_channels = 384
         self.post_flow = Glow(
             odim,
             256,  # post_glow_hidden  (original 192 in paper)
@@ -192,7 +195,6 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.prior_dist = dist.Normal(0, 1)
 
         self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
-        self.glow_enabled = False
 
         # initialize parameters
         self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
@@ -213,9 +215,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 gold_energy,
                 utterance_embedding,
                 return_mels=False,
-                lang_ids=None,
-                run_glow=False,  # requires warmup, so we don't use it from the start
-                use_posterior=True,  # may require warmup
+                lang_ids=None
                 ):
         """
         Calculate forward propagation.
@@ -243,7 +243,6 @@ class PortaSpeech(torch.nn.Module, ABC):
         d_outs, \
         p_outs, \
         e_outs, \
-        kl_loss, \
         glow_loss = self._forward(text_tensors,
                                   text_lengths,
                                   gold_speech,
@@ -253,9 +252,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                   gold_energy,
                                   utterance_embedding=utterance_embedding,
                                   is_inference=False,
-                                  use_posterior=use_posterior,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+                                  lang_ids=lang_ids)
 
         # calculate loss
         l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
@@ -270,8 +267,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
-            return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss, after_outs
-        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, kl_loss, glow_loss
+            return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, after_outs
+        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss
 
     def _forward(self,
                  text_tensors,
@@ -282,8 +279,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                  gold_pitch=None,
                  gold_energy=None,
                  is_inference=False,
-                 run_glow=False,
-                 use_posterior=True,
                  alpha=1.0,
                  utterance_embedding=None,
                  lang_ids=None):
@@ -328,50 +323,33 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
-        encoded_texts = pad_to_multiple_of_n(encoded_texts)
-
-        # forward VAE decoder
-        target_non_padding_mask = None
-        if is_inference:
-            z = self.vae_decoder(cond=encoded_texts.transpose(1, 2),
-                                 infer=is_inference)
+        # forward Conv decoder (in portaspeech this is a VAE, but I believe this is a bit misplaced and it is highly unstable)
+        if not is_inference:
+            target_non_padding_mask = make_non_pad_mask(lengths=speech_lens,
+                                                        device=speech_lens.device).unsqueeze(1).transpose(1, 2)
         else:
-            target_non_padding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1)
-            target_non_padding_mask = torch.nn.functional.pad(target_non_padding_mask,
-                                                              [0, gold_speech.size(1) - target_non_padding_mask.size(2),
-                                                               0, 0, 0, 0], value=False)
-            z, kl_loss, z_p, m_q, logs_q = self.vae_decoder(x=gold_speech,  # [B, T, 80]
-                                                            nonpadding=target_non_padding_mask,
-                                                            cond=encoded_texts.transpose(1, 2),
-                                                            infer=is_inference)
-            if not use_posterior:
-                z = torch.randn_like(z)
-
-        before_outs = self.vae_decoder.decoder(z, nonpadding=target_non_padding_mask,
-                                               cond=encoded_texts.transpose(1, 2)).transpose(1, 2)
+            target_non_padding_mask = None
+        before_outs = self.decoder(encoded_texts, nonpadding=target_non_padding_mask).transpose(1, 2)
+        before_outs = self.out_proj(before_outs).transpose(1, 2)
 
         after_outs = None
 
-        if run_glow:
-            # forward flow post-net
-            if is_inference:
-                after_outs = self.run_post_glow(tgt_mels=None,
-                                                infer=is_inference,
-                                                mel_out=before_outs,
-                                                encoded_texts=encoded_texts,
-                                                tgt_nonpadding=None)
-            else:
-                glow_loss = self.run_post_glow(tgt_mels=gold_speech,
-                                               infer=is_inference,
-                                               mel_out=before_outs,
-                                               encoded_texts=encoded_texts.detach(),
-                                               tgt_nonpadding=target_non_padding_mask)
+        # forward flow post-net
+        if is_inference:
+            after_outs = self.run_post_glow(tgt_mels=None,
+                                            infer=is_inference,
+                                            mel_out=before_outs,
+                                            encoded_texts=encoded_texts,
+                                            tgt_nonpadding=None)
         else:
-            glow_loss = torch.Tensor([0.0])
+            glow_loss = self.run_post_glow(tgt_mels=gold_speech,
+                                           infer=is_inference,
+                                           mel_out=before_outs,
+                                           encoded_texts=encoded_texts.detach(),
+                                           tgt_nonpadding=target_non_padding_mask.transpose(1, 2))
 
         if not is_inference:
-            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, kl_loss, glow_loss
-
+            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, glow_loss
         else:
             return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
 
@@ -421,7 +399,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            ilens,
                                            ys,
                                            is_inference=True,
-                                           run_glow=self.glow_enabled,
                                            alpha=alpha,
                                            utterance_embedding=utterance_embedding.unsqueeze(0),
                                            lang_ids=lang_id)  # (1, L, odim)
