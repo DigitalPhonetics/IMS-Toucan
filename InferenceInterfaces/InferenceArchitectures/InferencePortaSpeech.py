@@ -6,8 +6,8 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import ConvBlocks
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
@@ -57,8 +57,7 @@ class PortaSpeech(torch.nn.Module):
                  duration_predictor_dropout_rate=0.2,
                  # additional features
                  utt_embed_dim=256,
-                 lang_embs=8000,
-                 glow_enabled=True):
+                 lang_embs=8000):
         super().__init__()
         self.idim = idim
         self.odim = odim
@@ -111,25 +110,29 @@ class PortaSpeech(torch.nn.Module):
                                                                 padding=(energy_embed_kernel_size - 1) // 2),
                                                 torch.nn.Dropout(energy_embed_dropout))
         self.length_regulator = LengthRegulator()
-        # decoder is a VAE
-        self.vae_decoder = FVAE(
-            c_in_out=self.odim,
-            hidden_size=192,  # fvae_enc_dec_hidden (original 192 in paper)
-            c_latent=16,  # latent_size
-            kernel_size=5,  # fvae_kernel_size
-            enc_n_layers=8,  # fvae_enc_n_layers
-            dec_n_layers=8,  # fvae_dec_n_layers
-            c_cond=self.adim,
-            use_prior_flow=True,  # use_prior_flow
-            flow_hidden=64,  # prior_flow_hidden
-            flow_kernel_size=3,  # prior_flow_kernel_size
-            flow_n_steps=6,  # prior_flow_n_blocks
-            strides=[4],
-            # fvae_strides (4 in the paper, this has to be the same as the default n for the cutting function)
+
+        # decoder is just a bunch of conv blocks, the postnet does the heavy lifting.
+        # It's not perfect, but with the pitch and energy embeddings, as well as the
+        # explicit durations, we don't really need that much expressive power in the decoding.
+        self.decoder = ConvBlocks(
+            hidden_size=adim,
+            out_dims=adim,
+            dilations=[1] * 12,
+            kernel_size=5,
+            norm_type='ln',
+            layers_in_block=2,
+            c_multiple=2,
+            dropout=0.3,
+            ln_eps=1e-5,
+            init_weights=False,
+            is_BTC=True,
+            num_layers=None,
+            post_net_kernel=3
         )
+        self.out_proj = torch.nn.Conv1d(adim, odim, 1)
 
         # post net is realized as a flow
-        gin_channels = 192
+        gin_channels = 384
         self.post_flow = Glow(
             odim,
             256,  # post_glow_hidden  (original 192 in paper)
@@ -147,7 +150,6 @@ class PortaSpeech(torch.nn.Module):
         self.prior_dist = dist.Normal(0, 1)
 
         self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
-        self.glow_enabled = glow_enabled
         self.load_state_dict(weights)
         self.eval()
 
@@ -217,19 +219,16 @@ class PortaSpeech(torch.nn.Module):
         encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
         encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
 
-        # forward VAE decoder
-        z = self.vae_decoder(cond=encoded_texts.transpose(1, 2), infer=True)
-
-        before_outs = self.vae_decoder.decoder(z, nonpadding=None,
-                                               cond=encoded_texts.transpose(1, 2).detach()).transpose(1, 2)
+        # forward Conv decoder (in portaspeech this is a VAE, but I believe this is a bit misplaced and it is highly unstable)
+        before_outs = self.decoder(encoded_texts, nonpadding=None).transpose(1, 2)
+        before_outs = self.out_proj(before_outs).transpose(1, 2)
 
         # forward flow post-net
-        if self.glow_enabled:
-            after_outs = self.run_post_glow(mel_out=before_outs,
-                                            encoded_texts=encoded_texts,
-                                            device=device)
-        else:
-            after_outs = before_outs
+        after_outs = self.run_post_glow(tgt_mels=None,
+                                        infer=True,
+                                        mel_out=before_outs,
+                                        encoded_texts=encoded_texts,
+                                        tgt_nonpadding=None)
 
         return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
 

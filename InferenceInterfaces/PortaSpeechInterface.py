@@ -36,8 +36,6 @@ class PortaSpeechInterface(torch.nn.Module):
                  # initial language of the model, can be changed later with the setter methods
                  use_signalprocessing=False,
                  # some subtle effects that are frequently used in podcasting
-                 use_post_glow=False
-                 # whether to use the PostNet, as it is only trained after a large amount of steps, so it might still be random in preliminary checkpoints
                  ):
         super().__init__()
         self.device = device
@@ -74,18 +72,16 @@ class PortaSpeechInterface(torch.nn.Module):
         ################################
         self.use_lang_id = True
         try:
-            self.phone2mel = PortaSpeech(weights=checkpoint["model"], glow_enabled=use_post_glow)  # multi speaker multi language
+            self.phone2mel = PortaSpeech(weights=checkpoint["model"])  # multi speaker multi language
         except RuntimeError:
             try:
                 self.use_lang_id = False
                 self.phone2mel = PortaSpeech(weights=checkpoint["model"],
-                                             lang_embs=None,
-                                             glow_enabled=use_post_glow)  # multi speaker single language
+                                             lang_embs=None)  # multi speaker single language
             except RuntimeError:
                 self.phone2mel = PortaSpeech(weights=checkpoint["model"],
                                              lang_embs=None,
-                                             utt_embed_dim=None,
-                                             glow_enabled=use_post_glow)  # single speaker
+                                             utt_embed_dim=None)  # single speaker
         with torch.no_grad():
             self.phone2mel.store_inverse_all()
         self.phone2mel = self.phone2mel.to(torch.device(device))
