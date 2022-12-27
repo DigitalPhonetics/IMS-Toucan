@@ -134,7 +134,8 @@ def train_loop(net,
                         # mind the switched order
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
-                        return_mels=False)
+                        return_mels=False,
+                        run_glow=step_counter > warmup_steps)
                     train_loss = train_loss + \
                                  l1_loss + \
                                  ssim_loss * 40 + \
@@ -165,7 +166,8 @@ def train_loop(net,
                         # mind the switched order
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
-                        return_mels=True)
+                        return_mels=True,
+                        run_glow=step_counter > warmup_steps)
                     train_loss = train_loss + \
                                  l1_loss + \
                                  ssim_loss * 40 + \

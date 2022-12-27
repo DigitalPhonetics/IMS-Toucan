@@ -150,7 +150,8 @@ def train_loop(net,
                     gold_energy=gold_energy,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
-                    return_mels=False)
+                    return_mels=False,
+                    run_glow=step_counter > warmup_steps)
 
                 train_loss = train_loss + \
                              l1_loss + \
@@ -177,7 +178,8 @@ def train_loop(net,
                     gold_energy=gold_energy,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
-                    return_mels=True)
+                    return_mels=True,
+                    run_glow=step_counter > warmup_steps)
 
                 train_loss = train_loss + \
                              l1_loss + \
