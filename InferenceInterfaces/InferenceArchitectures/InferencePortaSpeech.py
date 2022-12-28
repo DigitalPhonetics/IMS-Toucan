@@ -18,7 +18,7 @@ class PortaSpeech(torch.nn.Module):
                  weights,
                  idim=62,
                  odim=80,
-                 adim=384,
+                 adim=192,
                  aheads=4,
                  elayers=6,
                  eunits=1536,
@@ -117,7 +117,7 @@ class PortaSpeech(torch.nn.Module):
         self.decoder = ConvBlocks(
             hidden_size=adim,
             out_dims=adim,
-            dilations=[1] * 12,
+            dilations=[1] * 8,
             kernel_size=5,
             norm_type='ln',
             layers_in_block=2,
@@ -132,10 +132,10 @@ class PortaSpeech(torch.nn.Module):
         self.out_proj = torch.nn.Conv1d(adim, odim, 1)
 
         # post net is realized as a flow
-        gin_channels = 384
+        gin_channels = adim
         self.post_flow = Glow(
             odim,
-            256,  # post_glow_hidden  (original 192 in paper)
+            adim,  # post_glow_hidden  (original 192 in paper)
             3,  # post_glow_kernel_size
             1,
             12,  # post_glow_n_blocks
@@ -219,16 +219,14 @@ class PortaSpeech(torch.nn.Module):
         encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
         encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
 
-        # forward Conv decoder (in portaspeech this is a VAE, but I believe this is a bit misplaced and it is highly unstable)
+        # forward Conv decoder
         before_outs = self.decoder(encoded_texts, nonpadding=None).transpose(1, 2)
         before_outs = self.out_proj(before_outs).transpose(1, 2)
 
         # forward flow post-net
-        after_outs = self.run_post_glow(tgt_mels=None,
-                                        infer=True,
-                                        mel_out=before_outs,
+        after_outs = self.run_post_glow(mel_out=before_outs,
                                         encoded_texts=encoded_texts,
-                                        tgt_nonpadding=None)
+                                        device=device)
 
         return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
 

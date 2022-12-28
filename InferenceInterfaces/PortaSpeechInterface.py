@@ -42,7 +42,7 @@ class PortaSpeechInterface(torch.nn.Module):
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"PortaSpeech_{tts_model_path}", "best.pt")
-        if vocoder_model_path is not None:
+        if vocoder_model_path is None:
             vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
         self.use_signalprocessing = use_signalprocessing
         if self.use_signalprocessing:

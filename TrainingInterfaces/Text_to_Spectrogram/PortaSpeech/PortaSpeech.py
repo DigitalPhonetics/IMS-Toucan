@@ -37,7 +37,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  # network structure related
                  idim=62,
                  odim=80,
-                 adim=384,
+                 adim=192,
                  aheads=4,
                  elayers=6,
                  eunits=1536,
@@ -162,7 +162,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.decoder = ConvBlocks(
             hidden_size=adim,
             out_dims=adim,
-            dilations=[1] * 12,
+            dilations=[1] * 8,
             kernel_size=5,
             norm_type='ln',
             layers_in_block=2,
@@ -177,7 +177,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.out_proj = torch.nn.Conv1d(adim, odim, 1)
 
         # post net is realized as a flow
-        gin_channels = 384
+        gin_channels = adim
         self.post_flow = Glow(
             odim,
             192,  # post_glow_hidden  (original 192 in paper)
