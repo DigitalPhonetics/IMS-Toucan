@@ -103,7 +103,7 @@ if __name__ == '__main__':
                          'Ghastly grim, and ancient Raven, wandering from the Nightly shore, ',
                          'Tell me, what thy lordly name is, on the Night’s Plutonian shore!',
                          'Quoth the Raven, Nevermore.'],
-               filename="audios/the_raven_big_other_vocoder.wav",
+               filename="audios/the_raven.wav",
                device=exec_device,
                language="en",
                speaker_reference=None)

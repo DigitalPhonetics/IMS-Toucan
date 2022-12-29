@@ -15,6 +15,10 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
 
+def make_estimated_durations_usable_for_inference(xs, offset=1.0):
+    return torch.clamp(torch.round(xs.exp() - offset), min=0).long()
+
+
 def cut_to_multiple_of_n(x, n=4, return_diff=False, seq_dim=1):
     max_frames = x.shape[seq_dim] // n * n
     if return_diff:

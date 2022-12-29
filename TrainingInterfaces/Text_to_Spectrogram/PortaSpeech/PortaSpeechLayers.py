@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.wavenet import WN
 
@@ -26,7 +27,7 @@ class ResidualBlock(nn.Module):
     """Implements conv->PReLU->norm n-times"""
 
     def __init__(self, channels, kernel_size, dilation, n=2, norm_type='bn', dropout=0.0,
-                 c_multiple=2, ln_eps=1e-12):
+                 c_multiple=2, ln_eps=1e-12, spk_emb_size=256):
         super(ResidualBlock, self).__init__()
 
         if norm_type == 'bn':
@@ -37,6 +38,9 @@ class ResidualBlock(nn.Module):
             norm_builder = lambda: nn.GroupNorm(8, channels)
         elif norm_type == 'ln':
             norm_builder = lambda: LayerNorm(channels, dim=1, eps=ln_eps)
+        elif norm_type == "cln":
+            # condition sequence on an embedding vector while performing layer norm
+            norm_builder = lambda: ConditionalLayerNorm(normal_shape=1, speaker_embedding_dim=spk_emb_size)
         else:
             norm_builder = lambda: nn.Identity()
 
@@ -55,10 +59,13 @@ class ResidualBlock(nn.Module):
         self.blocks = nn.ModuleList(self.blocks)
         self.dropout = dropout
 
-    def forward(self, x):
+    def forward(self, x, utt_emb=None):
         nonpadding = (x.abs().sum(1) > 0).float()[:, None, :]
         for b in self.blocks:
-            x_ = b(x)
+            if utt_emb is not None:
+                x_ = b(x, utt_emb)
+            else:
+                x_ = b(x)
             if self.dropout > 0 and self.training:
                 x_ = F.dropout(x_, self.dropout, training=self.training)
             x = x + x_
@@ -71,18 +78,22 @@ class ConvBlocks(nn.Module):
 
     def __init__(self, hidden_size, out_dims, dilations, kernel_size,
                  norm_type='ln', layers_in_block=2, c_multiple=2,
-                 dropout=0.0, ln_eps=1e-5,
+                 dropout=0.0, ln_eps=1e-5, spk_emb_size=256,
                  init_weights=True, is_BTC=True, num_layers=None, post_net_kernel=3):
         super(ConvBlocks, self).__init__()
         self.is_BTC = is_BTC
+        if norm_type == "cln":
+            self.utterance_conditioning_enabled = True
+        else:
+            self.utterance_conditioning_enabled = False
         if num_layers is not None:
             dilations = [1] * num_layers
         self.res_blocks = nn.Sequential(
             *[ResidualBlock(hidden_size, kernel_size, d,
                             n=layers_in_block, norm_type=norm_type, c_multiple=c_multiple,
-                            dropout=dropout, ln_eps=ln_eps)
+                            dropout=dropout, ln_eps=ln_eps, spk_emb_size=spk_emb_size)
               for d in dilations],
-            )
+        )
         if norm_type == 'bn':
             norm = nn.BatchNorm1d(hidden_size)
         elif norm_type == 'in':
@@ -91,13 +102,16 @@ class ConvBlocks(nn.Module):
             norm = nn.GroupNorm(8, hidden_size)
         elif norm_type == 'ln':
             norm = LayerNorm(hidden_size, dim=1, eps=ln_eps)
+        elif norm_type == "cln":
+            # condition sequence on an embedding vector while performing layer norm
+            norm = ConditionalLayerNorm(normal_shape=1, speaker_embedding_dim=spk_emb_size)
         self.last_norm = norm
         self.post_net1 = nn.Conv1d(hidden_size, out_dims, kernel_size=post_net_kernel,
                                    padding=post_net_kernel // 2)
         if init_weights:
             self.apply(init_weights_func)
 
-    def forward(self, x, nonpadding=None):
+    def forward(self, x, nonpadding=None, utt_emb=None):
         """
         :param x: [B, T, H]
         :return:  [B, T, H]
@@ -108,8 +122,11 @@ class ConvBlocks(nn.Module):
             nonpadding = (x.abs().sum(1) > 0).float()[:, None, :]
         elif self.is_BTC:
             nonpadding = nonpadding.transpose(1, 2)
-        x = self.res_blocks(x) * nonpadding
-        x = self.last_norm(x) * nonpadding
+        x = self.res_blocks(x, utt_emb=utt_emb) * nonpadding
+        if self.utterance_conditioning_enabled:
+            x = self.last_norm(x, speaker_embedding=utt_emb) * nonpadding
+        else:
+            x = self.last_norm(x) * nonpadding
         x = self.post_net1(x) * nonpadding
         if self.is_BTC:
             x = x.transpose(1, 2)
@@ -120,16 +137,17 @@ class ConditionalConvBlocks(ConvBlocks):
 
     def __init__(self, hidden_size, c_cond, c_out, dilations, kernel_size,
                  norm_type='ln', layers_in_block=2, c_multiple=2,
-                 dropout=0.0, ln_eps=1e-5, init_weights=True, is_BTC=True, num_layers=None):
+                 dropout=0.0, ln_eps=1e-5, init_weights=True, is_BTC=True, num_layers=None,
+                 spk_emb_size=256):
         super().__init__(hidden_size, c_out, dilations, kernel_size,
                          norm_type, layers_in_block, c_multiple,
-                         dropout, ln_eps, init_weights, is_BTC=False, num_layers=num_layers)
+                         dropout, ln_eps, spk_emb_size, init_weights, is_BTC=False, num_layers=num_layers)
         self.g_prenet = nn.Conv1d(c_cond, hidden_size, 3, padding=1)
         self.is_BTC_ = is_BTC
         if init_weights:
             self.g_prenet.apply(init_weights_func)
 
-    def forward(self, x, cond, nonpadding=None):
+    def forward(self, x, cond, nonpadding=None, utt_emb=None):
         if self.is_BTC_:
             x = x.transpose(1, 2)
             cond = cond.transpose(1, 2)
@@ -139,7 +157,7 @@ class ConditionalConvBlocks(ConvBlocks):
             nonpadding = x.abs().sum(1)[:, None]
         x = x + self.g_prenet(cond)
         x = x * nonpadding
-        x = super(ConditionalConvBlocks, self).forward(x)  # input needs to be BTC
+        x = super(ConditionalConvBlocks, self).forward(x, utt_emb=utt_emb)  # input needs to be BTC
         if self.is_BTC_:
             x = x.transpose(1, 2)
         return x
