@@ -112,6 +112,7 @@ def train_loop(net,
         pitch_losses_total = list()
         energy_losses_total = list()
         glow_losses_total = list()
+        kl_losses_total = list()
         for batch in tqdm(train_loader):
             train_loss = 0.0
             with autocast():
@@ -122,7 +123,7 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
+                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -142,7 +143,8 @@ def train_loop(net,
                                  duration_loss + \
                                  pitch_loss + \
                                  energy_loss + \
-                                 glow_loss
+                                 glow_loss + \
+                                 kl_loss
 
                 else:
                     # ======================================================
@@ -154,7 +156,7 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
+                    l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, output_spectrograms = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -174,7 +176,8 @@ def train_loop(net,
                                  duration_loss + \
                                  pitch_loss + \
                                  energy_loss + \
-                                 glow_loss
+                                 glow_loss + \
+                                 kl_loss
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -198,6 +201,7 @@ def train_loop(net,
                 pitch_losses_total.append(pitch_loss.item())
                 energy_losses_total.append(energy_loss.item())
                 glow_losses_total.append(glow_loss.item())
+                kl_losses_total.append(kl_loss.item())
 
             optimizer.zero_grad()
             scaler.scale(train_loss).backward()
@@ -250,6 +254,7 @@ def train_loop(net,
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                 "pitch_loss":    round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                 "energy_loss":   round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                "kl_loss":       round(sum(kl_losses_total) / len(kl_losses_total), 3),
                 "glow_loss":     round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                     glow_losses_total) != 0 else None,
                 "cycle_loss":    sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(

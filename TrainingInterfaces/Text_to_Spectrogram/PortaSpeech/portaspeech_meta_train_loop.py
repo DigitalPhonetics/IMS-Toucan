@@ -87,6 +87,7 @@ def train_loop(net,
     pitch_losses_total = list()
     energy_losses_total = list()
     glow_losses_total = list()
+    kl_losses_total = list()
     cycle_losses_total = list()
     if path_to_checkpoint is not None:
         check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
@@ -140,7 +141,7 @@ def train_loop(net,
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
 
-                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
+                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = net(
                     text_tensors=text_tensors,
                     text_lengths=text_lengths,
                     gold_speech=gold_speech,
@@ -160,7 +161,8 @@ def train_loop(net,
                              duration_loss + \
                              pitch_loss + \
                              energy_loss + \
-                             glow_loss
+                             glow_loss + \
+                             kl_loss
             else:
                 # PHASE 2
                 # cycle objective is added to make sure the embedding function is given adequate attention
@@ -169,7 +171,7 @@ def train_loop(net,
                                                                                   batch_of_spectrogram_lengths=speech_lengths,
                                                                                   return_all_outs=True)
 
-                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
+                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, output_spectrograms = net(
                     text_tensors=text_tensors,
                     text_lengths=text_lengths,
                     gold_speech=gold_speech,
@@ -188,7 +190,8 @@ def train_loop(net,
                              duration_loss + \
                              pitch_loss + \
                              energy_loss + \
-                             glow_loss
+                             glow_loss + \
+                             kl_loss
 
                 style_embedding_function.train()
                 style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -215,6 +218,7 @@ def train_loop(net,
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
         glow_losses_total.append(glow_loss.item())
+        kl_losses_total.append(kl_loss.item())
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
@@ -256,12 +260,13 @@ def train_loop(net,
                                                                 before_and_after_postnet=True)
             if use_wandb:
                 wandb.log({
-                    "total_loss"          : round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "l1_loss"             : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                    "total_loss":           round(sum(train_losses_total) / len(train_losses_total), 3),
+                    "l1_loss":              round(sum(l1_losses_total) / len(l1_losses_total), 3),
                     "ssim_loss":            round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                     "duration_loss":        round(sum(duration_losses_total) / len(duration_losses_total), 3),
                     "pitch_loss":           round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                     "energy_loss":          round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                    "kl_loss":              round(sum(kl_losses_total) / len(kl_losses_total), 3),
                     "glow_loss":            round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                         glow_losses_total) != 0 else None,
                     "cycle_loss":           sum(cycle_losses_total) / len(cycle_losses_total) if len(
@@ -278,4 +283,5 @@ def train_loop(net,
             pitch_losses_total = list()
             energy_losses_total = list()
             glow_losses_total = list()
+            kl_losses_total = list()
             net.train()
