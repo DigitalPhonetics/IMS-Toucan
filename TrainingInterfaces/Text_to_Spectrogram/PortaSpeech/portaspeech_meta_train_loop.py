@@ -151,7 +151,7 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=False,
-                    run_glow=step_counter > warmup_steps * 2)
+                    run_glow=step_counter > warmup_steps * 4)
                 # the meta loop needs some more time before the conv decoder is converged enough to be stable
 
                 train_loss = train_loss + \
@@ -180,7 +180,7 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=True,
-                    run_glow=step_counter > warmup_steps * 2)
+                    run_glow=step_counter > warmup_steps * 4)
 
                 train_loss = train_loss + \
                              l1_loss + \

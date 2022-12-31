@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
+from Layers.ConditionalLayerNorm import SequentialWrappableConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.wavenet import WN
 
@@ -40,7 +41,8 @@ class ResidualBlock(nn.Module):
             norm_builder = lambda: LayerNorm(channels, dim=1, eps=ln_eps)
         elif norm_type == "cln":
             # condition sequence on an embedding vector while performing layer norm
-            norm_builder = lambda: ConditionalLayerNorm(normal_shape=1, speaker_embedding_dim=spk_emb_size)
+            norm_builder = lambda: SequentialWrappableConditionalLayerNorm(normal_shape=1,
+                                                                           speaker_embedding_dim=spk_emb_size)
         else:
             norm_builder = lambda: nn.Identity()
 
@@ -52,25 +54,28 @@ class ResidualBlock(nn.Module):
                 LambdaLayer(lambda x: x * kernel_size ** -0.5),
                 nn.GELU(),
                 nn.Conv1d(c_multiple * channels, channels, 1, dilation=dilation),
-                )
+            )
             for i in range(n)
-            ]
+        ]
 
         self.blocks = nn.ModuleList(self.blocks)
         self.dropout = dropout
 
-    def forward(self, x, utt_emb=None):
+    def forward(self, x_utt_emb):
+        x = x_utt_emb[
+            0]  # have to upack the arguments from a single one because this is used inside a torch.nn.Sequential
+        utt_emb = x_utt_emb[1]
         nonpadding = (x.abs().sum(1) > 0).float()[:, None, :]
         for b in self.blocks:
             if utt_emb is not None:
-                x_ = b(x, utt_emb)
+                x_ = b((x, utt_emb))
             else:
                 x_ = b(x)
             if self.dropout > 0 and self.training:
                 x_ = F.dropout(x_, self.dropout, training=self.training)
             x = x + x_
             x = x * nonpadding
-        return x
+        return (x, utt_emb)
 
 
 class ConvBlocks(nn.Module):
@@ -122,7 +127,8 @@ class ConvBlocks(nn.Module):
             nonpadding = (x.abs().sum(1) > 0).float()[:, None, :]
         elif self.is_BTC:
             nonpadding = nonpadding.transpose(1, 2)
-        x = self.res_blocks(x, utt_emb=utt_emb) * nonpadding
+        x, _ = self.res_blocks((x, utt_emb))
+        x = x * nonpadding
         if self.utterance_conditioning_enabled:
             x = self.last_norm(x, speaker_embedding=utt_emb) * nonpadding
         else:

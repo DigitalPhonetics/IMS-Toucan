@@ -121,14 +121,14 @@ class PortaSpeech(torch.nn.Module, ABC):
                                  lang_embs=lang_embs)
 
         # define duration predictor
-        self.duration_vae = FVAE(c_in=adim,
-                                 c_out=1,
-                                 hidden_size=adim // 2,
-                                 c_latent=1,
+        self.duration_vae = FVAE(c_in=1,  # 1 dimensional random variable based sequence
+                                 c_out=1,  # 1 dimensional output sequence
+                                 hidden_size=adim // 2,  # size of embedding space in which the processing happens
+                                 c_latent=adim // 12,  # latent space inbetween encoder and decoder
                                  kernel_size=duration_predictor_kernel_size,
                                  enc_n_layers=duration_predictor_layers,
                                  dec_n_layers=duration_predictor_layers,
-                                 c_cond=adim,
+                                 c_cond=adim,  # condition to guide the sampling
                                  strides=[1],
                                  use_prior_flow=False,
                                  flow_hidden=None,
@@ -143,10 +143,10 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                     dropout_rate=duration_predictor_dropout_rate, )
 
         # define pitch predictor
-        self.pitch_vae = FVAE(c_in=adim,
+        self.pitch_vae = FVAE(c_in=1,
                               c_out=1,
                               hidden_size=adim // 2,
-                              c_latent=1,
+                              c_latent=adim // 12,
                               kernel_size=pitch_predictor_kernel_size,
                               enc_n_layers=pitch_predictor_layers,
                               dec_n_layers=pitch_predictor_layers,
@@ -172,10 +172,10 @@ class PortaSpeech(torch.nn.Module, ABC):
             torch.nn.Dropout(pitch_embed_dropout))
 
         # define energy predictor
-        self.energy_vae = FVAE(c_in=adim,
+        self.energy_vae = FVAE(c_in=1,
                                c_out=1,
                                hidden_size=adim // 2,
-                               c_latent=1,
+                               c_latent=adim // 12,
                                kernel_size=energy_predictor_kernel_size,
                                enc_n_layers=energy_predictor_layers,
                                dec_n_layers=energy_predictor_layers,
@@ -362,17 +362,17 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         if not is_inference:
             pitch_z, loss_kl_pitch, _, _, _ = self.pitch_vae(gold_pitch,
-                                                             nonpadding=~d_masks.unsqueeze(-1),
+                                                             nonpadding=~d_masks.unsqueeze(1),
                                                              cond=encoded_texts.transpose(1, 2),
                                                              utt_emb=utterance_embedding,
                                                              infer=is_inference)
             energy_z, loss_kl_energy, _, _, _ = self.energy_vae(gold_energy,
-                                                                nonpadding=~d_masks.unsqueeze(-1),
+                                                                nonpadding=~d_masks.unsqueeze(1),
                                                                 cond=encoded_texts.transpose(1, 2),
                                                                 utt_emb=utterance_embedding,
                                                                 infer=is_inference)
-            duration_z, loss_kl_duration, _, _, _ = self.duration_vae(gold_durations,
-                                                                      nonpadding=~d_masks.unsqueeze(-1),
+            duration_z, loss_kl_duration, _, _, _ = self.duration_vae(gold_durations.unsqueeze(-1).float(),
+                                                                      nonpadding=~d_masks.unsqueeze(1),
                                                                       cond=encoded_texts.transpose(1, 2),
                                                                       utt_emb=utterance_embedding,
                                                                       infer=is_inference)
@@ -385,15 +385,15 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            infer=is_inference)
 
         pitch_vae_predictions = self.pitch_vae.decoder(pitch_z,
-                                                       nonpadding=~d_masks.unsqueeze(-1),
+                                                       nonpadding=~d_masks.unsqueeze(1),
                                                        cond=encoded_texts.transpose(1, 2),
                                                        utt_emb=utterance_embedding)
         energy_vae_predictions = self.energy_vae.decoder(energy_z,
-                                                         nonpadding=~d_masks.unsqueeze(-1),
+                                                         nonpadding=~d_masks.unsqueeze(1),
                                                          cond=encoded_texts.transpose(1, 2),
                                                          utt_emb=utterance_embedding)
         duration_vae_predictions = self.duration_vae.decoder(duration_z,
-                                                             nonpadding=~d_masks.unsqueeze(-1),
+                                                             nonpadding=~d_masks.unsqueeze(1),
                                                              cond=encoded_texts.transpose(1, 2),
                                                              utt_emb=utterance_embedding)
 
