@@ -339,15 +339,15 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                              infer=is_inference)
             energy_z, loss_kl_energy, _, _, _ = self.energy_vae(gold_energy,
                                                                 nonpadding=~d_masks.unsqueeze(1),
-                                                                cond=encoded_texts.transpose(1, 2),
+                                                                cond=encoded_texts.transpose(1, 2).detach(),
                                                                 utt_emb=utterance_embedding,
                                                                 infer=is_inference)
             duration_z, loss_kl_duration, _, _, _ = self.duration_vae(gold_durations.unsqueeze(-1).float(),
                                                                       nonpadding=~d_masks.unsqueeze(1),
-                                                                      cond=encoded_texts.transpose(1, 2),
+                                                                      cond=encoded_texts.transpose(1, 2).detach(),
                                                                       utt_emb=utterance_embedding,
                                                                       infer=is_inference)
-            kl_loss = torch.clamp(loss_kl_pitch + loss_kl_duration + loss_kl_energy, min=0.0)
+            kl_loss = torch.clamp(loss_kl_pitch + loss_kl_duration + loss_kl_energy, min=0.0) * 0.01
         else:
             pitch_z = self.pitch_vae(cond=encoded_texts.transpose(1, 2),
                                      infer=is_inference)
@@ -364,6 +364,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         energy_predictions = self.energy_vae.decoder(energy_z,
                                                      nonpadding=~d_masks.unsqueeze(1),
                                                      cond=encoded_texts.transpose(1, 2),
+                                                     # note that this is not detached in the espnet recipes
+                                                     # while for pitch this is detached. So this is intentional.
                                                      utt_emb=utterance_embedding).transpose(1, 2)
         predicted_durations = self.duration_vae.decoder(duration_z,
                                                         nonpadding=~d_masks.unsqueeze(1),
