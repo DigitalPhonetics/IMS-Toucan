@@ -192,6 +192,8 @@ class PortaSpeech(torch.nn.Module):
         )
         self.prior_dist = dist.Normal(0, 1)
 
+        self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
+
         self.load_state_dict(weights)
         self.eval()
 
@@ -274,11 +276,9 @@ class PortaSpeech(torch.nn.Module):
         predicted_spectrogram_before_postnet = self.out_proj(predicted_spectrogram_before_postnet).transpose(1, 2)
 
         # forward flow post-net
-        predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
-                                                                 infer=True,
-                                                                 mel_out=predicted_spectrogram_before_postnet,
+        predicted_spectrogram_after_postnet = self.run_post_glow(mel_out=predicted_spectrogram_before_postnet,
                                                                  encoded_texts=encoded_texts,
-                                                                 tgt_nonpadding=None)
+                                                                 device=device)
 
         return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions
 
