@@ -225,6 +225,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                device=torch.device("cuda"),
                datasets=datasets,
                batch_size=64,
+               # choosing batchsize for this is tricky.
+               # A large batchsize is dangerous for the VAE,
+               # but a large batchsize is better for the modelling of the languages.
+               # Starting from a single speaker single language model can help with this.
                save_directory=meta_save_dir,
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),

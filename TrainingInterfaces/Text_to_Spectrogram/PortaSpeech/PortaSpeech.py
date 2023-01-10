@@ -13,7 +13,6 @@ from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import
 from Utility.utils import initialize
 from Utility.utils import make_estimated_durations_usable_for_inference
 from Utility.utils import make_non_pad_mask
-from Utility.utils import make_pad_mask
 
 
 class PortaSpeech(torch.nn.Module, ABC):
@@ -329,25 +328,29 @@ class PortaSpeech(torch.nn.Module, ABC):
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
-        d_masks = make_pad_mask(text_lens, device=text_lens.device)
+        text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
 
         if not is_inference:
             pitch_z, loss_kl_pitch, _, _, _ = self.pitch_vae(gold_pitch,
-                                                             nonpadding=~d_masks.unsqueeze(1),
+                                                             nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                              cond=encoded_texts.transpose(1, 2).detach(),
                                                              utt_emb=utterance_embedding,
                                                              infer=is_inference)
             energy_z, loss_kl_energy, _, _, _ = self.energy_vae(gold_energy,
-                                                                nonpadding=~d_masks.unsqueeze(1),
+                                                                nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                                 cond=encoded_texts.transpose(1, 2).detach(),
                                                                 utt_emb=utterance_embedding,
                                                                 infer=is_inference)
             duration_z, loss_kl_duration, _, _, _ = self.duration_vae(gold_durations.unsqueeze(-1).float(),
-                                                                      nonpadding=~d_masks.unsqueeze(1),
+                                                                      nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                                       cond=encoded_texts.transpose(1, 2).detach(),
                                                                       utt_emb=utterance_embedding,
                                                                       infer=is_inference)
-            kl_loss = torch.clamp(loss_kl_pitch + loss_kl_duration + loss_kl_energy, min=0.0) * 0.01
+
+            kl_loss = torch.clamp(loss_kl_pitch, min=0.0) + \
+                      torch.clamp(loss_kl_duration, min=0.0) + \
+                      torch.clamp(loss_kl_energy, min=0.0)
+
         else:
             pitch_z = self.pitch_vae(cond=encoded_texts.transpose(1, 2),
                                      infer=is_inference)
@@ -358,18 +361,16 @@ class PortaSpeech(torch.nn.Module, ABC):
             kl_loss = None
 
         pitch_predictions = self.pitch_vae.decoder(pitch_z,
-                                                   nonpadding=~d_masks.unsqueeze(1),
+                                                   nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                    cond=encoded_texts.transpose(1, 2).detach(),
                                                    utt_emb=utterance_embedding).transpose(1, 2)
         energy_predictions = self.energy_vae.decoder(energy_z,
-                                                     nonpadding=~d_masks.unsqueeze(1),
-                                                     cond=encoded_texts.transpose(1, 2),
-                                                     # note that this is not detached in the espnet recipes
-                                                     # while for pitch this is detached. So this is intentional.
+                                                     nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                     cond=encoded_texts.transpose(1, 2).detach(),
                                                      utt_emb=utterance_embedding).transpose(1, 2)
         predicted_durations = self.duration_vae.decoder(duration_z,
-                                                        nonpadding=~d_masks.unsqueeze(1),
-                                                        cond=encoded_texts.transpose(1, 2),
+                                                        nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                        cond=encoded_texts.transpose(1, 2).detach(),
                                                         utt_emb=utterance_embedding).squeeze(1)
 
         if is_inference:
@@ -390,37 +391,37 @@ class PortaSpeech(torch.nn.Module, ABC):
         # (convolutions are sufficient, self-attention is not needed with the strong pitch and energy conditioning)
         # (the variance needs to happen at the level of the variance predictors, not here)
         if not is_inference:
-            target_non_padding_mask = make_non_pad_mask(lengths=speech_lens,
-                                                        device=speech_lens.device).unsqueeze(1).transpose(1, 2)
+            speech_nonpadding_mask = make_non_pad_mask(lengths=speech_lens,
+                                                       device=speech_lens.device).unsqueeze(1).transpose(1, 2)
         else:
-            target_non_padding_mask = None
-        before_outs = self.decoder(encoded_texts, nonpadding=target_non_padding_mask,
-                                   utt_emb=utterance_embedding).transpose(1, 2)
-        before_outs = self.out_proj(before_outs).transpose(1, 2)
+            speech_nonpadding_mask = None
+        predicted_spectrogram_before_postnet = self.decoder(encoded_texts, nonpadding=speech_nonpadding_mask,
+                                                            utt_emb=utterance_embedding).transpose(1, 2)
+        predicted_spectrogram_before_postnet = self.out_proj(predicted_spectrogram_before_postnet).transpose(1, 2)
 
-        after_outs = None
+        predicted_spectrogram_after_postnet = None
 
         # forward flow post-net
         if run_glow:
             if is_inference:
-                after_outs = self.run_post_glow(tgt_mels=None,
-                                                infer=is_inference,
-                                                mel_out=before_outs,
-                                                encoded_texts=encoded_texts,
-                                                tgt_nonpadding=None)
+                predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
+                                                                         infer=is_inference,
+                                                                         mel_out=predicted_spectrogram_before_postnet,
+                                                                         encoded_texts=encoded_texts,
+                                                                         tgt_nonpadding=None)
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
-                                               mel_out=before_outs,
+                                               mel_out=predicted_spectrogram_before_postnet,
                                                encoded_texts=encoded_texts,
-                                               tgt_nonpadding=target_non_padding_mask.transpose(1, 2))
+                                               tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
 
         if not is_inference:
-            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions, glow_loss, kl_loss
+            return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss, kl_loss
         else:
-            return before_outs, after_outs, predicted_durations, pitch_predictions, energy_predictions
+            return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions
 
     def inference(self,
                   text,
@@ -508,16 +509,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             return x_recon.transpose(1, 2)
 
     def _source_mask(self, ilens):
-        """
-        Make masks for self-attention.
-
-        Args:
-            ilens (LongTensor): Batch of lengths (B,).
-
-        Returns:
-            Tensor: Mask tensor for self-attention.
-
-        """
+        # Make masks for self-attention.
         x_masks = make_non_pad_mask(ilens, device=ilens.device)
         return x_masks.unsqueeze(-2)
 

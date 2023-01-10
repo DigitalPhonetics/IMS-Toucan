@@ -2,14 +2,13 @@ import torch
 import torch.distributions as dist
 
 from Layers.Conformer import Conformer
-from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeechLayers import ConvBlocks
+from Utility.utils import make_estimated_durations_usable_for_inference
 from Utility.utils import make_non_pad_mask
-from Utility.utils import make_pad_mask
 
 
 class PortaSpeech(torch.nn.Module):
@@ -89,26 +88,70 @@ class PortaSpeech(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs)
-        self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
-                                                    n_chans=duration_predictor_chans,
-                                                    kernel_size=duration_predictor_kernel_size,
-                                                    dropout_rate=duration_predictor_dropout_rate, )
-        self.pitch_predictor = VariancePredictor(idim=adim, n_layers=pitch_predictor_layers,
-                                                 n_chans=pitch_predictor_chans,
-                                                 kernel_size=pitch_predictor_kernel_size,
-                                                 dropout_rate=pitch_predictor_dropout)
-        self.pitch_embed = torch.nn.Sequential(torch.nn.Conv1d(in_channels=1, out_channels=adim,
-                                                               kernel_size=pitch_embed_kernel_size,
-                                                               padding=(pitch_embed_kernel_size - 1) // 2),
-                                               torch.nn.Dropout(pitch_embed_dropout))
-        self.energy_predictor = VariancePredictor(idim=adim, n_layers=energy_predictor_layers,
-                                                  n_chans=energy_predictor_chans,
-                                                  kernel_size=energy_predictor_kernel_size,
-                                                  dropout_rate=energy_predictor_dropout)
-        self.energy_embed = torch.nn.Sequential(torch.nn.Conv1d(in_channels=1, out_channels=adim,
-                                                                kernel_size=energy_embed_kernel_size,
-                                                                padding=(energy_embed_kernel_size - 1) // 2),
-                                                torch.nn.Dropout(energy_embed_dropout))
+        # define duration predictor
+        self.duration_vae = FVAE(c_in=1,  # 1 dimensional random variable based sequence
+                                 c_out=1,  # 1 dimensional output sequence
+                                 hidden_size=adim // 2,  # size of embedding space in which the processing happens
+                                 c_latent=adim // 12,  # latent space inbetween encoder and decoder
+                                 kernel_size=duration_predictor_kernel_size,
+                                 enc_n_layers=duration_predictor_layers,
+                                 dec_n_layers=duration_predictor_layers,
+                                 c_cond=adim,  # condition to guide the sampling
+                                 strides=[1],
+                                 use_prior_flow=False,
+                                 flow_hidden=None,
+                                 flow_kernel_size=None,
+                                 flow_n_steps=None,
+                                 norm_type="cln" if utt_embed_dim is not None else "ln",
+                                 spk_emb_size=utt_embed_dim)
+
+        # define pitch predictor
+        self.pitch_vae = FVAE(c_in=1,
+                              c_out=1,
+                              hidden_size=adim // 2,
+                              c_latent=adim // 12,
+                              kernel_size=pitch_predictor_kernel_size,
+                              enc_n_layers=pitch_predictor_layers,
+                              dec_n_layers=pitch_predictor_layers,
+                              c_cond=adim,
+                              strides=[1],
+                              use_prior_flow=False,
+                              flow_hidden=None,
+                              flow_kernel_size=None,
+                              flow_n_steps=None,
+                              norm_type="cln" if utt_embed_dim is not None else "ln",
+                              spk_emb_size=utt_embed_dim)
+        self.pitch_embed = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=1,
+                            out_channels=adim,
+                            kernel_size=pitch_embed_kernel_size,
+                            padding=(pitch_embed_kernel_size - 1) // 2),
+            torch.nn.Dropout(pitch_embed_dropout))
+
+        # define energy predictor
+        self.energy_vae = FVAE(c_in=1,
+                               c_out=1,
+                               hidden_size=adim // 2,
+                               c_latent=adim // 12,
+                               kernel_size=energy_predictor_kernel_size,
+                               enc_n_layers=energy_predictor_layers,
+                               dec_n_layers=energy_predictor_layers,
+                               c_cond=adim,
+                               strides=[1],
+                               use_prior_flow=False,
+                               flow_hidden=None,
+                               flow_kernel_size=None,
+                               flow_n_steps=None,
+                               norm_type="cln" if utt_embed_dim is not None else "ln",
+                               spk_emb_size=utt_embed_dim)
+        self.energy_embed = torch.nn.Sequential(
+            torch.nn.Conv1d(in_channels=1,
+                            out_channels=adim,
+                            kernel_size=energy_embed_kernel_size,
+                            padding=(energy_embed_kernel_size - 1) // 2),
+            torch.nn.Dropout(energy_embed_dropout))
+
+        # define length regulator
         self.length_regulator = LengthRegulator()
 
         # decoder is just a bunch of conv blocks, the postnet does the heavy lifting.
@@ -119,7 +162,7 @@ class PortaSpeech(torch.nn.Module):
             out_dims=adim,
             dilations=[1] * 8,
             kernel_size=5,
-            norm_type='ln',
+            norm_type='cln' if utt_embed_dim is not None else 'ln',
             layers_in_block=2,
             c_multiple=2,
             dropout=0.3,
@@ -135,7 +178,7 @@ class PortaSpeech(torch.nn.Module):
         gin_channels = adim
         self.post_flow = Glow(
             odim,
-            adim,  # post_glow_hidden  (original 192 in paper)
+            192,  # post_glow_hidden  (original 192 in paper)
             3,  # post_glow_kernel_size
             1,
             12,  # post_glow_n_blocks
@@ -149,7 +192,6 @@ class PortaSpeech(torch.nn.Module):
         )
         self.prior_dist = dist.Normal(0, 1)
 
-        self.g_proj = torch.nn.Conv1d(odim + adim, gin_channels, 5, padding=2)
         self.load_state_dict(weights)
         self.eval()
 
@@ -182,23 +224,31 @@ class PortaSpeech(torch.nn.Module):
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
-        duration_masks = make_pad_mask(text_lens, device=text_lens.device)
 
-        if self.stop_gradient_from_pitch_predictor:
-            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), duration_masks.unsqueeze(-1))
-        else:
-            pitch_predictions = self.pitch_predictor(encoded_texts, duration_masks.unsqueeze(-1))
+        pitch_z = self.pitch_vae(cond=encoded_texts.transpose(1, 2),
+                                 infer=True)
+        energy_z = self.energy_vae(cond=encoded_texts.transpose(1, 2),
+                                   infer=True)
+        duration_z = self.duration_vae(cond=encoded_texts.transpose(1, 2),
+                                       infer=True)
 
-        if self.stop_gradient_from_energy_predictor:
-            energy_predictions = self.energy_predictor(encoded_texts.detach(), duration_masks.unsqueeze(-1))
-        else:
-            energy_predictions = self.energy_predictor(encoded_texts, duration_masks.unsqueeze(-1))
+        pitch_predictions = self.pitch_vae.decoder(pitch_z,
+                                                   nonpadding=None,
+                                                   cond=encoded_texts.transpose(1, 2).detach(),
+                                                   utt_emb=utterance_embedding).transpose(1, 2)
+        energy_predictions = self.energy_vae.decoder(energy_z,
+                                                     nonpadding=None,
+                                                     cond=encoded_texts.transpose(1, 2).detach(),
+                                                     utt_emb=utterance_embedding).transpose(1, 2)
+        predicted_durations = self.duration_vae.decoder(duration_z,
+                                                        nonpadding=None,
+                                                        cond=encoded_texts.transpose(1, 2).detach(),
+                                                        utt_emb=utterance_embedding).squeeze(1)
 
         if gold_durations is not None:
-            duration_predictions = gold_durations
+            predicted_durations = gold_durations
         else:
-            duration_predictions = self.duration_predictor.inference(encoded_texts, duration_masks)
-        duration_predictions = torch.round(duration_predictions.float() * duration_scaling_factor).long()
+            predicted_durations = make_estimated_durations_usable_for_inference(predicted_durations)
         if gold_pitch is not None:
             pitch_predictions = gold_pitch
         if gold_energy is not None:
@@ -209,26 +259,28 @@ class PortaSpeech(torch.nn.Module):
                 # this means the phoneme is unvoiced
                 pitch_predictions[0][phoneme_index] = 0.0
             if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
-                duration_predictions[0][phoneme_index] = torch.round(
-                    duration_predictions[0][phoneme_index].float() * pause_duration_scaling_factor)
+                predicted_durations[0][phoneme_index] = torch.round(
+                    predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor)
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
-        pitch_embeddings = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
-        energy_embeddings = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
-        encoded_texts = encoded_texts + energy_embeddings + pitch_embeddings
-        encoded_texts = self.length_regulator(encoded_texts, duration_predictions, duration_scaling_factor)
-
-        # forward Conv decoder
-        before_outs = self.decoder(encoded_texts, nonpadding=None).transpose(1, 2)
-        before_outs = self.out_proj(before_outs).transpose(1, 2)
+        embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+        embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+        encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+        encoded_texts = self.length_regulator(encoded_texts, predicted_durations,
+                                              duration_scaling_factor)  # (B, Lmax, adim)
+        predicted_spectrogram_before_postnet = self.decoder(encoded_texts, nonpadding=None,
+                                                            utt_emb=utterance_embedding).transpose(1, 2)
+        predicted_spectrogram_before_postnet = self.out_proj(predicted_spectrogram_before_postnet).transpose(1, 2)
 
         # forward flow post-net
-        after_outs = self.run_post_glow(mel_out=before_outs,
-                                        encoded_texts=encoded_texts,
-                                        device=device)
+        predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
+                                                                 infer=True,
+                                                                 mel_out=predicted_spectrogram_before_postnet,
+                                                                 encoded_texts=encoded_texts,
+                                                                 tgt_nonpadding=None)
 
-        return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
+        return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions
 
     @torch.inference_mode()
     def forward(self,
