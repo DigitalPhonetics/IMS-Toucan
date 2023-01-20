@@ -340,7 +340,7 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         if self.multilingual_model:
             lang_embs = self.encoder.language_embedding(lang_ids)
-            lang_and_utt_emb = torch.cat([utterance_embedding, lang_embs], dim=1)
+            lang_and_utt_emb = torch.cat([utterance_embedding, lang_embs.squeeze()], dim=1)
         else:
             lang_and_utt_emb = utterance_embedding
 
