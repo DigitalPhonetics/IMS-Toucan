@@ -139,7 +139,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                  flow_kernel_size=None,
                                  flow_n_steps=None,
                                  norm_type="cln" if utt_embed_dim is not None else "ln",
-                                 spk_emb_size=utt_embed_dim)
+                                 spk_emb_size=utt_embed_dim + attention_dimension if self.multilingual_model else utt_embed_dim)
 
         # define pitch predictor
         self.pitch_vae = FVAE(c_in=1,
@@ -156,7 +156,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                               flow_kernel_size=None,
                               flow_n_steps=None,
                               norm_type="cln" if utt_embed_dim is not None else "ln",
-                              spk_emb_size=utt_embed_dim)
+                              spk_emb_size=utt_embed_dim + attention_dimension if self.multilingual_model else utt_embed_dim)
         self.pitch_embed = torch.nn.Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
@@ -179,7 +179,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                flow_kernel_size=None,
                                flow_n_steps=None,
                                norm_type="cln" if utt_embed_dim is not None else "ln",
-                               spk_emb_size=utt_embed_dim)
+                               spk_emb_size=utt_embed_dim + attention_dimension if self.multilingual_model else utt_embed_dim)
         self.energy_embed = torch.nn.Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
@@ -338,21 +338,27 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward duration predictor and variance predictors
         text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
 
+        if self.multilingual_model:
+            lang_embs = self.encoder.language_embedding(lang_ids)
+            lang_and_utt_emb = torch.cat([utterance_embedding, lang_embs], dim=1)
+        else:
+            lang_and_utt_emb = utterance_embedding
+
         if not is_inference:
             pitch_z, loss_kl_pitch, _, _, _ = self.pitch_vae(gold_pitch,
                                                              nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                              cond=encoded_texts.transpose(1, 2).detach(),
-                                                             utt_emb=utterance_embedding,
+                                                             utt_emb=lang_and_utt_emb,
                                                              infer=is_inference)
             energy_z, loss_kl_energy, _, _, _ = self.energy_vae(gold_energy,
                                                                 nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                                 cond=encoded_texts.transpose(1, 2).detach(),
-                                                                utt_emb=utterance_embedding,
+                                                                utt_emb=lang_and_utt_emb,
                                                                 infer=is_inference)
             duration_z, loss_kl_duration, _, _, _ = self.duration_vae(gold_durations.unsqueeze(-1).float(),
                                                                       nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                                       cond=encoded_texts.transpose(1, 2).detach(),
-                                                                      utt_emb=utterance_embedding,
+                                                                      utt_emb=lang_and_utt_emb,
                                                                       infer=is_inference)
 
             kl_loss = torch.clamp(loss_kl_pitch, min=0.0) + \
@@ -371,15 +377,15 @@ class PortaSpeech(torch.nn.Module, ABC):
         pitch_predictions = self.pitch_vae.decoder(pitch_z,
                                                    nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                    cond=encoded_texts.transpose(1, 2).detach(),
-                                                   utt_emb=utterance_embedding).transpose(1, 2)
+                                                   utt_emb=lang_and_utt_emb).transpose(1, 2)
         energy_predictions = self.energy_vae.decoder(energy_z,
                                                      nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                      cond=encoded_texts.transpose(1, 2).detach(),
-                                                     utt_emb=utterance_embedding).transpose(1, 2)
+                                                     utt_emb=lang_and_utt_emb).transpose(1, 2)
         predicted_durations = self.duration_vae.decoder(duration_z,
                                                         nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                         cond=encoded_texts.transpose(1, 2).detach(),
-                                                        utt_emb=utterance_embedding).squeeze(1)
+                                                        utt_emb=lang_and_utt_emb).squeeze(1)
 
         if is_inference:
             predicted_durations = make_estimated_durations_usable_for_inference(predicted_durations)
