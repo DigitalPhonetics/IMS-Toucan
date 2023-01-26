@@ -377,7 +377,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                                       utt_emb=utterance_embedding,
                                                                       infer=is_inference)
 
-            min_dist = 0.05  # minimum distance between prior and posterior to avoid posterior collapse
+            min_dist = 0.1  # minimum distance between prior and posterior to avoid posterior collapse
             # https://openreview.net/forum?id=BJe0Gn0cY7
             kl_loss = (loss_kl_pitch - min_dist).abs() + \
                       (loss_kl_duration - min_dist).abs() + \
