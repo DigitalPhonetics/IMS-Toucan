@@ -344,6 +344,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         if not self.multispeaker_model:
             utterance_embedding = None
         else:
+            # because the embedding comes from a fixed embedding model, it might help to give it the chance to adapt
             utterance_embedding = self.embedding_prenet(utterance_embedding)
 
         # forward text encoder
