@@ -104,11 +104,11 @@ class FVAE(nn.Module):
             z_q, m_q, logs_q, nonpadding_sqz = self.encoder(x.transpose(1, 2), nonpadding, cond_sqz, utt_emb=utt_emb)
             q_dist = dist.Normal(torch.nan_to_num(m_q), torch.nan_to_num(torch.nan_to_num(logs_q).exp()))
             if self.use_prior_flow:
-                logqx = q_dist.log_prob(z_q)
+                logqx = q_dist.log_prob(torch.nan_to_num(z_q))
                 z_p = self.prior_flow(z_q, nonpadding_sqz, cond_sqz)
                 # we have to be careful, because this can sometimes produce numbers <= 0,
                 # or NaNs, which leads to an undefined log, which in turn triggers an error
-                logpx = self.prior_dist.log_prob(z_p)
+                logpx = self.prior_dist.log_prob(torch.nan_to_num(z_p))
                 loss_kl = ((logqx - logpx) * nonpadding_sqz).sum() / nonpadding_sqz.sum() / logqx.shape[1]
             else:
                 loss_kl = torch.distributions.kl_divergence(q_dist, self.prior_dist)

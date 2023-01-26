@@ -15,6 +15,7 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 from Utility.WarmupScheduler import WarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
+from Utility.utils import kl_beta
 from Utility.utils import plot_progress_spec
 
 
@@ -85,7 +86,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.RAdam(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=0.0)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -144,7 +145,8 @@ def train_loop(net,
                                  pitch_loss + \
                                  energy_loss + \
                                  glow_loss + \
-                                 kl_loss
+                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
+
 
                 else:
                     # ======================================================
@@ -177,7 +179,7 @@ def train_loop(net,
                                  pitch_loss + \
                                  energy_loss + \
                                  glow_loss + \
-                                 kl_loss
+                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -203,15 +205,20 @@ def train_loop(net,
                 glow_losses_total.append(glow_loss.item())
                 kl_losses_total.append(kl_loss.item())
 
-            optimizer.zero_grad()
-            scaler.scale(train_loss).backward()
-            del train_loss
-            step_counter += 1
-            scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-            scaler.step(optimizer)
-            scaler.update()
-            scheduler.step()
+            if not torch.isnan(train_loss):
+                # VAE might collapse, this prevents destructive updates
+                optimizer.zero_grad()
+                scaler.scale(train_loss).backward()
+                del train_loss
+                step_counter += 1
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+                scaler.step(optimizer)
+                scaler.update()
+                scheduler.step()
+            else:
+                del train_loss
+                optimizer.zero_grad()
 
         net.eval()
         style_embedding_function.eval()
@@ -219,8 +226,8 @@ def train_loop(net,
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
-            "model":        net.state_dict(),
-            "optimizer":    optimizer.state_dict(),
+            "model"       : net.state_dict(),
+            "optimizer"   : optimizer.state_dict(),
             "step_counter": step_counter,
             "scaler":       scaler.state_dict(),
             "scheduler":    scheduler.state_dict(),

@@ -32,8 +32,8 @@ def pad_to_multiple_of_n(x, n=4, seq_dim=1, pad_value=0):
     return torch.nn.functional.pad(x, [0, 0, 0, diff, 0, 0], mode="constant", value=pad_value)
 
 
-def kl_beta(step_counter, kl_warmup_steps):
-    return min((1 / (kl_warmup_steps // 2)) * step_counter, 1.0) * 0.001
+def kl_beta(step_counter, kl_cycle_steps):
+    return min([(1 / ((kl_cycle_steps / 2) / ((step_counter % kl_cycle_steps) + 1))), 1.0]) * 0.1
 
 
 @torch.inference_mode()
@@ -475,5 +475,5 @@ def to_device(m, x):
     else:
         raise TypeError(
             "Expected torch.nn.Module or torch.tensor, " f"bot got: {type(m)}"
-        )
+            )
     return x.to(device)

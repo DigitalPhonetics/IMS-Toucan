@@ -12,6 +12,7 @@ from Utility.WarmupScheduler import WarmupScheduler
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
+from Utility.utils import kl_beta
 from Utility.utils import plot_progress_spec
 
 
@@ -70,7 +71,7 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.RAdam(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=0.0)
     grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     if resume:
@@ -162,7 +163,9 @@ def train_loop(net,
                              pitch_loss + \
                              energy_loss + \
                              glow_loss + \
-                             kl_loss
+                             kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
+
+
             else:
                 # PHASE 2
                 # cycle objective is added to make sure the embedding function is given adequate attention
@@ -191,7 +194,7 @@ def train_loop(net,
                              pitch_loss + \
                              energy_loss + \
                              glow_loss + \
-                             kl_loss
+                             kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
 
                 style_embedding_function.train()
                 style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -219,13 +222,19 @@ def train_loop(net,
         energy_losses_total.append(energy_loss.item())
         glow_losses_total.append(glow_loss.item())
         kl_losses_total.append(kl_loss.item())
-        optimizer.zero_grad()
-        grad_scaler.scale(train_loss).backward()
-        grad_scaler.unscale_(optimizer)
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-        grad_scaler.step(optimizer)
-        grad_scaler.update()
-        scheduler.step()
+
+        if not torch.isnan(train_loss):
+            # VAE might collapse, this prevents destructive updates
+            optimizer.zero_grad()
+            grad_scaler.scale(train_loss).backward()
+            grad_scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+            grad_scaler.step(optimizer)
+            grad_scaler.update()
+            scheduler.step()
+        else:
+            del train_loss
+            optimizer.zero_grad()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
@@ -241,13 +250,13 @@ def train_loop(net,
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             torch.save({
-                "model":        net.state_dict(),
-                "optimizer":    optimizer.state_dict(),
-                "scaler":       grad_scaler.state_dict(),
-                "scheduler":    scheduler.state_dict(),
+                "model"       : net.state_dict(),
+                "optimizer"   : optimizer.state_dict(),
+                "scaler"      : grad_scaler.state_dict(),
+                "scheduler"   : scheduler.state_dict(),
                 "step_counter": step_counter,
-                "default_emb":  default_embedding,
-            },
+                "default_emb" : default_embedding,
+                },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot_before, \
@@ -260,21 +269,21 @@ def train_loop(net,
                                                                 before_and_after_postnet=True)
             if use_wandb:
                 wandb.log({
-                    "total_loss":           round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "l1_loss":              round(sum(l1_losses_total) / len(l1_losses_total), 3),
-                    "ssim_loss":            round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
-                    "duration_loss":        round(sum(duration_losses_total) / len(duration_losses_total), 3),
-                    "pitch_loss":           round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
-                    "energy_loss":          round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                    "kl_loss":              round(sum(kl_losses_total) / len(kl_losses_total), 3),
-                    "glow_loss":            round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
+                    "total_loss"          : round(sum(train_losses_total) / len(train_losses_total), 3),
+                    "l1_loss"             : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                    "ssim_loss"           : round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
+                    "duration_loss"       : round(sum(duration_losses_total) / len(duration_losses_total), 3),
+                    "pitch_loss"          : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                    "energy_loss"         : round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                    "kl_loss"             : round(sum(kl_losses_total) / len(kl_losses_total), 3),
+                    "glow_loss"           : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                         glow_losses_total) != 0 else None,
-                    "cycle_loss":           sum(cycle_losses_total) / len(cycle_losses_total) if len(
+                    "cycle_loss"          : sum(cycle_losses_total) / len(cycle_losses_total) if len(
                         cycle_losses_total) != 0 else None,
-                    "Steps":                step_counter,
+                    "Steps"               : step_counter,
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
-                    "progress_plot_after":  wandb.Image(path_to_most_recent_plot_after)
-                })
+                    "progress_plot_after" : wandb.Image(path_to_most_recent_plot_after)
+                    })
             train_losses_total = list()
             cycle_losses_total = list()
             l1_losses_total = list()
