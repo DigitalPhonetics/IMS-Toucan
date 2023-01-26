@@ -86,7 +86,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=0.0)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
     scaler = GradScaler()
     epoch = 0
@@ -145,7 +145,7 @@ def train_loop(net,
                                  pitch_loss + \
                                  energy_loss + \
                                  glow_loss + \
-                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
+                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps)
 
 
                 else:
@@ -179,7 +179,7 @@ def train_loop(net,
                                  pitch_loss + \
                                  energy_loss + \
                                  glow_loss + \
-                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
+                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
