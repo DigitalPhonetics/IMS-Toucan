@@ -196,7 +196,7 @@ def train_loop(net,
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
 
-                train_losses_this_epoch.append(train_loss.item() - kl_loss.item())
+                train_losses_this_epoch.append(train_loss.item() - kl_loss.item() * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps))
                 l1_losses_total.append(l1_loss.item())
                 ssim_losses_total.append(ssim_loss.item())
                 duration_losses_total.append(duration_loss.item())
