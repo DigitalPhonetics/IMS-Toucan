@@ -4,15 +4,14 @@ import torch
 import torch.distributions as dist
 
 from Layers.Conformer import Conformer
-from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
+from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.FVAE import FVAE
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
 from Utility.utils import initialize
+from Utility.utils import make_estimated_durations_usable_for_inference
 from Utility.utils import make_non_pad_mask
-from Utility.utils import make_pad_mask
 
 
 class PortaSpeech(torch.nn.Module, ABC):
@@ -142,16 +141,38 @@ class PortaSpeech(torch.nn.Module, ABC):
             )
 
         # define duration predictor
-        self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
-                                                    n_chans=duration_predictor_chans,
-                                                    kernel_size=duration_predictor_kernel_size,
-                                                    dropout_rate=duration_predictor_dropout_rate, )
+        self.duration_vae = FVAE(c_in=1,  # 1 dimensional random variable based sequence
+                                 c_out=1,  # 1 dimensional output sequence
+                                 hidden_size=duration_predictor_chans,  # size of embedding space
+                                 c_latent=attention_dimension // 12,  # latent space inbetween encoder and decoder
+                                 kernel_size=duration_predictor_kernel_size,
+                                 enc_n_layers=duration_predictor_layers,
+                                 dec_n_layers=duration_predictor_layers,
+                                 c_cond=attention_dimension,  # condition to guide the sampling
+                                 strides=[1],
+                                 use_prior_flow=True,
+                                 flow_hidden=64,
+                                 flow_kernel_size=3,
+                                 flow_n_steps=6,
+                                 norm_type="cln" if utt_embed_dim is not None else "ln",
+                                 spk_emb_size=utt_embed_dim)
 
         # define pitch predictor
-        self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
-                                                 n_chans=pitch_predictor_chans,
-                                                 kernel_size=pitch_predictor_kernel_size,
-                                                 dropout_rate=pitch_predictor_dropout)
+        self.pitch_vae = FVAE(c_in=1,
+                              c_out=1,
+                              hidden_size=pitch_predictor_chans,
+                              c_latent=attention_dimension // 12,
+                              kernel_size=pitch_predictor_kernel_size,
+                              enc_n_layers=pitch_predictor_layers,
+                              dec_n_layers=pitch_predictor_layers,
+                              c_cond=attention_dimension,
+                              strides=[1],
+                              use_prior_flow=True,
+                              flow_hidden=64,
+                              flow_kernel_size=3,
+                              flow_n_steps=6,
+                              norm_type="cln" if utt_embed_dim is not None else "ln",
+                              spk_emb_size=utt_embed_dim)
         self.pitch_embed = torch.nn.Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
@@ -160,10 +181,21 @@ class PortaSpeech(torch.nn.Module, ABC):
             torch.nn.Dropout(pitch_embed_dropout))
 
         # define energy predictor
-        self.energy_predictor = VariancePredictor(idim=attention_dimension, n_layers=energy_predictor_layers,
-                                                  n_chans=energy_predictor_chans,
-                                                  kernel_size=energy_predictor_kernel_size,
-                                                  dropout_rate=energy_predictor_dropout)
+        self.energy_vae = FVAE(c_in=1,
+                               c_out=1,
+                               hidden_size=energy_predictor_chans,
+                               c_latent=attention_dimension // 12,
+                               kernel_size=energy_predictor_kernel_size,
+                               enc_n_layers=energy_predictor_layers,
+                               dec_n_layers=energy_predictor_layers,
+                               c_cond=attention_dimension,
+                               strides=[1],
+                               use_prior_flow=True,
+                               flow_hidden=64,
+                               flow_kernel_size=3,
+                               flow_n_steps=6,
+                               norm_type="cln" if utt_embed_dim is not None else "ln",
+                               spk_emb_size=utt_embed_dim)
         self.energy_embed = torch.nn.Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
@@ -263,17 +295,18 @@ class PortaSpeech(torch.nn.Module, ABC):
         d_outs, \
         p_outs, \
         e_outs, \
-        glow_loss = self._forward(text_tensors,
-                                  text_lengths,
-                                  gold_speech,
-                                  speech_lengths,
-                                  gold_durations,
-                                  gold_pitch,
-                                  gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+        glow_loss, \
+        kl_loss = self._forward(text_tensors,
+                                text_lengths,
+                                gold_speech,
+                                speech_lengths,
+                                gold_durations,
+                                gold_pitch,
+                                gold_energy,
+                                utterance_embedding=utterance_embedding,
+                                is_inference=False,
+                                lang_ids=lang_ids,
+                                run_glow=run_glow)
 
         # calculate loss
         l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
@@ -284,7 +317,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                                                     es=gold_energy,
                                                                                     ilens=text_lengths,
                                                                                     olens=speech_lengths)
-        kl_loss = torch.tensor([0.0], device=l1_loss.device)  # for future extension / legacy compatibility
+
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
@@ -322,25 +355,75 @@ class PortaSpeech(torch.nn.Module, ABC):
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
-        d_masks = make_pad_mask(text_lens, device=text_lens.device)
+        text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
 
-        pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
-        energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+        if self.multilingual_model:
+            lang_embs = self.encoder.language_embedding(lang_ids)
+            utterance_embedding_for_variance_predictors = self.embedding_prenet_for_variance_predictors(torch.cat([utterance_embedding.detach(),
+                                                                                                                   lang_embs.detach().squeeze(1)], dim=1))
+
         if not is_inference:
-            # use groundtruth in training
-            predicted_durations = self.duration_predictor(encoded_texts, d_masks)
-            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
-            encoded_texts = self.length_regulator(encoded_texts, gold_durations)
+            pitch_z, loss_kl_pitch, _, _, _ = self.pitch_vae(gold_pitch,
+                                                             nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                             cond=encoded_texts.transpose(1, 2).detach(),
+                                                             utt_emb=utterance_embedding_for_variance_predictors,
+                                                             infer=is_inference)
+            energy_z, loss_kl_energy, _, _, _ = self.energy_vae(gold_energy,
+                                                                nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                                cond=encoded_texts.transpose(1, 2).detach(),
+                                                                utt_emb=utterance_embedding_for_variance_predictors,
+                                                                infer=is_inference)
+            duration_z, loss_kl_duration, _, _, _ = self.duration_vae(gold_durations.unsqueeze(-1).float(),
+                                                                      nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                                      cond=encoded_texts.transpose(1, 2).detach(),
+                                                                      utt_emb=utterance_embedding_for_variance_predictors,
+                                                                      infer=is_inference)
+
+            min_dist = 0.2  # minimum distance between prior and posterior to avoid posterior collapse
+            # https://openreview.net/forum?id=BJe0Gn0cY7
+            kl_loss = (loss_kl_pitch - min_dist).abs() + \
+                      (loss_kl_duration - min_dist).abs() + \
+                      (loss_kl_energy - min_dist).abs()
+
         else:
-            predicted_durations = self.duration_predictor.inference(encoded_texts, d_masks)
+            pitch_z = self.pitch_vae(cond=encoded_texts.transpose(1, 2),
+                                     infer=is_inference)
+            energy_z = self.energy_vae(cond=encoded_texts.transpose(1, 2),
+                                       infer=is_inference)
+            duration_z = self.duration_vae(cond=encoded_texts.transpose(1, 2),
+                                           infer=is_inference)
+            kl_loss = None
+
+        pitch_predictions = self.pitch_vae.decoder(pitch_z,
+                                                   nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                   cond=encoded_texts.transpose(1, 2).detach(),
+                                                   utt_emb=utterance_embedding_for_variance_predictors).transpose(1, 2)
+        energy_predictions = self.energy_vae.decoder(energy_z,
+                                                     nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                     cond=encoded_texts.transpose(1, 2).detach(),
+                                                     utt_emb=utterance_embedding_for_variance_predictors).transpose(1, 2)
+        predicted_durations = self.duration_vae.decoder(duration_z,
+                                                        nonpadding=text_nonpadding_mask.unsqueeze(1),
+                                                        cond=encoded_texts.transpose(1, 2).detach(),
+                                                        utt_emb=utterance_embedding_for_variance_predictors).squeeze(1)
+
+        if is_inference:
+            predicted_durations = make_estimated_durations_usable_for_inference(predicted_durations)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
-            encoded_texts = self.length_regulator(encoded_texts, predicted_durations, alpha)
+            encoded_texts = self.length_regulator(encoded_texts, predicted_durations, alpha)  # (B, Lmax, adim)
+        else:
+            # use groundtruth in training
+            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+            encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+            encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
-        # forward the decoder
+        # forward the simple dilated convolutional decoder
+        # (in PortaSpeech this is a VAE, but I believe this is a bit misplaced, and it is highly unstable)
+        # (convolutions are sufficient, self-attention is not needed with the strong pitch and energy conditioning)
+        # (the variance needs to happen at the level of the variance predictors, not here)
         if not is_inference:
             speech_nonpadding_mask = make_non_pad_mask(lengths=speech_lens,
                                                        device=speech_lens.device).unsqueeze(1).transpose(1, 2)
@@ -368,15 +451,15 @@ class PortaSpeech(torch.nn.Module, ABC):
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
-                                               mel_out=predicted_spectrogram_before_postnet,
-                                               encoded_texts=encoded_texts,
+                                               mel_out=predicted_spectrogram_before_postnet.detach(),
+                                               encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
                 glow_loss * glow_loss * 100  # counteract learning rate schedule with late start
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
 
         if not is_inference:
-            return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss
+            return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss, kl_loss
         else:
             return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions
 
