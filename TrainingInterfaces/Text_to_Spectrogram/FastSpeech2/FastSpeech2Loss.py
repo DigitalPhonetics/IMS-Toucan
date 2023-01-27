@@ -73,6 +73,9 @@ class FastSpeech2Loss(torch.nn.Module):
             Tensor: Energy predictor loss value.
 
         """
+        if self.include_portaspeech_losses:
+            after_outs = None  # the PostNet is detached because it's a flow
+
         # apply mask to remove padded part
         if self.use_masking:
             out_masks = make_non_pad_mask(olens).unsqueeze(-1).to(ys.device)

@@ -130,15 +130,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim + attention_dimension),
             torch.nn.Tanh(),
             torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim)
-            )
-
-        self.embedding_prenet = torch.nn.Sequential(
-            torch.nn.Linear(utt_embed_dim, utt_embed_dim),
-            torch.nn.Tanh(),
-            torch.nn.Linear(utt_embed_dim, utt_embed_dim),
-            torch.nn.Tanh(),
-            torch.nn.Linear(utt_embed_dim, utt_embed_dim)
-            )
+        )
 
         # define duration predictor
         self.duration_vae = FVAE(c_in=1,  # 1 dimensional random variable based sequence
@@ -242,7 +234,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,  # share_wn_layers
             sigmoid_scale=False  # sigmoid_scale
-            )
+        )
         self.prior_dist = dist.Normal(0, 1)
 
         self.g_proj = torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, gin_channels, 5, padding=2)
@@ -343,9 +335,6 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         if not self.multispeaker_model:
             utterance_embedding = None
-        else:
-            # because the embedding comes from a fixed embedding model, it might help to give it the chance to adapt
-            utterance_embedding = self.embedding_prenet(utterance_embedding)
 
         # forward text encoder
         text_masks = self._source_mask(text_lens)
@@ -359,8 +348,11 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         if self.multilingual_model:
             lang_embs = self.encoder.language_embedding(lang_ids)
-            utterance_embedding_for_variance_predictors = self.embedding_prenet_for_variance_predictors(torch.cat([utterance_embedding.detach(),
-                                                                                                                   lang_embs.detach().squeeze(1)], dim=1))
+            utterance_embedding_for_variance_predictors = self.embedding_prenet_for_variance_predictors(
+                torch.cat([utterance_embedding.detach(),
+                           lang_embs.detach().squeeze(1)], dim=1))
+        else:
+            utterance_embedding_for_variance_predictors = utterance_embedding.detach()
 
         if not is_inference:
             pitch_z, loss_kl_pitch, _, _, _ = self.pitch_vae(gold_pitch,
@@ -401,7 +393,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         energy_predictions = self.energy_vae.decoder(energy_z,
                                                      nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                      cond=encoded_texts.transpose(1, 2).detach(),
-                                                     utt_emb=utterance_embedding_for_variance_predictors).transpose(1, 2)
+                                                     utt_emb=utterance_embedding_for_variance_predictors).transpose(1,
+                                                                                                                    2)
         predicted_durations = self.duration_vae.decoder(duration_z,
                                                         nonpadding=text_nonpadding_mask.unsqueeze(1),
                                                         cond=encoded_texts.transpose(1, 2).detach(),
@@ -454,7 +447,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                mel_out=predicted_spectrogram_before_postnet.detach(),
                                                encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
-                glow_loss * glow_loss * 100  # counteract learning rate schedule with late start
+                glow_loss = glow_loss * 100  # counteract learning rate schedule with late start
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
 
