@@ -307,6 +307,7 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
         energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+
         if not is_inference:
             # use groundtruth in training
             predicted_durations = self.duration_predictor(encoded_texts, d_masks)

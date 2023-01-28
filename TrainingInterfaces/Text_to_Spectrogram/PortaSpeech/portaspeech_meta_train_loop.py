@@ -42,6 +42,7 @@ def train_loop(net,
                lang,
                path_to_embed_model,
                resume,
+               fine_tune,
                warmup_steps,
                use_wandb
                ):
@@ -64,7 +65,7 @@ def train_loop(net,
         train_loaders.append(DataLoader(batch_size=1,
                                         dataset=dataset,
                                         drop_last=True,
-                                        num_workers=4,
+                                        num_workers=2,
                                         pin_memory=True,
                                         shuffle=True,
                                         prefetch_factor=5,
@@ -74,12 +75,6 @@ def train_loop(net,
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=0.0)
     grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-    if resume:
-        previous_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
-        if previous_checkpoint is not None:
-            path_to_checkpoint = previous_checkpoint
-        else:
-            raise RuntimeError(f"No checkpoint found that can be resumed from in {save_directory}")
     steps_run_previously = 0
     train_losses_total = list()
     l1_losses_total = list()
@@ -90,17 +85,20 @@ def train_loop(net,
     glow_losses_total = list()
     kl_losses_total = list()
     cycle_losses_total = list()
+
+    if resume:
+        path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
-        check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
+        check_dict = torch.load(path_to_checkpoint, map_location=device)
         net.load_state_dict(check_dict["model"])
-        if resume:
+        if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
+            scheduler.load_state_dict(check_dict["scheduler"])
             steps_run_previously = check_dict["step_counter"]
             grad_scaler.load_state_dict(check_dict["scaler"])
-            scheduler.load_state_dict(check_dict["scheduler"])
-            if steps_run_previously > steps:
-                print("Desired steps already reached in loaded checkpoint.")
-                return
+        if steps_run_previously > steps:
+            print("Desired steps already reached in loaded checkpoint.")
+            return
 
     net.train()
     # =============================
@@ -153,7 +151,7 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=False,
-                    run_glow=True)
+                    run_glow=step_counter > 100000 or fine_tune)
                 # the meta loop needs some more time before the conv decoder is converged enough to be stable
 
                 train_loss = train_loss + \
@@ -185,7 +183,7 @@ def train_loop(net,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=True,
-                    run_glow=True)
+                    run_glow=step_counter > 100000 or fine_tune)
 
                 train_loss = train_loss + \
                              l1_loss + \

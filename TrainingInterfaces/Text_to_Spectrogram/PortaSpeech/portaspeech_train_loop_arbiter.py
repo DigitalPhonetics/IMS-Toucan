@@ -46,6 +46,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                             path_to_checkpoint=path_to_checkpoint,
                             path_to_embed_model=path_to_embed_model,
                             resume=resume,
+                            fine_tune=fine_tune,
                             warmup_steps=warmup_steps,
                             use_wandb=use_wandb)
     else:
