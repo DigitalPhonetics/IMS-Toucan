@@ -257,30 +257,37 @@ def train_loop(net,
                 },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
-            path_to_most_recent_plot_before, \
-            path_to_most_recent_plot_after = plot_progress_spec(net=net,
-                                                                device=device,
-                                                                lang=lang,
-                                                                save_dir=save_directory,
-                                                                step=step_counter,
-                                                                default_emb=default_embedding,
-                                                                before_and_after_postnet=True)
+            try:
+                path_to_most_recent_plot_before, \
+                path_to_most_recent_plot_after = plot_progress_spec(net=net,
+                                                                    device=device,
+                                                                    lang=lang,
+                                                                    save_dir=save_directory,
+                                                                    step=step_counter,
+                                                                    default_emb=default_embedding,
+                                                                    before_and_after_postnet=True)
+                if use_wandb:
+                    wandb.log({
+                        "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
+                        "progress_plot_after" : wandb.Image(path_to_most_recent_plot_after)
+                        })
+            except IndexError:
+                print("generating progress plots failed.")
+
             if use_wandb:
                 wandb.log({
-                    "total_loss"          : round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "l1_loss"             : round(sum(l1_losses_total) / len(l1_losses_total), 3),
-                    "ssim_loss"           : round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
-                    "duration_loss"       : round(sum(duration_losses_total) / len(duration_losses_total), 3),
-                    "pitch_loss"          : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
-                    "energy_loss"         : round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                    "kl_loss"             : round(sum(kl_losses_total) / len(kl_losses_total), 3),
-                    "glow_loss"           : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
+                    "total_loss"   : round(sum(train_losses_total) / len(train_losses_total), 3),
+                    "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                    "ssim_loss"    : round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
+                    "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
+                    "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                    "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                    "kl_loss"      : round(sum(kl_losses_total) / len(kl_losses_total), 3),
+                    "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                         glow_losses_total) != 0 else None,
-                    "cycle_loss"          : sum(cycle_losses_total) / len(cycle_losses_total) if len(
+                    "cycle_loss"   : sum(cycle_losses_total) / len(cycle_losses_total) if len(
                         cycle_losses_total) != 0 else None,
-                    "Steps"               : step_counter,
-                    "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
-                    "progress_plot_after" : wandb.Image(path_to_most_recent_plot_after)
+                    "Steps"        : step_counter
                     })
             train_losses_total = list()
             cycle_losses_total = list()

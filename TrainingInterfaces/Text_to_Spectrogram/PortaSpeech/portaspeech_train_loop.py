@@ -229,24 +229,28 @@ def train_loop(net,
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
             "step_counter": step_counter,
-            "scaler":       scaler.state_dict(),
-            "scheduler":    scheduler.state_dict(),
-            "default_emb":  default_embedding,
-        }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            "scaler"      : scaler.state_dict(),
+            "scheduler"   : scheduler.state_dict(),
+            "default_emb" : default_embedding,
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
-        path_to_most_recent_plot_before, \
-        path_to_most_recent_plot_after = plot_progress_spec(net,
-                                                            device,
-                                                            save_dir=save_directory,
-                                                            step=step_counter,
-                                                            lang=lang,
-                                                            default_emb=default_embedding,
-                                                            before_and_after_postnet=True)
-        if use_wandb:
-            wandb.log({
-                "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
-                "progress_plot_after":  wandb.Image(path_to_most_recent_plot_after)
-            })
+        try:
+            path_to_most_recent_plot_before, \
+            path_to_most_recent_plot_after = plot_progress_spec(net,
+                                                                device,
+                                                                save_dir=save_directory,
+                                                                step=step_counter,
+                                                                lang=lang,
+                                                                default_emb=default_embedding,
+                                                                before_and_after_postnet=True)
+            if use_wandb:
+                wandb.log({
+                    "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
+                    "progress_plot_after" : wandb.Image(path_to_most_recent_plot_after)
+                    })
+        except IndexError:
+            print("generating progress plots failed.")
+
         print("Epoch:              {}".format(epoch))
         print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
@@ -255,7 +259,7 @@ def train_loop(net,
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "total_loss":    round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
                 "l1_loss":       round(sum(l1_losses_total) / len(l1_losses_total), 3),
                 "ssim_loss":     round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
