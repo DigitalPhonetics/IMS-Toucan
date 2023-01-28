@@ -33,7 +33,7 @@ def pad_to_multiple_of_n(x, n=4, seq_dim=1, pad_value=0):
 
 
 def kl_beta(step_counter, kl_cycle_steps):
-    return min([(1 / ((kl_cycle_steps / 2) / ((step_counter % kl_cycle_steps) + 1))), 1.0]) * 0.1
+    return min([(1 / (kl_cycle_steps / ((step_counter % kl_cycle_steps) + 1))), 1.0]) * 0.01
 
 
 @torch.inference_mode()

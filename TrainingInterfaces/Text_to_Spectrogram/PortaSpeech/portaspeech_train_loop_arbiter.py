@@ -15,7 +15,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                # how many steps should be trained before a checkpoint is created. This is only relevant for the multilingual case,
                # the monolingual case will do this once per epoch, regardless of the steps.
                path_to_checkpoint=None,  # path to a trained checkpoint to either continue training or fine-tune from.
-               lr=0.0001,  # learning rate of the model.
+               lr=0.001,  # learning rate of the model.
                path_to_embed_model="Models/Embedding/embedding_function.pt",
                # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
@@ -24,7 +24,7 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                use_wandb=False,
                # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
                batch_size=64,
-               # how many samples to put into one batch. Higher batchsize is more stable, but requires more VRAM.
+               # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM.
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                phase_1_steps=250000,  # without cycle consistency objective.

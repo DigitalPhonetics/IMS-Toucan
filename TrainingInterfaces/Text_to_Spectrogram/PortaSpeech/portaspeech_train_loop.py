@@ -137,7 +137,7 @@ def train_loop(net,
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
-                        run_glow=step_counter > warmup_steps * 2)
+                        run_glow=True)
                     train_loss = train_loss + \
                                  l1_loss + \
                                  ssim_loss * 40 + \
@@ -171,7 +171,7 @@ def train_loop(net,
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
                         return_mels=True,
-                        run_glow=step_counter > warmup_steps * 2)
+                        run_glow=True)
                     train_loss = train_loss + \
                                  l1_loss + \
                                  ssim_loss * 40 + \
@@ -179,7 +179,7 @@ def train_loop(net,
                                  pitch_loss + \
                                  energy_loss + \
                                  glow_loss + \
-                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps)
+                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(

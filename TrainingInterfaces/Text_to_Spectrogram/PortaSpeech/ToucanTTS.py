@@ -14,21 +14,16 @@ from Utility.utils import make_estimated_durations_usable_for_inference
 from Utility.utils import make_non_pad_mask
 
 
-class PortaSpeech(torch.nn.Module, ABC):
+class ToucanTTS(torch.nn.Module, ABC):
     """
-    PortaSpeech 2 module, which is basically just a FastSpeech 2 module, but with an improved decoder and the PostNet is a flow.
-
-    This is a module of FastSpeech 2 described in FastSpeech 2: Fast and
-    High-Quality End-to-End Text to Speech. Instead of quantized pitch and
-    energy, we use token-averaged value introduced in FastPitch: Parallel
-    Text-to-speech with Pitch Prediction. The encoder and decoder are Conformers
-    instead of regular Transformers.
-
-        https://arxiv.org/abs/2006.04558
-        https://arxiv.org/abs/2006.06873
-        https://arxiv.org/pdf/2005.08100
-        https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf
-
+    ToucanTTS module, which is basically just a FastSpeech 2 module,
+    but with variance predictors that make more sense and the PostNet
+    is a normalizing flow, like in PortaSpeech. Furthermore, the pitch
+    and energy values are averaged per-phone, as in FastPitch. The
+    encoder and decoder are Conformers. Input features are configurations
+    of the articulatory tract rather than phoneme identities. Speaker
+    embedding conditioning is derived from GST and Adaspeech 4. There is
+    a large focus on multilinguality through numerous designs.
     """
 
     def __init__(self,
@@ -53,12 +48,12 @@ class PortaSpeech(torch.nn.Module, ABC):
                  conformer_decoder_kernel_size=31,
                  decoder_normalize_before=True,
                  # duration predictor
-                 duration_predictor_layers=2,
-                 duration_predictor_chans=256,
+                 duration_predictor_layers=4,
+                 duration_predictor_chans=64,
                  duration_predictor_kernel_size=3,
                  # energy predictor
-                 energy_predictor_layers=2,
-                 energy_predictor_chans=256,
+                 energy_predictor_layers=3,
+                 energy_predictor_chans=64,
                  energy_predictor_kernel_size=3,
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
@@ -66,7 +61,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  stop_gradient_from_energy_predictor=False,
                  # pitch predictor
                  pitch_predictor_layers=5,
-                 pitch_predictor_chans=256,
+                 pitch_predictor_chans=64,
                  pitch_predictor_kernel_size=5,
                  pitch_predictor_dropout=0.5,
                  pitch_embed_kernel_size=1,
@@ -136,16 +131,13 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.duration_vae = FVAE(c_in=1,  # 1 dimensional random variable based sequence
                                  c_out=1,  # 1 dimensional output sequence
                                  hidden_size=duration_predictor_chans,  # size of embedding space
-                                 c_latent=attention_dimension // 12,  # latent space inbetween encoder and decoder
+                                 c_latent=duration_predictor_chans // 12,  # latent space inbetween encoder and decoder
                                  kernel_size=duration_predictor_kernel_size,
-                                 enc_n_layers=duration_predictor_layers,
+                                 enc_n_layers=duration_predictor_layers * 2,
                                  dec_n_layers=duration_predictor_layers,
                                  c_cond=attention_dimension,  # condition to guide the sampling
                                  strides=[1],
-                                 use_prior_flow=True,
-                                 flow_hidden=64,
-                                 flow_kernel_size=3,
-                                 flow_n_steps=6,
+                                 use_prior_flow=False,
                                  norm_type="cln" if utt_embed_dim is not None else "ln",
                                  spk_emb_size=utt_embed_dim)
 
@@ -153,16 +145,13 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.pitch_vae = FVAE(c_in=1,
                               c_out=1,
                               hidden_size=pitch_predictor_chans,
-                              c_latent=attention_dimension // 12,
+                              c_latent=pitch_predictor_chans // 12,
                               kernel_size=pitch_predictor_kernel_size,
-                              enc_n_layers=pitch_predictor_layers,
+                              enc_n_layers=pitch_predictor_layers * 2,
                               dec_n_layers=pitch_predictor_layers,
                               c_cond=attention_dimension,
                               strides=[1],
-                              use_prior_flow=True,
-                              flow_hidden=64,
-                              flow_kernel_size=3,
-                              flow_n_steps=6,
+                              use_prior_flow=False,
                               norm_type="cln" if utt_embed_dim is not None else "ln",
                               spk_emb_size=utt_embed_dim)
         self.pitch_embed = torch.nn.Sequential(
@@ -176,16 +165,13 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.energy_vae = FVAE(c_in=1,
                                c_out=1,
                                hidden_size=energy_predictor_chans,
-                               c_latent=attention_dimension // 12,
+                               c_latent=energy_predictor_chans // 12,
                                kernel_size=energy_predictor_kernel_size,
-                               enc_n_layers=energy_predictor_layers,
+                               enc_n_layers=energy_predictor_layers * 2,
                                dec_n_layers=energy_predictor_layers,
                                c_cond=attention_dimension,
                                strides=[1],
-                               use_prior_flow=True,
-                               flow_hidden=64,
-                               flow_kernel_size=3,
-                               flow_n_steps=6,
+                               use_prior_flow=False,
                                norm_type="cln" if utt_embed_dim is not None else "ln",
                                spk_emb_size=utt_embed_dim)
         self.energy_embed = torch.nn.Sequential(
@@ -413,7 +399,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)  # (B, Lmax, adim)
 
-        # forward the simple dilated convolutional decoder
+        # forward the decoder
         # (in PortaSpeech this is a VAE, but I believe this is a bit misplaced, and it is highly unstable)
         # (convolutions are sufficient, self-attention is not needed with the strong pitch and energy conditioning)
         # (the variance needs to happen at the level of the variance predictors, not here)
@@ -447,7 +433,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                mel_out=predicted_spectrogram_before_postnet.detach(),
                                                encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
-                glow_loss = glow_loss * 100  # counteract learning rate schedule with late start
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
 

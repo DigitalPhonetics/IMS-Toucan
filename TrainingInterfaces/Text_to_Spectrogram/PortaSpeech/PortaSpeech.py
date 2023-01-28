@@ -125,14 +125,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs)
 
-        self.embedding_prenet_for_variance_predictors = torch.nn.Sequential(
-            torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim + attention_dimension),
-            torch.nn.Tanh(),
-            torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim + attention_dimension),
-            torch.nn.Tanh(),
-            torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim)
-        )
-
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
@@ -357,10 +349,9 @@ class PortaSpeech(torch.nn.Module, ABC):
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
-                                               mel_out=predicted_spectrogram_before_postnet,
-                                               encoded_texts=encoded_texts,
+                                               mel_out=predicted_spectrogram_before_postnet.detach(),
+                                               encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
-                glow_loss = glow_loss * 100  # counteract learning rate schedule with late start
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
 

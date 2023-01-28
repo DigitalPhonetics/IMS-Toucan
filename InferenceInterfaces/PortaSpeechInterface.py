@@ -97,7 +97,7 @@ class PortaSpeechInterface(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = torch.jit.trace(HiFiGANGenerator(path_to_weights=vocoder_model_path), torch.rand((80, 50))).to(torch.device(device))
+        self.mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path).to(torch.device(device))
 
         ################################
         #  set defaults                #
