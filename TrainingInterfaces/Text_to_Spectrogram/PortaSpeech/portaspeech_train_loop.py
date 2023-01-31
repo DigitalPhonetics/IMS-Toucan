@@ -142,15 +142,22 @@ def train_loop(net,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
                         run_glow=step_counter > postnet_start_steps or fine_tune)
-                    train_loss = train_loss + l1_loss if not torch.isnan(
-                        l1_loss) else 0.0 + ssim_loss * 40 if not torch.isnan(
-                        ssim_loss) else 0.0 + duration_loss if not torch.isnan(
-                        duration_loss) else 0.0 + pitch_loss if not torch.isnan(
-                        pitch_loss) else 0.0 + energy_loss if not torch.isnan(
-                        energy_loss) else 0.0 + glow_loss if not torch.isnan(
-                        glow_loss) else 0.0 + kl_loss * kl_beta(step_counter=step_counter,
-                                                                kl_cycle_steps=warmup_steps // 4) if not torch.isnan(
-                        kl_loss) else 0.0
+
+                    if not torch.isnan(l1_loss):
+                        train_loss = train_loss + l1_loss
+                    if not torch.isnan(ssim_loss):
+                        train_loss = train_loss + ssim_loss * 40
+                    if not torch.isnan(duration_loss):
+                        train_loss = train_loss + duration_loss
+                    if not torch.isnan(pitch_loss):
+                        train_loss = train_loss + pitch_loss
+                    if not torch.isnan(energy_loss):
+                        train_loss = train_loss + energy_loss
+                    if not torch.isnan(glow_loss):
+                        train_loss = train_loss + glow_loss
+                    if not torch.isnan(kl_loss):
+                        train_loss = train_loss + kl_loss * kl_beta(step_counter=step_counter,
+                                                                    kl_cycle_steps=warmup_steps // 4)
 
                 else:
                     # ======================================================
@@ -176,15 +183,22 @@ def train_loop(net,
                         lang_ids=batch[8].to(device),
                         return_mels=True,
                         run_glow=step_counter > postnet_start_steps or fine_tune)
-                    train_loss = train_loss + l1_loss if not torch.isnan(
-                        l1_loss) else 0.0 + ssim_loss * 40 if not torch.isnan(
-                        ssim_loss) else 0.0 + duration_loss if not torch.isnan(
-                        duration_loss) else 0.0 + pitch_loss if not torch.isnan(
-                        pitch_loss) else 0.0 + energy_loss if not torch.isnan(
-                        energy_loss) else 0.0 + glow_loss if not torch.isnan(
-                        glow_loss) else 0.0 + kl_loss * kl_beta(step_counter=step_counter,
-                                                                kl_cycle_steps=warmup_steps // 4) if not torch.isnan(
-                        kl_loss) else 0.0
+
+                    if not torch.isnan(l1_loss):
+                        train_loss = train_loss + l1_loss
+                    if not torch.isnan(ssim_loss):
+                        train_loss = train_loss + ssim_loss * 40
+                    if not torch.isnan(duration_loss):
+                        train_loss = train_loss + duration_loss
+                    if not torch.isnan(pitch_loss):
+                        train_loss = train_loss + pitch_loss
+                    if not torch.isnan(energy_loss):
+                        train_loss = train_loss + energy_loss
+                    if not torch.isnan(glow_loss):
+                        train_loss = train_loss + glow_loss
+                    if not torch.isnan(kl_loss):
+                        train_loss = train_loss + kl_loss * kl_beta(step_counter=step_counter,
+                                                                    kl_cycle_steps=warmup_steps // 4)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
