@@ -283,12 +283,16 @@ def train_loop(net,
                                                                     save_dir=save_directory,
                                                                     step=step_counter,
                                                                     default_emb=default_embedding,
-                                                                    before_and_after_postnet=True)
+                                                                    before_and_after_postnet=True,
+                                                                    run_postflow=step_counter > postnet_start_steps)
                 if use_wandb:
                     wandb.log({
-                        "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
-                        "progress_plot_after":  wandb.Image(path_to_most_recent_plot_after)
+                        "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
                     })
+                    if step_counter > postnet_start_steps:
+                        wandb.log({
+                            "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
+                        })
             except IndexError:
                 print("generating progress plots failed.")
 

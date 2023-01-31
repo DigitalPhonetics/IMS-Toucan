@@ -370,7 +370,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                   alpha=1.0,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
-                  lang_id=None):
+                  lang_id=None,
+                  run_postflow=True):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -409,7 +410,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                                            is_inference=True,
                                            alpha=alpha,
                                            utterance_embedding=utterance_embedding.unsqueeze(0),
-                                           lang_ids=lang_id)  # (1, L, odim)
+                                           lang_ids=lang_id,
+                                           run_glow=run_postflow)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0

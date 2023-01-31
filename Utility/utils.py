@@ -37,7 +37,14 @@ def kl_beta(step_counter, kl_cycle_steps):
 
 
 @torch.inference_mode()
-def plot_progress_spec(net, device, save_dir, step, lang, default_emb, before_and_after_postnet=False):
+def plot_progress_spec(net,
+                       device,
+                       save_dir,
+                       step,
+                       lang,
+                       default_emb,
+                       before_and_after_postnet=False,
+                       run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
@@ -46,7 +53,8 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb, before_an
     spec, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                    return_duration_pitch_energy=True,
                                                    utterance_embedding=default_emb,
-                                                   lang_id=get_language_id(lang).to(device))
+                                                   lang_id=get_language_id(lang).to(device),
+                                                   run_postflow=run_postflow)
     if before_and_after_postnet:
         # PortaSpeech case, because there it's more interesting
         spec_before, spec_after = spec
