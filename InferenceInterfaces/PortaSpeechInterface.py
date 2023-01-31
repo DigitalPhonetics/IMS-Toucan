@@ -112,6 +112,7 @@ class PortaSpeechInterface(torch.nn.Module):
         else:
             self.lang_id = None
         self.to(torch.device(device))
+        self.eval()
 
     def set_utterance_embedding(self, path_to_reference_audio="", embedding=None):
         if embedding is not None:

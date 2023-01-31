@@ -46,7 +46,8 @@ def train_loop(net,
                resume,
                phase_1_steps,
                phase_2_steps,
-               use_wandb,
+               postnet_start_steps,
+               use_wandb
                ):
     """
     Args:
@@ -86,9 +87,12 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=0.0)
+    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
+                                  betas=(0.9, 0.98), eps=1e-9)
+    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
+    grad_scaler = GradScaler()
     scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-    scaler = GradScaler()
+    scheduler_postflow = WarmupScheduler(optimizer_postflow, warmup_steps=warmup_steps // 2)
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -99,7 +103,7 @@ def train_loop(net,
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
-            scaler.load_state_dict(check_dict["scaler"])
+            grad_scaler.load_state_dict(check_dict["scaler"])
     start_time = time.time()
     while True:
         net.train()
@@ -137,16 +141,16 @@ def train_loop(net,
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
-                        run_glow=step_counter > 100000 or fine_tune)
-                    train_loss = train_loss + \
-                                 l1_loss + \
-                                 ssim_loss * 40 + \
-                                 duration_loss + \
-                                 pitch_loss + \
-                                 energy_loss + \
-                                 glow_loss + \
-                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps)
-
+                        run_glow=step_counter > postnet_start_steps or fine_tune)
+                    train_loss = train_loss + l1_loss if not torch.isnan(
+                        l1_loss) else 0.0 + ssim_loss * 40 if not torch.isnan(
+                        ssim_loss) else 0.0 + duration_loss if not torch.isnan(
+                        duration_loss) else 0.0 + pitch_loss if not torch.isnan(
+                        pitch_loss) else 0.0 + energy_loss if not torch.isnan(
+                        energy_loss) else 0.0 + glow_loss if not torch.isnan(
+                        glow_loss) else 0.0 + kl_loss * kl_beta(step_counter=step_counter,
+                                                                kl_cycle_steps=warmup_steps // 4) if not torch.isnan(
+                        kl_loss) else 0.0
 
                 else:
                     # ======================================================
@@ -171,15 +175,16 @@ def train_loop(net,
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
                         return_mels=True,
-                        run_glow=step_counter > 100000 or fine_tune)
-                    train_loss = train_loss + \
-                                 l1_loss + \
-                                 ssim_loss * 40 + \
-                                 duration_loss + \
-                                 pitch_loss + \
-                                 energy_loss + \
-                                 glow_loss + \
-                                 kl_loss * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps // 4)
+                        run_glow=step_counter > postnet_start_steps or fine_tune)
+                    train_loss = train_loss + l1_loss if not torch.isnan(
+                        l1_loss) else 0.0 + ssim_loss * 40 if not torch.isnan(
+                        ssim_loss) else 0.0 + duration_loss if not torch.isnan(
+                        duration_loss) else 0.0 + pitch_loss if not torch.isnan(
+                        pitch_loss) else 0.0 + energy_loss if not torch.isnan(
+                        energy_loss) else 0.0 + glow_loss if not torch.isnan(
+                        glow_loss) else 0.0 + kl_loss * kl_beta(step_counter=step_counter,
+                                                                kl_cycle_steps=warmup_steps // 4) if not torch.isnan(
+                        kl_loss) else 0.0
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -196,7 +201,8 @@ def train_loop(net,
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
 
-                train_losses_this_epoch.append(train_loss.item() - kl_loss.item() * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps))
+                train_losses_this_epoch.append(train_loss.item() - kl_loss.item() * kl_beta(step_counter=step_counter,
+                                                                                            kl_cycle_steps=warmup_steps))
                 l1_losses_total.append(l1_loss.item())
                 ssim_losses_total.append(ssim_loss.item())
                 duration_losses_total.append(duration_loss.item())
@@ -206,16 +212,28 @@ def train_loop(net,
                 kl_losses_total.append(kl_loss.item())
 
             if not torch.isnan(train_loss):
-                # VAE might collapse, this prevents destructive updates
+
                 optimizer.zero_grad()
-                scaler.scale(train_loss).backward()
+                optimizer_postflow.zero_grad()
+
+                grad_scaler.scale(train_loss).backward()
                 del train_loss
                 step_counter += 1
-                scaler.unscale_(optimizer)
+
+                grad_scaler.unscale_(optimizer)
+                if step_counter > postnet_start_steps:
+                    grad_scaler.unscale_(optimizer_postflow)
+
                 torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-                scaler.step(optimizer)
-                scaler.update()
+
+                grad_scaler.step(optimizer)
+                if step_counter > postnet_start_steps:
+                    grad_scaler.step(optimizer_postflow)
+                grad_scaler.update()
+
                 scheduler.step()
+                if step_counter > postnet_start_steps:
+                    scheduler_postflow.step()
             else:
                 del train_loss
                 optimizer.zero_grad()
@@ -226,13 +244,13 @@ def train_loop(net,
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
-            "model"       : net.state_dict(),
-            "optimizer"   : optimizer.state_dict(),
+            "model":        net.state_dict(),
+            "optimizer":    optimizer.state_dict(),
             "step_counter": step_counter,
-            "scaler"      : scaler.state_dict(),
-            "scheduler"   : scheduler.state_dict(),
-            "default_emb" : default_embedding,
-            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            "scaler":       grad_scaler.state_dict(),
+            "scheduler":    scheduler.state_dict(),
+            "default_emb":  default_embedding,
+        }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
         try:
             path_to_most_recent_plot_before, \
@@ -246,8 +264,8 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before),
-                    "progress_plot_after" : wandb.Image(path_to_most_recent_plot_after)
-                    })
+                    "progress_plot_after":  wandb.Image(path_to_most_recent_plot_after)
+                })
         except IndexError:
             print("generating progress plots failed.")
 
@@ -259,7 +277,7 @@ def train_loop(net,
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "total_loss":    round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
                 "l1_loss":       round(sum(l1_losses_total) / len(l1_losses_total), 3),
                 "ssim_loss":     round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
