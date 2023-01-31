@@ -305,8 +305,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
 
-        pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
-        energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+        pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
+        energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
 
         if not is_inference:
             # use groundtruth in training
