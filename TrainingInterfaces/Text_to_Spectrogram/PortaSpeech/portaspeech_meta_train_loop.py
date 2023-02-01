@@ -296,7 +296,7 @@ def train_loop(net,
                                                                     step=step_counter,
                                                                     default_emb=default_embedding,
                                                                     before_and_after_postnet=True,
-                                                                    run_postflow=step_counter > postnet_start_steps)
+                                                                    run_postflow=step_counter - 5 > postnet_start_steps)
                 if use_wandb:
                     wandb.log({
                         "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)

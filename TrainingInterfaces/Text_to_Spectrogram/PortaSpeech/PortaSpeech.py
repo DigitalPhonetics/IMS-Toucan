@@ -6,6 +6,7 @@ import torch.distributions as dist
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
+from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
@@ -36,7 +37,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=192,
+                 attention_dimension=384,  # TODO try 192, 384, 512
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -179,6 +180,11 @@ class PortaSpeech(torch.nn.Module, ABC):
         # define final projection
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
 
+        # define initial postnet while the flow based postnet is still in warmup
+        self.postnet = PostNet(idim=input_feature_dimensions, odim=output_spectrogram_channels, n_layers=5, n_chans=256,
+                               n_filts=5, use_batch_norm=True,
+                               dropout_rate=0.5)
+
         # post net is realized as a flow
         gin_channels = attention_dimension
         self.post_flow = Glow(
@@ -243,21 +249,21 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # forward propagation
         before_outs, \
-        after_outs, \
-        d_outs, \
-        p_outs, \
-        e_outs, \
-        glow_loss = self._forward(text_tensors,
-                                  text_lengths,
-                                  gold_speech,
-                                  speech_lengths,
-                                  gold_durations,
-                                  gold_pitch,
-                                  gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+            after_outs, \
+            d_outs, \
+            p_outs, \
+            e_outs, \
+            glow_loss = self._forward(text_tensors,
+                                      text_lengths,
+                                      gold_speech,
+                                      speech_lengths,
+                                      gold_durations,
+                                      gold_pitch,
+                                      gold_energy,
+                                      utterance_embedding=utterance_embedding,
+                                      is_inference=False,
+                                      lang_ids=lang_ids,
+                                      run_glow=run_glow)
 
         # calculate loss
         l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
@@ -298,7 +304,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward text encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks,
+        encoded_texts, _ = self.encoder(text_tensors,
+                                        text_masks,
                                         utterance_embedding=utterance_embedding,
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
@@ -309,13 +316,14 @@ class PortaSpeech(torch.nn.Module, ABC):
         energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
 
         if not is_inference:
-            # use groundtruth in training
+            # use ground truth in training
             predicted_durations = self.duration_predictor(encoded_texts, d_masks)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)
         else:
+            # use predictions in inference
             predicted_durations = self.duration_predictor.inference(encoded_texts, d_masks)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
@@ -337,8 +345,6 @@ class PortaSpeech(torch.nn.Module, ABC):
         decoded_speech, _ = self.decoder(encoded_texts, decoder_masks, utterance_embedding)
         predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
 
-        predicted_spectrogram_after_postnet = None
-
         # forward flow post-net
         if run_glow:
             if is_inference:
@@ -355,6 +361,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
+            predicted_spectrogram_after_postnet = predicted_spectrogram_before_postnet + self.postnet(
+                predicted_spectrogram_before_postnet.transpose(1, 2)).transpose(1, 2)
 
         if not is_inference:
             return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss
@@ -401,17 +409,17 @@ class PortaSpeech(torch.nn.Module, ABC):
             lang_id = lang_id.unsqueeze(0)
 
         before_outs, \
-        after_outs, \
-        d_outs, \
-        pitch_predictions, \
-        energy_predictions = self._forward(xs,
-                                           ilens,
-                                           ys,
-                                           is_inference=True,
-                                           alpha=alpha,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0),
-                                           lang_ids=lang_id,
-                                           run_glow=run_postflow)  # (1, L, odim)
+            after_outs, \
+            d_outs, \
+            pitch_predictions, \
+            energy_predictions = self._forward(xs,
+                                               ilens,
+                                               ys,
+                                               is_inference=True,
+                                               alpha=alpha,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0),
+                                               lang_ids=lang_id,
+                                               run_glow=run_postflow)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
