@@ -361,13 +361,13 @@ class ArticulatoryCombinedTextFrontend:
             ("꜒", "˥"),
             # symbols that indicate a pause or silence
             ('"', "~"),
-            ("-", "~"),
-            ("-", "~"),
+            (" - ", "~"),
+            ("-", ""),
             ("…", "."),
             (":", "~"),
             (";", "~"),
             (",", "~")  # make sure this remains the final one when adding new ones
-            ]
+        ]
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
                                       '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',

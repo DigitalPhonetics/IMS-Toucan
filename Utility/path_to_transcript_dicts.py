@@ -492,6 +492,23 @@ def build_path_to_transcript_dict_ESDS():
     return path_to_transcript_dict
 
 
+def build_path_to_transcript_dict_blizzard_2013():
+    path_to_transcript = dict()
+    root = "/mount/resources/speech/corpora/Blizzard2013/train/segmented/"
+    with open(root + "prompts.gui", encoding="utf8") as f:
+        transcriptions = f.read()
+    blocks = transcriptions.split("||\n")
+    for block in blocks:
+        trans_lines = block.split("\n")
+        if trans_lines[0].strip() != "":
+            transcript = trans_lines[1].replace("@", "").replace("#", ",").replace("|", "").replace(";", ",").replace(
+                ":", ",").replace(" 's", "'s").replace(", ,", ",").replace("  ", " ").replace(" ,", ",").replace(" .",
+                                                                                                                 ".").replace(
+                " ?", "?").replace(" !", "!").rstrip(" ,")
+            path_to_transcript[root + "wavn/" + trans_lines[0] + ".wav"] = transcript
+    return path_to_transcript
+
+
 def build_file_list_singing_voice_audio_database():
     root = "/mount/resources/speech/corpora/singing_voice_audio_dataset/monophonic"
     file_list = list()
@@ -500,3 +517,9 @@ def build_file_list_singing_voice_audio_database():
             for audio in os.listdir(os.path.join(root, corw, singer)):
                 file_list.append(os.path.join(root, corw, singer, audio))
     return file_list
+
+
+if __name__ == '__main__':
+    ptt = build_path_to_transcript_dict_blizzard_2013()
+    for p in ptt:
+        print(ptt[p] + "\n")
