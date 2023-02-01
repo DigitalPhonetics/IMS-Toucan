@@ -11,6 +11,7 @@ import torch
 import torch.multiprocessing
 import torch.multiprocessing
 
+import Layers.ConditionalLayerNorm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
@@ -312,7 +313,11 @@ def initialize(model, init):
 
     # reset some modules with default init
     for m in model.modules():
-        if isinstance(m, (torch.nn.Embedding, torch.nn.LayerNorm)):
+        if isinstance(m, (torch.nn.Embedding,
+                          torch.nn.LayerNorm,
+                          Layers.ConditionalLayerNorm.ConditionalLayerNorm,
+                          Layers.ConditionalLayerNorm.SequentialWrappableConditionalLayerNorm
+                          )):
             m.reset_parameters()
 
 

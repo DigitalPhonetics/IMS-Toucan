@@ -271,7 +271,9 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding,
+        encoded_texts, _ = self.encoder(text_tensors,
+                                        text_masks,
+                                        utterance_embedding=utterance_embedding,
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
