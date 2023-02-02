@@ -6,7 +6,6 @@ import torch.distributions as dist
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
@@ -37,7 +36,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=384,  # TODO try 192, 384, 512
+                 attention_dimension=192,  # TODO try 192, 384, 512
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -175,15 +174,10 @@ class PortaSpeech(torch.nn.Module, ABC):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 utt_embed=utt_embed_dim)
+                                 utt_embed=None)
 
         # define final projection
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
-
-        # define initial postnet while the flow based postnet is still in warmup
-        self.postnet = PostNet(idim=input_feature_dimensions, odim=output_spectrogram_channels, n_layers=5, n_chans=256,
-                               n_filts=5, use_batch_norm=True,
-                               dropout_rate=0.5)
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -345,6 +339,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         decoded_speech, _ = self.decoder(encoded_texts, decoder_masks, utterance_embedding)
         predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
 
+        predicted_spectrogram_after_postnet = None
+
         # forward flow post-net
         if run_glow:
             if is_inference:
@@ -361,8 +357,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = torch.Tensor([0]).to(encoded_texts.device)
-            predicted_spectrogram_after_postnet = predicted_spectrogram_before_postnet + self.postnet(
-                predicted_spectrogram_before_postnet.transpose(1, 2)).transpose(1, 2)
 
         if not is_inference:
             return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss
