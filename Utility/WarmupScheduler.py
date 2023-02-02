@@ -36,13 +36,15 @@ class WarmupScheduler(_LRScheduler):
                 self.base_lrs]
 
 
-class PortaSpeechWarmupScheduler(_LRScheduler):
+class ToucanWarmupScheduler(_LRScheduler):
     """
-    A warmup scheduler similar to https://github.com/NATSpeech/NATSpeech/blob/main/utils/nn/schedulers.py
+    A warmup scheduler that should be called after every batch.
     """
 
-    def __init__(self, optimizer, warmup_steps=25000, last_epoch=-1):
+    def __init__(self, optimizer, warmup_steps=8000, max_steps=100000, last_epoch=-1):
         self.warmup_steps = warmup_steps
+        self.peak_lr = optimizer.lr
+        self.max_steps = max_steps
         # __init__() must be invoked before setting field
         # because step() is also invoked in __init__()
         super().__init__(optimizer, last_epoch)
@@ -52,5 +54,9 @@ class PortaSpeechWarmupScheduler(_LRScheduler):
 
     def get_lr(self):
         step_num = self.last_epoch + 1
-        warmup = min(step_num / self.warmup_steps, 1.0)
-        return [max(lr * warmup, 1e-7) for lr in self.base_lrs]
+        if step_num <= self.warmup_steps:
+            lr = self.peak_lr * min(step_num / self.warmup_steps, 1.0)
+            return [lr for _ in self.base_lrs]
+        else:
+            scale = 1 - (((step_num - self.warmup_steps) / self.max_steps) / (self.max_steps / 10))
+            return [max(lr * scale, 1e-7) for lr in self.base_lrs]

@@ -12,7 +12,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from Utility.WarmupScheduler import WarmupScheduler as WarmupScheduler
+from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import kl_beta
@@ -91,8 +91,9 @@ def train_loop(net,
                                   betas=(0.9, 0.98), eps=1e-9)
     optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
     grad_scaler = GradScaler()
-    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps)
-    scheduler_postflow = WarmupScheduler(optimizer_postflow, warmup_steps=warmup_steps // 2)
+    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps, max_steps=phase_1_steps + phase_2_steps)
+    scheduler_postflow = WarmupScheduler(optimizer_postflow, warmup_steps=warmup_steps // 2,
+                                         max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
