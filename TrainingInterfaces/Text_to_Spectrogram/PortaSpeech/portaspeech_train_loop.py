@@ -89,11 +89,12 @@ def train_loop(net,
     step_counter = 0
     optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
                                   betas=(0.9, 0.98), eps=1e-9)
-    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
-    grad_scaler = GradScaler()
-    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps, max_steps=phase_1_steps + phase_2_steps)
-    scheduler_postflow = WarmupScheduler(optimizer_postflow, warmup_steps=warmup_steps // 2,
+    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=lr, betas=(0.9, 0.98), eps=1e-9)
+    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
+                                max_steps=phase_1_steps + phase_2_steps)
+    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps // 2,
                                          max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
+    grad_scaler = GradScaler()
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -259,24 +260,24 @@ def train_loop(net,
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
-            "model":        net.state_dict(),
-            "optimizer":    optimizer.state_dict(),
+            "model": net.state_dict(),
+            "optimizer": optimizer.state_dict(),
             "step_counter": step_counter,
-            "scaler":       grad_scaler.state_dict(),
-            "scheduler":    scheduler.state_dict(),
-            "default_emb":  default_embedding,
+            "scaler": grad_scaler.state_dict(),
+            "scheduler": scheduler.state_dict(),
+            "default_emb": default_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
         try:
             path_to_most_recent_plot_before, \
-            path_to_most_recent_plot_after = plot_progress_spec(net,
-                                                                device,
-                                                                save_dir=save_directory,
-                                                                step=step_counter,
-                                                                lang=lang,
-                                                                default_emb=default_embedding,
-                                                                before_and_after_postnet=True,
-                                                                run_postflow=step_counter - 5 > postnet_start_steps)
+                path_to_most_recent_plot_after = plot_progress_spec(net,
+                                                                    device,
+                                                                    save_dir=save_directory,
+                                                                    step=step_counter,
+                                                                    lang=lang,
+                                                                    default_emb=default_embedding,
+                                                                    before_and_after_postnet=True,
+                                                                    run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -297,18 +298,18 @@ def train_loop(net,
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "total_loss":    round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
-                "l1_loss":       round(sum(l1_losses_total) / len(l1_losses_total), 3),
-                "ssim_loss":     round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
+                "total_loss": round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "l1_loss": round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                "ssim_loss": round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
-                "pitch_loss":    round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
-                "energy_loss":   round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                "kl_loss":       round(sum(kl_losses_total) / len(kl_losses_total), 3),
-                "glow_loss":     round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
+                "pitch_loss": round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                "energy_loss": round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                "kl_loss": round(sum(kl_losses_total) / len(kl_losses_total), 3),
+                "glow_loss": round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                     glow_losses_total) != 0 else None,
-                "cycle_loss":    sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
+                "cycle_loss": sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
                     cycle_losses_this_epoch) != 0 else None,
-                "Steps":         step_counter,
+                "Steps": step_counter,
             })
         if step_counter > steps:
             # DONE

@@ -75,10 +75,11 @@ def train_loop(net,
         train_iters.append(iter(train_loaders[-1]))
     optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
                                   betas=(0.9, 0.98), eps=1e-9)
-    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
+    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=lr, betas=(0.9, 0.98), eps=1e-9)
     grad_scaler = GradScaler()
-    scheduler = WarmupScheduler(optimizer, warmup_steps=warmup_steps, max_steps=phase_1_steps + phase_2_steps)
-    scheduler_postflow = WarmupScheduler(optimizer_postflow, warmup_steps=warmup_steps // 2,
+    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
+                                max_steps=phase_1_steps + phase_2_steps)
+    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps // 2,
                                          max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     steps_run_previously = 0
     train_losses_total = list()
