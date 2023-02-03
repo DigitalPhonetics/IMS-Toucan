@@ -1,10 +1,13 @@
 import json
+import os
+
+from Preprocessing.multilinguality.create_map_and_tree_dist_lookups import CacheCreator
 
 
 class SimilaritySolver:
     def __init__(self):
-        self.lang_1_to_lang_2_to_tree_dist = load_json_from_path('Preprocessing/lang_1_to_lang_2_to_tree_dist.json')
-        self.lang_1_to_lang_2_to_map_dist = load_json_from_path('Preprocessing/lang_1_to_lang_2_to_map_dist.json')
+        self.lang_1_to_lang_2_to_tree_dist = load_json_from_path('lang_1_to_lang_2_to_tree_dist.json')
+        self.lang_1_to_lang_2_to_map_dist = load_json_from_path('lang_1_to_lang_2_to_map_dist.json')
         self.iso_to_fullname = load_json_from_path("iso_to_fullname.json")
         pop_keys = list()
         for el in self.iso_to_fullname:
@@ -33,6 +36,8 @@ class SimilaritySolver:
                     print(self.iso_to_fullname[result])
                 except KeyError:
                     print("Full Name of Language Missing")
+            if len(results) == 0:
+                print(f"No matches found for {self.iso_to_fullname[lang]}")
         return results
 
     def find_closest_on_map(self, lang, n_closest=5, verbose=False):
@@ -63,6 +68,10 @@ def load_json_from_path(path):
 
 
 if __name__ == '__main__':
+    if not (os.path.exists("lang_1_to_lang_2_to_map_dist.json") and os.path.exists(
+            "lang_1_to_lang_2_to_tree_dist.json")):
+        CacheCreator()
+
     ss = SimilaritySolver()
 
     ss.find_closest_in_family("vie", ["dga",

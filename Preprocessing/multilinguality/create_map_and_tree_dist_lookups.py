@@ -1,4 +1,5 @@
 import json
+import os.path
 
 from tqdm import tqdm
 
@@ -89,4 +90,6 @@ def load_json_from_path(path):
 
 
 if __name__ == '__main__':
-    CacheCreator()
+    if not (os.path.exists("lang_1_to_lang_2_to_map_dist.json") and os.path.exists(
+            "lang_1_to_lang_2_to_tree_dist.json")):
+        CacheCreator()
