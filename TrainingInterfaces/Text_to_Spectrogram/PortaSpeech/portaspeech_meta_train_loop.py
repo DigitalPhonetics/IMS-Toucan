@@ -45,8 +45,7 @@ def train_loop(net,
                fine_tune,
                warmup_steps,
                postnet_start_steps,
-               use_wandb,
-               use_ssim
+               use_wandb
                ):
     # ============
     # Preparations
@@ -85,7 +84,6 @@ def train_loop(net,
     steps_run_previously = 0
     train_losses_total = list()
     l1_losses_total = list()
-    ssim_losses_total = list()
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
@@ -147,7 +145,7 @@ def train_loop(net,
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
 
-                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = net(
+                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = net(
                     text_tensors=text_tensors,
                     text_lengths=text_lengths,
                     gold_speech=gold_speech,
@@ -163,9 +161,6 @@ def train_loop(net,
 
                 if not torch.isnan(l1_loss):
                     train_loss = train_loss + l1_loss
-                if use_ssim:
-                    if not torch.isnan(ssim_loss):
-                        train_loss = train_loss + ssim_loss * 40
                 if not torch.isnan(duration_loss):
                     train_loss = train_loss + duration_loss
                 if not torch.isnan(pitch_loss):
@@ -186,7 +181,7 @@ def train_loop(net,
                                                                                   batch_of_spectrogram_lengths=speech_lengths,
                                                                                   return_all_outs=True)
 
-                l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, output_spectrograms = net(
+                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, output_spectrograms = net(
                     text_tensors=text_tensors,
                     text_lengths=text_lengths,
                     gold_speech=gold_speech,
@@ -201,9 +196,6 @@ def train_loop(net,
 
                 if not torch.isnan(l1_loss):
                     train_loss = train_loss + l1_loss
-                if use_ssim:
-                    if not torch.isnan(ssim_loss):
-                        train_loss = train_loss + ssim_loss * 40
                 if not torch.isnan(duration_loss):
                     train_loss = train_loss + duration_loss
                 if not torch.isnan(pitch_loss):
@@ -237,7 +229,6 @@ def train_loop(net,
         train_losses_total.append(
             train_loss.item() - kl_loss.item() * kl_beta(step_counter=step_counter, kl_cycle_steps=warmup_steps))
         l1_losses_total.append(l1_loss.item())
-        ssim_losses_total.append(ssim_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
@@ -317,7 +308,6 @@ def train_loop(net,
                 wandb.log({
                     "total_loss":    round(sum(train_losses_total) / len(train_losses_total), 3),
                     "l1_loss":       round(sum(l1_losses_total) / len(l1_losses_total), 3),
-                    "ssim_loss":     round(sum(ssim_losses_total) / len(ssim_losses_total), 3),
                     "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                     "pitch_loss":    round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                     "energy_loss":   round(sum(energy_losses_total) / len(energy_losses_total), 3),
@@ -331,7 +321,6 @@ def train_loop(net,
             train_losses_total = list()
             cycle_losses_total = list()
             l1_losses_total = list()
-            ssim_losses_total = list()
             duration_losses_total = list()
             pitch_losses_total = list()
             energy_losses_total = list()

@@ -205,8 +205,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
         # define criterion
-        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking,
-                                         include_portaspeech_losses=True)
+        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
 
     def forward(self,
                 text_tensors,
@@ -260,20 +259,20 @@ class PortaSpeech(torch.nn.Module, ABC):
                                       run_glow=run_glow)
 
         # calculate loss
-        l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
-                                                                                    before_outs=before_outs,
-                                                                                    d_outs=d_outs, p_outs=p_outs,
-                                                                                    e_outs=e_outs, ys=gold_speech,
-                                                                                    ds=gold_durations, ps=gold_pitch,
-                                                                                    es=gold_energy,
-                                                                                    ilens=text_lengths,
-                                                                                    olens=speech_lengths)
+        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
+                                                                         before_outs=before_outs,
+                                                                         d_outs=d_outs, p_outs=p_outs,
+                                                                         e_outs=e_outs, ys=gold_speech,
+                                                                         ds=gold_durations, ps=gold_pitch,
+                                                                         es=gold_energy,
+                                                                         ilens=text_lengths,
+                                                                         olens=speech_lengths)
         kl_loss = torch.tensor([0.0], device=l1_loss.device)  # for future extension / legacy compatibility
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
-            return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, after_outs
-        return l1_loss, ssim_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss
+            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, after_outs
+        return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss
 
     def _forward(self,
                  text_tensors,
