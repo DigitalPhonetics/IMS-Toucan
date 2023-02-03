@@ -2,14 +2,18 @@ import json
 
 
 class SimilaritySolver:
-
     def __init__(self):
-        self.lang_1_to_lang_2_to_tree_dist = load_json_from_path('lang_1_to_lang_2_to_tree_dist.json')
-        self.lang_1_to_lang_2_to_map_dist = load_json_from_path('lang_1_to_lang_2_to_map_dist.json')
-        self.iso_to_fullname, \
-        self.fullname_to_iso, \
-        self.iso_to_espeak_identifier, \
-        self.iso_to_lang_id = load_json_from_path("iso_lookup.json")
+        self.lang_1_to_lang_2_to_tree_dist = load_json_from_path('Preprocessing/lang_1_to_lang_2_to_tree_dist.json')
+        self.lang_1_to_lang_2_to_map_dist = load_json_from_path('Preprocessing/lang_1_to_lang_2_to_map_dist.json')
+        self.iso_to_fullname = load_json_from_path("iso_to_fullname.json")
+        pop_keys = list()
+        for el in self.iso_to_fullname:
+            if "Sign Language" in self.iso_to_fullname[el]:
+                pop_keys.append(el)
+        for pop_key in pop_keys:
+            self.iso_to_fullname.pop(pop_key)
+        with open('iso_to_fullname.json', 'w', encoding='utf-8') as f:
+            json.dump(self.iso_to_fullname, f, ensure_ascii=False, indent=4)
 
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5, verbose=False):
         langs_to_sim = dict()
@@ -60,10 +64,6 @@ def load_json_from_path(path):
 
 if __name__ == '__main__':
     ss = SimilaritySolver()
-
-    ss.find_closest_on_map("vie", 10, True)
-
-    print("\n\n")
 
     ss.find_closest_in_family("vie", ["dga",
                                       "dgb",
@@ -141,3 +141,5 @@ if __name__ == '__main__':
                                       "dkr",
                                       "dks",
                                       "dkx"], 5, True)
+
+    ss.find_closest_on_map("vie", 10, True)
