@@ -88,10 +88,10 @@ def train_loop(net,
     step_counter = 0
     optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
                                   betas=(0.9, 0.98), eps=1e-9)
-    optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=lr, betas=(0.9, 0.98), eps=1e-9)
+    optimizer_postflow = torch.optim.RAdam(net.post_flow.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
-    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps // 2,
+    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps,
                                          max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     grad_scaler = GradScaler()
     grad_scaler_postflow = GradScaler()
@@ -219,10 +219,11 @@ def train_loop(net,
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
 
             grad_scaler.step(optimizer)
+            grad_scaler.update()
+
             if step_counter > postnet_start_steps:
                 grad_scaler_postflow.step(optimizer_postflow)
-            grad_scaler.update()
-            grad_scaler_postflow.update()
+                grad_scaler_postflow.update()
 
             scheduler.step()
             if step_counter > postnet_start_steps:
