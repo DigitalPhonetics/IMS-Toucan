@@ -77,6 +77,7 @@ def train_loop(net,
                                   betas=(0.9, 0.98), eps=1e-9)
     optimizer_postflow = torch.optim.AdamW(net.post_flow.parameters(), lr=lr, betas=(0.9, 0.98), eps=1e-9)
     grad_scaler = GradScaler()
+    grad_scaler_postflow = GradScaler()
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps // 2,
@@ -88,7 +89,6 @@ def train_loop(net,
     pitch_losses_total = list()
     energy_losses_total = list()
     glow_losses_total = list()
-    kl_losses_total = list()
     cycle_losses_total = list()
 
     if resume:
@@ -167,11 +167,6 @@ def train_loop(net,
                     train_loss = train_loss + pitch_loss
                 if not torch.isnan(energy_loss):
                     train_loss = train_loss + energy_loss
-                if not torch.isnan(glow_loss):
-                    train_loss = train_loss + glow_loss
-                if not torch.isnan(kl_loss):
-                    train_loss = train_loss + kl_loss * kl_beta(step_counter=step_counter,
-                                                                kl_cycle_steps=warmup_steps // 4)
 
             else:
                 # PHASE 2
@@ -202,11 +197,6 @@ def train_loop(net,
                     train_loss = train_loss + pitch_loss
                 if not torch.isnan(energy_loss):
                     train_loss = train_loss + energy_loss
-                if not torch.isnan(glow_loss):
-                    train_loss = train_loss + glow_loss
-                if not torch.isnan(kl_loss):
-                    train_loss = train_loss + kl_loss * kl_beta(step_counter=step_counter,
-                                                                kl_cycle_steps=warmup_steps // 4)
 
                 style_embedding_function.train()
                 style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -233,32 +223,26 @@ def train_loop(net,
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
         glow_losses_total.append(glow_loss.item())
-        kl_losses_total.append(kl_loss.item())
 
-        if not torch.isnan(train_loss):
+        optimizer.zero_grad()
+        optimizer_postflow.zero_grad()
 
-            optimizer.zero_grad()
-            optimizer_postflow.zero_grad()
+        grad_scaler.scale(train_loss).backward()
+        grad_scaler.unscale_(optimizer)
+        if step_counter > postnet_start_steps:
+            grad_scaler_postflow.scale(glow_loss).backward()
+            grad_scaler_postflow.unscale_(optimizer_postflow)
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
 
-            grad_scaler.scale(train_loss).backward()
-            grad_scaler.unscale_(optimizer)
-            if step_counter > postnet_start_steps:
-                grad_scaler.unscale_(optimizer_postflow)
+        grad_scaler.step(optimizer)
+        if step_counter > postnet_start_steps:
+            grad_scaler_postflow.step(optimizer_postflow)
+        grad_scaler.update()
+        grad_scaler_postflow.update()
 
-            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-
-            grad_scaler.step(optimizer)
-            if step_counter > postnet_start_steps:
-                grad_scaler.step(optimizer_postflow)
-            grad_scaler.update()
-
-            scheduler.step()
-            if step_counter > postnet_start_steps:
-                scheduler_postflow.step()
-
-        else:
-            del train_loss
-            optimizer.zero_grad()
+        scheduler.step()
+        if step_counter > postnet_start_steps:
+            scheduler_postflow.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
@@ -274,25 +258,25 @@ def train_loop(net,
             if len(cycle_losses_total) != 0:
                 print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             torch.save({
-                "model":        net.state_dict(),
-                "optimizer":    optimizer.state_dict(),
-                "scaler":       grad_scaler.state_dict(),
-                "scheduler":    scheduler.state_dict(),
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scaler": grad_scaler.state_dict(),
+                "scheduler": scheduler.state_dict(),
                 "step_counter": step_counter,
-                "default_emb":  default_embedding,
+                "default_emb": default_embedding,
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             try:
                 path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec(net=net,
-                                                                    device=device,
-                                                                    lang=lang,
-                                                                    save_dir=save_directory,
-                                                                    step=step_counter,
-                                                                    default_emb=default_embedding,
-                                                                    before_and_after_postnet=True,
-                                                                    run_postflow=step_counter - 5 > postnet_start_steps)
+                    path_to_most_recent_plot_after = plot_progress_spec(net=net,
+                                                                        device=device,
+                                                                        lang=lang,
+                                                                        save_dir=save_directory,
+                                                                        step=step_counter,
+                                                                        default_emb=default_embedding,
+                                                                        before_and_after_postnet=True,
+                                                                        run_postflow=step_counter - 5 > postnet_start_steps)
                 if use_wandb:
                     wandb.log({
                         "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -306,17 +290,16 @@ def train_loop(net,
 
             if use_wandb:
                 wandb.log({
-                    "total_loss":    round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "l1_loss":       round(sum(l1_losses_total) / len(l1_losses_total), 3),
+                    "total_loss": round(sum(train_losses_total) / len(train_losses_total), 3),
+                    "l1_loss": round(sum(l1_losses_total) / len(l1_losses_total), 3),
                     "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
-                    "pitch_loss":    round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
-                    "energy_loss":   round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                    "kl_loss":       round(sum(kl_losses_total) / len(kl_losses_total), 3),
-                    "glow_loss":     round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
+                    "pitch_loss": round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
+                    "energy_loss": round(sum(energy_losses_total) / len(energy_losses_total), 3),
+                    "glow_loss": round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                         glow_losses_total) != 0 else None,
-                    "cycle_loss":    sum(cycle_losses_total) / len(cycle_losses_total) if len(
+                    "cycle_loss": sum(cycle_losses_total) / len(cycle_losses_total) if len(
                         cycle_losses_total) != 0 else None,
-                    "Steps":         step_counter
+                    "Steps": step_counter
                 })
             train_losses_total = list()
             cycle_losses_total = list()
@@ -325,5 +308,4 @@ def train_loop(net,
             pitch_losses_total = list()
             energy_losses_total = list()
             glow_losses_total = list()
-            kl_losses_total = list()
             net.train()

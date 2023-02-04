@@ -15,7 +15,6 @@ from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbe
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
-from Utility.utils import kl_beta
 from Utility.utils import plot_progress_spec
 
 
@@ -95,6 +94,7 @@ def train_loop(net,
     scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps // 2,
                                          max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     grad_scaler = GradScaler()
+    grad_scaler_postflow = GradScaler()
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -118,7 +118,6 @@ def train_loop(net,
         pitch_losses_total = list()
         energy_losses_total = list()
         glow_losses_total = list()
-        kl_losses_total = list()
         for batch in tqdm(train_loader):
             train_loss = 0.0
             with autocast():
@@ -152,11 +151,6 @@ def train_loop(net,
                         train_loss = train_loss + pitch_loss
                     if not torch.isnan(energy_loss):
                         train_loss = train_loss + energy_loss
-                    if not torch.isnan(glow_loss):
-                        train_loss = train_loss + glow_loss
-                    if not torch.isnan(kl_loss):
-                        train_loss = train_loss + kl_loss * kl_beta(step_counter=step_counter,
-                                                                    kl_cycle_steps=warmup_steps // 4)
 
                 else:
                     # ======================================================
@@ -191,11 +185,6 @@ def train_loop(net,
                         train_loss = train_loss + pitch_loss
                     if not torch.isnan(energy_loss):
                         train_loss = train_loss + energy_loss
-                    if not torch.isnan(glow_loss):
-                        train_loss = train_loss + glow_loss
-                    if not torch.isnan(kl_loss):
-                        train_loss = train_loss + kl_loss * kl_beta(step_counter=step_counter,
-                                                                    kl_cycle_steps=warmup_steps // 4)
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -212,41 +201,34 @@ def train_loop(net,
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
 
-                train_losses_this_epoch.append(train_loss.item() - kl_loss.item() * kl_beta(step_counter=step_counter,
-                                                                                            kl_cycle_steps=warmup_steps))
+                train_losses_this_epoch.append(train_loss.item())
                 l1_losses_total.append(l1_loss.item())
                 duration_losses_total.append(duration_loss.item())
                 pitch_losses_total.append(pitch_loss.item())
                 energy_losses_total.append(energy_loss.item())
                 glow_losses_total.append(glow_loss.item())
-                kl_losses_total.append(kl_loss.item())
 
-            if not torch.isnan(train_loss):
+            optimizer.zero_grad()
+            optimizer_postflow.zero_grad()
 
-                optimizer.zero_grad()
-                optimizer_postflow.zero_grad()
+            grad_scaler.scale(train_loss).backward()
+            grad_scaler.unscale_(optimizer)
+            if step_counter > postnet_start_steps:
+                grad_scaler_postflow.scale(glow_loss).backward()
+                grad_scaler_postflow.unscale_(optimizer_postflow)
+            torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
 
-                grad_scaler.scale(train_loss).backward()
-                del train_loss
-                step_counter += 1
+            grad_scaler.step(optimizer)
+            if step_counter > postnet_start_steps:
+                grad_scaler_postflow.step(optimizer_postflow)
+            grad_scaler.update()
+            grad_scaler_postflow.update()
 
-                grad_scaler.unscale_(optimizer)
-                if step_counter > postnet_start_steps:
-                    grad_scaler.unscale_(optimizer_postflow)
+            scheduler.step()
+            if step_counter > postnet_start_steps:
+                scheduler_postflow.step()
 
-                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-
-                grad_scaler.step(optimizer)
-                if step_counter > postnet_start_steps:
-                    grad_scaler.step(optimizer_postflow)
-                grad_scaler.update()
-
-                scheduler.step()
-                if step_counter > postnet_start_steps:
-                    scheduler_postflow.step()
-            else:
-                del train_loss
-                optimizer.zero_grad()
+            step_counter += 1
 
         net.eval()
         style_embedding_function.eval()
@@ -297,7 +279,6 @@ def train_loop(net,
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
                 "pitch_loss": round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
                 "energy_loss": round(sum(energy_losses_total) / len(energy_losses_total), 3),
-                "kl_loss": round(sum(kl_losses_total) / len(kl_losses_total), 3),
                 "glow_loss": round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(
                     glow_losses_total) != 0 else None,
                 "cycle_loss": sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
