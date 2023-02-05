@@ -259,7 +259,8 @@ class PortaSpeech(torch.nn.Module, ABC):
                                       run_glow=run_glow)
 
         # calculate loss
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
+        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
+                                                                         # is a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
                                                                          before_outs=before_outs,
                                                                          d_outs=d_outs, p_outs=p_outs,
                                                                          e_outs=e_outs, ys=gold_speech,

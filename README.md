@@ -6,7 +6,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ---
 
-## Demonstration 🦚
+## Demonstrations 🦚
 
 ### Pre-Generated Audios
 
@@ -26,25 +26,27 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 [You can also design the voice of a speaker who doesn't exist on Huggingface🤗](https://huggingface.co/spaces/Flux9665/ThisSpeakerDoesNotExist)
 
+### Pretrained models are available!
+
+You can just try it yourself! Pretrained checkpoints for our massively multi-lingual model, the self-contained aligner,
+the embedding function, the vocoder and the embedding GAN are available in the
+[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). Run the `run_model_downloader.py` script
+to automatically download them from the release page and put them into their appropriate locations with appropriate
+names.
+
 ---
 
 ## New Features 🐣
 
-### 2021
+### 2023
 
-- We officially introduced IMS Toucan in
-  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
-- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
-  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 48kHz waveforms.
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
-  multilingual data to benefit less resource-rich languages.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
-  with very little data in almost any language. The last two contributions are described in
-  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
-- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
-  objective, inspired by
-  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
+- We now use the same PostFlow
+  as [PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) for
+  increased quality at basically no expense.
+- We also reduce the sampling-rate of the vocoder from 48kHz to 24kHz. While the theoretical upper bound for quality is
+  reduced, in practice, the vocoder produces much fewer artifacts.
+- Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
+  ever! Just follow the `finetuning_example.py` pipeline.
 
 ### 2022
 
@@ -53,11 +55,12 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
   also include word-boundary pseudo-tokens which are only visible to the text encoder.
 - By conditioning the TTS on speaker and language embeddings in a specific way, multi-lingual and multi-speaker models
   are possible. You can use any speaker in any language, regardless of the language that the speakers themselves are
-  speaking. We will present [a paper on this at AACL 2022](https://arxiv.org/abs/2210.12223)!
+  speaking. We presented [a paper on this at AACL 2022](https://arxiv.org/abs/2210.12223)!
 - Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with everything
-  else! So any utterance in any language spoken by any speaker can be replicated and controlled. We will
-  present [a paper on this at SLT 2022](https://arxiv.org/abs/2206.12229). We apply this
-  to [literary studies on poetry and presented a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
+  else! So any utterance in any language spoken by any speaker can be replicated and controlled. We
+  presented [a paper on this at SLT 2022](https://arxiv.org/abs/2206.12229).
+- We apply this to literary studies on poetry and presented
+  [a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
 - We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
 - We added a scorer utility to inspect your data and find potentially problematic samples.
 - You can now use [weights & biases](https://wandb.ai/site) to keep track of your training runs, if you want.
@@ -68,22 +71,34 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
   exist. We also found a way to make the sampling process very controllable using intuitive sliders. Check out our
   newest demo on Huggingface to try it yourself!
 
-### Pretrained models are available!
+### 2021
 
-Pretrained checkpoints for our massively multi-lingual model, the self-contained aligner, the embedding function, the
-vocoder and the embedding GAN are available in the
-[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). Run the ```run_model_downloader.py``` script
-to automatically download them from the release page and put them into their appropriate locations with appropriate
-names.
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 24kHz waveforms.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
+  multilingual data to benefit less resource-rich languages.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
+  with very little data in almost any language. The last two contributions are described in
+  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
+- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
+  objective, inspired by
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
 
 ---
 
 ## Installation 🦉
 
+These instructions should work for most cases, but I heard of some instances where espeak behaves weird, which are
+sometimes resolved after a re-install and sometimes not. Also, M1 and M2 MacBooks require a very different installation
+process, with which I am unfortunately not familiar.
+
 #### Basic Requirements
 
 To install this toolkit, clone it onto the machine you want to use it on
-(should have at least one GPU if you intend to train models on that machine. For inference, you can get by without GPU).
+(should have at least one GPU if you intend to train models on that machine. For inference, you don't need a GPU).
 Navigate to the directory you have cloned. We recommend creating and activating a
 [virtual environment](https://docs.python.org/3/library/venv.html)
 to install the basic requirements into. The commands below summarize everything you need to do.
@@ -119,13 +134,14 @@ active development, there are frequent updates, which can actually benefit your 
 
 #### Storage configuration
 
-If you don't want the pretrained and trained models as well as the data resulting from preprocessing your datasets to be
-stored in the default subfolders, you can first set corresponding directories globally by editing *
-Utility/storage_config.py* to suit your needs (the path can be relative to the repository root directory or absolute).
+If you don't want the pretrained and trained models as well as the cache files resulting from preprocessing your
+datasets to be stored in the default subfolders, you can set corresponding directories globally by
+editing `Utility/storage_config.py` to suit your needs (the path can be relative to the repository root directory or
+absolute).
 
 #### Pretrained Models
 
-You don't need to use pretrained models, but it can speed things up tremendously. Run the ```run_model_downloader.py```
+You don't need to use pretrained models, but it can speed things up tremendously. Run the `run_model_downloader.py`
 script to automatically download them from the release page and put them into their appropriate locations with
 appropriate names.
 
@@ -133,15 +149,11 @@ appropriate names.
 
 ## Creating a new Pipeline 🦆
 
-To create a new pipeline to train an Avocodo vocoder, you only need a set of audio files. To create a new pipeline for a
-FastSpeech 2, you need audio files, corresponding text labels, and an already trained Aligner model to estimate the
-duration information that FastSpeech 2 needs as input.
-
 ### Build an Avocodo Pipeline
 
 This should not be necessary, because we provide a pretrained model and one of the key benefits of vocoders in general
 is how incredibly speaker independent they are. But in case you want to train your own anyway, here are the
-instructions: In the directory called You will need a function to return the list of all the absolute paths to each of
+instructions: You will need a function to return the list of all the absolute paths to each of
 the audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for FastSpeech
 2 training, you can simply take the keys of the dict and transform them into a list.
 
@@ -154,11 +166,14 @@ Dataset.
 
 Now you need to add your newly created pipeline to the pipeline dictionary in the file
 *run_training_pipeline.py* in the top level of the toolkit. In this file, import the
-*run* function from the pipeline you just created and give it a speaking name. Now in the
-*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And just like that
-you're done.
+*run* function from the pipeline you just created and give it a meaningful name. Now in the
+*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
 
-### Build a FastSpeech 2 Pipeline
+### Build a PortaSpeech Pipeline
+
+What we call PortaSpeech is actually mostly FastSpeech 2, but with a couple of changes, such as the normalizing flow
+based PostNet that was introduced in PortaSpeech. We found the VAE used in PortaSpeech too unstable for low-resource
+cases, so we continue experimenting with those in experimental branches of the toolkit.
 
 In the directory called
 *Utility* there is a file called
@@ -167,8 +182,8 @@ absolute paths to each of the audio files in your dataset as strings as the keys
 corresponding audios as the values.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has FastSpeech 2 in its
-name. We will use this copy as reference and only make the necessary changes to use the new dataset. Import the function
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of the `finetuning_example.py` file. We will use this copy
+as reference and only make the necessary changes to use the new dataset. Import the function
 you have just written as
 *build_path_to_transcript_dict*. Since the data will be processed a considerable amount, a cache will be built and saved
 as file for quick and easy restarts. So find the variable
@@ -177,11 +192,6 @@ as file for quick and easy restarts. So find the variable
 the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
 different directory.
 
-In your new pipeline file, look out for the line in which the
-*acoustic_model* is loaded. Change the path to the checkpoint of an Aligner model. It can either be the one that is
-supplied with the toolkit on the release page, or one that you trained yourself. In the example pipelines, the one that
-we provide is finetuned to the dataset it is applied to before it is used to extract durations.
-
 Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
 *Preprocessing/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the language of
 your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just doing it
@@ -189,34 +199,27 @@ analogous to what is there already. Now back in the pipeline, change the
 *lang* argument in the creation of the dataset and in the call to the train loop function to the language ID that
 matches your data.
 
-Now navigate to the implementation of the
-*train_loop* that is called in the pipeline. In this file, find the function called
-*plot_progress_spec*. This function will produce spectrogram plots during training, which is the most important way to
-monitor the progress of the training. In there, you may need to add an example sentence for the language of the data you
-are using. It should all be pretty clear from looking at it.
+The arguments that are given to the train loop are meant for the case of finetuning from a pretrained model. If you want
+to train from scratch, have a look at a different pipeline that has PortaSpeech in its name and look at the arguments
+used there.
 
 Once this is done, we are almost done, now we just need to make it available to the
 *run_training_pipeline.py* file in the top level. In said file, import the
-*run* function from the pipeline you just created and give it a speaking name. Now in the
-*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense. And that's it.
+*run* function from the pipeline you just created and give it a meaningful name. Now in the
+*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
 
 ---
 
 ## Training a Model 🦜
 
-Once you have a pipeline built, training is super easy. Just activate your virtual environment and run the command
-below. You might want to use something like nohup to keep it running after you log out from the server (then you should
-also add -u as option to python) and add an & to start it in the background. Also, you might want to direct the std:out
-and std:err into a specific file using > but all of that is just standard shell use and has nothing to do with the
-toolkit.
+Once you have a training pipeline built, training is super easy:
 
 ```
 python run_training_pipeline.py <shorthand of the pipeline>
 ```
 
 You can supply any of the following arguments, but don't have to (although for training you should definitely specify at
-least a GPU ID). It is recommended to download the pretrained checkpoint from the releases and use it as basis for
-fine-tuning for any new model that you train to significantly reduce training time.
+least a GPU ID).
 
 ```
 --gpu_id <ID of the GPU you wish to use, as displayed with nvidia-smi, default is cpu> 
@@ -234,18 +237,14 @@ fine-tuning for any new model that you train to significantly reduce training ti
 --wandb_resume_id <the id of the run you want to resume, if you are using weights&biases (you can find the id in the URL of the run)>
 ```
 
-After every epoch, some logs will be written to the console. If the loss becomes NaN, you'll need to use a smaller
-learning rate or more warmup steps in the arguments of the call to the training_loop in the pipeline you are running.
+After every epoch, some logs will be written to the console. If you get cuda out of memory errors, you need to decrease
+the batchsize in the arguments of the call to the training_loop in the pipeline you are running. Try decreasing the
+batchsize in small steps until you get no more out of cuda memory errors.
 
-If you get cuda out of memory errors, you need to decrease the batchsize in the arguments of the call to the
-training_loop in the pipeline you are running. Try decreasing the batchsize in small steps until you get no more out of
-cuda memory errors. Decreasing the batchsize may also require you to use a smaller learning rate. The use of GroupNorm
-should make it so that the training remains mostly stable.
-
-Speaking of plots: in the directory you specified for saving model's checkpoint files and self-explanatory visualization
+In the directory you specified for saving, checkpoint files and spectrogram visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. The amount of
-training steps highly depends on the data you are using, but 1,000,000 is usually pretty good for Avocodo and 200,000 is
-pretty good for FastSpeech 2. The fewer data you have, the fewer steps you should take to prevent overfitting issues. If
+training steps highly depends on the data you are using and whether you're finetuning from a pretrained checkpoint or
+training from scratch. The fewer data you have, the fewer steps you should take to prevent overfitting issues. If
 you want to stop earlier, just kill the process, since everything is daemonic all the child-processes should die with
 it. In case there are some ghost-processes left behind, you can use the following command to find them and kill them
 manually.
@@ -270,7 +269,7 @@ You can load your trained models using an inference interface. Simply instanciat
 identifying the model you want to use, the rest should work out in the background. You might want to set a language
 embedding or a speaker embedding. The methods for that should be self-explanatory.
 
-An *InferenceInterface* contains two useful methods. They are
+An *InferenceInterface* contains two methods to create audio from text. They are
 *read_to_file* and
 *read_aloud*.
 
@@ -318,14 +317,14 @@ The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) ar
 [ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of
 [HiFiGAN](https://arxiv.org/abs/2010.05646) are taken from
 the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
-which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi).
+which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi). Some Modules related to the
+Normalizing Flow based PostNet as outlined in
+[PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) are taken
+from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech).
 
-For a version of the toolkit that includes TransformerTTS, Tacotron 2 or MelGAN, check out the other branches. They are
-separated to keep the code clean, simple and minimal as the development progresses.
-
-This toolkit has been written by Florian Lux, if you come across problems or questions, feel free
-to [write a mail](mailto:florian.lux@ims.uni-stuttgart.de). Also let me know if you do something cool with it. Thank you
-for reading.
+For a version of the toolkit that includes [TransformerTTS](https://arxiv.org/abs/1809.08895),
+[Tacotron 2](https://arxiv.org/abs/1712.05884) or [MelGAN](https://arxiv.org/abs/1910.06711), check out the other
+branches. They are separated to keep the code clean, simple and minimal as the development progresses.
 
 ## Citation 🐧
 
@@ -356,8 +355,6 @@ for reading.
 
 ### Adding Exact Prosody-Cloning Capabilities [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.2)
 
-(accepted, not yet published)
-
 ```
 @inproceedings{lux2022cloning,
   year         = 2022,
@@ -368,8 +365,6 @@ for reading.
 ```
 
 ### Adding Language Embeddings and Word Boundaries [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.2)
-
-(accepted, not yet published)
 
 ```
 @inproceedings{lux2022lrms,
