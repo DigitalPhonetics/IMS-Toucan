@@ -5,6 +5,7 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_codo
 from TrainingInterfaces.TrainingPipelines.JointEmbeddingFunction import run as embedding
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
+from TrainingInterfaces.TrainingPipelines.PortaSpeech_Libri import run as libri
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
@@ -19,6 +20,7 @@ pipeline_dict = {
     "fs_it":     fs_integration_test,
     "ps_it":     ps_integration_test,
     "nancy":     nancy,
+    "libri":     libri
 }
 
 if __name__ == '__main__':
