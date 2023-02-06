@@ -44,13 +44,13 @@ def train_loop(net,
                resume,
                fine_tune,
                warmup_steps,
-               postnet_start_steps,
                use_wandb
                ):
     # ============
     # Preparations
     # ============
     steps = phase_1_steps + phase_2_steps
+    postnet_start_steps = warmup_steps // 2
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
@@ -73,15 +73,10 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr,
-                                  betas=(0.9, 0.98), eps=1e-9)
-    optimizer_postflow = torch.optim.RAdam(net.post_flow.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=lr, betas=(0.9, 0.98), eps=1e-9)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
-    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps,
-                                         max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     grad_scaler = GradScaler()
-    grad_scaler_postflow = GradScaler()
     steps_run_previously = 0
     train_losses_total = list()
     l1_losses_total = list()
@@ -224,22 +219,17 @@ def train_loop(net,
         energy_losses_total.append(energy_loss.item())
         glow_losses_total.append(glow_loss.item())
 
-        optimizer.zero_grad()
-        optimizer_postflow.zero_grad()
-
         if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
             train_loss = train_loss + glow_loss
 
+        optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-
         grad_scaler.step(optimizer)
-        optimizer_postflow.step()
         grad_scaler.update()
-
         scheduler.step()
-        scheduler_postflow.step()
+        step_counter += 1
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
