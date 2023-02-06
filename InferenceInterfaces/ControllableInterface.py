@@ -2,14 +2,14 @@ import os
 
 import torch
 
-from InferenceInterfaces.Controllability.GAN import GanWrapper
 from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
+from TrainingInterfaces.Spectrogram_to_Embedding.EmbeddingVAE.Model import Model as EmbeddingVAE
 from Utility.storage_config import MODELS_DIR
 
 
 class ControllableInterface:
 
-    def __init__(self, gpu_id="cpu"):
+    def __init__(self, gpu_id="cpu", available_artificial_voices=1000):
         if gpu_id == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = ""
         else:
@@ -17,25 +17,30 @@ class ControllableInterface:
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = PortaSpeechInterface(device=self.device, tts_model_path="Meta")
-        self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
+        self.embeddingVAE = EmbeddingVAE(path_to_weights=os.path.join(MODELS_DIR, "EmbeddingVAE", "embedding_vae.pt"),
+                                         device=self.device)
+        self.generated_speaker_embeds = list()
+        self.available_artificial_voices = available_artificial_voices
+        for _ in range(self.available_artificial_voices):
+            self.generated_speaker_embeds.append(self.embeddingVAE().squeeze())
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
-            "English"   : "en",
-            "German"    : "de",
-            "Greek"     : "el",
-            "Spanish"   : "es",
-            "Finnish"   : "fi",
-            "Russian"   : "ru",
-            "Hungarian" : "hu",
-            "Dutch"     : "nl",
-            "French"    : "fr",
-            'Polish'    : "pl",
+            "English":    "en",
+            "German":     "de",
+            "Greek":      "el",
+            "Spanish":    "es",
+            "Finnish":    "fi",
+            "Russian":    "ru",
+            "Hungarian":  "hu",
+            "Dutch":      "nl",
+            "French":     "fr",
+            'Polish':     "pl",
             'Portuguese': "pt",
-            'Italian'   : "it",
-            'Chinese'   : "cmn",
+            'Italian':    "it",
+            'Chinese':    "cmn",
             'Vietnamese': "vi",
-            }
+        }
 
     def read(self,
              prompt,
@@ -45,10 +50,7 @@ class ControllableInterface:
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
-             energy_variance_scale,
-             emb_slider_1,
-             emb_slider_2,
-             emb_slider_6,
+             energy_variance_scale
              ):
         language = language.split()[0]
         accent = accent.split()[0]
@@ -59,12 +61,7 @@ class ControllableInterface:
             self.model.set_accent_language(self.language_id_lookup[accent])
             self.current_accent = accent
 
-        self.wgan.set_latent(voice_seed)
-
-        controllability_vector = torch.tensor(
-            [emb_slider_1, emb_slider_2, 0.0, 0.0, 0.0, emb_slider_6], dtype=torch.float32)
-        embedding = self.wgan.modify_embed(controllability_vector)
-        self.model.set_utterance_embedding(embedding=embedding)
+        self.model.set_utterance_embedding(embedding=self.generated_speaker_embeds[voice_seed])
 
         phones = self.model.text2phone.get_phone_string(prompt)
         if len(phones) > 1800:

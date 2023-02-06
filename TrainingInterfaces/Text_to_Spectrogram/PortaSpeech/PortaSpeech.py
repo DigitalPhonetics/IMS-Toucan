@@ -242,21 +242,21 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # forward propagation
         before_outs, \
-            after_outs, \
-            d_outs, \
-            p_outs, \
-            e_outs, \
-            glow_loss = self._forward(text_tensors,
-                                      text_lengths,
-                                      gold_speech,
-                                      speech_lengths,
-                                      gold_durations,
-                                      gold_pitch,
-                                      gold_energy,
-                                      utterance_embedding=utterance_embedding,
-                                      is_inference=False,
-                                      lang_ids=lang_ids,
-                                      run_glow=run_glow)
+        after_outs, \
+        d_outs, \
+        p_outs, \
+        e_outs, \
+        glow_loss = self._forward(text_tensors,
+                                  text_lengths,
+                                  gold_speech,
+                                  speech_lengths,
+                                  gold_durations,
+                                  gold_pitch,
+                                  gold_energy,
+                                  utterance_embedding=utterance_embedding,
+                                  is_inference=False,
+                                  lang_ids=lang_ids,
+                                  run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
@@ -403,17 +403,17 @@ class PortaSpeech(torch.nn.Module, ABC):
             lang_id = lang_id.unsqueeze(0)
 
         before_outs, \
-            after_outs, \
-            d_outs, \
-            pitch_predictions, \
-            energy_predictions = self._forward(xs,
-                                               ilens,
-                                               ys,
-                                               is_inference=True,
-                                               alpha=alpha,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0),
-                                               lang_ids=lang_id,
-                                               run_glow=run_postflow)  # (1, L, odim)
+        after_outs, \
+        d_outs, \
+        pitch_predictions, \
+        energy_predictions = self._forward(xs,
+                                           ilens,
+                                           ys,
+                                           is_inference=True,
+                                           alpha=alpha,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0),
+                                           lang_ids=lang_id,
+                                           run_glow=run_postflow)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0

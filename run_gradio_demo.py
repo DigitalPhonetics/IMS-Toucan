@@ -22,8 +22,9 @@ def float2pcm(sig, dtype='int16'):
 
 class TTSWebUI:
 
-    def __init__(self, gpu_id="cpu", title="Controllable Embeddings", article=""):
-        self.controllable_ui = ControllableInterface(gpu_id=gpu_id)
+    def __init__(self, gpu_id="cpu", title="Controllable Embeddings", article="", available_artificial_voices=1000):
+        self.controllable_ui = ControllableInterface(gpu_id=gpu_id,
+                                                     available_artificial_voices=available_artificial_voices)
         self.iface = gr.Interface(fn=self.read,
                                   inputs=[gr.inputs.Textbox(lines=2,
                                                             placeholder="write what you want the synthesis to read here...",
@@ -60,7 +61,7 @@ class TTSWebUI:
                                                               'Vietnamese Accent'], type="value",
                                                              default='English Accent',
                                                              label="Select the Accent of the Speaker"),
-                                          gr.inputs.Slider(minimum=0, maximum=1000, step=1,
+                                          gr.inputs.Slider(minimum=0, maximum=available_artificial_voices, step=1,
                                                            default=279,
                                                            label="Random Seed for the artificial Voice"),
                                           gr.inputs.Slider(minimum=0.5, maximum=1.5, step=0.1, default=1.0,
@@ -70,13 +71,7 @@ class TTSWebUI:
                                           gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0,
                                                            label="Pitch Variance Scale"),
                                           gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0,
-                                                           label="Energy Variance Scale"),
-                                          gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0,
-                                                           label="Femininity / Masculinity"),
-                                          gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0,
-                                                           label="Arousal"),
-                                          gr.inputs.Slider(minimum=-10.0, maximum=10.0, step=0.1, default=0.0,
-                                                           label="Age")
+                                                           label="Energy Variance Scale")
                                           ],
                                   outputs=gr.outputs.Audio(type="numpy", label=None),
                                   layout="vertical",
@@ -95,10 +90,7 @@ class TTSWebUI:
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
-             energy_variance_scale,
-             emb_slider_1,
-             emb_slider_2,
-             emb_slider_6):
+             energy_variance_scale):
         sr, wav = self.controllable_ui.read(prompt,
                                             language,
                                             accent,
@@ -106,10 +98,7 @@ class TTSWebUI:
                                             duration_scaling_factor,
                                             pause_duration_scaling_factor,
                                             pitch_variance_scale,
-                                            energy_variance_scale,
-                                            emb_slider_1,
-                                            emb_slider_2,
-                                            emb_slider_6)
+                                            energy_variance_scale)
         return sr, float2pcm(wav.cpu().numpy())
 
 

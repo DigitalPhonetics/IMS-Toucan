@@ -27,8 +27,8 @@ def train_loop(net,  # an already initialized PortaSpeech model that should be t
                # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM.
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
-               phase_1_steps=40000,  # without cycle consistency objective.
-               phase_2_steps=160000,  # with cycle consistency objective.
+               phase_1_steps=80000,  # without cycle consistency objective.
+               phase_2_steps=120000,  # with cycle consistency objective.
                postnet_start_steps=50000
                ):
     if type(datasets) != list:

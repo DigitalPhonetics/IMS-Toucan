@@ -102,14 +102,6 @@ class PortaSpeech(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs)
 
-        self.embedding_prenet_for_variance_predictors = torch.nn.Sequential(
-            torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim + attention_dimension),
-            torch.nn.Tanh(),
-            torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim + attention_dimension),
-            torch.nn.Tanh(),
-            torch.nn.Linear(utt_embed_dim + attention_dimension, utt_embed_dim)
-        )
-
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
@@ -159,7 +151,7 @@ class PortaSpeech(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 utt_embed=utt_embed_dim)
+                                 utt_embed=None)
 
         # define final projection
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
