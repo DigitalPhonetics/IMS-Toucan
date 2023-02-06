@@ -91,10 +91,7 @@ def train_loop(net,
     optimizer_postflow = torch.optim.RAdam(net.post_flow.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
-    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps,
-                                         max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     grad_scaler = GradScaler()
-    grad_scaler_postflow = GradScaler()
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -211,23 +208,18 @@ def train_loop(net,
             optimizer.zero_grad()
             optimizer_postflow.zero_grad()
 
+            if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
+                train_loss = train_loss + glow_loss
+
             grad_scaler.scale(train_loss).backward()
             grad_scaler.unscale_(optimizer)
-            if step_counter > postnet_start_steps:
-                grad_scaler_postflow.scale(glow_loss).backward()
-                grad_scaler_postflow.unscale_(optimizer_postflow)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
 
             grad_scaler.step(optimizer)
+            optimizer_postflow.step()
             grad_scaler.update()
 
-            if step_counter > postnet_start_steps:
-                grad_scaler_postflow.step(optimizer_postflow)
-                grad_scaler_postflow.update()
-
             scheduler.step()
-            if step_counter > postnet_start_steps:
-                scheduler_postflow.step()
 
             step_counter += 1
 

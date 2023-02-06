@@ -227,23 +227,18 @@ def train_loop(net,
         optimizer.zero_grad()
         optimizer_postflow.zero_grad()
 
+        if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
+            train_loss = train_loss + glow_loss
+
         grad_scaler.scale(train_loss).backward()
         grad_scaler.unscale_(optimizer)
-        if step_counter > postnet_start_steps:
-            grad_scaler_postflow.scale(glow_loss).backward()
-            grad_scaler_postflow.unscale_(optimizer_postflow)
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
 
         grad_scaler.step(optimizer)
+        optimizer_postflow.step()
         grad_scaler.update()
 
-        if step_counter > postnet_start_steps:
-            grad_scaler_postflow.step(optimizer_postflow)
-            grad_scaler_postflow.update()
-
         scheduler.step()
-        if step_counter > postnet_start_steps:
-            scheduler_postflow.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
