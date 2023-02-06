@@ -91,6 +91,8 @@ def train_loop(net,
     optimizer_postflow = torch.optim.RAdam(net.post_flow.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
+    scheduler_postflow = WarmupScheduler(optimizer_postflow, peak_lr=lr, warmup_steps=warmup_steps,
+                                         max_steps=phase_1_steps + phase_2_steps - postnet_start_steps)
     grad_scaler = GradScaler()
     epoch = 0
     if resume:
@@ -220,6 +222,7 @@ def train_loop(net,
             grad_scaler.update()
 
             scheduler.step()
+            scheduler_postflow.step()
 
             step_counter += 1
 

@@ -239,6 +239,7 @@ def train_loop(net,
         grad_scaler.update()
 
         scheduler.step()
+        scheduler_postflow.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
