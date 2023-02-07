@@ -200,10 +200,11 @@ def train_loop(net,
                 duration_losses_total.append(duration_loss.item())
                 pitch_losses_total.append(pitch_loss.item())
                 energy_losses_total.append(energy_loss.item())
-                glow_losses_total.append(glow_loss.item())
 
-            if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                train_loss = train_loss + glow_loss
+            if glow_loss is not None:
+                if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
+                    train_loss = train_loss + glow_loss
+                    glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
             grad_scaler.scale(train_loss).backward()

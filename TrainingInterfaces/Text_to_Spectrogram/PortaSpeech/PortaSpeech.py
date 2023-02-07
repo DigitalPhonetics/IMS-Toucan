@@ -182,12 +182,12 @@ class PortaSpeech(torch.nn.Module, ABC):
         # post net is realized as a flow
         gin_channels = attention_dimension
         self.post_flow = Glow(
-            output_spectrogram_channels,
-            192,  # post_glow_hidden  (original 192 in paper)
-            3,  # post_glow_kernel_size
-            1,
-            12,  # post_glow_n_blocks
-            3,  # post_glow_n_block_layers
+            in_channels=output_spectrogram_channels,
+            hidden_channels=192,  # post_glow_hidden  (original 192 in paper)
+            kernel_size=3,  # post_glow_kernel_size
+            dilation_rate=1,
+            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             gin_channels=gin_channels,
@@ -356,7 +356,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                encoded_texts=encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
-            glow_loss = torch.Tensor([0]).to(encoded_texts.device)
+            glow_loss = None
 
         if not is_inference:
             return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss
@@ -436,7 +436,11 @@ class PortaSpeech(torch.nn.Module, ABC):
             tgt_mels = tgt_mels.transpose(1, 2)
             z_postflow, ldj = self.post_flow(tgt_mels, tgt_nonpadding, g=g)
             ldj = ldj / y_lengths / 80
-            postflow_loss = -prior_dist.log_prob(z_postflow).mean() - ldj.mean()
+            try:
+                postflow_loss = -prior_dist.log_prob(z_postflow).mean() - ldj.mean()
+            except ValueError:
+                print("log probability of plostflow could not be calculated for this step")
+                postflow_loss = None
             return postflow_loss
         else:
             nonpadding = torch.ones_like(x_recon[:, :1, :])
@@ -462,3 +466,5 @@ if __name__ == '__main__':
     print(PortaSpeech().inference(dummy_text_batch,
                                   utterance_embedding=dummy_utterance_embed,
                                   lang_id=dummy_language_id))
+
+    print(sum(p.numel() for p in PortaSpeech().parameters() if p.requires_grad))
