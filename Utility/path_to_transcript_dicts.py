@@ -1,5 +1,7 @@
+import glob
 import os
 import random
+from pathlib import Path
 
 
 def limit_to_n(path_to_transcript_dict, n=40000):
@@ -166,9 +168,11 @@ def build_path_to_transcript_dict_hokuspokus():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt"):
         if transcript_file.endswith(".txt"):
-            with open("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt/" + transcript_file, 'r', encoding='utf8') as tf:
+            with open("/mount/resources/speech/corpora/LibriVox.Hokuspokus/txt/" + transcript_file, 'r',
+                      encoding='utf8') as tf:
                 transcript = tf.read()
-            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(".txt") + ".wav"
+            wav_path = "/mount/resources/speech/corpora/LibriVox.Hokuspokus/wav/" + transcript_file.rstrip(
+                ".txt") + ".wav"
             path_to_transcript[wav_path] = transcript
     return limit_to_n(path_to_transcript)
 
@@ -192,9 +196,11 @@ def build_path_to_transcript_dict_vctk():
     for transcript_dir in os.listdir("/mount/resources/speech/corpora/VCTK/txt"):
         for transcript_file in os.listdir(f"/mount/resources/speech/corpora/VCTK/txt/{transcript_dir}"):
             if transcript_file.endswith(".txt"):
-                with open(f"/mount/resources/speech/corpora/VCTK/txt/{transcript_dir}/" + transcript_file, 'r', encoding='utf8') as tf:
+                with open(f"/mount/resources/speech/corpora/VCTK/txt/{transcript_dir}/" + transcript_file, 'r',
+                          encoding='utf8') as tf:
                     transcript = tf.read()
-                wav_path = f"/mount/resources/speech/corpora/VCTK/wav48_silence_trimmed/{transcript_dir}/" + transcript_file.rstrip(".txt") + "_mic2.flac"
+                wav_path = f"/mount/resources/speech/corpora/VCTK/wav48_silence_trimmed/{transcript_dir}/" + transcript_file.rstrip(
+                    ".txt") + "_mic2.flac"
                 if os.path.exists(wav_path):
                     path_to_transcript[wav_path] = transcript
     return limit_to_n(path_to_transcript)
@@ -256,7 +262,8 @@ def build_path_to_transcript_dict_att_hack():
     path_to_transcript = dict()
     for transcript_file in os.listdir("/mount/resources/speech/corpora/FrenchExpressive/txt"):
         if transcript_file.endswith(".txt"):
-            with open("/mount/resources/speech/corpora/FrenchExpressive/txt/" + transcript_file, 'r', encoding='utf8') as tf:
+            with open("/mount/resources/speech/corpora/FrenchExpressive/txt/" + transcript_file, 'r',
+                      encoding='utf8') as tf:
                 transcript = tf.read()
             wav_path = "/mount/resources/speech/corpora/FrenchExpressive/wav/" + transcript_file.rstrip(".txt") + ".wav"
             path_to_transcript[wav_path] = transcript
@@ -270,7 +277,8 @@ def build_path_to_transcript_dict_css10de():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/CSS10/german/" + line.split("|")[0]] = line.split("|")[2]
+            path_to_transcript["/mount/resources/speech/corpora/CSS10/german/" + line.split("|")[0]] = line.split("|")[
+                2]
     return limit_to_n(path_to_transcript)
 
 
@@ -281,7 +289,8 @@ def build_path_to_transcript_dict_css10cmn():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/CSS10/chinese/" + line.split("|")[0]] = line.split("|")[2]
+            path_to_transcript["/mount/resources/speech/corpora/CSS10/chinese/" + line.split("|")[0]] = line.split("|")[
+                2]
     return limit_to_n(path_to_transcript)
 
 
@@ -306,7 +315,8 @@ def build_path_to_transcript_dict_thorsten():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = \
+                line.split("|")[1]
     return limit_to_n(path_to_transcript)
 
 
@@ -318,7 +328,8 @@ def build_path_to_transcript_dict_css10el():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -330,7 +341,8 @@ def build_path_to_transcript_dict_css10nl():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -342,7 +354,8 @@ def build_path_to_transcript_dict_css10fi():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -354,7 +367,8 @@ def build_path_to_transcript_dict_css10ru():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -366,7 +380,8 @@ def build_path_to_transcript_dict_css10hu():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -378,7 +393,8 @@ def build_path_to_transcript_dict_css10es():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -390,7 +406,8 @@ def build_path_to_transcript_dict_css10fr():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = line.split("|")[2]
+            path_to_transcript[f"/mount/resources/speech/corpora/CSS10/{language}/{line.split('|')[0]}"] = \
+                line.split("|")[2]
     return limit_to_n(path_to_transcript)
 
 
@@ -519,7 +536,69 @@ def build_file_list_singing_voice_audio_database():
     return file_list
 
 
+def build_path_to_transcript_dict_blizzard2023_ad():
+    root = "/mount/resources/speech/corpora/Blizzard2023/AD"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            norm_transcript = line.split("\t")[1]
+            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "")
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_blizzard2023_neb():
+    root = "/mount/resources/speech/corpora/Blizzard2023/NEB"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            norm_transcript = line.split("\t")[1]
+            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "")
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_synpaflex_norm_subset():
+    """
+    Contributed by https://github.com/tomschelsen
+    """
+    root = "/mount/resources/speech/corpora/synpaflex-corpus/5/v0.1/"
+    path_to_transcript = dict()
+    for text_path in glob.iglob(os.path.join(root, "**/*_norm.txt"), recursive=True):
+        with open(text_path, "r", encoding="utf8") as file:
+            norm_transcript = file.read()
+        path_obj = Path(text_path)
+        wav_path = str((path_obj.parent.parent / path_obj.name[:-9]).with_suffix(".wav"))
+        if Path(wav_path).exists():
+            path_to_transcript[wav_path] = norm_transcript
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_siwis_subset():
+    """
+    Contributed by https://github.com/tomschelsen
+    """
+    root = "/mount/resources/speech/corpora/SiwisFrenchSpeechSynthesisDatabase/"
+    # part4 and part5 are not segmented
+    sub_dirs = ["part1", "part2", "part3"]
+    path_to_transcript = dict()
+    for sd in sub_dirs:
+        for text_path in glob.iglob(os.path.join(root, "text", sd, "*.txt")):
+            with open(text_path, "r", encoding="utf8") as file:
+                norm_transcript = file.read()
+            path_obj = Path(text_path)
+            wav_path = str((path_obj.parent.parent.parent / "wavs" / sd / path_obj.stem).with_suffix(".wav"))
+            if Path(wav_path).exists():
+                path_to_transcript[wav_path] = norm_transcript
+    return path_to_transcript
+
+
 if __name__ == '__main__':
-    ptt = build_path_to_transcript_dict_blizzard_2013()
-    for p in ptt:
-        print(ptt[p] + "\n")
+    ptt = build_path_to_transcript_dict_blizzard2023_ad()
+    print(ptt)

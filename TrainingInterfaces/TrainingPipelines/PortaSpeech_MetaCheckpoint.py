@@ -16,7 +16,8 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, remove_faulty_samples=False, generate_all_aligner_caches=False):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, remove_faulty_samples=False,
+        generate_all_aligner_caches=False):
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data similar to how it is showcased in
@@ -66,9 +67,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                                       lang="en"))
 
-    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                                      lang="en"))
+    english_datasets.append(
+        prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                                  corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
+                                  lang="en"))
 
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
@@ -115,9 +117,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Greek"),
                                                     lang="el"))
 
-    spanish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "spanish_blizzard"),
-                                                      lang="es"))
+    spanish_datasets.append(
+        prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+                                  corpus_dir=os.path.join(PREPROCESSING_DIR, "spanish_blizzard"),
+                                  lang="es"))
 
     spanish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Spanish"),
@@ -151,8 +154,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_French"),
                                                      lang="fr"))
 
-    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_french"),
+    french_datasets.append(
+        prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_synpaflex_norm_subset(),
+                                  corpus_dir=os.path.join(PREPROCESSING_DIR, "synpaflex"),
+                                  lang="fr"))
+
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
+                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
+                                                     lang="fr"))
+
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
+                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
+                                                     lang="fr"))
+
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
+                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
                                                      lang="fr"))
 
     portuguese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
@@ -243,7 +259,8 @@ def find_and_remove_faulty_samples(net,
                                    datasets,
                                    device,
                                    path_to_checkpoint,
-                                   path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")):
+                                   path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding",
+                                                                             "embedding_function.pt")):
     net = net.to(device)
     torch.multiprocessing.set_sharing_strategy('file_system')
     check_dict = torch.load(os.path.join(path_to_checkpoint), map_location=device)
@@ -254,15 +271,18 @@ def find_and_remove_faulty_samples(net,
     for dataset_index in range(len(datasets)):
         nan_ids = list()
         for datapoint_index in tqdm(range(len(datasets[dataset_index]))):
-            style_embedding = style_embedding_function(batch_of_spectrograms=datasets[dataset_index][datapoint_index][2].unsqueeze(0).to(device),
-                                                       batch_of_spectrogram_lengths=datasets[dataset_index][datapoint_index][3].to(device))
+            style_embedding = style_embedding_function(
+                batch_of_spectrograms=datasets[dataset_index][datapoint_index][2].unsqueeze(0).to(device),
+                batch_of_spectrogram_lengths=datasets[dataset_index][datapoint_index][3].to(device))
             loss = net(text_tensors=datasets[dataset_index][datapoint_index][0].unsqueeze(0).to(device),
                        text_lengths=datasets[dataset_index][datapoint_index][1].to(device),
                        gold_speech=datasets[dataset_index][datapoint_index][2].unsqueeze(0).to(device),
                        speech_lengths=datasets[dataset_index][datapoint_index][3].to(device),
                        gold_durations=datasets[dataset_index][datapoint_index][4].unsqueeze(0).to(device),
-                       gold_pitch=datasets[dataset_index][datapoint_index][6].unsqueeze(0).to(device),  # mind the switched order
-                       gold_energy=datasets[dataset_index][datapoint_index][5].unsqueeze(0).to(device),  # mind the switched order
+                       gold_pitch=datasets[dataset_index][datapoint_index][6].unsqueeze(0).to(device),
+                       # mind the switched order
+                       gold_energy=datasets[dataset_index][datapoint_index][5].unsqueeze(0).to(device),
+                       # mind the switched order
                        utterance_embedding=style_embedding.unsqueeze(0).to(device),
                        lang_ids=datasets[dataset_index][datapoint_index][8].unsqueeze(0).to(device),
                        return_mels=False).squeeze()
