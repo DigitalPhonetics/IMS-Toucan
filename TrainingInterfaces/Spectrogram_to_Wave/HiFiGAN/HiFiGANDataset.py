@@ -58,7 +58,9 @@ class HiFiGANDataset(Dataset):
             try:
                 wave, sr = sf.read(path)
                 wave = to_mono(wave)
-                self.waves.append((wave, sr))
+                if sr != self.desired_samplingrate:
+                    wave = librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate)
+                self.waves.append(wave)
             except RuntimeError:
                 print(f"Problem with the following path: {path}")
 
@@ -68,7 +70,7 @@ class HiFiGANDataset(Dataset):
         All audio segments have to be cut to the same length,
         according to the NeurIPS reference implementation.
 
-        return a pair of high-red audio and corresponding low-res spectrogram as if it was predicted by the TTS
+        return a pair of high-res audio and corresponding low-res spectrogram as if it was predicted by the TTS
         """
         wave, sr = self.waves[index]
         while (len(wave) / sr) < (
@@ -76,10 +78,7 @@ class HiFiGANDataset(Dataset):
             # catch files that are too short to apply meaningful signal processing and make them longer
             wave = numpy.concatenate([wave, numpy.zeros(shape=1000), wave])
             # add some true silence in the mix, so the vocoder is exposed to that as well during training
-        if sr == self.desired_samplingrate:
-            wave = torch.Tensor(wave)
-        else:
-            wave = torch.Tensor(librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate))
+        wave = torch.Tensor(wave)
 
         max_audio_start = len(wave) - self.samples_per_segment
         audio_start = random.randint(0, max_audio_start)
@@ -93,10 +92,10 @@ class HiFiGANDataset(Dataset):
             scale = math.sqrt(math.e) * noise_power / speech_power  # signal to noise ratio of 5db
             noisy_segment = (scale * segment + noise) / 2
             resampled_segment = self.melspec_ap.resample(
-                noisy_segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+                noisy_segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
         else:
             resampled_segment = self.melspec_ap.resample(
-                segment)  # 16kHz spectrogram as input, 48kHz wave as output, see Blizzard 2021 DelightfulTTS
+                segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
         try:
             melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
                                                                explicit_sampling_rate=16000,

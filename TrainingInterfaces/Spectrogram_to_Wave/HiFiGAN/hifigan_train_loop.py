@@ -71,8 +71,8 @@ def train_loop(generator,
             optimizer_d.load_state_dict(check_dict["discriminator_optimizer"])
             scheduler_g.load_state_dict(check_dict["generator_scheduler"])
             scheduler_d.load_state_dict(check_dict["discriminator_scheduler"])
-            d.load_state_dict(check_dict["discriminator"])
             step_counter = check_dict["step_counter"]
+        d.load_state_dict(check_dict["discriminator"])
         g.load_state_dict(check_dict["generator"])
 
     start_time = time.time()
@@ -152,14 +152,14 @@ def train_loop(generator,
         if epoch % epochs_per_save == 0:
             g.eval()
             torch.save({
-                "generator"              : g.state_dict(),
-                "discriminator"          : d.state_dict(),
-                "generator_optimizer"    : optimizer_g.state_dict(),
+                "generator":               g.state_dict(),
+                "discriminator":           d.state_dict(),
+                "generator_optimizer":     optimizer_g.state_dict(),
                 "discriminator_optimizer": optimizer_d.state_dict(),
-                "generator_scheduler"    : scheduler_g.state_dict(),
+                "generator_scheduler":     scheduler_g.state_dict(),
                 "discriminator_scheduler": scheduler_d.state_dict(),
-                "step_counter"           : step_counter
-                }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
+                "step_counter":            step_counter
+            }, os.path.join(model_save_dir, "checkpoint_{}.pt".format(step_counter)))
             g.train()
             delete_old_checkpoints(model_save_dir, keep=5)
 
