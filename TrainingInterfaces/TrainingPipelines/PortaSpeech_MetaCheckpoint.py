@@ -149,10 +149,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_dutch"),
                                                     lang="nl"))
 
-    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_css10fr(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_French"),
-                                                     lang="fr"))
-
     french_datasets.append(
         prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_synpaflex_norm_subset(),
                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "synpaflex"),

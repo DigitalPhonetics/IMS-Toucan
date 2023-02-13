@@ -288,7 +288,7 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
-        utt.replace("»", '"').replace("«", '"')
+        utt = utt.replace("»", '"').replace("«", '"')
         # phonemize
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = pinyin_to_ipa(utt)
