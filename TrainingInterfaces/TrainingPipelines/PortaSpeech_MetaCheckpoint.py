@@ -20,8 +20,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         generate_all_aligner_caches=False):
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the github release
-    # page and finetune to your desired data similar to how it is showcased in
-    # FastSpeech2_finetuning_example.py
+    # page and finetune to your desired data
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -173,7 +172,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     portuguese_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
-                                                         lang="pt"))
+                                                         lang="pt-br"))
 
     polish_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_polish"),
@@ -392,7 +391,7 @@ def build_all_aligner_dataset_caches(device):
 
     factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
                         corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
-                        lang="pt")
+                        lang="pt-br")
 
     factory.build_cache(transcript_dict=build_path_to_transcript_dict_mls_polish(),
                         corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_polish"),

@@ -122,6 +122,12 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Portuguese Text-Frontend")
 
+        elif language == "pt-br":
+            self.g2p_lang = "pt-br"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Brazilian Portuguese Text-Frontend")
+
         elif language == "pl":
             self.g2p_lang = "pl"
             self.expand_abbreviations = lambda x: x
@@ -190,7 +196,7 @@ class ArticulatoryCombinedTextFrontend:
             return "Dit is een complexe zin, er zit zelfs een pauze in!"
         elif lang == "fr":
             return "C'est une phrase complexe, elle a même une pause !"
-        elif lang == "pt":
+        elif lang == "pt" or lang == "pt-br":
             return "Esta é uma frase complexa, tem até uma pausa!"
         elif lang == "pl":
             return "To jest zdanie złożone, ma nawet pauzę!"
@@ -481,6 +487,8 @@ def get_language_id(language):
         return torch.LongTensor([15])
     elif language == "fa":
         return torch.LongTensor([16])
+    elif language == "pt-br":
+        return torch.LongTensor([17])
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
-                                           lang="pt",
+                                           lang="pt-bt",
                                            device=device))
 
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),

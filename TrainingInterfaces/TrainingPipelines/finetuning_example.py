@@ -86,7 +86,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                eval_lang="de",  # THE LANGUAGE YOUR PROGRESS PLOTS WILL BE MADE IN
                lr=0.00005,
                warmup_steps=500,
-               # DOWNLOAD THIS INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY
+               # DOWNLOAD THESE INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY
                path_to_checkpoint=os.path.join(MODELS_DIR, "PortaSpeech_Meta",
                                                "best.pt") if resume_checkpoint is None else resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
@@ -94,7 +94,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                phase_1_steps=5000,
                phase_2_steps=1000,
-               postnet_start_steps=4000,
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

@@ -310,6 +310,23 @@ def build_path_to_transcript_dict_vietTTS():
 
 def build_path_to_transcript_dict_thorsten():
     path_to_transcript = dict()
+    root = "/mount/resources/speech/corpora/Thorsten_DE/V2"
+    with open(root + "/metadata_train.csv", encoding="utf8") as f:
+        transcriptions = f.read()
+    with open(root + "/metadata_dev.csv", encoding="utf8") as f:
+        transcriptions += "\n" + f.read()
+    with open(root + "/metadata_test.csv", encoding="utf8") as f:
+        transcriptions += "\n" + f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[root + "/wavs/" + line.split("|")[0] + ".wav"] = \
+                line.split("|")[1]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_thorsten_2020():
+    path_to_transcript = dict()
     with open("/mount/resources/speech/corpora/Thorsten_DE/metadata_shuf.csv", encoding="utf8") as f:
         transcriptions = f.read()
     trans_lines = transcriptions.split("\n")
