@@ -35,8 +35,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                          lang="en",
-                                          save_imgs=False)
+                                          lang="en")
 
     model = PortaSpeech()
     if use_wandb:

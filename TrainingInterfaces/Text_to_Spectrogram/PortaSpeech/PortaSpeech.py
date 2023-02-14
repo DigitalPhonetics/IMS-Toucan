@@ -122,7 +122,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
-                                 utt_embed=utt_embed_dim,
+                                 utt_embed=None,
                                  lang_embs=lang_embs)
 
         # define duration predictor
@@ -178,6 +178,12 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # define final projection
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
+
+        # define speaker embedding integrations
+        self.encoder_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.decoder_out_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim,
+                                                                attention_dimension)
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -242,25 +248,25 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # forward propagation
         before_outs, \
-        after_outs, \
-        d_outs, \
-        p_outs, \
-        e_outs, \
-        glow_loss = self._forward(text_tensors,
-                                  text_lengths,
-                                  gold_speech,
-                                  speech_lengths,
-                                  gold_durations,
-                                  gold_pitch,
-                                  gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+            after_outs, \
+            d_outs, \
+            p_outs, \
+            e_outs, \
+            glow_loss = self._forward(text_tensors,
+                                      text_lengths,
+                                      gold_speech,
+                                      speech_lengths,
+                                      gold_durations,
+                                      gold_pitch,
+                                      gold_energy,
+                                      utterance_embedding=utterance_embedding,
+                                      is_inference=False,
+                                      lang_ids=lang_ids,
+                                      run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
-                                                                         # is a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
+                                                                         # if a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
                                                                          before_outs=before_outs,
                                                                          d_outs=d_outs, p_outs=p_outs,
                                                                          e_outs=e_outs, ys=gold_speech,
@@ -303,6 +309,11 @@ class PortaSpeech(torch.nn.Module, ABC):
                                         utterance_embedding=utterance_embedding,
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
+        if utterance_embedding is not None:
+            encoded_texts = _integrate_with_utt_embed(hs=encoded_texts,
+                                                      utt_embeddings=utterance_embedding,
+                                                      projection=self.encoder_embedding_projection)
+
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
 
@@ -336,6 +347,11 @@ class PortaSpeech(torch.nn.Module, ABC):
         else:
             decoder_masks = None
 
+        if utterance_embedding is not None:
+            encoded_texts = _integrate_with_utt_embed(hs=encoded_texts,
+                                                      utt_embeddings=utterance_embedding,
+                                                      projection=self.decoder_in_embedding_projection)
+
         decoded_speech, _ = self.decoder(encoded_texts, decoder_masks, utterance_embedding)
         predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
 
@@ -343,16 +359,23 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # forward flow post-net
         if run_glow:
+            if utterance_embedding is not None:
+                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
+                                                            utt_embeddings=utterance_embedding,
+                                                            projection=self.decoder_out_embedding_projection)
+            else:
+                before_enriched = predicted_spectrogram_before_postnet
+
             if is_inference:
                 predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
                                                                          infer=is_inference,
-                                                                         mel_out=predicted_spectrogram_before_postnet,
+                                                                         mel_out=before_enriched,
                                                                          encoded_texts=encoded_texts,
                                                                          tgt_nonpadding=None)
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
-                                               mel_out=predicted_spectrogram_before_postnet,
+                                               mel_out=before_enriched,
                                                encoded_texts=encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
@@ -403,17 +426,17 @@ class PortaSpeech(torch.nn.Module, ABC):
             lang_id = lang_id.unsqueeze(0)
 
         before_outs, \
-        after_outs, \
-        d_outs, \
-        pitch_predictions, \
-        energy_predictions = self._forward(xs,
-                                           ilens,
-                                           ys,
-                                           is_inference=True,
-                                           alpha=alpha,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0),
-                                           lang_ids=lang_id,
-                                           run_glow=run_postflow)  # (1, L, odim)
+            after_outs, \
+            d_outs, \
+            pitch_predictions, \
+            energy_predictions = self._forward(xs,
+                                               ilens,
+                                               ys,
+                                               is_inference=True,
+                                               alpha=alpha,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0),
+                                               lang_ids=lang_id,
+                                               run_glow=run_postflow)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
@@ -457,6 +480,13 @@ class PortaSpeech(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
+
+def _integrate_with_utt_embed(hs, utt_embeddings, projection):
+    # concat hidden states with spk embeds and then apply projection
+    embeddings_expanded = utt_embeddings.unsqueeze(1).expand(-1, hs.size(1), -1)
+    hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
+    return hs
 
 
 if __name__ == '__main__':

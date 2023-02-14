@@ -61,7 +61,7 @@ class ControllableInterface:
             self.model.set_accent_language(self.language_id_lookup[accent])
             self.current_accent = accent
 
-        self.model.set_utterance_embedding(embedding=self.generated_speaker_embeds[voice_seed])
+        self.model.set_utterance_embedding(embedding=self.generated_speaker_embeds[voice_seed - 1])
 
         phones = self.model.text2phone.get_phone_string(prompt)
         if len(phones) > 1800:
