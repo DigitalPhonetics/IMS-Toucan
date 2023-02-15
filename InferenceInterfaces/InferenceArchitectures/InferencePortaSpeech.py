@@ -324,21 +324,21 @@ class PortaSpeech(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, \
-            after_outs, \
-            d_outs, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text.unsqueeze(0),
-                                               ilens,
-                                               gold_durations=durations,
-                                               gold_pitch=pitch,
-                                               gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0),
-                                               lang_ids=lang_id,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale,
-                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                               device=device)
+        after_outs, \
+        d_outs, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           ilens,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0),
+                                           lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                           device=device)
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]
