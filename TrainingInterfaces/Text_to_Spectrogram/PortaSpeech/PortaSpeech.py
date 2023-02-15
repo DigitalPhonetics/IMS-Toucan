@@ -182,8 +182,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         # define speaker embedding integrations
         self.encoder_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
-        self.decoder_out_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim,
-                                                                attention_dimension)
+        self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
+                                                                output_spectrogram_channels)
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -193,7 +193,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
             n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             gin_channels=gin_channels,
@@ -317,7 +317,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
 
-        pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
+        pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
         energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
 
         if not is_inference:
@@ -360,11 +360,11 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward flow post-net
         if run_glow:
             if utterance_embedding is not None:
-                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
+                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet.detach(),
                                                             utt_embeddings=utterance_embedding,
                                                             projection=self.decoder_out_embedding_projection)
             else:
-                before_enriched = predicted_spectrogram_before_postnet
+                before_enriched = predicted_spectrogram_before_postnet.detach()
 
             if is_inference:
                 predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
@@ -376,7 +376,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
                                                mel_out=before_enriched,
-                                               encoded_texts=encoded_texts,
+                                               encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = None

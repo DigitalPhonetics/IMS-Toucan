@@ -159,8 +159,8 @@ class PortaSpeech(torch.nn.Module):
         # define speaker embedding integrations
         self.encoder_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
-        self.decoder_out_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim,
-                                                                attention_dimension)
+        self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
+                                                                output_spectrogram_channels)
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -170,7 +170,7 @@ class PortaSpeech(torch.nn.Module):
             3,  # post_glow_kernel_size
             1,
             16,  # post_glow_n_blocks
-            4,  # post_glow_n_block_layers
+            3,  # post_glow_n_block_layers
             n_split=4,
             n_sqz=2,
             gin_channels=gin_channels,
