@@ -182,8 +182,8 @@ class PortaSpeech(torch.nn.Module, ABC):
         # define speaker embedding integrations
         self.encoder_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
-        self.decoder_out_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim,
-                                                                attention_dimension)
+        self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
+                                                                output_spectrogram_channels)
 
         # post net is realized as a flow
         gin_channels = attention_dimension

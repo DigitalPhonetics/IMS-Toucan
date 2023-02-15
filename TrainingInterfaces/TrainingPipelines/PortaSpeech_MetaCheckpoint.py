@@ -235,7 +235,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     train_loop(net=model,
                device=torch.device("cuda"),
                datasets=datasets,
-               batch_size=64,
+               batch_size=32,
                # choosing batchsize for this is tricky.
                # A large batchsize is dangerous for the VAE,
                # but a large batchsize is better for the modelling of the languages.
