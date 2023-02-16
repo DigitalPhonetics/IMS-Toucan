@@ -601,6 +601,22 @@ def build_path_to_transcript_dict_synpaflex_norm_subset():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_synpaflex_all():
+    """
+    Contributed by https://github.com/tomschelsen
+    """
+    root = "/mount/resources/speech/corpora/synpaflex-corpus/5/v0.1/"
+    path_to_transcript = dict()
+    for text_path in glob.iglob(os.path.join(root, "**/*.txt"), recursive=True):
+        with open(text_path, "r", encoding="utf8") as file:
+            transcript = file.read()
+        path_obj = Path(text_path)
+        wav_path = str((path_obj.parent.parent / path_obj.name[:-4]).with_suffix(".wav"))
+        if Path(wav_path).exists():
+            path_to_transcript[wav_path] = transcript
+    return path_to_transcript
+
+
 def build_path_to_transcript_dict_siwis_subset():
     """
     Contributed by https://github.com/tomschelsen

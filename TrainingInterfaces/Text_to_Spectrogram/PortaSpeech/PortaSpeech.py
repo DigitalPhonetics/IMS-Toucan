@@ -200,7 +200,7 @@ class PortaSpeech(torch.nn.Module, ABC):
             kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
             n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             gin_channels=gin_channels,
