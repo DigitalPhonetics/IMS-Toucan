@@ -157,10 +157,15 @@ class PortaSpeech(torch.nn.Module):
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.encoder_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.pitch_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.energy_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.duration_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
                                                                 output_spectrogram_channels)
+        self.pitch_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.energy_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.duration_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -214,9 +219,20 @@ class PortaSpeech(torch.nn.Module):
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         if utterance_embedding is not None:
-            encoded_texts = _integrate_with_utt_embed(hs=encoded_texts,
-                                                      utt_embeddings=utterance_embedding,
-                                                      projection=self.encoder_embedding_projection)
+
+            encoded_texts_for_pitch = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                utt_embeddings=self.pitch_bottleneck(utterance_embedding),
+                                                                projection=self.pitch_embedding_projection)
+            encoded_texts_for_energy = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                 utt_embeddings=self.energy_bottleneck(utterance_embedding),
+                                                                 projection=self.energy_embedding_projection)
+            encoded_texts_for_duration = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                   utt_embeddings=self.duration_bottleneck(utterance_embedding),
+                                                                   projection=self.duration_embedding_projection)
+        else:
+            encoded_texts_for_pitch = encoded_texts
+            encoded_texts_for_energy = encoded_texts
+            encoded_texts_for_duration = encoded_texts
 
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
@@ -224,15 +240,15 @@ class PortaSpeech(torch.nn.Module):
         if gold_durations is not None:
             predicted_durations = gold_durations
         else:
-            predicted_durations = self.duration_predictor.inference(encoded_texts, d_masks)
+            predicted_durations = self.duration_predictor.inference(encoded_texts_for_duration, d_masks)
         if gold_pitch is not None:
             pitch_predictions = gold_pitch
         else:
-            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+            pitch_predictions = self.pitch_predictor(encoded_texts_for_pitch, d_masks.unsqueeze(-1))
         if gold_energy is not None:
             energy_predictions = gold_energy
         else:
-            energy_predictions = self.energy_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+            energy_predictions = self.energy_predictor(encoded_texts_for_energy, d_masks.unsqueeze(-1))
 
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:

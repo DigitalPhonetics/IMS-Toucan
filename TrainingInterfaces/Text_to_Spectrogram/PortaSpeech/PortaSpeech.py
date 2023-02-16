@@ -180,10 +180,17 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.encoder_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.pitch_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2, attention_dimension)
+        self.energy_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2,
+                                                           attention_dimension)
+        self.duration_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2,
+                                                             attention_dimension)
         self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
                                                                 output_spectrogram_channels)
+        self.pitch_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.energy_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.duration_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -248,21 +255,21 @@ class PortaSpeech(torch.nn.Module, ABC):
 
         # forward propagation
         before_outs, \
-            after_outs, \
-            d_outs, \
-            p_outs, \
-            e_outs, \
-            glow_loss = self._forward(text_tensors,
-                                      text_lengths,
-                                      gold_speech,
-                                      speech_lengths,
-                                      gold_durations,
-                                      gold_pitch,
-                                      gold_energy,
-                                      utterance_embedding=utterance_embedding,
-                                      is_inference=False,
-                                      lang_ids=lang_ids,
-                                      run_glow=run_glow)
+        after_outs, \
+        d_outs, \
+        p_outs, \
+        e_outs, \
+        glow_loss = self._forward(text_tensors,
+                                  text_lengths,
+                                  gold_speech,
+                                  speech_lengths,
+                                  gold_durations,
+                                  gold_pitch,
+                                  gold_energy,
+                                  utterance_embedding=utterance_embedding,
+                                  is_inference=False,
+                                  lang_ids=lang_ids,
+                                  run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
@@ -310,26 +317,36 @@ class PortaSpeech(torch.nn.Module, ABC):
                                         lang_ids=lang_ids)  # (B, Tmax, adim)
 
         if utterance_embedding is not None:
-            encoded_texts = _integrate_with_utt_embed(hs=encoded_texts,
-                                                      utt_embeddings=utterance_embedding,
-                                                      projection=self.encoder_embedding_projection)
+            encoded_texts_for_pitch = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                utt_embeddings=self.pitch_bottleneck(utterance_embedding),
+                                                                projection=self.pitch_embedding_projection)
+            encoded_texts_for_energy = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                 utt_embeddings=self.energy_bottleneck(utterance_embedding),
+                                                                 projection=self.energy_embedding_projection)
+            encoded_texts_for_duration = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                   utt_embeddings=self.duration_bottleneck(utterance_embedding),
+                                                                   projection=self.duration_embedding_projection)
+        else:
+            encoded_texts_for_pitch = encoded_texts
+            encoded_texts_for_energy = encoded_texts
+            encoded_texts_for_duration = encoded_texts
 
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
 
-        pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
-        energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
+        pitch_predictions = self.pitch_predictor(encoded_texts_for_pitch, d_masks.unsqueeze(-1))
+        energy_predictions = self.energy_predictor(encoded_texts_for_energy, d_masks.unsqueeze(-1))
 
         if not is_inference:
             # use ground truth in training
-            predicted_durations = self.duration_predictor(encoded_texts, d_masks)
+            predicted_durations = self.duration_predictor(encoded_texts_for_duration, d_masks)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
             encoded_texts = self.length_regulator(encoded_texts, gold_durations)
         else:
             # use predictions in inference
-            predicted_durations = self.duration_predictor.inference(encoded_texts, d_masks)
+            predicted_durations = self.duration_predictor.inference(encoded_texts_for_duration, d_masks)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
@@ -426,17 +443,17 @@ class PortaSpeech(torch.nn.Module, ABC):
             lang_id = lang_id.unsqueeze(0)
 
         before_outs, \
-            after_outs, \
-            d_outs, \
-            pitch_predictions, \
-            energy_predictions = self._forward(xs,
-                                               ilens,
-                                               ys,
-                                               is_inference=True,
-                                               alpha=alpha,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0),
-                                               lang_ids=lang_id,
-                                               run_glow=run_postflow)  # (1, L, odim)
+        after_outs, \
+        d_outs, \
+        pitch_predictions, \
+        energy_predictions = self._forward(xs,
+                                           ilens,
+                                           ys,
+                                           is_inference=True,
+                                           alpha=alpha,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0),
+                                           lang_ids=lang_id,
+                                           run_glow=run_postflow)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 pitch_predictions[0][phoneme_index] = 0.0
