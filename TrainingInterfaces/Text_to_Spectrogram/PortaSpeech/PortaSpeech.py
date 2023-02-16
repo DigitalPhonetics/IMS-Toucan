@@ -317,7 +317,7 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
 
-        pitch_predictions = self.pitch_predictor(encoded_texts.detach(), d_masks.unsqueeze(-1))
+        pitch_predictions = self.pitch_predictor(encoded_texts, d_masks.unsqueeze(-1))
         energy_predictions = self.energy_predictor(encoded_texts, d_masks.unsqueeze(-1))
 
         if not is_inference:
@@ -360,11 +360,11 @@ class PortaSpeech(torch.nn.Module, ABC):
         # forward flow post-net
         if run_glow:
             if utterance_embedding is not None:
-                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet.detach(),
+                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
                                                             utt_embeddings=utterance_embedding,
                                                             projection=self.decoder_out_embedding_projection)
             else:
-                before_enriched = predicted_spectrogram_before_postnet.detach()
+                before_enriched = predicted_spectrogram_before_postnet
 
             if is_inference:
                 predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
@@ -376,7 +376,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
                                                mel_out=before_enriched,
-                                               encoded_texts=encoded_texts.detach(),
+                                               encoded_texts=encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = None
