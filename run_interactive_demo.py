@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     PATH_TO_TTS_MODEL = os.path.join(MODELS_DIR, "PortaSpeech_Meta", "best.pt")
     PATH_TO_VOCODER_MODEL = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
-    PATH_TO_REFERENCE_SPEAKER = ""  # audios/speaker_references_for_testing/female_high_voice.wav
+    PATH_TO_REFERENCE_SPEAKER = "audios/the_raven_large_embedding_dim.wav"  # audios/speaker_references_for_testing/female_high_voice.wav
     LANGUAGE = "en"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 

@@ -96,7 +96,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                  use_masking=False,
                  use_weighted_masking=True,
                  # additional features
-                 utt_embed_dim=256,
+                 utt_embed_dim=64,
                  lang_embs=8000):
         super().__init__()
 

@@ -54,14 +54,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
                                               lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                              lang="en"))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
-                                              lang="en"))
-
     # for the next iteration, we should add an augmented noisy version of e.g. Nancy,
     # so the embedding learns to factor out noise
 

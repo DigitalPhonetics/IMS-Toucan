@@ -29,18 +29,18 @@ class StyleEncoder(torch.nn.Module):
     """
 
     def __init__(
-            self,
-            idim: int = 80,
-            gst_tokens: int = 2000,
-            gst_token_dim: int = 256,
-            gst_heads: int = 8,
-            conv_layers: int = 8,
-            conv_chans_list=(32, 32, 64, 64, 128, 128, 256, 256),
-            conv_kernel_size: int = 3,
-            conv_stride: int = 2,
-            gst_layers: int = 2,
-            gst_units: int = 256,
-            ):
+        self,
+        idim: int = 80,
+        gst_tokens: int = 2000,
+        gst_token_dim: int = 64,
+        gst_heads: int = 8,
+        conv_layers: int = 8,
+        conv_chans_list=(32, 32, 64, 64, 128, 128, 256, 256),
+        conv_kernel_size: int = 3,
+        conv_stride: int = 2,
+        gst_layers: int = 2,
+        gst_units: int = 256,
+    ):
         """Initialize global style encoder module."""
         super(StyleEncoder, self).__init__()
 

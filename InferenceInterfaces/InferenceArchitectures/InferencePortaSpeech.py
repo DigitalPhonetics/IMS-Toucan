@@ -63,7 +63,7 @@ class PortaSpeech(torch.nn.Module):
                  transformer_dec_attn_dropout_rate=0.2,
                  duration_predictor_dropout_rate=0.2,
                  # additional features
-                 utt_embed_dim=256,
+                 utt_embed_dim=64,
                  lang_embs=8000,
                  weights=None):
         super().__init__()
@@ -157,9 +157,9 @@ class PortaSpeech(torch.nn.Module):
         self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.pitch_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
-        self.energy_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
-        self.duration_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
+        self.pitch_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2, attention_dimension)
+        self.energy_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2, attention_dimension)
+        self.duration_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2, attention_dimension)
         self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
         self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
                                                                 output_spectrogram_channels)
