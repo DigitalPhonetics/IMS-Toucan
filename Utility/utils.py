@@ -51,11 +51,18 @@ def plot_progress_spec(net,
     if sentence is None:
         return None
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    spec, durations, pitch, energy = net.inference(text=phoneme_vector,
-                                                   return_duration_pitch_energy=True,
-                                                   utterance_embedding=default_emb,
-                                                   lang_id=get_language_id(lang).to(device),
-                                                   run_postflow=run_postflow)
+    if run_postflow:
+        spec, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                       return_duration_pitch_energy=True,
+                                                       utterance_embedding=default_emb,
+                                                       lang_id=get_language_id(lang).to(device),
+                                                       run_postflow=run_postflow)
+    else:
+        spec, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                       return_duration_pitch_energy=True,
+                                                       utterance_embedding=default_emb,
+                                                       lang_id=get_language_id(lang).to(device))
+
     if before_and_after_postnet:
         # PortaSpeech case, because there it's more interesting
         spec_before, spec_after = spec
