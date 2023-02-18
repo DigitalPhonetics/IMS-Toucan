@@ -186,11 +186,10 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    cycle_dist = 0
-                    for out_gold, out_pred in zip(out_list_gold, out_list_predicted):
-                        # essentially feature matching, as is often done in vocoder training,
-                        # since we're essentially dealing with a discriminator here.
-                        cycle_dist = cycle_dist + torch.nn.functional.l1_loss(out_pred, out_gold.detach())
+                    cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted,
+                                                             style_embedding_of_gold.detach()) \
+                                 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted,
+                                                                         style_embedding_of_gold.detach()).mean()
 
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist

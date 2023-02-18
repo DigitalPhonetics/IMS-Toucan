@@ -2,6 +2,10 @@ from abc import ABC
 
 import torch
 import torch.distributions as dist
+from torch.nn import LayerNorm
+from torch.nn import Linear
+from torch.nn import Sequential
+from torch.nn import Tanh
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
@@ -103,9 +107,9 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.multispeaker_model = utt_embed_dim is not None
 
         # define encoder
-        embed = torch.nn.Sequential(torch.nn.Linear(input_feature_dimensions, 100),
-                                    torch.nn.Tanh(),
-                                    torch.nn.Linear(100, attention_dimension))
+        embed = Sequential(Linear(input_feature_dimensions, 100),
+                           Tanh(),
+                           Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
@@ -136,7 +140,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                  n_chans=pitch_predictor_chans,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout)
-        self.pitch_embed = torch.nn.Sequential(
+        self.pitch_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
                             kernel_size=pitch_embed_kernel_size,
@@ -148,7 +152,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                   n_chans=energy_predictor_chans,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout)
-        self.energy_embed = torch.nn.Sequential(
+        self.energy_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
                             kernel_size=energy_embed_kernel_size,
@@ -177,20 +181,25 @@ class PortaSpeech(torch.nn.Module, ABC):
                                  utt_embed=None)
 
         # define final projection
-        self.feat_out = torch.nn.Linear(attention_dimension, output_spectrogram_channels)
+        self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.pitch_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2, attention_dimension)
-        self.energy_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2,
-                                                           attention_dimension)
-        self.duration_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim // 2,
-                                                             attention_dimension)
-        self.decoder_in_embedding_projection = torch.nn.Linear(attention_dimension + utt_embed_dim, attention_dimension)
-        self.decoder_out_embedding_projection = torch.nn.Linear(output_spectrogram_channels + utt_embed_dim,
-                                                                output_spectrogram_channels)
-        self.pitch_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
-        self.energy_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
-        self.duration_bottleneck = torch.nn.Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.pitch_bottleneck = Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.energy_bottleneck = Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.duration_bottleneck = Linear(utt_embed_dim, utt_embed_dim // 2)
+        self.pitch_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim // 2, attention_dimension),
+                                                     LayerNorm(attention_dimension))
+        self.energy_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim // 2,
+                                                             attention_dimension),
+                                                      LayerNorm(attention_dimension))
+        self.duration_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim // 2,
+                                                               attention_dimension),
+                                                        LayerNorm(attention_dimension))
+        self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension),
+                                                          LayerNorm(attention_dimension))
+        self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim,
+                                                                  output_spectrogram_channels),
+                                                           LayerNorm(attention_dimension))
 
         # post net is realized as a flow
         gin_channels = attention_dimension
