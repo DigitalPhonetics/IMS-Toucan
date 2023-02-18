@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks import finetune_model_speaker
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_codo
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_AD import run as hifiad
@@ -28,7 +29,8 @@ pipeline_dict = {
     "neb":       neb,
     "ad_codo":   hifiad,
     "neb_codo":  hifineb,
-    "libri":     libri
+    "libri":     libri,
+    "spk_embed": finetune_model_speaker
 }
 
 if __name__ == '__main__':

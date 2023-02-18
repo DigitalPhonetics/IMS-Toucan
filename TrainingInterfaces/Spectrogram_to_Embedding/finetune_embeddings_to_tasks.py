@@ -311,7 +311,7 @@ def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embe
     embed.to(device)
 
     # define optimizer
-    optimizer = torch.optim.Adam(embed.parameters(), lr=0.001)
+    optimizer = torch.optim.AdamW(embed.parameters(), lr=0.001)
     optimizer.add_param_group({"params": non_contrastive_loss.parameters()})
 
     con_losses = list()
@@ -352,7 +352,7 @@ def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embe
         # calculate loss on embeddings and update
         con_loss = contrastive_loss(anchor_emb, positive_emb, negative_emb)
         con_losses.append(con_loss.item())
-        if step % 10 == 0:
+        if step % 10 == 0 and step < 5000:
             non_con_loss = non_contrastive_loss(anchor_emb, positive_emb)
             non_con_losses.append(non_con_loss.item())
         else:
