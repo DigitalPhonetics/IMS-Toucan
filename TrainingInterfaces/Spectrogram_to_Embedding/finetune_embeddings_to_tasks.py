@@ -307,7 +307,7 @@ def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embe
     wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}", id=None, resume=None)
 
     contrastive_loss = TripletLoss(margin=1.0)
-    non_contrastive_loss = BarlowTwinsLoss().to(device)
+    non_contrastive_loss = BarlowTwinsLoss(vector_dimensions=64).to(device)
 
     # load model
     embed = StyleEmbedding()
