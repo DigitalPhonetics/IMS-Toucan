@@ -5,9 +5,11 @@ models: One for speakers and one for emotion.
 """
 import os
 import random
+import time
 
 import soundfile
 import torch
+import wandb
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
@@ -301,6 +303,9 @@ def finetune_model_speaker(gpu_id, resume_checkpoint, resume, finetune, model_di
 
 def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")):
     # initialize losses
+
+    wandb.init(name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}", id=None, resume=None)
+
     contrastive_loss = TripletLoss(margin=1.0)
     non_contrastive_loss = BarlowTwinsLoss().to(device)
 
@@ -363,7 +368,13 @@ def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embe
         optimizer.step()
 
         # log
-        if step % 1000 == 0:
+        if step % 100 == 0:
+            wandb.log({
+                "contrastive": sum(con_losses) / len(con_losses),
+                "triplet":     sum(non_con_losses) / len(non_con_losses),
+                "Steps":       step
+            })
+
             print(f"\nStep: {step}")
             print(f"Contrastive:     {sum(con_losses) / len(con_losses)}")
             print(f"Non-Contrastive: {sum(non_con_losses) / len(non_con_losses)}")
