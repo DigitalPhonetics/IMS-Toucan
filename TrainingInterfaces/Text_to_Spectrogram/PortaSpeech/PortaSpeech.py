@@ -199,7 +199,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                           LayerNorm(attention_dimension))
         self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim,
                                                                   output_spectrogram_channels),
-                                                           LayerNorm(attention_dimension))
+                                                           LayerNorm(output_spectrogram_channels))
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -510,14 +510,14 @@ class PortaSpeech(torch.nn.Module, ABC):
 
 def _integrate_with_utt_embed(hs, utt_embeddings, projection):
     # concat hidden states with spk embeds and then apply projection
-    embeddings_expanded = utt_embeddings.unsqueeze(1).expand(-1, hs.size(1), -1)
+    embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
     hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
     return hs
 
 
 if __name__ == '__main__':
     dummy_text_batch = torch.randn([12, 62])  # [Sequence Length, Features per Phone]
-    dummy_utterance_embed = torch.randn([256])  # [Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
     print(PortaSpeech().inference(dummy_text_batch,
                                   utterance_embedding=dummy_utterance_embed,
