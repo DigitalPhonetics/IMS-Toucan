@@ -187,9 +187,9 @@ def train_loop(net,
                         return_all_outs=True)
 
                     cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted,
-                                                             style_embedding_of_gold.detach()) \
-                                 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted,
-                                                                         style_embedding_of_gold.detach()).mean()
+                                                             style_embedding_of_gold.detach()) * 0.1 + \
+                                 1.0 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted,
+                                                                             style_embedding_of_gold.detach()).mean()
 
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist

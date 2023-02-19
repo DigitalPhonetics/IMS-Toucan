@@ -5,7 +5,8 @@ import torch
 from matplotlib import pyplot as plt
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
+from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from Model import Model
@@ -14,7 +15,7 @@ DEVICE = "cuda:7"
 
 
 def train(epochs=130,
-          net=Model(device=DEVICE),
+          net=Model(device=DEVICE, path_to_weights=None),
           batch_size=64):
     torch.backends.cudnn.benchmark = True
     speaker_embedding_dataset = SpeakerEmbeddingDataset()
@@ -33,7 +34,7 @@ def train(epochs=130,
         for batch in tqdm(dataloader):
             _, kl_loss, reconstruction_loss = net(batch.to(DEVICE))
             if not torch.isnan(kl_loss):
-                cyclic_kl_scale = ((epoch % 5) + 1) / 5000
+                cyclic_kl_scale = ((epoch % 5) + 1) / 50
                 loss = kl_loss * cyclic_kl_scale + reconstruction_loss
                 kl_losses.append(kl_loss.cpu().item())
             else:
@@ -54,8 +55,8 @@ def create_eval_visualization(net, dataset, epoch):
 
     fig, axes = plt.subplots(1, 1, figsize=(6, 6))
 
-    real_samples_shown = 2000
-    fake_samples_shown = 2000
+    real_samples_shown = 1000
+    fake_samples_shown = 1000
 
     generated_embeds = list()
     for _ in range(fake_samples_shown):
@@ -101,7 +102,7 @@ def create_eval_visualization(net, dataset, epoch):
 
 class SpeakerEmbeddingDataset(Dataset):
     def __init__(self):
-        self.embedding_list = torch.load("reference_embeddings_as_list.pt", map_location="cpu")
+        self.embedding_list = torch.load("embedding_vectors_as_list_speakers.pt", map_location="cpu")
         print("loaded dataset")
 
     def __getitem__(self, index):

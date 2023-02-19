@@ -126,6 +126,6 @@ class Conformer(torch.nn.Module):
 
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
         # concat hidden states with spk embeds and then apply projection
-        embeddings_expanded = utt_embeddings.unsqueeze(1).expand(-1, hs.size(1), -1)
+        embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
         return hs
