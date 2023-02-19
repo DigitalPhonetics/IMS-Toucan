@@ -14,9 +14,9 @@ from Model import Model
 DEVICE = "cuda:7"
 
 
-def train(epochs=130,
+def train(epochs=300,
           net=Model(device=DEVICE, path_to_weights=None),
-          batch_size=64):
+          batch_size=16):
     torch.backends.cudnn.benchmark = True
     speaker_embedding_dataset = SpeakerEmbeddingDataset()
     dataloader = DataLoader(dataset=speaker_embedding_dataset,
@@ -34,7 +34,7 @@ def train(epochs=130,
         for batch in tqdm(dataloader):
             _, kl_loss, reconstruction_loss = net(batch.to(DEVICE))
             if not torch.isnan(kl_loss):
-                cyclic_kl_scale = ((epoch % 5) + 1) / 50
+                cyclic_kl_scale = ((epoch % 5) + 1) * 0.2
                 loss = kl_loss * cyclic_kl_scale + reconstruction_loss
                 kl_losses.append(kl_loss.cpu().item())
             else:
@@ -47,7 +47,7 @@ def train(epochs=130,
         print(f"KL this epoch: {sum(kl_losses) / len(kl_losses)}")
         print(f"Reconstruction this epoch: {sum(reconstruction_losses) / len(reconstruction_losses)}")
         create_eval_visualization(net, speaker_embedding_dataset, epoch + 1)
-    torch.save({"model": net.state_dict()}, f="checkpoint.pt")
+    torch.save({"model": net.state_dict()}, f="embedding_vae.pt")
 
 
 def create_eval_visualization(net, dataset, epoch):
@@ -55,8 +55,8 @@ def create_eval_visualization(net, dataset, epoch):
 
     fig, axes = plt.subplots(1, 1, figsize=(6, 6))
 
-    real_samples_shown = 1000
-    fake_samples_shown = 1000
+    real_samples_shown = 500
+    fake_samples_shown = 500
 
     generated_embeds = list()
     for _ in range(fake_samples_shown):
