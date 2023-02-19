@@ -2,7 +2,7 @@ import torch
 
 
 class Model(torch.nn.Module):
-    def __init__(self, path_to_weights="Models/EmbeddingVAE/embedding_vae.pt", bottleneck_size=128, device="cpu"):
+    def __init__(self, path_to_weights="Models/EmbeddingVAE/embedding_vae.pt", bottleneck_size=16, device="cpu"):
         super().__init__()
         self.bottleneck_size = bottleneck_size
         self.encoder = Encoder(bottleneck_size=self.bottleneck_size)
@@ -47,19 +47,19 @@ class Model(torch.nn.Module):
 class Encoder(torch.nn.Module):
     def __init__(self, bottleneck_size):
         """
-        takes in a 256 dimensional speaker embedding and bottlenecks the information into a compressed vector
+        takes in a 64 dimensional speaker embedding and bottlenecks the information into a compressed vector
         """
         super().__init__()
         self.nn = torch.nn.Sequential(
-            torch.nn.Linear(256, 256),
+            torch.nn.Linear(64, 64),
             torch.nn.Tanh(),
-            torch.nn.Linear(256, 256),
+            torch.nn.Linear(64, 32),
             torch.nn.Tanh(),
-            torch.nn.Linear(256, 128),
+            torch.nn.Linear(32, 32),
             torch.nn.Tanh(),
-            torch.nn.Linear(128, 128),
+            torch.nn.Linear(32, 16),
             torch.nn.Tanh(),
-            torch.nn.Linear(128, bottleneck_size),
+            torch.nn.Linear(16, bottleneck_size),
             torch.nn.Tanh()
         )
         self.proj_mean = torch.nn.Sequential(
@@ -83,21 +83,21 @@ class Encoder(torch.nn.Module):
 class Decoder(torch.nn.Module):
     def __init__(self, bottleneck_size):
         """
-        takes in a compressed vector and decompresses it into a 256 dimensional speaker embedding
+        takes in a compressed vector and decompresses it into a 64 dimensional speaker embedding
         """
         super().__init__()
         self.nn = torch.nn.Sequential(
-            torch.nn.Linear(bottleneck_size, 128),
+            torch.nn.Linear(bottleneck_size, 16),
             torch.nn.Tanh(),
-            torch.nn.Linear(128, 128),
+            torch.nn.Linear(16, 32),
             torch.nn.Tanh(),
-            torch.nn.Linear(128, 128),
+            torch.nn.Linear(32, 32),
             torch.nn.Tanh(),
-            torch.nn.Linear(128, 256),
+            torch.nn.Linear(32, 64),
             torch.nn.Tanh(),
-            torch.nn.Linear(256, 256),
+            torch.nn.Linear(64, 64),
             torch.nn.Tanh(),
-            torch.nn.Linear(256, 256)
+            torch.nn.Linear(64, 64)
         )
 
     def forward(self, compressed_data_for_decompression):
