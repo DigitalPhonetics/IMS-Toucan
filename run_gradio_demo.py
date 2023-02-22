@@ -71,9 +71,20 @@ class TTSWebUI:
                                           gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0,
                                                            label="Pitch Variance Scale"),
                                           gr.inputs.Slider(minimum=0.0, maximum=2.0, step=0.1, default=1.0,
-                                                           label="Energy Variance Scale")
+                                                           label="Energy Variance Scale"),
+                                          gr.inputs.Slider(minimum=-50.0, maximum=50.0, step=0.1, default=0.0,
+                                                           label="Femininity / Masculinity"),
+                                          gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0,
+                                                           label="Sibilance"),
+                                          gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0,
+                                                           label="Accentuated High / Low Frequencies"),
+                                          gr.inputs.Slider(minimum=-30.0, maximum=30.0, step=0.1, default=0.0,
+                                                           label="Loudness / Arousal / Calmness"),
+                                          gr.inputs.Slider(minimum=-20.0, maximum=20.0, step=0.1, default=0.0,
+                                                           label="Tone / Timbre")
                                           ],
-                                  outputs=gr.outputs.Audio(type="numpy", label=None),
+                                  outputs=[gr.outputs.Audio(type="numpy", label=None),
+                                           gr.outputs.Image(type="plot")],
                                   layout="vertical",
                                   title=title,
                                   theme="default",
@@ -90,16 +101,27 @@ class TTSWebUI:
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
-             energy_variance_scale):
-        sr, wav = self.controllable_ui.read(prompt,
-                                            language,
-                                            accent,
-                                            voice_seed,
-                                            duration_scaling_factor,
-                                            pause_duration_scaling_factor,
-                                            pitch_variance_scale,
-                                            energy_variance_scale)
-        return sr, float2pcm(wav.cpu().numpy())
+             energy_variance_scale,
+             emb1,
+             emb2,
+             emb3,
+             emb5,
+             emb6):
+        sr, wav, fig = self.controllable_ui.read(prompt,
+                                                 language,
+                                                 accent,
+                                                 voice_seed,
+                                                 duration_scaling_factor,
+                                                 pause_duration_scaling_factor,
+                                                 pitch_variance_scale,
+                                                 energy_variance_scale,
+                                                 emb1,
+                                                 emb2,
+                                                 emb3,
+                                                 0.0,  # slider 4 did not have a meaningful interpretation, too many properties mixed
+                                                 emb5,
+                                                 emb6)
+        return (sr, float2pcm(wav.cpu().numpy())), fig
 
 
 if __name__ == '__main__':

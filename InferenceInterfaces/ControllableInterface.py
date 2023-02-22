@@ -2,8 +2,8 @@ import os
 
 import torch
 
+from InferenceInterfaces.Controllability.GAN import GanWrapper
 from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
-from TrainingInterfaces.Spectrogram_to_Embedding.EmbeddingVAE.Model import Model as EmbeddingVAE
 from Utility.storage_config import MODELS_DIR
 
 
@@ -17,28 +17,25 @@ class ControllableInterface:
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = PortaSpeechInterface(device=self.device, tts_model_path="Meta")
-        self.embeddingVAE = EmbeddingVAE(path_to_weights=os.path.join(MODELS_DIR, "EmbeddingVAE", "embedding_vae.pt"),
-                                         device=self.device)
+        self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
         self.generated_speaker_embeds = list()
         self.available_artificial_voices = available_artificial_voices
-        for _ in range(self.available_artificial_voices):
-            self.generated_speaker_embeds.append(self.embeddingVAE().squeeze())
         self.current_language = "English"
         self.current_accent = "English"
         self.language_id_lookup = {
-            "English":    "en",
-            "German":     "de",
-            "Greek":      "el",
-            "Spanish":    "es",
-            "Finnish":    "fi",
-            "Russian":    "ru",
-            "Hungarian":  "hu",
-            "Dutch":      "nl",
-            "French":     "fr",
-            'Polish':     "pl",
+            "English"   : "en",
+            "German"    : "de",
+            "Greek"     : "el",
+            "Spanish"   : "es",
+            "Finnish"   : "fi",
+            "Russian"   : "ru",
+            "Hungarian" : "hu",
+            "Dutch"     : "nl",
+            "French"    : "fr",
+            'Polish'    : "pl",
             'Portuguese': "pt",
-            'Italian':    "it",
-            'Chinese':    "cmn",
+            'Italian'   : "it",
+            'Chinese'   : "cmn",
             'Vietnamese': "vi",
         }
 
@@ -50,7 +47,13 @@ class ControllableInterface:
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
-             energy_variance_scale
+             energy_variance_scale,
+             emb_slider_1,
+             emb_slider_2,
+             emb_slider_3,
+             emb_slider_4,
+             emb_slider_5,
+             emb_slider_6
              ):
         language = language.split()[0]
         accent = accent.split()[0]
@@ -61,7 +64,15 @@ class ControllableInterface:
             self.model.set_accent_language(self.language_id_lookup[accent])
             self.current_accent = accent
 
-        self.model.set_utterance_embedding(embedding=self.generated_speaker_embeds[voice_seed - 1])
+        self.wgan.set_latent(voice_seed)
+        controllability_vector = torch.tensor([emb_slider_1,
+                                               emb_slider_2,
+                                               emb_slider_3,
+                                               emb_slider_4,
+                                               emb_slider_5,
+                                               emb_slider_6], dtype=torch.float32)
+        embedding = self.wgan.modify_embed(controllability_vector)
+        self.model.set_utterance_embedding(embedding=embedding)
 
         phones = self.model.text2phone.get_phone_string(prompt)
         if len(phones) > 1800:
@@ -99,12 +110,12 @@ class ControllableInterface:
                 if self.current_accent != "English":
                     self.model.set_accent_language(self.language_id_lookup["English"])
                     self.current_accent = "English"
-            phones = self.model.text2phone.get_phone_string(prompt)
 
-        wav = self.model(phones,
-                         input_is_phones=True,
-                         duration_scaling_factor=duration_scaling_factor,
-                         pitch_variance_scale=pitch_variance_scale,
-                         energy_variance_scale=energy_variance_scale,
-                         pause_duration_scaling_factor=pause_duration_scaling_factor)
-        return 24000, wav
+        wav, fig = self.model(prompt,
+                              input_is_phones=False,
+                              duration_scaling_factor=duration_scaling_factor,
+                              pitch_variance_scale=pitch_variance_scale,
+                              energy_variance_scale=energy_variance_scale,
+                              pause_duration_scaling_factor=pause_duration_scaling_factor,
+                              return_plot_as_figure=True)
+        return 24000, wav, fig

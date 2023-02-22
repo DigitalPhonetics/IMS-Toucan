@@ -154,7 +154,8 @@ class PortaSpeechInterface(torch.nn.Module):
                 durations=None,
                 pitch=None,
                 energy=None,
-                input_is_phones=False):
+                input_is_phones=False,
+                return_plot_as_figure=False):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -190,7 +191,7 @@ class PortaSpeechInterface(torch.nn.Module):
                     # if the audio is too short, a value error might arise
                     pass
 
-        if view:
+        if view or return_plot_as_figure:
             from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
             ax[0].plot(wave.cpu().numpy())
@@ -206,7 +207,10 @@ class PortaSpeechInterface(torch.nn.Module):
             duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
             ax[1].xaxis.grid(True, which='minor')
             ax[1].set_xticks(label_positions, minor=False)
-            phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
+            if input_is_phones:
+                phones = text.replace(" ", "|")
+            else:
+                phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
             ax[1].set_xticklabels(phones)
             word_boundaries = list()
             for label_index, phone in enumerate(phones):
@@ -240,7 +244,10 @@ class PortaSpeechInterface(torch.nn.Module):
                     ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
                                  linestyles="solid", linewidth=0.5)
             plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
-            plt.show()
+            if not return_plot_as_figure:
+                plt.show()
+            else:
+                return wave, fig
         return wave
 
     def read_to_file(self,
