@@ -267,14 +267,16 @@ class PortaSpeech(torch.nn.Module):
             if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
                 predicted_durations[0][phoneme_index] = torch.round(
                     predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor)
+        if duration_scaling_factor != 1.0:
+            assert duration_scaling_factor > 0
+            predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
         embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
         embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
         encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
-        encoded_texts = self.length_regulator(encoded_texts, predicted_durations,
-                                              duration_scaling_factor)  # (B, Lmax, adim)
+        encoded_texts = self.length_regulator(encoded_texts, predicted_durations)
 
         if utterance_embedding is not None:
             encoded_texts = _integrate_with_utt_embed(hs=encoded_texts,

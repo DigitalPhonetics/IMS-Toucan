@@ -179,6 +179,7 @@ class PortaSpeechInterface(torch.nn.Module):
                                                            energy_variance_scale=energy_variance_scale,
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor,
                                                            device=self.device)
+
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
             if self.use_signalprocessing:
@@ -207,18 +208,37 @@ class PortaSpeechInterface(torch.nn.Module):
             phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
             ax[1].set_xticklabels(phones)
             word_boundaries = list()
-            for label_index, word_boundary in enumerate(phones):
-                if word_boundary == "|":
+            for label_index, phone in enumerate(phones):
+                if phone == "|":
                     word_boundaries.append(label_positions[label_index])
+
+            try:
+                prev_word_boundary = 0
+                word_label_positions = list()
+                for word_boundary in word_boundaries:
+                    word_label_positions.append((word_boundary + prev_word_boundary) / 2)
+                    prev_word_boundary = word_boundary
+                word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
+
+                secondary_ax = ax[1].secondary_xaxis('bottom')
+                secondary_ax.tick_params(axis="x", direction="out", pad=25)
+                secondary_ax.set_xticks(word_label_positions + word_boundaries, minor=False)
+                secondary_ax.set_xticklabels(text.split() + ["|"] * len(word_boundaries))
+                secondary_ax.tick_params(axis='x', colors='orange')
+                secondary_ax.xaxis.label.set_color('orange')
+            except ValueError:
+                ax[0].set_title(text)
+            except IndexError:
+                ax[0].set_title(text)
+
             ax[1].vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-            ax[1].vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+            ax[1].vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=8000, linewidth=1.2)
             pitch_array = pitch.cpu().numpy()
             for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
                 if pitch_array[pitch_index] != 0:
                     ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
                                  linestyles="solid", linewidth=0.5)
-            ax[0].set_title(text)
-            plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.9, wspace=0.0, hspace=0.0)
+            plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             plt.show()
         return wave
 

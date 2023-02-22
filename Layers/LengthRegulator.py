@@ -46,6 +46,11 @@ class LengthRegulator(torch.nn.Module, ABC):
         Returns:
             Tensor: replicated input tensor based on durations (B, T*, D).
         """
+
+        if alpha != 1.0:
+            assert alpha > 0
+            ds = torch.round(ds.float() * alpha).long()
+
         if ds.sum() == 0:
             ds[ds.sum(dim=1).eq(0)] = 1
 
