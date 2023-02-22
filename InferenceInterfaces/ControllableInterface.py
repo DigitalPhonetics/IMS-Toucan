@@ -111,11 +111,12 @@ class ControllableInterface:
                     self.model.set_accent_language(self.language_id_lookup["English"])
                     self.current_accent = "English"
 
+        print(prompt)
         wav, fig = self.model(prompt,
                               input_is_phones=False,
                               duration_scaling_factor=duration_scaling_factor,
                               pitch_variance_scale=pitch_variance_scale,
                               energy_variance_scale=energy_variance_scale,
                               pause_duration_scaling_factor=pause_duration_scaling_factor,
-                              return_plot_as_figure=True)
+                              return_plot_as_filepath=True)
         return 24000, wav, fig
