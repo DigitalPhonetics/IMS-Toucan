@@ -6,6 +6,7 @@ import os
 
 import torch
 
+from TrainingInterfaces.Spectrogram_to_Wave.BigVGAN.BigVGAN import BigVGAN
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
 from Utility.storage_config import MODELS_DIR
@@ -29,6 +30,13 @@ def load_net_porta(path):
 def load_net_hifigan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = HiFiGANGenerator()
+    net.load_state_dict(check_dict["generator"])
+    return net, None  # does not have utterance embedding
+
+
+def load_net_bigvgan(path):
+    check_dict = torch.load(path, map_location=torch.device("cpu"))
+    net = BigVGAN()
     net.load_state_dict(check_dict["generator"])
     return net, None  # does not have utterance embedding
 
@@ -105,6 +113,15 @@ def make_best_in_all():
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
                 save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
+
+            elif "BigVGAN" in model_dir:
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir),
+                                                                  n=2)
+                if checkpoint_paths is None:
+                    continue
+                averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
+                save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
+
             elif "PortaSpeech" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir),
                                                                   n=1)
