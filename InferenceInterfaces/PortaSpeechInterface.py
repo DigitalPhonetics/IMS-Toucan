@@ -221,9 +221,9 @@ class PortaSpeechInterface(torch.nn.Module):
                 word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
 
                 secondary_ax = ax[1].secondary_xaxis('bottom')
-                secondary_ax.tick_params(axis="x", direction="out", pad=25)
-                secondary_ax.set_xticks(word_label_positions + word_boundaries, minor=False)
-                secondary_ax.set_xticklabels(text.split() + ["|"] * len(word_boundaries))
+                secondary_ax.tick_params(axis="x", direction="out", pad=24)
+                secondary_ax.set_xticks(word_label_positions, minor=False)
+                secondary_ax.set_xticklabels(text.split())
                 secondary_ax.tick_params(axis='x', colors='orange')
                 secondary_ax.xaxis.label.set_color('orange')
             except ValueError:
