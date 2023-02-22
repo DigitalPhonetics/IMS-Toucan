@@ -72,9 +72,8 @@ class HiFiGANDataset(Dataset):
 
         return a pair of high-res audio and corresponding low-res spectrogram as if it was predicted by the TTS
         """
-        wave, sr = self.waves[index]
-        while (len(wave) / sr) < (
-                (self.samples_per_segment + 50) / self.desired_samplingrate):  # + 50 is just to be extra sure
+        wave = self.waves[index]
+        while len(wave) < self.samples_per_segment + 50:  # + 50 is just to be extra sure
             # catch files that are too short to apply meaningful signal processing and make them longer
             wave = numpy.concatenate([wave, numpy.zeros(shape=1000), wave])
             # add some true silence in the mix, so the vocoder is exposed to that as well during training

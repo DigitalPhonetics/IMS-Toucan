@@ -16,7 +16,7 @@ class Model(torch.nn.Module):
     def forward(self,
                 target_data=None,  # during training this should be a batch of target data.
                 # During inference simply leave this out to sample unconditionally.
-                noise_scale_during_inference=0.8,
+                noise_scale_during_inference=1.4,
                 z=None):
         if target_data is not None:
             # run the encoder
@@ -37,8 +37,9 @@ class Model(torch.nn.Module):
             # calculate the losses
             predicted_distribution = torch.distributions.Normal(means, variance)
             kl_loss = torch.distributions.kl_divergence(predicted_distribution, self.prior_distribution).mean()
-            reconstruction_loss = torch.nn.functional.mse_loss(reconstructions_of_targets, target_data,
-                                                               reduction="mean")
+            reconstruction_loss = 0.1 * torch.nn.functional.l1_loss(reconstructions_of_targets, target_data) + \
+                                  1.0 - torch.nn.functional.cosine_similarity(reconstructions_of_targets, target_data).mean() + \
+                                  0.1 * torch.nn.functional.mse_loss(reconstructions_of_targets, target_data, reduction="mean")
             return reconstructions_of_targets, kl_loss, reconstruction_loss
 
         return reconstructions_of_targets
@@ -54,6 +55,10 @@ class Encoder(torch.nn.Module):
             torch.nn.Linear(64, 64),
             torch.nn.Tanh(),
             torch.nn.Linear(64, 32),
+            torch.nn.Tanh(),
+            torch.nn.Linear(32, 32),
+            torch.nn.Tanh(),
+            torch.nn.Linear(32, 32),
             torch.nn.Tanh(),
             torch.nn.Linear(32, 32),
             torch.nn.Tanh(),
@@ -94,6 +99,20 @@ class Decoder(torch.nn.Module):
             torch.nn.Linear(32, 32),
             torch.nn.Tanh(),
             torch.nn.Linear(32, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
+            torch.nn.Tanh(),
+            torch.nn.Linear(64, 64),
             torch.nn.Tanh(),
             torch.nn.Linear(64, 64),
             torch.nn.Tanh(),

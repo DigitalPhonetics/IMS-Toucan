@@ -11,32 +11,28 @@ from tqdm import tqdm
 
 from Model import Model
 
-DEVICE = "cuda:7"
+DEVICE = "cpu"
 
 
-def train(epochs=300,
+def train(epochs=3000,
           net=Model(device=DEVICE, path_to_weights=None),
-          batch_size=16):
+          batch_size=256):
     torch.backends.cudnn.benchmark = True
     speaker_embedding_dataset = SpeakerEmbeddingDataset()
     dataloader = DataLoader(dataset=speaker_embedding_dataset,
                             batch_size=batch_size,
-                            num_workers=10,
+                            num_workers=0,
                             shuffle=True,
-                            prefetch_factor=10,
-                            persistent_workers=True,
                             drop_last=True)
-    optimizer = torch.optim.AdamW(net.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(net.parameters(), lr=0.0001)
     create_eval_visualization(net, speaker_embedding_dataset, 0)
     for epoch in range(epochs):
         kl_losses = list()
         reconstruction_losses = list()
         for batch in tqdm(dataloader):
             _, kl_loss, reconstruction_loss = net(batch.to(DEVICE))
-            if not torch.isnan(kl_loss):
-                cyclic_kl_scale = ((epoch % 5) + 1) * 0.2
-                loss = kl_loss * cyclic_kl_scale + reconstruction_loss
-                kl_losses.append(kl_loss.cpu().item())
+            if not torch.isnan(kl_loss) and epoch > 10:
+                loss = kl_loss * 0.2 + reconstruction_loss
             else:
                 loss = reconstruction_loss
             kl_losses.append(kl_loss.cpu().item())
@@ -44,9 +40,11 @@ def train(epochs=300,
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+        print(f"Epoch: {epoch}")
         print(f"KL this epoch: {sum(kl_losses) / len(kl_losses)}")
         print(f"Reconstruction this epoch: {sum(reconstruction_losses) / len(reconstruction_losses)}")
-        create_eval_visualization(net, speaker_embedding_dataset, epoch + 1)
+        if epoch % 100 == 0:
+            create_eval_visualization(net, speaker_embedding_dataset, epoch + 1)
     torch.save({"model": net.state_dict()}, f="embedding_vae.pt")
 
 
