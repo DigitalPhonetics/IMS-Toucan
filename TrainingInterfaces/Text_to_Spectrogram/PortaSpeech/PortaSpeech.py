@@ -40,7 +40,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=512,  # TODO try 192, 384, 512
+                 attention_dimension=512,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
