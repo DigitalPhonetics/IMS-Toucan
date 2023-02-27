@@ -142,6 +142,8 @@ def show_all_models_params():
     print("Number of (trainable) Parameters in GST: {}".format(count_parameters(StyleEmbedding())))
     from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
     print("Number of (trainable) Parameters in the HiFiGAN Generator: {}".format(count_parameters(HiFiGANGenerator())))
+    from TrainingInterfaces.Spectrogram_to_Wave.BigVGAN.BigVGAN import BigVGAN
+    print("Number of (trainable) Parameters in the BigVGAN Generator: {}".format(count_parameters(BigVGAN())))
     from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
     print("Number of (trainable) Parameters in PortaSpeech: {}".format(count_parameters(PortaSpeech())))
 
