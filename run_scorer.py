@@ -18,7 +18,7 @@ alignment_scorer = AlignmentScorer(path_to_aligner_model=os.path.join(MODELS_DIR
 alignment_scorer.score(path_to_aligner_dataset=os.path.join(PREPROCESSING_DIR, "IntegrationTest", "aligner_train_cache.pt"))
 alignment_scorer.show_samples_with_highest_loss(20)
 
-tts_scorer = TTSScorer(path_to_fastspeech_model=os.path.join(MODELS_DIR, "FastSpeech2_IntegrationTest", "best.pt"), device=exec_device)
-tts_scorer.score(path_to_fastspeech_dataset=os.path.join(PREPROCESSING_DIR, "IntegrationTest/"), lang_id="en")
+tts_scorer = TTSScorer(path_to_portaspeech_model=os.path.join(MODELS_DIR, "FastSpeech2_IntegrationTest", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "IntegrationTest/"), lang_id="en")
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(20)
