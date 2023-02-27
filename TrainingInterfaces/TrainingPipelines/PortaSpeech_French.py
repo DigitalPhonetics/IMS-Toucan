@@ -35,16 +35,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     os.makedirs(save_dir, exist_ok=True)
 
     french_datasets = list()
-    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_synpaflex_all(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "synpaflex_all"),
-                                                     lang="fr"))
 
     french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
-                                                     lang="fr"))
-
-    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_french"),
                                                      lang="fr"))
 
     french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
