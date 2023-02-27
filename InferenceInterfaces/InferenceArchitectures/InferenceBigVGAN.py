@@ -70,6 +70,7 @@ class BigVGAN(torch.nn.Module):
         self.load_state_dict(torch.load(path_to_weights, map_location='cpu')["generator"])
 
     def forward(self, x):
+        x = x.unsqueeze(0)
         # pre conv
         x = self.conv_pre(x)
 
@@ -94,7 +95,7 @@ class BigVGAN(torch.nn.Module):
         return x.squeeze()
 
     def remove_weight_norm(self):
-        print('Removing weight norm...')
+        # print('Removing weight norm...')
         for l in self.ups:
             for l_i in l:
                 remove_weight_norm(l_i)

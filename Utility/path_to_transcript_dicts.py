@@ -604,16 +604,26 @@ def build_path_to_transcript_dict_synpaflex_norm_subset():
 def build_path_to_transcript_dict_synpaflex_all():
     """
     Contributed by https://github.com/tomschelsen
+    modified by Flux to capture all audios
     """
     root = "/mount/resources/speech/corpora/synpaflex-corpus/5/v0.1/"
     path_to_transcript = dict()
-    for text_path in glob.iglob(os.path.join(root, "**/*.txt"), recursive=True):
-        with open(text_path, "r", encoding="utf8") as file:
-            transcript = file.read()
-        path_obj = Path(text_path)
-        wav_path = str((path_obj.parent.parent / path_obj.name[:-4]).with_suffix(".wav"))
-        if Path(wav_path).exists():
-            path_to_transcript[wav_path] = transcript
+    for wav_path in glob.iglob(os.path.join(root, "**/*.wav"), recursive=True):
+        # two cases: either the txt lie in the txt subdir, or they lie in the txt subdir of the parent node
+        file_id = str(wav_path).split("/")[-1].rstrip(".wav")
+        wav_dir = "/".join(str(wav_path).split("/")[:-1])
+        wav_parent_dir = "/".join(str(wav_path).split("/")[:-2])
+
+        text_path = wav_dir + "/txt/" + file_id + "_norm.txt"
+        if not Path(text_path).exists():
+            text_path = wav_dir + "/txt/" + file_id + ".txt"
+            if not Path(text_path).exists():
+                text_path = wav_parent_dir + "/txt/" + file_id + ".wav"
+
+        if Path(text_path).exists():
+            with open(text_path, "r", encoding="utf8") as file:
+                norm_transcript = file.read()
+        path_to_transcript[wav_path] = norm_transcript
     return path_to_transcript
 
 
@@ -637,5 +647,5 @@ def build_path_to_transcript_dict_siwis_subset():
 
 
 if __name__ == '__main__':
-    ptt = build_path_to_transcript_dict_blizzard2023_ad()
+    ptt = build_path_to_transcript_dict_synpaflex_all()
     print(ptt)

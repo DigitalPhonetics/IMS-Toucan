@@ -106,7 +106,7 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr":
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = lambda x: x
+            self.expand_abbreviations = french_spacing
             if not silent:
                 print("Created a French Text-Frontend")
 
@@ -288,7 +288,7 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
-        utt = utt.replace("»", '"').replace("«", '"')
+
         # phonemize
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = pinyin_to_ipa(utt)
@@ -448,6 +448,13 @@ def english_text_expansion(text):
                        ('Capt.', 'captain'), ('Esq.', 'esquire'), ('Ltd.', 'limited'), ('Col.', 'colonel'), ('Ft.', 'fort')]]
     for regex, replacement in _abbreviations:
         text = re.sub(regex, replacement, text)
+    return text
+
+
+def french_spacing(text):
+    text = text.replace("»", '"').replace("«", '"')
+    for punc in ["!", ";", ":", ".", ",", "?"]:
+        text = text.replace(f" {punc}", punc)
     return text
 
 

@@ -15,6 +15,7 @@ from pedalboard import PeakFilter
 from pedalboard import Pedalboard
 
 from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
+from InferenceInterfaces.InferenceArchitectures.InferenceBigVGAN import BigVGAN
 from InferenceInterfaces.InferenceArchitectures.InferencePortaSpeech import PortaSpeech
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
@@ -31,7 +32,9 @@ class PortaSpeechInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"PortaSpeech_Meta", "best.pt"),
                  # path to the PortaSpeech checkpoint or just a shorthand if run standalone
                  vocoder_model_path=None,
-                 # path to the hifigan/avocodo checkpoint
+                 # path to the hifigan/avocodo/bigvgan checkpoint
+                 faster_vocoder=False,
+                 # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",
                  # initial language of the model, can be changed later with the setter methods
                  use_signalprocessing=False,
@@ -43,7 +46,10 @@ class PortaSpeechInterface(torch.nn.Module):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"PortaSpeech_{tts_model_path}", "best.pt")
         if vocoder_model_path is None:
-            vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
+            if faster_vocoder:
+                vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
+            else:
+                vocoder_model_path = os.path.join(MODELS_DIR, "BigVGAN", "best.pt")
         self.use_signalprocessing = use_signalprocessing
         if self.use_signalprocessing:
             self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
@@ -97,7 +103,10 @@ class PortaSpeechInterface(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        self.mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path).to(torch.device(device))
+        if faster_vocoder:
+            self.mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path).to(torch.device(device))
+        else:
+            self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
         self.mel2wav.remove_weight_norm()
 
         ################################

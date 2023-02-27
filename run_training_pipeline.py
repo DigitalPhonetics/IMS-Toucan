@@ -5,12 +5,10 @@ from TrainingInterfaces.Spectrogram_to_Embedding.finetune_embeddings_to_tasks im
 from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_codo
-from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_AD import run as hifiad
-from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo_NEB import run as hifineb
 from TrainingInterfaces.TrainingPipelines.JointEmbeddingFunction import run as embedding
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_AD import run as ad
+from TrainingInterfaces.TrainingPipelines.PortaSpeech_French import run as libri
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
-from TrainingInterfaces.TrainingPipelines.PortaSpeech_Libri import run as libri
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_NEB import run as neb
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_Nancy import run as nancy
@@ -28,8 +26,6 @@ pipeline_dict = {
     "nancy"    : nancy,
     "ad"       : ad,
     "neb"      : neb,
-    "ad_codo"  : hifiad,
-    "neb_codo" : hifineb,
     "libri"    : libri,
     "spk_embed": finetune_model_speaker,
     "bigvgan"  : bigvgan
