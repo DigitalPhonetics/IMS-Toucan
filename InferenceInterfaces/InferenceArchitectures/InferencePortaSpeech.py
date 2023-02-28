@@ -261,6 +261,20 @@ class PortaSpeech(torch.nn.Module):
             energy_predictions = self.energy_predictor(encoded_texts_for_energy, d_masks.unsqueeze(-1))
 
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
+            if phoneme_vector[get_feature_to_index_lookup()["questionmark"]] == 1:
+                if phoneme_index - 4 >= 0:
+                    pitch_predictions[0][phoneme_index - 1] += .3
+                    pitch_predictions[0][phoneme_index - 2] += .3
+                    pitch_predictions[0][phoneme_index - 3] += .2
+                    pitch_predictions[0][phoneme_index - 4] += .1
+            if phoneme_vector[get_feature_to_index_lookup()["exclamationmark"]] == 1:
+                if phoneme_index - 6 >= 0:
+                    pitch_predictions[0][phoneme_index - 1] += .3
+                    pitch_predictions[0][phoneme_index - 2] += .3
+                    pitch_predictions[0][phoneme_index - 3] += .2
+                    pitch_predictions[0][phoneme_index - 4] += .2
+                    pitch_predictions[0][phoneme_index - 5] += .1
+                    pitch_predictions[0][phoneme_index - 6] += .1
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                 # this means the phoneme is unvoiced
                 pitch_predictions[0][phoneme_index] = 0.0
@@ -351,21 +365,21 @@ class PortaSpeech(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, \
-        after_outs, \
-        d_outs, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text.unsqueeze(0),
-                                           ilens,
-                                           gold_durations=durations,
-                                           gold_pitch=pitch,
-                                           gold_energy=energy,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0),
-                                           lang_ids=lang_id,
-                                           duration_scaling_factor=duration_scaling_factor,
-                                           pitch_variance_scale=pitch_variance_scale,
-                                           energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                           device=device)
+            after_outs, \
+            d_outs, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text.unsqueeze(0),
+                                               ilens,
+                                               gold_durations=durations,
+                                               gold_pitch=pitch,
+                                               gold_energy=energy,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0),
+                                               lang_ids=lang_id,
+                                               duration_scaling_factor=duration_scaling_factor,
+                                               pitch_variance_scale=pitch_variance_scale,
+                                               energy_variance_scale=energy_variance_scale,
+                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                               device=device)
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]
         return after_outs[0]

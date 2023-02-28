@@ -33,7 +33,7 @@ class PortaSpeechInterface(torch.nn.Module):
                  # path to the PortaSpeech checkpoint or just a shorthand if run standalone
                  vocoder_model_path=None,
                  # path to the hifigan/avocodo/bigvgan checkpoint
-                 faster_vocoder=False,
+                 faster_vocoder=True,
                  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",
                  # initial language of the model, can be changed later with the setter methods
