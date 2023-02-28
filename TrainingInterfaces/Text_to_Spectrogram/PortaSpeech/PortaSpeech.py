@@ -92,7 +92,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=True,
+                 detach_postflow=False,
                  lang_embs=8000):
         super().__init__()
 
@@ -210,8 +210,8 @@ class PortaSpeech(torch.nn.Module, ABC):
             hidden_channels=192,  # post_glow_hidden  (original 192 in paper)
             kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=24,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             gin_channels=gin_channels,
