@@ -71,8 +71,10 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
 
-    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 200000),  # adjust the sample size until it fits into RAM
-                               use_random_corruption=False)
+    train_set = HiFiGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 200000) +
+                                             list(build_path_to_transcript_dict_blizzard2023_ad().keys()) +
+                                             list(build_path_to_transcript_dict_blizzard2023_neb().keys()),  # adjust the sample size until it fits into RAM
+                               )
 
     generator = BigVGAN()
     jit_compiled_generator = torch.jit.trace(generator, torch.rand([24, 80, 32]))
