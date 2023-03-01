@@ -361,7 +361,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
 
             predicted_durations = self.duration_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=enriched_encoded_texts.transpose(1, 2), utt_emb=utterance_embedding)
-            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations, alpha)
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations, alpha)
 
         # forward the decoder
         if not is_inference:
@@ -545,15 +545,15 @@ class ToucanTTS(torch.nn.Module, ABC):
         real_windows = list()
         condition_windows = list()
 
-        for end_index, generated, real, condition in zip(text_lens, generated_sequences, real_sequences, condition_sequences):
+        for end_index, generated, real, condition in zip(text_lens.squeeze(), generated_sequences, real_sequences, condition_sequences):
             max_start = end_index - self.window_size
             if max_start > 0:
                 start = random.randint(0, max_start)
             else:
                 start = 0
-            generated_windows.append(generated[start:start + self.window_size])
-            real_windows.append(real[start:start + self.window_size])
-            condition_windows.append(condition[start:start + self.window_size])
+            generated_windows.append(generated[start:start + self.window_size].unsqueeze(0))
+            real_windows.append(real[start:start + self.window_size].unsqueeze(0))
+            condition_windows.append(condition[start:start + self.window_size].unsqueeze(0))
         return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0), torch.cat(condition_windows, dim=0)
 
 
@@ -565,6 +565,7 @@ def _integrate_with_utt_embed(hs, utt_embeddings, projection):
 
 
 if __name__ == '__main__':
+    print(""" TESTING INFERENCE """)
     dummy_text_batch = torch.randn([12, 62])  # [Sequence Length, Features per Phone]
     dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
@@ -572,27 +573,31 @@ if __name__ == '__main__':
                                 utterance_embedding=dummy_utterance_embed,
                                 lang_id=dummy_language_id))
 
+    print(""" TESTING TRAINING """)
+
     dummy_text_batch = torch.randn([2, 3, 62])  # [Batch, Sequence Length, Features per Phone]
-    dummy_text_lens = torch.LongTensor([1, 2])
+    dummy_text_lens = torch.LongTensor([2, 3])
 
     dummy_speech_batch = torch.randn([2, 30, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
-    dummy_speech_lens = torch.LongTensor([10, 25])
+    dummy_speech_lens = torch.LongTensor([10, 30])
 
-    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 0]])
-    dummy_pitch = torch.Tensor([[1.0, 0., 0.], [1.1, 1.2, 0.]])
-    dummy_energy = torch.tensor([[1.0, 0., 0.], [1.1, 1.2, 0.]])
+    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5]])
+    dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]]])
+    dummy_energy = torch.tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
-    dummy_language_id = torch.LongTensor([2])
+    dummy_utterance_embed = torch.randn([2, 64])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
 
-    print(ToucanTTS()(dummy_text_batch,
-                      dummy_text_lens,
-                      dummy_speech_batch,
-                      dummy_speech_lens,
-                      dummy_durations,
-                      dummy_pitch,
-                      dummy_energy,
-                      utterance_embedding=dummy_utterance_embed,
-                      lang_ids=dummy_language_id))
+    model = ToucanTTS(window_size=2)
+    model.initialize_solver(2)
+    print(model(dummy_text_batch,
+                dummy_text_lens,
+                dummy_speech_batch,
+                dummy_speech_lens,
+                dummy_durations,
+                dummy_pitch,
+                dummy_energy,
+                utterance_embedding=dummy_utterance_embed,
+                lang_ids=dummy_language_id))
 
-    print(sum(p.numel() for p in ToucanTTSLoss().parameters() if p.requires_grad))
+    print(sum(p.numel() for p in ToucanTTS().parameters() if p.requires_grad))

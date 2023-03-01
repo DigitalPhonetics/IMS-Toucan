@@ -125,15 +125,15 @@ class VarianceDiscriminator(torch.nn.Module):
 
         return sol
 
-    def _approx_OT_(self, sol):
+    def _approx_OT_(self, sol, device):
         # Compute the OT mapping for each fake dataset
         ResMat = np.array(sol['z']).reshape((self.batch_size, self.batch_size))
-        mapping = torch.from_numpy(np.argmax(ResMat, axis=0)).long().to(self.device)
+        mapping = torch.from_numpy(np.argmax(ResMat, axis=0)).long().to(device)
 
         return mapping
 
     def _optimal_transport_regularization_(self, output_fake, fake, real_fake_diff):
-        output_fake_grad = torch.ones(output_fake.size()).to(self.device)
+        output_fake_grad = torch.ones(output_fake.size()).to(fake.device)
         gradients = torch_grad(outputs=output_fake, inputs=fake,
                                grad_outputs=output_fake_grad,
                                create_graph=True, retain_graph=True, only_inputs=True)[0]
@@ -152,22 +152,22 @@ class VarianceDiscriminator(torch.nn.Module):
         self.D.train()
 
         # Get generated fake dataset
-        generated_data = torch.cat((data_generated, data_condition), dim=3)
+        generated_data = torch.cat((data_generated, data_condition), dim=2)
 
-        real_data = torch.cat((data_real, data_condition), dim=3)
+        real_data = torch.cat((data_real, data_condition), dim=2)
 
         # compute wasserstein distance
         distance = self._quadratic_wasserstein_distance_(real_data, generated_data)
         # solve linear programming problem
         sol = self._linear_programming_(distance, self.batch_size)
         # approximate optimal transport
-        mapping = self._approx_OT_(sol)
+        mapping = self._approx_OT_(sol, data_generated.device)
         real_ordered = real_data[mapping]  # match real and fake
         real_fake_diff = real_ordered - generated_data
 
         # construct target
         target = torch.from_numpy(np.array(sol['x'])).float()
-        target = target.squeeze().to(self.device)
+        target = target.squeeze().to(data_generated.device)
 
         for i in range(opt_iterations):
             generated_data.requires_grad_()
@@ -199,7 +199,7 @@ class VarianceDiscriminator(torch.nn.Module):
         for p in self.D.parameters():
             p.requires_grad = False  # freeze critic
 
-        fake = torch.cat((data_generated, data_condition), dim=3)
+        fake = torch.cat((data_generated, data_condition), dim=2)
         output_fake = self.D(fake)
         output_F_mean_after = output_fake.mean(0).view(1)
 
