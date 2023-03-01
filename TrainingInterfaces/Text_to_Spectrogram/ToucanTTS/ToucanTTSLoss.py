@@ -12,10 +12,7 @@ class ToucanTTSLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-
-        # define criterions
-        reduction = "none" if self.use_weighted_masking else "mean"
-        self.l1_criterion = torch.nn.L1Loss(reduction=reduction)
+        self.l1_criterion = torch.nn.L1Loss(reduction="none")
 
     def forward(self, after_outs, before_outs, ys, olens, ):
         """
