@@ -141,7 +141,6 @@ class VarianceDiscriminator(torch.nn.Module):
         RegLoss = 0.5 * ((gradients.view(n, -1).norm(dim=1) / (2 * self.Kr) - self.Kr / 2 * real_fake_diff.view(n,
                                                                                                                 -1).norm(
             dim=1)).pow(2)).mean()
-        fake.requires_grad = False
 
         return RegLoss
 
@@ -183,7 +182,7 @@ class VarianceDiscriminator(torch.nn.Module):
             L2LossD_fake = self.criterion(output_fake, target[self.batch_size:])
             L2LossD = 0.5 * L2LossD_real + 0.5 * L2LossD_fake
 
-            reg_loss_D = self._optimal_transport_regularization_(output_fake, generated_data, real_fake_diff)
+            reg_loss_D = self._optimal_transport_regularization_(output_fake.detach(), generated_data, real_fake_diff)
 
             total_loss = L2LossD + self.LAMBDA * reg_loss_D
 
