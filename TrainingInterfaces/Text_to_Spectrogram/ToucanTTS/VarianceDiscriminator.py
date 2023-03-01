@@ -44,7 +44,7 @@ class VarianceDiscriminator(torch.nn.Module):
         self.D = ResNet_D(parameters['data_dim'][-1],
                           parameters['size'],
                           nfilter=parameters['nfilter'],
-                          nfilter_max=parameters['nfilter_max']).to(device=device)
+                          nfilter_max=parameters['nfilter_max'])
 
         self.D.apply(weights_init_D)
         self.losses = {
