@@ -27,7 +27,7 @@ class VariationalVariancePredictor(nn.Module):
                                         layers_in_block=2, is_BTC=False, norm_type=norm_type, spk_emb_size=spk_emb_size)
         self.out_proj = nn.Conv1d(hidden_size, out_channels, 1)
 
-    def forward(self, nonpadding, cond, utt_emb=None):
+    def forward(self, cond, nonpadding=None, utt_emb=None):
         # first we sample random noise
         x = torch.randn([cond.shape[0], self.latent_size, cond.shape[2]]).to(cond.device)
         # then we pass the random noise through a pre net

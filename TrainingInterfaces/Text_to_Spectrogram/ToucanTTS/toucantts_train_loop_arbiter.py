@@ -1,6 +1,5 @@
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.portaspeech_meta_train_loop import \
-    train_loop as multi_language_loop
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.portaspeech_train_loop import train_loop as mono_language_loop
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_meta_train_loop import train_loop as multi_language_loop
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop import train_loop as mono_language_loop
 
 
 def train_loop(net,  # an already initialized PortaSpeech model that should be trained.

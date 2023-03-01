@@ -12,28 +12,24 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeech2Loss import FastSpeech2Loss
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.VariationalVariancePredictor import VariationalVariancePredictor
 from Utility.utils import initialize
+from Utility.utils import make_estimated_durations_usable_for_inference
 from Utility.utils import make_non_pad_mask
-from Utility.utils import make_pad_mask
 
 
-class PortaSpeech(torch.nn.Module, ABC):
+class ToucanTTS(torch.nn.Module, ABC):
     """
-    PortaSpeech 2 module, which is basically just a FastSpeech 2 module, but with an improved decoder and the PostNet is a flow.
-
-    This is a module of FastSpeech 2 described in FastSpeech 2: Fast and
-    High-Quality End-to-End Text to Speech. Instead of quantized pitch and
-    energy, we use token-averaged value introduced in FastPitch: Parallel
-    Text-to-speech with Pitch Prediction. The encoder and decoder are Conformers
-    instead of regular Transformers.
-
-        https://arxiv.org/abs/2006.04558
-        https://arxiv.org/abs/2006.06873
-        https://arxiv.org/pdf/2005.08100
-        https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf
-
+    ToucanTTS module, which is basically just a FastSpeech 2 module,
+    but with variance predictors that make more sense and the PostNet
+    is a normalizing flow, like in PortaSpeech. Furthermore, the pitch
+    and energy values are averaged per-phone, as in FastPitch. The
+    encoder and decoder are Conformers. Input features are configurations
+    of the articulatory tract rather than phoneme identities. Speaker
+    embedding conditioning is derived from GST and Adaspeech 4. There is
+    a large focus on multilinguality through numerous designs.
     """
 
     def __init__(self,
@@ -88,8 +84,6 @@ class PortaSpeech(torch.nn.Module, ABC):
                  init_type="xavier_uniform",
                  init_enc_alpha=1.0,
                  init_dec_alpha=1.0,
-                 use_masking=False,
-                 use_weighted_masking=True,
                  # additional features
                  utt_embed_dim=64,
                  detach_postflow=False,
@@ -136,12 +130,31 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate, )
+        self.duration_predictor = VariationalVariancePredictor(out_channels=1,  # 1 dimensional output sequence
+                                                               hidden_size=duration_predictor_chans,  # size of embedding space
+                                                               c_latent=duration_predictor_chans // 12,  # latent space inbetween encoder and decoder
+                                                               kernel_size=duration_predictor_kernel_size,
+                                                               n_layers=duration_predictor_layers,
+                                                               c_cond=attention_dimension,  # condition to guide the sampling
+                                                               strides=[1],
+                                                               norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                               spk_emb_size=utt_embed_dim)
 
         # define pitch predictor
         self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
                                                  n_chans=pitch_predictor_chans,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout)
+        self.pitch_predictor = VariationalVariancePredictor(out_channels=1,
+                                                            hidden_size=pitch_predictor_chans,
+                                                            c_latent=pitch_predictor_chans // 12,
+                                                            kernel_size=pitch_predictor_kernel_size,
+                                                            n_layers=pitch_predictor_layers,
+                                                            c_cond=attention_dimension,
+                                                            strides=[1],
+                                                            norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                            spk_emb_size=utt_embed_dim)
+
         self.pitch_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
@@ -154,6 +167,15 @@ class PortaSpeech(torch.nn.Module, ABC):
                                                   n_chans=energy_predictor_chans,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout)
+        self.energy_predictor = VariationalVariancePredictor(out_channels=1,
+                                                             hidden_size=energy_predictor_chans,
+                                                             c_latent=energy_predictor_chans // 12,
+                                                             kernel_size=energy_predictor_kernel_size,
+                                                             n_layers=energy_predictor_layers,
+                                                             c_cond=attention_dimension,
+                                                             strides=[1],
+                                                             norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                             spk_emb_size=utt_embed_dim)
         self.energy_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
                             out_channels=attention_dimension,
@@ -186,17 +208,6 @@ class PortaSpeech(torch.nn.Module, ABC):
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.pitch_bottleneck = Linear(utt_embed_dim, utt_embed_dim // 2)
-        self.energy_bottleneck = Linear(utt_embed_dim, utt_embed_dim // 2)
-        self.duration_bottleneck = Linear(utt_embed_dim, utt_embed_dim // 2)
-        self.pitch_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim // 2, attention_dimension),
-                                                     LayerNorm(attention_dimension))
-        self.energy_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim // 2,
-                                                             attention_dimension),
-                                                      LayerNorm(attention_dimension))
-        self.duration_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim // 2,
-                                                               attention_dimension),
-                                                        LayerNorm(attention_dimension))
         self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension),
                                                           LayerNorm(attention_dimension))
         self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim,
@@ -228,8 +239,12 @@ class PortaSpeech(torch.nn.Module, ABC):
         if lang_embs is not None:
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
+        self.duration_discriminator = None
+        self.pitch_discriminator = None
+        self.energy_discriminator = None
+
         # define criterion
-        self.criterion = FastSpeech2Loss(use_masking=use_masking, use_weighted_masking=use_weighted_masking)
+        self.criterion = ToucanTTSLoss()
 
     def forward(self,
                 text_tensors,
@@ -270,28 +285,32 @@ class PortaSpeech(torch.nn.Module, ABC):
         d_outs, \
         p_outs, \
         e_outs, \
-        glow_loss = self._forward(text_tensors,
-                                  text_lengths,
-                                  gold_speech,
-                                  speech_lengths,
-                                  gold_durations,
-                                  gold_pitch,
-                                  gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+        glow_loss, \
+        pitch_dist_real, pitch_dist_fake, pitch_dist_fake_discriminator_frozen, \
+        energy_dist_real, energy_dist_fake, energy_dist_fake_discriminator_frozen, \
+        duration_dist_real, duration_dist_fake, duration_dist_fake_discriminator_frozen \
+            = self._forward(text_tensors,
+                            text_lengths,
+                            gold_speech,
+                            speech_lengths,
+                            gold_durations,
+                            gold_pitch,
+                            gold_energy,
+                            utterance_embedding=utterance_embedding,
+                            is_inference=False,
+                            lang_ids=lang_ids,
+                            run_glow=run_glow)
+
+        duration_loss = (duration_dist_real, duration_dist_fake, duration_dist_fake_discriminator_frozen)
+        energy_loss = (energy_dist_real, energy_dist_fake, energy_dist_fake_discriminator_frozen)
+        pitch_loss = (pitch_dist_real, pitch_dist_fake, pitch_dist_fake_discriminator_frozen)
 
         # calculate loss
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
-                                                                         # if a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
-                                                                         before_outs=before_outs,
-                                                                         d_outs=d_outs, p_outs=p_outs,
-                                                                         e_outs=e_outs, ys=gold_speech,
-                                                                         ds=gold_durations, ps=gold_pitch,
-                                                                         es=gold_energy,
-                                                                         ilens=text_lengths,
-                                                                         olens=speech_lengths)
+        l1_loss = self.criterion(after_outs=None,
+                                 # if a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
+                                 before_outs=before_outs,
+                                 ys=gold_speech,
+                                 olens=speech_lengths)
         kl_loss = torch.tensor([0.0], device=l1_loss.device)  # for future extension / legacy compatibility
         if return_mels:
             if after_outs is None:
@@ -325,43 +344,34 @@ class PortaSpeech(torch.nn.Module, ABC):
         encoded_texts, _ = self.encoder(text_tensors,
                                         text_masks,
                                         utterance_embedding=utterance_embedding,
-                                        lang_ids=lang_ids)  # (B, Tmax, adim)
+                                        lang_ids=lang_ids)
 
-        if utterance_embedding is not None:
-            encoded_texts_for_pitch = _integrate_with_utt_embed(hs=encoded_texts,
-                                                                utt_embeddings=self.pitch_bottleneck(utterance_embedding),
-                                                                projection=self.pitch_embedding_projection)
-            encoded_texts_for_energy = _integrate_with_utt_embed(hs=encoded_texts,
-                                                                 utt_embeddings=self.energy_bottleneck(utterance_embedding),
-                                                                 projection=self.energy_embedding_projection)
-            encoded_texts_for_duration = _integrate_with_utt_embed(hs=encoded_texts,
-                                                                   utt_embeddings=self.duration_bottleneck(utterance_embedding),
-                                                                   projection=self.duration_embedding_projection)
-        else:
-            encoded_texts_for_pitch = encoded_texts
-            encoded_texts_for_energy = encoded_texts
-            encoded_texts_for_duration = encoded_texts
+        text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
 
-        # forward duration predictor and variance predictors
-        d_masks = make_pad_mask(text_lens, device=text_lens.device)
-
-        pitch_predictions = self.pitch_predictor(encoded_texts_for_pitch, d_masks.unsqueeze(-1))
-        energy_predictions = self.energy_predictor(encoded_texts_for_energy, d_masks.unsqueeze(-1))
-
-        if not is_inference:
-            # use ground truth in training
-            predicted_durations = self.duration_predictor(encoded_texts_for_duration, d_masks)
-            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
-            encoded_texts = self.length_regulator(encoded_texts, gold_durations)
-        else:
-            # use predictions in inference
-            predicted_durations = self.duration_predictor.inference(encoded_texts_for_duration, d_masks)
+        if is_inference:
+            pitch_predictions = self.pitch_predictor(cond=encoded_texts, utt_emb=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+            encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+
+            energy_predictions = self.energy_predictor(cond=encoded_texts_enriched_with_pitch, utt_emb=utterance_embedding)
             embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
-            encoded_texts = self.length_regulator(encoded_texts, predicted_durations, alpha)
+            enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+
+            predicted_durations = self.duration_predictor(cond=enriched_encoded_texts, utt_emb=utterance_embedding)
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, make_estimated_durations_usable_for_inference(predicted_durations), alpha)
+
+        else:
+            # training with teacher forcing
+            pitch_predictions = self.pitch_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts, utt_emb=utterance_embedding)
+            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+
+            energy_predictions = self.energy_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts_enriched_with_pitch, utt_emb=utterance_embedding)
+            embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+            enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+
+            predicted_durations = self.duration_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts, utt_emb=utterance_embedding)
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations, alpha)
 
         # forward the decoder
         if not is_inference:
@@ -376,11 +386,11 @@ class PortaSpeech(torch.nn.Module, ABC):
             decoder_masks = None
 
         if utterance_embedding is not None:
-            encoded_texts = _integrate_with_utt_embed(hs=encoded_texts,
-                                                      utt_embeddings=utterance_embedding,
-                                                      projection=self.decoder_in_embedding_projection)
+            upsampled_enriched_encoded_texts = _integrate_with_utt_embed(hs=upsampled_enriched_encoded_texts,
+                                                                         utt_embeddings=utterance_embedding,
+                                                                         projection=self.decoder_in_embedding_projection)
 
-        decoded_speech, _ = self.decoder(encoded_texts, decoder_masks, utterance_embedding)
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding)
         predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
         if self.detach_postflow:
             predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
@@ -400,21 +410,53 @@ class PortaSpeech(torch.nn.Module, ABC):
                 predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
                                                                          infer=is_inference,
                                                                          mel_out=before_enriched,
-                                                                         encoded_texts=encoded_texts,
+                                                                         encoded_texts=upsampled_enriched_encoded_texts,
                                                                          tgt_nonpadding=None)
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
                                                mel_out=before_enriched,
-                                               encoded_texts=encoded_texts,
+                                               encoded_texts=upsampled_enriched_encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = None
 
-        if not is_inference:
-            return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions, glow_loss
+        # calculate discriminator outputs
+
+        # TODO windowing
+
+        self.pitch_discriminator.requires_grad_(False)
+        pitch_dist_fake_discriminator_frozen = self.pitch_discriminator(pitch_predictions, encoded_texts.detach())
+        self.pitch_discriminator.requires_grad_(True)
+        pitch_dist_fake = self.pitch_discriminator(pitch_predictions.detach(), encoded_texts.detach())
+        pitch_dist_real = self.pitch_discriminator(gold_pitch, encoded_texts.detach())
+
+        self.energy_discriminator.requires_grad_(False)
+        energy_dist_fake_discriminator_frozen = self.energy_discriminator(energy_predictions, encoded_texts_enriched_with_pitch.detach())
+        self.energy_discriminator.requires_grad_(True)
+        energy_dist_fake = self.energy_discriminator(predicted_durations.detach(), encoded_texts_enriched_with_pitch.detach())
+        energy_dist_real = self.energy_discriminator(gold_energy, encoded_texts_enriched_with_pitch.detach())
+
+        self.duration_discriminator.requires_grad_(False)
+        duration_dist_fake_discriminator_frozen = self.duration_discriminator(predicted_durations, enriched_encoded_texts.detach())
+        self.duration_discriminator.requires_grad_(True)
+        duration_dist_fake = self.duration_discriminator(predicted_durations.detach(), enriched_encoded_texts.detach())
+        duration_dist_real = self.duration_discriminator(gold_durations, enriched_encoded_texts.detach())
+
+        if is_inference:
+            return predicted_spectrogram_before_postnet, \
+                   predicted_spectrogram_after_postnet, \
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions
         else:
-            return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions, energy_predictions
+            return predicted_spectrogram_before_postnet, \
+                   predicted_spectrogram_after_postnet, \
+                   predicted_durations, pitch_predictions, energy_predictions, \
+                   glow_loss, \
+                   pitch_dist_real, pitch_dist_fake, pitch_dist_fake_discriminator_frozen, \
+                   energy_dist_real, energy_dist_fake, energy_dist_fake_discriminator_frozen, \
+                   duration_dist_real, duration_dist_fake, duration_dist_fake_discriminator_frozen
 
     def inference(self,
                   text,
