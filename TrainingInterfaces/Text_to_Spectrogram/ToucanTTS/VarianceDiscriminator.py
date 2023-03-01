@@ -1,8 +1,12 @@
 import os
+
 import numpy as np
 import torch
 import torch.nn as nn
-from cvxopt import matrix, solvers, sparse, spmatrix
+from cvxopt import matrix
+from cvxopt import solvers
+from cvxopt import sparse
+from cvxopt import spmatrix
 from torch.autograd import grad as torch_grad
 
 
@@ -10,51 +14,50 @@ def weights_init_D(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='leaky_relu')
-        #nn.init.constant_(m.bias, 0)
+        # nn.init.constant_(m.bias, 0)
     elif classname.find('BatchNorm') != -1:
         nn.init.constant_(m.weight, 1)
         nn.init.constant_(m.bias, 0)
 
-class VarianceDiscriminator():
-    def __init__(self, batch_size, device, gamma=0.1, K=-1, use_cuda=False):
-        
+
+class VarianceDiscriminator(torch.nn.Module):
+    def __init__(self, data_dim, gamma=0.1, K=-1):
+
+        super().__init__()
         parameters = {
-            "betas": [0.5,0.999],
-            "z_dim": 32,
-            "size": 16,
-            "nfilter": 4,
-            "nfilter_max": 16,
-            "batch_size": 128,
-            "data_dim": [1, 5, 193],
-            "activation": "leaky_relu",
-            "num_workers": 8,
-            "conv_filters": 20,
-            "gamma": 1,
-            "milestones": [1500,3000,5000],
-            "save_every": 30,
+            "betas"         : [0.5, 0.999],
+            "z_dim"         : 32,
+            "size"          : 16,
+            "nfilter"       : 4,
+            "nfilter_max"   : 16,
+            "batch_size"    : 128,
+            "data_dim"      : data_dim,
+            "activation"    : "leaky_relu",
+            "num_workers"   : 8,
+            "conv_filters"  : 20,
+            "gamma"         : 1,
+            "milestones"    : [1500, 3000, 5000],
+            "save_every"    : 30,
             "normalize_data": False
         }
-        
-        self.D = ResNet_D(parameters['data_dim'][-1], 
-                          parameters['size'], 
-                          nfilter=parameters['nfilter'], 
+
+        self.D = ResNet_D(parameters['data_dim'][-1],
+                          parameters['size'],
+                          nfilter=parameters['nfilter'],
                           nfilter_max=parameters['nfilter_max']).to(device=device)
-        
+
         self.D.apply(weights_init_D)
         self.losses = {
-            'D': [], 
+            'D' : [],
             'WD': [],
-            'G': []
+            'G' : []
         }
         self.num_steps = 0
         self.gen_steps = 0
-        self.use_cuda = use_cuda
         # put in the shape of a dataset sample
         self.data_dim = parameters['data_dim'][0] * parameters['data_dim'][1] * parameters['data_dim'][2]
-        self.batch_size = batch_size
-        self.device = device
         self.criterion = torch.nn.MSELoss()
-        self.mone = torch.FloatTensor([-1]).to(device)
+        self.mone = torch.FloatTensor([-1])
         self.tensorboard_counter = 0
 
         if K <= 0:
@@ -63,13 +66,17 @@ class VarianceDiscriminator():
             self.K = K
         self.Kr = np.sqrt(self.K)
         self.LAMBDA = 2 * self.Kr * gamma * 2
-        
-        if self.use_cuda:
-            self.G = nn.DataParallel(self.G.cuda())
-            self.D = nn.DataParallel(self.D.cuda())
 
+        # the following can be initialized once batch_size is known, so use the function initialize_solver for this.
+        self = None
+        self.A = None
+        self.pStart = None
+        self.batch_size = None
+
+    def initialize_solver(self, batch_size):
+        self.batch_size = batch_size
         self.c, self.A, self.pStart = self._prepare_linear_programming_solver_(self.batch_size)
-    
+
     def _quadratic_wasserstein_distance_(self, real, generated):
         num_r = real.size(0)
         num_f = generated.size(0)
@@ -146,9 +153,9 @@ class VarianceDiscriminator():
 
         # Get generated fake dataset
         generated_data = torch.cat((data_generated, data_condition), dim=3)
-        
+
         real_data = torch.cat((data_real, data_condition), dim=3)
-        
+
         # compute wasserstein distance
         distance = self._quadratic_wasserstein_distance_(real_data, generated_data)
         # solve linear programming problem
@@ -185,7 +192,7 @@ class VarianceDiscriminator():
         # this is supposed to be the wasserstein distance
         wasserstein_distance = output_R_mean - output_F_mean
         self.losses['WD'].append(float(wasserstein_distance.data))
-        
+
         return total_loss
 
     def _generator_train_iteration(self, data_generated, data_condition):
@@ -195,7 +202,7 @@ class VarianceDiscriminator():
         fake = torch.cat((data_generated, data_condition), dim=3)
         output_fake = self.D(fake)
         output_F_mean_after = output_fake.mean(0).view(1)
-        
+
         self.losses['G'].append(float(output_F_mean_after.data))
 
         return output_F_mean_after
@@ -204,31 +211,8 @@ class VarianceDiscriminator():
         self.num_steps += 1
         loss_critic = self._critic_deep_regression_(data_generated, data_real, data_condition)
         loss_generator = self._generator_train_iteration(data_generated, data_condition)
-        
+
         return loss_critic, loss_generator * -1
-
-    def sample_generator(self, num_samples, nograd=False, return_intermediate=False):
-        self.G.eval()
-        if isinstance(self.G, torch.nn.parallel.DataParallel):
-            latent_samples = self.G.module.sample_latent(num_samples, self.G.module.z_dim)
-        else:
-            latent_samples = self.G.sample_latent(num_samples, self.G.z_dim)
-        if self.use_cuda:
-            latent_samples = latent_samples.cuda()
-        if nograd:
-            with torch.no_grad():
-                generated_data = self.G(latent_samples, return_intermediate=return_intermediate)
-        else:
-            generated_data = self.G(latent_samples)
-        self.G.train()
-        if return_intermediate:
-            return generated_data[0].detach(), generated_data[1], latent_samples
-        return generated_data.detach()
-
-    def sample(self, num_samples):
-        generated_data = self.sample_generator(num_samples)
-        # Remove color channel
-        return generated_data.data.cpu().numpy()[:, 0, :, :]
 
     def save_model_checkpoint(self, model_path, model_parameters, timestampStr, dataset_mean=None, dataset_std=None):
         # dateTimeObj = datetime.now()
@@ -236,16 +220,17 @@ class VarianceDiscriminator():
         name = '%s_%s' % (timestampStr, 'wgan')
         model_filename = os.path.join(model_path, name)
         torch.save({
-            'generator_state_dict': self.G.state_dict(),
-            'critic_state_dict': self.D.state_dict(),
-            'gen_optimizer_state_dict': self.G_opt.state_dict(),
+            'generator_state_dict'       : self.G.state_dict(),
+            'critic_state_dict'          : self.D.state_dict(),
+            'gen_optimizer_state_dict'   : self.G_opt.state_dict(),
             'critic_optimizer_state_dict': self.D_opt.state_dict(),
-            'model_parameters': model_parameters,
-            'iterations': self.num_steps,
-            'dataset_mean': dataset_mean,
-            'dataset_std': dataset_std
+            'model_parameters'           : model_parameters,
+            'iterations'                 : self.num_steps,
+            'dataset_mean'               : dataset_mean,
+            'dataset_std'                : dataset_std
         }, model_filename)
-        
+
+
 class ResNet_D(nn.Module):
     def __init__(self, data_dim, size, nfilter=64, nfilter_max=512, res_ratio=0.1):
         super().__init__()
@@ -256,7 +241,7 @@ class ResNet_D(nn.Module):
 
         # Submodules
         nlayers = int(np.log2(size / s0))
-        self.nf0 = min(nf_max, nf * 2**nlayers)
+        self.nf0 = min(nf_max, nf * 2 ** nlayers)
 
         nf0 = min(nf, nf_max)
         nf1 = min(nf * 2, nf_max)
@@ -265,17 +250,17 @@ class ResNet_D(nn.Module):
             ResNetBlock(nf0, nf1, bn=False, res_ratio=res_ratio)
         ]
 
-        self.fc_input = nn.Linear(data_dim, 3*size*size)
+        self.fc_input = nn.Linear(data_dim, 3 * size * size)
 
-        for i in range(1, nlayers+1):
-            nf0 = min(nf * 2**i, nf_max)
-            nf1 = min(nf * 2**(i+1), nf_max)
+        for i in range(1, nlayers + 1):
+            nf0 = min(nf * 2 ** i, nf_max)
+            nf1 = min(nf * 2 ** (i + 1), nf_max)
             blocks += [
                 nn.AvgPool2d(3, stride=2, padding=1),
                 ResNetBlock(nf0, nf1, bn=False, res_ratio=res_ratio),
             ]
 
-        self.conv_img = nn.Conv2d(1, 1*nf, 3, padding=1)
+        self.conv_img = nn.Conv2d(1, 1 * nf, 3, padding=1)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
         self.resnet = nn.Sequential(*blocks)
 
@@ -293,7 +278,8 @@ class ResNet_D(nn.Module):
         out = self.fc(out)
 
         return out
-    
+
+
 class ResNetBlock(nn.Module):
     def __init__(self, fin, fout, fhidden=None, bn=True, res_ratio=0.1):
         super().__init__()
@@ -321,7 +307,7 @@ class ResNetBlock(nn.Module):
             if self.bn:
                 self.bn2d_s = nn.BatchNorm2d(self.fout)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
-        
+
     def forward(self, x):
         x_s = self._shortcut(x)
         dx = self.conv_0(x)
@@ -331,7 +317,7 @@ class ResNetBlock(nn.Module):
         dx = self.conv_1(dx)
         if self.bn:
             dx = self.bn2d_1(dx)
-        out = self.relu(x_s + self.res_ratio*dx)
+        out = self.relu(x_s + self.res_ratio * dx)
         return out
 
     def _shortcut(self, x):

@@ -1,3 +1,4 @@
+import random
 from abc import ABC
 
 import torch
@@ -12,6 +13,7 @@ from Layers.LengthRegulator import LengthRegulator
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.VarianceDiscriminator import VarianceDiscriminator
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.VariationalVariancePredictor import VariationalVariancePredictor
 from Utility.utils import initialize
 from Utility.utils import make_estimated_durations_usable_for_inference
@@ -85,7 +87,8 @@ class ToucanTTS(torch.nn.Module, ABC):
                  # additional features
                  utt_embed_dim=64,
                  detach_postflow=False,
-                 lang_embs=8000):
+                 lang_embs=8000,
+                 window_size=5):
         super().__init__()
 
         # store hyperparameters
@@ -93,6 +96,7 @@ class ToucanTTS(torch.nn.Module, ABC):
         self.odim = output_spectrogram_channels
         self.adim = attention_dimension
         self.eos = 1
+        self.window_size = window_size
         self.detach_postflow = detach_postflow
         self.stop_gradient_from_pitch_predictor = stop_gradient_from_pitch_predictor
         self.stop_gradient_from_energy_predictor = stop_gradient_from_energy_predictor
@@ -225,9 +229,9 @@ class ToucanTTS(torch.nn.Module, ABC):
         if lang_embs is not None:
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
-        self.duration_discriminator = None
-        self.pitch_discriminator = None
-        self.energy_discriminator = None
+        self.duration_discriminator = VarianceDiscriminator(data_dim=[1, window_size, attention_dimension + 1])
+        self.pitch_discriminator = VarianceDiscriminator(data_dim=[1, window_size, attention_dimension + 1])
+        self.energy_discriminator = VarianceDiscriminator(data_dim=[1, window_size, attention_dimension + 1])
 
         # define criterion
         self.criterion = ToucanTTSLoss()
@@ -408,12 +412,15 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         # calculate discriminator losses
 
-        # TODO windowing
+        # the windowing function is inefficient because it loops over the text lens. We could merge these three calls into one in the future.
+        pitch_f_window, pitch_r_window, pitch_cond_window = self.get_random_window(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach(), text_lens)
+        energy_f_window, energy_r_window, energy_cond_window = self.get_random_window(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach(), text_lens)
+        duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations, enriched_encoded_texts.detach(), text_lens)
 
         # [Batch, Sequence, Hidden]
-        pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach())
-        energy_critic_loss, energy_generator_loss = self.energy_discriminator(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach())
-        duration_critic_loss, duration_generator_loss = self.durtion_discriminator(predicted_durations.transpose(1, 2), gold_durations, enriched_encoded_texts.detach())
+        pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window, pitch_r_window, pitch_cond_window)
+        energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window, energy_r_window, energy_cond_window)
+        duration_critic_loss, duration_generator_loss = self.durtion_discriminator.train_step(duration_f_window, duration_r_window, duration_cond_window)
 
         if is_inference:
             return predicted_spectrogram_before_postnet, \
@@ -524,6 +531,26 @@ class ToucanTTS(torch.nn.Module, ABC):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
+    def get_random_window(self, generated_sequences, real_sequences, condition_sequences, text_lens):
+        """
+        This will return a randomized but consistent window of each that can be passed to the discriminator
+        Suboptimal runtime because of a loop, should not be too bad, but a fix would be nice.
+        """
+        generated_windows = list()
+        real_windows = list()
+        condition_windows = list()
+
+        for end_index, generated, real, condition in zip(text_lens, generated_sequences, real_sequences, condition_sequences):
+            max_start = end_index - self.window_size
+            if max_start > 0:
+                start = random.randint(0, max_start)
+            else:
+                start = 0
+            generated_windows.append(generated[start:start + self.window_size])
+            real_windows.append(real[start:start + self.window_size])
+            condition_windows.append(condition[start:start + self.window_size])
+        return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0), torch.cat(condition_windows, dim=0)
 
 
 def _integrate_with_utt_embed(hs, utt_embeddings, projection):
