@@ -185,7 +185,7 @@ class PortaSpeech(torch.nn.Module):
             3,  # post_glow_kernel_size
             1,
             16,  # post_glow_n_blocks
-            4,  # post_glow_n_block_layers
+            3,  # post_glow_n_block_layers
             n_split=4,
             n_sqz=2,
             gin_channels=gin_channels,
