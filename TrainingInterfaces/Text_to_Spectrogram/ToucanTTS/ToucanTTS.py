@@ -410,25 +410,18 @@ class ToucanTTS(torch.nn.Module, ABC):
                                                encoded_texts=upsampled_enriched_encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
 
-        # calculate discriminator losses
+        if not is_inference:
+            # calculate discriminator losses
+            # the windowing function is inefficient because it loops over the text lens. We could merge these three calls into one in the future.
+            pitch_f_window, pitch_r_window, pitch_cond_window = self.get_random_window(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach(), text_lens)
+            energy_f_window, energy_r_window, energy_cond_window = self.get_random_window(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach(), text_lens)
+            duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations, enriched_encoded_texts.detach(), text_lens)
 
-        # the windowing function is inefficient because it loops over the text lens. We could merge these three calls into one in the future.
-        pitch_f_window, pitch_r_window, pitch_cond_window = self.get_random_window(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach(), text_lens)
-        energy_f_window, energy_r_window, energy_cond_window = self.get_random_window(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach(), text_lens)
-        duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations, enriched_encoded_texts.detach(), text_lens)
+            # [Batch, Sequence, Hidden]
+            pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window, pitch_r_window, pitch_cond_window)
+            energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window, energy_r_window, energy_cond_window)
+            duration_critic_loss, duration_generator_loss = self.durtion_discriminator.train_step(duration_f_window, duration_r_window, duration_cond_window)
 
-        # [Batch, Sequence, Hidden]
-        pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window, pitch_r_window, pitch_cond_window)
-        energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window, energy_r_window, energy_cond_window)
-        duration_critic_loss, duration_generator_loss = self.durtion_discriminator.train_step(duration_f_window, duration_r_window, duration_cond_window)
-
-        if is_inference:
-            return predicted_spectrogram_before_postnet, \
-                   predicted_spectrogram_after_postnet, \
-                   predicted_durations, \
-                   pitch_predictions, \
-                   energy_predictions
-        else:
             return predicted_spectrogram_before_postnet, \
                    predicted_spectrogram_after_postnet, \
                    predicted_durations, pitch_predictions, energy_predictions, \
@@ -436,6 +429,12 @@ class ToucanTTS(torch.nn.Module, ABC):
                    pitch_critic_loss, pitch_generator_loss, \
                    energy_critic_loss, energy_generator_loss, \
                    duration_critic_loss, duration_generator_loss
+
+        return predicted_spectrogram_before_postnet, \
+               predicted_spectrogram_after_postnet, \
+               predicted_durations, \
+               pitch_predictions, \
+               energy_predictions
 
     def inference(self,
                   text,

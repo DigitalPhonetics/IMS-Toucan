@@ -68,7 +68,7 @@ class VarianceDiscriminator(torch.nn.Module):
         self.LAMBDA = 2 * self.Kr * gamma * 2
 
         # the following can be initialized once batch_size is known, so use the function initialize_solver for this.
-        self = None
+        self.batch_size = None
         self.A = None
         self.pStart = None
         self.batch_size = None
