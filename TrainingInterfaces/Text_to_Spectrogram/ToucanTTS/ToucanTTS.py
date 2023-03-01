@@ -531,6 +531,11 @@ class ToucanTTS(torch.nn.Module, ABC):
         if init_type != "pytorch":
             initialize(self, init_type)
 
+    def initialize_solver(self, batch_size):
+        self.duration_discriminator.initialize_solver(batch_size=batch_size)
+        self.pitch_discriminator.initialize_solver(batch_size=batch_size)
+        self.energy_discriminator.initialize_solver(batch_size=batch_size)
+
     def get_random_window(self, generated_sequences, real_sequences, condition_sequences, text_lens):
         """
         This will return a randomized but consistent window of each that can be passed to the discriminator

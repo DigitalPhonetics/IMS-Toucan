@@ -66,6 +66,7 @@ def train_loop(net,
     """
     steps = phase_1_steps + phase_2_steps
     postnet_start_steps = warmup_steps // 2
+    net.initialize_solver(batch_size=batch_size)
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
