@@ -274,7 +274,7 @@ class ResNet_D(nn.Module):
 
         out = self.relu((self.conv_img(x.unsqueeze(1))))
         out = self.resnet(out)
-        out = out.view(batch_size, 1568)
+        out = out.view(batch_size, -1)
         out = self.fc(out)
 
         return out
