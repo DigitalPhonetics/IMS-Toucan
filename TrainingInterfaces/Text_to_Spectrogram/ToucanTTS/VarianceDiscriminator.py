@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -134,13 +132,14 @@ class VarianceDiscriminator(torch.nn.Module):
 
     def _optimal_transport_regularization_(self, output_fake, fake, real_fake_diff):
         output_fake_grad = torch.ones(output_fake.size()).to(fake.device)
-        gradients = torch_grad(outputs=output_fake, inputs=fake,
+        gradients = torch_grad(outputs=output_fake,
+                               inputs=fake,
                                grad_outputs=output_fake_grad,
-                               create_graph=True, retain_graph=True, only_inputs=True)[0]
+                               create_graph=True,
+                               retain_graph=True,
+                               only_inputs=True)[0]
         n = gradients.size(0)
-        RegLoss = 0.5 * ((gradients.view(n, -1).norm(dim=1) / (2 * self.Kr) - self.Kr / 2 * real_fake_diff.view(n,
-                                                                                                                -1).norm(
-            dim=1)).pow(2)).mean()
+        RegLoss = 0.5 * ((gradients.view(n, -1).norm(dim=1) / (2 * self.Kr) - self.Kr / 2 * real_fake_diff.view(n, -1).norm(dim=1)).pow(2)).mean()
 
         return RegLoss
 
@@ -151,9 +150,9 @@ class VarianceDiscriminator(torch.nn.Module):
         self.D.train()
 
         # Get generated fake dataset
-        generated_data = torch.cat((data_generated, data_condition), dim=2)
+        generated_data = torch.cat((data_generated, data_condition), dim=3)
 
-        real_data = torch.cat((data_real, data_condition), dim=2)
+        real_data = torch.cat((data_real, data_condition), dim=3)
 
         # compute wasserstein distance
         distance = self._quadratic_wasserstein_distance_(real_data, generated_data)
@@ -182,7 +181,7 @@ class VarianceDiscriminator(torch.nn.Module):
             L2LossD_fake = self.criterion(output_fake, target[self.batch_size:])
             L2LossD = 0.5 * L2LossD_real + 0.5 * L2LossD_fake
 
-            reg_loss_D = self._optimal_transport_regularization_(output_fake.detach(), generated_data, real_fake_diff)
+            reg_loss_D = self._optimal_transport_regularization_(output_fake, generated_data, real_fake_diff)
 
             total_loss = L2LossD + self.LAMBDA * reg_loss_D
 
@@ -198,7 +197,7 @@ class VarianceDiscriminator(torch.nn.Module):
         for p in self.D.parameters():
             p.requires_grad = False  # freeze critic
 
-        fake = torch.cat((data_generated, data_condition), dim=2)
+        fake = torch.cat((data_generated, data_condition), dim=3)
         output_fake = self.D(fake)
         output_F_mean_after = output_fake.mean(0).view(1)
 
@@ -208,26 +207,10 @@ class VarianceDiscriminator(torch.nn.Module):
 
     def train_step(self, data_generated, data_real, data_condition):
         self.num_steps += 1
-        loss_critic = self._critic_deep_regression_(data_generated, data_real, data_condition)
+        loss_critic = self._critic_deep_regression_(data_generated.detach(), data_real, data_condition)
         loss_generator = self._generator_train_iteration(data_generated, data_condition)
 
         return loss_critic, loss_generator * -1
-
-    def save_model_checkpoint(self, model_path, model_parameters, timestampStr, dataset_mean=None, dataset_std=None):
-        # dateTimeObj = datetime.now()
-        # timestampStr = dateTimeObj.strftime("%d-%m-%Y-%H-%M-%S")
-        name = '%s_%s' % (timestampStr, 'wgan')
-        model_filename = os.path.join(model_path, name)
-        torch.save({
-            'generator_state_dict'       : self.G.state_dict(),
-            'critic_state_dict'          : self.D.state_dict(),
-            'gen_optimizer_state_dict'   : self.G_opt.state_dict(),
-            'critic_optimizer_state_dict': self.D_opt.state_dict(),
-            'model_parameters'           : model_parameters,
-            'iterations'                 : self.num_steps,
-            'dataset_mean'               : dataset_mean,
-            'dataset_std'                : dataset_std
-        }, model_filename)
 
 
 class ResNet_D(nn.Module):
@@ -263,7 +246,7 @@ class ResNet_D(nn.Module):
         self.relu = nn.LeakyReLU(0.2, inplace=True)
         self.resnet = nn.Sequential(*blocks)
 
-        self.fc = nn.Linear(1568, 1)
+        self.fc = nn.Linear(784, 1)
 
     def forward(self, x):
         batch_size = x.size(0)
@@ -271,7 +254,7 @@ class ResNet_D(nn.Module):
         # out = self.fc_input(x)
         # out = self.relu(out).view(batch_size, 3, self.size, self.size)
 
-        out = self.relu((self.conv_img(x.unsqueeze(1))))
+        out = self.relu((self.conv_img(x)))
         out = self.resnet(out)
         out = out.view(batch_size, -1)
         out = self.fc(out)

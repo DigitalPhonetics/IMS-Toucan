@@ -415,12 +415,12 @@ class ToucanTTS(torch.nn.Module, ABC):
             # the windowing function is inefficient because it loops over the text lens. We could merge these three calls into one in the future.
             pitch_f_window, pitch_r_window, pitch_cond_window = self.get_random_window(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach(), text_lens)
             energy_f_window, energy_r_window, energy_cond_window = self.get_random_window(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach(), text_lens)
-            duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations, enriched_encoded_texts.detach(), text_lens)
+            duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations.unsqueeze(2), enriched_encoded_texts.detach(), text_lens)
 
             # [Batch, Sequence, Hidden]
-            pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window, pitch_r_window, pitch_cond_window)
-            energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window, energy_r_window, energy_cond_window)
-            duration_critic_loss, duration_generator_loss = self.durtion_discriminator.train_step(duration_f_window, duration_r_window, duration_cond_window)
+            pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window.unsqueeze(1), pitch_r_window.unsqueeze(1), pitch_cond_window.unsqueeze(1))
+            energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window.unsqueeze(1), energy_r_window.unsqueeze(1), energy_cond_window.unsqueeze(1))
+            duration_critic_loss, duration_generator_loss = self.duration_discriminator.train_step(duration_f_window.unsqueeze(1), duration_r_window.unsqueeze(1), duration_cond_window.unsqueeze(1))
 
             return predicted_spectrogram_before_postnet, \
                    predicted_spectrogram_after_postnet, \
@@ -571,7 +571,7 @@ if __name__ == '__main__':
     dummy_language_id = torch.LongTensor([2])
     print(ToucanTTS().inference(dummy_text_batch,
                                 utterance_embedding=dummy_utterance_embed,
-                                lang_id=dummy_language_id))
+                                lang_id=dummy_language_id).shape)
 
     print(""" TESTING TRAINING """)
 
@@ -590,14 +590,18 @@ if __name__ == '__main__':
 
     model = ToucanTTS(window_size=2)
     model.initialize_solver(2)
-    print(model(dummy_text_batch,
-                dummy_text_lens,
-                dummy_speech_batch,
-                dummy_speech_lens,
-                dummy_durations,
-                dummy_pitch,
-                dummy_energy,
-                utterance_embedding=dummy_utterance_embed,
-                lang_ids=dummy_language_id))
+    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = model(dummy_text_batch,
+                                                                                dummy_text_lens,
+                                                                                dummy_speech_batch,
+                                                                                dummy_speech_lens,
+                                                                                dummy_durations,
+                                                                                dummy_pitch,
+                                                                                dummy_energy,
+                                                                                utterance_embedding=dummy_utterance_embed,
+                                                                                lang_ids=dummy_language_id)
+
+    loss = l1_loss + duration_loss[0] + duration_loss[1] + pitch_loss[0] + pitch_loss[1] + energy_loss[0] + energy_loss[1] + glow_loss
+    print(loss)
+    loss.backward()
 
     print(sum(p.numel() for p in ToucanTTS().parameters() if p.requires_grad))
