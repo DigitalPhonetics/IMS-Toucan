@@ -109,48 +109,40 @@ def train_loop(net,
         train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
         l1_losses_total = list()
-        duration_losses_discr_total = list()
-        pitch_losses_discr_total = list()
-        energy_losses_discr_total = list()
-        duration_losses_adv_total = list()
-        pitch_losses_adv_total = list()
-        energy_losses_adv_total = list()
         glow_losses_total = list()
 
         if step_counter > 1000:
             for gan_step, batch in tqdm(enumerate(train_loader)):
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
-                for _ in range(5):
-                    pitch_critic_loss, energy_critic_loss, duration_critic_loss, pitch_generator_loss, energy_generator_loss, duration_generator_loss = net.calculate_discriminator_losses(
-                        text_tensors=batch[0].to(device),
-                        text_lens=batch[1].to(device),
-                        gold_durations=batch[4].to(device),
-                        gold_pitch=batch[6].to(device),  # mind the switched order
-                        gold_energy=batch[5].to(device),  # mind the switched order
-                        utterance_embedding=style_embedding,
-                        lang_ids=batch[8].to(device),
-                    )
-                    loss = pitch_critic_loss + energy_critic_loss + duration_critic_loss
-                    if gan_step % 3 == 0:
-                        loss = loss + pitch_generator_loss + energy_generator_loss + duration_generator_loss
-                        if use_wandb:
-                            wandb.log({
-                                "pitch_generator_loss"   : pitch_generator_loss.item(),
-                                "energy_generator_loss"  : energy_generator_loss.item(),
-                                "duration_generator_loss": duration_generator_loss.item(),
-                            })
-
+                pitch_critic_loss, energy_critic_loss, duration_critic_loss, pitch_generator_loss, energy_generator_loss, duration_generator_loss = net.calculate_discriminator_losses(
+                    text_tensors=batch[0].to(device),
+                    text_lens=batch[1].to(device),
+                    gold_durations=batch[4].to(device),
+                    gold_pitch=batch[6].to(device),  # mind the switched order
+                    gold_energy=batch[5].to(device),  # mind the switched order
+                    utterance_embedding=style_embedding,
+                    lang_ids=batch[8].to(device),
+                )
+                loss = pitch_critic_loss + energy_critic_loss + duration_critic_loss
+                if use_wandb:
+                    wandb.log({
+                        "pitch_critic_loss"   : pitch_critic_loss.item(),
+                        "energy_critic_loss"  : energy_critic_loss.item(),
+                        "duration_critic_loss": duration_critic_loss.item(),
+                    })
+                if gan_step % 3 == 0:
+                    loss = loss + pitch_generator_loss + energy_generator_loss + duration_generator_loss
                     if use_wandb:
                         wandb.log({
-                            "pitch_critic_loss"   : pitch_critic_loss.item(),
-                            "energy_critic_loss"  : energy_critic_loss.item(),
-                            "duration_critic_loss": duration_critic_loss.item(),
+                            "pitch_generator_loss"   : pitch_generator_loss.item(),
+                            "energy_generator_loss"  : energy_generator_loss.item(),
+                            "duration_generator_loss": duration_generator_loss.item(),
                         })
-                    optimizer.zero_grad()
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-                    optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+                optimizer.step()
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
@@ -162,7 +154,7 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    l1_loss, duration_losses, pitch_losses, energy_losses, glow_loss, kl_loss = net(
+                    l1_loss, glow_loss, kl_loss = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -188,7 +180,7 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    l1_loss, duration_losses, pitch_losses, energy_losses, glow_loss, kl_loss, output_spectrograms = net(
+                    l1_loss, glow_loss, kl_loss, output_spectrograms = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -220,12 +212,6 @@ def train_loop(net,
 
                 train_losses_this_epoch.append(train_loss.item())
                 l1_losses_total.append(l1_loss.item())
-                duration_losses_discr_total.append(duration_losses[0].item())
-                pitch_losses_discr_total.append(pitch_losses[0].item())
-                energy_losses_discr_total.append(energy_losses[0].item())
-                duration_losses_adv_total.append(duration_losses[1].item())
-                pitch_losses_adv_total.append(pitch_losses[1].item())
-                energy_losses_adv_total.append(energy_losses[1].item())
 
             if glow_loss is not None:
                 if step_counter > postnet_start_steps and not torch.isnan(glow_loss):

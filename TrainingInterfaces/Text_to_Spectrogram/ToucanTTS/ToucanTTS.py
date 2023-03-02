@@ -275,25 +275,17 @@ class ToucanTTS(torch.nn.Module, ABC):
         d_outs, \
         p_outs, \
         e_outs, \
-        glow_loss, \
-        pitch_critic_loss, pitch_generator_loss, \
-        energy_critic_loss, energy_generator_loss, \
-        duration_critic_loss, duration_generator_loss \
-            = self._forward(text_tensors,
-                            text_lengths,
-                            gold_speech,
-                            speech_lengths,
-                            gold_durations,
-                            gold_pitch,
-                            gold_energy,
-                            utterance_embedding=utterance_embedding,
-                            is_inference=False,
-                            lang_ids=lang_ids,
-                            run_glow=run_glow)
-
-        pitch_loss = (pitch_critic_loss, pitch_generator_loss)
-        energy_loss = (energy_critic_loss, energy_generator_loss)
-        duration_loss = (duration_critic_loss, duration_generator_loss)
+        glow_loss = self._forward(text_tensors,
+                                  text_lengths,
+                                  gold_speech,
+                                  speech_lengths,
+                                  gold_durations,
+                                  gold_pitch,
+                                  gold_energy,
+                                  utterance_embedding=utterance_embedding,
+                                  is_inference=False,
+                                  lang_ids=lang_ids,
+                                  run_glow=run_glow)
 
         # calculate loss
         l1_loss = self.criterion(after_outs=None,
@@ -305,8 +297,8 @@ class ToucanTTS(torch.nn.Module, ABC):
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
-            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, after_outs
-        return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss
+            return l1_loss, glow_loss, kl_loss, after_outs
+        return l1_loss, glow_loss, kl_loss
 
     def _forward(self,
                  text_tensors,
@@ -410,25 +402,12 @@ class ToucanTTS(torch.nn.Module, ABC):
                                                encoded_texts=upsampled_enriched_encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
 
-        if not is_inference:
-            # calculate discriminator losses
-            # the windowing function is inefficient because it loops over the text lens. We could merge these three calls into one in the future.
-            pitch_f_window, pitch_r_window, pitch_cond_window = self.get_random_window(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach(), text_lens)
-            energy_f_window, energy_r_window, energy_cond_window = self.get_random_window(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach(), text_lens)
-            duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations.unsqueeze(2), enriched_encoded_texts.detach(), text_lens)
-
-            # [Batch, Sequence, Hidden]
-            pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window.unsqueeze(1), pitch_r_window.unsqueeze(1), pitch_cond_window.unsqueeze(1))
-            energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window.unsqueeze(1), energy_r_window.unsqueeze(1), energy_cond_window.unsqueeze(1))
-            duration_critic_loss, duration_generator_loss = self.duration_discriminator.train_step(duration_f_window.unsqueeze(1), duration_r_window.unsqueeze(1), duration_cond_window.unsqueeze(1))
-
             return predicted_spectrogram_before_postnet, \
                    predicted_spectrogram_after_postnet, \
-                   predicted_durations, pitch_predictions, energy_predictions, \
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions, \
                    glow_loss, \
-                   pitch_critic_loss, pitch_generator_loss, \
-                   energy_critic_loss, energy_generator_loss, \
-                   duration_critic_loss, duration_generator_loss
 
         return predicted_spectrogram_before_postnet, \
                predicted_spectrogram_after_postnet, \
