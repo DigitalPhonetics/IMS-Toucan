@@ -136,9 +136,9 @@ def train_loop(net,
                         loss = loss + pitch_generator_loss + energy_generator_loss + duration_generator_loss
                         if use_wandb:
                             wandb.log({
-                                "pitch_critic_loss"   : pitch_generator_loss.item(),
-                                "energy_critic_loss"  : energy_generator_loss.item(),
-                                "duration_critic_loss": duration_generator_loss.item(),
+                                "pitch_generator_loss"   : pitch_generator_loss.item(),
+                                "energy_generator_loss"  : energy_generator_loss.item(),
+                                "duration_generator_loss": duration_generator_loss.item(),
                             })
 
                     if use_wandb:
