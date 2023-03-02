@@ -23,20 +23,12 @@ class VarianceDiscriminator(torch.nn.Module):
 
         super().__init__()
         parameters = {
-            "betas"         : [0.5, 0.999],
             "z_dim"         : 32,
             "size"          : 16,
             "nfilter"       : 4,
             "nfilter_max"   : 16,
-            "batch_size"    : 128,
             "data_dim"      : data_dim,
-            "activation"    : "leaky_relu",
-            "num_workers"   : 8,
             "conv_filters"  : 20,
-            "gamma"         : 1,
-            "milestones"    : [1500, 3000, 5000],
-            "save_every"    : 30,
-            "normalize_data": False
         }
 
         self.D = ResNet_D(parameters['data_dim'][-1],

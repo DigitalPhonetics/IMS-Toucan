@@ -267,6 +267,22 @@ def train_loop(net,
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
+
+            if use_wandb:
+                wandb.log({
+                    "total_loss"                 : round(sum(train_losses_total) / len(train_losses_total), 3),
+                    "l1_loss"                    : round(sum(l1_losses_total) / len(l1_losses_total), 5),
+                    "duration_adversarial_loss"  : round(sum(duration_losses_adv_total) / len(duration_losses_adv_total), 5),
+                    "pitch_adversarial_loss"     : round(sum(pitch_losses_adv_total) / len(pitch_losses_adv_total), 5),
+                    "energy_adversarial_loss"    : round(sum(energy_losses_adv_total) / len(energy_losses_adv_total), 5),
+                    "duration_discriminator_loss": round(sum(duration_losses_discr_total) / len(duration_losses_discr_total), 5),
+                    "pitch_discriminator_loss"   : round(sum(pitch_losses_discr_total) / len(pitch_losses_discr_total), 5),
+                    "energy_discriminator_loss"  : round(sum(energy_losses_discr_total) / len(energy_losses_discr_total), 5),
+                    "glow_loss"                  : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
+                    "cycle_loss"                 : sum(cycle_losses_total) / len(cycle_losses_total) if len(cycle_losses_total) != 0 else None,
+                    "Steps"                      : step_counter
+                })
+
             try:
                 path_to_most_recent_plot_before, \
                 path_to_most_recent_plot_after = plot_progress_spec(net=net,
@@ -288,20 +304,6 @@ def train_loop(net,
             except IndexError:
                 print("generating progress plots failed.")
 
-            if use_wandb:
-                wandb.log({
-                    "total_loss"                 : round(sum(train_losses_total) / len(train_losses_total), 3),
-                    "l1_loss"                    : round(sum(l1_losses_total) / len(l1_losses_total), 5),
-                    "duration_adversarial_loss"  : round(sum(duration_losses_adv_total) / len(duration_losses_adv_total), 5),
-                    "pitch_adversarial_loss"     : round(sum(pitch_losses_adv_total) / len(pitch_losses_adv_total), 5),
-                    "energy_adversarial_loss"    : round(sum(energy_losses_adv_total) / len(energy_losses_adv_total), 5),
-                    "duration_discriminator_loss": round(sum(duration_losses_discr_total) / len(duration_losses_discr_total), 5),
-                    "pitch_discriminator_loss"   : round(sum(pitch_losses_discr_total) / len(pitch_losses_discr_total), 5),
-                    "energy_discriminator_loss"  : round(sum(energy_losses_discr_total) / len(energy_losses_discr_total), 5),
-                    "glow_loss"                  : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
-                    "cycle_loss"                 : sum(cycle_losses_total) / len(cycle_losses_total) if len(cycle_losses_total) != 0 else None,
-                    "Steps"                      : step_counter
-                })
             train_losses_total = list()
             cycle_losses_total = list()
             l1_losses_total = list()

@@ -241,6 +241,28 @@ def train_loop(net,
             "default_emb" : default_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
+
+        print("Epoch:              {}".format(epoch))
+        print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
+        if len(cycle_losses_this_epoch) != 0:
+            print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
+        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
+        print("Steps:              {}".format(step_counter))
+        if use_wandb:
+            wandb.log({
+                "total_loss"                 : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
+                "l1_loss"                    : round(sum(l1_losses_total) / len(l1_losses_total), 5),
+                "duration_adversarial_loss"  : round(sum(duration_losses_adv_total) / len(duration_losses_adv_total), 5),
+                "pitch_adversarial_loss"     : round(sum(pitch_losses_adv_total) / len(pitch_losses_adv_total), 5),
+                "energy_adversarial_loss"    : round(sum(energy_losses_adv_total) / len(energy_losses_adv_total), 5),
+                "duration_discriminator_loss": round(sum(duration_losses_discr_total) / len(duration_losses_discr_total), 5),
+                "pitch_discriminator_loss"   : round(sum(pitch_losses_discr_total) / len(pitch_losses_discr_total), 5),
+                "energy_discriminator_loss"  : round(sum(energy_losses_discr_total) / len(energy_losses_discr_total), 5),
+                "glow_loss"                  : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
+                "cycle_loss"                 : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else None,
+                "Steps"                      : step_counter,
+            })
+
         try:
             path_to_most_recent_plot_before, \
             path_to_most_recent_plot_after = plot_progress_spec(net,
@@ -263,26 +285,6 @@ def train_loop(net,
         except IndexError:
             print("generating progress plots failed.")
 
-        print("Epoch:              {}".format(epoch))
-        print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
-        if len(cycle_losses_this_epoch) != 0:
-            print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
-        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Steps:              {}".format(step_counter))
-        if use_wandb:
-            wandb.log({
-                "total_loss"                 : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
-                "l1_loss"                    : round(sum(l1_losses_total) / len(l1_losses_total), 5),
-                "duration_adversarial_loss"  : round(sum(duration_losses_adv_total) / len(duration_losses_adv_total), 5),
-                "pitch_adversarial_loss"     : round(sum(pitch_losses_adv_total) / len(pitch_losses_adv_total), 5),
-                "energy_adversarial_loss"    : round(sum(energy_losses_adv_total) / len(energy_losses_adv_total), 5),
-                "duration_discriminator_loss": round(sum(duration_losses_discr_total) / len(duration_losses_discr_total), 5),
-                "pitch_discriminator_loss"   : round(sum(pitch_losses_discr_total) / len(pitch_losses_discr_total), 5),
-                "energy_discriminator_loss"  : round(sum(energy_losses_discr_total) / len(energy_losses_discr_total), 5),
-                "glow_loss"                  : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
-                "cycle_loss"                 : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else None,
-                "Steps"                      : step_counter,
-            })
         if step_counter > steps:
             # DONE
             return
