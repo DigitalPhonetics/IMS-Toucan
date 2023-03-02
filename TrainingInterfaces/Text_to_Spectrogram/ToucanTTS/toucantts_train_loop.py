@@ -144,7 +144,6 @@ def train_loop(net,
                                 "duration_critic_loss": duration_critic_loss.item(),
                             })
 
-                        loss.backward()
                         optimizer.zero_grad()
                         grad_scaler.scale(loss).backward()
                         grad_scaler.unscale_(optimizer)
