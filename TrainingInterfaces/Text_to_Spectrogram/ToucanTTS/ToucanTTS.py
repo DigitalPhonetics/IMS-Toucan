@@ -536,15 +536,15 @@ class ToucanTTS(torch.nn.Module, ABC):
         self.pitch_discriminator.initialize_solver(batch_size=batch_size)
         self.energy_discriminator.initialize_solver(batch_size=batch_size)
 
-    def calculate_discriminator_loss(self,
-                                     text_tensors,
-                                     text_lens,
-                                     gold_durations,
-                                     gold_pitch,
-                                     gold_energy,
-                                     utterance_embedding,
-                                     lang_ids=None,
-                                     ):
+    def calculate_discriminator_losses(self,
+                                       text_tensors,
+                                       text_lens,
+                                       gold_durations,
+                                       gold_pitch,
+                                       gold_energy,
+                                       utterance_embedding,
+                                       lang_ids=None,
+                                       ):
         """
         Basically a forward pass that only returns the discriminator loss, because it requires more steps than the rest.
         """
@@ -586,7 +586,7 @@ class ToucanTTS(torch.nn.Module, ABC):
         energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window.unsqueeze(1), energy_r_window.unsqueeze(1), energy_cond_window.unsqueeze(1))
         duration_critic_loss, duration_generator_loss = self.duration_discriminator.train_step(duration_f_window.unsqueeze(1), duration_r_window.unsqueeze(1), duration_cond_window.unsqueeze(1))
 
-        return pitch_critic_loss, energy_critic_loss, duration_critic_loss
+        return pitch_critic_loss, energy_critic_loss, duration_critic_loss, pitch_generator_loss, energy_generator_loss, duration_generator_loss
 
     def get_random_window(self, generated_sequences, real_sequences, condition_sequences, text_lens):
         """
