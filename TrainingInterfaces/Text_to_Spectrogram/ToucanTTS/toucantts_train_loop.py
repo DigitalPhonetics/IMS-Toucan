@@ -206,12 +206,12 @@ def train_loop(net,
 
                 train_losses_this_epoch.append(train_loss.item())
                 l1_losses_total.append(l1_loss.item())
-                duration_losses_discr_total.append(duration_loss[0].item())
-                pitch_losses_discr_total.append(pitch_loss[0].item())
-                energy_losses_discr_total.append(energy_loss[0].item())
-                duration_losses_adv_total.append(duration_loss[1].item())
-                pitch_losses_adv_total.append(pitch_loss[1].item())
-                energy_losses_adv_total.append(energy_loss[1].item())
+                duration_losses_discr_total.append(duration_losses[0].item())
+                pitch_losses_discr_total.append(pitch_losses[0].item())
+                energy_losses_discr_total.append(energy_losses[0].item())
+                duration_losses_adv_total.append(duration_losses[1].item())
+                pitch_losses_adv_total.append(pitch_losses[1].item())
+                energy_losses_adv_total.append(energy_losses[1].item())
 
             if glow_loss is not None:
                 if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
