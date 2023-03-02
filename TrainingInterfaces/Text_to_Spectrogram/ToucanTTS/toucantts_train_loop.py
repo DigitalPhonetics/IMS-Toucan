@@ -129,7 +129,7 @@ def train_loop(net,
                     for _ in range(100):
                         pitch_critic_loss, energy_critic_loss, duration_critic_loss = net.calculate_discriminator_loss(
                             text_tensors=batch[0].to(device),
-                            text_lengths=batch[1].to(device),
+                            text_lens=batch[1].to(device),
                             gold_durations=batch[4].to(device),
                             gold_pitch=batch[6].to(device),  # mind the switched order
                             gold_energy=batch[5].to(device),  # mind the switched order
