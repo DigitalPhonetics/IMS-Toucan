@@ -395,11 +395,7 @@ class ToucanTTS(torch.nn.Module, ABC):
                                                                          mel_out=before_enriched,
                                                                          encoded_texts=upsampled_enriched_encoded_texts,
                                                                          tgt_nonpadding=None)
-                return predicted_spectrogram_before_postnet, \
-                       predicted_spectrogram_after_postnet, \
-                       predicted_durations, \
-                       pitch_predictions, \
-                       energy_predictions
+
 
             else:
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
@@ -407,13 +403,19 @@ class ToucanTTS(torch.nn.Module, ABC):
                                                mel_out=before_enriched,
                                                encoded_texts=upsampled_enriched_encoded_texts,
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
-
-                return predicted_spectrogram_before_postnet, \
-                       predicted_spectrogram_after_postnet, \
-                       predicted_durations, \
-                       pitch_predictions, \
-                       energy_predictions, \
-                       glow_loss
+        if is_inference:
+            return predicted_spectrogram_before_postnet, \
+                   predicted_spectrogram_after_postnet, \
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions
+        else:
+            return predicted_spectrogram_before_postnet, \
+                   predicted_spectrogram_after_postnet, \
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions, \
+                   glow_loss
 
     def inference(self,
                   text,
