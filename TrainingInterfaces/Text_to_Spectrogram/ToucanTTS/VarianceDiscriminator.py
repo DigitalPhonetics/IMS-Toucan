@@ -246,7 +246,7 @@ class ResNet_D(nn.Module):
         self.relu = nn.LeakyReLU(0.2, inplace=True)
         self.resnet = nn.Sequential(*blocks)
 
-        self.fc = nn.Linear(784, 1)
+        self.fc = nn.Linear(1568, 1)  # this needs to be changes everytime the window length is changes. It would be nice if this could be done dynamically.
 
     def forward(self, x):
         batch_size = x.size(0)
