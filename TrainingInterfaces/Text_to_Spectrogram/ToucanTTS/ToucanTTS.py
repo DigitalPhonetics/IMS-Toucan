@@ -536,6 +536,58 @@ class ToucanTTS(torch.nn.Module, ABC):
         self.pitch_discriminator.initialize_solver(batch_size=batch_size)
         self.energy_discriminator.initialize_solver(batch_size=batch_size)
 
+    def calculate_discriminator_loss(self,
+                                     text_tensors,
+                                     text_lens,
+                                     gold_durations,
+                                     gold_pitch,
+                                     gold_energy,
+                                     utterance_embedding,
+                                     lang_ids=None,
+                                     ):
+        """
+        Basically a forward pass that only returns the discriminator loss, because it requires more steps than the rest.
+        """
+        if not self.multilingual_model:
+            lang_ids = None
+
+        if not self.multispeaker_model:
+            utterance_embedding = None
+
+        # forward text encoder
+        text_masks = self._source_mask(text_lens)
+
+        encoded_texts, _ = self.encoder(text_tensors,
+                                        text_masks,
+                                        utterance_embedding=utterance_embedding,
+                                        lang_ids=lang_ids)
+
+        text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
+
+        # training with teacher forcing
+        pitch_predictions = self.pitch_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts.transpose(1, 2), utt_emb=utterance_embedding)
+        embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+        encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+
+        energy_predictions = self.energy_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts_enriched_with_pitch.transpose(1, 2), utt_emb=utterance_embedding)
+        embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+        enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+
+        predicted_durations = self.duration_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=enriched_encoded_texts.transpose(1, 2), utt_emb=utterance_embedding)
+
+        # calculate discriminator losses
+        # the windowing function is inefficient because it loops over the text lens. We could merge these three calls into one in the future.
+        pitch_f_window, pitch_r_window, pitch_cond_window = self.get_random_window(pitch_predictions.transpose(1, 2), gold_pitch, encoded_texts.detach(), text_lens)
+        energy_f_window, energy_r_window, energy_cond_window = self.get_random_window(energy_predictions.transpose(1, 2), gold_energy, encoded_texts_enriched_with_pitch.detach(), text_lens)
+        duration_f_window, duration_r_window, duration_cond_window = self.get_random_window(predicted_durations.transpose(1, 2), gold_durations.unsqueeze(2), enriched_encoded_texts.detach(), text_lens)
+
+        # [Batch, Sequence, Hidden]
+        pitch_critic_loss, pitch_generator_loss = self.pitch_discriminator.train_step(pitch_f_window.unsqueeze(1), pitch_r_window.unsqueeze(1), pitch_cond_window.unsqueeze(1))
+        energy_critic_loss, energy_generator_loss = self.energy_discriminator.train_step(energy_f_window.unsqueeze(1), energy_r_window.unsqueeze(1), energy_cond_window.unsqueeze(1))
+        duration_critic_loss, duration_generator_loss = self.duration_discriminator.train_step(duration_f_window.unsqueeze(1), duration_r_window.unsqueeze(1), duration_cond_window.unsqueeze(1))
+
+        return pitch_critic_loss, energy_critic_loss, duration_critic_loss
+
     def get_random_window(self, generated_sequences, real_sequences, condition_sequences, text_lens):
         """
         This will return a randomized but consistent window of each that can be passed to the discriminator
