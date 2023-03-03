@@ -291,9 +291,12 @@ class ToucanTTS(torch.nn.Module, ABC):
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
                                                                          # if a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
                                                                          before_outs=before_outs,
-                                                                         d_outs=d_outs, p_outs=p_outs,
-                                                                         e_outs=e_outs, ys=gold_speech,
-                                                                         ds=gold_durations, ps=gold_pitch,
+                                                                         d_outs=d_outs.squeeze(),
+                                                                         p_outs=p_outs.squeeze(),
+                                                                         e_outs=e_outs.squeeze(),
+                                                                         ys=gold_speech,
+                                                                         ds=gold_durations,
+                                                                         ps=gold_pitch,
                                                                          es=gold_energy,
                                                                          ilens=text_lengths,
                                                                          olens=speech_lengths)
