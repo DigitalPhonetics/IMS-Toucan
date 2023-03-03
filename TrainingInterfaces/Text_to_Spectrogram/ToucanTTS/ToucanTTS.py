@@ -286,14 +286,17 @@ class ToucanTTS(torch.nn.Module, ABC):
                                   is_inference=False,
                                   lang_ids=lang_ids,
                                   run_glow=run_glow)
+        d_outs = d_outs.squeeze(1)
+        p_outs = p_outs.transpose(1, 2)
+        e_outs = e_outs.transpose(1, 2)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
                                                                          # if a regular postnet is used, the post-postnet outs have to go here. The flow has its own loss though, so we hard-code this to None
                                                                          before_outs=before_outs,
-                                                                         d_outs=d_outs.squeeze(),
-                                                                         p_outs=p_outs.squeeze(),
-                                                                         e_outs=e_outs.squeeze(),
+                                                                         d_outs=d_outs,
+                                                                         p_outs=p_outs,
+                                                                         e_outs=e_outs,
                                                                          ys=gold_speech,
                                                                          ds=gold_durations,
                                                                          ps=gold_pitch,
@@ -645,17 +648,17 @@ if __name__ == '__main__':
 
     model = ToucanTTS(window_size=2)
     model.initialize_solver(2)
-    l1_loss, glow_loss, kl_loss = model(dummy_text_batch,
-                                        dummy_text_lens,
-                                        dummy_speech_batch,
-                                        dummy_speech_lens,
-                                        dummy_durations,
-                                        dummy_pitch,
-                                        dummy_energy,
-                                        utterance_embedding=dummy_utterance_embed,
-                                        lang_ids=dummy_language_id)
+    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = model(dummy_text_batch,
+                                                                                dummy_text_lens,
+                                                                                dummy_speech_batch,
+                                                                                dummy_speech_lens,
+                                                                                dummy_durations,
+                                                                                dummy_pitch,
+                                                                                dummy_energy,
+                                                                                utterance_embedding=dummy_utterance_embed,
+                                                                                lang_ids=dummy_language_id)
 
-    loss = l1_loss + glow_loss
+    loss = l1_loss + glow_loss + duration_loss + energy_loss + pitch_loss
     print(loss)
     loss.backward()
 
