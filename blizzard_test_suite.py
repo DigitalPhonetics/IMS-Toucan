@@ -30,5 +30,5 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    le_corbeau_et_le_renard(version="03_NEB_pretraining", model_id="NEB", exec_device=exec_device, vocoder_model_path=None, biggan=True)
-    le_corbeau_et_le_renard(version="03_AD_pretraining", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
+    le_corbeau_et_le_renard(version="03_NEB_pretrain", model_id="NEB", exec_device=exec_device, vocoder_model_path=None, biggan=True)
+    le_corbeau_et_le_renard(version="03_AD_pretrain", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
