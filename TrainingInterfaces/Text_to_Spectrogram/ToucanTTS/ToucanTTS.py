@@ -130,24 +130,25 @@ class ToucanTTS(torch.nn.Module, ABC):
         # define duration predictor
         self.duration_predictor = VariationalVariancePredictor(out_channels=1,  # 1 dimensional output sequence
                                                                hidden_size=duration_predictor_chans,  # size of embedding space
-                                                               c_latent=duration_predictor_chans // 12,  # latent space inbetween encoder and decoder
+                                                               c_latent=duration_predictor_chans,  # latent space inbetween encoder and decoder
                                                                kernel_size=duration_predictor_kernel_size,
                                                                n_layers=duration_predictor_layers,
                                                                c_cond=attention_dimension,  # condition to guide the sampling
                                                                strides=[1],
-                                                               norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                               # norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                               norm_type="ln",
                                                                spk_emb_size=utt_embed_dim)
 
         # define pitch predictor
         self.pitch_predictor = VariationalVariancePredictor(out_channels=1,
                                                             hidden_size=pitch_predictor_chans,
-                                                            c_latent=pitch_predictor_chans // 12,
+                                                            c_latent=pitch_predictor_chans,
                                                             kernel_size=pitch_predictor_kernel_size,
                                                             n_layers=pitch_predictor_layers,
                                                             c_cond=attention_dimension,
                                                             strides=[1],
-                                                            norm_type="cln" if utt_embed_dim is not None else "ln",
-                                                            spk_emb_size=utt_embed_dim)
+                                                            # norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                            norm_type="ln", spk_emb_size=utt_embed_dim)
 
         self.pitch_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
@@ -159,12 +160,13 @@ class ToucanTTS(torch.nn.Module, ABC):
         # define energy predictor
         self.energy_predictor = VariationalVariancePredictor(out_channels=1,
                                                              hidden_size=energy_predictor_chans,
-                                                             c_latent=energy_predictor_chans // 12,
+                                                             c_latent=energy_predictor_chans,
                                                              kernel_size=energy_predictor_kernel_size,
                                                              n_layers=energy_predictor_layers,
                                                              c_cond=attention_dimension,
                                                              strides=[1],
-                                                             norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                             # norm_type="cln" if utt_embed_dim is not None else "ln",
+                                                             norm_type="ln",
                                                              spk_emb_size=utt_embed_dim)
         self.energy_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
@@ -198,11 +200,9 @@ class ToucanTTS(torch.nn.Module, ABC):
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension),
-                                                          LayerNorm(attention_dimension))
-        self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim,
-                                                                  output_spectrogram_channels),
-                                                           LayerNorm(output_spectrogram_channels))
+        self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension), LayerNorm(attention_dimension))
+        self.variance_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension), LayerNorm(attention_dimension))
+        self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim, output_spectrogram_channels), LayerNorm(output_spectrogram_channels))
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -330,10 +330,17 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
 
+        if utterance_embedding is not None:
+            encoded_texts_with_speaker_info = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                        utt_embeddings=utterance_embedding,
+                                                                        projection=self.variance_embedding_projection)
+        else:
+            encoded_texts_with_speaker_info = encoded_texts
+
         if is_inference:
-            pitch_predictions = self.pitch_predictor(cond=encoded_texts.transpose(1, 2), utt_emb=utterance_embedding)
+            pitch_predictions = self.pitch_predictor(cond=encoded_texts_with_speaker_info.transpose(1, 2), utt_emb=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-            encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+            encoded_texts_enriched_with_pitch = encoded_texts_with_speaker_info + embedded_pitch_curve
 
             energy_predictions = self.energy_predictor(cond=encoded_texts_enriched_with_pitch.transpose(1, 2), utt_emb=utterance_embedding)
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
@@ -344,9 +351,9 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         else:
             # training with teacher forcing
-            pitch_predictions = self.pitch_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts.transpose(1, 2), utt_emb=utterance_embedding)
+            pitch_predictions = self.pitch_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts_with_speaker_info.transpose(1, 2), utt_emb=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+            encoded_texts_enriched_with_pitch = encoded_texts_with_speaker_info + embedded_pitch_curve
 
             energy_predictions = self.energy_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts_enriched_with_pitch.transpose(1, 2), utt_emb=utterance_embedding)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
@@ -545,10 +552,17 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device)
 
+        if utterance_embedding is not None:
+            encoded_texts_with_speaker_info = _integrate_with_utt_embed(hs=encoded_texts,
+                                                                        utt_embeddings=utterance_embedding,
+                                                                        projection=self.variance_embedding_projection)
+        else:
+            encoded_texts_with_speaker_info = encoded_texts
+
         # training with teacher forcing
-        pitch_predictions = self.pitch_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts.transpose(1, 2), utt_emb=utterance_embedding)
+        pitch_predictions = self.pitch_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts_with_speaker_info.transpose(1, 2), utt_emb=utterance_embedding)
         embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-        encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+        encoded_texts_enriched_with_pitch = encoded_texts_with_speaker_info + embedded_pitch_curve
 
         energy_predictions = self.energy_predictor(nonpadding=text_nonpadding_mask.unsqueeze(1), cond=encoded_texts_enriched_with_pitch.transpose(1, 2), utt_emb=utterance_embedding)
         embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
@@ -636,5 +650,13 @@ if __name__ == '__main__':
     loss = l1_loss + glow_loss
     print(loss)
     loss.backward()
+
+    print(model.calculate_discriminator_losses(dummy_text_batch,
+                                               dummy_text_lens,
+                                               dummy_durations,
+                                               dummy_pitch,
+                                               dummy_energy,
+                                               utterance_embedding=dummy_utterance_embed,
+                                               lang_ids=dummy_language_id))
 
     print(sum(p.numel() for p in ToucanTTS().parameters() if p.requires_grad))

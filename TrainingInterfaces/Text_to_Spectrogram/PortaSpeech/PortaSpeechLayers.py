@@ -60,6 +60,7 @@ class ResidualBlock(nn.Module):
 
         self.blocks = nn.ModuleList(self.blocks)
         self.dropout = dropout
+        self.norm_type = norm_type
 
     def forward(self, x_utt_emb):
         x = x_utt_emb[0]
@@ -67,7 +68,7 @@ class ResidualBlock(nn.Module):
         utt_emb = x_utt_emb[1]
         nonpadding = (x.abs().sum(1) > 0).float()[:, None, :]
         for b in self.blocks:
-            if utt_emb is not None:
+            if utt_emb is not None and self.norm_type == "cln":
                 x_ = b((x, utt_emb))
             else:
                 x_ = b(x)
