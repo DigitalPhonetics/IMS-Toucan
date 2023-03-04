@@ -45,7 +45,8 @@ def train_loop(net,
                resume,
                phase_1_steps,
                phase_2_steps,
-               use_wandb
+               use_wandb,
+               postnet_start_steps
                ):
     """
     Args:
@@ -65,7 +66,6 @@ def train_loop(net,
         path_to_embed_model: path to the pretrained embedding function
     """
     steps = phase_1_steps + phase_2_steps
-    postnet_start_steps = warmup_steps // 2
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)

@@ -12,7 +12,7 @@ from Layers.Conformer import Conformer
 from Layers.LengthRegulator import LengthRegulator
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLossWGAN import ToucanTTSLoss
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.VarianceDiscriminator import VarianceDiscriminator
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.VariationalVariancePredictor import VariationalVariancePredictor
 from Utility.utils import initialize

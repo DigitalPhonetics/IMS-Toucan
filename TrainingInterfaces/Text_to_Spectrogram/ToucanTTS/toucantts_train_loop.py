@@ -45,28 +45,13 @@ def train_loop(net,
                resume,
                phase_1_steps,
                phase_2_steps,
-               use_wandb
+               use_wandb,
+               postnet_start_steps
                ):
     """
-    Args:
-        resume: whether to resume from the most recent checkpoint
-        warmup_steps: how long the learning rate should increase before it reaches the specified value
-        lr: The initial learning rate for the optimiser
-        path_to_checkpoint: reloads a checkpoint to continue training from there
-        fine_tune: whether to load everything from a checkpoint, or only the model parameters
-        lang: language of the synthesis
-        net: Model to train
-        train_dataset: Pytorch Dataset Object for train data
-        device: Device to put the loaded tensors on
-        save_directory: Where to save the checkpoints
-        batch_size: How many elements should be loaded at once
-        phase_1_steps: how many steps to train before using any of the cycle objectives
-        phase_2_steps: how many steps to train using the cycle objectives
-        path_to_embed_model: path to the pretrained embedding function
+    see train loop arbiter for explanations of the arguments
     """
     steps = phase_1_steps + phase_2_steps
-    postnet_start_steps = warmup_steps // 2
-    net.initialize_solver(batch_size=batch_size)
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
@@ -114,40 +99,6 @@ def train_loop(net,
         pitch_losses_total = list()
         energy_losses_total = list()
 
-        if step_counter > 10000:
-            for _ in range(10):
-                for gan_step, batch in tqdm(enumerate(train_loader)):
-                    style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                               batch_of_spectrogram_lengths=batch[3].to(device))
-                    pitch_critic_loss, energy_critic_loss, duration_critic_loss, pitch_generator_loss, energy_generator_loss, duration_generator_loss = net.calculate_discriminator_losses(
-                        text_tensors=batch[0].to(device),
-                        text_lens=batch[1].to(device),
-                        gold_durations=batch[4].to(device),
-                        gold_pitch=batch[6].to(device),  # mind the switched order
-                        gold_energy=batch[5].to(device),  # mind the switched order
-                        utterance_embedding=style_embedding,
-                        lang_ids=batch[8].to(device),
-                    )
-                    loss = pitch_critic_loss + energy_critic_loss + duration_critic_loss
-                    if use_wandb:
-                        wandb.log({
-                            "pitch_critic_loss"   : pitch_critic_loss.item(),
-                            "energy_critic_loss"  : energy_critic_loss.item(),
-                            "duration_critic_loss": duration_critic_loss.item(),
-                        })
-                    if gan_step % 30 == 0:
-                        loss = loss + pitch_generator_loss + energy_generator_loss + duration_generator_loss
-                        if use_wandb:
-                            wandb.log({
-                                "pitch_generator_loss"   : pitch_generator_loss.item(),
-                                "energy_generator_loss"  : energy_generator_loss.item(),
-                                "duration_generator_loss": duration_generator_loss.item(),
-                            })
-                    optimizer.zero_grad()
-                    loss.backward()
-                    torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-                    optimizer.step()
-
         for batch in tqdm(train_loader):
             train_loss = 0.0
             with autocast():
@@ -158,7 +109,7 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss = net(
+                    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -190,7 +141,7 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, kl_loss, output_spectrograms = net(
+                    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
@@ -218,10 +169,8 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted,
-                                                             style_embedding_of_gold.detach()) * 0.1 + \
-                                 1.0 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted,
-                                                                             style_embedding_of_gold.detach()).mean()
+                    cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted, style_embedding_of_gold.detach()) * 0.1 + \
+                                 1.0 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted, style_embedding_of_gold.detach()).mean()
 
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
@@ -281,14 +230,14 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-            path_to_most_recent_plot_after = plot_progress_spec(net,
-                                                                device,
-                                                                save_dir=save_directory,
-                                                                step=step_counter,
-                                                                lang=lang,
-                                                                default_emb=default_embedding,
-                                                                before_and_after_postnet=True,
-                                                                run_postflow=step_counter - 5 > postnet_start_steps)
+                path_to_most_recent_plot_after = plot_progress_spec(net,
+                                                                    device,
+                                                                    save_dir=save_directory,
+                                                                    step=step_counter,
+                                                                    lang=lang,
+                                                                    default_emb=default_embedding,
+                                                                    before_and_after_postnet=True,
+                                                                    run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)

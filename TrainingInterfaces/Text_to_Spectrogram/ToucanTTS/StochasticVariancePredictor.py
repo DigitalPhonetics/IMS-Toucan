@@ -37,11 +37,10 @@ DEFAULT_MIN_DERIVATIVE = 1e-3
 
 
 class StochasticVariancePredictor(nn.Module):
-    def __init__(self, in_channels, filter_channels, kernel_size, p_dropout, n_flows=4, gin_channels=0):
+    def __init__(self, in_channels, kernel_size, p_dropout, n_flows=4, gin_channels=0):
         super().__init__()
-        filter_channels = in_channels  # it needs to be removed from future version.
         self.in_channels = in_channels
-        self.filter_channels = filter_channels
+        self.filter_channels = in_channels
         self.kernel_size = kernel_size
         self.p_dropout = p_dropout
         self.n_flows = n_flows
@@ -51,23 +50,23 @@ class StochasticVariancePredictor(nn.Module):
         self.flows = nn.ModuleList()
         self.flows.append(ElementwiseAffine(2))
         for i in range(n_flows):
-            self.flows.append(ConvFlow(2, filter_channels, kernel_size, n_layers=3))
+            self.flows.append(ConvFlow(2, in_channels, kernel_size, n_layers=3))
             self.flows.append(Flip())
 
-        self.post_pre = nn.Conv1d(1, filter_channels, 1)
-        self.post_proj = nn.Conv1d(filter_channels, filter_channels, 1)
-        self.post_convs = DDSConv(filter_channels, kernel_size, n_layers=3, p_dropout=p_dropout)
+        self.post_pre = nn.Conv1d(1, in_channels, 1)
+        self.post_proj = nn.Conv1d(in_channels, in_channels, 1)
+        self.post_convs = DDSConv(in_channels, kernel_size, n_layers=3, p_dropout=p_dropout)
         self.post_flows = nn.ModuleList()
         self.post_flows.append(ElementwiseAffine(2))
         for i in range(4):
-            self.post_flows.append(ConvFlow(2, filter_channels, kernel_size, n_layers=3))
+            self.post_flows.append(ConvFlow(2, in_channels, kernel_size, n_layers=3))
             self.post_flows.append(Flip())
 
-        self.pre = nn.Conv1d(in_channels, filter_channels, 1)
-        self.proj = nn.Conv1d(filter_channels, filter_channels, 1)
-        self.convs = DDSConv(filter_channels, kernel_size, n_layers=3, p_dropout=p_dropout)
+        self.pre = nn.Conv1d(in_channels, in_channels, 1)
+        self.proj = nn.Conv1d(in_channels, in_channels, 1)
+        self.convs = DDSConv(in_channels, kernel_size, n_layers=3, p_dropout=p_dropout)
         if gin_channels != 0:
-            self.cond = nn.Conv1d(gin_channels, filter_channels, 1)
+            self.cond = nn.Conv1d(gin_channels, in_channels, 1)
 
     def forward(self, x, x_mask, w=None, g=None, reverse=False, noise_scale=1.0):
         x = torch.detach(x)
@@ -224,7 +223,7 @@ class ConvFlow(nn.Module):
         if not reverse:
             return x, logdet
         else:
-            return
+            return x
 
 
 class ElementwiseAffine(nn.Module):
