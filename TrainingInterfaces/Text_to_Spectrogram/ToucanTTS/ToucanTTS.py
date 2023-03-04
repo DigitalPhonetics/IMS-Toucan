@@ -287,29 +287,29 @@ class ToucanTTS(torch.nn.Module, ABC):
             # predicting pitch, energy and duration. All predictions are made in log space, so we apply exp to them.
             pitch_predictions = torch.exp(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-            encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+            encoded_texts = encoded_texts + embedded_pitch_curve
 
-            energy_predictions = torch.exp(self.energy_predictor(encoded_texts_enriched_with_pitch.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
+            energy_predictions = torch.exp(self.energy_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
-            enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+            encoded_texts = encoded_texts + embedded_energy_curve
 
-            predicted_durations = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
-            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()  # we apply log to the gold during training because it is easier for the model to produce small floats than large ints
-            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations.squeeze(0), alpha)
+            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
+            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
+            upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, predicted_durations.squeeze(0), alpha)
 
         else:
             # training with teacher forcing
             pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_pitch.transpose(1, 2), g=utterance_embedding.unsqueeze(-1), reverse=False))
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
+            encoded_texts = encoded_texts + embedded_pitch_curve
 
-            energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts_enriched_with_pitch.transpose(1, 2), text_nonpadding_mask, w=gold_energy.transpose(1, 2), g=utterance_embedding.unsqueeze(-1), reverse=False))
+            energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_energy.transpose(1, 2), g=utterance_embedding.unsqueeze(-1), reverse=False))
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
+            encoded_texts = encoded_texts + embedded_energy_curve
 
-            duration_flow_loss = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
+            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
             duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(text_nonpadding_mask))  # weighted masking
-            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations, alpha)
+            upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, gold_durations, alpha)
 
         # forward the decoder
         if not is_inference:
