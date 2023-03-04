@@ -354,7 +354,7 @@ class ToucanTTS(torch.nn.Module, ABC):
                                                                      infer=is_inference,
                                                                      mel_out=before_enriched,
                                                                      encoded_texts=upsampled_enriched_encoded_texts,
-                                                                     tgt_nonpadding=None)
+                                                                     tgt_nonpadding=None).squeeze()
 
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
@@ -363,11 +363,11 @@ class ToucanTTS(torch.nn.Module, ABC):
                                            encoded_texts=upsampled_enriched_encoded_texts,
                                            tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         if is_inference:
-            return predicted_spectrogram_before_postnet, \
+            return predicted_spectrogram_before_postnet.squeeze(), \
                 predicted_spectrogram_after_postnet, \
-                predicted_durations, \
-                pitch_predictions, \
-                energy_predictions
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze(), \
+                energy_predictions.squeeze()
         else:
             return predicted_spectrogram_before_postnet, \
                 predicted_spectrogram_after_postnet, \
@@ -419,13 +419,13 @@ class ToucanTTS(torch.nn.Module, ABC):
                                                run_glow=run_postflow)  # (1, L, odim)
         for phoneme_index, phoneme_vector in enumerate(xs.squeeze()):
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                pitch_predictions[0][phoneme_index] = 0.0
+                pitch_predictions[phoneme_index] = 0.0
         self.train()
         if after_outs is None:
             after_outs = before_outs
         if return_duration_pitch_energy:
-            return (before_outs[0], after_outs[0]), d_outs[0], pitch_predictions[0], energy_predictions[0]
-        return after_outs[0]
+            return (before_outs, after_outs), d_outs, pitch_predictions, energy_predictions
+        return after_outs
 
     def _source_mask(self, ilens):
         # Make masks for self-attention.
