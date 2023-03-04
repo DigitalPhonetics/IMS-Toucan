@@ -13,7 +13,6 @@ from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.StochasticVariancePredictor import StochasticVariancePredictor
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from Utility.utils import initialize
-from Utility.utils import make_estimated_durations_usable_for_inference
 from Utility.utils import make_non_pad_mask
 
 
@@ -285,18 +284,18 @@ class ToucanTTS(torch.nn.Module, ABC):
         text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device).unsqueeze(1)
 
         if is_inference:
-            # predicting pitch, energy and duration
-            pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
+            # predicting pitch, energy and duration. All predictions are made in log space, so we apply exp to them.
+            pitch_predictions = torch.exp(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             encoded_texts_enriched_with_pitch = encoded_texts + embedded_pitch_curve
 
-            energy_predictions = self.energy_predictor(encoded_texts_enriched_with_pitch.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
+            energy_predictions = torch.exp(self.energy_predictor(encoded_texts_enriched_with_pitch.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
             enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
 
             predicted_durations = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
             predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()  # we apply log to the gold during training because it is easier for the model to produce small floats than large ints
-            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, make_estimated_durations_usable_for_inference(predicted_durations).squeeze(0), alpha)
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations.squeeze(0), alpha)
 
         else:
             # training with teacher forcing
@@ -308,10 +307,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
             enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
 
-            duration_targets = gold_durations.float()
-            idx = duration_targets != 0  # once more thanks to ptrblck https://discuss.pytorch.org/t/calculating-logarithm-of-non-zero-values-in-pytorch/39303
-            duration_targets[idx] = torch.log(duration_targets[idx])
-            duration_flow_loss = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=duration_targets.unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
+            duration_flow_loss = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
             duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(text_nonpadding_mask))  # weighted masking
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations, alpha)
 
