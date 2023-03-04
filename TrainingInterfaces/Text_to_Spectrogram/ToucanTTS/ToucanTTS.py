@@ -311,7 +311,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             duration_targets = gold_durations.float()
             idx = duration_targets != 0  # once more thanks to ptrblck https://discuss.pytorch.org/t/calculating-logarithm-of-non-zero-values-in-pytorch/39303
             duration_targets[idx] = torch.log(duration_targets[idx])
-            duration_flow_loss = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=torch.log(duration_targets).unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
+            duration_flow_loss = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=duration_targets.unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
             duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(text_nonpadding_mask))  # weighted masking
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations, alpha)
 
