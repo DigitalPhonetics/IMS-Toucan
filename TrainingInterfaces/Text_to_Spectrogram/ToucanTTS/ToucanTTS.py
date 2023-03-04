@@ -295,7 +295,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
 
             predicted_durations = self.duration_predictor(enriched_encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
-            torch.ceil(torch.exp(predicted_durations))  # we apply log to the gold during training because it is easier for the model to produce small floats than large ints
+            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()  # we apply log to the gold during training because it is easier for the model to produce small floats than large ints
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, make_estimated_durations_usable_for_inference(predicted_durations).squeeze(0), alpha)
 
         else:
