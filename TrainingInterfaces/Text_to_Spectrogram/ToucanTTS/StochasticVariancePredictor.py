@@ -44,7 +44,7 @@ class StochasticVariancePredictor(nn.Module):
         self.kernel_size = kernel_size
         self.p_dropout = p_dropout
         self.n_flows = n_flows
-        self.gin_channels = gin_channels
+        self.gin_channels = gin_channels if gin_channels is not None else 0
 
         self.log_flow = Log()
         self.flows = nn.ModuleList()
@@ -65,10 +65,10 @@ class StochasticVariancePredictor(nn.Module):
         self.pre = nn.Conv1d(in_channels, in_channels, 1)
         self.proj = nn.Conv1d(in_channels, in_channels, 1)
         self.convs = DDSConv(in_channels, kernel_size, n_layers=3, p_dropout=p_dropout)
-        if gin_channels != 0:
-            self.cond = nn.Conv1d(gin_channels, in_channels, 1)
+        if self.gin_channels != 0:
+            self.cond = nn.Conv1d(self.gin_channels, in_channels, 1)
 
-    def forward(self, x, x_mask, w=None, g=None, reverse=False, noise_scale=1.0):
+    def forward(self, x, x_mask, w=None, g=None, reverse=False, noise_scale=0.8):
         x = torch.detach(x)
         x = self.pre(x)
         if g is not None:
@@ -108,7 +108,7 @@ class StochasticVariancePredictor(nn.Module):
         else:
             flows = list(reversed(self.flows))
             flows = flows[:-2] + [flows[-1]]  # remove a useless vflow
-            z = torch.randn(x.size(0), 2, x.size(2)).to(device=x.device, dtype=x.dtype) * noise_scale
+            z = torch.randn(x.size(0), 2, x.size(2)).to(device=x.device, dtype=x.dtype) * noise_scale  # noise scale 0.8 derived from coqui implementation
             for flow in flows:
                 z = flow(z, x_mask, g=x, reverse=reverse)
             z0, z1 = torch.split(z, [1, 1], 1)

@@ -167,8 +167,9 @@ class ToucanTTS(torch.nn.Module, ABC):
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
         # define speaker embedding integrations
-        self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension), LayerNorm(attention_dimension))
-        self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim, output_spectrogram_channels), LayerNorm(output_spectrogram_channels))
+        if self.multispeaker_model:
+            self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension), LayerNorm(attention_dimension))
+            self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim, output_spectrogram_channels), LayerNorm(output_spectrogram_channels))
 
         # post net is realized as a flow
         gin_channels = attention_dimension
@@ -283,45 +284,43 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         text_nonpadding_mask = make_non_pad_mask(text_lens, device=text_lens.device).unsqueeze(1)
 
+        if self.multispeaker_model:
+            utterance_embedding_expanded = utterance_embedding.unsqueeze(-1)
+        else:
+            utterance_embedding_expanded = None
+
         if is_inference:
             # predicting pitch, energy and duration. All predictions are made in log space, so we apply exp to them.
-            pitch_predictions = torch.exp(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
+            pitch_predictions = torch.exp(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding_expanded, reverse=True))
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve
 
-            energy_predictions = torch.exp(self.energy_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True))
+            energy_predictions = torch.exp(self.energy_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding_expanded, reverse=True))
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve
 
-            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding.unsqueeze(-1), reverse=True)
+            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
             upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, predicted_durations.squeeze(0), alpha)
 
         else:
             # training with teacher forcing
-            pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_pitch.transpose(1, 2), g=utterance_embedding.unsqueeze(-1), reverse=False))
+            pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_pitch.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve
 
-            energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_energy.transpose(1, 2), g=utterance_embedding.unsqueeze(-1), reverse=False))
+            energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_energy.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve
 
-            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding.unsqueeze(-1), reverse=False)
+            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2), text_nonpadding_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding_expanded, reverse=False)
             duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(text_nonpadding_mask))  # weighted masking
             upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, gold_durations, alpha)
 
         # forward the decoder
-        if not is_inference:
-            speech_nonpadding_mask = make_non_pad_mask(lengths=speech_lens,
-                                                       device=speech_lens.device).unsqueeze(1).transpose(1, 2)
-        else:
-            speech_nonpadding_mask = None
+        speech_nonpadding_mask = make_non_pad_mask(lengths=speech_lens, device=speech_lens.device).unsqueeze(1).transpose(1, 2) if not is_inference else None
 
-        if speech_lens is not None and not is_inference:
-            decoder_masks = self._source_mask(speech_lens)
-        else:
-            decoder_masks = None
+        decoder_masks = self._source_mask(speech_lens) if speech_lens is not None and not is_inference else None
 
         if utterance_embedding is not None:
             upsampled_enriched_encoded_texts = _integrate_with_utt_embed(hs=upsampled_enriched_encoded_texts,
