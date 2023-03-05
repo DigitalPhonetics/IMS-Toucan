@@ -276,8 +276,10 @@ class PortaSpeech(torch.nn.Module):
                     pitch_predictions[0][phoneme_index - 5] += .1
                     pitch_predictions[0][phoneme_index - 6] += .1
             if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                # this means the phoneme is unvoiced
+                # this means the phoneme is unvoiced and should therefore not have a pitch value (undefined, but we overload this with 0)
                 pitch_predictions[0][phoneme_index] = 0.0
+            if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                predicted_durations[0][phoneme_index] = 0
             if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
                 predicted_durations[0][phoneme_index] = torch.round(predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor).long()
         if duration_scaling_factor != 1.0:
