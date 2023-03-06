@@ -285,8 +285,8 @@ class ToucanTTS(torch.nn.Module, ABC):
             utterance_embedding_expanded = None
 
         if is_inference:
-            # predicting pitch, energy and duration. All predictions are made in log space, so we apply exp to them. We also scaled up pitch and energy, so they are no longer centered around 1 during training
-            pitch_predictions = 0.1 * self.pitch_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
+            # predicting pitch, energy and duration. All predictions are made in log space, so we apply exp to them.
+            pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
 
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
                 if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
@@ -295,7 +295,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve
 
-            energy_predictions = 0.1 * self.energy_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
+            energy_predictions = self.energy_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_energy_curve
 
@@ -312,14 +312,14 @@ class ToucanTTS(torch.nn.Module, ABC):
             # training with teacher forcing
             idx = gold_pitch != 0  # once more thanks to ptrblck https://discuss.pytorch.org/t/calculating-logarithm-of-non-zero-values-in-pytorch/39303
             scaled_pitch_targets = gold_pitch.detach()
-            scaled_pitch_targets[idx] = torch.exp(gold_pitch[idx] * 10)  # we scale up, so that the log in the flow can handle the value ranges better. We just have to remember to scale back down again during inference.
+            scaled_pitch_targets[idx] = torch.exp(gold_pitch[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
             pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), text_masks, w=scaled_pitch_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
             pitch_flow_loss = torch.sum(pitch_flow_loss / torch.sum(text_masks))  # weighted masking
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve
 
             scaled_energy_targets = gold_energy.detach()
-            scaled_energy_targets[idx] = torch.exp(gold_energy[idx] * 10)  # we scale up, so that the log in the flow can handle the value ranges better. We just have to remember to scale back down again during inference.
+            scaled_energy_targets[idx] = torch.exp(gold_energy[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
             energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts.transpose(1, 2), text_masks, w=scaled_energy_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
             energy_flow_loss = torch.sum(energy_flow_loss / torch.sum(text_masks))  # weighted masking
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
