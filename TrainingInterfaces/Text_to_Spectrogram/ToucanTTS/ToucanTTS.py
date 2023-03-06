@@ -225,21 +225,21 @@ class ToucanTTS(torch.nn.Module, ABC):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         before_outs, \
-        after_outs, \
-        duration_loss, \
-        pitch_loss, \
-        energy_loss, \
-        glow_loss = self._forward(text_tensors,
-                                  text_lengths,
-                                  gold_speech,
-                                  speech_lengths,
-                                  gold_durations,
-                                  gold_pitch,
-                                  gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+            after_outs, \
+            duration_loss, \
+            pitch_loss, \
+            energy_loss, \
+            glow_loss = self._forward(text_tensors,
+                                      text_lengths,
+                                      gold_speech,
+                                      speech_lengths,
+                                      gold_durations,
+                                      gold_pitch,
+                                      gold_energy,
+                                      utterance_embedding=utterance_embedding,
+                                      is_inference=False,
+                                      lang_ids=lang_ids,
+                                      run_glow=run_glow)
 
         # calculate loss
         l1_loss = self.criterion(after_outs=None,
@@ -285,49 +285,48 @@ class ToucanTTS(torch.nn.Module, ABC):
             utterance_embedding_expanded = None
 
         if is_inference:
-            # predicting pitch, energy and duration. All predictions are made in log space, so we apply exp to them.
+            # predicting pitch, energy and duration.
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
-
-            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
-                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    pitch_predictions[0][0][phoneme_index] = 0.0
-
-            embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-
             energy_predictions = self.energy_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
-            embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
-
             predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
             predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
 
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     predicted_durations[0][0][phoneme_index] = 0
+                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
+                    pitch_predictions[0][0][phoneme_index] = 0.0
+                if phoneme_vector[get_feature_to_index_lookup()["phoneme"]] == 0:
+                    energy_predictions[0][0][phoneme_index] = 0.0
 
+            embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
+            embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
-
             upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, predicted_durations.squeeze(0), alpha)
 
         else:
             # training with teacher forcing
-            idx = gold_pitch != 0  # once more thanks to ptrblck https://discuss.pytorch.org/t/calculating-logarithm-of-non-zero-values-in-pytorch/39303
+            idx = gold_pitch != 0
+            pitch_mask = torch.logical_and(text_masks, idx.transpose(1, 2))
             scaled_pitch_targets = gold_pitch.detach()
             scaled_pitch_targets[idx] = torch.exp(gold_pitch[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
-            pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), text_masks, w=scaled_pitch_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
-            pitch_flow_loss = torch.sum(pitch_flow_loss / torch.sum(text_masks))  # weighted masking
-            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=scaled_pitch_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
+            pitch_flow_loss = torch.sum(pitch_flow_loss / torch.sum(pitch_mask))  # weighted masking
 
+            idx = gold_energy != 0
+            energy_mask = torch.logical_and(text_masks, idx.transpose(1, 2))
             scaled_energy_targets = gold_energy.detach()
             scaled_energy_targets[idx] = torch.exp(gold_energy[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
-            energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts.transpose(1, 2), text_masks, w=scaled_energy_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
-            energy_flow_loss = torch.sum(energy_flow_loss / torch.sum(text_masks))  # weighted masking
+            energy_flow_loss = torch.sum(self.energy_predictor(encoded_texts.transpose(1, 2), energy_mask, w=scaled_energy_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
+            energy_flow_loss = torch.sum(energy_flow_loss / torch.sum(energy_mask))  # weighted masking
+
+            duration_mask = torch.logical_and(text_masks, (gold_durations.unsqueeze(1) != 0))
+            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding_expanded, reverse=False)
+            duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(duration_mask))  # weighted masking
+
+            embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-
-            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2), text_masks, w=gold_durations.float().unsqueeze(1), g=utterance_embedding_expanded, reverse=False)
-            duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(text_masks))  # weighted masking
-
             encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
-
             upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, gold_durations, alpha)
 
         # forward the decoder
@@ -369,18 +368,19 @@ class ToucanTTS(torch.nn.Module, ABC):
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return predicted_spectrogram_before_postnet.squeeze(), \
-                   predicted_spectrogram_after_postnet, \
-                   predicted_durations.squeeze(), \
-                   pitch_predictions.squeeze(), \
-                   energy_predictions.squeeze()
+                predicted_spectrogram_after_postnet, \
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze(), \
+                energy_predictions.squeeze()
         else:
             return predicted_spectrogram_before_postnet, \
-                   predicted_spectrogram_after_postnet, \
-                   duration_flow_loss * 0.1, \
-                   pitch_flow_loss * 0.1, \
-                   energy_flow_loss * 0.1, \
-                   glow_loss
+                predicted_spectrogram_after_postnet, \
+                duration_flow_loss * 0.1, \
+                pitch_flow_loss * 0.1, \
+                energy_flow_loss * 0.1, \
+                glow_loss
 
+    @torch.inference_mode()
     def inference(self,
                   text,
                   speech=None,
@@ -411,17 +411,17 @@ class ToucanTTS(torch.nn.Module, ABC):
             lang_id = lang_id.unsqueeze(0)
 
         before_outs, \
-        after_outs, \
-        d_outs, \
-        pitch_predictions, \
-        energy_predictions = self._forward(xs,
-                                           ilens,
-                                           ys,
-                                           is_inference=True,
-                                           alpha=alpha,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0),
-                                           lang_ids=lang_id,
-                                           run_glow=run_postflow)  # (1, L, odim)
+            after_outs, \
+            d_outs, \
+            pitch_predictions, \
+            energy_predictions = self._forward(xs,
+                                               ilens,
+                                               ys,
+                                               is_inference=True,
+                                               alpha=alpha,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0),
+                                               lang_ids=lang_id,
+                                               run_glow=run_postflow)  # (1, L, odim)
         self.train()
         if after_outs is None:
             after_outs = before_outs
