@@ -265,8 +265,8 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         if is_inference:
             # predicting pitch, energy and duration.
-            pitch_mask = torch.ones(size=[text_tensors.size(1)])
-            duration_mask = torch.ones(size=[text_tensors.size(1)])
+            pitch_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
+            duration_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     pitch_mask[phoneme_index] = 0
