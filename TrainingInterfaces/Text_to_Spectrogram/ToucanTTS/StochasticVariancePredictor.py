@@ -68,7 +68,7 @@ class StochasticVariancePredictor(nn.Module):
         if self.gin_channels != 0:
             self.cond = nn.Conv1d(self.gin_channels, in_channels, 1)
 
-    def forward(self, x, x_mask, w=None, g=None, reverse=False, noise_scale=0.6):
+    def forward(self, x, x_mask, w=None, g=None, reverse=False, noise_scale=0.3):
         # x = torch.detach(x)
         x = self.pre(x)
         if g is not None:

@@ -12,7 +12,7 @@ from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
-from Utility.utils import plot_progress_spec
+from Utility.utils import plot_progress_spec_toucantts
 
 
 def collate_and_pad(batch):
@@ -81,7 +81,6 @@ def train_loop(net,
     l1_losses_total = list()
     duration_losses_total = list()
     pitch_losses_total = list()
-    energy_losses_total = list()
     glow_losses_total = list()
     cycle_losses_total = list()
 
@@ -125,7 +124,6 @@ def train_loop(net,
         speech_lengths = batch[3].squeeze().to(device)
         gold_durations = batch[4].to(device)
         gold_pitch = batch[6].unsqueeze(-1).to(device)  # mind the switched order
-        gold_energy = batch[5].unsqueeze(-1).to(device)  # mind the switched order
         lang_ids = batch[8].squeeze(1).to(device)
 
         train_loss = 0.0
@@ -139,14 +137,13 @@ def train_loop(net,
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                            batch_of_spectrogram_lengths=batch[3].to(device))
 
-                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
+                l1_loss, duration_loss, pitch_loss, glow_loss = net(
                     text_tensors=text_tensors,
                     text_lengths=text_lengths,
                     gold_speech=gold_speech,
                     speech_lengths=speech_lengths,
                     gold_durations=gold_durations,
                     gold_pitch=gold_pitch,
-                    gold_energy=gold_energy,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=False,
@@ -159,8 +156,6 @@ def train_loop(net,
                     train_loss = train_loss + duration_loss
                 if not torch.isnan(pitch_loss):
                     train_loss = train_loss + pitch_loss
-                if not torch.isnan(energy_loss):
-                    train_loss = train_loss + energy_loss
 
             else:
                 # PHASE 2
@@ -170,14 +165,13 @@ def train_loop(net,
                                                                                   batch_of_spectrogram_lengths=speech_lengths,
                                                                                   return_all_outs=True)
 
-                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
+                l1_loss, duration_loss, pitch_loss, glow_loss, output_spectrograms = net(
                     text_tensors=text_tensors,
                     text_lengths=text_lengths,
                     gold_speech=gold_speech,
                     speech_lengths=speech_lengths,
                     gold_durations=gold_durations,
                     gold_pitch=gold_pitch,
-                    gold_energy=gold_energy,
                     utterance_embedding=style_embedding,
                     lang_ids=lang_ids,
                     return_mels=True,
@@ -189,8 +183,6 @@ def train_loop(net,
                     train_loss = train_loss + duration_loss
                 if not torch.isnan(pitch_loss):
                     train_loss = train_loss + pitch_loss
-                if not torch.isnan(energy_loss):
-                    train_loss = train_loss + energy_loss
 
                 style_embedding_function.train()
                 style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -211,7 +203,6 @@ def train_loop(net,
         l1_losses_total.append(l1_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
-        energy_losses_total.append(energy_loss.item())
 
         if glow_loss is not None:
             if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
@@ -257,7 +248,6 @@ def train_loop(net,
                     "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
                     "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 5),
                     "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                    "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                     "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
                     "cycle_loss"   : sum(cycle_losses_total) / len(cycle_losses_total) if len(cycle_losses_total) != 0 else None,
                     "Steps"        : step_counter
@@ -265,14 +255,14 @@ def train_loop(net,
 
             try:
                 path_to_most_recent_plot_before, \
-                    path_to_most_recent_plot_after = plot_progress_spec(net=net,
-                                                                        device=device,
-                                                                        lang=lang,
-                                                                        save_dir=save_directory,
-                                                                        step=step_counter,
-                                                                        default_emb=default_embedding,
-                                                                        before_and_after_postnet=True,
-                                                                        run_postflow=step_counter - 5 > postnet_start_steps)
+                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net=net,
+                                                                              device=device,
+                                                                              lang=lang,
+                                                                              save_dir=save_directory,
+                                                                              step=step_counter,
+                                                                              default_emb=default_embedding,
+                                                                              before_and_after_postnet=True,
+                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
                 if use_wandb:
                     wandb.log({
                         "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -289,6 +279,5 @@ def train_loop(net,
             l1_losses_total = list()
             duration_losses_total = list()
             pitch_losses_total = list()
-            energy_losses_total = list()
             glow_losses_total = list()
             net.train()
