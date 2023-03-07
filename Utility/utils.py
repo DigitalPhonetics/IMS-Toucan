@@ -227,12 +227,12 @@ def plot_progress_spec_toucantts(net,
         for label_index, word_boundary in enumerate(phones):
             if word_boundary == "|":
                 word_boundaries.append(label_positions[label_index])
-        ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.5)
-        ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.5)
+        ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+        ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
         pitch_array = pitch.cpu().numpy()
         for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
             if pitch_array[pitch_index] > 0.001:
-                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red",
+                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
                           linestyles="solid",
                           linewidth=1.0)
         ax.set_title(sentence)
@@ -266,9 +266,9 @@ def plot_progress_spec_toucantts(net,
         pitch_array = pitch.cpu().numpy()
         for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
             if pitch_array[pitch_index] > 0.001:
-                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
+                ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
                           linestyles="solid",
-                          linewidth=0.5)
+                          linewidth=1.0)
         ax.set_title(sentence)
         plt.savefig(os.path.join(os.path.join(save_dir, "spec_after"), f"{step}.png"))
         plt.clf()

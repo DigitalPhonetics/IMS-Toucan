@@ -269,9 +269,9 @@ class ToucanTTS(torch.nn.Module, ABC):
             duration_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                    pitch_mask[phoneme_index] = 0
+                    duration_mask[phoneme_index] = 0
                 if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    duration_mask[phoneme_index] = 0.0
+                    pitch_mask[phoneme_index] = 0.0
 
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=None, g=utterance_embedding_expanded, reverse=True)
