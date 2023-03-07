@@ -109,7 +109,7 @@ class StochasticVariancePredictor(nn.Module):
             flows = list(reversed(self.flows))
             flows = flows[:-2] + [flows[-1]]  # remove a useless vflow
             z = torch.randn(x.size(0), 2, x.size(2)).to(device=x.device, dtype=x.dtype) * noise_scale
-            # noise scale 0.8 derived from coqui implementation, but dropped to 0.6 during testing. Might not be ideal yet.
+            # noise scale 0.8 derived from coqui implementation, but dropped to 0.3 during testing. Might not be ideal yet.
             for flow in flows:
                 z = flow(z, x_mask, g=x, reverse=reverse)
             z0, z1 = torch.split(z, [1, 1], 1)

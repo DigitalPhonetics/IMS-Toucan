@@ -55,9 +55,6 @@ class ToucanTTS(torch.nn.Module, ABC):
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,
                  decoder_normalize_before=True,
-                 # energy predictor
-                 energy_embed_kernel_size=1,
-                 energy_embed_dropout=0.0,
                  # pitch predictor
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
@@ -205,7 +202,6 @@ class ToucanTTS(torch.nn.Module, ABC):
             speech_lengths (LongTensor): Batch of the lengths of each target (B,).
             gold_durations (LongTensor): Batch of padded durations (B, Tmax + 1).
             gold_pitch (Tensor): Batch of padded token-averaged pitch (B, Tmax + 1, 1).
-            gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
             run_glow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
@@ -269,15 +265,17 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         if is_inference:
             # predicting pitch, energy and duration.
-            pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
-            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), text_masks, w=None, g=utterance_embedding_expanded, reverse=True)
-            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
-
+            pitch_mask = torch.ones(size=[text_tensors.size(1)])
+            duration_mask = torch.ones(size=[text_tensors.size(1)])
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                    predicted_durations[0][0][phoneme_index] = 0
+                    pitch_mask[phoneme_index] = 0
                 if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    pitch_predictions[0][0][phoneme_index] = 0.0
+                    duration_mask[phoneme_index] = 0.0
+
+            pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
+            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=None, g=utterance_embedding_expanded, reverse=True)
+            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
 
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve
@@ -381,7 +379,7 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         before_outs, \
         after_outs, \
-        d_outs, \
+        duration_predictions, \
         pitch_predictions = self._forward(xs,
                                           ilens,
                                           ys,
@@ -394,7 +392,7 @@ class ToucanTTS(torch.nn.Module, ABC):
         if after_outs is None:
             after_outs = before_outs
         if return_duration_pitch_energy:
-            return (before_outs, after_outs), d_outs, pitch_predictions
+            return (before_outs, after_outs), duration_predictions, pitch_predictions
         return after_outs
 
     def _source_mask(self, ilens):
