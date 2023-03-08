@@ -68,7 +68,7 @@ def train_loop(net,
                                         num_workers=2,
                                         pin_memory=True,
                                         shuffle=True,
-                                        prefetch_factor=5,
+                                        prefetch_factor=10,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
