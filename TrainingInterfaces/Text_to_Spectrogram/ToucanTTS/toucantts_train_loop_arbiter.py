@@ -23,7 +23,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                phase_1_steps=80000,  # without cycle consistency objective.
                phase_2_steps=120000,  # with cycle consistency objective.
-               postnet_start_steps=14000
+               postnet_start_steps=2000
                ):
     if type(datasets) != list:
         datasets = [datasets]
