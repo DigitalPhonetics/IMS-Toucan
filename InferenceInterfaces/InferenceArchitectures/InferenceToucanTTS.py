@@ -202,17 +202,12 @@ class ToucanTTS(torch.nn.Module):
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
             if phoneme_vector[get_feature_to_index_lookup()["questionmark"]] == 1:
                 if phoneme_index - 4 >= 0:
-                    pitch_predictions[0][phoneme_index - 1] += .3
-                    pitch_predictions[0][phoneme_index - 2] += .3
-                    pitch_predictions[0][phoneme_index - 3] += .2
-                    pitch_predictions[0][phoneme_index - 4] += .1
-            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                # this means the phoneme is unvoiced and should therefore not have a pitch value (undefined, but we overload this with 0)
-                pitch_predictions[0][phoneme_index] = 0.0
-            if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                predicted_durations[0][phoneme_index] = 0
+                    pitch_predictions[phoneme_index - 1] += .3
+                    pitch_predictions[phoneme_index - 2] += .3
+                    pitch_predictions[phoneme_index - 3] += .2
+                    pitch_predictions[phoneme_index - 4] += .1
             if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
-                predicted_durations[0][phoneme_index] = torch.round(predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor).long()
+                predicted_durations[phoneme_index] = torch.round(predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor).long()
         if duration_scaling_factor != 1.0:
             assert duration_scaling_factor > 0
             predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
@@ -237,24 +232,24 @@ class ToucanTTS(torch.nn.Module):
                                                         projection=self.decoder_out_embedding_projection)
         else:
             before_enriched = predicted_spectrogram_before_postnet
-        predicted_spectrogram_after_postnet = self.run_post_glow(mel_out=before_enriched,
-                                                                 encoded_texts=upsampled_enriched_encoded_texts,
-                                                                 device=device)
+        predicted_spectrogram_after_postnet = self.post_flow(tgt_mels=None,
+                                                             infer=True,
+                                                             mel_out=before_enriched,
+                                                             encoded_texts=upsampled_enriched_encoded_texts,
+                                                             tgt_nonpadding=None)
 
-        return predicted_spectrogram_before_postnet, predicted_spectrogram_after_postnet, predicted_durations, pitch_predictions
+        return predicted_spectrogram_before_postnet.squeeze(), predicted_spectrogram_after_postnet.squeeze(), predicted_durations.squeeze(), pitch_predictions.squeeze()
 
     @torch.inference_mode()
     def forward(self,
                 text,
                 durations=None,
                 pitch=None,
-                energy=None,
                 utterance_embedding=None,
                 return_duration_pitch_energy=False,
                 lang_id=None,
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
-                energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
                 device=None):
         """
@@ -292,7 +287,7 @@ class ToucanTTS(torch.nn.Module):
 
         before_outs, \
             after_outs, \
-            d_outs, \
+            predicted_durations, \
             pitch_predictions = self._forward(text.unsqueeze(0),
                                               ilens,
                                               gold_durations=durations,
@@ -304,8 +299,8 @@ class ToucanTTS(torch.nn.Module):
                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
                                               device=device)
         if return_duration_pitch_energy:
-            return after_outs[0], d_outs[0], pitch_predictions[0], None
-        return after_outs[0]
+            return after_outs, predicted_durations, pitch_predictions
+        return after_outs
 
     def _source_mask(self, ilens):
         x_masks = make_non_pad_mask(ilens).to(next(self.parameters()).device)
@@ -321,17 +316,6 @@ class ToucanTTS(torch.nn.Module):
                 return
 
         self.apply(remove_weight_norm)
-
-    def run_post_glow(self, mel_out, encoded_texts, device):
-        x_recon = mel_out.transpose(1, 2)
-        g = x_recon
-        B, _, T = g.shape
-        g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
-        g = self.g_proj(g)
-        nonpadding = torch.ones_like(x_recon[:, :1, :])
-        z_post = torch.randn(x_recon.shape).to(device) * 0.8
-        x_recon, _ = self.post_flow(z_post, nonpadding, g, reverse=True)
-        return x_recon.transpose(1, 2)
 
 
 def _integrate_with_utt_embed(hs, utt_embeddings, projection):
