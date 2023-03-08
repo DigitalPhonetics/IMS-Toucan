@@ -274,6 +274,8 @@ class ToucanTTS(torch.nn.Module, ABC):
                     pitch_mask[phoneme_index] = 0.0
 
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
+            pitch_scaling_factor_to_restore_mean = 1 - (sum(pitch_predictions) / len(pitch_predictions.squeeze()))
+            pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
             predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
 

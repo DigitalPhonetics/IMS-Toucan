@@ -198,6 +198,8 @@ class ToucanTTS(torch.nn.Module):
             pitch_predictions = gold_pitch
         else:
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
+            pitch_scaling_factor_to_restore_mean = 1 - (sum(pitch_predictions) / len(pitch_predictions.squeeze()))
+            pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
 
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
             if phoneme_vector[get_feature_to_index_lookup()["questionmark"]] == 1:
@@ -286,18 +288,18 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, \
-            after_outs, \
-            predicted_durations, \
-            pitch_predictions = self._forward(text.unsqueeze(0),
-                                              ilens,
-                                              gold_durations=durations,
-                                              gold_pitch=pitch,
-                                              utterance_embedding=utterance_embedding.unsqueeze(0),
-                                              lang_ids=lang_id,
-                                              duration_scaling_factor=duration_scaling_factor,
-                                              pitch_variance_scale=pitch_variance_scale,
-                                              pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                              device=device)
+        after_outs, \
+        predicted_durations, \
+        pitch_predictions = self._forward(text.unsqueeze(0),
+                                          ilens,
+                                          gold_durations=durations,
+                                          gold_pitch=pitch,
+                                          utterance_embedding=utterance_embedding.unsqueeze(0),
+                                          lang_ids=lang_id,
+                                          duration_scaling_factor=duration_scaling_factor,
+                                          pitch_variance_scale=pitch_variance_scale,
+                                          pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                          device=device)
         if return_duration_pitch_energy:
             return after_outs, predicted_durations, pitch_predictions
         return after_outs
