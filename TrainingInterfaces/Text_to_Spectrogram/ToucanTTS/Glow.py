@@ -335,7 +335,7 @@ class Glow(nn.Module):
                 ))
 
     def forward(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding):
-        x_recon = mel_out.transpose(1, 2)
+        x_recon = mel_out.transpose(1, 2).detach()
         g = x_recon
         B, _, T = g.shape
         g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
