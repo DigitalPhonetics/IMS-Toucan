@@ -278,6 +278,12 @@ class ToucanTTS(torch.nn.Module, ABC):
             pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
             predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
+            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
+                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
+                    # this means the phoneme is unvoiced and should therefore not have a pitch value (undefined, but we overload this with 0)
+                    pitch_predictions[0][0][phoneme_index] = 0.0
+                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                    predicted_durations[0][0][phoneme_index] = 0
 
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             encoded_texts = encoded_texts + embedded_pitch_curve

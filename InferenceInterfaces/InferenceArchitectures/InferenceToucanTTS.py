@@ -204,12 +204,17 @@ class ToucanTTS(torch.nn.Module):
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
             if phoneme_vector[get_feature_to_index_lookup()["questionmark"]] == 1:
                 if phoneme_index - 4 >= 0:
-                    pitch_predictions[phoneme_index - 1] += .3
-                    pitch_predictions[phoneme_index - 2] += .3
-                    pitch_predictions[phoneme_index - 3] += .2
-                    pitch_predictions[phoneme_index - 4] += .1
+                    pitch_predictions[0][0][phoneme_index - 1] += .3
+                    pitch_predictions[0][0][phoneme_index - 2] += .3
+                    pitch_predictions[0][0][phoneme_index - 3] += .2
+                    pitch_predictions[0][0][phoneme_index - 4] += .1
             if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
-                predicted_durations[phoneme_index] = torch.round(predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor).long()
+                predicted_durations[phoneme_index] = torch.round(predicted_durations[0][0][phoneme_index].float() * pause_duration_scaling_factor).long()
+            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
+                # this means the phoneme is unvoiced and should therefore not have a pitch value (undefined, but we overload this with 0)
+                pitch_predictions[0][0][phoneme_index] = 0.0
+            if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                predicted_durations[0][0][phoneme_index] = 0
         if duration_scaling_factor != 1.0:
             assert duration_scaling_factor > 0
             predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
