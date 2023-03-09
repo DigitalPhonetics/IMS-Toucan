@@ -321,15 +321,17 @@ class ToucanTTS(torch.nn.Module, ABC):
         # forward flow post-net
         glow_loss = None
         if self.detach_postflow:
-            predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
+            _predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
+        else:
+            _predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet
 
         if run_glow:
             if utterance_embedding is not None:
-                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
+                before_enriched = _integrate_with_utt_embed(hs=_predicted_spectrogram_before_postnet,
                                                             utt_embeddings=utterance_embedding,
                                                             projection=self.decoder_out_embedding_projection)
             else:
-                before_enriched = predicted_spectrogram_before_postnet
+                before_enriched = _predicted_spectrogram_before_postnet
 
             if is_inference:
                 predicted_spectrogram_after_postnet = self.post_flow(tgt_mels=None,

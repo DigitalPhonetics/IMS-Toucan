@@ -92,7 +92,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                  use_weighted_masking=True,
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=False,
+                 detach_postflow=True,
                  lang_embs=8000):
         super().__init__()
 
@@ -383,18 +383,20 @@ class PortaSpeech(torch.nn.Module, ABC):
         decoded_speech, _ = self.decoder(encoded_texts, decoder_masks, utterance_embedding)
         predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
         if self.detach_postflow:
-            predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
+            _predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
+        else:
+            _predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet
 
         predicted_spectrogram_after_postnet = None
 
         # forward flow post-net
         if run_glow:
             if utterance_embedding is not None:
-                before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
+                before_enriched = _integrate_with_utt_embed(hs=_predicted_spectrogram_before_postnet,
                                                             utt_embeddings=utterance_embedding,
                                                             projection=self.decoder_out_embedding_projection)
             else:
-                before_enriched = predicted_spectrogram_before_postnet
+                before_enriched = _predicted_spectrogram_before_postnet
 
             if is_inference:
                 predicted_spectrogram_after_postnet = self.run_post_glow(tgt_mels=None,
@@ -406,7 +408,7 @@ class PortaSpeech(torch.nn.Module, ABC):
                 glow_loss = self.run_post_glow(tgt_mels=gold_speech,
                                                infer=is_inference,
                                                mel_out=before_enriched,
-                                               encoded_texts=encoded_texts,
+                                               encoded_texts=encoded_texts.detach(),
                                                tgt_nonpadding=speech_nonpadding_mask.transpose(1, 2))
         else:
             glow_loss = None
