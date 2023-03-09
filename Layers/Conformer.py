@@ -47,11 +47,12 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True):
         super(Conformer, self).__init__()
 
         activation = Swish()
         self.conv_subsampling_factor = 1
+        self.use_output_norm = use_output_norm
 
         if isinstance(input_layer, torch.nn.Module):
             self.embed = input_layer
@@ -62,7 +63,8 @@ class Conformer(torch.nn.Module):
         else:
             raise ValueError("unknown input_layer: " + input_layer)
 
-        self.output_norm = LayerNorm(attention_dim)
+        if self.use_output_norm:
+            self.output_norm = LayerNorm(attention_dim)
         self.utt_embed = utt_embed
         if utt_embed is not None:
             self.hs_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
@@ -117,10 +119,11 @@ class Conformer(torch.nn.Module):
         if isinstance(xs, tuple):
             xs = xs[0]
 
+        if self.use_output_norm:
+            xs = self.output_norm(xs)
+
         if self.utt_embed:
             xs = self._integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding)
-
-        xs = self.output_norm(xs)
 
         return xs, masks
 

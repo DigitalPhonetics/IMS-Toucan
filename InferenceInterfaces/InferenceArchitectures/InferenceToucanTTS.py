@@ -87,13 +87,13 @@ class ToucanTTS(torch.nn.Module):
                                                               kernel_size=3,
                                                               p_dropout=0.5,
                                                               n_flows=4,
-                                                              gin_channels=utt_embed_dim)
+                                                              conditioning_signal_channels=utt_embed_dim)
 
         self.pitch_predictor = StochasticVariancePredictor(in_channels=attention_dimension,
                                                            kernel_size=3,
                                                            p_dropout=0.5,
                                                            n_flows=4,
-                                                           gin_channels=utt_embed_dim)
+                                                           conditioning_signal_channels=utt_embed_dim)
 
         self.pitch_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
@@ -142,11 +142,11 @@ class ToucanTTS(torch.nn.Module):
             n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
-            gin_channels=gin_channels,
+            text_condition_channels=gin_channels,
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,  # share_wn_layers
             sigmoid_scale=False,  # sigmoid_scale
-            g_proj=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, gin_channels, 5, padding=2)
+            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, gin_channels, 5, padding=2)
         )
 
         self.load_state_dict(weights)

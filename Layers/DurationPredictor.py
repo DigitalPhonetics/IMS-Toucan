@@ -55,47 +55,46 @@ class DurationPredictor(torch.nn.Module):
         for f in self.conv:
             xs = f(xs)  # (B, C, Tmax)
 
-        # NOTE: calculate in log domain
+        # NOTE: targets are transformed to log domain in the loss calculation, so this will learn to predict in the log space, which makes the value range easier to handle.
         xs = self.linear(xs.transpose(1, -1)).squeeze(-1)  # (B, Tmax)
 
         if is_inference:
-            # NOTE: calculate in linear domain
+            # NOTE: since we learned to predict in the log domain, we have to invert the log during inference.
             xs = torch.clamp(torch.round(xs.exp() - self.offset), min=0).long()  # avoid negative value
-
-        if x_masks is not None:
+        else:
             xs = xs.masked_fill(x_masks, 0.0)
 
         return xs
 
-    def forward(self, xs, x_masks=None):
+    def forward(self, xs, padding_mask=None):
         """
         Calculate forward propagation.
 
         Args:
             xs (Tensor): Batch of input sequences (B, Tmax, idim).
-            x_masks (ByteTensor, optional):
+            padding_mask (ByteTensor, optional):
                 Batch of masks indicating padded part (B, Tmax).
 
         Returns:
             Tensor: Batch of predicted durations in log domain (B, Tmax).
 
         """
-        return self._forward(xs, x_masks, False)
+        return self._forward(xs, padding_mask, False)
 
-    def inference(self, xs, x_masks=None):
+    def inference(self, xs, padding_mask=None):
         """
         Inference duration.
 
         Args:
             xs (Tensor): Batch of input sequences (B, Tmax, idim).
-            x_masks (ByteTensor, optional):
+            padding_mask (ByteTensor, optional):
                 Batch of masks indicating padded part (B, Tmax).
 
         Returns:
             LongTensor: Batch of predicted durations in linear domain (B, Tmax).
 
         """
-        return self._forward(xs, x_masks, True)
+        return self._forward(xs, padding_mask, True)
 
 
 class DurationPredictorLoss(torch.nn.Module):

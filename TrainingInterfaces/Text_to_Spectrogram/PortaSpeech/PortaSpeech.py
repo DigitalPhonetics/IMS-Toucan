@@ -525,8 +525,8 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randn([12, 62])  # [Sequence Length, Features per Phone]
     dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
-    print(PortaSpeech().inference(dummy_text_batch,
-                                  utterance_embedding=dummy_utterance_embed,
-                                  lang_id=dummy_language_id))
+    PortaSpeech().inference(dummy_text_batch,
+                            utterance_embedding=dummy_utterance_embed,
+                            lang_id=dummy_language_id)
 
     print(sum(p.numel() for p in PortaSpeech().parameters() if p.requires_grad))

@@ -1,12 +1,12 @@
 from abc import ABC
 
 import torch
-from torch.nn import LayerNorm
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
 
 from Layers.Conformer import Conformer
+from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
@@ -42,58 +42,61 @@ class ToucanTTS(torch.nn.Module, ABC):
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
-                 # encoder / decoder
+                 init_type="xavier_uniform",
+                 use_macaron_style_in_conformer=True,
+                 use_cnn_in_conformer=True,
+
+                 # encoder
                  encoder_layers=6,
                  encoder_units=1536,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
-                 use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
                  conformer_encoder_kernel_size=7,
+                 transformer_enc_dropout_rate=0.2,
+                 transformer_enc_positional_dropout_rate=0.2,
+                 transformer_enc_attn_dropout_rate=0.2,
+
+                 # decoder
                  decoder_layers=6,
                  decoder_units=1536,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,
                  decoder_normalize_before=True,
-                 # pitch predictor
-                 pitch_embed_kernel_size=1,
-                 pitch_embed_dropout=0.0,
-                 # training related
-                 transformer_enc_dropout_rate=0.2,
-                 transformer_enc_positional_dropout_rate=0.2,
-                 transformer_enc_attn_dropout_rate=0.2,
                  transformer_dec_dropout_rate=0.2,
                  transformer_dec_positional_dropout_rate=0.2,
                  transformer_dec_attn_dropout_rate=0.2,
-                 init_type="xavier_uniform",
-                 init_enc_alpha=1.0,
-                 init_dec_alpha=1.0,
+
+                 # duration predictor
+                 duration_predictor_layers=2,
+                 duration_predictor_chans=256,
+                 duration_predictor_kernel_size=3,
+                 duration_predictor_dropout_rate=0.2,
+
+                 # pitch predictor
+                 pitch_embed_kernel_size=1,
+                 pitch_embed_dropout=0.0,
+
                  # additional features
                  utt_embed_dim=64,
                  detach_postflow=True,
                  lang_embs=8000):
         super().__init__()
 
-        # store hyperparameters
-        self.idim = input_feature_dimensions
-        self.odim = output_spectrogram_channels
-        self.adim = attention_dimension
-        self.eos = 1
+        self.input_feature_dimensions = input_feature_dimensions
+        self.output_spectrogram_channels = output_spectrogram_channels
+        self.attention_dimension = attention_dimension
         self.detach_postflow = detach_postflow
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
 
-        # define encoder
-        embed = Sequential(Linear(input_feature_dimensions, 100),
-                           Tanh(),
-                           Linear(100, attention_dimension))
+        articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
                                  linear_units=encoder_units,
                                  num_blocks=encoder_layers,
-                                 input_layer=embed,
+                                 input_layer=articulatory_feature_embedding,
                                  dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate,
                                  attention_dropout_rate=transformer_enc_attn_dropout_rate,
@@ -104,20 +107,20 @@ class ToucanTTS(torch.nn.Module, ABC):
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
-                                 utt_embed=None,
-                                 lang_embs=lang_embs)
+                                 utt_embed=utt_embed_dim,
+                                 lang_embs=lang_embs,
+                                 use_output_norm=True)
 
-        self.duration_predictor = StochasticVariancePredictor(in_channels=attention_dimension,
-                                                              kernel_size=3,
-                                                              p_dropout=0.5,
-                                                              n_flows=4,
-                                                              gin_channels=utt_embed_dim)
+        self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
+                                                    n_chans=duration_predictor_chans,
+                                                    kernel_size=duration_predictor_kernel_size,
+                                                    dropout_rate=duration_predictor_dropout_rate, )
 
         self.pitch_predictor = StochasticVariancePredictor(in_channels=attention_dimension,
                                                            kernel_size=3,
                                                            p_dropout=0.5,
                                                            n_flows=4,
-                                                           gin_channels=utt_embed_dim)
+                                                           conditioning_signal_channels=utt_embed_dim)
 
         self.pitch_embed = Sequential(
             torch.nn.Conv1d(in_channels=1,
@@ -126,10 +129,8 @@ class ToucanTTS(torch.nn.Module, ABC):
                             padding=(pitch_embed_kernel_size - 1) // 2),
             torch.nn.Dropout(pitch_embed_dropout))
 
-        # define length regulator
         self.length_regulator = LengthRegulator()
 
-        # define decoder
         self.decoder = Conformer(idim=0,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
@@ -145,40 +146,31 @@ class ToucanTTS(torch.nn.Module, ABC):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 utt_embed=None)
+                                 use_output_norm=False)
 
-        # define final projection
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
-        # define speaker embedding integrations
-        if self.multispeaker_model:
-            self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension), LayerNorm(attention_dimension))
-            self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim, output_spectrogram_channels), LayerNorm(output_spectrogram_channels))
-
-        # post net is realized as a flow
-        gin_channels = attention_dimension
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
-            hidden_channels=192,  # post_glow_hidden  (original 192 in paper)
+            hidden_channels=192,  # post_glow_hidden
             kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
             n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
             n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
-            gin_channels=gin_channels,
+            text_condition_channels=attention_dimension,
             share_cond_layers=False,  # post_share_cond_layers
-            share_wn_layers=4,  # share_wn_layers
-            sigmoid_scale=False,  # sigmoid_scale
-            g_proj=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, gin_channels, 5, padding=2)
+            share_wn_layers=4,
+            sigmoid_scale=False,
+            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
         )
 
         # initialize parameters
-        self._reset_parameters(init_type=init_type, init_enc_alpha=init_enc_alpha, init_dec_alpha=init_dec_alpha)
+        self._reset_parameters(init_type=init_type)
         if lang_embs is not None:
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
-        # define criterion
         self.criterion = ToucanTTSLoss()
 
     def forward(self,
@@ -207,26 +199,29 @@ class ToucanTTS(torch.nn.Module, ABC):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         before_outs, \
-        after_outs, \
-        duration_loss, \
-        pitch_loss, \
-        glow_loss = self._forward(text_tensors,
-                                  text_lengths,
-                                  gold_speech,
-                                  speech_lengths,
-                                  gold_durations,
-                                  gold_pitch,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+            after_outs, \
+            predicted_durations, \
+            pitch_loss, \
+            glow_loss = self._forward(text_tensors=text_tensors,
+                                      text_lengths=text_lengths,
+                                      gold_speech=gold_speech,
+                                      speech_lengths=speech_lengths,
+                                      gold_durations=gold_durations,
+                                      gold_pitch=gold_pitch,
+                                      utterance_embedding=utterance_embedding,
+                                      is_inference=False,
+                                      lang_ids=lang_ids,
+                                      run_glow=run_glow)
 
         # calculate loss
-        l1_loss = self.criterion(after_outs=None,
-                                 # if a regular PostNet is used, the post-PostNet outs have to go here. The flow has its own loss though, so we hard-code this to None
-                                 before_outs=before_outs,
-                                 ys=gold_speech,
-                                 olens=speech_lengths)
+        l1_loss, duration_loss = self.criterion(after_outs=None,
+                                                # if a regular PostNet is used, the post-PostNet outs have to go here. The flow has its own loss though, so we hard-code this to None
+                                                before_outs=before_outs,
+                                                gold_spectrograms=gold_speech,
+                                                spectrogram_lengths=speech_lengths,
+                                                text_lengths=text_lengths,
+                                                gold_durations=gold_durations,
+                                                predicted_durations=predicted_durations)
 
         if return_mels:
             if after_outs is None:
@@ -236,13 +231,12 @@ class ToucanTTS(torch.nn.Module, ABC):
 
     def _forward(self,
                  text_tensors,
-                 text_lens,
+                 text_lengths,
                  gold_speech=None,
-                 speech_lens=None,
+                 speech_lengths=None,
                  gold_durations=None,
                  gold_pitch=None,
                  is_inference=False,
-                 alpha=1.0,
                  utterance_embedding=None,
                  lang_ids=None,
                  run_glow=True):
@@ -253,9 +247,8 @@ class ToucanTTS(torch.nn.Module, ABC):
         if not self.multispeaker_model:
             utterance_embedding = None
 
-        # forward text encoder
-        text_masks = self._source_mask(text_lens)
-
+        # encoding the texts
+        text_masks = self._source_mask(text_lengths)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.multispeaker_model:
@@ -264,30 +257,22 @@ class ToucanTTS(torch.nn.Module, ABC):
             utterance_embedding_expanded = None
 
         if is_inference:
-            # predicting pitch, energy and duration.
+            # predicting pitch
             pitch_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
-            duration_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
-                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                    duration_mask[phoneme_index] = 0
                 if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                     pitch_mask[phoneme_index] = 0.0
-
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             pitch_scaling_factor_to_restore_mean = 1 - (sum(pitch_predictions) / len(pitch_predictions.squeeze()))
             pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
-            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=None, g=utterance_embedding_expanded, reverse=True)
-            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
-            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
-                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    # this means the phoneme is unvoiced and should therefore not have a pitch value (undefined, but we overload this with 0)
-                    pitch_predictions[0][0][phoneme_index] = 0.0
-                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                    predicted_durations[0][0][phoneme_index] = 0
 
+            # enriching the text with pitch info
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-            encoded_texts = encoded_texts + embedded_pitch_curve
-            upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, predicted_durations.squeeze(0), alpha)
+            enriched_encoded_texts = encoded_texts + embedded_pitch_curve
+
+            # predicting durations for enriched text and upsampling accordingly
+            predicted_durations = self.duration_predictor.inference(enriched_encoded_texts, padding_mask=None)
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations.squeeze(0))
 
         else:
             # training with teacher forcing
@@ -298,71 +283,53 @@ class ToucanTTS(torch.nn.Module, ABC):
             pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2).detach(), pitch_mask, w=scaled_pitch_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
             pitch_flow_loss = torch.sum(pitch_flow_loss / torch.sum(pitch_mask))  # weighted masking
 
-            duration_mask = torch.logical_and(text_masks, (gold_durations.unsqueeze(1) != 0))
-            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2).detach(), duration_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding_expanded, reverse=False)
-            duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(duration_mask))  # weighted masking
-
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            encoded_texts = encoded_texts + embedded_pitch_curve
-            upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, gold_durations, alpha)
+            enriched_encoded_texts = encoded_texts + embedded_pitch_curve
 
-        # forward the decoder
-        decoder_masks = self._source_mask(speech_lens) if speech_lens is not None and not is_inference else None
-        if utterance_embedding is not None:
-            upsampled_enriched_encoded_texts = _integrate_with_utt_embed(hs=upsampled_enriched_encoded_texts,
-                                                                         utt_embeddings=utterance_embedding,
-                                                                         projection=self.decoder_in_embedding_projection)
+            predicted_durations = self.duration_predictor(enriched_encoded_texts, padding_mask=~text_masks.squeeze())
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations)
 
+        # decoding spectrogram
+        decoder_masks = self._source_mask(speech_lengths) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding)
-        predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
+        predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
+        # refine spectrogram (optional)
         predicted_spectrogram_after_postnet = None
-
-        # forward flow post-net
         glow_loss = None
         if self.detach_postflow:
             _predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
         else:
             _predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet
-
         if run_glow:
-            if utterance_embedding is not None:
-                before_enriched = _integrate_with_utt_embed(hs=_predicted_spectrogram_before_postnet,
-                                                            utt_embeddings=utterance_embedding,
-                                                            projection=self.decoder_out_embedding_projection)
-            else:
-                before_enriched = _predicted_spectrogram_before_postnet
-
             if is_inference:
                 predicted_spectrogram_after_postnet = self.post_flow(tgt_mels=None,
                                                                      infer=is_inference,
-                                                                     mel_out=before_enriched,
+                                                                     mel_out=_predicted_spectrogram_before_postnet,
                                                                      encoded_texts=upsampled_enriched_encoded_texts,
                                                                      tgt_nonpadding=None).squeeze()
-
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=before_enriched,
+                                           mel_out=_predicted_spectrogram_before_postnet,
                                            encoded_texts=upsampled_enriched_encoded_texts.detach(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return predicted_spectrogram_before_postnet.squeeze(), \
-                   predicted_spectrogram_after_postnet, \
-                   predicted_durations.squeeze(), \
-                   pitch_predictions.squeeze()
+                predicted_spectrogram_after_postnet.squeeze(), \
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze()
         else:
             return predicted_spectrogram_before_postnet, \
-                   predicted_spectrogram_after_postnet, \
-                   duration_flow_loss * 0.1, \
-                   pitch_flow_loss * 0.1, \
-                   glow_loss
+                predicted_spectrogram_after_postnet, \
+                predicted_durations, \
+                pitch_flow_loss * 0.1, \
+                glow_loss
 
     @torch.inference_mode()
     def inference(self,
                   text,
                   speech=None,
-                  alpha=1.0,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None,
@@ -371,7 +338,6 @@ class ToucanTTS(torch.nn.Module, ABC):
         Args:
             text (LongTensor): Input sequence of characters (T,).
             speech (Tensor, optional): Feature sequence to extract style (N, idim).
-            alpha (float, optional): Alpha to control the speed.
             return_duration_pitch_energy (Boolean): whether to return the list of predicted durations for nicer plotting
             run_postflow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_id (LongTensor): The language ID used to access the language embedding table, if the model is multilingual
@@ -389,21 +355,20 @@ class ToucanTTS(torch.nn.Module, ABC):
             lang_id = lang_id.unsqueeze(0)
 
         before_outs, \
-        after_outs, \
-        duration_predictions, \
-        pitch_predictions = self._forward(xs,
-                                          ilens,
-                                          ys,
-                                          is_inference=True,
-                                          alpha=alpha,
-                                          utterance_embedding=utterance_embedding.unsqueeze(0),
-                                          lang_ids=lang_id,
-                                          run_glow=run_postflow)  # (1, L, odim)
+            after_outs, \
+            duration_predictions, \
+            pitch_predictions = self._forward(xs,
+                                              ilens,
+                                              ys,
+                                              is_inference=True,
+                                              utterance_embedding=utterance_embedding.unsqueeze(0),
+                                              lang_ids=lang_id,
+                                              run_glow=run_postflow)  # (1, L, odim)
         self.train()
         if after_outs is None:
             after_outs = before_outs
         if return_duration_pitch_energy:
-            return (before_outs, after_outs), duration_predictions, pitch_predictions
+            return before_outs, after_outs, duration_predictions, pitch_predictions
         return after_outs
 
     def _source_mask(self, ilens):
@@ -411,7 +376,7 @@ class ToucanTTS(torch.nn.Module, ABC):
         x_masks = make_non_pad_mask(ilens, device=ilens.device)
         return x_masks.unsqueeze(-2)
 
-    def _reset_parameters(self, init_type, init_enc_alpha, init_dec_alpha):
+    def _reset_parameters(self, init_type):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
@@ -429,6 +394,7 @@ if __name__ == '__main__':
 
     print(" TESTING TRAINING ")
 
+    print(" batchsize 3 ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
@@ -440,6 +406,33 @@ if __name__ == '__main__':
 
     dummy_utterance_embed = torch.randn([3, 64])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
+
+    model = ToucanTTS()
+    l1, dl, pl, gl = model(dummy_text_batch,
+                           dummy_text_lens,
+                           dummy_speech_batch,
+                           dummy_speech_lens,
+                           dummy_durations,
+                           dummy_pitch,
+                           utterance_embedding=dummy_utterance_embed,
+                           lang_ids=dummy_language_id)
+
+    loss = l1 + gl + dl + pl
+    print(loss)
+    loss.backward()
+
+    print(" batchsize 2 ")
+    dummy_text_batch = torch.randint(low=0, high=2, size=[2, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
+    dummy_text_lens = torch.LongTensor([2, 3])
+
+    dummy_speech_batch = torch.randn([2, 30, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_lens = torch.LongTensor([10, 30])
+
+    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5]])
+    dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]]])
+
+    dummy_utterance_embed = torch.randn([2, 64])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
 
     model = ToucanTTS()
     l1, dl, pl, gl = model(dummy_text_batch,

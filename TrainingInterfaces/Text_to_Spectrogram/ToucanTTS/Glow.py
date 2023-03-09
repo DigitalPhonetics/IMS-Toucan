@@ -219,7 +219,7 @@ class InvConv(nn.Module):
 class CouplingBlock(nn.Module):
 
     def __init__(self, in_channels, hidden_channels, kernel_size, dilation_rate, n_layers,
-                 gin_channels=0, p_dropout=0, sigmoid_scale=False, wn=None):
+                 gin_channels=0, p_dropout=0., sigmoid_scale=False, wn=None):
         super().__init__()
         self.in_channels = in_channels
         self.hidden_channels = hidden_channels
@@ -280,12 +280,12 @@ class Glow(nn.Module):
                  dilation_rate,
                  n_blocks,
                  n_layers,
-                 g_proj,
+                 condition_integration_projection,
                  p_dropout=0.,
                  n_split=4,
                  n_sqz=2,
                  sigmoid_scale=False,
-                 gin_channels=0,
+                 text_condition_channels=0,
                  inv_conv_type='near',
                  share_cond_layers=False,
                  share_wn_layers=0,
@@ -302,12 +302,12 @@ class Glow(nn.Module):
         self.n_split = n_split
         self.n_sqz = n_sqz
         self.sigmoid_scale = sigmoid_scale
-        self.gin_channels = gin_channels
+        self.text_condition_channels = text_condition_channels
         self.share_cond_layers = share_cond_layers
         self.prior_dist = dist.Normal(0, 1)
-        self.g_proj = g_proj
-        if gin_channels != 0 and share_cond_layers:
-            cond_layer = torch.nn.Conv1d(gin_channels * n_sqz, 2 * hidden_channels * n_layers, 1)
+        self.g_proj = condition_integration_projection
+        if text_condition_channels != 0 and share_cond_layers:
+            cond_layer = torch.nn.Conv1d(text_condition_channels * n_sqz, 2 * hidden_channels * n_layers, 1)
             self.cond_layer = torch.nn.utils.weight_norm(cond_layer, name='weight')
         wn = None
         self.flows = nn.ModuleList()
@@ -319,8 +319,7 @@ class Glow(nn.Module):
                 self.flows.append(InvConv(channels=in_channels * n_sqz))
             if share_wn_layers > 0:
                 if b % share_wn_layers == 0:
-                    wn = WN(hidden_channels, kernel_size, dilation_rate, n_layers, gin_channels * n_sqz,
-                            p_dropout, share_cond_layers)
+                    wn = WN(hidden_channels, kernel_size, dilation_rate, n_layers, text_condition_channels * n_sqz, p_dropout, share_cond_layers)
             self.flows.append(
                 CouplingBlock(
                     in_channels * n_sqz,
@@ -328,7 +327,7 @@ class Glow(nn.Module):
                     kernel_size=kernel_size,
                     dilation_rate=dilation_rate,
                     n_layers=n_layers,
-                    gin_channels=gin_channels * n_sqz,
+                    gin_channels=text_condition_channels * n_sqz,
                     p_dropout=p_dropout,
                     sigmoid_scale=sigmoid_scale,
                     wn=wn

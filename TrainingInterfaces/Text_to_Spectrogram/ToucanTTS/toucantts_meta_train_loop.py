@@ -72,7 +72,7 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     grad_scaler = GradScaler()
@@ -254,22 +254,19 @@ def train_loop(net,
                 })
 
             try:
-                path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net=net,
-                                                                              device=device,
-                                                                              lang=lang,
-                                                                              save_dir=save_directory,
-                                                                              step=step_counter,
-                                                                              default_emb=default_embedding,
-                                                                              before_and_after_postnet=True,
-                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
+                figure_before, figure_after = plot_progress_spec_toucantts(net=net,
+                                                                           device=device,
+                                                                           lang=lang,
+                                                                           step=step_counter,
+                                                                           default_emb=default_embedding,
+                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
                 if use_wandb:
                     wandb.log({
-                        "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
+                        "progress_plot_before": figure_before
                     })
                     if step_counter > postnet_start_steps:
                         wandb.log({
-                            "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
+                            "progress_plot_after": figure_after
                         })
             except IndexError:
                 print("generating progress plots failed.")

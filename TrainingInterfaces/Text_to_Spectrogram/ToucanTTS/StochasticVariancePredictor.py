@@ -37,14 +37,14 @@ DEFAULT_MIN_DERIVATIVE = 1e-3
 
 
 class StochasticVariancePredictor(nn.Module):
-    def __init__(self, in_channels, kernel_size, p_dropout, n_flows=4, gin_channels=0):
+    def __init__(self, in_channels, kernel_size, p_dropout, n_flows=4, conditioning_signal_channels=0):
         super().__init__()
         self.in_channels = in_channels
         self.filter_channels = in_channels
         self.kernel_size = kernel_size
         self.p_dropout = p_dropout
         self.n_flows = n_flows
-        self.gin_channels = gin_channels if gin_channels is not None else 0
+        self.gin_channels = conditioning_signal_channels if conditioning_signal_channels is not None else 0
 
         self.log_flow = Log()
         self.flows = nn.ModuleList()
