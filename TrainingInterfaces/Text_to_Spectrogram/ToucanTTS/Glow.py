@@ -335,10 +335,10 @@ class Glow(nn.Module):
                 ))
 
     def forward(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding):
-        x_recon = mel_out.transpose(1, 2).detach()
+        x_recon = mel_out.transpose(1, 2)
         g = x_recon
         B, _, T = g.shape
-        g = torch.cat([g, encoded_texts.transpose(1, 2).detach()], 1)
+        g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
         g = self.g_proj(g)
         prior_dist = self.prior_dist
         if not infer:

@@ -70,7 +70,7 @@ class ToucanTTS(torch.nn.Module, ABC):
                  init_dec_alpha=1.0,
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=False,
+                 detach_postflow=True,
                  lang_embs=8000):
         super().__init__()
 
@@ -295,11 +295,11 @@ class ToucanTTS(torch.nn.Module, ABC):
             pitch_mask = torch.logical_and(text_masks, idx.transpose(1, 2))
             scaled_pitch_targets = gold_pitch.detach()
             scaled_pitch_targets[idx] = torch.exp(gold_pitch[idx])  # we scale up, so that the log in the flow can handle the value ranges better.
-            pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=scaled_pitch_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
+            pitch_flow_loss = torch.sum(self.pitch_predictor(encoded_texts.transpose(1, 2).detach(), pitch_mask, w=scaled_pitch_targets.transpose(1, 2), g=utterance_embedding_expanded, reverse=False))
             pitch_flow_loss = torch.sum(pitch_flow_loss / torch.sum(pitch_mask))  # weighted masking
 
             duration_mask = torch.logical_and(text_masks, (gold_durations.unsqueeze(1) != 0))
-            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding_expanded, reverse=False)
+            duration_flow_loss = self.duration_predictor(encoded_texts.transpose(1, 2).detach(), duration_mask, w=gold_durations.float().unsqueeze(1), g=utterance_embedding_expanded, reverse=False)
             duration_flow_loss = torch.sum(duration_flow_loss / torch.sum(duration_mask))  # weighted masking
 
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
@@ -315,13 +315,14 @@ class ToucanTTS(torch.nn.Module, ABC):
 
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding)
         predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
-        if self.detach_postflow:
-            predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
 
         predicted_spectrogram_after_postnet = None
 
         # forward flow post-net
         glow_loss = None
+        if self.detach_postflow:
+            predicted_spectrogram_before_postnet = predicted_spectrogram_before_postnet.detach()
+
         if run_glow:
             if utterance_embedding is not None:
                 before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
@@ -341,7 +342,7 @@ class ToucanTTS(torch.nn.Module, ABC):
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
                                            mel_out=before_enriched,
-                                           encoded_texts=upsampled_enriched_encoded_texts,
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return predicted_spectrogram_before_postnet.squeeze(), \
