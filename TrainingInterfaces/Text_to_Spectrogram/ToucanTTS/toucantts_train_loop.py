@@ -220,19 +220,21 @@ def train_loop(net,
             })
 
         try:
-            figure_before, figure_after = plot_progress_spec_toucantts(net=net,
-                                                                       device=device,
-                                                                       lang=lang,
-                                                                       step=step_counter,
-                                                                       default_emb=default_embedding,
-                                                                       run_postflow=step_counter - 5 > postnet_start_steps)
+            path_to_most_recent_plot_before, \
+                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                              device,
+                                                                              save_dir=save_directory,
+                                                                              step=step_counter,
+                                                                              lang=lang,
+                                                                              default_emb=default_embedding,
+                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
-                    "progress_plot_before": wandb.Image(figure_before)
+                    "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
                 })
                 if step_counter > postnet_start_steps:
                     wandb.log({
-                        "progress_plot_after": wandb.Image(figure_after)
+                        "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
                     })
         except IndexError:
             print("generating progress plots failed.")
