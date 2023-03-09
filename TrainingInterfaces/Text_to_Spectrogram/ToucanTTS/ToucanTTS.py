@@ -421,6 +421,14 @@ if __name__ == '__main__':
     print(loss)
     loss.backward()
 
+    # from Utility.utils import plot_grad_flow
+
+    # plot_grad_flow(model.encoder.named_parameters())
+    # plot_grad_flow(model.decoder.named_parameters())
+    # plot_grad_flow(model.pitch_predictor.named_parameters())
+    # plot_grad_flow(model.duration_predictor.named_parameters())
+    # plot_grad_flow(model.post_flow.named_parameters())
+
     print(" batchsize 2 ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[2, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3])
