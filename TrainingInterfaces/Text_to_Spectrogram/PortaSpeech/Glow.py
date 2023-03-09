@@ -119,7 +119,7 @@ class InvConvNear(nn.Module):
             if self.no_jacobian:
                 logdet = 0
 
-        weight = weight.view(self.n_split, self.n_split, 1, 1)
+        weight = weight.view(self.n_split, self.n_split, 1, 1).to(x.device)
         z = F.conv2d(x, weight)
 
         z = z.view(b, self.n_sqz, self.n_split // self.n_sqz, c // self.n_split, t)
