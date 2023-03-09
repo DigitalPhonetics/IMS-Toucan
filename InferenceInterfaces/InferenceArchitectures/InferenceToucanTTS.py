@@ -176,7 +176,7 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.multispeaker_model:
-            utterance_embedding_expanded = utterance_embedding.unsqueeze(-1)
+            utterance_embedding_expanded = torch.nn.functional.normalize(utterance_embedding.unsqueeze(-1))
         else:
             utterance_embedding_expanded = None
 
