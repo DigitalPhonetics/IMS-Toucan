@@ -195,7 +195,7 @@ class ToucanTTS(torch.nn.Module):
         if gold_durations is not None:
             predicted_durations = gold_durations
         else:
-            predicted_durations = self.duration_predictor.inference(text_tensors, padding_mask=None)
+            predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None)
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
                 if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
                     predicted_durations[0][phoneme_index] = torch.round(predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor).long()
