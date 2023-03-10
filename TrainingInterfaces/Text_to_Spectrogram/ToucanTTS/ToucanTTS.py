@@ -1,5 +1,3 @@
-from abc import ABC
-
 import torch
 from torch.nn import Linear
 from torch.nn import Sequential
@@ -16,7 +14,7 @@ from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 
 
-class ToucanTTS(torch.nn.Module, ABC):
+class ToucanTTS(torch.nn.Module):
     """
     ToucanTTS module, which is basically just a FastSpeech 2 module,
     but with stochastic variance predictors inspired by the flow based
@@ -264,15 +262,15 @@ class ToucanTTS(torch.nn.Module, ABC):
                     pitch_mask[phoneme_index] = 0.0
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             pitch_scaling_factor_to_restore_mean = 1 - (sum(pitch_predictions) / len(pitch_predictions.squeeze()))
-            pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
+            pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to the training distribution
 
             # enriching the text with pitch info
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
             enriched_encoded_texts = encoded_texts + embedded_pitch_curve
 
-            # predicting durations for enriched text and upsampling accordingly
-            predicted_durations = self.duration_predictor.inference(enriched_encoded_texts, padding_mask=None)
-            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations.squeeze(0))
+            # predicting durations for text and upsampling accordingly
+            predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None)
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
 
         else:
             # training with teacher forcing
@@ -286,7 +284,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
             enriched_encoded_texts = encoded_texts + embedded_pitch_curve
 
-            predicted_durations = self.duration_predictor(enriched_encoded_texts, padding_mask=~text_masks.squeeze())
+            predicted_durations = self.duration_predictor(encoded_texts, padding_mask=~text_masks.squeeze())
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations)
 
         # decoding spectrogram

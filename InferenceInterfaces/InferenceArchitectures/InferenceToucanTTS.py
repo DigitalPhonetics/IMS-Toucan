@@ -1,10 +1,10 @@
 import torch
-from torch.nn import LayerNorm
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
 
 from Layers.Conformer import Conformer
+from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
@@ -23,53 +23,62 @@ class ToucanTTS(torch.nn.Module):
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
-                 # encoder / decoder
+                 init_type="xavier_uniform",
+                 use_macaron_style_in_conformer=True,
+                 use_cnn_in_conformer=True,
+
+                 # encoder
                  encoder_layers=6,
                  encoder_units=1536,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
-                 use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
                  conformer_encoder_kernel_size=7,
+                 transformer_enc_dropout_rate=0.2,
+                 transformer_enc_positional_dropout_rate=0.2,
+                 transformer_enc_attn_dropout_rate=0.2,
+
+                 # decoder
                  decoder_layers=6,
                  decoder_units=1536,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,
                  decoder_normalize_before=True,
-                 # pitch predictor
-                 pitch_embed_kernel_size=1,
-                 pitch_embed_dropout=0.0,
-                 # training related
-                 transformer_enc_dropout_rate=0.2,
-                 transformer_enc_positional_dropout_rate=0.2,
-                 transformer_enc_attn_dropout_rate=0.2,
                  transformer_dec_dropout_rate=0.2,
                  transformer_dec_positional_dropout_rate=0.2,
                  transformer_dec_attn_dropout_rate=0.2,
+
+                 # duration predictor
+                 duration_predictor_layers=2,
+                 duration_predictor_chans=256,
+                 duration_predictor_kernel_size=3,
+                 duration_predictor_dropout_rate=0.2,
+
+                 # pitch predictor
+                 pitch_embed_kernel_size=1,
+                 pitch_embed_dropout=0.0,
+
                  # additional features
                  utt_embed_dim=64,
+                 detach_postflow=True,
                  lang_embs=8000,
                  weights=None):
         super().__init__()
 
-        # store hyperparameters
-        self.idim = input_feature_dimensions
-        self.odim = output_spectrogram_channels
-        self.adim = attention_dimension
+        self.input_feature_dimensions = input_feature_dimensions
+        self.output_spectrogram_channels = output_spectrogram_channels
+        self.attention_dimension = attention_dimension
+        self.detach_postflow = detach_postflow
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
 
-        # define encoder
-        embed = Sequential(Linear(input_feature_dimensions, 100),
-                           Tanh(),
-                           Linear(100, attention_dimension))
+        articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
                                  linear_units=encoder_units,
                                  num_blocks=encoder_layers,
-                                 input_layer=embed,
+                                 input_layer=articulatory_feature_embedding,
                                  dropout_rate=transformer_enc_dropout_rate,
                                  positional_dropout_rate=transformer_enc_positional_dropout_rate,
                                  attention_dropout_rate=transformer_enc_attn_dropout_rate,
@@ -80,14 +89,14 @@ class ToucanTTS(torch.nn.Module):
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
-                                 utt_embed=None,
-                                 lang_embs=lang_embs)
+                                 utt_embed=utt_embed_dim,
+                                 lang_embs=lang_embs,
+                                 use_output_norm=True)
 
-        self.duration_predictor = StochasticVariancePredictor(in_channels=attention_dimension,
-                                                              kernel_size=3,
-                                                              p_dropout=0.5,
-                                                              n_flows=4,
-                                                              conditioning_signal_channels=utt_embed_dim)
+        self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
+                                                    n_chans=duration_predictor_chans,
+                                                    kernel_size=duration_predictor_kernel_size,
+                                                    dropout_rate=duration_predictor_dropout_rate, )
 
         self.pitch_predictor = StochasticVariancePredictor(in_channels=attention_dimension,
                                                            kernel_size=3,
@@ -102,10 +111,8 @@ class ToucanTTS(torch.nn.Module):
                             padding=(pitch_embed_kernel_size - 1) // 2),
             torch.nn.Dropout(pitch_embed_dropout))
 
-        # define length regulator
         self.length_regulator = LengthRegulator()
 
-        # define decoder
         self.decoder = Conformer(idim=0,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
@@ -121,32 +128,24 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 utt_embed=None)
+                                 use_output_norm=False)
 
-        # define final projection
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
-        # define speaker embedding integrations
-        if self.multispeaker_model:
-            self.decoder_in_embedding_projection = Sequential(Linear(attention_dimension + utt_embed_dim, attention_dimension), LayerNorm(attention_dimension))
-            self.decoder_out_embedding_projection = Sequential(Linear(output_spectrogram_channels + utt_embed_dim, output_spectrogram_channels), LayerNorm(output_spectrogram_channels))
-
-        # post net is realized as a flow
-        gin_channels = attention_dimension
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
-            hidden_channels=192,  # post_glow_hidden  (original 192 in paper)
+            hidden_channels=192,  # post_glow_hidden
             kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
             n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
             n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
-            text_condition_channels=gin_channels,
+            text_condition_channels=attention_dimension,
             share_cond_layers=False,  # post_share_cond_layers
-            share_wn_layers=4,  # share_wn_layers
-            sigmoid_scale=False,  # sigmoid_scale
-            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, gin_channels, 5, padding=2)
+            share_wn_layers=4,
+            sigmoid_scale=False,
+            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
         )
 
         self.load_state_dict(weights)
@@ -154,7 +153,7 @@ class ToucanTTS(torch.nn.Module):
 
     def _forward(self,
                  text_tensors,
-                 text_lens,
+                 text_lengths,
                  gold_durations=None,
                  gold_pitch=None,
                  duration_scaling_factor=1.0,
@@ -170,9 +169,8 @@ class ToucanTTS(torch.nn.Module):
         if not self.multispeaker_model:
             utterance_embedding = None
 
-        # forward encoder
-        text_masks = self._source_mask(text_lens)
-
+        # encoding the texts
+        text_masks = self._source_mask(text_lengths)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if self.multispeaker_model:
@@ -180,70 +178,48 @@ class ToucanTTS(torch.nn.Module):
         else:
             utterance_embedding_expanded = None
 
-        # predicting pitch, energy and duration.
-        pitch_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
-        duration_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
-        for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
-            if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                duration_mask[phoneme_index] = 0
-            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                pitch_mask[phoneme_index] = 0.0
-
-        if gold_durations is not None:
-            predicted_durations = gold_durations
-        else:
-            predicted_durations = self.duration_predictor(encoded_texts.transpose(1, 2), duration_mask, w=None, g=utterance_embedding_expanded, reverse=True)
-            predicted_durations = torch.ceil(torch.exp(predicted_durations)).long()
+        # predicting pitch
         if gold_pitch is not None:
             pitch_predictions = gold_pitch
         else:
+            pitch_mask = torch.ones(size=[text_tensors.size(1)], device=text_tensors.device)
+            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze()):
+                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
+                    pitch_mask[phoneme_index] = 0.0
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             pitch_scaling_factor_to_restore_mean = 1 - (sum(pitch_predictions) / len(pitch_predictions.squeeze()))
             pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
+            pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
 
-        for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
-            if phoneme_vector[get_feature_to_index_lookup()["questionmark"]] == 1:
-                if phoneme_index - 4 >= 0:
-                    pitch_predictions[0][0][phoneme_index - 1] += .3
-                    pitch_predictions[0][0][phoneme_index - 2] += .3
-                    pitch_predictions[0][0][phoneme_index - 3] += .2
-                    pitch_predictions[0][0][phoneme_index - 4] += .1
-            if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
-                predicted_durations[phoneme_index] = torch.round(predicted_durations[0][0][phoneme_index].float() * pause_duration_scaling_factor).long()
-            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                # this means the phoneme is unvoiced and should therefore not have a pitch value (undefined, but we overload this with 0)
-                pitch_predictions[0][0][phoneme_index] = 0.0
-            if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                predicted_durations[0][0][phoneme_index] = 0
-        if duration_scaling_factor != 1.0:
-            assert duration_scaling_factor > 0
-            predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
-        pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
-
-        embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-        encoded_texts = encoded_texts + embedded_pitch_curve
-        upsampled_enriched_encoded_texts = self.length_regulator(encoded_texts, predicted_durations.squeeze(0))
-
-        if utterance_embedding is not None:
-            upsampled_enriched_encoded_texts = _integrate_with_utt_embed(hs=upsampled_enriched_encoded_texts,
-                                                                         utt_embeddings=utterance_embedding,
-                                                                         projection=self.decoder_in_embedding_projection)
-
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding)
-        predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.odim)
-
-        # forward flow post-net
-        if utterance_embedding is not None:
-            before_enriched = _integrate_with_utt_embed(hs=predicted_spectrogram_before_postnet,
-                                                        utt_embeddings=utterance_embedding,
-                                                        projection=self.decoder_out_embedding_projection)
+        # predicting durations
+        if gold_durations is not None:
+            predicted_durations = gold_durations
         else:
-            before_enriched = predicted_spectrogram_before_postnet
+            predicted_durations = self.duration_predictor.inference(text_tensors, padding_mask=None)
+            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
+                if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
+                    predicted_durations[0][phoneme_index] = torch.round(predicted_durations[0][phoneme_index].float() * pause_duration_scaling_factor).long()
+                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                    predicted_durations[0][phoneme_index] = 0
+            if duration_scaling_factor != 1.0:
+                assert duration_scaling_factor > 0
+                predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
+
+        # enriching the text with pitch info and upsampling it
+        embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
+        enriched_encoded_texts = encoded_texts + embedded_pitch_curve
+        upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
+
+        # decoding spectrogram
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding)
+        predicted_spectrogram_before_postnet = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
+
+        # refine spectrogram
         predicted_spectrogram_after_postnet = self.post_flow(tgt_mels=None,
                                                              infer=True,
-                                                             mel_out=before_enriched,
+                                                             mel_out=predicted_spectrogram_before_postnet,
                                                              encoded_texts=upsampled_enriched_encoded_texts,
-                                                             tgt_nonpadding=None)
+                                                             tgt_nonpadding=None).squeeze()
 
         return predicted_spectrogram_before_postnet.squeeze(), predicted_spectrogram_after_postnet.squeeze(), predicted_durations.squeeze(), pitch_predictions.squeeze()
 
@@ -293,18 +269,18 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, \
-        after_outs, \
-        predicted_durations, \
-        pitch_predictions = self._forward(text.unsqueeze(0),
-                                          ilens,
-                                          gold_durations=durations,
-                                          gold_pitch=pitch,
-                                          utterance_embedding=utterance_embedding.unsqueeze(0),
-                                          lang_ids=lang_id,
-                                          duration_scaling_factor=duration_scaling_factor,
-                                          pitch_variance_scale=pitch_variance_scale,
-                                          pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                          device=device)
+            after_outs, \
+            predicted_durations, \
+            pitch_predictions = self._forward(text.unsqueeze(0),
+                                              ilens,
+                                              gold_durations=durations,
+                                              gold_pitch=pitch,
+                                              utterance_embedding=utterance_embedding.unsqueeze(0),
+                                              lang_ids=lang_id,
+                                              duration_scaling_factor=duration_scaling_factor,
+                                              pitch_variance_scale=pitch_variance_scale,
+                                              pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                              device=device)
         if return_duration_pitch_energy:
             return after_outs, predicted_durations, pitch_predictions
         return after_outs
