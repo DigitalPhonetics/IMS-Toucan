@@ -353,6 +353,7 @@ class ToucanTTS(torch.nn.Module, ABC):
             ys = y.unsqueeze(0)
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
+        utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         before_outs, \
             after_outs, \
@@ -361,7 +362,7 @@ class ToucanTTS(torch.nn.Module, ABC):
                                               ilens,
                                               ys,
                                               is_inference=True,
-                                              utterance_embedding=utterance_embedding.unsqueeze(0),
+                                              utterance_embedding=utterance_embeddings,
                                               lang_ids=lang_id,
                                               run_glow=run_postflow)  # (1, L, odim)
         self.train()
