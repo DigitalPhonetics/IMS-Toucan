@@ -190,7 +190,7 @@ class ToucanTTS(torch.nn.Module):
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
             pitch_scaling_factor_to_restore_mean = 1 - (pitch_predictions.sum() / len(pitch_predictions.squeeze() != 0))
             pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to training
-            pitch_predictions = torch.tensor(curve_smoother(pitch_predictions.squeeze())).unsqueeze(0).unsqueeze(0)
+            pitch_predictions = torch.tensor(curve_smoother(pitch_predictions.squeeze())).unsqueeze(0).unsqueeze(0).to(text_tensors.device)
             pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
 
         # predicting durations
