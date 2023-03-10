@@ -242,8 +242,8 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_array = pitch.cpu().numpy()
             for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
                 if pitch_array[pitch_index] != 0:
-                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="blue",
-                                 linestyles="solid", linewidth=0.5)
+                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
+                                 linestyles="solid", linewidth=1.)
             plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             if not return_plot_as_filepath:
                 plt.show()
@@ -280,7 +280,7 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         wav = None
         silence = torch.zeros([24000])
-        for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
+        for (text, durations, pitch) in itertools.zip_longest(text_list, dur_list, pitch_list):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
@@ -288,7 +288,6 @@ class ToucanTTSInterface(torch.nn.Module):
                     wav = self(text,
                                durations=durations.to(self.device) if durations is not None else None,
                                pitch=pitch.to(self.device) if pitch is not None else None,
-                               energy=energy.to(self.device) if energy is not None else None,
                                duration_scaling_factor=duration_scaling_factor,
                                pitch_variance_scale=pitch_variance_scale).cpu()
                     wav = torch.cat((wav, silence), 0)
@@ -296,7 +295,6 @@ class ToucanTTSInterface(torch.nn.Module):
                     wav = torch.cat((wav, self(text,
                                                durations=durations.to(self.device) if durations is not None else None,
                                                pitch=pitch.to(self.device) if pitch is not None else None,
-                                               energy=energy.to(self.device) if energy is not None else None,
                                                duration_scaling_factor=duration_scaling_factor,
                                                pitch_variance_scale=pitch_variance_scale).cpu()), 0)
                     wav = torch.cat((wav, silence), 0)

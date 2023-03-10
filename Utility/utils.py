@@ -626,3 +626,37 @@ def to_device(m, x):
             "Expected torch.nn.Module or torch.tensor, " f"bot got: {type(m)}"
         )
     return x.to(device)
+
+
+def curve_smoother(curve):
+    if len(curve) < 3:
+        return curve
+    new_curve = list()
+    for index in range(len(curve)):
+        if curve[index] != 0:
+            current_value = curve[index]
+            if index != len(curve) - 1:
+                if curve[index + 1] != 0:
+                    next_value = curve[index + 1]
+                else:
+                    next_value = curve[index]
+            if index != 0:
+                if curve[index - 1] != 0:
+                    prev_value = curve[index - 1]
+                else:
+                    prev_value = curve[index]
+            else:
+                prev_value = curve[index]
+            smooth_value = (current_value * 3 + prev_value + next_value) / 5
+            new_curve.append(smooth_value)
+        else:
+            new_curve.append(0)
+    return new_curve
+
+
+if __name__ == '__main__':
+    data = np.random.randn(50)
+    plt.plot(data, color="b")
+    smooth = curve_smoother(data)
+    plt.plot(smooth, color="g")
+    plt.show()

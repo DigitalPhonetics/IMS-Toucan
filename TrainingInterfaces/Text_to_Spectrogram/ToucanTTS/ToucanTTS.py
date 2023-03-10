@@ -10,6 +10,7 @@ from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.StochasticVariancePredictor import StochasticVariancePredictor
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
+from Utility.utils import curve_smoother
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 
@@ -197,19 +198,19 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         before_outs, \
-            after_outs, \
-            predicted_durations, \
-            pitch_loss, \
-            glow_loss = self._forward(text_tensors=text_tensors,
-                                      text_lengths=text_lengths,
-                                      gold_speech=gold_speech,
-                                      speech_lengths=speech_lengths,
-                                      gold_durations=gold_durations,
-                                      gold_pitch=gold_pitch,
-                                      utterance_embedding=utterance_embedding,
-                                      is_inference=False,
-                                      lang_ids=lang_ids,
-                                      run_glow=run_glow)
+        after_outs, \
+        predicted_durations, \
+        pitch_loss, \
+        glow_loss = self._forward(text_tensors=text_tensors,
+                                  text_lengths=text_lengths,
+                                  gold_speech=gold_speech,
+                                  speech_lengths=speech_lengths,
+                                  gold_durations=gold_durations,
+                                  gold_pitch=gold_pitch,
+                                  utterance_embedding=utterance_embedding,
+                                  is_inference=False,
+                                  lang_ids=lang_ids,
+                                  run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss = self.criterion(after_outs=None,
@@ -261,8 +262,9 @@ class ToucanTTS(torch.nn.Module):
                 if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
                     pitch_mask[phoneme_index] = 0.0
             pitch_predictions = self.pitch_predictor(encoded_texts.transpose(1, 2), pitch_mask, w=None, g=utterance_embedding_expanded, reverse=True)
-            pitch_scaling_factor_to_restore_mean = 1 - (sum(pitch_predictions) / len(pitch_predictions.squeeze()))
+            pitch_scaling_factor_to_restore_mean = 1 - (pitch_predictions.sum() / len(pitch_predictions.squeeze() != 0))
             pitch_predictions = pitch_predictions * pitch_scaling_factor_to_restore_mean  # we make sure the sequence has a mean of 1.0 to be closer to the training distribution
+            pitch_predictions = torch.tensor(curve_smoother(pitch_predictions.squeeze())).unsqueeze(0).unsqueeze(0)
 
             # enriching the text with pitch info
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
@@ -314,15 +316,15 @@ class ToucanTTS(torch.nn.Module):
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return predicted_spectrogram_before_postnet.squeeze(), \
-                predicted_spectrogram_after_postnet.squeeze(), \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze()
+                   predicted_spectrogram_after_postnet.squeeze(), \
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze()
         else:
             return predicted_spectrogram_before_postnet, \
-                predicted_spectrogram_after_postnet, \
-                predicted_durations, \
-                pitch_flow_loss * 0.1, \
-                glow_loss
+                   predicted_spectrogram_after_postnet, \
+                   predicted_durations, \
+                   pitch_flow_loss * 0.1, \
+                   glow_loss
 
     @torch.inference_mode()
     def inference(self,
@@ -354,15 +356,15 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         before_outs, \
-            after_outs, \
-            duration_predictions, \
-            pitch_predictions = self._forward(xs,
-                                              ilens,
-                                              ys,
-                                              is_inference=True,
-                                              utterance_embedding=utterance_embeddings,
-                                              lang_ids=lang_id,
-                                              run_glow=run_postflow)  # (1, L, odim)
+        after_outs, \
+        duration_predictions, \
+        pitch_predictions = self._forward(xs,
+                                          ilens,
+                                          ys,
+                                          is_inference=True,
+                                          utterance_embedding=utterance_embeddings,
+                                          lang_ids=lang_id,
+                                          run_glow=run_postflow)  # (1, L, odim)
         self.train()
         if after_outs is None:
             after_outs = before_outs
