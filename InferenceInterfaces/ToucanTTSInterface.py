@@ -108,6 +108,7 @@ class ToucanTTSInterface(torch.nn.Module):
         else:
             self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
         self.mel2wav.remove_weight_norm()
+        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]))
 
         ################################
         #  set defaults                #
@@ -279,7 +280,7 @@ class ToucanTTSInterface(torch.nn.Module):
         if not pitch_list:
             pitch_list = []
         wav = None
-        silence = torch.zeros([24000])
+        silence = torch.zeros([10600])
         for (text, durations, pitch) in itertools.zip_longest(text_list, dur_list, pitch_list):
             if text.strip() != "":
                 if not silent:
@@ -312,7 +313,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    view,
                    duration_scaling_factor=duration_scaling_factor,
                    pitch_variance_scale=pitch_variance_scale).cpu()
-        wav = torch.cat((wav, torch.zeros([12000])), 0)
+        wav = torch.cat((wav, torch.zeros([10600])), 0)
         if not blocking:
             sounddevice.play(wav.numpy(), samplerate=24000)
         else:
