@@ -1,11 +1,12 @@
 # Copyright 2019 Tomoki Hayashi
 # MIT License (https://opensource.org/licenses/MIT)
-# Adapted by Florian Lux 2021
+# Adapted by Florian Lux 2023
 
 from abc import ABC
 
 import torch
 
+from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
 
 
@@ -21,7 +22,7 @@ class VariancePredictor(torch.nn.Module, ABC):
 
     """
 
-    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, bias=True, dropout_rate=0.5, ):
+    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, bias=True, dropout_rate=0.5, utt_embed_dim=None):
         """
         Initilize duration predictor module.
 
@@ -34,32 +35,46 @@ class VariancePredictor(torch.nn.Module, ABC):
         """
         super().__init__()
         self.conv = torch.nn.ModuleList()
+        self.dropouts = list()
+        self.norms = list()
+
         for idx in range(n_layers):
             in_chans = idim if idx == 0 else n_chans
-            self.conv += [
-                torch.nn.Sequential(torch.nn.Conv1d(in_chans, n_chans, kernel_size, stride=1, padding=(kernel_size - 1) // 2, bias=bias, ), torch.nn.ReLU(),
-                                    LayerNorm(n_chans, dim=1), torch.nn.Dropout(dropout_rate), )]
+            self.conv += [torch.nn.Sequential(torch.nn.Conv1d(in_chans, n_chans, kernel_size, stride=1, padding=(kernel_size - 1) // 2, bias=bias, ),
+                                              torch.nn.ReLU())]
+            if utt_embed_dim is not None:
+                self.norms += [ConditionalLayerNorm(normal_shape=n_chans, speaker_embedding_dim=utt_embed_dim, dim=1)]
+            else:
+                self.norms += [LayerNorm(n_chans, dim=1)]
+            self.dropouts += [torch.nn.Dropout(dropout_rate)]
+
         self.linear = torch.nn.Linear(n_chans, 1)
 
-    def forward(self, xs, x_masks=None):
+    def forward(self, xs, padding_mask=None, utt_embed=None):
         """
         Calculate forward propagation.
 
         Args:
             xs (Tensor): Batch of input sequences (B, Tmax, idim).
-            x_masks (ByteTensor, optional):
+            padding_mask (ByteTensor, optional):
                 Batch of masks indicating padded part (B, Tmax).
 
         Returns:
             Tensor: Batch of predicted sequences (B, Tmax, 1).
         """
         xs = xs.transpose(1, -1)  # (B, idim, Tmax)
-        for f in self.conv:
+
+        for f, c, d in zip(self.conv, self.norms, self.dropouts):
             xs = f(xs)  # (B, C, Tmax)
+            if utt_embed is not None:
+                xs = c(xs, utt_embed)
+            else:
+                xs = c(xs)
+            xs = d(xs)
 
         xs = self.linear(xs.transpose(1, 2))  # (B, Tmax, 1)
 
-        if x_masks is not None:
-            xs = xs.masked_fill(x_masks, 0.0)
+        if padding_mask is not None:
+            xs = xs.masked_fill(padding_mask, 0.0)
 
         return xs

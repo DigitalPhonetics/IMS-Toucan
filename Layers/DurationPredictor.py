@@ -5,6 +5,7 @@
 
 import torch
 
+from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
 
 
@@ -28,7 +29,7 @@ class DurationPredictor(torch.nn.Module):
 
     """
 
-    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, dropout_rate=0.1, offset=1.0):
+    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, dropout_rate=0.1, offset=1.0, utt_embed_dim=None):
         """
         Initialize duration predictor module.
 
@@ -44,16 +45,31 @@ class DurationPredictor(torch.nn.Module):
         super(DurationPredictor, self).__init__()
         self.offset = offset
         self.conv = torch.nn.ModuleList()
+        self.dropouts = list()
+        self.norms = list()
+
         for idx in range(n_layers):
             in_chans = idim if idx == 0 else n_chans
-            self.conv += [torch.nn.Sequential(torch.nn.Conv1d(in_chans, n_chans, kernel_size, stride=1, padding=(kernel_size - 1) // 2, ), torch.nn.ReLU(),
-                                              LayerNorm(n_chans, dim=1), torch.nn.Dropout(dropout_rate), )]
+            self.conv += [torch.nn.Sequential(torch.nn.Conv1d(in_chans, n_chans, kernel_size, stride=1, padding=(kernel_size - 1) // 2, ),
+                                              torch.nn.ReLU())]
+            if utt_embed_dim is not None:
+                self.norms += [ConditionalLayerNorm(normal_shape=n_chans, speaker_embedding_dim=utt_embed_dim, dim=1)]
+            else:
+                self.norms += [LayerNorm(n_chans, dim=1)]
+            self.dropouts += [torch.nn.Dropout(dropout_rate)]
+
         self.linear = torch.nn.Linear(n_chans, 1)
 
-    def _forward(self, xs, x_masks=None, is_inference=False):
+    def _forward(self, xs, x_masks=None, is_inference=False, utt_embed=None):
         xs = xs.transpose(1, -1)  # (B, idim, Tmax)
-        for f in self.conv:
+
+        for f, c, d in zip(self.conv, self.norms, self.dropouts):
             xs = f(xs)  # (B, C, Tmax)
+            if utt_embed is not None:
+                xs = c(xs, utt_embed)
+            else:
+                xs = c(xs)
+            xs = d(xs)
 
         # NOTE: targets are transformed to log domain in the loss calculation, so this will learn to predict in the log space, which makes the value range easier to handle.
         xs = self.linear(xs.transpose(1, -1)).squeeze(-1)  # (B, Tmax)
@@ -66,7 +82,7 @@ class DurationPredictor(torch.nn.Module):
 
         return xs
 
-    def forward(self, xs, padding_mask=None):
+    def forward(self, xs, padding_mask=None, utt_embed=None):
         """
         Calculate forward propagation.
 
@@ -79,9 +95,9 @@ class DurationPredictor(torch.nn.Module):
             Tensor: Batch of predicted durations in log domain (B, Tmax).
 
         """
-        return self._forward(xs, padding_mask, False)
+        return self._forward(xs, padding_mask, False, utt_embed=utt_embed)
 
-    def inference(self, xs, padding_mask=None):
+    def inference(self, xs, padding_mask=None, utt_embed=None):
         """
         Inference duration.
 
@@ -94,7 +110,7 @@ class DurationPredictor(torch.nn.Module):
             LongTensor: Batch of predicted durations in linear domain (B, Tmax).
 
         """
-        return self._forward(xs, padding_mask, True)
+        return self._forward(xs, padding_mask, True, utt_embed=utt_embed)
 
 
 class DurationPredictorLoss(torch.nn.Module):

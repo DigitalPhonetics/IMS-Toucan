@@ -199,8 +199,7 @@ def train_loop(net,
                     batch_of_spectrogram_lengths=speech_lengths,
                     return_all_outs=True)
 
-                cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted,
-                                                         style_embedding_of_gold.detach()) * 0.1 + \
+                cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted, style_embedding_of_gold.detach()) * 0.1 + \
                              1.0 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted,
                                                                          style_embedding_of_gold.detach()).mean()
 
