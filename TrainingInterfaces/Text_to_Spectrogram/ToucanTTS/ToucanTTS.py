@@ -223,7 +223,7 @@ class ToucanTTS(torch.nn.Module):
             speech_lengths (LongTensor): Batch of the lengths of each target (B,).
             gold_durations (LongTensor): Batch of padded durations (B, Tmax + 1).
             gold_pitch (Tensor): Batch of padded token-averaged pitch (B, Tmax + 1, 1).
-            gold_pitch (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
+            gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
             run_glow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
@@ -285,7 +285,7 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding = None
 
         # encoding the texts
-        text_masks = self._source_mask(text_lengths)
+        text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         padding_masks = make_pad_mask(text_lengths, device=text_lengths.device)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
@@ -316,7 +316,7 @@ class ToucanTTS(torch.nn.Module):
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations)
 
         # decoding spectrogram
-        decoder_masks = self._source_mask(speech_lengths) if speech_lengths is not None and not is_inference else None
+        decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
@@ -400,11 +400,6 @@ class ToucanTTS(torch.nn.Module):
         if return_duration_pitch_energy:
             return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
         return after_outs
-
-    def _source_mask(self, ilens):
-        # Make masks for self-attention.
-        x_masks = make_non_pad_mask(ilens, device=ilens.device)
-        return x_masks.unsqueeze(-2)
 
     def _reset_parameters(self, init_type):
         # initialize parameters

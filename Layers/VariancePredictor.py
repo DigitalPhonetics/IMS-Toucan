@@ -35,8 +35,8 @@ class VariancePredictor(torch.nn.Module, ABC):
         """
         super().__init__()
         self.conv = torch.nn.ModuleList()
-        self.dropouts = list()
-        self.norms = list()
+        self.dropouts = torch.nn.ModuleList()
+        self.norms = torch.nn.ModuleList()
 
         for idx in range(n_layers):
             in_chans = idim if idx == 0 else n_chans
