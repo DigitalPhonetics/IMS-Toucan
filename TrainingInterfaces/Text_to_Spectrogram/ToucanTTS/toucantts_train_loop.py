@@ -97,6 +97,7 @@ def train_loop(net,
         glow_losses_total = list()
         duration_losses_total = list()
         pitch_losses_total = list()
+        energy_losses_total = list()
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
@@ -108,24 +109,20 @@ def train_loop(net,
                     style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                                batch_of_spectrogram_lengths=batch[3].to(device))
 
-                    l1_loss, duration_loss, pitch_loss, glow_loss = net(
+                    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
                         speech_lengths=batch[3].to(device),
                         gold_durations=batch[4].to(device),
                         gold_pitch=batch[6].to(device),  # mind the switched order
+                        gold_energy=batch[5].to(device),  # mind the switched order
                         utterance_embedding=style_embedding,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
                         run_glow=step_counter > postnet_start_steps or fine_tune)
 
-                    if not torch.isnan(l1_loss):
-                        train_loss = train_loss + l1_loss
-                    if not torch.isnan(duration_loss):
-                        train_loss = train_loss + duration_loss
-                    if not torch.isnan(pitch_loss):
-                        train_loss = train_loss + pitch_loss
+
 
                 else:
                     # ======================================================
@@ -137,24 +134,18 @@ def train_loop(net,
                         batch_of_spectrogram_lengths=batch[3].to(device),
                         return_all_outs=True)
 
-                    l1_loss, duration_loss, pitch_loss, glow_loss, output_spectrograms = net(
+                    l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
                         text_tensors=batch[0].to(device),
                         text_lengths=batch[1].to(device),
                         gold_speech=batch[2].to(device),
                         speech_lengths=batch[3].to(device),
                         gold_durations=batch[4].to(device),
                         gold_pitch=batch[6].to(device),  # mind the switched order
+                        gold_energy=batch[5].to(device),  # mind the switched order
                         utterance_embedding=style_embedding_of_gold.detach(),
                         lang_ids=batch[8].to(device),
                         return_mels=True,
                         run_glow=step_counter > postnet_start_steps or fine_tune)
-
-                    if not torch.isnan(l1_loss):
-                        train_loss = train_loss + l1_loss
-                    if not torch.isnan(duration_loss):
-                        train_loss = train_loss + duration_loss
-                    if not torch.isnan(pitch_loss):
-                        train_loss = train_loss + pitch_loss
 
                     style_embedding_function.train()
                     style_embedding_of_predicted, out_list_predicted = style_embedding_function(
@@ -168,11 +159,19 @@ def train_loop(net,
                     cycle_losses_this_epoch.append(cycle_dist.item())
                     train_loss = train_loss + cycle_dist
 
-                train_losses_this_epoch.append(train_loss.item())
-                l1_losses_total.append(l1_loss.item())
-                duration_losses_total.append(duration_loss.item())
-                pitch_losses_total.append(pitch_loss.item())
+            l1_losses_total.append(l1_loss.item())
+            duration_losses_total.append(duration_loss.item())
+            pitch_losses_total.append(pitch_loss.item())
+            energy_losses_total.append(energy_loss.item())
 
+            if not torch.isnan(l1_loss):
+                train_loss = train_loss + l1_loss
+            if not torch.isnan(duration_loss):
+                train_loss = train_loss + duration_loss
+            if not torch.isnan(pitch_loss):
+                train_loss = train_loss + pitch_loss
+            if not torch.isnan(energy_loss):
+                train_loss = train_loss + energy_loss
             if glow_loss is not None:
                 if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
                     train_loss = train_loss + glow_loss
@@ -210,11 +209,11 @@ def train_loop(net,
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "total_loss"   : round(sum(train_losses_this_epoch) / len(train_losses_this_epoch), 3),
-                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 3),
-                "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 3),
-                "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 3),
-                "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
+                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
+                "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 5) if len(glow_losses_total) != 0 else None,
                 "cycle_loss"   : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(cycle_losses_this_epoch) != 0 else None,
                 "Steps"        : step_counter,
             })

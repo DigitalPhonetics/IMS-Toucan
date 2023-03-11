@@ -192,16 +192,16 @@ def plot_progress_spec_toucantts(net,
         return None
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     if run_postflow:
-        spec_before, spec_after, durations, pitch = net.inference(text=phoneme_vector,
-                                                                  return_duration_pitch_energy=True,
-                                                                  utterance_embedding=default_emb,
-                                                                  lang_id=get_language_id(lang).to(device),
-                                                                  run_postflow=run_postflow)
+        spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                                          return_duration_pitch_energy=True,
+                                                                          utterance_embedding=default_emb,
+                                                                          lang_id=get_language_id(lang).to(device),
+                                                                          run_postflow=run_postflow)
     else:
-        spec_before, spec_after, durations, pitch = net.inference(text=phoneme_vector,
-                                                                  return_duration_pitch_energy=True,
-                                                                  utterance_embedding=default_emb,
-                                                                  lang_id=get_language_id(lang).to(device))
+        spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                                          return_duration_pitch_energy=True,
+                                                                          utterance_embedding=default_emb,
+                                                                          lang_id=get_language_id(lang).to(device))
     spec = spec_before.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     os.makedirs(os.path.join(save_dir, "spec_before"), exist_ok=True)
