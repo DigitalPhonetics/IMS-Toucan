@@ -407,13 +407,6 @@ class ToucanTTS(torch.nn.Module):
             initialize(self, init_type)
 
 
-def _integrate_with_utt_embed(hs, utt_embeddings, projection):
-    # concat hidden states with spk embeds and then apply projection
-    embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-    hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
-    return hs
-
-
 if __name__ == '__main__':
     print(sum(p.numel() for p in ToucanTTS().parameters() if p.requires_grad))
 

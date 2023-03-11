@@ -91,7 +91,6 @@ def train_loop(net,
         net.train()
         epoch += 1
         optimizer.zero_grad()
-        train_losses_this_epoch = list()
         cycle_losses_this_epoch = list()
         l1_losses_total = list()
         glow_losses_total = list()
@@ -121,9 +120,6 @@ def train_loop(net,
                         lang_ids=batch[8].to(device),
                         return_mels=False,
                         run_glow=step_counter > postnet_start_steps or fine_tune)
-
-
-
                 else:
                     # ======================================================
                     # =       PHASE 2:     cycle objective is added        =
@@ -202,14 +198,12 @@ def train_loop(net,
         delete_old_checkpoints(save_directory, keep=5)
 
         print("Epoch:              {}".format(epoch))
-        print("Total Loss:         {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
             print("Cycle Loss:         {}".format(sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch)))
         print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
-                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 5),
                 "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
