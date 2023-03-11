@@ -23,7 +23,6 @@ class ToucanTTS(torch.nn.Module):
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
-                 init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
                  use_cnn_in_conformer=True,
 
