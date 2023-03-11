@@ -18,12 +18,12 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
                warmup_steps=8000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,  # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
-               batch_size=16,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM.
+               batch_size=24,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM.
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
-               phase_1_steps=80000,  # without cycle consistency objective.
-               phase_2_steps=120000,  # with cycle consistency objective.
-               postnet_start_steps=6000
+               phase_1_steps=120000,  # without cycle consistency objective.
+               phase_2_steps=80000,  # with cycle consistency objective.
+               postnet_start_steps=9000
                ):
     if type(datasets) != list:
         datasets = [datasets]

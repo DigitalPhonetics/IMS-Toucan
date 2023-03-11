@@ -204,6 +204,7 @@ def train_loop(net,
         print("Steps:              {}".format(step_counter))
         if use_wandb:
             wandb.log({
+                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
                 "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 5),
                 "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),

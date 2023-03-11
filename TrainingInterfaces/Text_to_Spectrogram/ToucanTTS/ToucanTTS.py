@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=192,
+                 attention_dimension=512,  # 36173039 params for 192
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -71,7 +71,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_dec_attn_dropout_rate=0.2,
 
                  # duration predictor
-                 duration_predictor_layers=2,
+                 duration_predictor_layers=3,
                  duration_predictor_chans=256,
                  duration_predictor_kernel_size=3,
                  duration_predictor_dropout_rate=0.2,
@@ -145,17 +145,15 @@ class ToucanTTS(torch.nn.Module):
                                                   dropout_rate=energy_predictor_dropout,
                                                   utt_embed_dim=utt_embed_dim)
 
-        self.pitch_embed = Sequential(
-            torch.nn.Conv1d(in_channels=1,
-                            out_channels=attention_dimension,
-                            kernel_size=pitch_embed_kernel_size,
-                            padding=(pitch_embed_kernel_size - 1) // 2),
-            torch.nn.Dropout(pitch_embed_dropout))
+        self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
+                                                      out_channels=attention_dimension,
+                                                      kernel_size=pitch_embed_kernel_size,
+                                                      padding=(pitch_embed_kernel_size - 1) // 2),
+                                      torch.nn.Dropout(pitch_embed_dropout))
 
-        self.energy_embed = torch.nn.Sequential(
-            torch.nn.Conv1d(in_channels=1, out_channels=attention_dimension, kernel_size=energy_embed_kernel_size,
-                            padding=(energy_embed_kernel_size - 1) // 2),
-            torch.nn.Dropout(energy_embed_dropout))
+        self.energy_embed = Sequential(torch.nn.Conv1d(in_channels=1, out_channels=attention_dimension, kernel_size=energy_embed_kernel_size,
+                                                       padding=(energy_embed_kernel_size - 1) // 2),
+                                       torch.nn.Dropout(energy_embed_dropout))
 
         self.length_regulator = LengthRegulator()
 
@@ -317,7 +315,7 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding)
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
         # refine spectrogram (requires warmup, so it's not always on)
