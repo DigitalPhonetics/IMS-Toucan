@@ -45,8 +45,8 @@ class DurationPredictor(torch.nn.Module):
         super(DurationPredictor, self).__init__()
         self.offset = offset
         self.conv = torch.nn.ModuleList()
-        self.dropouts = list()
-        self.norms = list()
+        self.dropouts = torch.nn.ModuleList()
+        self.norms = torch.nn.ModuleList()
 
         for idx in range(n_layers):
             in_chans = idim if idx == 0 else n_chans
