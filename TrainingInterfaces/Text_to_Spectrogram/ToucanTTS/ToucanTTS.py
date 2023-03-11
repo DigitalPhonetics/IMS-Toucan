@@ -7,6 +7,7 @@ from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from Utility.utils import initialize
@@ -42,7 +43,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=512,  # 36173039 params for 192
+                 attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -288,9 +289,17 @@ class ToucanTTS(torch.nn.Module):
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
 
         if is_inference:
-            # predicting pitch and energy
+            # predicting pitch, energy and durations
             pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
             energy_predictions = self.energy_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
+            predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
+
+            # modifying the predictions with linguistic knowledge
+            for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
+                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
+                    pitch_predictions[0][phoneme_index] = 0.0
+                if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                    predicted_durations[0][phoneme_index] = 0
 
             # enriching the text with pitch and energy info
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
@@ -298,7 +307,6 @@ class ToucanTTS(torch.nn.Module):
             enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
 
             # predicting durations for text and upsampling accordingly
-            predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
 
         else:

@@ -6,13 +6,6 @@ import matplotlib.pyplot as plt
 import sounddevice
 import soundfile
 import torch
-from pedalboard import Compressor
-from pedalboard import HighShelfFilter
-from pedalboard import HighpassFilter
-from pedalboard import LowpassFilter
-from pedalboard import NoiseGate
-from pedalboard import PeakFilter
-from pedalboard import Pedalboard
 
 from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceBigVGAN import BigVGAN
@@ -37,8 +30,6 @@ class ToucanTTSInterface(torch.nn.Module):
                  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",
                  # initial language of the model, can be changed later with the setter methods
-                 use_signalprocessing=False,
-                 # some subtle effects that are frequently used in podcasting
                  ):
         super().__init__()
         self.device = device
@@ -50,18 +41,6 @@ class ToucanTTSInterface(torch.nn.Module):
                 vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
             else:
                 vocoder_model_path = os.path.join(MODELS_DIR, "BigVGAN", "best.pt")
-        self.use_signalprocessing = use_signalprocessing
-        if self.use_signalprocessing:
-            self.effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
-                                               HighShelfFilter(cutoff_frequency_hz=8000, gain_db=5.0),
-                                               LowpassFilter(cutoff_frequency_hz=17000),
-                                               PeakFilter(cutoff_frequency_hz=150, gain_db=2.0),
-                                               PeakFilter(cutoff_frequency_hz=220, gain_db=-2.0),
-                                               PeakFilter(cutoff_frequency_hz=900, gain_db=-2.0),
-                                               PeakFilter(cutoff_frequency_hz=3200, gain_db=-2.0),
-                                               PeakFilter(cutoff_frequency_hz=7500, gain_db=-2.0),
-                                               NoiseGate(),
-                                               Compressor(ratio=2.0)])
 
         ################################
         #   build text to phone        #
@@ -159,9 +138,11 @@ class ToucanTTSInterface(torch.nn.Module):
                 view=False,
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
+                energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
                 durations=None,
                 pitch=None,
+                energy=None,
                 input_is_phones=False,
                 return_plot_as_filepath=False):
         """
@@ -171,27 +152,25 @@ class ToucanTTSInterface(torch.nn.Module):
         pitch_variance_scale: reasonable values are 0.6 < scale < 1.4.
                                   1.0 means no scaling happens, higher values increase variance of the pitch curve,
                                   lower values decrease variance of the pitch curve.
+        energy_variance_scale: reasonable values are 0.6 < scale < 1.4.
+                                   1.0 means no scaling happens, higher values increase variance of the energy curve,
+                                   lower values decrease variance of the energy curve.
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
-            mel, durations, pitch = self.phone2mel(phones,
-                                                   return_duration_pitch_energy=True,
-                                                   utterance_embedding=self.default_utterance_embedding,
-                                                   durations=durations,
-                                                   pitch=pitch,
-                                                   lang_id=self.lang_id,
-                                                   duration_scaling_factor=duration_scaling_factor,
-                                                   pitch_variance_scale=pitch_variance_scale,
-                                                   pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                                   device=self.device)
+            mel, durations, pitch, energy = self.phone2mel(phones,
+                                                           return_duration_pitch_energy=True,
+                                                           utterance_embedding=self.default_utterance_embedding,
+                                                           durations=durations,
+                                                           pitch=pitch,
+                                                           energy=energy,
+                                                           lang_id=self.lang_id,
+                                                           duration_scaling_factor=duration_scaling_factor,
+                                                           pitch_variance_scale=pitch_variance_scale,
+                                                           energy_variance_scale=energy_variance_scale,
+                                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
-            if self.use_signalprocessing:
-                try:
-                    wave = torch.Tensor(self.effects(wave.cpu().numpy(), 24000))
-                except ValueError:
-                    # if the audio is too short, a value error might arise
-                    pass
 
         if view or return_plot_as_filepath:
             from Utility.utils import cumsum_durations
@@ -258,14 +237,17 @@ class ToucanTTSInterface(torch.nn.Module):
                      file_location,
                      duration_scaling_factor=1.0,
                      pitch_variance_scale=1.0,
+                     energy_variance_scale=1.0,
                      silent=False,
                      dur_list=None,
-                     pitch_list=None):
+                     pitch_list=None,
+                     energy_list=None):
         """
         Args:
             silent: Whether to be verbose about the process
             text_list: A list of strings to be read
             file_location: The path and name of the file it should be saved to
+            energy_list: list of energy tensors to be used for the texts
             pitch_list: list of pitch tensors to be used for the texts
             dur_list: list of duration tensors to be used for the texts
             duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
@@ -274,14 +256,19 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_variance_scale: reasonable values are 0.6 < scale < 1.4.
                                   1.0 means no scaling happens, higher values increase variance of the pitch curve,
                                   lower values decrease variance of the pitch curve.
+            energy_variance_scale: reasonable values are 0.6 < scale < 1.4.
+                                   1.0 means no scaling happens, higher values increase variance of the energy curve,
+                                   lower values decrease variance of the energy curve.
         """
         if not dur_list:
             dur_list = []
         if not pitch_list:
             pitch_list = []
+        if not energy_list:
+            energy_list = []
         wav = None
         silence = torch.zeros([10600])
-        for (text, durations, pitch) in itertools.zip_longest(text_list, dur_list, pitch_list):
+        for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
@@ -289,15 +276,19 @@ class ToucanTTSInterface(torch.nn.Module):
                     wav = self(text,
                                durations=durations.to(self.device) if durations is not None else None,
                                pitch=pitch.to(self.device) if pitch is not None else None,
+                               energy=energy.to(self.device) if energy is not None else None,
                                duration_scaling_factor=duration_scaling_factor,
-                               pitch_variance_scale=pitch_variance_scale).cpu()
+                               pitch_variance_scale=pitch_variance_scale,
+                               energy_variance_scale=energy_variance_scale).cpu()
                     wav = torch.cat((wav, silence), 0)
                 else:
                     wav = torch.cat((wav, self(text,
                                                durations=durations.to(self.device) if durations is not None else None,
                                                pitch=pitch.to(self.device) if pitch is not None else None,
+                                               energy=energy.to(self.device) if energy is not None else None,
                                                duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale).cpu()), 0)
+                                               pitch_variance_scale=pitch_variance_scale,
+                                               energy_variance_scale=energy_variance_scale).cpu()), 0)
                     wav = torch.cat((wav, silence), 0)
         soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=24000)
 
@@ -306,14 +297,16 @@ class ToucanTTSInterface(torch.nn.Module):
                    view=False,
                    duration_scaling_factor=1.0,
                    pitch_variance_scale=1.0,
+                   energy_variance_scale=1.0,
                    blocking=False):
         if text.strip() == "":
             return
         wav = self(text,
                    view,
                    duration_scaling_factor=duration_scaling_factor,
-                   pitch_variance_scale=pitch_variance_scale).cpu()
-        wav = torch.cat((wav, torch.zeros([10600])), 0)
+                   pitch_variance_scale=pitch_variance_scale,
+                   energy_variance_scale=energy_variance_scale).cpu()
+        wav = torch.cat((wav, torch.zeros([12000])), 0)
         if not blocking:
             sounddevice.play(wav.numpy(), samplerate=24000)
         else:
