@@ -207,7 +207,7 @@ def train_loop(net,
                 glow_losses_total.append(glow_loss.item())
 
         optimizer.zero_grad()
-        grad_scaler.scale(train_loss).backward()
+        grad_scaler.scale(train_loss).backward(create_graph=True)
         grad_scaler.unscale_(optimizer)
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
         grad_scaler.step(optimizer)
