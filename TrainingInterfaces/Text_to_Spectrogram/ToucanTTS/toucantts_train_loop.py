@@ -9,7 +9,6 @@ from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
-from torch_optimizer import Adahessian
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
@@ -72,7 +71,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = Adahessian(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     grad_scaler = GradScaler()
@@ -175,7 +174,7 @@ def train_loop(net,
                     glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
-            grad_scaler.scale(train_loss).backward(create_graph=True)
+            grad_scaler.scale(train_loss).backward()
             grad_scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             grad_scaler.step(optimizer)
