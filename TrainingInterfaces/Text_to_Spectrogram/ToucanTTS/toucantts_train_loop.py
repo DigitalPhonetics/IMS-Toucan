@@ -8,7 +8,6 @@ import wandb
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
-from torch.optim.swa_utils import AveragedModel
 from torch.utils.data.dataloader import DataLoader
 from torch_optimizer import Adahessian
 from tqdm import tqdm
@@ -55,7 +54,6 @@ def train_loop(net,
     """
     steps = phase_1_steps + phase_2_steps
     net = net.to(device)
-    swa_net = AveragedModel(net)
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -183,8 +181,6 @@ def train_loop(net,
             grad_scaler.step(optimizer)
             grad_scaler.update()
             scheduler.step()
-            if step_counter > warmup_steps * 2:
-                swa_net.update_parameters(net)
             step_counter += 1
 
         net.eval()
