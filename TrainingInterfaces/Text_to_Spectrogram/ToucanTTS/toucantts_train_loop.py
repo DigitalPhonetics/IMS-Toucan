@@ -8,7 +8,9 @@ import wandb
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
+from torch.optim.swa_utils import AveragedModel
 from torch.utils.data.dataloader import DataLoader
+from torch_optimizer import Adahessian
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
@@ -53,6 +55,7 @@ def train_loop(net,
     """
     steps = phase_1_steps + phase_2_steps
     net = net.to(device)
+    swa_net = AveragedModel(net)
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -71,7 +74,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1e-3)
+    optimizer = Adahessian(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     grad_scaler = GradScaler()
@@ -180,6 +183,8 @@ def train_loop(net,
             grad_scaler.step(optimizer)
             grad_scaler.update()
             scheduler.step()
+            if step_counter > warmup_steps * 2:
+                swa_net.update_parameters(net)
             step_counter += 1
 
         net.eval()
@@ -195,6 +200,10 @@ def train_loop(net,
             "scheduler"   : scheduler.state_dict(),
             "default_emb" : default_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+        torch.save({
+            "model"      : net.state_dict(),
+            "default_emb": default_embedding,
+        }, os.path.join(save_directory, "best.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
 
         print("Epoch:              {}".format(epoch))
@@ -215,13 +224,13 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                              device,
-                                                                              save_dir=save_directory,
-                                                                              step=step_counter,
-                                                                              lang=lang,
-                                                                              default_emb=default_embedding,
-                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
+            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                          device,
+                                                                          save_dir=save_directory,
+                                                                          step=step_counter,
+                                                                          lang=lang,
+                                                                          default_emb=default_embedding,
+                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
