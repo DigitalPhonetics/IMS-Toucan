@@ -72,7 +72,7 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.AdamW(net.parameters(), lr=lr, weight_decay=0.0001, betas=(0.9, 0.98))
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr, eps=1e-3)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     grad_scaler = GradScaler()

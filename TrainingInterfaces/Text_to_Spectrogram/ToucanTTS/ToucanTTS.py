@@ -95,7 +95,7 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=True,
+                 detach_postflow=False,
                  lang_embs=8000):
         super().__init__()
 
@@ -344,7 +344,7 @@ class ToucanTTS(torch.nn.Module):
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
                                            mel_out=_decoded_spectrogram,
-                                           encoded_texts=upsampled_enriched_encoded_texts.detach(),
+                                           encoded_texts=upsampled_enriched_encoded_texts,
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \
