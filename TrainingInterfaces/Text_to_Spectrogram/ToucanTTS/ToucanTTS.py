@@ -1,5 +1,3 @@
-import copy
-
 import torch
 from torch.nn import Linear
 from torch.nn import Sequential
@@ -417,11 +415,6 @@ class ToucanTTS(torch.nn.Module):
 
 if __name__ == '__main__':
     print(sum(p.numel() for p in ToucanTTS().parameters() if p.requires_grad))
-
-    print(" TESTING DEEPCOPY ")
-
-    model = ToucanTTS()
-    net = copy.deepcopy(model)
 
     print(" TESTING TRAINING ")
 

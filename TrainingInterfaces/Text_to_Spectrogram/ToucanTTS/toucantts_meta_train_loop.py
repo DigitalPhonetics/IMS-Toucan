@@ -52,7 +52,9 @@ def train_loop(net,
     """
     steps = phase_1_steps + phase_2_steps
     net = net.to(device)
-    swa_net = AveragedModel(net)
+    swa_nets = list()
+    for component in [net.encoder, net.decoder, net.duration_predictor, net.pitch_predictor, net.energy_predictor, net.pitch_embed, net.energy_embed, net.feat_out]:
+        swa_nets.append(AveragedModel(component))  # because of weight norm, we cannot apply torch builtin SWA to the postflow
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -215,7 +217,8 @@ def train_loop(net,
         grad_scaler.update()
         scheduler.step()
         if step_counter > 2 * warmup_steps:
-            swa_net.update_parameters(net)
+            for component, swa_net in zip([net.encoder, net.decoder, net.duration_predictor, net.pitch_predictor, net.energy_predictor, net.pitch_embed, net.energy_embed, net.feat_out], swa_nets):
+                swa_net.update_parameters(component)
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================

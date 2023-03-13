@@ -290,7 +290,7 @@ class Glow(nn.Module):
                  inv_conv_type='near',
                  share_cond_layers=False,
                  share_wn_layers=0,
-                 use_weightnorm=False  # If weightnorm is set to false, we can deepcopy the module, which we need to be able to do to perform SWA. Without weightnorm, the module will probably take a little longer to converge.
+                 use_weightnorm=True  # If weightnorm is set to false, we can deepcopy the module, which we need to be able to do to perform SWA. Without weightnorm, the module will probably take a little longer to converge.
                  ):
         super().__init__()
 
