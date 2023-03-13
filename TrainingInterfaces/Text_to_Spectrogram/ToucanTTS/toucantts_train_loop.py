@@ -10,7 +10,6 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim.swa_utils import AveragedModel
 from torch.utils.data.dataloader import DataLoader
-from torch_optimizer import Yogi
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
@@ -76,7 +75,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = Yogi(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     grad_scaler = GradScaler()
