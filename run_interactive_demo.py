@@ -4,19 +4,19 @@ import warnings
 
 import torch
 
-from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
+from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Utility.storage_config import MODELS_DIR
 
 if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning)
 
-    PATH_TO_TTS_MODEL = os.path.join(MODELS_DIR, "PortaSpeech_Meta", "best.pt")
-    PATH_TO_VOCODER_MODEL = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
+    PATH_TO_TTS_MODEL = os.path.join(MODELS_DIR, "ToucanTTS_Nancy", "best.pt")
+    PATH_TO_VOCODER_MODEL = os.path.join(MODELS_DIR, "BigVGAN", "best.pt")
     PATH_TO_REFERENCE_SPEAKER = ""  # audios/speaker_references_for_testing/female_high_voice.wav
     LANGUAGE = "en"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    tts = PortaSpeechInterface(device=device, tts_model_path=PATH_TO_TTS_MODEL, vocoder_model_path=PATH_TO_VOCODER_MODEL)
+    tts = ToucanTTSInterface(device=device, tts_model_path=PATH_TO_TTS_MODEL, vocoder_model_path=PATH_TO_VOCODER_MODEL, faster_vocoder=False)
     tts.set_language(lang_id=LANGUAGE)
     if PATH_TO_REFERENCE_SPEAKER != "":
         if os.path.exists(PATH_TO_REFERENCE_SPEAKER):

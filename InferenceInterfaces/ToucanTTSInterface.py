@@ -68,7 +68,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                            lang_embs=None,
                                            utt_embed_dim=None)  # single speaker
         with torch.no_grad():
-            self.phone2mel.store_inverse_all()
+            self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
 
         #################################

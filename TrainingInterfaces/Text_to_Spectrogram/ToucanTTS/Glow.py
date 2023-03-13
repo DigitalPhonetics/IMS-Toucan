@@ -240,7 +240,7 @@ class CouplingBlock(nn.Module):
         end.weight.data.zero_()
         end.bias.data.zero_()
         self.end = end
-        self.wn = WN(hidden_channels, kernel_size, dilation_rate, n_layers, gin_channels, p_dropout)
+        self.wn = WN(hidden_channels, kernel_size, dilation_rate, n_layers, gin_channels, p_dropout, use_weightnorm=use_weightnorm)
         if wn is not None:
             self.wn.in_layers = wn.in_layers
             self.wn.res_skip_layers = wn.res_skip_layers
