@@ -11,6 +11,7 @@ from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_NEB import run as neb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Libri import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB import run as toucanneb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
@@ -26,6 +27,7 @@ pipeline_dict = {
     "nancy"    : nancy,
     "ad"       : ad,
     "neb"      : neb,
+    "toucanneb": toucanneb,
     "french"   : french,
     "libri"    : libri,
     "bigvgan"  : bigvgan
