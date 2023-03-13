@@ -184,7 +184,7 @@ def train_loop(net,
             grad_scaler.step(optimizer)
             grad_scaler.update()
             scheduler.step()
-            if step_counter > warmup_steps:
+            if step_counter > 2 * warmup_steps:
                 for component, swa_net in zip([net.encoder, net.decoder, net.duration_predictor, net.pitch_predictor, net.energy_predictor, net.pitch_embed, net.energy_embed, net.feat_out], swa_nets):
                     swa_net.update_parameters(component)
             step_counter += 1
