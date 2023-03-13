@@ -8,7 +8,6 @@ import wandb
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
-from torch.optim.swa_utils import AveragedModel
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
@@ -17,6 +16,10 @@ from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec_toucantts
+from run_weight_averaging import average_checkpoints
+from run_weight_averaging import get_n_recent_checkpoints_paths
+from run_weight_averaging import load_net_toucan
+from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
@@ -54,9 +57,6 @@ def train_loop(net,
     """
     steps = phase_1_steps + phase_2_steps
     net = net.to(device)
-    swa_nets = list()
-    for component in [net.encoder, net.decoder, net.duration_predictor, net.pitch_predictor, net.energy_predictor, net.pitch_embed, net.energy_embed, net.feat_out]:
-        swa_nets.append(AveragedModel(component))  # because of weight norm, we cannot apply torch builtin SWA to the postflow
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -184,11 +184,9 @@ def train_loop(net,
             grad_scaler.step(optimizer)
             grad_scaler.update()
             scheduler.step()
-            if step_counter > 2 * warmup_steps:
-                for component, swa_net in zip([net.encoder, net.decoder, net.duration_predictor, net.pitch_predictor, net.energy_predictor, net.pitch_embed, net.energy_embed, net.feat_out], swa_nets):
-                    swa_net.update_parameters(component)
             step_counter += 1
 
+        # EPOCH IS OVER
         net.eval()
         style_embedding_function.eval()
         default_embedding = style_embedding_function(
@@ -202,10 +200,6 @@ def train_loop(net,
             "scheduler"   : scheduler.state_dict(),
             "default_emb" : default_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-        torch.save({
-            "model"      : net.state_dict(),
-            "default_emb": default_embedding,
-        }, os.path.join(save_directory, "best.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
 
         print("Epoch:              {}".format(epoch))
@@ -247,4 +241,12 @@ def train_loop(net,
         if step_counter > steps:
             # DONE
             return
+
+        # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
+        checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
+        averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+        save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
+        check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
+        net.load_state_dict(check_dict["model"])
+
         net.train()

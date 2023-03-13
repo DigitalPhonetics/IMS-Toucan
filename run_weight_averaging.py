@@ -123,27 +123,27 @@ def make_best_in_all():
     for model_dir in os.listdir(MODELS_DIR):
         if os.path.isdir(os.path.join(MODELS_DIR, model_dir)):
             if "HiFiGAN" in model_dir or "Avocodo" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=2)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
                 save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
 
             elif "BigVGAN" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=2)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
                 save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
 
             elif "PortaSpeech" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=1)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_porta)
                 save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
             elif "ToucanTTS" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=1)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
