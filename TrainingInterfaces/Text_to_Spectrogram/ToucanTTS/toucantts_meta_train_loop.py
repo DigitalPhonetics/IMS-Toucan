@@ -6,6 +6,7 @@ from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.optim.swa_utils import AveragedModel
 from torch.utils.data.dataloader import DataLoader
+from torch_optimizer import Yogi
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
@@ -76,7 +77,7 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = Yogi(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
                                 max_steps=phase_1_steps + phase_2_steps)
     grad_scaler = GradScaler()
@@ -216,7 +217,7 @@ def train_loop(net,
         grad_scaler.step(optimizer)
         grad_scaler.update()
         scheduler.step()
-        if step_counter > 2 * warmup_steps:
+        if step_counter > warmup_steps:
             for component, swa_net in zip([net.encoder, net.decoder, net.duration_predictor, net.pitch_predictor, net.energy_predictor, net.pitch_embed, net.energy_embed, net.feat_out], swa_nets):
                 swa_net.update_parameters(component)
 
