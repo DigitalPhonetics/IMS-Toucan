@@ -16,7 +16,7 @@ from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.storage_config import MODELS_DIR
 
@@ -79,7 +79,7 @@ class AlignmentScorer:
 class TTSScorer:
 
     def __init__(self,
-                 path_to_portaspeech_model,
+                 path_to_model,
                  device,
                  path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")
                  ):
@@ -88,17 +88,17 @@ class TTSScorer:
         self.path_to_id = dict()
         self.nans = list()
         self.nan_indexes = list()
-        self.tts = PortaSpeech()
-        checkpoint = torch.load(path_to_portaspeech_model, map_location='cpu')
+        self.tts = ToucanTTS()
+        checkpoint = torch.load(path_to_model, map_location='cpu')
         weights = checkpoint["model"]
         try:
             self.tts.load_state_dict(weights)
         except RuntimeError:
             try:
-                self.tts = PortaSpeech(lang_embs=None)
+                self.tts = ToucanTTS(lang_embs=None)
                 self.tts.load_state_dict(weights)
             except RuntimeError:
-                self.tts = PortaSpeech(lang_embs=None, utt_embed_dim=None)
+                self.tts = ToucanTTS(lang_embs=None, utt_embed_dim=None)
                 self.tts.load_state_dict(weights)
         self.style_embedding_function = StyleEmbedding().to(device)
         check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
