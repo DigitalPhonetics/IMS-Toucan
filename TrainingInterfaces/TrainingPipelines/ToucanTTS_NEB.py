@@ -53,7 +53,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"),
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=True,
-               lr=0.0001,
                resume=resume,
                warmup_steps=200,
                postnet_start_steps=200,
