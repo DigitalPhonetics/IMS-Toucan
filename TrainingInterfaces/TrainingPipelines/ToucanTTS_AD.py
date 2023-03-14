@@ -30,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_AD")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_AD_finetune")
     os.makedirs(save_dir, exist_ok=True)
 
     train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
@@ -50,12 +50,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                device=device,
                save_directory=save_dir,
                eval_lang="fr",
-               path_to_checkpoint=resume_checkpoint,
+               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"),
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
-               fine_tune=finetune,
+               fine_tune=True,
+               lr=0.0001,
                resume=resume,
-               postnet_start_steps=8000,
-               warmup_steps=2000,
+               warmup_steps=200,
+               postnet_start_steps=200,
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

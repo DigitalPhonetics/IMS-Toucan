@@ -2,13 +2,13 @@ import os
 
 import torch
 
-from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
+from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
 def le_corbeau_et_le_renard(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = PortaSpeechInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan)
+    tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan)
     tts.set_language("fr")
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
@@ -30,5 +30,5 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    le_corbeau_et_le_renard(version="06_NEB_hifigan", model_id="NEB", exec_device=exec_device, vocoder_model_path=None, biggan=False)
-    le_corbeau_et_le_renard(version="06_AD_hifigan", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
+    le_corbeau_et_le_renard(version="002_NEB_finetune", model_id="NEB", exec_device=exec_device, vocoder_model_path=None, biggan=True)
+    le_corbeau_et_le_renard(version="002_AD_finetune", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
