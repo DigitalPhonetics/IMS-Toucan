@@ -9,6 +9,7 @@ from TrainingInterfaces.TrainingPipelines.PortaSpeech_AD import run as ad
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_French import run as french
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_NEB import run as neb
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD import run as toucanad
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Libri import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB import run as toucanneb
@@ -28,6 +29,7 @@ pipeline_dict = {
     "ad"       : ad,
     "neb"      : neb,
     "toucanneb": toucanneb,
+    "toucanad" : toucanad,
     "french"   : french,
     "libri"    : libri,
     "bigvgan"  : bigvgan
