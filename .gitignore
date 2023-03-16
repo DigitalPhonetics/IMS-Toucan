@@ -24,3 +24,4 @@ Models/
 old_nohup/
 phonemizer/
 *.ignoretest
+ignore/ignoreme/
