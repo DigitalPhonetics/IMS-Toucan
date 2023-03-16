@@ -1,4 +1,5 @@
 import csv
+import os
 from pathlib import Path
 
 
@@ -48,6 +49,34 @@ def read_voxpopuli():
     paths = [Path(filepath) for filepath in file2spk.keys()]
     file2text = {filepath: transcripts[Path(filepath).stem] for filepath, _ in file2spk.items()}
     return file2text
+
+
+def build_path_to_transcript_dict_blizzard2023_ad_double():
+    root = "/mount/arbeitsdaten45/projekte/asr-4/denisopl/Blizzard2023/2sentences/output/AD"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            norm_transcript = line.split("\t")[1]
+            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace("»", '"').replace("«", '"')
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_blizzard2023_neb_double():
+    root = "/mount/arbeitsdaten45/projekte/asr-4/denisopl/Blizzard2023/2sentences/output/NEB"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            norm_transcript = line.split("\t")[1]
+            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
+            if os.path.exists(wav_path):
+                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace("»", '"').replace("«", '"')
+    return path_to_transcript
 
 
 if __name__ == '__main__':

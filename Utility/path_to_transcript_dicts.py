@@ -563,9 +563,7 @@ def build_path_to_transcript_dict_blizzard2023_ad():
             norm_transcript = line.split("\t")[1]
             wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
             if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~",
-                                                                                                         "").replace(
-                    "»", '"').replace("«", '"')
+                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace("»", '"').replace("«", '"')
     return path_to_transcript
 
 
@@ -579,9 +577,7 @@ def build_path_to_transcript_dict_blizzard2023_neb():
             norm_transcript = line.split("\t")[1]
             wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
             if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~",
-                                                                                                         "").replace(
-                    "»", '"').replace("«", '"')
+                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace("»", '"').replace("«", '"')
     return path_to_transcript
 
 

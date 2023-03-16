@@ -6,10 +6,10 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_codo
 from TrainingInterfaces.TrainingPipelines.JointEmbeddingFunction import run as embedding
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_AD import run as ad
-from TrainingInterfaces.TrainingPipelines.PortaSpeech_French import run as french
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.PortaSpeech_NEB import run as neb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD import run as toucanad
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Libri import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB import run as toucanneb
