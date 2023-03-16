@@ -18,3 +18,9 @@ pretrained_models/
 .vscode/
 split/
 singing/
+audios/
+Corpora/
+Models/
+old_nohup/
+phonemizer/
+*.ignoretest
