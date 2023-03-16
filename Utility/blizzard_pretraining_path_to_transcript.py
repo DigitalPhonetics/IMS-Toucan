@@ -15,7 +15,7 @@ def read_sep_data(filename, sep='\t'):
 
 # PFC
 def read_pfc():
-    pfc_dict = read_sep_data('female_pfc_utterances.csv')
+    pfc_dict = read_sep_data('Utility/female_pfc_utterances.csv')
     for key in pfc_dict:
         if not key.split("_")[-2].endswith("t"):  # only read speech subset
             pfc_dict.pop(key)
@@ -25,7 +25,7 @@ def read_pfc():
 # MLS
 def read_mls():
     transcripts = {split: read_sep_data(f'/resources/speech/corpora/MultiLingLibriSpeech/mls_french/{split}/transcripts.txt') for split in {'train', 'dev', 'test'}}
-    file2spk = read_sep_data('female_mls.csv', sep=',')
+    file2spk = read_sep_data('Utility/female_mls.csv', sep=',')
     paths = [Path(filepath) for filepath in file2spk.keys()]
     file2text = {str(filepath): transcripts[filepath.parts[6]][filepath.stem] for filepath in paths}
     return file2text
@@ -45,7 +45,7 @@ def read_voxpopuli():
     transcripts = {}
     for split in {'train', 'dev', 'test'}:
         transcripts.update(read_tsv(f'/resources/asr-data/voxpopuli/transcribed_data/fr/asr_{split}.tsv'))
-    file2spk = read_sep_data('female_voxpopuli.csv', sep=',')
+    file2spk = read_sep_data('Utility/female_voxpopuli.csv', sep=',')
     paths = [Path(filepath) for filepath in file2spk.keys()]
     file2text = {filepath: transcripts[Path(filepath).stem] for filepath, _ in file2spk.items()}
     return file2text
