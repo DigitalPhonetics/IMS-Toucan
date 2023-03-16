@@ -20,16 +20,11 @@ from Utility.storage_config import MODELS_DIR
 class ToucanTTSInterface(torch.nn.Module):
 
     def __init__(self,
-                 device="cpu",
-                 # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
-                 tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),
-                 # path to the PortaSpeech checkpoint or just a shorthand if run standalone
-                 vocoder_model_path=None,
-                 # path to the hifigan/avocodo/bigvgan checkpoint
-                 faster_vocoder=True,
-                 # whether to use the quicker HiFiGAN or the better BigVGAN
-                 language="en",
-                 # initial language of the model, can be changed later with the setter methods
+                 device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
+                 tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
+                 faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
+                 language="en",  # initial language of the model, can be changed later with the setter methods
                  ):
         super().__init__()
         self.device = device
@@ -61,15 +56,20 @@ class ToucanTTSInterface(torch.nn.Module):
         except RuntimeError:
             try:
                 self.use_lang_id = False
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                           lang_embs=None)  # multi speaker single language
+                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                           lang_embs=None,
-                                           utt_embed_dim=None)  # single speaker
+                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
+        self.phone2mel.eval()
         self.phone2mel = self.phone2mel.to(torch.device(device))
+        try:
+            self.phone2mel = torch.compile(self.phone2mel)
+            print("Compiled TTS for speed increase!")
+        except RuntimeError:
+            print("Compiling TTS failed, running in eager mode.")
+        except AttributeError:
+            print("Compiling TTS failed, running in eager mode. Consider upgrading to PyTorch 2.0 for potential speed increase.")
 
         #################################
         #  load mel to style models     #
@@ -77,26 +77,32 @@ class ToucanTTSInterface(torch.nn.Module):
         self.style_embedding_function = StyleEmbedding()
         check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        self.style_embedding_function.eval()
         self.style_embedding_function.to(self.device)
 
         ################################
         #  load mel to wave model      #
         ################################
         if faster_vocoder:
-            self.mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path).to(torch.device(device))
+            self.mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path)
         else:
-            self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
+            self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path)
         self.mel2wav.remove_weight_norm()
-        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]))
+        self.mel2wav.eval()
+        self.mel2wav = self.mel2wav.to(torch.device(device))
+        try:
+            self.mel2wav = torch.compile(self.mel2wav)
+            print("Compiled vocoder for speed increase!")
+        except RuntimeError:
+            print("Compiling vocoder failed, running in eager mode.")
+        except AttributeError:
+            print("Compiling vocoder failed, running in eager mode. Consider upgrading to PyTorch 2.0 for potential speed increase.")
 
         ################################
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
-        self.phone2mel.eval()
-        self.mel2wav.eval()
-        self.style_embedding_function.eval()
         if self.use_lang_id:
             self.lang_id = get_language_id(language)
         else:
