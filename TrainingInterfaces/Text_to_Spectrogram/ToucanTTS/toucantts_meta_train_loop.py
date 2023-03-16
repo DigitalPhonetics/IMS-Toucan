@@ -37,8 +37,7 @@ def train_loop(net,
                device,
                save_directory,
                batch_size,
-               phase_1_steps,
-               phase_2_steps,
+               steps,
                steps_per_checkpoint,
                lr,
                path_to_checkpoint,
@@ -53,7 +52,6 @@ def train_loop(net,
     """
     see train loop arbiter for explanations of the arguments
     """
-    steps = phase_1_steps + phase_2_steps
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
@@ -77,8 +75,7 @@ def train_loop(net,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps,
-                                max_steps=phase_1_steps + phase_2_steps)
+    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     grad_scaler = GradScaler()
     steps_run_previously = 0
     l1_losses_total = list()
@@ -86,7 +83,6 @@ def train_loop(net,
     pitch_losses_total = list()
     energy_losses_total = list()
     glow_losses_total = list()
-    cycle_losses_total = list()
 
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -133,60 +129,23 @@ def train_loop(net,
 
         train_loss = 0.0
         with autocast():
-            if step_counter <= phase_1_steps:
-                # PHASE 1
-                # we sum the loss for each task, as we would do for the
-                # second order regular MAML, but we do it only over one
-                # step (i.e. iterations of inner loop = 1)
-
-                style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                           batch_of_spectrogram_lengths=batch[3].to(device))
-
-                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
-                    text_tensors=text_tensors,
-                    text_lengths=text_lengths,
-                    gold_speech=gold_speech,
-                    speech_lengths=speech_lengths,
-                    gold_durations=gold_durations,
-                    gold_pitch=gold_pitch,
-                    gold_energy=gold_energy,
-                    utterance_embedding=style_embedding,
-                    lang_ids=lang_ids,
-                    return_mels=False,
-                    run_glow=step_counter > postnet_start_steps)
-
-            else:
-                # PHASE 2
-                # cycle objective is added to make sure the embedding function is given adequate attention
-                style_embedding_function.eval()
-                style_embedding_of_gold, out_list_gold = style_embedding_function(batch_of_spectrograms=gold_speech,
-                                                                                  batch_of_spectrogram_lengths=speech_lengths,
-                                                                                  return_all_outs=True)
-
-                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, output_spectrograms = net(
-                    text_tensors=text_tensors,
-                    text_lengths=text_lengths,
-                    gold_speech=gold_speech,
-                    speech_lengths=speech_lengths,
-                    gold_durations=gold_durations,
-                    gold_pitch=gold_pitch,
-                    gold_energy=gold_energy,
-                    utterance_embedding=style_embedding,
-                    lang_ids=lang_ids,
-                    return_mels=True,
-                    run_glow=step_counter > postnet_start_steps or fine_tune)
-
-                style_embedding_function.train()
-                style_embedding_of_predicted, out_list_predicted = style_embedding_function(
-                    batch_of_spectrograms=output_spectrograms,
-                    batch_of_spectrogram_lengths=speech_lengths,
-                    return_all_outs=True)
-
-                cycle_dist = torch.nn.functional.l1_loss(style_embedding_of_predicted, style_embedding_of_gold.detach()) * 0.1 + \
-                             1.0 - torch.nn.functional.cosine_similarity(style_embedding_of_predicted, style_embedding_of_gold.detach()).mean()
-
-                train_loss = train_loss + cycle_dist
-                cycle_losses_total.append(cycle_dist.item())
+            # we sum the loss for each task, as we would do for the
+            # second order regular MAML, but we do it only over one
+            # step (i.e. iterations of inner loop = 1)
+            style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                       batch_of_spectrogram_lengths=batch[3].to(device))
+            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
+                text_tensors=text_tensors,
+                text_lengths=text_lengths,
+                gold_speech=gold_speech,
+                speech_lengths=speech_lengths,
+                gold_durations=gold_durations,
+                gold_pitch=gold_pitch,
+                gold_energy=gold_energy,
+                utterance_embedding=style_embedding,
+                lang_ids=lang_ids,
+                return_mels=False,
+                run_glow=step_counter > postnet_start_steps)
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
@@ -227,8 +186,6 @@ def train_loop(net,
                 batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print(f"\nTotal Steps: {step_counter}")
-            if len(cycle_losses_total) != 0:
-                print(f"Cycle Loss: {round(sum(cycle_losses_total) / len(cycle_losses_total), 3)}")
             torch.save({
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
@@ -247,7 +204,6 @@ def train_loop(net,
                     "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                     "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                     "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
-                    "cycle_loss"   : sum(cycle_losses_total) / len(cycle_losses_total) if len(cycle_losses_total) != 0 else None,
                     "Steps"        : step_counter
                 })
 
@@ -271,7 +227,6 @@ def train_loop(net,
             except IndexError:
                 print("generating progress plots failed.")
 
-            cycle_losses_total = list()
             l1_losses_total = list()
             duration_losses_total = list()
             pitch_losses_total = list()

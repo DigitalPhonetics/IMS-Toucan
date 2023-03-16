@@ -21,9 +21,8 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                batch_size=32,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
-               phase_1_steps=120000,  # without cycle consistency objective.
-               phase_2_steps=80000,  # with cycle consistency objective.
-               postnet_start_steps=9000
+               steps=80000,  # how many updates to run until training is completed
+               postnet_start_steps=9000  # how many warmup steps before the postnet starts training
                ):
     if type(datasets) != list:
         datasets = [datasets]
@@ -33,8 +32,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                             device=device,
                             save_directory=save_directory,
                             batch_size=batch_size,
-                            phase_1_steps=phase_1_steps,
-                            phase_2_steps=phase_2_steps,
+                            steps=steps,
                             steps_per_checkpoint=steps_per_checkpoint,
                             lr=lr,
                             lang=eval_lang,
@@ -58,7 +56,6 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            path_to_embed_model=path_to_embed_model,
                            fine_tune=fine_tune,
                            resume=resume,
-                           phase_1_steps=phase_1_steps,
-                           phase_2_steps=phase_2_steps,
+                           steps=steps,
                            use_wandb=use_wandb,
                            postnet_start_steps=postnet_start_steps)

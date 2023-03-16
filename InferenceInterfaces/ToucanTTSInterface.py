@@ -20,16 +20,11 @@ from Utility.storage_config import MODELS_DIR
 class ToucanTTSInterface(torch.nn.Module):
 
     def __init__(self,
-                 device="cpu",
-                 # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
-                 tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),
-                 # path to the ToucanTTS checkpoint or just a shorthand if run standalone
-                 vocoder_model_path=None,
-                 # path to the hifigan/avocodo/bigvgan checkpoint
-                 faster_vocoder=True,
-                 # whether to use the quicker HiFiGAN or the better BigVGAN
-                 language="en",
-                 # initial language of the model, can be changed later with the setter methods
+                 device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
+                 tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
+                 faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
+                 language="en",  # initial language of the model, can be changed later with the setter methods
                  ):
         super().__init__()
         self.device = device
@@ -61,12 +56,9 @@ class ToucanTTSInterface(torch.nn.Module):
         except RuntimeError:
             try:
                 self.use_lang_id = False
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                           lang_embs=None)  # multi speaker single language
+                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                           lang_embs=None,
-                                           utt_embed_dim=None)  # single speaker
+                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
