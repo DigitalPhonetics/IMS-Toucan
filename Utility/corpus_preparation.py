@@ -19,7 +19,8 @@ def prepare_fastspeech_corpus(transcript_dict,
                               fine_tune_aligner=True,
                               use_reconstruction=True,
                               phone_input=False,
-                              save_imgs=False):
+                              save_imgs=False,
+                              use_avg_lang_emb=False):
     """
     create an aligner dataset,
     fine-tune an aligner,
@@ -62,4 +63,5 @@ def prepare_fastspeech_corpus(transcript_dict,
                              device=torch.device("cuda"),
                              lang=lang,
                              ctc_selection=ctc_selection,
-                             save_imgs=save_imgs)
+                             save_imgs=save_imgs,
+                             use_avg_lang_emb=use_avg_lang_emb)

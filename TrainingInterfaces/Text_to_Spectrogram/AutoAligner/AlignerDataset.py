@@ -21,7 +21,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=30,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
+                 loading_processes=8,  # careful with the amount of processes if you use silence removal, only as many processes as you have cores
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silences=True,
@@ -145,9 +145,9 @@ class AlignerDataset(Dataset):
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
             try:
-                cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input, path_to_wavfile=path).squeeze(0).cpu().numpy()
             except KeyError:
-                tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input, path_to_wavfile=path).squeeze(0).cpu().numpy()
                 continue  # we skip sentences with unknown symbols
 
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()

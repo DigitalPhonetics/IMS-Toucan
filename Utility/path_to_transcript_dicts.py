@@ -1,39 +1,136 @@
 import os
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
+
+def build_path_to_transcript_dict_aridialect():
+    path_to_transcript = dict()
+    with open("/data/vokquant/data/aridialect/train-text-pac_orig.txt", encoding="utf8") as f:
+#    with open("/data/vokquant/data/aridialect/train-text-pac_mini.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+    return path_to_transcript
+
+def build_path_to_transcript_dict_aridialect_input_phonemes():
+    path_to_transcript = dict()
+    with open("/data/vokquant/data/aridialect/train-text-pac_orig.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            label_file = open("/data/vokquant/data/aridialect/aridialect_labels_phoneme_input_train/" + line.split("|")[0] + ".lab", "r")
+            phones = label_file.read()
+            path_to_transcript["/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav"] = phones
+    return path_to_transcript
+
+def build_path_to_transcript_dict_aridialect_input_phonemes_miniset():
+    path_to_transcript = dict()
+#    with open("/data/vokquant/data/aridialect/train-text-pac_orig_mini.txt", encoding="utf8") as f:
+    with open("/data/vokquant/data/aridialect/train-text-pac_mini.txt", encoding="utf8") as f:
+
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            label_file = open("/data/vokquant/data/aridialect/aridialect_labels_phoneme_input_train/" + line.split("|")[0] + ".lab", "r")
+            phones = label_file.read()
+            path_to_transcript["/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav"] = phones
+    return path_to_transcript
+    
+def build_path_to_transcript_dict_aridialect_and_write_phonemes_to_file_train():
+    tf = ArticulatoryCombinedTextFrontend(language="at-lab")
+    path_to_transcript = dict()
+    with open("/data/vokquant/data/aridialect/train-text-pac_orig.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            tf.string_to_tensor("test", path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav")
+    return path_to_transcript
+
+def build_path_to_transcript_dict_aridialect_and_write_phonemes_to_file_test():
+    tf = ArticulatoryCombinedTextFrontend(language="at-lab")
+    path_to_transcript = dict()    
+    with open("/data/vokquant/data/aridialect/test-text.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            tf.string_to_tensor("test", path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav")            
+    return path_to_transcript
+
+#hga, hpo, joe, alf, bje, bsc, cal, cha, cmi, csc, dsc, esc, fwa, gun, hoi, jage, juk, kep, lsc, mpu, nau, nke, psc, sat, tfe, wke, spo
+#def build_path_to_transcript_dict_aridialect_hpo():
+#    path_to_transcript = dict()
+#    with open("/data/vokquant/data/aridialect/train-text-pac_orig.txt", encoding="utf8") as f:
+#        transcriptions = f.read()
+#    trans_lines = transcriptions.split("\n")
+#    for line in trans_lines:
+#        if line.strip() != "" and line.split("|")[0].split("_")[0] == "spo":
+#            path_to_transcript["/data/vokquant/data/aridialect/aridialect_wav16000/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+#    print(path_to_transcript)
+#    with open('/data/vokquant/spo.txt', 'w+') as f:
+#        f.write(str(path_to_transcript))
+#    return path_to_transcript
+
+def build_path_to_transcript_dict_aridialect_48kHz():
+    path_to_transcript = dict()
+    with open("/data/vokquant/data/aridialect_48kHz/train-text-pac_orig.txt", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["/data/vokquant/data/aridialect_48kHz/aridialect_wav48000/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_mls_german():
+    lang = "german"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
+
+def build_path_to_transcript_dict_mls_english():
+    lang = "english"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
+    return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 def build_path_to_transcript_dict_mls_italian():
     lang = "italian"
-    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
     return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 
 def build_path_to_transcript_dict_mls_french():
     lang = "french"
-    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
     return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 
 def build_path_to_transcript_dict_mls_dutch():
     lang = "dutch"
-    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
     return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 
 def build_path_to_transcript_dict_mls_polish():
     lang = "polish"
-    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
     return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 
 def build_path_to_transcript_dict_mls_spanish():
     lang = "spanish"
-    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
     return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 
 def build_path_to_transcript_dict_mls_portuguese():
     lang = "portuguese"
-    root = f"/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_{lang}/train"
+    root = f"/data/vokquant/data/mls/mls_{lang}/train"
     return build_path_to_transcript_dict_multi_ling_librispeech_template(root=root)
 
 
@@ -519,3 +616,7 @@ def build_path_to_transcript_dict_VIVOS_viet():
             audio_file = f"{root}/waves/{parsed_line[0][:10]}/{parsed_line[0]}.wav"
             path_to_transcript_dict[audio_file] = " ".join(parsed_line[1:]).lower()
     return path_to_transcript_dict
+    
+if __name__ == '__main__':
+    #build_path_to_transcript_dict_aridialect_and_write_phonemes_to_file()
+    build_path_to_transcript_dict_aridialect_input_phonemes()

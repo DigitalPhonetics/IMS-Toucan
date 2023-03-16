@@ -5,20 +5,28 @@ import librosa.display as lbd
 import matplotlib.pyplot as plt
 import torch
 import torch.multiprocessing
-import torch.multiprocessing
 from torch.cuda.amp import GradScaler
 from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
-
+import numpy as np
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from Utility.WarmupScheduler import WarmupScheduler
 from Utility.utils import cumsum_durations
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
+from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.logger import FastSpeech2Logger #Added for logging
+from Preprocessing.Language_embedding import LanguageEmbedding
 
+#This function creates the logging directory and the returns the logger.
+def prepare_logger(log_directory):
+    if not os.path.isdir(log_directory):
+        os.makedirs(log_directory)
+        os.chmod(log_directory, 0o775)
+    logger = FastSpeech2Logger( log_directory)
+    return logger
 
 @torch.no_grad()
 def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
@@ -27,6 +35,12 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     if lang == "en":
         sentence = "This is a complex sentence, it even has a pause!"
     elif lang == "de":
+        sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
+    elif lang == "at":
+        sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
+    elif lang == "vd":
+        sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
+    elif lang == "at-lab":
         sentence = "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
     elif lang == "el":
         sentence = "Αυτή είναι μια σύνθετη πρόταση, έχει ακόμη και παύση!"
@@ -52,11 +66,16 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
         sentence = "这是一个复杂的句子，它甚至包含一个停顿。"
     elif lang == "vi":
         sentence = "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
-    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
+    if lang == "at-lab":
+        sentence == "Heute ist schönes Frühlingswetter!"
+        phoneme_vector = tf.string_to_tensor(sentence, path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/alf_at_berlin_001.wav").squeeze(0).to(device)
+    else:
+        phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
+    emb = LanguageEmbedding()
     spec, durations, *_ = net.inference(text=phoneme_vector,
                                         return_duration_pitch_energy=True,
                                         utterance_embedding=default_emb,
-                                        lang_id=get_language_id(lang).to(device))
+                                        lang_emb=emb.get_emb_from_path(path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/alf_at_berlin_001.wav" ).to(device))
     spec = spec.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     if not os.path.exists(os.path.join(save_dir, "spec")):
@@ -73,7 +92,7 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
     ax.set_xticks(duration_splits, minor=True)
     ax.xaxis.grid(True, which='minor')
     ax.set_xticks(label_positions, minor=False)
-    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True))
+    ax.set_xticklabels(tf.get_phone_string(sentence, for_plot_labels=True, path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/alf_at_berlin_001.wav"))
     ax.set_title(sentence)
     plt.savefig(os.path.join(os.path.join(save_dir, "spec"), str(step) + ".png"))
     plt.clf()
@@ -81,7 +100,11 @@ def plot_progress_spec(net, device, save_dir, step, lang, default_emb):
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition,language_embedding, language_id
+    if type([datapoint[8] for datapoint in batch][0]) == np.ndarray:
+        lang_emb = [torch.from_numpy(datapoint[8]) for datapoint in batch]
+    else:
+        lang_emb = [datapoint[8] for datapoint in batch]
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -90,7 +113,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[7] for datapoint in batch]).squeeze(),
-            torch.stack([datapoint[8] for datapoint in batch]))
+            torch.stack(lang_emb).squeeze(),
+            torch.stack([datapoint[9] for datapoint in batch]))
 
 
 def train_loop(net,
@@ -124,6 +148,8 @@ def train_loop(net,
 
     """
     net = net.to(device)
+
+    logger = prepare_logger(log_directory=os.path.join(save_directory,'logs')) #Create the logger and the logging dir
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -175,7 +201,7 @@ def train_loop(net,
                                  gold_pitch=batch[6].to(device),  # mind the switched order
                                  gold_energy=batch[5].to(device),  # mind the switched order
                                  utterance_embedding=batch[7].to(device),
-                                 lang_ids=batch[8].to(device),
+                                 lang_embs=batch[8].to(device),
                                  return_mels=False)
                 train_losses_this_epoch.append(train_loss.item())
 
@@ -208,4 +234,7 @@ def train_loop(net,
         print("Train Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
+
+        logger.log_training(sum(train_losses_this_epoch) / len(train_losses_this_epoch),step_counter) #We add the loss of the specific step to the log
+
         net.train()

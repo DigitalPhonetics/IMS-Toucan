@@ -7,7 +7,8 @@ import torch.nn.functional as F
 
 from Layers.Attention import RelPositionMultiHeadedAttention
 from Layers.Convolution import ConvolutionModule
-from Layers.EncoderLayer import EncoderLayer
+# from Layers.EncoderLayer import EncoderLayer
+from Layers.EncoderLayer_accent import EncoderLayer
 from Layers.LayerNorm import LayerNorm
 from Layers.MultiLayeredConv1d import MultiLayeredConv1d
 from Layers.MultiSequential import repeat
@@ -49,7 +50,7 @@ class Conformer(torch.nn.Module):
     def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
                  macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, connect_utt_emb_at_encoder_out=True,
-                 spk_emb_bottleneck_size=128, lang_embs=None):
+                 spk_emb_bottleneck_size=128):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -72,8 +73,6 @@ class Conformer(torch.nn.Module):
             # embedding projection derived from https://arxiv.org/pdf/1705.08947.pdf
             self.embedding_projection = torch.nn.Sequential(torch.nn.Linear(utt_embed, spk_emb_bottleneck_size),
                                                             torch.nn.Softsign())
-        if lang_embs is not None:
-            self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
@@ -95,7 +94,7 @@ class Conformer(torch.nn.Module):
         if self.normalize_before:
             self.after_norm = LayerNorm(attention_dim)
 
-    def forward(self, xs, masks, utterance_embedding=None, lang_ids=None):
+    def forward(self, xs, masks, utterance_embedding=None, lang_embs=None):
         """
         Encode input sequence.
         Args:
@@ -111,9 +110,12 @@ class Conformer(torch.nn.Module):
         if self.embed is not None:
             xs = self.embed(xs)
 
-        if lang_ids is not None:
-            lang_embs = self.language_embedding(lang_ids)
-            xs = xs + lang_embs  # offset the phoneme distribution of a language
+        if lang_embs is not None:
+            #print("torch.cat([lang_embs,lang_embs],dim=-1).unsqueeze(1): ")
+            #print(torch.cat([lang_embs,lang_embs],dim=-1).unsqueeze(1))
+            #print("1.4 * torch.cat([lang_embs,lang_embs],dim=-1).unsqueeze(1): ")
+            #print(1.4 * torch.cat([lang_embs,lang_embs],dim=-1).unsqueeze(1))
+            xs = xs + torch.cat([lang_embs,lang_embs],dim=-1).unsqueeze(1) 
 
         if utterance_embedding is not None and not self.connect_utt_emb_at_encoder_out:
             xs = self._integrate_with_utt_embed(xs, utterance_embedding)

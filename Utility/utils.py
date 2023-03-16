@@ -33,7 +33,7 @@ def delete_old_checkpoints(checkpoint_dir, keep=5):
             try:
                 os.remove(os.path.join(old_checkpoint))
             except OSError:
-                print("Could not delete checkpoint: "+os.path.join(old_checkpoint))
+                print("could not delete checkpoint"+os.path.join(old_checkpoint))
                 pass
 
 

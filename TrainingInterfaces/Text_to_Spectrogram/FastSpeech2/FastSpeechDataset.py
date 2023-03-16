@@ -12,7 +12,8 @@ from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import Al
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
 from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
-
+#Victor added
+from Preprocessing.Language_embedding import LanguageEmbedding
 
 class FastSpeechDataset(Dataset):
 
@@ -29,7 +30,8 @@ class FastSpeechDataset(Dataset):
                  device=torch.device("cpu"),
                  rebuild_cache=False,
                  ctc_selection=True,
-                 save_imgs=False):
+                 save_imgs=False,
+                 use_avg_lang_emb=False):
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
@@ -137,6 +139,13 @@ class FastSpeechDataset(Dataset):
                 except RuntimeError:
                     # if there is an audio without any voiced segments whatsoever we have to skip it.
                     continue
+                
+                embedder = LanguageEmbedding()
+                if use_avg_lang_emb:
+                    #loads the embedding from the folder of the audio with the name "{vd,at,goi,ivg}_emb.pt"
+                    language_embedding = torch.load(os.path.join('/data/vokquant/IMS-Toucan_lang_emb/Preprocessing/embeds',filepaths[index].split('/')[-1].split('_')[1] + '_emb_trained.pt' )).squeeze(0)
+                else:
+                    language_embedding = embedder.get_language_embedding(input_waves=norm_wave.unsqueeze(0))
 
                 self.datapoints.append([dataset[index][0],
                                         dataset[index][1],
@@ -146,7 +155,8 @@ class FastSpeechDataset(Dataset):
                                         cached_energy,
                                         cached_pitch,
                                         prosodic_condition,
-                                        filepaths[index]])
+                                        filepaths[index],
+                                        language_embedding])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -179,6 +189,7 @@ class FastSpeechDataset(Dataset):
         self.language_id = get_language_id(lang)
         print(f"Prepared a FastSpeech dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
+    #index[9] added by victor, it is lang_embedd
     def __getitem__(self, index):
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
@@ -188,7 +199,9 @@ class FastSpeechDataset(Dataset):
                self.datapoints[index][5], \
                self.datapoints[index][6], \
                self.datapoints[index][7], \
+               self.datapoints[index][9], \
                self.language_id
+
 
     def __len__(self):
         return len(self.datapoints)

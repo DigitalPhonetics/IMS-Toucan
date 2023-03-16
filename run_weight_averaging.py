@@ -97,11 +97,11 @@ def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
 def make_best_in_all(n=3):
     for model_dir in os.listdir("Models"):
         if os.path.isdir(f"Models/{model_dir}"):
-            if "HiFiGAN" in model_dir:
+            if "HiFiGAN_aridialect" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 averaged_model = average_checkpoints(checkpoint_paths, load_func=load_net_hifigan)
                 save_model_for_use(model=averaged_model, name="Models/{}/best.pt".format(model_dir), dict_name="generator")
-            elif "FastSpeech2" in model_dir:
+            elif "FastSpeech2_Austrian" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir="Models/{}".format(model_dir), n=n)
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_fast)
                 save_model_for_use(model=averaged_model, default_embed=default_embed, name="Models/{}/best.pt".format(model_dir))

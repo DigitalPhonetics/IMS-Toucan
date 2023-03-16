@@ -3,13 +3,17 @@
 
 import re
 import sys
-
+import os
 import torch
+import phonemizer
 from phonemizer.backend import EspeakBackend
+from phonemizer.backend import FestivalBackend
+from phonemizer.separator import underline_separator
 from pypinyin import pinyin
 
 from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_phone_to_id
+
 
 
 class ArticulatoryCombinedTextFrontend:
@@ -20,7 +24,8 @@ class ArticulatoryCombinedTextFrontend:
                  use_lexical_stress=True,
                  silent=True,
                  allow_unknown=False,
-                 add_silence_to_end=True):
+                 add_silence_to_end=True,
+                 path_to_sampa_mapping_list="Preprocessing/sampa_to_ipa_punct.txt"):
         """
         Mostly preparing ID lookups
         """
@@ -28,6 +33,18 @@ class ArticulatoryCombinedTextFrontend:
         self.use_explicit_eos = use_explicit_eos
         self.use_stress = use_lexical_stress
         self.add_silence_to_end = add_silence_to_end
+        self.sampa_to_ipa_dict = dict()
+        
+        #FestivalBackend.set_executable("/data/vokquant/CSTR-HTSVoice-Library-ver0.99/festival/bin/festival")
+        FestivalBackend.set_festival_path("/data/vokquant/CSTR-HTSVoice-Library-ver0.99/festival/bin/festival")
+
+        with open(path_to_sampa_mapping_list, "r", encoding='utf8') as f:
+            sampa_to_ipa = f.read()
+        sampa_to_ipa_list = sampa_to_ipa.split("\n")
+        for pair in sampa_to_ipa_list:
+            if pair.strip() != "":
+                #print(pair)
+                self.sampa_to_ipa_dict[pair.split(" ")[0]] = pair.split(" ")[1]
 
         if language == "en":
             self.g2p_lang = "en-us"
@@ -130,6 +147,24 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = lambda x: x
             if not silent:
                 print("Created a Cherokee Text-Frontend")
+                
+        elif language == "at-lab":
+            self.g2p_lang = "at-lab"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created an Austrian German Label Text-Frontend")
+
+        elif language == "at":
+            self.g2p_lang = "at"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created an Austrian German Text-Frontend")
+
+        elif language == "vd":
+            self.g2p_lang = "vd"
+            self.expand_abbreviations = lambda x: x
+            if not silent:
+                print("Created a Viennese Text-Frontend")
 
         # remember to also update get_language_id() below when adding something here
 
@@ -137,17 +172,28 @@ class ArticulatoryCombinedTextFrontend:
             print("Language not supported yet")
             sys.exit()
 
-        self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
-                                                punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
-                                                preserve_punctuation=True,
-                                                language_switch='remove-flags',
-                                                with_stress=self.use_stress)
-
+        if self.g2p_lang=="at":
+            print("g2p_lang: 'at' --> using festival")
+        elif self.g2p_lang=="vd":
+            print("g2p_lang: 'vd' --> using festival")
+        elif self.g2p_lang=="at-lab":
+            print("g2p_lang: 'at-lab' --> using labels from labelfiles")
+            #self.phonemizer_backend = FestivalBackend(language=self.g2p_lang,
+            #                                          punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+            #                                          preserve_punctuation=False)
+        else:
+            print("use espeak")
+            self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
+                                                    punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                    preserve_punctuation=True,
+                                                    language_switch='remove-flags',
+                                                    with_stress=self.use_stress)
+                                         
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
 
-    def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True, input_phonemes=False):
+    def string_to_tensor(self, text, view=False, device="cpu", handle_missing=True, input_phonemes=False, path_to_wavfile="", write_to_file=False):
         """
         Fixes unicode errors, expands some abbreviations,
         turns graphemes into phonemes and then vectorizes
@@ -156,9 +202,26 @@ class ArticulatoryCombinedTextFrontend:
         if input_phonemes:
             phones = text
         else:
-            phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True)
+            #print("text (string_to_tensor):")
+            #print(text)
+            phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True, path_to_wavfile=path_to_wavfile)
+            #print(phones)
         if view:
-            print("Phonemes: \n{}\n".format(phones))
+            print("Phonemes (string_to_tensor) look like this: \n{}\n".format(phones))
+        if write_to_file:
+            #open text file
+            filename = os.path.basename(path_to_wavfile)
+            output_phonemes_folder="/data/vokquant/data/phoneme_labels/"
+            if not os.path.exists(output_phonemes_folder):
+                os.makedirs(output_phonemes_folder)
+            print(filename)
+            text_file = open(output_phonemes_folder + filename + ".lab", "w")
+            #write string to file
+            text_file.write(phones)
+            #close file
+            text_file.close()
+
+            
         phones_vector = list()
         # turn into numeric vectors
         stressed_flag = False
@@ -223,11 +286,68 @@ class ArticulatoryCombinedTextFrontend:
 
         return torch.Tensor(phones_vector, device=device)
 
-    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
+    def phonemize_from_labelfile(self, text, path_to_wavfile, include_eos_symbol=True):
+        if os.path.exists(path_to_wavfile):
+            print(path_to_wavfile)
+            head, tail = os.path.split(path_to_wavfile)
+            labelfile=tail.replace(".wav",".lab")
+            print(labelfile)
+            sampa_phones=[]
+            phones=""
+            with open(os.path.join(head.replace("aridialect_wav16000","aridialect_labels"),labelfile), encoding="utf8") as f:
+                labels = f.read()
+            label_lines = labels.split("\n")
+            for line in label_lines:
+                if line.strip() != "":
+                    sampa_phones.append(line[line.find("-")+1:line.find("+")])
+            #print(sampa_phones)
+            phones = self.sampa_to_ipa(sampa_phones)
+            #if self.strip_silence:
+            #    phones = phones.lstrip("~").rstrip("~")
+            #preserve final punctuation
+            #print(text[len(text)-1])
+            #if ';:,.!?¡¿—…"«»“”~/'.find(text[len(text)-1].strip())!=-1:
+            #    phones = phones + text[len(text)-1].strip()
+            #print(phones)
+            return phones
+        else:
+            print("path does not exist: "+path_to_wavfile)
+
+    def sampa_to_ipa(self, sampa_phones):
+        ipa_phones = ""
+        for p in sampa_phones:
+          if p not in ';:,.!?¡¿—…"«»“”~/':
+             ipa_phones = ipa_phones+self.sampa_to_ipa_dict[p]
+
+        return ipa_phones.replace(";", ",").replace("/", " ") \
+                .replace(":", ",").replace('"', ",").replace("-", ",").replace("-", ",").replace("\n", " ") \
+                .replace("\t", " ").replace("¡", "").replace("¿", "").replace(",", "~")
+
+    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False, path_to_wavfile=""):
         # expand abbreviations
+        #print("get_phone_string 'text': \n"+ text)
         utt = self.expand_abbreviations(text)
+        
         # phonemize
-        phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]
+        if self.g2p_lang=="at" or self.g2p_lang=="vd":
+            #phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]
+            #phones = self.phonemizer_backend.phonemize([utt], strip=True)
+            phones = phonemizer.phonemize(text=utt,
+                                          backend="festival",
+                                          language=self.g2p_lang,
+                                          preserve_punctuation=True,
+                                          strip=False,
+                                          punctuation_marks=';:,.!?¡¿—…"«»“”~/',
+                                          separator=underline_separator # in phonemizer/seperator.py: underline_separator = Separator(phone='_', syllable='', word=' ')
+                                         )
+            print("phone output from festival: ")
+            print(phones)
+        elif self.g2p_lang=="at-lab":
+            phones = self.phonemize_from_labelfile(text=utt, path_to_wavfile=path_to_wavfile, include_eos_symbol=False)
+        else:
+            phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]
+        #
+        #print(phones)
 
         # Unfortunately tonal languages don't agree on the tone, most tonal
         # languages use different tones denoted by different numbering
@@ -267,7 +387,7 @@ class ArticulatoryCombinedTextFrontend:
             ("/", " "),
             ("—", ""),
             ("...", "…"),
-            ("\n", " "),
+            #("\n", " "),
             ("\t", " "),
             ("¡", ""),
             ("¿", ""),
@@ -295,6 +415,186 @@ class ArticulatoryCombinedTextFrontend:
             (";", "~"),
             (",", "~")  # make sure this remains the final one when adding new ones
         ]
+        replacements_sampa_to_ipa = [
+            # Lorenz sampa to IPA
+            ('schwa_',"ə"),
+            ('gsth_',"ɡ"),
+            ('bsth_',"b"),
+            ('dsth_',"d"),
+            ('P2h6_',"øːɐ"),
+            ('P9hn_',"œːn"),
+            ('P9P2_',"œø"),
+            ('P3hn_',"ɛː"),
+            ('sil_',"~"),
+            ('aAN_',"aɑ"),
+            ('aeN_',"aeŋ"),
+            ('aen_',"aen"),
+            ('Ah6_',"ɑːɐ"),
+            ('ah6_',"aɐː"),
+            ('Ahn_',"ɑːn"),
+            ('AhN_',"ɑːŋ"),
+            ('ahn_',"aːn"),
+            ('ahN_',"aːŋ"),
+            ('aO1_',"aɔɶ"),
+            ('ao1_',"aoɶ"),
+            ('aoN_',"aoŋ"),
+            ('yh6_',"ʏːɐ"),
+            ('yP6_',"ʏɐ"),
+            ('UP6_',"ʊɐ"),
+            ('uP6_',"uɐ"),
+            ('EP6_',"e"),
+            ('eP6_',"eɐ"),
+            ('EeN_',"ɛeŋ"),
+            ('Eh6_',"ɛːn"),
+            ('Ehn_',"ɛːn"),
+            ('EhN_',"ɛːŋ"),
+            ('ih6_',"iːɐ"),
+            ('ihn_',"iːn"),
+            ('ihN_',"iːŋ"),
+            ('kch_',"kx"),
+            ('e~:_',"eː"),
+            ('iP6_',"iɐ"),
+            ('oaN_',"oaŋ"),
+            ('OaN_',"ɔaŋ"),
+            ('Oan_',"ɔan"),
+            ('oan_',"oan"),
+            ('Oh6_',"ɔːɐ"),
+            ('oh6_',"oːɐ"),
+            ('Ohn_',"ɔːn"),
+            ('ohn_',"oːn"),
+            ('P6N_',"ɐŋ"),
+            ('P6n_',"ɐn"),
+            ('P6O_',"ɐɔ"),
+            ('P6U_',"ɐʊ"),
+            ('P96_',"œɐ"),
+            ('P9e_',"œe"),
+            ('P9h_',"œː"),
+            ('pau_',"~"),
+            ('OP6_',"ɔɐ"),
+            ('P1h_',"ɶ"),
+            ('P2h_',"øː"),
+            ('P3h_',"ɛː"),
+            ('P1:_',"ɶ"),
+            ('uh6_',"uːɐ"),
+            ('Uh6_',"ʊːɐ"),
+            ('A6_',"ɑɐ"),
+            ('a6_',"aɐ"),
+            ('aA_',"aɑ"),
+            ('ae_',"ae"),
+            ('aE_',"aɛ"),
+            ('ah_',"aː"),
+            ('Ah_',"ɑː"),
+            ('AI_',"ɑɪ"),
+            ('aI_',"aɪ"),
+            ('AN_',"ɑŋ"),
+            ('aN_',"aŋ"),
+            ('An_',"ɑn"),
+            ('an_',"an"),
+            ('ao_',"ao"),
+            ('aO_',"aɔ"),
+            ('aU_',"aʊ"),
+            ('Y6_',"ʏɐ"),
+            ('yh_',"ʏː"),
+            ('bf_',"bf"),
+            ('ch_',"x"),
+            ('dF_',"d"),
+            ('E6_',"ɛɐ"),
+            ('ea_',"ea"),
+            ('Ea_',"ɛa"),
+            ('eE_',"eɛ"),
+            ('Ee_',"ɛe"),
+            ('eh_',"eː"),
+            ('Eh_',"ɛː"),
+            ('Ei_',"ɛi"),
+            ('EN_',"ɛŋ"),
+            ('En_',"ɛn"),
+            ('GS_',"ʔ"),
+            ('I6_',"ɪɐ"),
+            ('i6_',"iɐ"),
+            ('iE_',"iɛ"),
+            ('ih_',"iː"),
+            ('Ii_',"ɪi"),
+            ('iN_',"iŋ"),
+            ('in_',"in"),
+            ('iV_',"i"),
+            ('kH_',"kɥ"),
+            ('ks_',"ks"),
+            ('ll_',"ɭ"),
+            ('ml_',"mɭ"),
+            ('Nl_',"ŋɭ"),
+            ('nl_',"nɭ"),
+            ('O6_',"ɔɐ"),
+            ('Oa_',"ɔ"),
+            ('oa_',"o"),
+            ('Oe_',"ɔe"),
+            ('OE_',"ɔɛ"),
+            ('oe_',"oe"),
+            ('Oh_',"ɔː"),
+            ('oh_',"oː"),
+            ('oI_',"oɪ"),
+            ('oi_',"oi"),
+            ('ON_',"ɔŋ"),
+            ('On_',"ɔn"),
+            ('Oo_',"ɔo"),
+            ('OU_',"ɔʊ"),
+            ('OY_',"ɔʏ"),
+            ('P2_',"ø"),
+            ('P6_',"ɐ"),
+            ('P9_',"œ"),
+            ('pH_',"pɥ"),
+            ('Qh_',"ɒː"),
+            ('RX_',"ʀχ"),
+            ('sh_',"sː"),
+            ('tH_',"tɥ"),
+            ('tS_',"tʃ"),
+            ('ts_',"ts"),
+            ('U6_',"ʊɐ"),
+            ('ua_',"u"),
+            ('ue_',"u"),
+            ('uh_',"uː"),
+            ('Ui_',"ʊi"),
+            ('ui_',"ui"),
+            ('uI_',"uɪ"),
+            ('uN_',"uŋ"),
+            ('Uu_',"ʊu"),
+            ('a_',"a"),
+            ('B_',"β"),
+            ('b_',"b"),
+            ('E_',"ɛ"),
+            ('C_',"ç"),
+            ('D_',"ð"),
+            ('d_',"d"),
+            ('e_',"e"),
+            ('f_',"f"),
+            ('G_',"ɣ"),
+            ('g_',"ɡ"),
+            ('h_',"h"),
+            ('I_',"ɪ"),
+            ('i_',"i"),
+            ('j_',"j"),
+            ('k_',"k"),
+            ('L_',"ʎ"),
+            ('l_',"l"),
+            ('m_',"m"),
+            ('N_',"ŋ"),
+            ('n_',"n"),
+            ('O_',"ɔ"),
+            ('o_',"o"),
+            ('p_',"p"),
+            ('R_',"ʀ"),
+            ('r_',"r"),
+            ('S_',"ʃ"),
+            ('s_',"s"),
+            ('t_',"t"),
+            ('U_',"ʊ"),
+            ('u_',"u"),
+            ('v_',"v"),
+            ('Y_',"ʏ"),
+            ('y_',"y"),
+            ('Z_',"ʒ"),
+            ('z_',"z")
+        ]
+
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
                                       '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
@@ -317,12 +617,28 @@ class ArticulatoryCombinedTextFrontend:
                 ('\u030C', ""),  # rising tone
                 ('\u0302', "")  # falling tone
             ]
-        for replacement in replacements:
-            phones = phones.replace(replacement[0], replacement[1])
+        #for replacement in replacements:
+        #    phones = phones.replace(replacement[0], replacement[1])
+        print(self.g2p_lang)
+        if self.g2p_lang == "at-lab":
+            for replacement in replacements:
+                phones = phones.replace(replacement[0], replacement[1])
+        elif self.g2p_lang=="at" or self.g2p_lang=="vd":
+
+            for replacement in replacements:
+                phones = phones.replace(replacement[0], replacement[1])
+            for replacement_sampaipa in replacements_sampa_to_ipa:
+                phones = phones.replace(replacement_sampaipa[0], replacement_sampaipa[1])
+        else:
+            for replacement in replacements:
+                phones = phones.replace(replacement[0], replacement[1])
+        
         phones = re.sub("~+", "~", phones)
         phones = re.sub(r"\s+", " ", phones)
         phones = re.sub(r"\.+", ".", phones)
+        phones = phones.replace(" ~", "~").replace(" .", ".").replace(" ?", "?").replace(" !", "!")
         phones = phones.lstrip("~").rstrip("~")
+
 
         if self.add_silence_to_end:
             phones += "~"  # adding a silence in the end during inference produces more natural sounding prosody
@@ -334,6 +650,8 @@ class ArticulatoryCombinedTextFrontend:
 
         phones = "~" + phones
         phones = re.sub("~+", "~", phones)
+        #print("finally, IPA phones look like this:")
+        #print(phones)
         return phones
 
 
@@ -396,20 +714,30 @@ def get_language_id(language):
         return torch.LongTensor([16])
     elif language == "chr":
         return torch.LongTensor([17])
+    elif language == "at":
+        return torch.LongTensor([18])
+    elif language == "vd":
+        return torch.LongTensor([19])
+    elif language == "at-lab":
+        return torch.LongTensor([20])
 
 
 if __name__ == '__main__':
-    tf = ArticulatoryCombinedTextFrontend(language="en")
-    tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
+    #tf = ArticulatoryCombinedTextFrontend(language="en")
+    #tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="de")
-    tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True)
+    tf = ArticulatoryCombinedTextFrontend(language="at")
+    #tf.string_to_tensor("Hi( - Alles klar, jetzt. testen wir einen deutschen Satz... Ich hoffe.. es gibt nicht mehr viele unspezifizierte Phoneme. Unter uns, fuhr!!! fuhr?", view=True, path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/alf_at_berlin_001.wav")
+    
+    #tf.string_to_tensor("Der Satz sollte nicht generiert werden!", view=True, path_to_wavfile="/data/vokquant/data/aridialect/aridialect_wav16000/alf_at_berlin_001.wav")
+    #tf = ArticulatoryCombinedTextFrontend(language="at")
+    tf.string_to_tensor("Hi. Alles klar, jetzt testen wir einen deutschen Satz... Ich hoffe.. es gibt nicht mehr viele unspezifizierte Phoneme. Unter uns, fuhr!!! fuhr?", view=True, path_to_wavfile="")
 
-    tf = ArticulatoryCombinedTextFrontend(language="cmn")
-    tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
-    tf.string_to_tensor("李绅 《悯农》    锄禾日当午，    汗滴禾下土。    谁知盘中餐，    粒粒皆辛苦。", view=True)
-    tf.string_to_tensor("巴	拔	把	爸	吧", view=True)
+    #tf = ArticulatoryCombinedTextFrontend(language="cmn")
+    #tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
+    #tf.string_to_tensor("李绅 《悯农》    锄禾日当午，    汗滴禾下土。    谁知盘中餐，    粒粒皆辛苦。", view=True)
+    #tf.string_to_tensor("巴	拔	把	爸	吧", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="vi")
-    tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
-    tf.string_to_tensor("ba bà bá bạ bả bã", view=True)
+    #tf = ArticulatoryCombinedTextFrontend(language="vi")
+    #tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
+    #tf.string_to_tensor("ba bà bá bạ bả bã", view=True)

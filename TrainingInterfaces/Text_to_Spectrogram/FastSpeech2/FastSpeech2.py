@@ -124,7 +124,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
-                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out, lang_embs=lang_embs)
+                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out)
 
         # define duration predictor
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers, n_chans=duration_predictor_chans,
@@ -179,7 +179,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                 gold_energy,
                 utterance_embedding,
                 return_mels=False,
-                lang_ids=None):
+                lang_embs=None):
         """
         Calculate forward propagation.
 
@@ -203,7 +203,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward propagation
         before_outs, after_outs, d_outs, p_outs, e_outs = self._forward(text_tensors, text_lengths, gold_speech, speech_lengths,
                                                                         gold_durations, gold_pitch, gold_energy, utterance_embedding=utterance_embedding,
-                                                                        is_inference=False, lang_ids=lang_ids)
+                                                                        is_inference=False, lang_embs=lang_embs)
 
         # modify mod part of groundtruth (speaking pace)
         if self.reduction_factor > 1:
@@ -227,10 +227,10 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
-                 is_inference=False, alpha=1.0, utterance_embedding=None, lang_ids=None):
+                 is_inference=False, alpha=1.0, utterance_embedding=None, lang_embs=None):
 
         if not self.multilingual_model:
-            lang_ids = None
+            lang_embs = None
 
         if not self.multispeaker_model:
             utterance_embedding = None
@@ -238,7 +238,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_embs=lang_embs)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
         d_masks = make_pad_mask(text_lens, device=text_lens.device)
@@ -304,7 +304,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                   use_teacher_forcing=False,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
-                  lang_id=None):
+                  lang_emb=None):
         """
         Generate the sequence of features given the sequences of characters.
 
@@ -332,8 +332,8 @@ class FastSpeech2(torch.nn.Module, ABC):
         xs, ys = x.unsqueeze(0), None
         if y is not None:
             ys = y.unsqueeze(0)
-        if lang_id is not None:
-            lang_id = lang_id.unsqueeze(0)
+        # if lang_id is not None:
+        #     lang_id = lang_id.unsqueeze(0)
 
         if use_teacher_forcing:
             # use groundtruth of duration, pitch, and energy
@@ -345,7 +345,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    gold_pitch=ps,
                                                                                                    gold_energy=es,
                                                                                                    utterance_embedding=utterance_embedding.unsqueeze(0),
-                                                                                                   lang_ids=lang_id)  # (1, L, odim)
+                                                                                                   lang_embs=lang_emb)  # (1, L, odim)
         else:
             before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(xs,
                                                                                                    ilens,
@@ -353,7 +353,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                    is_inference=True,
                                                                                                    alpha=alpha,
                                                                                                    utterance_embedding=utterance_embedding.unsqueeze(0),
-                                                                                                   lang_ids=lang_id)  # (1, L, odim)
+                                                                                                   lang_embs=lang_emb)  # (1, L, odim)
         self.train()
         if return_duration_pitch_energy:
             return after_outs[0], d_outs[0], pitch_predictions[0], energy_predictions[0]

@@ -1,16 +1,28 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.Corpora_extract_phonemes_from_labelfiles import run as extract_lab
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_German_Austrian import run as fast_austrian
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_German_Austrian_lang_emb import run as lang_emb
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_German_Austrian_avg_lang_emb import run as avg_lang_emb
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_multilingual_lang_emb import run as multi_lang_emb
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTestVietnamese import run as integration_test_vietnamese
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
+from TrainingInterfaces.TrainingPipelines.HiFiGAN_aridialect import run as hifigan_aridialect
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     "meta": meta_fast,
     "hifi_combined": hifigan_combined,
+    "hifi_aridialect": hifigan_aridialect,
+    "extract_lab"   : extract_lab,
+    "fast_austrian" : fast_austrian,
+    "aridialect_lang_emb" : lang_emb, 
+    "aridialect_avg_lang_emb" : avg_lang_emb,
+    "aridialect_multi_avg_lang_emb" : multi_lang_emb,
     "aligner": aligner,
     "fine_ger": fine_ger,
     "integration_test": integration_test,
@@ -54,6 +66,10 @@ if __name__ == '__main__':
 
     if args.finetune and args.resume_checkpoint is None:
         print("Need to provide path to checkpoint to fine-tune from!")
+        sys.exit()
+
+    if args.finetune and "hifigan" in args.pipeline:
+        print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,

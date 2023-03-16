@@ -7,10 +7,10 @@ from run_text_to_file_reader import read_texts_as_ensemble
 def visualize_random_speakers(generate=False):
     if generate:
         # first we generate a bunch of audios with random speaker embeddings
-        if not len(os.listdir("audios/random_speakers/")) != 0:
+        if not os.path.exists("audios/random_speakers/"):
             os.makedirs("audios/random_speakers/", exist_ok=True)
-            read_texts_as_ensemble(model_id="Libri", sentence="Hi, I am a completely random speaker that probably doesn't exist!",
-                                   filename="audios/random_speakers/libri", amount=100)
+            read_texts_as_ensemble(model_id="Austrian", sentence="Mein Herz ist schwer.",
+                                   filename="audios/random_speakers/Austrian", amount=10)
 
     # then we visualize those audios
     vs = Visualizer()
@@ -19,7 +19,8 @@ def visualize_random_speakers(generate=False):
         if audio_file not in ltf:
             ltf[audio_file] = list()
         ltf[audio_file].append(f"audios/random_speakers/{audio_file}")
-    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of TTS with random Condition")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of TTS with random Condition", save_file_path="audios/random_speakers")
+    #print(ltf)
 
 
 def visualize_libritts():
@@ -32,7 +33,28 @@ def visualize_libritts():
                 ltf[speaker].append(f"audios/LibriTTS/{speaker}/{book}/{audio_file}")
     vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of a Subset of LibriTTS")
 
+def visualize_austrian():
+    vs = Visualizer()
+    ltf = dict()
 
+    #for audio_file in os.listdir("audios/random_speakers"):
+    #    if audio_file not in ltf:
+    #        ltf[audio_file] = list()
+    #    ltf[audio_file].append(f"audios/random_speakers/{audio_file}")
+    #vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of TTS with random Condition", save_file_path="audios/random_speakers")
+
+    path="audios/Austrian/all_48kHz_HiFiGAN_1250000_FastSpeech2_500000/"    
+    for speaker in os.listdir(path):
+        print(type(speaker))
+        if os.path.isdir(os.path.join(path,speaker)):
+            print("it is a speaker")
+            ltf[speaker] = list()
+            for audio_file in os.listdir(f"audios/Austrian/all_48kHz_HiFiGAN_1250000_FastSpeech2_500000/{speaker}"):
+                print("here!!!!!!!!!!!!!!!!!!")
+                print(audio_file)
+                ltf[speaker].append(f"audios/Austrian/all_48kHz_HiFiGAN_1250000_FastSpeech2_500000/{speaker}/{audio_file}")
+    vs.visualize_speaker_embeddings(label_to_filepaths=ltf, title_of_plot="Embeddings of a Subset of Austrian", save_file_path="audios/Austrian/Austrian_embedding")
+    
 def visualize_adept_experiment():
     vs = Visualizer()
     ltf = dict()
@@ -93,4 +115,7 @@ def calculate_spk_sims_multiling():
 
 
 if __name__ == '__main__':
-    calculate_spk_sims_multiling()
+    #calculate_spk_sims_multiling()
+    visualize_austrian()
+    #visualize_random_speakers(generate=True)
+    

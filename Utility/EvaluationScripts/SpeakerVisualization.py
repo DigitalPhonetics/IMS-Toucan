@@ -3,8 +3,10 @@ import soundfile as sf
 import torch
 from matplotlib import cm
 from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
-matplotlib.use("tkAgg")
+#matplotlib.use("tkAgg") #original but makes error
+matplotlib.use("Agg")
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 import numpy
@@ -51,6 +53,7 @@ class Visualizer:
                               save_file_path=save_file_path,
                               legend=legend,
                               colors=colors)
+        print(save_file_path)
 
         if include_pca:
             dimensionality_reduced_embeddings_pca = self.pca.fit_transform(embeddings_as_array)
@@ -94,6 +97,7 @@ class Visualizer:
         ax.set_title(title)
         if save_file_path is not None:
             plt.savefig(save_file_path)
+            print(save_file_path)
         else:
             plt.show()
         plt.close()

@@ -1,0 +1,8 @@
+/data/vokquant/toucan_conda_multi_tensor/lib/python3.8/site-packages/joblib/_multiprocessing_helpers.py:45: UserWarning: [Errno 13] Permission denied.  joblib will operate in serial mode
+  warnings.warn('%s.  joblib will operate in serial mode' % (e,))
+usage: run_training_pipeline.py [-h] [--gpu_id GPU_ID]
+                                [--resume_checkpoint RESUME_CHECKPOINT]
+                                [--resume] [--finetune]
+                                [--model_save_dir MODEL_SAVE_DIR]
+                                {meta,hifi_combined,hifi_aridialect,extract_lab,aridialect,aridialect_lang_emb,aridialect_avg_lang_emb,aridialect_multi_avg_lang_emb,aligner,fine_ger,integration_test,integration_test_vietnamese}
+run_training_pipeline.py: error: argument pipeline: invalid choice: 'fast_austrian' (choose from 'meta', 'hifi_combined', 'hifi_aridialect', 'extract_lab', 'aridialect', 'aridialect_lang_emb', 'aridialect_avg_lang_emb', 'aridialect_multi_avg_lang_emb', 'aligner', 'fine_ger', 'integration_test', 'integration_test_vietnamese')

@@ -1,6 +1,15 @@
 from Utility.path_to_transcript_dicts import *
 
-
+def get_file_list_aridialect():
+    path_to_transcript_dict = build_path_to_transcript_dict_aridialect()
+    #print(path_to_transcript_dict.keys())
+    return list(path_to_transcript_dict.keys())
+    
+def get_file_list_aridialect_48kHz():
+    path_to_transcript_dict = build_path_to_transcript_dict_aridialect_48kHz()
+    #print(path_to_transcript_dict.keys())
+    return list(path_to_transcript_dict.keys())
+    
 def get_file_list_vctk():
     path_to_transcript_dict = build_path_to_transcript_dict_vctk()
     return list(path_to_transcript_dict.keys())

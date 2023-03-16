@@ -91,7 +91,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                  normalize_before=encoder_normalize_before, concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size, macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer, cnn_module_kernel=conformer_enc_kernel_size, zero_triu=False,
-                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out, lang_embs=lang_embs)
+                                 utt_embed=utt_embed_dim, connect_utt_emb_at_encoder_out=connect_utt_emb_at_encoder_out)
         self.duration_predictor = DurationPredictor(idim=adim, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
@@ -140,11 +140,11 @@ class FastSpeech2(torch.nn.Module, ABC):
 
     def _forward(self, text_tensors, text_lens, gold_speech=None, speech_lens=None,
                  gold_durations=None, gold_pitch=None, gold_energy=None,
-                 is_inference=False, duration_scaling_factor=1.0, utterance_embedding=None, lang_ids=None,
+                 is_inference=False, duration_scaling_factor=1.0, utterance_embedding=None, lang_embs=None,
                  pitch_variance_scale=1.0, energy_variance_scale=1.0):
 
-        if not self.multilingual_model:
-            lang_ids = None
+        # if not self.multilingual_model:
+        #     lang_ids = None
 
         if not self.multispeaker_model:
             utterance_embedding = None
@@ -152,7 +152,7 @@ class FastSpeech2(torch.nn.Module, ABC):
         # forward encoder
         text_masks = self._source_mask(text_lens)
 
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)  # (B, Tmax, adim)
+        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_embs=lang_embs)  # (B, Tmax, adim)
 
         # forward duration predictor and variance predictors
         duration_masks = make_pad_mask(text_lens, device=text_lens.device)
@@ -222,7 +222,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                 energy=None,
                 utterance_embedding=None,
                 return_duration_pitch_energy=False,
-                lang_id=None,
+                lang_emb=None,
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0):
@@ -265,8 +265,8 @@ class FastSpeech2(torch.nn.Module, ABC):
             pitch = pitch.unsqueeze(0).to(text.device)
         if energy is not None:
             energy = energy.unsqueeze(0).to(text.device)
-        if lang_id is not None:
-            lang_id = lang_id.unsqueeze(0).to(text.device)
+        # if lang_id is not None:
+        #     lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, after_outs, d_outs, pitch_predictions, energy_predictions = self._forward(text.unsqueeze(0),
                                                                                                ilens,
@@ -276,7 +276,7 @@ class FastSpeech2(torch.nn.Module, ABC):
                                                                                                gold_pitch=pitch,
                                                                                                gold_energy=energy,
                                                                                                utterance_embedding=utterance_embedding.unsqueeze(0),
-                                                                                               lang_ids=lang_id,
+                                                                                               lang_embs=lang_emb,
                                                                                                duration_scaling_factor=duration_scaling_factor,
                                                                                                pitch_variance_scale=pitch_variance_scale,
                                                                                                energy_variance_scale=energy_variance_scale)
