@@ -23,5 +23,5 @@ Corpora/
 Models/
 old_nohup/
 phonemizer/
-*.ignoretest
-ignore/ignoreme/
+*.pt
+Layers/lhotse/
