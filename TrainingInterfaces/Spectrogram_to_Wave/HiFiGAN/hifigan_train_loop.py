@@ -44,6 +44,16 @@ def train_loop(generator,
 
     g = generator.to(device)
     d = discriminator.to(device)
+
+    try:
+        g = torch.compile(g)
+        d = torch.compile(d)
+        print("Compiled nets for speed increase!")
+    except RuntimeError:
+        print("Compiling nets failed, running in eager mode.")
+    except AttributeError:
+        print("Compiling nets failed, running in eager mode. Consider upgrading to PyTorch 2.0 for potential speed increase.")
+
     g.train()
     d.train()
     optimizer_g = torch.optim.RAdam(g.parameters(), betas=(0.5, 0.9), lr=0.001, weight_decay=0.0)

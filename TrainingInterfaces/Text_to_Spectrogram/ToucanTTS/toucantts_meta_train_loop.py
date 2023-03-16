@@ -56,6 +56,14 @@ def train_loop(net,
     steps = phase_1_steps + phase_2_steps
     net = net.to(device)
 
+    try:
+        net = torch.compile(net)
+        print("Compiled net for speed increase!")
+    except RuntimeError:
+        print("Compiling net failed, running in eager mode.")
+    except AttributeError:
+        print("Compiling net failed, running in eager mode. Consider upgrading to PyTorch 2.0 for potential speed increase.")
+
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
