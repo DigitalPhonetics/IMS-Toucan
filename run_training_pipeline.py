@@ -4,7 +4,7 @@ import sys
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as integration_test
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTestVietnamese import run as integration_test_vietnamese
 from TrainingInterfaces.TrainingPipelines.FastSpeech2_MetaCheckpoint import run as meta_fast
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetune_to_German import run as fine_ger
+from TrainingInterfaces.TrainingPipelines.FastSpeech2_finetuning_example import run as fine_ger
 from TrainingInterfaces.TrainingPipelines.HiFiGAN_combined import run as hifigan_combined
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -54,10 +54,6 @@ if __name__ == '__main__':
 
     if args.finetune and args.resume_checkpoint is None:
         print("Need to provide path to checkpoint to fine-tune from!")
-        sys.exit()
-
-    if args.finetune and "hifigan" in args.pipeline:
-        print("Fine-tuning for HiFiGAN is not implemented as it didn't seem necessary. Should generalize across speakers without fine-tuning.")
         sys.exit()
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
