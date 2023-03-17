@@ -1,4 +1,5 @@
 import time
+from multiprocessing import Process
 
 import torch
 import wandb
@@ -35,6 +36,15 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining")
     os.makedirs(save_dir, exist_ok=True)
 
+    chunk_count = 5
+    mls_chunks = split_dictionary(read_mls(), split_n=chunk_count)
+    processes = list()
+    for index in range(chunk_count):
+        processes.append(Process(target=create_cache, args=(mls_chunks[index], os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"), "fr")))
+        processes[-1].start()
+    for process in processes:
+        process.join()
+
     train_sets = list()
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_voxpopuli(),
@@ -47,10 +57,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                 lang="fr",
                                                 save_imgs=False))
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_mls(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_french_female"),
-                                                lang="fr",
-                                                save_imgs=False))
+    chunk_count = 5
+    mls_chunks = split_dictionary(read_mls(), split_n=chunk_count)
+    for index in range(chunk_count):
+        train_sets.append(prepare_fastspeech_corpus(transcript_dict=mls_chunks[index],
+                                                    corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"),
+                                                    lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
@@ -104,3 +116,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()
+
+
+def split_dictionary(input_dict, split_n):
+    res = []
+    new_dict = {}
+    elements_per_dict = (len(input_dict.keys()) // split_n) + 1
+    for k, v in input_dict.items():
+        if len(new_dict) < elements_per_dict:
+            new_dict[k] = v
+        else:
+            res.append(new_dict)
+            new_dict = {k: v}
+    res.append(new_dict)
+    return res
+
+
+def create_cache(pttd, cachedir, lang):
+    prepare_fastspeech_corpus(transcript_dict=pttd,
+                              corpus_dir=cachedir,
+                              lang=lang)
