@@ -4,12 +4,12 @@ from pathlib import Path
 
 
 # helper
-def read_sep_data(filename, sep='\t'):
+def read_sep_data(filename, sep='\t', field=1):
     data = {}
     with open(filename) as f:
         for line in f:
             line = line.split(sep)
-            data[line[0].strip()] = line[1].strip()
+            data[line[0].strip()] = line[field].strip()
     return data
 
 
@@ -27,7 +27,12 @@ def read_pfc():
 def read_mls():
     transcripts = {split: read_sep_data(f'/resources/speech/corpora/MultiLingLibriSpeech/mls_french/{split}/transcripts.txt') for split in {'train', 'dev', 'test'}}
     file2spk = read_sep_data('Utility/female_mls.csv', sep=',')
-    paths = [Path(filepath) for filepath in file2spk.keys()]
+    spk2purity = read_sep_data('Utility/female_mls_stats.csv', sep=',', field=-1)
+    file_2_french_only_speakers = dict()
+    for key in file2spk:
+        if spk2purity[file2spk[key]] == "True":
+            file_2_french_only_speakers[key] = file2spk[key]
+    paths = [Path(filepath) for filepath in file_2_french_only_speakers.keys()]
     file2text = {str(filepath): transcripts[filepath.parts[6]][filepath.stem] for filepath in paths}
     return file2text
 
