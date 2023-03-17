@@ -16,10 +16,11 @@ def read_sep_data(filename, sep='\t'):
 # PFC
 def read_pfc():
     pfc_dict = read_sep_data('Utility/female_pfc_utterances.csv')
+    filtered_dict = dict()
     for key in pfc_dict:
-        if not key.split("_")[-2].endswith("t"):  # only read speech subset
-            pfc_dict.pop(key)
-    return pfc_dict
+        if key.split("_")[-2].endswith("t"):  # only read speech subset
+            filtered_dict[key] = pfc_dict[key]
+    return filtered_dict
 
 
 # MLS

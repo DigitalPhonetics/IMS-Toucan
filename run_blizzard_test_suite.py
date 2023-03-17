@@ -26,7 +26,7 @@ def le_corbeau_et_le_renard(version, model_id="Meta", exec_device="cpu", speaker
         tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/Le_corbeau_et_le_renard_{i}.wav")
 
 
-def phonetically_interesting_sentences(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False):
+def phonetically_interesting_sentences_seen(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
     tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan)
@@ -42,16 +42,29 @@ def phonetically_interesting_sentences(version, model_id="Meta", exec_device="cp
                                   "La France mérite un tout autre projet.",
                                   "Mon maître, dit alors nab, j'ai l'idée que nous pouvons chercher tant que nous voudrons le monsieur dont il s'agit, mais que nous ne le découvrirons que quand il lui plaira.",
                                   "Pendant la première semaine du mois d'août, les rafales s'apaisèrent peu à peu, et l'atmosphère recouvra un calme qu'elle semblait avoir à jamais perdu.",
-                                  "Les amis ont vu un ancien ami en avril, dit-on.",
+                                  ]):
+        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/seen_sentences_{i}.wav")
+
+
+def phonetically_interesting_sentences_unseen(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan)
+    tts.set_language("fr")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+
+    for i, sentence in enumerate(["Les amis ont vu un ancien ami en avril, dit-on.",
                                   "Des amis ont vu en avril un vieil ami qui était très aimable, dit-on.",
                                   "C'est une maison où l'on peut aller quand il pleut.",
                                   "Après un tour de présentation, ils sont allés"
                                   ]):
-        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sents_{i}.wav")
+        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/unseen_sentences_{i}.wav")
 
 
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    phonetically_interesting_sentences(version="002_AD_test", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
+    phonetically_interesting_sentences_seen(version="002_AD_finetuned_from_multiling", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
+    phonetically_interesting_sentences_unseen(version="002_AD_finetuned_from_multiling", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
