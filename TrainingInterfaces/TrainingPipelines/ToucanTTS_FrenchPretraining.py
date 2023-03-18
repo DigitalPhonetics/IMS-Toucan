@@ -39,13 +39,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_voxpopuli(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "voxpopuli"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_pfc(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "pfc"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     chunk_count = 5
     mls_chunks = split_dictionary(read_mls(), split_n=chunk_count)
@@ -56,33 +54,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_double(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_double"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_double(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_double"),
-                                                lang="fr",
-                                                save_imgs=False))
-
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_synpaflex_all(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "synpaflex_all"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
-                                                lang="fr",
-                                                save_imgs=False))
+                                                lang="fr"))
 
     model = ToucanTTS(lang_embs=None)
     if use_wandb:
@@ -102,7 +90,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                warmup_steps=8000,
                postnet_start_steps=9000,
-               batch_size=16,
                steps=120000,
                use_wandb=use_wandb)
     if use_wandb:
