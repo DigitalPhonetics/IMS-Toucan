@@ -37,8 +37,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_sets = list()
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_voxpopuli(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "voxpopuli"),
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
                                                 lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_pfc(),
@@ -54,18 +54,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                                lang="fr"))
-
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
-                                                lang="fr"))
-
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_double(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_double"),
-                                                lang="fr"))
-
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_double(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_double"),
                                                 lang="fr"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
