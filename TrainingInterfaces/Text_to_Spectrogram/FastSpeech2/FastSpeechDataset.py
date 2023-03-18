@@ -173,6 +173,12 @@ class FastSpeechDataset(Dataset):
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
         print(f"Prepared a FastSpeech dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
+        speech_lens = list()
+        for el in self.datapoints:
+            speech_lens.append(el[3])
+        print(max(speech_lens))
+        print(reversed(sorted(speech_lens))[50:])
+        print(sum(speech_lens) / len(speech_lens))
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \
