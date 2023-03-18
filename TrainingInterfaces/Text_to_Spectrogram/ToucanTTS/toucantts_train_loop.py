@@ -69,7 +69,7 @@ def train_loop(net,
                               num_workers=12 if os.cpu_count() > 12 else max(os.cpu_count() - 2, 1),
                               pin_memory=True,
                               shuffle=True,
-                              prefetch_factor=8,
+                              prefetch_factor=2,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
@@ -91,7 +91,6 @@ def train_loop(net,
     while True:
         net.train()
         epoch += 1
-        optimizer.zero_grad()
         l1_losses_total = list()
         glow_losses_total = list()
         duration_losses_total = list()
@@ -117,23 +116,23 @@ def train_loop(net,
                     return_mels=False,
                     run_glow=step_counter > postnet_start_steps or fine_tune)
 
+                if not torch.isnan(l1_loss):
+                    train_loss = train_loss + l1_loss
+                if not torch.isnan(duration_loss):
+                    train_loss = train_loss + duration_loss
+                if not torch.isnan(pitch_loss):
+                    train_loss = train_loss + pitch_loss
+                if not torch.isnan(energy_loss):
+                    train_loss = train_loss + energy_loss
+                if glow_loss is not None:
+                    if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
+                        train_loss = train_loss + glow_loss
+                        glow_losses_total.append(glow_loss.item())
+
             l1_losses_total.append(l1_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
-
-            if not torch.isnan(l1_loss):
-                train_loss = train_loss + l1_loss
-            if not torch.isnan(duration_loss):
-                train_loss = train_loss + duration_loss
-            if not torch.isnan(pitch_loss):
-                train_loss = train_loss + pitch_loss
-            if not torch.isnan(energy_loss):
-                train_loss = train_loss + energy_loss
-            if glow_loss is not None:
-                if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                    train_loss = train_loss + glow_loss
-                    glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
             grad_scaler.scale(train_loss).backward()

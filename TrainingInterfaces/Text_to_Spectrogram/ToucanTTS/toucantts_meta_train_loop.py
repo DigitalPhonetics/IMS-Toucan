@@ -70,7 +70,7 @@ def train_loop(net,
                                         num_workers=2,
                                         pin_memory=True,
                                         shuffle=True,
-                                        prefetch_factor=10,
+                                        prefetch_factor=4,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
@@ -103,7 +103,6 @@ def train_loop(net,
     # Actual train loop starts here
     # =============================
     for step_counter in tqdm(range(steps_run_previously, steps)):
-        optimizer.zero_grad()
         batches = []
         while len(batches) < batch_size:
             for index in random.sample(list(range(len(datasets))), len(datasets)):
@@ -147,26 +146,26 @@ def train_loop(net,
                 return_mels=False,
                 run_glow=step_counter > postnet_start_steps)
 
-        # then we directly update our meta-parameters without
-        # the need for any task specific parameters
+            # then we directly update our meta-parameters without
+            # the need for any task specific parameters
+
+            if not torch.isnan(l1_loss):
+                train_loss = train_loss + l1_loss
+            if not torch.isnan(duration_loss):
+                train_loss = train_loss + duration_loss
+            if not torch.isnan(pitch_loss):
+                train_loss = train_loss + pitch_loss
+            if not torch.isnan(energy_loss):
+                train_loss = train_loss + energy_loss
+            if glow_loss is not None:
+                if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
+                    train_loss = train_loss + glow_loss
+                    glow_losses_total.append(glow_loss.item())
 
         l1_losses_total.append(l1_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
-
-        if not torch.isnan(l1_loss):
-            train_loss = train_loss + l1_loss
-        if not torch.isnan(duration_loss):
-            train_loss = train_loss + duration_loss
-        if not torch.isnan(pitch_loss):
-            train_loss = train_loss + pitch_loss
-        if not torch.isnan(energy_loss):
-            train_loss = train_loss + energy_loss
-        if glow_loss is not None:
-            if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                train_loss = train_loss + glow_loss
-                glow_losses_total.append(glow_loss.item())
 
         optimizer.zero_grad()
         grad_scaler.scale(train_loss).backward()
