@@ -38,7 +38,7 @@ class ArticulatoryCombinedTextFrontend:
             "˧": 3,
             "˨": 2,
             "˩": 1
-            }
+        }
         self.rising_perms = list()
         self.falling_perms = list()
         self.peaking_perms = list()
@@ -106,7 +106,7 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr":
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = lambda x: x
+            self.expand_abbreviations = french_spacing
             if not silent:
                 print("Created a French Text-Frontend")
 
@@ -158,14 +158,13 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Farsi Text-Frontend")
 
-
         else:
             print("Language not supported yet")
             sys.exit()
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
-        if self.g2p_lang != "cmn" or self.g2p_lang != "cmn-latn-pinyin":
+        if self.g2p_lang != "cmn" and self.g2p_lang != "cmn-latn-pinyin":
             self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
                                                     punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
                                                     preserve_punctuation=True,
@@ -243,6 +242,9 @@ class ArticulatoryCombinedTextFrontend:
             elif char == '\u0306':
                 # shortened
                 phones_vector[-1][get_feature_to_index_lookup()["shortened"]] = 1
+            elif char == '̃':
+                # nasalized (vowel)
+                phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 1
             elif char == "˥":
                 # very high tone
                 phones_vector[-1][get_feature_to_index_lookup()["very-high-tone"]] = 1
@@ -288,7 +290,7 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
-        utt = utt.replace("»", '"').replace("«", '"')
+
         # phonemize
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = pinyin_to_ipa(utt)
@@ -376,7 +378,7 @@ class ArticulatoryCombinedTextFrontend:
             (",", "~")  # make sure this remains the final one when adding new ones
         ]
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
-                                      '̃', '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
+                                      '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
                                       '̚', '↗', 'ꜛ', '̻', '̥', 'ˁ', '̘', '͡', '̺'}
         for char in unsupported_ipa_characters:
@@ -400,7 +402,8 @@ class ArticulatoryCombinedTextFrontend:
                 ('⭨', ""),  # falling
                 ('⮃', ""),  # dipping
                 ('⮁', ""),  # peaking
-                ]
+                ('̃', ""),  # nasalizing
+            ]
         for replacement in replacements:
             phoneme_string = phoneme_string.replace(replacement[0], replacement[1])
         phones = re.sub("~+", "~", phoneme_string)
@@ -448,6 +451,13 @@ def english_text_expansion(text):
                        ('Capt.', 'captain'), ('Esq.', 'esquire'), ('Ltd.', 'limited'), ('Col.', 'colonel'), ('Ft.', 'fort')]]
     for regex, replacement in _abbreviations:
         text = re.sub(regex, replacement, text)
+    return text
+
+
+def french_spacing(text):
+    text = text.replace("»", '"').replace("«", '"')
+    for punc in ["!", ";", ":", ".", ",", "?"]:
+        text = text.replace(f" {punc}", punc)
     return text
 
 
@@ -507,3 +517,6 @@ if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="vi")
     tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
     tf.string_to_tensor("ba bà bá bạ bả bã", view=True)
+
+    tf = ArticulatoryCombinedTextFrontend(language="fr")
+    tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
