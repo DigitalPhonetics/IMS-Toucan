@@ -1,5 +1,4 @@
 import time
-from multiprocessing import Process
 
 import torch
 import wandb
@@ -35,15 +34,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining")
     os.makedirs(save_dir, exist_ok=True)
-
-    chunk_count = 5
-    mls_chunks = split_dictionary(read_mls(), split_n=chunk_count)
-    processes = list()
-    for index in range(chunk_count):
-        processes.append(Process(target=create_cache, args=(mls_chunks[index], os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"), "fr")))
-        processes[-1].start()
-    for process in processes:
-        process.join()
 
     train_sets = list()
 
@@ -112,6 +102,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                warmup_steps=8000,
                postnet_start_steps=9000,
+               batch_size=16,
                steps=120000,
                use_wandb=use_wandb)
     if use_wandb:
