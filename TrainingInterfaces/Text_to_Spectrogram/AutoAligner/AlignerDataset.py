@@ -151,8 +151,7 @@ class AlignerDataset(Dataset):
                 continue
             try:
                 with warnings.catch_warnings():
-                    warnings.simplefilter(
-                        "ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
+                    warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
                     norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
             except ValueError:
                 continue
@@ -203,6 +202,16 @@ class AlignerDataset(Dataset):
                         tokens.append(self.tf.phone_to_id[phone])
                         # this is terribly inefficient, but it's fine
                         break
+                    elif vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
+                        non_nasal_vowel = vector.cpu().numpy().tolist()[13:]
+                        non_nasal_vowel[get_feature_to_index_lookup()["nasal"]] = 0
+                        if non_nasal_vowel == self.tf.phone_to_vector[phone][13:]:
+                            # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                            # additionally we ignore the nasal flag for vowels, because unfortunately nasalized vowels exist.
+                            tokens.append(self.tf.phone_to_id[phone])
+                            # this is terribly inefficient, but it's fine
+                            break
+
         tokens = torch.LongTensor(tokens)
         return tokens, \
                torch.LongTensor([len(tokens)]), \

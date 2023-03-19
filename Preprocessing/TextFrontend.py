@@ -520,3 +520,4 @@ if __name__ == '__main__':
 
     tf = ArticulatoryCombinedTextFrontend(language="fr")
     tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
+    print(tf.get_phone_string("Je ne te fais pas un dessin."))
