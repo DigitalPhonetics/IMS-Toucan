@@ -6,7 +6,6 @@ from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
-from Utility.Scorer import TTSScorer
 from Utility.blizzard_pretraining_path_to_transcript import *
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
@@ -36,46 +35,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining")
     os.makedirs(save_dir, exist_ok=True)
 
-    exec_device = "cuda" if torch.cuda.is_available() else "cpu"
-    tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt"), device=exec_device)
-
-    print("\n\n\n\nSIWIS\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "siwis/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nNEB\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "blizzard2023neb/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nPFC\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "pfc/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nAD\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "AD/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(2)
-    print("\n\n\n\nMLS 0\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "mls_french_female_chunk_0/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nMLS 1\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "mls_french_female_chunk_1/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nMLS 2\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "mls_french_female_chunk_2/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nMLS 3\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "mls_french_female_chunk_3/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-    print("\n\n\n\nMLS 4\n")
-    tts_scorer.score(path_to_portaspeech_dataset=os.path.join(PREPROCESSING_DIR, "mls_french_female_chunk_4/"), lang_id="fr")
-    tts_scorer.show_samples_with_highest_loss(20)
-    tts_scorer.remove_samples_with_highest_loss(20)
-
     train_sets = list()
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
@@ -101,7 +60,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
                                                 lang="fr"))
 
-    model = ToucanTTS(lang_embs=None)
+    model = ToucanTTS()
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
