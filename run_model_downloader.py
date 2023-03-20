@@ -3,6 +3,7 @@ import urllib.request
 
 from Utility.storage_config import MODELS_DIR
 
+
 def report(block_number, read_size, total_size):
     if block_number % 1000 == 0:
         return_to_front = '\b' * 52
@@ -57,3 +58,4 @@ def download_models():
 
 if __name__ == '__main__':
     download_models()
+

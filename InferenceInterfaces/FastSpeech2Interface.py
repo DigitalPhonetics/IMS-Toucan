@@ -244,13 +244,13 @@ class InferenceFastSpeech2(torch.nn.Module):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
+                if durations is not None:
+                    durations = durations.to(self.device)
+                if pitch is not None:
+                    pitch = pitch.to(self.device)
+                if energy is not None:
+                    energy = energy.to(self.device)
                 if wav is None:
-                    if durations is not None:
-                        durations = durations.to(self.device)
-                    if pitch is not None:
-                        pitch = pitch.to(self.device)
-                    if energy is not None:
-                        energy = energy.to(self.device)
                     wav = self(text,
                                durations=durations,
                                pitch=pitch,
@@ -261,9 +261,9 @@ class InferenceFastSpeech2(torch.nn.Module):
                     wav = torch.cat((wav, silence), 0)
                 else:
                     wav = torch.cat((wav, self(text,
-                                               durations=durations.to(self.device),
-                                               pitch=pitch.to(self.device),
-                                               energy=energy.to(self.device),
+                                               durations=durations,
+                                               pitch=pitch,
+                                               energy=energy,
                                                duration_scaling_factor=duration_scaling_factor,
                                                pitch_variance_scale=pitch_variance_scale,
                                                energy_variance_scale=energy_variance_scale).cpu()), 0)
