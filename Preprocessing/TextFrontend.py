@@ -381,6 +381,8 @@ class ArticulatoryCombinedTextFrontend:
                                       '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
                                       '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
                                       '̚', '↗', 'ꜛ', '̻', '̥', 'ˁ', '̘', '͡', '̺'}
+        # TODO support more of these. Problem: bridge over to aligner ID lookups after modifying the feature vector
+        #  https://en.wikipedia.org/wiki/IPA_number
         for char in unsupported_ipa_characters:
             replacements.append((char, ""))
 
@@ -539,3 +541,4 @@ if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="fr")
     tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
     print(tf.get_phone_string("Je ne te fais pas un dessin."))
+    print(tf.string_to_tensor("un", view=True))
