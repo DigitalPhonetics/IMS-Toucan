@@ -443,7 +443,7 @@ class ArticulatoryCombinedTextFrontend:
         for vector in text_vector:
             if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
                 # we don't include word boundaries when performing alignment, since they are not always present in audio.
-                features = vector.numpy().tolist()
+                features = vector.cpu().numpy().tolist()
                 if vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
                     # for the sake of alignment, we ignore the difference between nasalized vowels and regular vowels
                     features[get_feature_to_index_lookup()["nasal"]] = 0
