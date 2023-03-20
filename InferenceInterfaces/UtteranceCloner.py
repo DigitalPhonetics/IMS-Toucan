@@ -68,16 +68,7 @@ class UtteranceCloner:
         if on_line_fine_tune:
             # we fine-tune the aligner for a couple steps using SGD. This makes cloning pretty slow, but the results are greatly improved.
             steps = 5
-            tokens = list()  # we need an ID sequence for training rather than a sequence of phonological features
-            for vector in text:
-                if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
-                    # we don't include word boundaries when performing alignment, since they are not always present in audio.
-                    for phone in self.tf.phone_to_vector:
-                        if vector.numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
-                            # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
-                            tokens.append(self.tf.phone_to_id[phone])
-                            # this is terribly inefficient, but it's fine
-                            break
+            tokens = self.tf.text_vectors_to_id_sequence(text_vector=text)  # we need an ID sequence for training rather than a sequence of phonological features
             tokens = torch.LongTensor(tokens).squeeze().to(self.device)
             tokens_len = torch.LongTensor([len(tokens)]).to(self.device)
             mel = melspec.unsqueeze(0).to(self.device)

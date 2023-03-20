@@ -438,6 +438,24 @@ class ArticulatoryCombinedTextFrontend:
 
         return phones
 
+    def text_vectors_to_id_sequence(self, text_vector):
+        tokens = list()
+        for vector in text_vector:
+            if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
+                # we don't include word boundaries when performing alignment, since they are not always present in audio.
+                features = vector.numpy().tolist()
+                if vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
+                    # for the sake of alignment, we ignore the difference between nasalized vowels and regular vowels
+                    features[get_feature_to_index_lookup()["nasal"]] = 0
+                features = features[13:]
+                # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                for phone in self.phone_to_vector:
+                    if features == self.phone_to_vector[phone][13:]:
+                        tokens.append(self.phone_to_id[phone])
+                        # this is terribly inefficient, but it's fine
+                        break
+        return tokens
+
 
 def english_text_expansion(text):
     """

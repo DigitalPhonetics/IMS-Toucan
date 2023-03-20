@@ -13,7 +13,6 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.articulatory_features import get_feature_to_index_lookup
 
 
 class BatchNormConv(nn.Module):
@@ -98,26 +97,7 @@ class Aligner(torch.nn.Module):
     @torch.inference_mode()
     def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
         if not train:
-            tokens_indexed = list()  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
-            for vector in tokens:
-                if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
-                    # we don't include word boundaries when performing alignment, since they are not always present in audio.
-                    for phone in self.tf.phone_to_vector:
-                        if vector.cpu().numpy().tolist()[13:] == self.tf.phone_to_vector[phone][13:]:
-                            # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
-                            tokens_indexed.append(self.tf.phone_to_id[phone])
-                            # this is terribly inefficient, but it's fine
-                            break
-                        elif vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
-                            non_nasal_vowel = vector.cpu().numpy().tolist()
-                            non_nasal_vowel[get_feature_to_index_lookup()["nasal"]] = 0
-                            if non_nasal_vowel[13:] == self.tf.phone_to_vector[phone][13:]:
-                                # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
-                                # additionally we ignore the nasal flag for vowels, because unfortunately nasalized vowels exist.
-                                tokens_indexed.append(self.tf.phone_to_id[phone])
-                                # this is terribly inefficient, but it's fine
-                                break
-
+            tokens_indexed = self.tf.text_vectors_to_id_sequence(text_vector=tokens)  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             tokens = np.asarray(tokens_indexed)
         else:
             tokens = tokens.cpu().detach().numpy()
