@@ -64,12 +64,12 @@ def phonetically_interesting_sentences_unseen(version, model_id="Meta", exec_dev
                                   ]):
         tts.read_to_file(text_list=[sentence],
                          file_location=f"audios/{version}/unseen_sentences_{i}.wav",
-                         duration_scaling_factor=1.3)
+                         duration_scaling_factor=1.2)
 
 
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    phonetically_interesting_sentences_seen(version="002_AD_baseline_slowed_hifi", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
-    phonetically_interesting_sentences_unseen(version="002_AD_baseline_slowed_hifi", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
+    phonetically_interesting_sentences_seen(version="AD_solo_slowed", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
+    phonetically_interesting_sentences_unseen(version="AD_solo_slowed", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
