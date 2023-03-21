@@ -57,14 +57,19 @@ def phonetically_interesting_sentences_unseen(version, model_id="Meta", exec_dev
     for i, sentence in enumerate(["Les amis ont vu un ancien ami en avril, dit-on.",
                                   "Des amis ont vu en avril un vieil ami qui était très aimable, dit-on.",
                                   "C'est une maison où l'on peut aller quand il pleut.",
-                                  "Après un tour de présentation, ils sont allés"
+                                  "Après un tour de présentation, ils sont allés",
+                                  "Le village de Beaulieu est en grand émoi.",
+                                  "Le Premier Ministre a en effet décidé de faire étape dans cette commune au cours de sa tournée de la région en fin d'année.",
+                                  "Jusqu'ici les seuls titres de gloire de Beaulieu étaient son vin blanc sec, ses chemises en soie, un champion local de course à pied (Louis Garret), quatrième aux jeux olymiques de Berlin en 1936, et plus récemment, son usine de pâtes italiennes."
                                   ]):
-        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/unseen_sentences_{i}.wav")
+        tts.read_to_file(text_list=[sentence],
+                         file_location=f"audios/{version}/unseen_sentences_{i}.wav",
+                         duration_scaling_factor=1.3)
 
 
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    phonetically_interesting_sentences_seen(version="002_AD_finetuned_from_multiling", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
-    phonetically_interesting_sentences_unseen(version="002_AD_finetuned_from_multiling", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=True)
+    phonetically_interesting_sentences_seen(version="002_AD_baseline_slowed_hifi", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
+    phonetically_interesting_sentences_unseen(version="002_AD_baseline_slowed_hifi", model_id="AD", exec_device=exec_device, vocoder_model_path=None, biggan=False)
