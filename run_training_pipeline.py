@@ -1,43 +1,43 @@
 import argparse
 import sys
 
+from TrainingInterfaces.TrainingPipelines.Avocodo_combined import run as hifi_codo
 from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
-from TrainingInterfaces.TrainingPipelines.FastSpeech2_IntegrationTest import run as fs_integration_test
-from TrainingInterfaces.TrainingPipelines.HiFiGAN_Avocodo import run as hifi_codo
-from TrainingInterfaces.TrainingPipelines.JointEmbeddingFunction import run as embedding
-from TrainingInterfaces.TrainingPipelines.PortaSpeech_AD import run as ad
-from TrainingInterfaces.TrainingPipelines.PortaSpeech_IntegrationTest import run as ps_integration_test
-from TrainingInterfaces.TrainingPipelines.PortaSpeech_NEB import run as neb
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD import run as toucanad
+from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
+from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning import run as toucanad
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_Libri import run as libri
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB import run as toucanneb
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
-    "meta"     : meta,
-    "embedding": embedding,
-    "hifi_codo": hifi_codo,
-    "aligner"  : aligner,
+    # the finetuning example
     "fine_ex"  : fine_tuning_example,
+    # integration tests
     "fs_it"    : fs_integration_test,
     "ps_it"    : ps_integration_test,
+    # regular ToucanTTS pipelines
     "nancy"    : nancy,
-    "ad"       : ad,
-    "neb"      : neb,
-    "toucanneb": toucanneb,
-    "toucanad" : toucanad,
+    "neb"      : toucanneb,
+    "ad"       : toucanad,
     "french"   : french,
-    "libri"    : libri,
-    "bigvgan"  : bigvgan
+    "meta"     : meta,
+    # training vocoders (not recommended, best to use provided checkpoint)
+    "avocodo"  : hifi_codo,
+    "bigvgan"  : bigvgan,
+    # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
+    "embedding": embedding,
+    # training the aligner from scratch (not recommended, best to use provided checkpoint)
+    "aligner"  : aligner,
 }
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='IMS Speech Synthesis Toolkit - Call to Train')
+    parser = argparse.ArgumentParser(description='Training with the IMS Toucan Speech Synthesis Toolkit')
 
     parser.add_argument('pipeline',
                         choices=list(pipeline_dict.keys()),
@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--wandb',
                         action="store_true",
-                        help="Whether to use weigths and biases to track training runs. Requires you to run wandb login and place your auth key before.",
+                        help="Whether to use weights and biases to track training runs. Requires you to run wandb login and place your auth key before.",
                         default=False)
 
     parser.add_argument('--wandb_resume_id',
