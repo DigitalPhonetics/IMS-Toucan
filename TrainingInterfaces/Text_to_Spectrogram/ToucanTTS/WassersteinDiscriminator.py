@@ -191,6 +191,12 @@ class WassersteinDiscriminator(torch.nn.Module):
 
         return loss_critic, loss_generator * -1
 
+    def calc_discriminator_loss(self, data_generated, data_real):
+        return self._critic_deep_regression_(data_generated.detach(), data_real)
+
+    def calc_generator_feedback(self, data_generated):
+        return self._generator_train_iteration(data_generated) * -1
+
 
 class ResNet_D(nn.Module):
     def __init__(self, data_dim, size, nfilter=64, nfilter_max=512, res_ratio=0.1):

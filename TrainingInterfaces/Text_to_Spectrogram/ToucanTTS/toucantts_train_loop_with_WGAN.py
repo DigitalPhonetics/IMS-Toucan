@@ -226,11 +226,16 @@ def train_loop(net,
 
 
 def calc_wgan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, discriminator):
-    # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
-    fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
-    # now we have windows that are [batch_size, 100, 80]
-    critic_loss, generator_loss = discriminator.train_step(fake_window.unsqueeze(1), real_window.unsqueeze(1))
-    return critic_loss, generator_loss
+    critic_losses = list()
+    for _ in range(50):
+        # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
+        fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
+        # now we have windows that are [batch_size, 100, 80]
+        critic_loss = discriminator.calc_discriminator_loss(fake_window.unsqueeze(1), real_window.unsqueeze(1))
+        critic_losses.append(critic_loss)
+    generator_loss = discriminator.calc_generator_feedback(fake_window)
+
+    return sum(critic_losses), generator_loss
 
 
 def get_random_window(generated_sequences, real_sequences, lengths):
