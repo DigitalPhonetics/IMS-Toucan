@@ -55,7 +55,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
-               batch_size=32,
+               batch_size=16,
                lr=0.001,
                warmup_steps=8000,
                steps=80000,

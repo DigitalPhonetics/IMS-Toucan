@@ -57,7 +57,7 @@ def train_loop(net,
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
-    wgan_d = WassersteinDiscriminator(data_dim=[1, 100, 80]).to(device)
+    wgan_d = WassersteinDiscriminator(data_dim=[1, 100, 80], batch_size=batch_size).to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)

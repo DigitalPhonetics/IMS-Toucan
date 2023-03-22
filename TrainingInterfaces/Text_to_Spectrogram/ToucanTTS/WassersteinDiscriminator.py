@@ -19,7 +19,7 @@ def weights_init_D(m):
 
 
 class WassersteinDiscriminator(torch.nn.Module):
-    def __init__(self, data_dim, gamma=0.1, K=-1):
+    def __init__(self, data_dim, batch_size, gamma=0.1, K=-1):
 
         super().__init__()
         parameters = {
@@ -57,13 +57,6 @@ class WassersteinDiscriminator(torch.nn.Module):
         self.Kr = np.sqrt(self.K)
         self.LAMBDA = 2 * self.Kr * gamma * 2
 
-        # the following can be initialized once batch_size is known, so use the function initialize_solver for this.
-        self.batch_size = None
-        self.A = None
-        self.pStart = None
-        self.batch_size = None
-
-    def initialize_solver(self, batch_size):
         self.batch_size = batch_size
         self.c, self.A, self.pStart = self._prepare_linear_programming_solver_(self.batch_size)
 
