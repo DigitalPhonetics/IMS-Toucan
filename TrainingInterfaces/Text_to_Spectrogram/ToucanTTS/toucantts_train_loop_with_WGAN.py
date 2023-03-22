@@ -13,6 +13,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.WassersteinDiscriminator import WassersteinDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -56,6 +57,7 @@ def train_loop(net,
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
+    wgan_d = WassersteinDiscriminator(data_dim=[1, 100, 80]).to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -74,7 +76,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(list(net.parameters()) + list(wgan_d.parameters()), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     grad_scaler = GradScaler()
     epoch = 0
@@ -121,7 +123,8 @@ def train_loop(net,
 
                 discriminator_loss, generator_loss = calc_wgan_outputs(real_spectrograms=batch[2].to(device),
                                                                        fake_spectrograms=generated_spectrograms,
-                                                                       spectrogram_lengths=batch[3].to(device))
+                                                                       spectrogram_lengths=batch[3].to(device),
+                                                                       discriminator=wgan_d)
 
                 if not torch.isnan(l1_loss):
                     train_loss = train_loss + l1_loss
@@ -189,13 +192,13 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                          device,
-                                                                          save_dir=save_directory,
-                                                                          step=step_counter,
-                                                                          lang=lang,
-                                                                          default_emb=default_embedding,
-                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
+                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                              device,
+                                                                              save_dir=save_directory,
+                                                                              step=step_counter,
+                                                                              lang=lang,
+                                                                              default_emb=default_embedding,
+                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -222,12 +225,11 @@ def train_loop(net,
         net.train()
 
 
-def calc_wgan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths):
+def calc_wgan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, discriminator):
     # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
     fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
-    # now we have windows that are [batch_size, 80, 100]
-    # TODO doublecheck shape
-    critic_loss, generator_loss = None, None
+    # now we have windows that are [batch_size, 100, 80]
+    critic_loss, generator_loss = discriminator.train_step(fake_window.unsqueeze(1), real_window.unsqueeze(1))
     return critic_loss, generator_loss
 
 
@@ -256,3 +258,11 @@ def get_random_window(generated_sequences, real_sequences, lengths):
         generated_windows.append(fake_spec_unpadded[start:start + window_size].unsqueeze(0))
         real_windows.append(real_spec_unpadded[start:start + window_size].unsqueeze(0))
     return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0)
+
+
+if __name__ == '__main__':
+    dummy_speech_batch = torch.randn([2, 30, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_lens = torch.LongTensor([10, 30])
+    fake_window, real_window = get_random_window(dummy_speech_batch, dummy_speech_batch, dummy_speech_lens)
+    print(real_window.shape),
+    print(fake_window.shape)
