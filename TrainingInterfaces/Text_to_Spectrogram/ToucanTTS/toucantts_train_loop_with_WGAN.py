@@ -126,8 +126,8 @@ def train_loop(net,
                                                                        spectrogram_lengths=batch[3].to(device),
                                                                        discriminator=wgan_d)
 
-                # if not torch.isnan(l1_loss):
-                #    train_loss = train_loss + l1_loss
+                if not torch.isnan(l1_loss):
+                    train_loss = train_loss + l1_loss
                 if not torch.isnan(duration_loss):
                     train_loss = train_loss + duration_loss
                 if not torch.isnan(pitch_loss):
@@ -140,7 +140,7 @@ def train_loop(net,
                         glow_losses_total.append(glow_loss.item())
                 if not torch.isnan(discriminator_loss):
                     train_loss = train_loss + discriminator_loss
-                if not torch.isnan(generator_loss) and step_counter % 5 == 0:
+                if not torch.isnan(generator_loss):
                     train_loss = train_loss + generator_loss
 
             l1_losses_total.append(l1_loss.item())
@@ -192,13 +192,13 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                              device,
-                                                                              save_dir=save_directory,
-                                                                              step=step_counter,
-                                                                              lang=lang,
-                                                                              default_emb=default_embedding,
-                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
+            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                          device,
+                                                                          save_dir=save_directory,
+                                                                          step=step_counter,
+                                                                          lang=lang,
+                                                                          default_emb=default_embedding,
+                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -226,16 +226,13 @@ def train_loop(net,
 
 
 def calc_wgan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, discriminator):
-    critic_losses = list()
-    for _ in range(50):
-        # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
-        fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
-        # now we have windows that are [batch_size, 100, 80]
-        critic_loss = discriminator.calc_discriminator_loss(fake_window.unsqueeze(1), real_window.unsqueeze(1))
-        critic_losses.append(critic_loss)
+    # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
+    fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
+    # now we have windows that are [batch_size, 200, 80]
+    critic_loss = discriminator.calc_discriminator_loss(fake_window.unsqueeze(1), real_window.unsqueeze(1))
     generator_loss = discriminator.calc_generator_feedback(fake_window.unsqueeze(1))
 
-    return sum(critic_losses), generator_loss
+    return critic_loss, generator_loss
 
 
 def get_random_window(generated_sequences, real_sequences, lengths):

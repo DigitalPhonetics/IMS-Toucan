@@ -31,10 +31,7 @@ class WassersteinDiscriminator(torch.nn.Module):
             "conv_filters": 20,
         }
 
-        self.D = ResNet_D(parameters['data_dim'][-1],
-                          parameters['size'],
-                          nfilter=parameters['nfilter'],
-                          nfilter_max=parameters['nfilter_max'])
+        self.D = SpectrogramDiscriminator()
 
         self.D.apply(weights_init_D)
         self.losses = {
@@ -198,6 +195,32 @@ class WassersteinDiscriminator(torch.nn.Module):
         return self._generator_train_iteration(data_generated) * -1
 
 
+class SpectrogramDiscriminator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.filters = nn.ModuleList([
+            nn.utils.weight_norm(nn.Conv2d(1, 32, kernel_size=(3, 9), padding=(1, 4))),
+            nn.utils.weight_norm(nn.Conv2d(32, 32, kernel_size=(3, 9), stride=(1, 2), padding=(1, 4))),
+            nn.utils.weight_norm(nn.Conv2d(32, 32, kernel_size=(3, 9), stride=(1, 2), padding=(1, 4))),
+            nn.utils.weight_norm(nn.Conv2d(32, 32, kernel_size=(3, 9), stride=(1, 2), padding=(1, 4))),
+            nn.utils.weight_norm(nn.Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))),
+        ])
+
+        self.out = nn.utils.weight_norm(nn.Conv2d(32, 1, 3, 1, 1))
+
+        self.fc = nn.Linear(2000, 1)  # this needs to be changes everytime the window length is changes. It would be nice if this could be done dynamically.
+
+    def forward(self, y):
+        for d in self.filters:
+            y = d(y)
+            y = nn.functional.leaky_relu(y, 0.1)
+        y = self.out(y)
+        y = torch.flatten(y, 1, -1)
+        y = self.fc(y)
+
+        return y
+
+
 class ResNet_D(nn.Module):
     def __init__(self, data_dim, size, nfilter=64, nfilter_max=512, res_ratio=0.1):
         super().__init__()
@@ -295,3 +318,13 @@ class ResNetBlock(nn.Module):
         else:
             x_s = x
         return x_s
+
+
+if __name__ == '__main__':
+    d = WassersteinDiscriminator(data_dim=[1, 200, 80], batch_size=2)
+    dummy_speech_batch = torch.randn([2, 200, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+
+    critic_loss = d.calc_discriminator_loss((dummy_speech_batch.unsqueeze(1)), dummy_speech_batch.unsqueeze(1))
+    generator_loss = d.calc_generator_feedback(dummy_speech_batch.unsqueeze(1))
+    print(critic_loss)
+    print(generator_loss)
