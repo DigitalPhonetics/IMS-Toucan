@@ -140,7 +140,7 @@ def train_loop(net,
                         glow_losses_total.append(glow_loss.item())
                 if not torch.isnan(discriminator_loss):
                     train_loss = train_loss + discriminator_loss
-                if not torch.isnan(generator_loss):
+                if not torch.isnan(generator_loss) and step_counter % 5 == 0:
                     train_loss = train_loss + generator_loss
 
             l1_losses_total.append(l1_loss.item())
@@ -240,7 +240,7 @@ def get_random_window(generated_sequences, real_sequences, lengths):
     """
     generated_windows = list()
     real_windows = list()
-    window_size = 100
+    window_size = 200  # corresponds to 3.2 seconds of audio in real time
 
     for end_index, generated, real in zip(lengths.squeeze(), generated_sequences, real_sequences):
 
