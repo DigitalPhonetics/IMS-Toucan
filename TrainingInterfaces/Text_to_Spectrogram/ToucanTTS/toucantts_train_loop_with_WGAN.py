@@ -126,8 +126,8 @@ def train_loop(net,
                                                                        spectrogram_lengths=batch[3].to(device),
                                                                        discriminator=wgan_d)
 
-                if not torch.isnan(l1_loss):
-                    train_loss = train_loss + l1_loss
+                # if not torch.isnan(l1_loss):
+                #    train_loss = train_loss + l1_loss
                 if not torch.isnan(duration_loss):
                     train_loss = train_loss + duration_loss
                 if not torch.isnan(pitch_loss):
