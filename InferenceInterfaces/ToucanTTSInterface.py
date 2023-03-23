@@ -58,7 +58,13 @@ class ToucanTTSInterface(torch.nn.Module):
                 self.use_lang_id = False
                 self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+                try:
+                    self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+                except RuntimeError:
+                    try:
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], sent_embed_dim=768)  # multi speaker multi language + sentence embeddings
+                    except RuntimeError:
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, sent_embed_dim=768)  # multi speaker single language + sentence embeddings
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -79,12 +85,16 @@ class ToucanTTSInterface(torch.nn.Module):
         else:
             self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
         self.mel2wav.remove_weight_norm()
-        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]))
+        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]).to(torch.device(device)))
 
         ################################
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        try:
+            self.default_sentence_embedding = checkpoint["default_sent_emb"].to(self.device)
+        except KeyError:
+            self.default_sentence_embedding = None
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -108,6 +118,10 @@ class ToucanTTSInterface(torch.nn.Module):
         spec_len = torch.LongTensor([len(spec)])
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
                                                                          spec_len.unsqueeze(0).to(self.device)).squeeze()
+        
+    def set_sentence_embedding(self, sentence:str, sentence_embedding_extractor):
+        sentence_embedding = sentence_embedding_extractor.encode([sentence]).squeeze().to(self.device)
+        self.default_sentence_embedding = sentence_embedding
 
     def set_language(self, lang_id):
         """
@@ -153,6 +167,7 @@ class ToucanTTSInterface(torch.nn.Module):
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
+                                                           sentence_embedding=self.default_sentence_embedding,
                                                            durations=durations,
                                                            pitch=pitch,
                                                            energy=energy,
