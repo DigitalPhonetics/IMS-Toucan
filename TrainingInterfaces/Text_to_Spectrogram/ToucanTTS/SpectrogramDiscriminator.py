@@ -67,10 +67,11 @@ class DiscriminatorNet(nn.Module):
 
         self.out = nn.utils.weight_norm(nn.Conv2d(32, 1, 3, 1, 1))
 
-        self.fc = nn.Linear(2000, 1)  # this needs to be changes everytime the window length is changes. It would be nice if this could be done dynamically.
+        self.fc = nn.Linear(2000, 1)  # this needs to be changed everytime the window length is changes. It would be nice if this could be done dynamically.
 
     def forward(self, y):
         feature_maps = list()
+        feature_maps.append(y)
         for d in self.filters:
             y = d(y)
             feature_maps.append(y)

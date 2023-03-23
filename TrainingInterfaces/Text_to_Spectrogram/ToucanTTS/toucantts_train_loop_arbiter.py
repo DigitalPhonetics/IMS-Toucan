@@ -1,5 +1,5 @@
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_meta_train_loop import train_loop as multi_language_loop
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_with_WGAN import train_loop as mono_language_loop
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_with_discriminator import train_loop as mono_language_loop
 
 
 def train_loop(net,  # an already initialized ToucanTTS model that should be trained.
