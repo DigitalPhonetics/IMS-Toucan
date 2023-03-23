@@ -79,7 +79,7 @@ class ToucanTTSInterface(torch.nn.Module):
         else:
             self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
         self.mel2wav.remove_weight_norm()
-        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]))
+        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]).to(torch.device(device)))
 
         ################################
         #  set defaults                #
