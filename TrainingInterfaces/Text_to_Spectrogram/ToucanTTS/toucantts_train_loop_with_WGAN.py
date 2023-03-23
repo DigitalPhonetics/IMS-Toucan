@@ -231,7 +231,7 @@ def calc_wgan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths,
     # now we have windows that are [batch_size, 200, 80]
     critic_loss = discriminator.calc_discriminator_loss(fake_window.unsqueeze(1), real_window.unsqueeze(1))
     generator_loss = discriminator.calc_generator_feedback(fake_window.unsqueeze(1))
-    critic_loss = critic_loss * 10
+    critic_loss = critic_loss
     generator_loss = generator_loss
     return critic_loss, generator_loss
 

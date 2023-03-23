@@ -148,8 +148,8 @@ class WassersteinDiscriminator(torch.nn.Module):
             generated_data.requires_grad_()
             if generated_data.grad is not None:
                 generated_data.grad.data.zero_()
-            output_real = self.D(real_data)
-            output_fake = self.D(generated_data)
+            output_real = self.D(real_data)[0]
+            output_fake = self.D(generated_data)[0]
             output_real, output_fake = output_real.squeeze(), output_fake.squeeze()
             output_R_mean = output_real.mean(0).view(1)
             output_F_mean = output_fake.mean(0).view(1)
@@ -174,12 +174,25 @@ class WassersteinDiscriminator(torch.nn.Module):
         for p in self.D.parameters():
             p.requires_grad = False  # freeze critic
 
-        output_fake = self.D(data_generated)
+        output_fake = self.D(data_generated)[0]
         output_F_mean_after = output_fake.mean(0).view(1)
 
         self.losses['G'].append(float(output_F_mean_after.data))
 
         return output_F_mean_after
+
+    def _generator_feature_matching(self, data_generated, data_real):
+        for p in self.D.parameters():
+            p.requires_grad = False  # freeze critic
+
+        fmap_fake = self.D(data_generated)[1]
+        fmap_real = self.D(data_real)[1]
+
+        feature_matching_loss = 0.0
+        for feat_fake, feat_real in zip(fmap_fake, fmap_real):
+            feature_matching_loss += nn.functional.l1_loss(feat_fake, feat_real.detach())
+
+        return feature_matching_loss
 
     def train_step(self, data_generated, data_real):
         self.num_steps += 1
@@ -191,8 +204,8 @@ class WassersteinDiscriminator(torch.nn.Module):
     def calc_discriminator_loss(self, data_generated, data_real):
         return self._critic_deep_regression_(data_generated.detach(), data_real)
 
-    def calc_generator_feedback(self, data_generated):
-        return self._generator_train_iteration(data_generated) * -1
+    def calc_generator_feedback(self, data_generated, data_real):
+        return self._generator_feature_matching(data_generated, data_real)
 
 
 class SpectrogramDiscriminator(nn.Module):
@@ -211,14 +224,17 @@ class SpectrogramDiscriminator(nn.Module):
         self.fc = nn.Linear(2000, 1)  # this needs to be changes everytime the window length is changes. It would be nice if this could be done dynamically.
 
     def forward(self, y):
+        feature_maps = list()
         for d in self.filters:
             y = d(y)
+            feature_maps.append(y)
             y = nn.functional.leaky_relu(y, 0.1)
         y = self.out(y)
+        feature_maps.append(y)
         y = torch.flatten(y, 1, -1)
         y = self.fc(y)
 
-        return y
+        return y, feature_maps
 
 
 class ResNet_D(nn.Module):
@@ -322,9 +338,10 @@ class ResNetBlock(nn.Module):
 
 if __name__ == '__main__':
     d = WassersteinDiscriminator(data_dim=[1, 200, 80], batch_size=2)
-    dummy_speech_batch = torch.randn([2, 200, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+    fake = torch.randn([2, 200, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+    real = torch.randn([2, 200, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
 
-    critic_loss = d.calc_discriminator_loss((dummy_speech_batch.unsqueeze(1)), dummy_speech_batch.unsqueeze(1))
-    generator_loss = d.calc_generator_feedback(dummy_speech_batch.unsqueeze(1))
+    critic_loss = d.calc_discriminator_loss((fake.unsqueeze(1)), real.unsqueeze(1))
+    generator_loss = d.calc_generator_feedback(fake.unsqueeze(1), real.unsqueeze(1))
     print(critic_loss)
     print(generator_loss)
