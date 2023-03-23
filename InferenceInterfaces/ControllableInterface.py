@@ -9,14 +9,14 @@ from Utility.storage_config import MODELS_DIR
 
 class ControllableInterface:
 
-    def __init__(self, gpu_id="cpu"):
+    def __init__(self, gpu_id="cpu", model_name="Meta"):
         if gpu_id == "cpu":
             os.environ["CUDA_VISIBLE_DEVICES"] = ""
         else:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = InferenceFastSpeech2(device=self.device, model_name="Meta")
+        self.model = InferenceFastSpeech2(device=self.device, model_name=model_name)
         self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
         self.current_language = "English"
         self.current_accent = "English"
