@@ -13,7 +13,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.WassersteinDiscriminator import WassersteinDiscriminator
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.SpectrogramDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -57,7 +57,7 @@ def train_loop(net,
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
-    wgan_d = WassersteinDiscriminator(data_dim=[1, 200, 80], batch_size=batch_size).to(device)
+    discriminator = SpectrogramDiscriminator().to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -76,7 +76,7 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.Adam(list(net.parameters()) + list(wgan_d.parameters()), lr=lr)
+    optimizer = torch.optim.Adam(list(net.parameters()) + list(discriminator.parameters()), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     grad_scaler = GradScaler()
     epoch = 0
@@ -124,7 +124,7 @@ def train_loop(net,
                 discriminator_loss, generator_loss = calc_wgan_outputs(real_spectrograms=batch[2].to(device),
                                                                        fake_spectrograms=generated_spectrograms,
                                                                        spectrogram_lengths=batch[3].to(device),
-                                                                       discriminator=wgan_d)
+                                                                       discriminator=discriminator)
 
                 if not torch.isnan(l1_loss):
                     train_loss = train_loss + l1_loss
