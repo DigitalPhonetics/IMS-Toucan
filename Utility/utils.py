@@ -185,6 +185,7 @@ def plot_progress_spec_toucantts(net,
                                  step,
                                  lang,
                                  default_emb,
+                                 default_sent_emb=None,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = tf.get_example_sentence(lang=lang)
@@ -195,11 +196,13 @@ def plot_progress_spec_toucantts(net,
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,
                                                                           utterance_embedding=default_emb,
+                                                                          sentence_embedding=default_sent_emb,
                                                                           lang_id=get_language_id(lang).to(device),
                                                                           run_postflow=run_postflow)
     else:
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,
+                                                                          sentence_embedding=default_sent_emb,
                                                                           utterance_embedding=default_emb,
                                                                           lang_id=get_language_id(lang).to(device))
     spec = spec_before.transpose(0, 1).to("cpu").numpy()

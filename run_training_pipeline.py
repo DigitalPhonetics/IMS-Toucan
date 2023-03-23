@@ -6,6 +6,7 @@ from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning import run as toucanad
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_sent_embs_example import run as ad_sent_embs
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
@@ -24,10 +25,11 @@ pipeline_dict = {
     # regular ToucanTTS pipelines
     "nancy"     : nancy,
     "nancy_wgan": nancy_wgan,
-    "neb"       : toucanneb,
-    "ad"        : toucanad,
     "french"    : french,
-    "meta"      : meta,
+    "neb"      : toucanneb,
+    "ad"       : toucanad,
+    "ad_sent"  : ad_sent_embs,
+    "meta"     : meta,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"   : hifi_codo,
     "bigvgan"   : bigvgan,
