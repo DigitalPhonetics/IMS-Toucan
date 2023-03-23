@@ -1,18 +1,24 @@
 # -*- coding: utf-8 -*-
 
-
 import re
 import sys
+import os
+import json
 
 import torch
 from dragonmapper.transcriptions import pinyin_to_ipa
 from phonemizer.backend import EspeakBackend
 from pypinyin import pinyin
 
+from Utility.storage_config import PREPROCESSING_DIR
 from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Preprocessing.articulatory_features import get_phone_to_id
-
+from Preprocessing.french_pos import map_to_wiktionary_pos
+from pathlib import Path
+from flair.data import Sentence
+from flair.models import SequenceTagger
+import flair
 
 class ArticulatoryCombinedTextFrontend:
 
@@ -106,7 +112,15 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr":
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = french_spacing
+            self.expand_abbreviations = lambda x: x
+            # add POS Tagger for Blizzard Challenge
+            flair.cache_root = Path(f"{PREPROCESSING_DIR}/.flair")
+            self.pos_tagger = SequenceTagger.load("qanastek/pos-french-camembert-flair")
+            self.homographs = load_json_from_path("Preprocessing/french_homographs_preprocessed.json")
+            self.homograph_list = list(self.homographs.keys())
+            self.poet_to_wiktionary = map_to_wiktionary_pos()
+
+
             if not silent:
                 print("Created a French Text-Frontend")
 
@@ -287,13 +301,55 @@ class ArticulatoryCombinedTextFrontend:
 
         return torch.Tensor(phones_vector, device=device)
 
-    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
+
+    def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False, resolve_homographs=True):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
+
 
         # phonemize
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = pinyin_to_ipa(utt)
+        elif self.g2p_lang == "fr-fr" and resolve_homographs:
+            sentence = Sentence(utt)
+            self.pos_tagger.predict(sentence)
+            # print(sentence.to_tagged_string())
+
+            phones = '' # we'll bulid the phone string incrementally
+            chunk_to_phonemize = ''
+            for label in sentence.get_labels():
+                token = label.data_point.text
+                pos = label.value
+                # disambiguate homographs
+                if token in self.homographs or token.lower() in self.homographs: # This is really ineffective, but we need to check identity and lowercase, otherwise we won't find homographs at beginning of sentences if written in upper case
+                    print("found homograph: ", token, "\t POS: ", pos)
+                    wiki_pos = self.poet_to_wiktionary.get(pos, pos)
+                    # print(wiki_pos)
+                    # get candidates with correct pos tag
+                    candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
+                    # print(candidates)
+                    
+                    # TODO: resolve if there are multiple pronunciations for one entry.
+                    # For now, ignore lists
+                    pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
+                    if len(pronunciation_set) == 1: # all entries have the same pronunciation, so we can just take it
+                        pronunciation = pronunciation_set.pop()
+                        print(f"All entries have the same pronunciation for {token}", pronunciation)
+                    # TODO: needs further action
+                    else:
+                        print("There are different pronunciations in the entries for ", token) 
+                        pronunciation = self.phonemizer_backend.phonemize([token], strip=True)[0] # for now take espeak phonemes for testing
+                    
+                    # we found a homograph, so let's phonemize everything up to this point
+                    chunk_to_phonemize += token # we add the homograph token and replace it later, because we don't want to lose liaisons etc.
+                    phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
+                    phones = phones.rsplit(" ", 1)[0] + " " + pronunciation + " " # remove espeak phonemes for homograph token and replace them with gold phonemes
+                    chunk_to_phonemize = " "
+
+                else: # no homograph found
+                    chunk_to_phonemize += token + " "
+                    
+            phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0] #add last part of phone string
         else:
             phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
 
@@ -521,8 +577,15 @@ def get_language_id(language):
     elif language == "pt-br":
         return torch.LongTensor([17])
 
+def load_json_from_path(path):
+    with open(path, "r", encoding="utf8") as f:
+        obj = json.loads(f.read())
+    return obj
 
 if __name__ == '__main__':
+
+    tf = ArticulatoryCombinedTextFrontend(language="fr")
+    
     tf = ArticulatoryCombinedTextFrontend(language="en")
     tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
 
