@@ -23,7 +23,11 @@ from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence embedding
+    try:
+        sentence_embeddings = torch.stack([datapoint[9] for datapoint in batch])
+    except TypeError:
+        sentence_embeddings = None
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -32,7 +36,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
-            torch.stack([datapoint[8] for datapoint in batch]))
+            torch.stack([datapoint[8] for datapoint in batch]),
+            sentence_embeddings)
 
 
 def train_loop(net,
@@ -112,6 +117,7 @@ def train_loop(net,
                     gold_pitch=batch[6].to(device),  # mind the switched order
                     gold_energy=batch[5].to(device),  # mind the switched order
                     utterance_embedding=style_embedding,
+                    sentence_embedding=batch[9].to(device) if batch[9] is not None else None,
                     lang_ids=batch[8].to(device),
                     return_mels=False,
                     run_glow=step_counter > postnet_start_steps or fine_tune)
@@ -149,6 +155,7 @@ def train_loop(net,
         default_embedding = style_embedding_function(
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+        default_sentence_embedding = train_dataset[0][9]
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
@@ -156,6 +163,7 @@ def train_loop(net,
             "scaler"      : grad_scaler.state_dict(),
             "scheduler"   : scheduler.state_dict(),
             "default_emb" : default_embedding,
+            "default_sent_emb": default_sentence_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
 
@@ -180,6 +188,7 @@ def train_loop(net,
                                                                           step=step_counter,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
+                                                                          default_sent_emb=default_sentence_embedding,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
@@ -199,8 +208,8 @@ def train_loop(net,
         if step_counter > 2 * postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
-            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-            save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
+            averaged_model, default_embed, default_sent_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+            save_model_for_use(model=averaged_model, default_embed=default_embed, default_sent_embed=default_sent_embed, name=os.path.join(save_directory, "best.pt"))
             check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
             net.load_state_dict(check_dict["model"])
 
