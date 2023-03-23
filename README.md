@@ -101,7 +101,9 @@ To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you don't need a GPU).
 Navigate to the directory you have cloned. We recommend creating and activating a
 [virtual environment](https://docs.python.org/3/library/venv.html)
-to install the basic requirements into. The commands below summarize everything you need to do.
+to install the basic requirements into. We test using Python version 3.8 and higher, 
+but we are not aware of any issues with any Python versions yet. 
+The commands below summarize everything you need to do.
 
 ```
 python -m venv <path_to_where_you_want_your_env_to_be>
