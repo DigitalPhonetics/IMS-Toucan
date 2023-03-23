@@ -333,14 +333,14 @@ class ToucanTTS(torch.nn.Module):
             if is_inference:
                 refined_spectrogram = self.post_flow(tgt_mels=None,
                                                      infer=is_inference,
-                                                     mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
-                                                     encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
+                                                     mel_out=decoded_spectrogram,
+                                                     encoded_texts=upsampled_enriched_encoded_texts,
                                                      tgt_nonpadding=None).squeeze()
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=decoded_spectrogram,
-                                           encoded_texts=upsampled_enriched_encoded_texts,
+                                           mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \

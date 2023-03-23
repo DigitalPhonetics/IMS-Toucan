@@ -11,28 +11,30 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run a
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy_WGAN import run as nancy_wgan
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     # the finetuning example
-    "fine_ex"  : fine_tuning_example,
+    "fine_ex"   : fine_tuning_example,
     # integration tests
-    "fs_it"    : fs_integration_test,
-    "ps_it"    : ps_integration_test,
+    "fs_it"     : fs_integration_test,
+    "ps_it"     : ps_integration_test,
     # regular ToucanTTS pipelines
-    "nancy"    : nancy,
-    "neb"      : toucanneb,
-    "ad"       : toucanad,
-    "french"   : french,
-    "meta"     : meta,
+    "nancy"     : nancy,
+    "nancy_wgan": nancy_wgan,
+    "neb"       : toucanneb,
+    "ad"        : toucanad,
+    "french"    : french,
+    "meta"      : meta,
     # training vocoders (not recommended, best to use provided checkpoint)
-    "avocodo"  : hifi_codo,
-    "bigvgan"  : bigvgan,
+    "avocodo"   : hifi_codo,
+    "bigvgan"   : bigvgan,
     # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
-    "embedding": embedding,
+    "embedding" : embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
-    "aligner"  : aligner,
+    "aligner"   : aligner,
 }
 
 if __name__ == '__main__':
