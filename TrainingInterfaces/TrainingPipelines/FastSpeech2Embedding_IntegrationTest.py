@@ -17,17 +17,9 @@ from Utility.storage_config import PREPROCESSING_DIR
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
     if gpu_id == "cpu":
-        os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
-
     else:
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         device = torch.device("cuda")
-
-    torch.manual_seed(131714)
-    random.seed(131714)
-    torch.random.manual_seed(131714)
 
     print("Preparing")
 

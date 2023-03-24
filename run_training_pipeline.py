@@ -1,40 +1,36 @@
 import argparse
+import os
+import random
 import sys
+
+import torch
 
 from TrainingInterfaces.TrainingPipelines.Avocodo_combined import run as hifi_codo
 from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning import run as toucanad
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy_WGAN import run as nancy_wgan
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     # the finetuning example
-    "fine_ex"   : fine_tuning_example,
+    "fine_ex"  : fine_tuning_example,
     # integration tests
-    "fs_it"     : fs_integration_test,
-    "ps_it"     : ps_integration_test,
+    "fs_it"    : fs_integration_test,
+    "ps_it"    : ps_integration_test,
     # regular ToucanTTS pipelines
-    "nancy"     : nancy,
-    "nancy_wgan": nancy_wgan,
-    "neb"       : toucanneb,
-    "ad"        : toucanad,
-    "french"    : french,
-    "meta"      : meta,
+    "nancy"    : nancy,
+    "meta"     : meta,
     # training vocoders (not recommended, best to use provided checkpoint)
-    "avocodo"   : hifi_codo,
-    "bigvgan"   : bigvgan,
+    "avocodo"  : hifi_codo,
+    "bigvgan"  : bigvgan,
     # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
-    "embedding" : embedding,
+    "embedding": embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
-    "aligner"   : aligner,
+    "aligner"  : aligner,
 }
 
 if __name__ == '__main__':
@@ -85,6 +81,21 @@ if __name__ == '__main__':
     if args.finetune and args.resume_checkpoint is None and not args.resume:
         print("Need to provide path to checkpoint to fine-tune from!")
         sys.exit()
+
+    if args.gpu_id == "cpu":
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        device = torch.device("cpu")
+        print(f"No GPU specified, using CPU. Training will likely not work without GPU.")
+
+    else:
+        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
+        device = torch.device("cuda")
+        print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device.")
+
+    torch.manual_seed(131714)
+    random.seed(131714)
+    torch.random.manual_seed(131714)
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
                                  resume_checkpoint=args.resume_checkpoint,

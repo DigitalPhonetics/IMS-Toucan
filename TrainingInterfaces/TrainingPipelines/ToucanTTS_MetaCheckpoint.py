@@ -18,13 +18,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # The recommended use is to download the pretrained model from the github release
     # page and finetune to your desired data
 
-    torch.manual_seed(131714)
-    random.seed(131714)
-    torch.random.manual_seed(131714)
-
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
-
     datasets = list()
 
     base_dir = os.path.join(MODELS_DIR, "ToucanTTS_Meta")
