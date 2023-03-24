@@ -7,8 +7,8 @@ from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
+from Layers.LayerNorm import LayerNorm
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from Utility.utils import make_non_pad_mask
 
@@ -72,6 +72,7 @@ class ToucanTTS(torch.nn.Module):
                  utt_embed_dim=64,
                  detach_postflow=True,
                  lang_embs=8000,
+                 sent_embed_dim=None,
                  weights=None):
         super().__init__()
 
@@ -82,6 +83,18 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None # sentence embeddings are only used if utterance embeddings are present
+
+        if self.use_sent_embs:
+            # pass sentence embeddings through adaptation layers
+            self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
+                                                            Tanh(),
+                                                            Linear(sent_embed_dim // 2, sent_embed_dim // 4),
+                                                            Tanh(),
+                                                            Linear(sent_embed_dim // 4, utt_embed_dim))
+            # projection layer for concatenation of sentence embeddings and utterance embeddings
+            self.style_embedding_projection = Sequential(Linear(utt_embed_dim + utt_embed_dim, utt_embed_dim),
+                                                        LayerNorm(utt_embed_dim))
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
@@ -180,6 +193,7 @@ class ToucanTTS(torch.nn.Module):
                  gold_energy=None,
                  duration_scaling_factor=1.0,
                  utterance_embedding=None,
+                 sentence_embedding=None,
                  lang_ids=None,
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
@@ -187,6 +201,12 @@ class ToucanTTS(torch.nn.Module):
 
         if not self.multilingual_model:
             lang_ids = None
+
+        if self.use_sent_embs:
+            # pass through adaptation layers
+            sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+            # concatenate utterance embedding with sentence embedding and apply projection
+            utterance_embedding = self.style_embedding_projection(torch.nn.functional.normalize(torch.cat([utterance_embedding, sentence_embedding], dim=1)))
 
         if not self.multispeaker_model:
             utterance_embedding = None
@@ -244,6 +264,7 @@ class ToucanTTS(torch.nn.Module):
                 pitch=None,
                 energy=None,
                 utterance_embedding=None,
+                sentence_embedding=None,
                 return_duration_pitch_energy=False,
                 lang_id=None,
                 duration_scaling_factor=1.0,
@@ -297,7 +318,8 @@ class ToucanTTS(torch.nn.Module):
                                                gold_durations=durations,
                                                gold_pitch=pitch,
                                                gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0),
+                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None,
+                                               sentence_embedding=sentence_embedding.unsqueeze(0) if sentence_embedding is not None else None,
                                                lang_ids=lang_id,
                                                duration_scaling_factor=duration_scaling_factor,
                                                pitch_variance_scale=pitch_variance_scale,

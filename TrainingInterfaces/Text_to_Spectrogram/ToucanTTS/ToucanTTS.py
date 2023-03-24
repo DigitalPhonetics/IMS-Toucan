@@ -7,6 +7,7 @@ from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
+from Layers.LayerNorm import LayerNorm
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
@@ -96,7 +97,8 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=64,
                  detach_postflow=True,
-                 lang_embs=8000):
+                 lang_embs=8000,
+                 sent_embed_dim=None):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -106,6 +108,18 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None # sentence embeddings are only used if utterance embeddings are present
+
+        if self.use_sent_embs:
+            # pass sentence embeddings through adaptation layers
+            self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
+                                                            Tanh(),
+                                                            Linear(sent_embed_dim // 2, sent_embed_dim // 4),
+                                                            Tanh(),
+                                                            Linear(sent_embed_dim // 4, utt_embed_dim))
+            # projection layer for concatenation of sentence embeddings and utterance embeddings
+            self.style_embedding_projection = Sequential(Linear(utt_embed_dim + utt_embed_dim, utt_embed_dim),
+                                                        LayerNorm(utt_embed_dim))
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
@@ -209,6 +223,7 @@ class ToucanTTS(torch.nn.Module):
                 gold_pitch,
                 gold_energy,
                 utterance_embedding,
+                sentence_embedding=None,
                 return_mels=False,
                 lang_ids=None,
                 run_glow=True
@@ -226,6 +241,7 @@ class ToucanTTS(torch.nn.Module):
             run_glow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
+            sentence_embedding (Tensor): Batch of sentence embeddings, if the model should be conditioned on them
         """
         before_outs, \
             after_outs, \
@@ -240,6 +256,7 @@ class ToucanTTS(torch.nn.Module):
                                       gold_pitch=gold_pitch,
                                       gold_energy=gold_energy,
                                       utterance_embedding=utterance_embedding,
+                                      sentence_embedding=sentence_embedding,
                                       is_inference=False,
                                       lang_ids=lang_ids,
                                       run_glow=run_glow)
@@ -274,11 +291,18 @@ class ToucanTTS(torch.nn.Module):
                  gold_energy=None,
                  is_inference=False,
                  utterance_embedding=None,
+                 sentence_embedding=None,
                  lang_ids=None,
                  run_glow=True):
 
         if not self.multilingual_model:
             lang_ids = None
+
+        if self.use_sent_embs:
+            # pass through adaptation layers
+            sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+            # concatenate utterance embedding with sentence embedding and apply projection
+            utterance_embedding = self.style_embedding_projection(torch.nn.functional.normalize(torch.cat([utterance_embedding, sentence_embedding], dim=1)))
 
         if not self.multispeaker_model:
             utterance_embedding = None
@@ -333,14 +357,14 @@ class ToucanTTS(torch.nn.Module):
             if is_inference:
                 refined_spectrogram = self.post_flow(tgt_mels=None,
                                                      infer=is_inference,
-                                                     mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
-                                                     encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
+                                                     mel_out=decoded_spectrogram,
+                                                     encoded_texts=upsampled_enriched_encoded_texts,
                                                      tgt_nonpadding=None).squeeze()
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=decoded_spectrogram,
-                                           encoded_texts=upsampled_enriched_encoded_texts,
+                                           mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \
@@ -361,6 +385,7 @@ class ToucanTTS(torch.nn.Module):
                   text,
                   speech=None,
                   utterance_embedding=None,
+                  sentence_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None,
                   run_postflow=True):
@@ -372,6 +397,7 @@ class ToucanTTS(torch.nn.Module):
             run_postflow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_id (LongTensor): The language ID used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Embedding to condition the TTS on, if the model is multispeaker
+            sentence_embedding (Tensor): Sentence embedding, if the model should be conditioned on it
         """
         self.eval()
         x, y = text, speech
@@ -384,6 +410,7 @@ class ToucanTTS(torch.nn.Module):
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
+        sentence_embeddings = sentence_embedding.unsqueeze(0).to(x.device) if sentence_embedding is not None else None
 
         before_outs, \
             after_outs, \
@@ -394,6 +421,7 @@ class ToucanTTS(torch.nn.Module):
                                                ys,
                                                is_inference=True,
                                                utterance_embedding=utterance_embeddings,
+                                               sentence_embedding=sentence_embeddings,
                                                lang_ids=lang_id,
                                                run_glow=run_postflow)  # (1, L, odim)
         self.train()

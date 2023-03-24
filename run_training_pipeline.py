@@ -6,33 +6,37 @@ from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning import run as toucanad
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_sent_embs_example import run as ad_sent_embs
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy_WGAN import run as nancy_wgan
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     # the finetuning example
-    "fine_ex"  : fine_tuning_example,
+    "fine_ex"   : fine_tuning_example,
     # integration tests
-    "fs_it"    : fs_integration_test,
-    "ps_it"    : ps_integration_test,
+    "fs_it"     : fs_integration_test,
+    "ps_it"     : ps_integration_test,
     # regular ToucanTTS pipelines
-    "nancy"    : nancy,
+    "nancy"     : nancy,
+    "nancy_wgan": nancy_wgan,
+    "french"    : french,
     "neb"      : toucanneb,
     "ad"       : toucanad,
-    "french"   : french,
+    "ad_sent"  : ad_sent_embs,
     "meta"     : meta,
     # training vocoders (not recommended, best to use provided checkpoint)
-    "avocodo"  : hifi_codo,
-    "bigvgan"  : bigvgan,
+    "avocodo"   : hifi_codo,
+    "bigvgan"   : bigvgan,
     # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
-    "embedding": embedding,
+    "embedding" : embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
-    "aligner"  : aligner,
+    "aligner"   : aligner,
 }
 
 if __name__ == '__main__':

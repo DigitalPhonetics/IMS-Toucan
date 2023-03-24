@@ -3,6 +3,7 @@ import time
 import torch
 import wandb
 from torch.utils.data import ConcatDataset
+from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
@@ -29,38 +30,58 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
+    use_sent_embs=True
+
+    if use_sent_embs:
+        sentence_embedding_extractor = SentenceEmbeddingExtractor()
+    else:
+        sentence_embedding_extractor = None
+
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining_with_sent_embs")
     os.makedirs(save_dir, exist_ok=True)
 
     train_sets = list()
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
-                                                lang="fr"))
+                                                lang="fr",
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=read_pfc(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "pfc"),
-                                                lang="fr"))
+                                                lang="fr",
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
 
     chunk_count = 5
     mls_chunks = split_dictionary(read_mls(), split_n=chunk_count)
     for index in range(chunk_count):
         train_sets.append(prepare_fastspeech_corpus(transcript_dict=mls_chunks[index],
                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"),
-                                                    lang="fr"))
+                                                    lang="fr",
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                                lang="fr"))
+                                                lang="fr",
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
-                                                lang="fr"))
+                                                lang="fr",
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
 
-    model = ToucanTTS()
+    if sentence_embedding_extractor is not None:
+        # free GPU memory
+        del sentence_embedding_extractor
+
+    if use_sent_embs:
+        model = ToucanTTS(sent_embed_dim=768)
+    else:
+        model = ToucanTTS()
+
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,

@@ -4,7 +4,7 @@ import torch
 import wandb
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_with_WGAN import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
@@ -30,12 +30,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_AD_finetune_GAN")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_NancyWGAN")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
-                                          lang="fr",
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
+                                          lang="en",
                                           save_imgs=False)
 
     model = ToucanTTS()
@@ -46,14 +46,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
-               datasets=[train_set],
+               train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               eval_lang="fr",
-               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining", "best.pt"),
+               lang="en",
+               path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
-               fine_tune=True,
+               fine_tune=finetune,
                resume=resume,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               batch_size=16,
+               lr=0.001,
+               warmup_steps=8000,
+               steps=80000,
+               postnet_start_steps=9000
+               )
     if use_wandb:
         wandb.finish()
