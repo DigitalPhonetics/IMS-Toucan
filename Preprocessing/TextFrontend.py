@@ -328,15 +328,13 @@ class ArticulatoryCombinedTextFrontend:
                     # get candidates with correct pos tag
                     candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
                     # print(candidates)
-                    
-                    # TODO: resolve if there are multiple pronunciations for one entry.
-                    # For now, ignore lists
+                    # TODO: handle case when no candidates were found for POS tag
+                    # TODO: resolve if there are multiple pronunciations for one entry. For now, ignore lists
                     pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
                     if len(pronunciation_set) == 1: # all entries have the same pronunciation, so we can just take it
                         pronunciation = pronunciation_set.pop()
-                        print(f"All entries have the same pronunciation for {token}", pronunciation)
-                    # TODO: needs further action
-                    else:
+                        print(f"All entries have the same pronunciation for {token}", pronunciation)                 
+                    else: # TODO: needs further action
                         print("There are different pronunciations in the entries for ", token) 
                         pronunciation = self.phonemizer_backend.phonemize([token], strip=True)[0] # for now take espeak phonemes for testing
                     

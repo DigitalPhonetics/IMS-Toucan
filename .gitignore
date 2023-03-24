@@ -13,7 +13,6 @@ singing/
 toucan_conda_venv/
 venv/
 vis/
-wandb/
 
 
 *_graph
@@ -27,6 +26,7 @@ run_phonemizer.py
 *.wav
 *.flac
 *.json
+!french_homographs_preprocessed.json
 *.pyc
 *.png
 *.pdf
