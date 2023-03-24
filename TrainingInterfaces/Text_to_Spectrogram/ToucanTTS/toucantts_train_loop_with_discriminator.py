@@ -51,7 +51,8 @@ def train_loop(net,
                resume,
                steps,
                use_wandb,
-               postnet_start_steps
+               postnet_start_steps,
+               use_discriminator
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -99,8 +100,8 @@ def train_loop(net,
         duration_losses_total = list()
         pitch_losses_total = list()
         energy_losses_total = list()
-        wgan_generator_losses_total = list()
-        wgan_discriminator_losses_total = list()
+        generator_losses_total = list()
+        discriminator_losses_total = list()
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
@@ -121,10 +122,10 @@ def train_loop(net,
                     return_mels=True,
                     run_glow=step_counter > postnet_start_steps or fine_tune)
 
-                discriminator_loss, generator_loss = calc_wgan_outputs(real_spectrograms=batch[2].to(device),
-                                                                       fake_spectrograms=generated_spectrograms,
-                                                                       spectrogram_lengths=batch[3].to(device),
-                                                                       discriminator=discriminator)
+                discriminator_loss, generator_loss = calc_gan_outputs(real_spectrograms=batch[2].to(device),
+                                                                      fake_spectrograms=generated_spectrograms,
+                                                                      spectrogram_lengths=batch[3].to(device),
+                                                                      discriminator=discriminator)
 
                 if not torch.isnan(l1_loss):
                     train_loss = train_loss + l1_loss
@@ -147,8 +148,8 @@ def train_loop(net,
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
-            wgan_discriminator_losses_total.append(discriminator_loss.item())
-            wgan_generator_losses_total.append(generator_loss.item())
+            discriminator_losses_total.append(discriminator_loss.item())
+            generator_losses_total.append(generator_loss.item())
 
             optimizer.zero_grad()
             grad_scaler.scale(train_loss).backward()
@@ -184,8 +185,8 @@ def train_loop(net,
                 "duration_loss" : round(sum(duration_losses_total) / len(duration_losses_total), 5),
                 "pitch_loss"    : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"   : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                "critic_loss"   : round(sum(wgan_discriminator_losses_total) / len(wgan_discriminator_losses_total), 5),
-                "generator_loss": round(sum(wgan_generator_losses_total) / len(wgan_generator_losses_total), 5),
+                "critic_loss"   : round(sum(discriminator_losses_total) / len(discriminator_losses_total), 5),
+                "generator_loss": round(sum(generator_losses_total) / len(generator_losses_total), 5),
                 "glow_loss"     : round(sum(glow_losses_total) / len(glow_losses_total), 5) if len(glow_losses_total) != 0 else None,
                 "Steps"         : step_counter,
             })
@@ -225,7 +226,7 @@ def train_loop(net,
         net.train()
 
 
-def calc_wgan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, discriminator):
+def calc_gan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, discriminator):
     # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
     fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
     # now we have windows that are [batch_size, 200, 80]
