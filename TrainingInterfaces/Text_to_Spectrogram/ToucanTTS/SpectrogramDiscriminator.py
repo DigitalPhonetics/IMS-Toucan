@@ -17,26 +17,28 @@ class SpectrogramDiscriminator(torch.nn.Module):
         self.D = DiscriminatorNet()
         self.D.apply(weights_init_D)
 
-    def _generator_feature_matching(self, data_generated, data_real):
+    def _generator_feedback(self, data_generated, data_real):
         for p in self.D.parameters():
             p.requires_grad = False  # freeze critic
 
-        fmap_fake = self.D(data_generated)[1]
-        fmap_real = self.D(data_real)[1]
+        score_fake, fmap_fake = self.D(data_generated)
+        _, fmap_real = self.D(data_real)
 
         feature_matching_loss = 0.0
         for feat_fake, feat_real in zip(fmap_fake, fmap_real):
             feature_matching_loss += nn.functional.l1_loss(feat_fake, feat_real.detach())
 
-        return feature_matching_loss
+        discr_loss = nn.functional.mse_loss(input=score_fake, target=torch.ones(score_fake.shape, device=score_fake.device), reduction="mean")
+
+        return feature_matching_loss + discr_loss
 
     def _discriminator_feature_matching(self, data_generated, data_real):
         for p in self.D.parameters():
             p.requires_grad = True  # unfreeze critic
         self.D.train()
 
-        score_fake, fmap_fake = self.D(data_generated)
-        score_real, fmap_real = self.D(data_real)
+        score_fake, _ = self.D(data_generated)
+        score_real, _ = self.D(data_real)
 
         discr_loss = 0.0
         discr_loss = discr_loss + nn.functional.mse_loss(input=score_fake, target=torch.zeros(score_fake.shape, device=score_fake.device), reduction="mean")
@@ -48,8 +50,7 @@ class SpectrogramDiscriminator(torch.nn.Module):
         return self._discriminator_feature_matching(data_generated.detach(), data_real)
 
     def calc_generator_feedback(self, data_generated, data_real):
-        return self._generator_feature_matching(data_generated, data_real)
-
+        return self._generator_feedback(data_generated, data_real)
 
 class DiscriminatorNet(nn.Module):
     def __init__(self):
