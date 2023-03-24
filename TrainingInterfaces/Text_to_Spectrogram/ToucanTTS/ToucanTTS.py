@@ -342,11 +342,6 @@ class ToucanTTS(torch.nn.Module):
                                            mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
                                            encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
                                            tgt_nonpadding=decoder_masks)
-                refined_spectrograms = self.post_flow(tgt_mels=gold_speech,
-                                                      infer=True,
-                                                      mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
-                                                      encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
-                                                      tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \
                 refined_spectrogram.squeeze(), \
