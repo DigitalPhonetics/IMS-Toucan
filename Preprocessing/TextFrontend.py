@@ -324,26 +324,47 @@ class ArticulatoryCombinedTextFrontend:
                 if token in self.homographs or token.lower() in self.homographs: # This is really ineffective, but we need to check identity and lowercase, otherwise we won't find homographs at beginning of sentences if written in upper case
                     print("found homograph: ", token, "\t POS: ", pos)
                     wiki_pos = self.poet_to_wiktionary.get(pos, pos)
+                    resolved = False
                     # print(wiki_pos)
                     # get candidates with correct pos tag
                     candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
                     # print(candidates)
-                    # TODO: handle case when no candidates were found for POS tag
+
+                    # no candidates were found for POS tag, we don't need to check anything further
+                    if len(candidates) == 0:
+                        chunk_to_phonemize += token
+                        print(f"no matching candidates found for {token}: {pos}")
+                        continue
+
                     # TODO: resolve if there are multiple pronunciations for one entry. For now, ignore lists
                     pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
                     if len(pronunciation_set) == 1: # all entries have the same pronunciation, so we can just take it
                         pronunciation = pronunciation_set.pop()
-                        print(f"All entries have the same pronunciation for {token}", pronunciation)                 
+                        print(f"All entries have the same pronunciation for {token}", pronunciation) 
+                        resolved = True                
                     else: # TODO: needs further action
-                        print("There are different pronunciations in the entries for ", token) 
-                        pronunciation = self.phonemizer_backend.phonemize([token], strip=True)[0] # for now take espeak phonemes for testing
-                    
-                    # we found a homograph, so let's phonemize everything up to this point
-                    chunk_to_phonemize += token # we add the homograph token and replace it later, because we don't want to lose liaisons etc.
-                    phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
-                    phones = phones.rsplit(" ", 1)[0] + " " + pronunciation + " " # remove espeak phonemes for homograph token and replace them with gold phonemes
-                    chunk_to_phonemize = " "
+                        print("There are different pronunciations in the entries for ", token)
 
+                        for entry in candidates:
+                            if "pos_details" in entry and entry['pos_details'] == pos:
+                                pronunciation = entry['pronunciation']
+                                resolved = True
+                                print(f"found pos details for {token} ({pos}): {pronunciation}")    
+                                break # we found our match, no need to look further
+                            elif "defult" in entry and entry['default'] == "True":
+                                pronunciation == entry['pronunciation'] # found default pronunciation, but keep searching for matching pos_details
+                                resolved = True
+                                print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
+                    
+                    # we found a homograph and could resolve it, so let's phonemize everything up to this point
+                    if resolved == True:
+                        chunk_to_phonemize += token # we add the homograph token and replace it later, because we don't want to lose liaisons etc.
+                        phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
+                        phones = phones.rsplit(" ", 1)[0] + " " + pronunciation + " " # remove espeak phonemes for homograph token and replace them with gold phonemes
+                        chunk_to_phonemize = " "
+                    else: # there is a homograph but we couldn't resolve it, add it to chunk and let espeak handle when chunk is phonemized
+                        chunk_to_phonemize += token + " "
+                        print(f"Couldn't disambiguate homograph {token} ({pos}). Fall back on espeak.")
                 else: # no homograph found
                     chunk_to_phonemize += token + " "
                     
