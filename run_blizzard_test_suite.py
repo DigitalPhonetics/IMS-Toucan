@@ -74,14 +74,14 @@ def phonetically_interesting_sentences_unseen(version,
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
 
-    for i, sentence in enumerate(["Les amis ont vu un ancien ami en avril, dit-on.",
-                                  "Des amis ont vu en avril un vieil ami qui était très aimable, dit-on.",
-                                  "C'est une maison où l'on peut aller quand il pleut.",
-                                  "Après un tour de présentation, ils sont allés",
-                                  "Le village de Beaulieu est en grand émoi.",
-                                  "Le Premier Ministre a en effet décidé de faire étape dans cette commune au cours de sa tournée de la région en fin d'année.",
-                                  "Jusqu'ici les seuls titres de gloire de Beaulieu étaient son vin blanc sec, ses chemises en soie, un champion local de course à pied (Louis Garret), quatrième aux jeux olymiques de Berlin en 1936, et plus récemment, son usine de pâtes italiennes."
-                                  ]):
+    for i, sentence in enumerate([  # "Les amis ont vu un ancien ami en avril, dit-on.",
+        "Des amis ont vu en avril un vieil ami qui était très aimable, dit-on.",
+        "C'est une maison où l'on peut aller quand il pleut.",
+        "Après un tour de présentation, ils sont allés",
+        "Le village de Beaulieu est en grand émoi.",
+        "Le Premier Ministre a en effet décidé de faire étape dans cette commune au cours de sa tournée de la région en fin d'année.",
+        "Jusqu'ici les seuls titres de gloire de Beaulieu étaient son vin blanc sec, ses chemises en soie, un champion local de course à pied (Louis Garret), quatrième aux jeux olymiques de Berlin en 1936, et plus récemment, son usine de pâtes italiennes."
+    ]):
         tts.read_to_file(text_list=[sentence],
                          file_location=f"audios/{version}/unseen_sentences_{i}.wav",
                          duration_scaling_factor=duration_scaling_factor,
@@ -97,37 +97,7 @@ if __name__ == '__main__':
     # Key:
     # [avocodo0/biggan1] _ [pretraining0/scratch1] _ [prosody unmodded0/prosody modded1] _ [with sent emb0/without1] _ [with discriminator0/without1] _ [neb/ad]
 
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_ad_speakeremb_1",
-                                              model_id="AD_f",
-                                              exec_device=exec_device,
-                                              vocoder_model_path=None,
-                                              biggan=True,
-                                              duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.0,
-                                              energy_variance_scale=1.0,
-                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_01_0001_0.wav"
-                                              )
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_ad_speakeremb_2",
-                                              model_id="AD_f",
-                                              exec_device=exec_device,
-                                              vocoder_model_path=None,
-                                              biggan=True,
-                                              duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.0,
-                                              energy_variance_scale=1.0,
-                                              speaker_reference="audios/blizzard_references/DIVERS_PARL_AD_01_0002_82.wav"
-                                              )
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_ad_speakeremb_3",
-                                              model_id="AD_f",
-                                              exec_device=exec_device,
-                                              vocoder_model_path=None,
-                                              biggan=True,
-                                              duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.0,
-                                              energy_variance_scale=1.0,
-                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0002_82.wav"
-                                              )
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_ad_speakeremb_4",
+    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_ad",
                                               model_id="AD_f",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
@@ -138,7 +108,18 @@ if __name__ == '__main__':
                                               speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
                                               )
 
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_neb_speakeremb_1",
+    phonetically_interesting_sentences_unseen(version="1_0_1_1_1_ad",
+                                              model_id="AD_f",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              duration_scaling_factor=1.0,
+                                              pitch_variance_scale=1.2,
+                                              energy_variance_scale=1.2,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_neb",
                                               model_id="NEB",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
@@ -148,33 +129,14 @@ if __name__ == '__main__':
                                               energy_variance_scale=1.0,
                                               speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
                                               )
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_neb_speakeremb_2",
+
+    phonetically_interesting_sentences_unseen(version="1_0_1_1_1_neb",
                                               model_id="NEB",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
                                               biggan=True,
                                               duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.0,
-                                              energy_variance_scale=1.0,
-                                              speaker_reference="audios/blizzard_references/EC_LFDP_NEB_07_0010_34.wav"
-                                              )
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_neb_speakeremb_3",
-                                              model_id="NEB",
-                                              exec_device=exec_device,
-                                              vocoder_model_path=None,
-                                              biggan=True,
-                                              duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.0,
-                                              energy_variance_scale=1.0,
-                                              speaker_reference="audios/blizzard_references/PF_VAMP_NEB_01_0020_74.wav"
-                                              )
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_neb_speakeremb_4",
-                                              model_id="NEB",
-                                              exec_device=exec_device,
-                                              vocoder_model_path=None,
-                                              biggan=True,
-                                              duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.0,
-                                              energy_variance_scale=1.0,
-                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0007_32.wav"
+                                              pitch_variance_scale=1.3,
+                                              energy_variance_scale=1.3,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
                                               )
