@@ -4,7 +4,7 @@ import torch
 import wandb
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_with_WGAN import train_loop
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_with_discriminator import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR

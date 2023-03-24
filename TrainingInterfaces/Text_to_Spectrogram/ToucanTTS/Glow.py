@@ -358,7 +358,7 @@ class Glow(nn.Module):
                 postflow_loss = None
             return postflow_loss
         else:
-            nonpadding = torch.ones_like(x_recon[:, :1, :])
+            nonpadding = torch.ones_like(x_recon[:, :1, :]) if tgt_nonpadding is None else tgt_nonpadding
             z_post = torch.randn(x_recon.shape).to(g.device) * 0.8
             x_recon, _ = self._forward(z_post, nonpadding, g, reverse=True)
             return x_recon.transpose(1, 2)

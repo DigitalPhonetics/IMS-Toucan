@@ -38,14 +38,11 @@ class SpectrogramDiscriminator(torch.nn.Module):
         score_fake, fmap_fake = self.D(data_generated)
         score_real, fmap_real = self.D(data_real)
 
-        feature_matching_loss = 0.0
-        for feat_fake, feat_real in zip(fmap_fake, fmap_real):
-            feature_matching_loss += nn.functional.l1_loss(feat_fake, feat_real.detach())
+        discr_loss = 0.0
+        discr_loss = discr_loss + nn.functional.mse_loss(input=score_fake, target=torch.zeros(score_fake.shape, device=score_fake.device), reduction="mean")
+        discr_loss = discr_loss + nn.functional.mse_loss(input=score_real, target=torch.ones(score_real.shape, device=score_real.device), reduction="mean")
 
-        feature_matching_loss += nn.functional.l1_loss(score_fake.mean(), torch.tensor(-1.0, device=score_fake.device))
-        feature_matching_loss += nn.functional.l1_loss(score_real.mean(), torch.tensor(1.0, device=score_real.device))
-
-        return feature_matching_loss * -1
+        return discr_loss
 
     def calc_discriminator_loss(self, data_generated, data_real):
         return self._discriminator_feature_matching(data_generated.detach(), data_real)
@@ -67,10 +64,11 @@ class DiscriminatorNet(nn.Module):
 
         self.out = nn.utils.weight_norm(nn.Conv2d(32, 1, 3, 1, 1))
 
-        self.fc = nn.Linear(2000, 1)  # this needs to be changes everytime the window length is changes. It would be nice if this could be done dynamically.
+        self.fc = nn.Linear(2000, 1)  # this needs to be changed everytime the window length is changes. It would be nice if this could be done dynamically.
 
     def forward(self, y):
         feature_maps = list()
+        feature_maps.append(y)
         for d in self.filters:
             y = d(y)
             feature_maps.append(y)
