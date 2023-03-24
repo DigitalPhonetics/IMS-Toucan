@@ -4,7 +4,6 @@ import torch
 import wandb
 from torch.utils.data import ConcatDataset
 
-from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.blizzard_pretraining_path_to_transcript import *
@@ -27,6 +26,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
+
+    from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
+    # has to be imported down here, because it messes with environment variables
 
     print("Preparing")
 

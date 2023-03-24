@@ -9,12 +9,11 @@ from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
-from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
 
-    use_sent_embs = True # set this to True if sentence embeddings should be used
+    use_sent_embs = True  # set this to True if sentence embeddings should be used
 
     if gpu_id == "cpu":
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -28,6 +27,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     torch.manual_seed(131714)
     random.seed(131714)
     torch.random.manual_seed(131714)
+
+    from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
+    # has to be imported down here, because it messes with environment variables
 
     print("Preparing")
 
