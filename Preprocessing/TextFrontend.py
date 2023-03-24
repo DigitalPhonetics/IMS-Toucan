@@ -315,7 +315,8 @@ class ArticulatoryCombinedTextFrontend:
 
             phones = ''  # we'll bulid the phone string incrementally
             chunk_to_phonemize = ''
-            for label in sentence.get_labels():
+            labels = sentence.get_labels()
+            for i,label in enumerate(labels):
                 token = label.data_point.text
                 pos = label.value
                 # disambiguate homographs
@@ -323,7 +324,26 @@ class ArticulatoryCombinedTextFrontend:
                     print("found homograph: ", token, "\t POS: ", pos)
                     wiki_pos = self.poet_to_wiktionary.get(pos, pos)
                     resolved = False
-                    # print(wiki_pos)
+                   
+                    # 'plus' is tricky and needs special treatment
+                    if token == "plus" and wiki_pos == "adverbe":
+                        # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
+                        if re.search(r"(\b(ne|non)\b)", text) or re.search(r"\bn(\’|\')", text):
+                            # print("found negation")
+                            pronunciation = "ply"
+                        # Wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
+                        elif i < len(sentence) and (labels[i+1].value in ["ADV", 'ADJ','ADJMS','ADJFS','ADJMP','ADJFP']) and (sentence[i+1].text[0].lower() in ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
+                            print("plus before adjective or adverb")
+                            print(sentence[i+1].text[0])
+                            pronunciation = "ply"
+                        # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
+                        else:
+                            pronunciation = "plys" # in theory, there is also a difference between /plys/ and /plyz/ but maybe we can ignore this?
+                        phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
+                        phones += " " + pronunciation + " " 
+                        chunk_to_phonemize = " "
+                        continue # we're done with 'plus' move on to next token without checking anything else
+
                     # get candidates with correct pos tag
                     candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
                     # print(candidates)
@@ -334,7 +354,7 @@ class ArticulatoryCombinedTextFrontend:
                         print(f"no matching candidates found for {token}: {pos}")
                         continue
 
-                    # TODO: resolve if there are multiple pronunciations for one entry. For now, ignore lists
+                    # resolve if there are multiple pronunciations for one entry. For now, ignore lists
                     pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
                     if len(pronunciation_set) == 1:  # all entries have the same pronunciation, so we can just take it
                         pronunciation = pronunciation_set.pop()
