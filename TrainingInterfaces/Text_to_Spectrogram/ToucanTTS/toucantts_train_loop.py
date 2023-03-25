@@ -84,11 +84,13 @@ def train_loop(net,
                               persistent_workers=True)
     step_counter = 0
     if use_discriminator:
-        optimizer = torch.optim.Adam(list(net.parameters()) + list(discriminator.parameters()), lr=lr)
+        optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name] + list(discriminator.parameters()), lr=lr, betas=(0.9, 0.98))
     else:
-        optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr)
+    postflow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr, betas=(0.9, 0.98))
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     grad_scaler = GradScaler()
+    postflow_grad_scaler = GradScaler()
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -100,6 +102,7 @@ def train_loop(net,
             scheduler.load_state_dict(check_dict["scheduler"])
             step_counter = check_dict["step_counter"]
             grad_scaler.load_state_dict(check_dict["scaler"])
+            postflow_grad_scaler.load_state_dict(check_dict["flow_scaler"])
     start_time = time.time()
     while True:
         net.train()
@@ -152,16 +155,13 @@ def train_loop(net,
                     train_loss = train_loss + pitch_loss
                 if not torch.isnan(energy_loss):
                     train_loss = train_loss + energy_loss
-                if glow_loss is not None:
-                    if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                        train_loss = train_loss + glow_loss
-                        glow_losses_total.append(glow_loss.item())
-
 
             l1_losses_total.append(l1_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
+            if step_counter > postnet_start_steps:
+                glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
             grad_scaler.scale(train_loss).backward()
@@ -170,6 +170,14 @@ def train_loop(net,
             grad_scaler.step(optimizer)
             grad_scaler.update()
             scheduler.step()
+
+            if step_counter > postnet_start_steps:
+                postflow_optimizer.zero_grad()
+                postflow_grad_scaler.scale(glow_loss).backward()
+                postflow_grad_scaler.unscale_(postflow_optimizer)
+                postflow_grad_scaler.step(postflow_optimizer)
+                postflow_grad_scaler.update()
+
             step_counter += 1
 
         # EPOCH IS OVER
@@ -184,6 +192,7 @@ def train_loop(net,
             "optimizer"       : optimizer.state_dict(),
             "step_counter"    : step_counter,
             "scaler"          : grad_scaler.state_dict(),
+            "flow_scaler"     : postflow_grad_scaler.state_dict(),
             "scheduler"       : scheduler.state_dict(),
             "default_emb"     : default_embedding,
             "default_sent_emb": default_sentence_embedding,
@@ -233,7 +242,7 @@ def train_loop(net,
             # DONE
             return
 
-        if step_counter > 2 * postnet_start_steps:
+        if step_counter > postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
             averaged_model, default_embed, default_sent_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
