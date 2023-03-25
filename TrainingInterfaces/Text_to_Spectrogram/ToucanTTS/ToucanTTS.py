@@ -5,9 +5,9 @@ from torch.nn import Tanh
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
+from Layers.LayerNorm import LayerNorm
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
-from Layers.LayerNorm import LayerNorm
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
@@ -108,7 +108,7 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
-        self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None # sentence embeddings are only used if utterance embeddings are present
+        self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None  # sentence embeddings are only used if utterance embeddings are present
 
         if self.use_sent_embs:
             # pass sentence embeddings through adaptation layers
@@ -119,7 +119,7 @@ class ToucanTTS(torch.nn.Module):
                                                             Linear(sent_embed_dim // 4, utt_embed_dim))
             # projection layer for concatenation of sentence embeddings and utterance embeddings
             self.style_embedding_projection = Sequential(Linear(utt_embed_dim + utt_embed_dim, utt_embed_dim),
-                                                        LayerNorm(utt_embed_dim))
+                                                         LayerNorm(utt_embed_dim))
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
