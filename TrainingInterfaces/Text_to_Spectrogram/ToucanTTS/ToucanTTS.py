@@ -96,7 +96,6 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=True,
                  lang_embs=8000,
                  sent_embed_dim=None):
         super().__init__()
@@ -104,7 +103,6 @@ class ToucanTTS(torch.nn.Module):
         self.input_feature_dimensions = input_feature_dimensions
         self.output_spectrogram_channels = output_spectrogram_channels
         self.attention_dimension = attention_dimension
-        self.detach_postflow = detach_postflow
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
@@ -363,8 +361,8 @@ class ToucanTTS(torch.nn.Module):
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
-                                           encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
+                                           mel_out=decoded_spectrogram.detach().clone(),
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \
