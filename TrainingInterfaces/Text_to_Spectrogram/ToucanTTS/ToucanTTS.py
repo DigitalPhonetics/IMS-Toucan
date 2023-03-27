@@ -5,9 +5,9 @@ from torch.nn import Tanh
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
+from Layers.LayerNorm import LayerNorm
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
-from Layers.LayerNorm import LayerNorm
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
@@ -96,7 +96,6 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=True,
                  lang_embs=8000,
                  sent_embed_dim=None):
         super().__init__()
@@ -104,11 +103,10 @@ class ToucanTTS(torch.nn.Module):
         self.input_feature_dimensions = input_feature_dimensions
         self.output_spectrogram_channels = output_spectrogram_channels
         self.attention_dimension = attention_dimension
-        self.detach_postflow = detach_postflow
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
-        self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None # sentence embeddings are only used if utterance embeddings are present
+        self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None  # sentence embeddings are only used if utterance embeddings are present
 
         if self.use_sent_embs:
             # pass sentence embeddings through adaptation layers
@@ -119,7 +117,7 @@ class ToucanTTS(torch.nn.Module):
                                                             Linear(sent_embed_dim // 4, utt_embed_dim))
             # projection layer for concatenation of sentence embeddings and utterance embeddings
             self.style_embedding_projection = Sequential(Linear(utt_embed_dim + utt_embed_dim, utt_embed_dim),
-                                                        LayerNorm(utt_embed_dim))
+                                                         LayerNorm(utt_embed_dim))
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
@@ -335,7 +333,7 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
+            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             energy_predictions = self.energy_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             predicted_durations = self.duration_predictor(encoded_texts, padding_mask=padding_masks, utt_embed=utterance_embedding)
 
@@ -363,8 +361,8 @@ class ToucanTTS(torch.nn.Module):
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
-                                           encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
+                                           mel_out=decoded_spectrogram.detach().clone(),
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \

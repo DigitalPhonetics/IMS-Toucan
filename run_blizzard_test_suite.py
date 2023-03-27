@@ -27,6 +27,8 @@ def le_corbeau_et_le_renard(version, model_id="Meta", exec_device="cpu", speaker
 
 
 def phonetically_interesting_sentences_seen(version,
+                                            system,
+                                            speaker,
                                             model_id="Meta",
                                             exec_device="cpu",
                                             speaker_reference=None,
@@ -51,7 +53,8 @@ def phonetically_interesting_sentences_seen(version,
                                   "Mon maître, dit alors nab, j'ai l'idée que nous pouvons chercher tant que nous voudrons le monsieur dont il s'agit, mais que nous ne le découvrirons que quand il lui plaira.",
                                   "Pendant la première semaine du mois d'août, les rafales s'apaisèrent peu à peu, et l'atmosphère recouvra un calme qu'elle semblait avoir à jamais perdu.",
                                   ]):
-        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/seen_sentences_{i}.wav",
+        tts.read_to_file(text_list=[sentence],
+                         file_location=f"audios/{version}/{speaker}-{version}-Sentence{i}-{system}.wav",
                          duration_scaling_factor=duration_scaling_factor,
                          pitch_variance_scale=pitch_variance_scale,
                          energy_variance_scale=energy_variance_scale,
@@ -59,6 +62,8 @@ def phonetically_interesting_sentences_seen(version,
 
 
 def phonetically_interesting_sentences_unseen(version,
+                                              system,
+                                              speaker,
                                               model_id="Meta",
                                               exec_device="cpu",
                                               speaker_reference=None,
@@ -74,16 +79,17 @@ def phonetically_interesting_sentences_unseen(version,
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
 
-    for i, sentence in enumerate([  # "Les amis ont vu un ancien ami en avril, dit-on.",
-         "Des amis ont vu en avril un vieil ami qui était très aimable, dit-on.",
+    for i, sentence in enumerate([
+        # "Les amis ont vu un ancien ami en avril, dit-on.",
+        "Des amis ont vu en avril un vieil ami qui était très aimable, dit-on.",
         "C'est une maison où l'on peut aller quand il pleut.",
         "Après un tour de présentation, ils sont allés",
-        "Le village de Beaulieu est en grand émoi.",
+        # "Le village de Beaulieu est en grand émoi.",
         "Le Premier Ministre a en effet décidé de faire étape dans cette commune au cours de sa tournée de la région en fin d'année.",
         "Jusqu'ici les seuls titres de gloire de Beaulieu étaient son vin blanc sec, ses chemises en soie, un champion local de course à pied (Louis Garret), quatrième aux jeux olymiques de Berlin en 1936, et plus récemment, son usine de pâtes italiennes."
     ]):
         tts.read_to_file(text_list=[sentence],
-                         file_location=f"audios/{version}/unseen_sentences_{i}.wav",
+                         file_location=f"audios/{version}/{speaker}-{version}-Sentence{i}-{system}.wav",
                          duration_scaling_factor=duration_scaling_factor,
                          pitch_variance_scale=pitch_variance_scale,
                          energy_variance_scale=energy_variance_scale,
@@ -95,10 +101,53 @@ if __name__ == '__main__':
     print(f"running on {exec_device}")
 
     # Key:
-    # [avocodo0/biggan1] _ [pretraining0/scratch1] _ [prosody unmodded0/prosody modded1] _ [with sent emb0/without1] _ [with discriminator0/without1] _ [neb/ad]
 
-    phonetically_interesting_sentences_unseen(version="1_0_1_1_1_ad",
-                                              model_id="AD_f",
+    # Component 1: Avocodo / BigVGAN
+    phonetically_interesting_sentences_unseen(version="Component1",
+                                              system="SystemA",
+                                              speaker="AD",
+                                              model_id="AD_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=False,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component1",
+                                              system="SystemB",
+                                              speaker="AD",
+                                              model_id="AD_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component1",
+                                              system="SystemA",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=False,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component1",
+                                              system="SystemB",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
+                                              )
+
+    # Component 3: Prosody Modded / Unmodded
+    phonetically_interesting_sentences_unseen(version="Component2",
+                                              system="SystemA",
+                                              speaker="AD",
+                                              model_id="AD_finetuned",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
                                               biggan=True,
@@ -108,8 +157,10 @@ if __name__ == '__main__':
                                               speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
                                               )
 
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_ad",
-                                              model_id="AD_f",
+    phonetically_interesting_sentences_unseen(version="Component2",
+                                              system="SystemB",
+                                              speaker="AD",
+                                              model_id="AD_finetuned",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
                                               biggan=True,
@@ -119,8 +170,23 @@ if __name__ == '__main__':
                                               speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
                                               )
 
-    phonetically_interesting_sentences_unseen(version="1_0_0_1_1_neb",
-                                              model_id="NEB",
+    phonetically_interesting_sentences_unseen(version="Component2",
+                                              system="SystemA",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              duration_scaling_factor=1.0,
+                                              pitch_variance_scale=1.3,
+                                              energy_variance_scale=1.3,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component2",
+                                              system="SystemB",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
                                               biggan=True,
@@ -130,13 +196,84 @@ if __name__ == '__main__':
                                               speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
                                               )
 
-    phonetically_interesting_sentences_unseen(version="1_0_1_1_1_neb",
-                                              model_id="NEB",
+    # Component 4: Sentence Embedding / Without
+    phonetically_interesting_sentences_unseen(version="Component3",
+                                              system="SystemA",
+                                              speaker="AD",
+                                              model_id="AD_finetuned_with_sentence",
                                               exec_device=exec_device,
                                               vocoder_model_path=None,
                                               biggan=True,
-                                              duration_scaling_factor=1.0,
-                                              pitch_variance_scale=1.3,
-                                              energy_variance_scale=1.3,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component3",
+                                              system="SystemB",
+                                              speaker="AD",
+                                              model_id="AD_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component3",
+                                              system="SystemA",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned_with_sentence",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component3",
+                                              system="SystemB",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
+                                              )
+
+    # Component 5: No Discriminator / With Discriminator
+    phonetically_interesting_sentences_unseen(version="Component4",
+                                              system="SystemA",
+                                              speaker="AD",
+                                              model_id="AD_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component4",
+                                              system="SystemB",
+                                              speaker="AD",
+                                              model_id="AD_finetuned_with_discriminator",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component4",
+                                              system="SystemA",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
+                                              speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
+                                              )
+
+    phonetically_interesting_sentences_unseen(version="Component4",
+                                              system="SystemB",
+                                              speaker="NEB",
+                                              model_id="NEB_finetuned_with_discriminator",
+                                              exec_device=exec_device,
+                                              vocoder_model_path=None,
+                                              biggan=True,
                                               speaker_reference="audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav"
                                               )

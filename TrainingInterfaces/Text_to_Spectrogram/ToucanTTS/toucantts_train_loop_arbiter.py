@@ -22,7 +22,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=80000,  # how many updates to run until training is completed
-               postnet_start_steps=9000,  # how many warmup steps before the postnet starts training
+               postnet_start_steps=20000,  # how many warmup steps before the postnet starts training
                use_discriminator=False
                ):
     if type(datasets) != list:
