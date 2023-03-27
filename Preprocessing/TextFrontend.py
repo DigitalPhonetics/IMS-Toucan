@@ -333,8 +333,8 @@ class ArticulatoryCombinedTextFrontend:
                             pronunciation = "ply"
                         # Wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
                         elif i < len(sentence) and (labels[i+1].value in ["ADV", 'ADJ','ADJMS','ADJFS','ADJMP','ADJFP']) and (sentence[i+1].text[0].lower() in ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
-                            print("plus before adjective or adverb")
-                            print(sentence[i+1].text[0])
+                            # print("plus before adjective or adverb")
+                            # print(sentence[i+1].text[0])
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
                         else:
@@ -345,7 +345,10 @@ class ArticulatoryCombinedTextFrontend:
                         continue # we're done with 'plus' move on to next token without checking anything else
 
                     # get candidates with correct pos tag
-                    candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
+                    try:
+                        candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
+                    except KeyError:
+                        candidates = [entry for entry in self.homographs[token.lower()] if entry['pos'] == wiki_pos]
                     # print(candidates)
 
                     # no candidates were found for POS tag, we don't need to check anything further
@@ -369,8 +372,8 @@ class ArticulatoryCombinedTextFrontend:
                                 resolved = True
                                 print(f"found pos details for {token} ({pos}): {pronunciation}")    
                                 break # we found our match, no need to look further
-                            elif "defult" in entry and entry['default'] == "True":
-                                pronunciation == entry['pronunciation'] # found default pronunciation, but keep searching for matching pos_details
+                            elif "default" in entry and entry['default'] == "True":
+                                pronunciation = entry['pronunciation'] # found default pronunciation, but keep searching for matching pos_details
                                 resolved = True
                                 print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
                     

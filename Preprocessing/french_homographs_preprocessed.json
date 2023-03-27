@@ -7977,66 +7977,6 @@
       ]
     }
   ],
-  "de": [
-    {
-      "pronunciation": "də",
-      "pos": "préposition",
-      "meta": [
-        "fr-accord-mixte",
-        " titre=Avec l’article défini",
-        " ms=du",
-        " mp=des",
-        " fs=de la",
-        " fp=des",
-        " pms=dy",
-        " pmp=de",
-        " pfs=də la",
-        " pfp=de"
-      ],
-      "default": "True"
-    },
-    {
-      "pronunciation": "de",
-      "pos": "préposition",
-      "meta": [
-        "invar"
-      ],
-      "default": "False"
-    },
-    {
-      "pronunciation": "də",
-      "pos": "det",
-      "meta": [
-        "mf",
-        "s"
-      ],
-      "comment": "original pos tag was article partitif. This was the only instance of this tag, so changed to det"
-    },
-    {
-      "pronunciation": "də",
-      "pos": "det",
-      "meta": [
-        "mf",
-        "p"
-      ],
-      "comment": "original pos tag was article indéfini. This was the only instance of this tag, so changed to det"
-    },
-    {
-      "pronunciation": "də",
-      "pos": "nom",
-      "meta": [
-        "fr-inv",
-        "də",
-        "m",
-        "invar"
-      ]
-    },
-    {
-      "pronunciation": "də",
-      "pos": "conjonction",
-      "meta": []
-    }
-  ],
   "designer": [
     {
       "pronunciation": "di.zaj.nœʁ",
@@ -17323,7 +17263,9 @@
         "fr-rég",
         "lat",
         "f"
-      ]
+      ],
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
       "pronunciation": "la.te",
@@ -17332,7 +17274,8 @@
         "fr-rég",
         "lat",
         "m"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "lat",
@@ -17380,10 +17323,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "vɑ̃",
-        "van"
-      ],
+      "pronunciation": "vɑ̃",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -17425,7 +17365,8 @@
       "pos": "nom de famille",
       "meta": [
         "mf"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": [
@@ -17446,7 +17387,8 @@
         "fr-inv",
         "me.lis",
         "inv_titre=Nom propre"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": [
@@ -17676,7 +17618,8 @@
         "fr-verbe-flexion",
         "tromper",
         "pp=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tʁɔ̃.pɛ",
@@ -17887,7 +17830,8 @@
         "groupe=1",
         "anglicisme",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʒɔ.be",
@@ -17982,7 +17926,8 @@
     {
       "pronunciation": "uʁ",
       "pos": "nom propre",
-      "meta": []
+      "meta": [],
+      "default": "True"
     }
   ],
   "nayons": [
@@ -18107,7 +18052,8 @@
         "fr-rég",
         "spaʁ",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "spɛʁ",
@@ -18212,7 +18158,8 @@
         "jasser",
         "ind.p.2s=oui",
         "sub.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "jasse": [
@@ -18248,7 +18195,8 @@
         "sub.p.1s=oui",
         "sub.p.3s=oui",
         "imp.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "jassant": [
@@ -18268,7 +18216,8 @@
         "fr-verbe-flexion",
         "jasser",
         "ppr=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "jassé": [
@@ -18288,7 +18237,8 @@
         "fr-verbe-flexion",
         "jasser",
         "pp=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "wallons": [
@@ -18333,7 +18283,8 @@
         "ta.kos",
         "sp=1",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ta.kɔs",
@@ -18342,20 +18293,6 @@
         "fr-inv",
         "ta.kɔs",
         "sp=1",
-        "m"
-      ]
-    },
-    {
-      "pronunciation": [
-        "ta.kɔs",
-        "ta.kɔ"
-      ],
-      "pos": "nom",
-      "meta": [
-        "fr-accord-mf",
-        "p=tacos",
-        "pron=ta.ko",
-        "pp2=ta.kos",
         "m"
       ]
     }
@@ -18379,7 +18316,8 @@
         "targetter",
         "ind.p.2s=oui",
         "sub.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "taʁ.ɡɛt",
@@ -18487,7 +18425,8 @@
         "fr-inv",
         "tak.sis",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tak.si",
@@ -18497,7 +18436,8 @@
         "s=taxi",
         "tak.si",
         "m"
-      ]
+      ],
+      "pos_details": "NMP"
     }
   ],
   "talus": [
@@ -18510,7 +18450,8 @@
         "m",
         "sp",
         "invar"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ta.lys",
@@ -18566,14 +18507,17 @@
       "pos": "nom",
       "meta": [
         "f"
-      ]
+      ],
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
       "pronunciation": "tɛ.ip",
       "pos": "nom",
       "meta": [
         "m"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "tap",
@@ -18599,7 +18543,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "taʁ.ɡɛ.te",
@@ -18621,7 +18566,8 @@
         "fr-inv",
         "tɑ̃",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tan",
@@ -18654,7 +18600,8 @@
         "sub.p.1s=oui",
         "sub.p.3s=oui",
         "imp.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "taʁ.ɡɛt",
@@ -18690,7 +18637,8 @@
         "sp=oui",
         "m",
         "sp"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "Ben": [
@@ -18711,7 +18659,8 @@
         "bɛn",
         "inv_titre=Nom propre"
       ],
-      "comment": "prénom"
+      "comment": "prénom",
+      "default": "True"
     }
   ],
   "affluent": [
@@ -18800,7 +18749,8 @@
         "fr-rég",
         "bɛ̃",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bɛn",
@@ -18871,7 +18821,8 @@
         "tɛ",
         "pron2=tɛt",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tɛ",
@@ -19003,7 +18954,8 @@
         "fr-rég",
         "fas",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "fɛjs",
@@ -19038,7 +18990,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "fe.de",
@@ -19060,7 +19013,9 @@
         "fr-rég",
         "fa.dɛ",
         "m"
-      ]
+      ],
+      "pos_details": "NMS", 
+      "default": "True"
     },
     {
       "pronunciation": "fa.dɛt",
@@ -19069,7 +19024,8 @@
         "fr-rég",
         "fa.dɛt",
         "f"
-      ]
+      ],
+      "pos_details": "NFS"
     },
     {
       "pronunciation": "fa.dɛ",
@@ -19121,7 +19077,8 @@
         "fr-accord-s",
         "ʁɔ.ʃwa",
         "ms=Rochois"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɔ.kwaz",
@@ -19151,7 +19108,8 @@
         "ʁɔ.bɛ̃",
         "m"
       ],
-      "comment": "prénom"
+      "comment": "prénom",
+      "default": "True"
     },
     {
       "pronunciation": "ʁɔ.bin",
