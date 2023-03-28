@@ -12,6 +12,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_silence_annot import run as sa
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning_with_discr import run as nebdisc
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning_with_sents import run as nebsent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
@@ -25,6 +26,7 @@ pipeline_dict = {
     "fs_it"    : fs_integration_test,
     "ps_it"    : ps_integration_test,
     # regular ToucanTTS pipelines
+    "sa":sa,
     "nancy"    : nancy,
     "nebsent"  : nebsent,
     "french"   : french,

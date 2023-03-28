@@ -8,10 +8,11 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
 
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device):
+def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, path_to_aligner_for_silence_annotation=None):
     return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                           cut_silences=True,
-                          device=device)
+                          device=device,
+                          path_to_aligner_for_silence_annotation=path_to_aligner_for_silence_annotation)
 
 
 def prepare_fastspeech_corpus(transcript_dict,
@@ -23,7 +24,8 @@ def prepare_fastspeech_corpus(transcript_dict,
                               use_reconstruction=True,
                               phone_input=False,
                               save_imgs=False,
-                              sentence_embedding_extractor=None):
+                              sentence_embedding_extractor=None,
+                              path_to_aligner_for_silence_annotation=None):
     """
     create an aligner dataset,
     fine-tune an aligner,
@@ -38,7 +40,7 @@ def prepare_fastspeech_corpus(transcript_dict,
             aligner_loc = os.path.join(corpus_dir, "Aligner", "aligner.pt")
 
             if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
-                aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
+                aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"), path_to_aligner_for_silence_annotation=path_to_aligner_for_silence_annotation)
                 if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):
                     train_aligner(train_dataset=aligner_datapoints,
                                   device=torch.device("cuda"),
