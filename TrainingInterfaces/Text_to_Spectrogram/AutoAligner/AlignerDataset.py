@@ -13,8 +13,6 @@ from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.TextFrontend import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from Utility.storage_config import MODELS_DIR
 
 
@@ -32,9 +30,7 @@ class AlignerDataset(Dataset):
                  verbose=False,
                  device="cpu",
                  phone_input=False,
-                 allow_unknown_symbols=False,
-                 path_to_aligner_for_silence_annotation=None
-                 ):
+                 allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             if cut_silences:
@@ -71,8 +67,7 @@ class AlignerDataset(Dataset):
                                   verbose,
                                   "cpu",
                                   phone_input,
-                                  allow_unknown_symbols,
-                                  path_to_aligner_for_silence_annotation),
+                                  allow_unknown_symbols),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -131,16 +126,12 @@ class AlignerDataset(Dataset):
                               verbose,
                               device,
                               phone_input,
-                              allow_unknown_symbols,
-                              path_to_aligner_for_silence_annotation):
+                              allow_unknown_symbols):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
                                cut_silence=cut_silences, device=device)
-
-        if path_to_aligner_for_silence_annotation is not None:
-            sa = SilenceAnnotator(lang=lang, device=device, path_to_aligner=path_to_aligner_for_silence_annotation)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
@@ -172,13 +163,6 @@ class AlignerDataset(Dataset):
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
 
-            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
-                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
-            cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
-
-            if path_to_aligner_for_silence_annotation is not None:
-                transcript = sa.get_text_with_silences(transcript, cached_speech)
-
             try:
                 try:
                     cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
@@ -194,9 +178,12 @@ class AlignerDataset(Dataset):
                 continue
 
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
+            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
+                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
+            cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_text_len,
-                                                   cached_speech.cpu().numpy(),
+                                                   cached_speech,
                                                    cached_speech_len,
                                                    norm_wave.cpu().detach().numpy(),
                                                    path])
@@ -214,56 +201,3 @@ class AlignerDataset(Dataset):
 
     def __len__(self):
         return len(self.datapoints)
-
-
-class SilenceAnnotator:
-
-    def __init__(self, lang, path_to_aligner, device):
-        self.text_frontend = ArticulatoryCombinedTextFrontend(language=lang)
-        self.device = device
-        self.acoustic_model = Aligner().to(device)
-        self.acoustic_model.load_state_dict(torch.load(path_to_aligner, map_location=device)["asr_model"])
-
-    def get_text_with_silences(self, text, spectrogram):
-        # get all permutations
-        perms = get_all_permutations(text)
-        # align audio with all permutations and note down loss for each
-        ctc_losses = list()
-        for perm in perms:
-            phonemes = self.text_frontend.string_to_tensor(perm)
-            # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
-            # We note the index of word boundaries and insert durations of 0 afterwards
-            text_without_word_boundaries = list()
-            indexes_of_word_boundaries = list()
-            for phoneme_index, vector in enumerate(phonemes):
-                if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
-                    text_without_word_boundaries.append(vector.numpy().tolist())
-                else:
-                    indexes_of_word_boundaries.append(phoneme_index)
-            matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
-            _, ctc_loss = self.acoustic_model.inference(mel=spectrogram.to(self.device),
-                                                        tokens=matrix_without_word_boundaries.to(self.device),
-                                                        save_img_for_debug=None,
-                                                        return_ctc=True)
-            ctc_losses.append(ctc_loss)
-        # return annotation with the lowest loss
-        min_loss = min(ctc_losses)
-        for index, loss in enumerate(ctc_losses):
-            if loss == min_loss:
-                print(f"{text} --> {perms[index]}")
-                return perms[index]
-
-
-def get_all_permutations(sentence):
-    permutations = list()
-    word_list = sentence.split()
-
-    for index1, _ in enumerate(word_list):
-        permutation = list()
-        for index2, word in enumerate(word_list):
-            permutation.append(word)
-            if index1 > index2 and word[-1] not in ["!", "?", ",", ";", ".", ":", "-"]:
-                permutation.append(",")
-        permutations.append(" ".join(permutation).replace(" ,", ","))
-
-    return permutations
