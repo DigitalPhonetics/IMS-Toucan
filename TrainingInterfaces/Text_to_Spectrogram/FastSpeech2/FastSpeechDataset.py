@@ -143,7 +143,8 @@ class FastSpeechDataset(Dataset):
                                         cached_energy,
                                         cached_pitch,
                                         prosodic_condition,
-                                        filepaths[index]])
+                                        filepaths[index],
+                                        path_to_transcript_dict[filepaths[index]]])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -202,7 +203,8 @@ class FastSpeechDataset(Dataset):
                self.datapoints[index][6], \
                self.datapoints[index][7], \
                self.language_id, \
-               self.datapoints[index][9] if self.extract_sent_embs else None # sentence embedding
+               self.datapoints[index][10] if self.extract_sent_embs else None, \
+               self.datapoints[index][9]
 
     def __len__(self):
         return len(self.datapoints)

@@ -73,6 +73,7 @@ class ToucanTTS(torch.nn.Module):
                  detach_postflow=True,
                  lang_embs=8000,
                  sent_embed_dim=None,
+                 word_embed_dim=None,
                  weights=None):
         super().__init__()
 
@@ -84,6 +85,7 @@ class ToucanTTS(torch.nn.Module):
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
         self.use_sent_embs = sent_embed_dim is not None and utt_embed_dim is not None # sentence embeddings are only used if utterance embeddings are present
+        self.use_word_embs = word_embed_dim is not None
 
         if self.use_sent_embs:
             # pass sentence embeddings through adaptation layers
@@ -114,6 +116,7 @@ class ToucanTTS(torch.nn.Module):
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
+                                 word_embed=word_embed_dim,
                                  lang_embs=lang_embs,
                                  use_output_norm=True)
 
@@ -169,10 +172,10 @@ class ToucanTTS(torch.nn.Module):
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
-            kernel_size=3,  # post_glow_kernel_size
+            kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=22,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -194,6 +197,7 @@ class ToucanTTS(torch.nn.Module):
                  duration_scaling_factor=1.0,
                  utterance_embedding=None,
                  sentence_embedding=None,
+                 word_embedding=None,
                  lang_ids=None,
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
@@ -211,9 +215,29 @@ class ToucanTTS(torch.nn.Module):
         if not self.multispeaker_model:
             utterance_embedding = None
 
+        if not self.use_word_embs:
+            word_embedding = None
+            word_boundaries_batch = None
+
+        if self.use_word_embs:
+            # get word boundaries
+            word_boundaries_batch = []
+            for batch_id, batch in enumerate(text_tensors):
+                word_boundaries = []
+                for phoneme_index, phoneme_vector in enumerate(batch):
+                    if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                        word_boundaries.append(phoneme_index)
+                word_boundaries_batch.append(torch.tensor(word_boundaries))
+
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
+        encoded_texts, _ = self.encoder(text_tensors, 
+                                        text_masks, 
+                                        utterance_embedding=utterance_embedding,
+                                        word_embedding=word_embedding, 
+                                        word_boundaries=word_boundaries_batch,
+                                        text_lengths=text_lengths, 
+                                        lang_ids=lang_ids)
 
         # predicting pitch, energy and durations
         pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding) if gold_pitch is None else gold_pitch
@@ -265,6 +289,7 @@ class ToucanTTS(torch.nn.Module):
                 energy=None,
                 utterance_embedding=None,
                 sentence_embedding=None,
+                word_embedding=None,
                 return_duration_pitch_energy=False,
                 lang_id=None,
                 duration_scaling_factor=1.0,
@@ -320,6 +345,7 @@ class ToucanTTS(torch.nn.Module):
                                                gold_energy=energy,
                                                utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None,
                                                sentence_embedding=sentence_embedding.unsqueeze(0) if sentence_embedding is not None else None,
+                                               word_embedding=word_embedding.unsqueeze(0) if word_embedding is not None else None,
                                                lang_ids=lang_id,
                                                duration_scaling_factor=duration_scaling_factor,
                                                pitch_variance_scale=pitch_variance_scale,

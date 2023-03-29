@@ -10,6 +10,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
+from Preprocessing.WordEmbeddingExtractor import WordEmbeddingExtractor
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.SpectrogramDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
@@ -23,7 +24,7 @@ from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence embedding
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence embedding, sentence string
     try:
         sentence_embeddings = torch.stack([datapoint[9] for datapoint in batch])
     except TypeError:
@@ -37,7 +38,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]),
-            sentence_embeddings)
+            sentence_embeddings,
+            [datapoint[10] for datapoint in batch])
 
 
 def train_loop(net,
@@ -69,6 +71,8 @@ def train_loop(net,
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
+
+    word_embedding_extractor = WordEmbeddingExtractor()
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -114,6 +118,8 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                        batch_of_spectrogram_lengths=batch[3].to(device))
+            
+            word_embedding, sentence_lens = word_embedding_extractor.encode(sentences=batch[10])
 
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
@@ -125,6 +131,7 @@ def train_loop(net,
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
                 sentence_embedding=batch[9].to(device) if batch[9] is not None else None,
+                word_embedding=word_embedding.to(device),
                 lang_ids=batch[8].to(device),
                 return_mels=True,
                 run_glow=step_counter > postnet_start_steps or fine_tune)
@@ -178,6 +185,8 @@ def train_loop(net,
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         default_sentence_embedding = train_dataset[0][9]
+        default_word_embeddings, _ = word_embedding_extractor.encode(sentences=[train_dataset[0][10]])
+        default_word_embeddings = default_word_embeddings.squeeze()
         torch.save({
             "model"             : net.state_dict(),
             "optimizer"         : optimizer.state_dict(),
@@ -186,6 +195,7 @@ def train_loop(net,
             "scheduler"         : scheduler.state_dict(),
             "default_emb"       : default_embedding,
             "default_sent_emb"  : default_sentence_embedding,
+            "default_word_emb"  : default_word_embeddings,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
 
@@ -216,6 +226,7 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           default_sent_emb=default_sentence_embedding,
+                                                                          default_word_emb=default_word_embeddings,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({

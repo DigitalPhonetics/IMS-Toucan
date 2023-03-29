@@ -1,0 +1,50 @@
+import os
+import re
+import string
+
+import numpy as np
+import torch
+from torch.nn.utils.rnn import pad_sequence
+from transformers import CamembertTokenizerFast, CamembertModel
+
+from Utility.storage_config import MODELS_DIR
+
+class WordEmbeddingExtractor():
+    def __init__(self, cache_dir: str = os.path.join(MODELS_DIR, 'LM'), device=torch.device("cuda")):
+        self.tokenizer = CamembertTokenizerFast.from_pretrained('camembert-base', cache_dir=cache_dir)
+        self.model = CamembertModel.from_pretrained("camembert-base", cache_dir=cache_dir).to(device)
+        self.model.eval()
+        self.device = device
+        self.punct = string.punctuation.replace("'", "").replace("-", "")
+    
+    def encode(self, sentences: list[str]) -> np.ndarray:
+        if type(sentences) == str:
+            sentences = [sentences]
+        # insert whitespace around punctuation if it's not already there
+        sentences = [re.sub(f'(?<! )(?=[{self.punct}])|(?<=[{self.punct}])(?! )', r' ', sentence).strip() for sentence in sentences]
+        # tokenize and encode sentences
+        encoded_input = self.tokenizer(sentences, padding=True, return_tensors='pt').to(self.device)
+        with torch.no_grad():
+            # get all hidden states
+            hidden_states = self.model(**encoded_input, output_hidden_states=True).hidden_states
+        # stack and sum last 4 layers for each token
+        token_embeddings = torch.stack([hidden_states[-4], hidden_states[-3], hidden_states[-2], hidden_states[-1]]).sum(0).squeeze()
+        if len(sentences) == 1:
+            token_embeddings = token_embeddings.unsqueeze(0)
+        word_embeddings_list = []
+        lens = []
+        for batch_id in range(len(sentences)):
+            # get word ids corresponding to token embeddings
+            word_ids = encoded_input.word_ids(batch_id)
+            word_ids_set = set([word_id for word_id in word_ids if word_id is not None])
+            # get ids of hidden states of sub tokens for each word
+            token_ids_words = [[t_id for t_id, word_id in enumerate(word_ids) if word_id == w_id] for w_id in word_ids_set]
+            # combine hidden states of sub tokens for each word
+            word_embeddings = torch.stack([token_embeddings[batch_id, token_ids_word].mean(dim=0) for token_ids_word in token_ids_words])
+            word_embeddings_list.append(word_embeddings)
+            # save sentence lengths
+            lens.append(word_embeddings.shape[0])
+        # pad tensors to max sentence lenth of batch
+        word_embeddings_batch = pad_sequence(word_embeddings_list, batch_first=True).detach()
+        # return word embeddings for each word in each sentence along with sentence lengths
+        return word_embeddings_batch, lens
