@@ -112,7 +112,7 @@ class ArticulatoryCombinedTextFrontend:
             import flair
             # have to import down here, because this import sets the cuda visible devices GLOBALLY for some reason.
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = lambda x: x
+            self.expand_abbreviations = french_spacing
             # add POS Tagger for Blizzard Challenge
             flair.cache_root = Path(f"{PREPROCESSING_DIR}/.flair")
             self.pos_tagger = SequenceTagger.load("qanastek/pos-french-camembert-flair")
@@ -316,7 +316,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = ''  # we'll bulid the phone string incrementally
             chunk_to_phonemize = ''
             labels = sentence.get_labels()
-            for i,label in enumerate(labels):
+            for i, label in enumerate(labels):
                 token = label.data_point.text
                 pos = label.value
                 # disambiguate homographs
@@ -324,7 +324,7 @@ class ArticulatoryCombinedTextFrontend:
                     print("found homograph: ", token, "\t POS: ", pos)
                     wiki_pos = self.poet_to_wiktionary.get(pos, pos)
                     resolved = False
-                   
+
                     # 'plus' is tricky and needs special treatment
                     if token == "plus" and wiki_pos == "adverbe":
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
@@ -332,17 +332,17 @@ class ArticulatoryCombinedTextFrontend:
                             # print("found negation")
                             pronunciation = "ply"
                         # Wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
-                        elif i < len(sentence) and (labels[i+1].value in ["ADV", 'ADJ','ADJMS','ADJFS','ADJMP','ADJFP']) and (sentence[i+1].text[0].lower() in ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
+                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
                             # print("plus before adjective or adverb")
                             # print(sentence[i+1].text[0])
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
                         else:
-                            pronunciation = "plys" # in theory, there is also a difference between /plys/ and /plyz/ but maybe we can ignore this?
+                            pronunciation = "plys"  # in theory, there is also a difference between /plys/ and /plyz/ but maybe we can ignore this?
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
-                        phones += " " + pronunciation + " " 
+                        phones += " " + pronunciation + " "
                         chunk_to_phonemize = " "
-                        continue # we're done with 'plus' move on to next token without checking anything else
+                        continue  # we're done with 'plus' move on to next token without checking anything else
 
                     # get candidates with correct pos tag
                     try:
@@ -361,32 +361,32 @@ class ArticulatoryCombinedTextFrontend:
                     pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
                     if len(pronunciation_set) == 1:  # all entries have the same pronunciation, so we can just take it
                         pronunciation = pronunciation_set.pop()
-                        print(f"All entries have the same pronunciation for {token}", pronunciation) 
-                        resolved = True                
-                    else: # TODO: needs further action
+                        print(f"All entries have the same pronunciation for {token}", pronunciation)
+                        resolved = True
+                    else:  # TODO: needs further action
                         print("There are different pronunciations in the entries for ", token)
 
                         for entry in candidates:
                             if "pos_details" in entry and entry['pos_details'] == pos:
                                 pronunciation = entry['pronunciation']
                                 resolved = True
-                                print(f"found pos details for {token} ({pos}): {pronunciation}")    
-                                break # we found our match, no need to look further
+                                print(f"found pos details for {token} ({pos}): {pronunciation}")
+                                break  # we found our match, no need to look further
                             elif "default" in entry and entry['default'] == "True":
-                                pronunciation = entry['pronunciation'] # found default pronunciation, but keep searching for matching pos_details
+                                pronunciation = entry['pronunciation']  # found default pronunciation, but keep searching for matching pos_details
                                 resolved = True
                                 print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
-                    
+
                     # we found a homograph and could resolve it, so let's phonemize everything up to this point
                     if resolved == True:
-                        chunk_to_phonemize += token # we add the homograph token and replace it later, because we don't want to lose liaisons etc.
+                        chunk_to_phonemize += token  # we add the homograph token and replace it later, because we don't want to lose liaisons etc.
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
-                        phones = phones.rsplit(" ", 1)[0] + " " + pronunciation + " " # remove espeak phonemes for homograph token and replace them with gold phonemes
+                        phones = phones.rsplit(" ", 1)[0] + " " + pronunciation + " "  # remove espeak phonemes for homograph token and replace them with gold phonemes
                         chunk_to_phonemize = " "
-                    else: # there is a homograph but we couldn't resolve it, add it to chunk and let espeak handle it when chunk is phonemized
+                    else:  # there is a homograph, but we couldn't resolve it, add it to chunk and let espeak handle it when chunk is phonemized
                         chunk_to_phonemize += token + " "
                         print(f"Couldn't disambiguate homograph {token} ({pos}). Fall back on espeak.")
-                else: # no homograph found
+                else:  # no homograph found
                     chunk_to_phonemize += token + " "
 
             phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]  # add last part of phone string
