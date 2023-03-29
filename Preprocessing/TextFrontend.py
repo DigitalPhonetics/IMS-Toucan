@@ -123,6 +123,12 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a French Text-Frontend")
 
+        elif language == "fr_no_flair":
+            self.g2p_lang = "fr-fr"
+            self.expand_abbreviations = french_spacing
+            if not silent:
+                print("Created a French Text-Frontend")
+
         elif language == "it":
             self.g2p_lang = "it"
             self.expand_abbreviations = lambda x: x
@@ -307,7 +313,7 @@ class ArticulatoryCombinedTextFrontend:
         # phonemize
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = pinyin_to_ipa(utt)
-        elif self.g2p_lang == "fr-fr" and resolve_homographs:
+        elif self.language == "fr" and resolve_homographs:
             from flair.data import Sentence
             sentence = Sentence(utt)
             self.pos_tagger.predict(sentence)
@@ -596,7 +602,7 @@ def get_language_id(language):
         return torch.LongTensor([6])
     elif language == "nl":
         return torch.LongTensor([7])
-    elif language == "fr":
+    elif language == "fr" or language == "fr_no_flair":
         return torch.LongTensor([8])
     elif language == "pt":
         return torch.LongTensor([9])
