@@ -360,7 +360,7 @@ class ArticulatoryCombinedTextFrontend:
 
                     # no candidates were found for POS tag, we don't need to check anything further
                     if len(candidates) == 0:
-                        chunk_to_phonemize += token
+                        chunk_to_phonemize += token + " "
                         print(f"no matching candidates found for {token}: {pos}")
                         continue
 

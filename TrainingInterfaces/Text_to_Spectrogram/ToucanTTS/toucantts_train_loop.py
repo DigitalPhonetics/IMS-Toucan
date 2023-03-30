@@ -243,7 +243,7 @@ def train_loop(net,
             # DONE
             return
 
-        if step_counter > postnet_start_steps * 2:
+        if step_counter > 2*postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
             averaged_model, default_embed, default_sent_embed, default_word_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
