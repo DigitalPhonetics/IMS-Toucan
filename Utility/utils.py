@@ -198,7 +198,7 @@ def plot_progress_spec_toucantts(net,
         word_embedding_extractor = WordEmbeddingExtractor()
         word_embeddings, _ = word_embedding_extractor.encode([sentence])
         default_word_emb = word_embeddings.squeeze()
-    phoneme_vector = tf.string_to_tensor(sentence, view=True).squeeze(0).to(device)
+    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     if run_postflow:
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,
