@@ -33,6 +33,7 @@ class FastSpeechDataset(Dataset):
                  sentence_embedding_extractor=None):
         self.cache_dir = cache_dir
         self.extract_sent_embs = sentence_embedding_extractor is not None
+        self.path_to_transcript_dict = path_to_transcript_dict
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -143,8 +144,7 @@ class FastSpeechDataset(Dataset):
                                         cached_energy,
                                         cached_pitch,
                                         prosodic_condition,
-                                        filepaths[index],
-                                        path_to_transcript_dict[filepaths[index]]])
+                                        filepaths[index]])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -203,8 +203,8 @@ class FastSpeechDataset(Dataset):
                self.datapoints[index][6], \
                self.datapoints[index][7], \
                self.language_id, \
-               self.datapoints[index][10] if self.extract_sent_embs else None, \
-               self.datapoints[index][9]
+               self.datapoints[index][9] if self.extract_sent_embs else None, \
+               self.path_to_transcript_dict[self.datapoints[index][8]]
 
     def __len__(self):
         return len(self.datapoints)
