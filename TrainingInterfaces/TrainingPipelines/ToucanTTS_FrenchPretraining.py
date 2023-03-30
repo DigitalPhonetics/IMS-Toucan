@@ -42,10 +42,25 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining_with_sent_embs")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinal")
     os.makedirs(save_dir, exist_ok=True)
 
     train_sets = list()
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_long(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_long"),
+                                                lang="fr_no_flair",
+                                                sentence_embedding_extractor=sentence_embedding_extractor))
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_long(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_long"),
+                                                lang="fr_no_flair",
+                                                sentence_embedding_extractor=sentence_embedding_extractor))
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e"),
+                                                lang="fr_no_flair",
+                                                sentence_embedding_extractor=sentence_embedding_extractor))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
