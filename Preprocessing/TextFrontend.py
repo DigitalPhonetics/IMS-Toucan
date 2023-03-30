@@ -110,6 +110,7 @@ class ArticulatoryCombinedTextFrontend:
         elif language == "fr":
             from flair.models import SequenceTagger
             import flair
+            flair.device = torch.device('cpu') # set flair to cpu because it causes errors on gpu
             # have to import down here, because this import sets the cuda visible devices GLOBALLY for some reason.
             self.g2p_lang = "fr-fr"
             self.expand_abbreviations = french_spacing

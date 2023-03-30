@@ -16,6 +16,7 @@ from Utility.storage_config import MODELS_DIR
 def load_net_porta(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     default_sent_emb = None
+    default_word_emb = None
     try:
         net = PortaSpeech()
         net.load_state_dict(check_dict["model"])
@@ -26,12 +27,13 @@ def load_net_porta(path):
         except RuntimeError:
             net = PortaSpeech(lang_embs=None, utt_embed_dim=None)
             net.load_state_dict(check_dict["model"])
-    return net, check_dict["default_emb"], default_sent_emb
+    return net, check_dict["default_emb"], default_sent_emb, default_word_emb
 
 
 def load_net_toucan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     default_sent_emb = None
+    default_word_emb = None
     try:
         net = ToucanTTS()
         net.load_state_dict(check_dict["model"])
@@ -49,10 +51,20 @@ def load_net_toucan(path):
                     net.load_state_dict(check_dict["model"])
                     default_sent_emb = check_dict["default_sent_emb"]
                 except RuntimeError:
-                    net = ToucanTTS(lang_embs=None, sent_embed_dim=768)
-                    net.load_state_dict(check_dict["model"])
-                    default_sent_emb = check_dict["default_sent_emb"]
-    return net, check_dict["default_emb"], default_sent_emb
+                    try:
+                        net = ToucanTTS(lang_embs=None, sent_embed_dim=768)
+                        net.load_state_dict(check_dict["model"])
+                        default_sent_emb = check_dict["default_sent_emb"]
+                    except RuntimeError:
+                        try:
+                            net = ToucanTTS(word_embed_dim=768)
+                            net.load_state_dict(check_dict["model"])
+                            default_word_emb = check_dict["default_word_emb"]
+                        except RuntimeError:
+                            net = ToucanTTS(lang_embs=None, word_embed_dim=768)
+                            net.load_state_dict(check_dict["model"])
+                            default_word_emb = check_dict["default_word_emb"]
+    return net, check_dict["default_emb"], default_sent_emb, default_word_emb
 
 
 def load_net_hifigan(path):
@@ -94,11 +106,12 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
     model = None
     default_embed = None
     default_sent_embed = None
+    default_word_embed = None
 
     # LOAD CHECKPOINTS
     for path_to_checkpoint in list_of_checkpoint_paths:
         print("loading model {}".format(path_to_checkpoint))
-        model, default_embed, default_sent_embed = load_func(path=path_to_checkpoint)
+        model, default_embed, default_sent_embed, default_word_embed = load_func(path=path_to_checkpoint)
         checkpoints_weights[path_to_checkpoint] = dict(model.named_parameters())
 
     # AVERAGE CHECKPOINTS
@@ -118,20 +131,23 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
     model_dict.update(dict_params)
     model.load_state_dict(model_dict)
     model.eval()
-    return model, default_embed, default_sent_embed
+    return model, default_embed, default_sent_embed, default_word_embed
 
 
-def save_model_for_use(model, name="", default_embed=None, default_sent_embed=None, dict_name="model"):
+def save_model_for_use(model, name="", default_embed=None, default_sent_embed=None, default_word_embed=None, dict_name="model"):
     print("saving model...")
     if default_embed is None:
         # HiFiGAN case
         torch.save({dict_name: model.state_dict()}, name)
-    elif default_sent_embed is None:
-        # TTS case without sentence embedding
-        torch.save({dict_name: model.state_dict(), "default_emb": default_embed}, name)
-    else:
+    elif default_sent_embed is not None:
         # TTS case with sentence embedding
         torch.save({dict_name: model.state_dict(), "default_emb": default_embed, "default_sent_emb": default_sent_embed}, name)
+    elif default_word_embed is not None:
+        # TTS case with word embedding
+        torch.save({dict_name: model.state_dict(), "default_emb": default_embed, "default_word_emb": default_word_embed}, name)
+    else:
+        # TTS case
+        torch.save({dict_name: model.state_dict(), "default_emb": default_embed}, name)
     print("...done!")
 
 
@@ -162,8 +178,8 @@ def make_best_in_all():
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue
-                averaged_model, default_embed, default_sent_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, default_sent_embed=default_sent_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
+                averaged_model, default_embed, default_sent_embed, default_word_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+                save_model_for_use(model=averaged_model, default_embed=default_embed, default_sent_embed=default_sent_embed, default_word_embed=default_word_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
 
 
 def count_parameters(net):
