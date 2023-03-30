@@ -209,14 +209,14 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                              device,
-                                                                              save_dir=save_directory,
-                                                                              step=step_counter,
-                                                                              lang=lang,
-                                                                              default_emb=default_embedding,
-                                                                              default_sent_emb=default_sentence_embedding,
-                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
+            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                          device,
+                                                                          save_dir=save_directory,
+                                                                          step=step_counter,
+                                                                          lang=lang,
+                                                                          default_emb=default_embedding,
+                                                                          default_sent_emb=default_sentence_embedding,
+                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -232,7 +232,7 @@ def train_loop(net,
             # DONE
             return
 
-        if step_counter > postnet_start_steps:
+        if step_counter > 2*postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
             averaged_model, default_embed, default_sent_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
@@ -261,7 +261,7 @@ def get_random_window(generated_sequences, real_sequences, lengths):
     """
     generated_windows = list()
     real_windows = list()
-    window_size = 200  # corresponds to 3.2 seconds of audio in real time
+    window_size = 100  # corresponds to 1.6 seconds of audio in real time
 
     for end_index, generated, real in zip(lengths.squeeze(), generated_sequences, real_sequences):
 

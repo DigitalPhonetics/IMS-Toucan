@@ -2,6 +2,7 @@ import time
 
 import torch
 import wandb
+from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
@@ -33,10 +34,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_NEB_finetune")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                          lang="fr",
-                                          save_imgs=False)
+    train_sets = list()
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
+                                                lang="fr"))
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_long(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_long"),
+                                                lang="fr"))
+
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e"),
+                                                lang="fr"))
 
     model = ToucanTTS()
     if use_wandb:
@@ -46,7 +57,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
-               datasets=[train_set],
+               datasets=[ConcatDataset(train_sets)],
                device=device,
                save_directory=save_dir,
                eval_lang="fr",
@@ -54,6 +65,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=True,
                resume=resume,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               use_discriminator=True)
     if use_wandb:
         wandb.finish()
