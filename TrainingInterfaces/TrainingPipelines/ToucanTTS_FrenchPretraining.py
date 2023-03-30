@@ -32,7 +32,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    use_sent_embs = True
+    use_sent_embs = False
 
     if use_sent_embs:
         sentence_embedding_extractor = SentenceEmbeddingExtractor()
