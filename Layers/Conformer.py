@@ -130,7 +130,6 @@ class Conformer(torch.nn.Module):
                         word_embed = word_embedding[batch_id, i]
                     # if mismatch of words and phonemizer is not handled
                     except IndexError:
-                        print("error")
                         # take last word embedding again to avoid errors
                         word_embed = word_embedding[batch_id, -1]
                     # concatenate phoneme embeddings with word embedding
