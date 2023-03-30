@@ -306,6 +306,7 @@ class ArticulatoryCombinedTextFrontend:
 
         return torch.Tensor(phones_vector, device=device)
 
+
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False, resolve_homographs=True):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
@@ -322,6 +323,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = ''  # we'll bulid the phone string incrementally
             chunk_to_phonemize = ''
             labels = sentence.get_labels()
+            print(labels)
             for i, label in enumerate(labels):
                 token = label.data_point.text
                 pos = label.value
@@ -333,18 +335,28 @@ class ArticulatoryCombinedTextFrontend:
 
                     # 'plus' is tricky and needs special treatment
                     if token == "plus" and wiki_pos == "adverbe":
+                        # for utterances with multiple sentences, we use only the sentence that contains the current plus as context
+                        l_punct, r_punct = find_punctuation(labels, i)
+                        print(l_punct, r_punct)
+                        context = sentence[l_punct+1:r_punct].text
+                        print("context: ", context)
+
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
-                        if re.search(r"(\b(ne|non)\b)", text) or re.search(r"\bn(\’|\')", text):
-                            # print("found negation")
-                            pronunciation = "ply"
-                        # Wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
-                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
-                            # print("plus before adjective or adverb")
-                            # print(sentence[i+1].text[0])
+                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))", context):
+                            print("found negation")
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
+                        # Außer wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, dann sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
+                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["b", "c", "d", "f", "g", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
+                            print("plus before adjective or adverb")
+                            # print(sentence[i+1].text[0])
+                            pronunciation = "ply"
+                        # Wenn das folgende Adjektiv oder Adverb mit einem Vokal beginnt, machen wr eine Liaison mit /z/
+                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["a", "e", "i", "o", "u", "y", "h", "à", "è", "ì", "ò", "ù", "â", "ê", "î", "ô", "û"]):
+                            pronunciation = "plyz" # liaison
+                        # positive Bedeutung ohne Ausnahme
                         else:
-                            pronunciation = "plys"  # in theory, there is also a difference between /plys/ and /plyz/ but maybe we can ignore this?
+                            pronunciation = "plys"
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
                         phones += " " + pronunciation + " "
                         chunk_to_phonemize = " "
@@ -582,6 +594,20 @@ def french_spacing(text):
         text = text.replace(f" {punc}", punc)
     return text
 
+def find_punctuation(labels, index):
+    # Find punctuation to the left
+    left_punctuation_index = -1
+    for i in range(index-1, -1, -1):
+        if labels[i].value in ["YPFOR", "PUNCT"]:
+            left_punctuation_index = i
+            break
+    # Find punctuation to the right
+    right_punctuation_index = len(labels) - 1
+    for i in range(index+1, len(labels)):
+        if labels[i].value in ["YPFOR", "PUNCT"]: #in [".", "!", "?", ",", ":", ";", "(", ")", "-", "«", "»", '"', '"']:
+            right_punctuation_index = i
+            break
+    return left_punctuation_index, right_punctuation_index
 
 def convert_kanji_to_pinyin_mandarin(text):
     return " ".join([x[0] for x in pinyin(text)])
