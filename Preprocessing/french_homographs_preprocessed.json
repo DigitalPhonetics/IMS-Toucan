@@ -873,10 +873,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "va.lɔ̃",
-        "wa.lɔ̃"
-      ],
+      "pronunciation": "wa.lɔ̃",
       "pos": "nom de famille",
       "meta": []
     }
@@ -994,10 +991,7 @@
   ],
   "case": [
     {
-      "pronunciation": [
-        "kaz",
-        "kɑz"
-      ],
+      "pronunciation": "kɑz",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -1005,7 +999,8 @@
         "pron2=kɑz",
         "f"
       ],
-      "pos_details": "NFS"
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
       "pronunciation": "kes",
@@ -1211,10 +1206,7 @@
       "default": "True"
     },
     {
-      "pronunciation": [
-        "kan.sɛl",
-        "kɑ̃n.sɛl"
-      ],
+      "pronunciation": "kan.sɛl",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -1537,10 +1529,7 @@
   ],
   "Cassis": [
     {
-      "pronunciation": [
-        "ka.si",
-        "ka.sis"
-      ],
+      "pronunciation": "ka.sis",
       "pos": "nom propre",
       "meta": [
         "fr-inv",
@@ -4968,10 +4957,7 @@
   ],
   "damas": [
     {
-      "pronunciation": [
-        "da.ma",
-        "da.mas"
-      ],
+      "pronunciation": "da.mas",
       "pos": "nom",
       "meta": [
         "m",
@@ -5261,10 +5247,7 @@
   ],
   "boxer": [
     {
-      "pronunciation": [
-        "bɔk.sɛʁ",
-        "bɔk.sœʁ"
-      ],
+      "pronunciation": "bɔk.sɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -6219,10 +6202,7 @@
   ],
   "pointer": [
     {
-      "pronunciation": [
-        "pwɛ̃.tɛʁ",
-        "pɔjn.tœʁ"
-      ],
+      "pronunciation": "pwɛ̃.tɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -7170,10 +7150,7 @@
   ],
   "package": [
     {
-      "pronunciation": [
-        "pa.kɛdʒ",
-        "pa.kadʒ"
-      ],
+      "pronunciation": "pa.kɛdʒ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -7426,10 +7403,7 @@
   ],
   "patas": [
     {
-      "pronunciation": [
-        "pa.tɑ",
-        "pa.tas"
-      ],
+      "pronunciation": "pa.tɑ",
       "pos": "nom",
       "meta": [
         "m"
@@ -7512,10 +7486,7 @@
   ],
   "toaster": [
     {
-      "pronunciation": [
-        "tɔs.te",
-        "tos.te"
-      ],
+      "pronunciation": "tɔs.te",
       "pos": "verbe",
       "meta": [
         "t",
@@ -9192,10 +9163,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "i.pɛʁ",
-        "aj.pe"
-      ],
+      "pronunciation": "aj.pe",
       "pos": "verbe",
       "meta": [
         "invar",
@@ -9547,13 +9515,7 @@
       ]
     },
     {
-      "pronunciation": [
-        [
-          "mɛʁ.dʒe",
-          "mɛʁ.ʒe"
-        ],
-        "mœʁ.dʒe"
-      ],
+      "pronunciation": "mɛʁ.dʒe",
       "pos": "verbe",
       "meta": [
         "FR",
@@ -10367,10 +10329,7 @@
   ],
   "bumper": [
     {
-      "pronunciation": [
-        "bœm.pəʁ",
-        "bœm.pe"
-      ],
+      "pronunciation": "bœm.pe",
       "pos": "verbe",
       "meta": [
         "fr-rég",
@@ -10386,10 +10345,7 @@
   ],
   "bulldozer": [
     {
-      "pronunciation": [
-        "byl.do.zɛʁ",
-        "bul.do.zœʁ"
-      ],
+      "pronunciation": "byl.do.zɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -10399,10 +10355,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "byl.do.ze",
-        "bul.do.ze"
-      ],
+      "pronunciation": "byl.do.ze",
       "pos": "verbe",
       "meta": [
         "t",
@@ -10774,18 +10727,12 @@
   ],
   "Colas": [
     {
-      "pronunciation": [
-        "kɔ.lɑs",
-        "kɔ.las"
-      ],
+      "pronunciation": "kɔ.lɑs",
       "pos": "nom de famille",
       "meta": []
     },
     {
-      "pronunciation": [
-        "kɔ.lɑ",
-        "kɔ.la"
-      ],
+      "pronunciation": "kɔ.lɑ",
       "pos": "nom propre",
       "meta": [
         "m"
@@ -10846,10 +10793,7 @@
   ],
   "dominions": [
     {
-      "pronunciation": [
-        "dɔ.mi.njɔn",
-        "dɔ.mi.njɔ̃"
-      ],
+      "pronunciation": "dɔ.mi.njɔn",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -10961,28 +10905,7 @@
   ],
   "plus": [
     {
-      "pronunciation": [
-        [
-          [
-            [
-              [
-                [
-                  [
-                    "ply",
-                    "plys"
-                  ],
-                  "plys"
-                ],
-                "plys"
-              ],
-              "ply"
-            ],
-            "plys"
-          ],
-          "ply"
-        ],
-        "ply"
-      ],
+      "pronunciation": "ply",
       "pos": "adverbe",
       "meta": [
         "fr-inv",
@@ -11153,10 +11076,7 @@
   ],
   "Millet": [
     {
-      "pronunciation": [
-        "mi.lɛ",
-        "mi.jɛ"
-      ],
+      "pronunciation": "mi.jɛ",
       "pos": "nom de famille",
       "meta": []
     }
@@ -11269,10 +11189,7 @@
   ],
   "racer": [
     {
-      "pronunciation": [
-        "ʁa.sœʁ",
-        "ʁɛ.sœʁ"
-      ],
+      "pronunciation": "ʁa.sœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11569,10 +11486,7 @@
   ],
   "tuner": [
     {
-      "pronunciation": [
-        "ty.nɛʁ",
-        "ty.nœʁ"
-      ],
+      "pronunciation": "ty.nɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11623,13 +11537,11 @@
         "mɛ̃",
         "f"
       ],
-      "pos_details": "NFS"
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
-      "pronunciation": [
-        "mɛjn",
-        "mɛn"
-      ],
+      "pronunciation": "mɛjn",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11698,13 +11610,7 @@
   ],
   "manager": [
     {
-      "pronunciation": [
-        [
-          "ma.na.dʒœʁ",
-          "ma.na.dʒɛʁ"
-        ],
-        "ma.na.ʒœʁ"
-      ],
+      "pronunciation": "ma.na.ʒœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11715,10 +11621,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ma.na.dʒe",
-        "ma.na.ʒe"
-      ],
+      "pronunciation": "ma.na.dʒe",
       "pos": "verbe",
       "meta": [
         "t",
@@ -11917,10 +11820,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ska.nœʁ",
-        "ska.nɛʁ"
-      ],
+      "pronunciation": "ska.nɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -12799,10 +12699,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ʃa.lɑ̃.ʒe",
-        "tʃa.lɛn.dʒe"
-      ],
+      "pronunciation": "ʃa.lɑ̃.ʒe",
       "pos": "verbe",
       "meta": [
         "t",
@@ -13260,10 +13157,7 @@
   ],
   "bitter": [
     {
-      "pronunciation": [
-        "bi.tɛʁ",
-        "bi.tœʁ"
-      ],
+      "pronunciation": "bi.tɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -13362,10 +13256,7 @@
   ],
   "ester": [
     {
-      "pronunciation": [
-        "ɛs.te",
-        "ɛ.te"
-      ],
+      "pronunciation": "ɛs.te",
       "pos": "verbe",
       "meta": [
         "i",
@@ -13450,10 +13341,7 @@
   ],
   "Bourg": [
     {
-      "pronunciation": [
-        "buʁ",
-        "buʁk"
-      ],
+      "pronunciation": "buʁ",
       "pos": "nom propre",
       "meta": [
         "fr-inv",
@@ -14841,10 +14729,7 @@
   ],
   "setter": [
     {
-      "pronunciation": [
-        "sɛ.tœʁ",
-        "sɛ.tɛʁ"
-      ],
+      "pronunciation": "sɛ.tɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -14963,10 +14848,7 @@
   ],
   "quadra": [
     {
-      "pronunciation": [
-        "kwa.dʁa",
-        "ka.dʁa"
-      ],
+      "pronunciation": "kwa.dʁa",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -14988,10 +14870,7 @@
   ],
   "quadrillions": [
     {
-      "pronunciation": [
-        "kwa.dʁi.ljɔ̃",
-        "ka.dʁi.ljɔ̃"
-      ],
+      "pronunciation": "kwa.dʁi.ljɔ̃",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -15317,10 +15196,7 @@
   ],
   "équipollent": [
     {
-      "pronunciation": [
-        "e.ki.pɔ.lɑ̃",
-        "e.kɥi.pɔ.lɑ̃"
-      ],
+      "pronunciation": "e.ki.pɔ.lɑ̃",
       "pos": "adjectif",
       "meta": [
         "fr-accord-cons",
@@ -15330,10 +15206,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "e.ki.pɔl",
-        "e.kɥi.pɔl"
-      ],
+      "pronunciation": "e.ki.pɔl",
       "pos": "verbe",
       "meta": [
         "fr-verbe-flexion",
@@ -16958,13 +16831,7 @@
   ],
   "halant": [
     {
-      "pronunciation": [
-        [
-          "a.lɑ̃t",
-          "ka"
-        ],
-        "k"
-      ],
+      "pronunciation": "a.lɑ̃t",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -17099,10 +16966,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ʁi.zœʁ",
-        "ʁaj.zœʁ"
-      ],
+      "pronunciation": "ʁi.zœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -17384,10 +17248,7 @@
       "default": "True"
     },
     {
-      "pronunciation": [
-        "maʁ.ti.nɛ",
-        "maʁ.ti.ne"
-      ],
+      "pronunciation": "maʁ.ti.nɛ",
       "pos": "nom de famille",
       "meta": [
         "mf"
@@ -17406,10 +17267,7 @@
       "default": "True"
     },
     {
-      "pronunciation": [
-        "mej.lis",
-        "ma.i.lis"
-      ],
+      "pronunciation": "mej.lis",
       "pos": "nom propre",
       "meta": [
         "fr-inv",
@@ -17774,13 +17632,7 @@
   ],
   "joker": [
     {
-      "pronunciation": [
-        [
-          "ʒɔ.kɛʁ",
-          "dʒɔ.kɛʁ"
-        ],
-        "dʒoʊ̯.kœʁ"
-      ],
+      "pronunciation": "ʒɔ.kɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -17793,10 +17645,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "dʒɔ.ke",
-        "dʒoʊ̯.ke"
-      ],
+      "pronunciation": "dʒɔ.ke",
       "pos": "verbe",
       "meta": [
         "CA",
@@ -18493,10 +18342,7 @@
   ],
   "taser": [
     {
-      "pronunciation": [
-        "ta.zɛʁ",
-        "ta.zœʁ"
-      ],
+      "pronunciation": "ta.zɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
