@@ -23,13 +23,41 @@ class WordEmbeddingExtractor():
                              ("parce qu'il", "parce-qu'il"), 
                              ("parce qu'ils", "parce-qu'ils") ,
                              ("temps en temps", "temps-en-temps"), 
-                             ("sud est", "sud-est"), 
+                             ("sud est", "sud-est"),
                              ("tout le monde", "tout-le-monde"), 
                              ("qu'est-ce que", "qu'est-ce-que"),
                              ("ceux-ci", "ceux ci"),
                              ("celles-ci", "celles ci"),
                              ("celle-ci", "celle ci"),
                              ("celle-là", "celle là"),
+                             ("tant mieux", "tant-mieux"),
+                             ("ceux-là", "ceux là"),
+                             ("leAsseyez", "le Asseyez"),
+                             ("parce qu", "parce-qu"),
+                             ("tout le temps", "tout-le-temps"),
+                             ("tant pis", "tant-pis"),
+                             ("celles-là", "celles là"),
+                             ("as tu", "as-tu"),
+                             ("l'ai je", "l'ai-je"),
+                             ("j'ai je", "j'ai-je"),
+                             ("nord est", "nord-est"),
+                             ("ta ent", "ta-ent"),
+                             ("n'est ce", "n'est-ce"),
+                             ("of the", "of-the"),
+                             ("déveiapp ent", "déveiapp-ent"),
+                             ("jug ent", "jug-ent"),
+                             (" ent ", "-ent "),
+                             ("vip", "v i p"),
+                             ("qu'est ce que", "qu'est-ce-que"),
+                             ("ai je", "ai-je"),
+                             ("jureTu", "jure Tu"),
+                             ("tellementAh", "tellement Ah"),
+                             ("votreTe", "votre Te"),
+                             ("desDes", "des Des"),
+                             ("PaoShen", "Pao Shen"),
+                             ("textesOh", "textes Oh"),
+                             ("prendreLa", "prendre La"),
+                             ("queBien", "que Bien"),
                              # and upper case
                              ("Parce que", "Parce-que"), 
                              ("Parce qu'il", "Parce-qu'il"), 
@@ -41,7 +69,25 @@ class WordEmbeddingExtractor():
                              ("Ceux-ci", "Ceux ci"),
                              ("Celles-ci", "Celles ci"),
                              ("Celle-ci", "Celle ci"),
-                             ("Celle-là", "Celle là")
+                             ("Celle-là", "Celle là"),
+                             ("Tant mieux", "Tant-mieux"),
+                             ("Ceux-là", "Ceux là"),
+                             ("Parce qu", "Parce-qu"),
+                             ("Tout le temps", "Tout-le-temps"),
+                             ("Tant pis", "Tant-pis"),
+                             ("Celles-là", "Celles là"),
+                             ("As tu", "As-tu"),
+                             ("L'ai je", "L'ai-je"),
+                             ("J'ai je", "J'ai-je"),
+                             ("Nord est", "Nord est"),
+                             ("Ta ent", "Ta-ent"),
+                             ("N'est ce", "N'est-ce"),
+                             ("Of the", "Of-the"),
+                             ("Déveiapp ent", "Déveiapp ent"),
+                             ("Jug ent", "Jug-ent"),
+                             ("VIP", "V I P"),
+                             ("Qu'est ce que", "Qu'est-ce-que"),
+                             ("Ai je", "Ai-je"),
                              ]
     
     def encode(self, sentences: list[str]) -> np.ndarray:
@@ -55,9 +101,10 @@ class WordEmbeddingExtractor():
             phone_string = self.tf.get_phone_string(sent)
             for replacement in self.replacements:
                 sent = sent.replace(replacement[0], replacement[1])
-            if len(phone_string.split(" ")) != len(sent.split(" ")):
+            if len(phone_string.split()) != len(sent.split()):
                 print("Warning: unhandled length mismatch in following sentence, consider modifying replacements in word embedding extractor.")
                 print(sent)
+                print(phone_string)
             sentences_replaced.append(sent)
         sentences = sentences_replaced
         # tokenize and encode sentences
