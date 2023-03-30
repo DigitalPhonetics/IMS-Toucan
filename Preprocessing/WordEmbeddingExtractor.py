@@ -3,11 +3,13 @@ import os
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from transformers import CamembertTokenizerFast, CamembertModel
+from transformers import CamembertModel
+from transformers import CamembertTokenizerFast
 
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.TextFrontend import french_spacing
+from Preprocessing.TextFrontend import remove_french_spacing
 from Utility.storage_config import MODELS_DIR
+
 
 class WordEmbeddingExtractor():
     def __init__(self, cache_dir: str = os.path.join(MODELS_DIR, 'LM'), device=torch.device("cuda")):
@@ -59,12 +61,12 @@ class WordEmbeddingExtractor():
                              ("prendreLa", "prendre La"),
                              ("queBien", "que Bien"),
                              # and upper case
-                             ("Parce que", "Parce-que"), 
-                             ("Parce qu'il", "Parce-qu'il"), 
-                             ("Parce qu'ils", "Parce-qu'ils") ,
-                             ("Temps en temps", "Temps-en-temps"), 
-                             ("Sud est", "Sud-est"), 
-                             ("Tout le monde", "Tout-le-monde"), 
+                             ("Parce que", "Parce-que"),
+                             ("Parce qu'il", "Parce-qu'il"),
+                             ("Parce qu'ils", "Parce-qu'ils"),
+                             ("Temps en temps", "Temps-en-temps"),
+                             ("Sud est", "Sud-est"),
+                             ("Tout le monde", "Tout-le-monde"),
                              ("Qu'est-ce que", "Qu'est-ce-que"),
                              ("Ceux-ci", "Ceux ci"),
                              ("Celles-ci", "Celles ci"),
@@ -89,12 +91,12 @@ class WordEmbeddingExtractor():
                              ("Qu'est ce que", "Qu'est-ce-que"),
                              ("Ai je", "Ai-je"),
                              ]
-    
+
     def encode(self, sentences: list[str]) -> np.ndarray:
         if type(sentences) == str:
             sentences = [sentences]
         # apply spacing
-        sentences = [french_spacing(sent) for sent in sentences]
+        sentences = [remove_french_spacing(sent) for sent in sentences]
         sentences_replaced = []
         # replace words
         for sent in sentences:

@@ -1,6 +1,5 @@
 import os
 
-import numpy
 import pyloudnorm as pyln
 import soundfile as sf
 import torch
@@ -64,10 +63,8 @@ def read_sentences_ad(sentences,
         sr = 48000
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
-        loudness = meter.integrated_loudness(wave)
-        loud_normed = pyln.normalize.loudness(wave, loudness, -30.0)
-        peak = numpy.amax(numpy.abs(loud_normed))
-        wave = numpy.divide(loud_normed, peak)
+        loudness = meter.integrated_loudness(wav)
+        wav = pyln.normalize.loudness(wav, loudness, -32.0)
         sf.write(file=f"audios/{version}/AD-{version}-Sentence{i}-{system}.mp3",
                  data=wav, samplerate=sr)
 
@@ -99,10 +96,8 @@ def read_sentences_neb(sentences,
         sr = 48000
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
-        loudness = meter.integrated_loudness(wave)
-        loud_normed = pyln.normalize.loudness(wave, loudness, -30.0)
-        peak = numpy.amax(numpy.abs(loud_normed))
-        wave = numpy.divide(loud_normed, peak)
+        loudness = meter.integrated_loudness(wav)
+        wav = pyln.normalize.loudness(wav, loudness, -28.0)
         sf.write(file=f"audios/{version}/NEB-{version}-Sentence{i}-{system}.mp3",
                  data=wav, samplerate=sr)
 
@@ -113,20 +108,20 @@ if __name__ == '__main__':
 
     phonetically_interesting_sentences_unseen(version="Component1",
                                               system="SystemA",
-                                              model_id="AD_finetuned_with_word",
-                                              device=exec_device)
-
-    phonetically_interesting_sentences_unseen(version="Component1",
-                                              system="SystemB",
                                               model_id="AD_finetuned",
                                               device=exec_device)
 
     phonetically_interesting_sentences_unseen(version="Component1",
+                                              system="SystemB",
+                                              model_id="AD_finetuned_with_word",
+                                              device=exec_device)
+
+    phonetically_interesting_sentences_unseen(version="Component1",
                                               system="SystemA",
-                                              model_id="NEB_finetuned_with_word",
+                                              model_id="NEB_finetuned",
                                               device=exec_device)
 
     phonetically_interesting_sentences_unseen(version="Component1",
                                               system="SystemB",
-                                              model_id="NEB_finetuned",
+                                              model_id="NEB_finetuned_with_word",
                                               device=exec_device)
