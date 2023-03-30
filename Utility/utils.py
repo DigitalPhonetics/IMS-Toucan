@@ -16,6 +16,7 @@ from matplotlib.lines import Line2D
 import Layers.ConditionalLayerNorm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
+from Preprocessing.WordEmbeddingExtractor import WordEmbeddingExtractor
 
 
 def make_estimated_durations_usable_for_inference(xs, offset=1.0):
@@ -192,7 +193,12 @@ def plot_progress_spec_toucantts(net,
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
         return None
-    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
+    if default_word_emb is not None:
+        # change default word emb since it should fit the test sentence
+        word_embedding_extractor = WordEmbeddingExtractor()
+        word_embeddings, _ = word_embedding_extractor.encode([sentence])
+        default_word_emb = word_embeddings.squeeze()
+    phoneme_vector = tf.string_to_tensor(sentence, view=True).squeeze(0).to(device)
     if run_postflow:
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,

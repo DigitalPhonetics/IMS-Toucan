@@ -99,7 +99,6 @@ class Conformer(torch.nn.Module):
                 utterance_embedding=None,
                 word_embedding=None,
                 word_boundaries=None,
-                text_lengths=None,
                 lang_ids=None):
         """
         Encode input sequence.
@@ -125,16 +124,14 @@ class Conformer(torch.nn.Module):
                 phoneme_sequence = []
                 for i, wb_id in enumerate(wbs):
                     # get phoneme embeddings corresponding to words according to word boundaries
-                    if i+1 == len(wbs):
-                        phoneme_embeds = xs[batch_id, w_start:text_lengths[batch_id]]
-                    else:
-                        phoneme_embeds = xs[batch_id, w_start:wb_id+1]
+                    phoneme_embeds = xs[batch_id, w_start:wb_id+1]
                     # get cooresponding word embedding
                     try:
                         word_embed = word_embedding[batch_id, i]
+                    # if mismatch of words and phonemizer is not handled
                     except IndexError:
-                        # seems like in some cases (just very few now) the length of word embeddings doesn't align with the one of word boundaries
-                        # in this case we just take the last word embedding again for the last phonemes
+                        print("error")
+                        # take last word embedding again to avoid errors
                         word_embed = word_embedding[batch_id, -1]
                     # concatenate phoneme embeddings with word embedding
                     phoneme_embeds = self._cat_with_word_embed(phoneme_embeddings=phoneme_embeds, word_embedding=word_embed)

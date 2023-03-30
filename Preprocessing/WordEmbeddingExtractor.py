@@ -1,12 +1,12 @@
 import os
-import re
-import string
 
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from transformers import CamembertTokenizerFast, CamembertModel
 
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.TextFrontend import french_spacing
 from Utility.storage_config import MODELS_DIR
 
 class WordEmbeddingExtractor():
@@ -15,13 +15,51 @@ class WordEmbeddingExtractor():
         self.model = CamembertModel.from_pretrained("camembert-base", cache_dir=cache_dir).to(device)
         self.model.eval()
         self.device = device
-        self.punct = string.punctuation.replace("'", "").replace("-", "")
+        self.tf = ArticulatoryCombinedTextFrontend(language="fr_no_flair")
+        # phonemizer reduces or expands some words
+        # we try to account for this here to get matching sequence lengths
+        # more case might have to be added in the future
+        self.replacements = [("parce que", "parce-que"), 
+                             ("parce qu'il", "parce-qu'il"), 
+                             ("parce qu'ils", "parce-qu'ils") ,
+                             ("temps en temps", "temps-en-temps"), 
+                             ("sud est", "sud-est"), 
+                             ("tout le monde", "tout-le-monde"), 
+                             ("qu'est-ce que", "qu'est-ce-que"),
+                             ("ceux-ci", "ceux ci"),
+                             ("celles-ci", "celles ci"),
+                             ("celle-ci", "celle ci"),
+                             ("celle-là", "celle là"),
+                             # and upper case
+                             ("Parce que", "Parce-que"), 
+                             ("Parce qu'il", "Parce-qu'il"), 
+                             ("Parce qu'ils", "Parce-qu'ils") ,
+                             ("Temps en temps", "Temps-en-temps"), 
+                             ("Sud est", "Sud-est"), 
+                             ("Tout le monde", "Tout-le-monde"), 
+                             ("Qu'est-ce que", "Qu'est-ce-que"),
+                             ("Ceux-ci", "Ceux ci"),
+                             ("Celles-ci", "Celles ci"),
+                             ("Celle-ci", "Celle ci"),
+                             ("Celle-là", "Celle là")
+                             ]
     
     def encode(self, sentences: list[str]) -> np.ndarray:
         if type(sentences) == str:
             sentences = [sentences]
-        # insert whitespace around punctuation if it's not already there
-        sentences = [re.sub(f'(?<! )(?=[{self.punct}])|(?<=[{self.punct}])(?! )', r' ', sentence).strip() for sentence in sentences]
+        # apply spacing
+        sentences = [french_spacing(sent) for sent in sentences]
+        sentences_replaced = []
+        # replace words
+        for sent in sentences:
+            phone_string = self.tf.get_phone_string(sent)
+            for replacement in self.replacements:
+                sent = sent.replace(replacement[0], replacement[1])
+            if len(phone_string.split(" ")) != len(sent.split(" ")):
+                print("Warning: unhandled length mismatch in following sentence, consider modifying replacements in word embedding extractor.")
+                print(sent)
+            sentences_replaced.append(sent)
+        sentences = sentences_replaced
         # tokenize and encode sentences
         encoded_input = self.tokenizer(sentences, padding=True, return_tensors='pt').to(self.device)
         with torch.no_grad():

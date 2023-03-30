@@ -19,7 +19,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=192,
+                 attention_dimension=384,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -227,6 +227,7 @@ class ToucanTTS(torch.nn.Module):
                 for phoneme_index, phoneme_vector in enumerate(batch):
                     if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                         word_boundaries.append(phoneme_index)
+                word_boundaries.append(text_lengths[batch_id].cpu().numpy()-1) # marker for last word of sentence
                 word_boundaries_batch.append(torch.tensor(word_boundaries))
 
         # encoding the texts
@@ -236,7 +237,6 @@ class ToucanTTS(torch.nn.Module):
                                         utterance_embedding=utterance_embedding,
                                         word_embedding=word_embedding, 
                                         word_boundaries=word_boundaries_batch,
-                                        text_lengths=text_lengths, 
                                         lang_ids=lang_ids)
 
         # predicting pitch, energy and durations
