@@ -342,7 +342,7 @@ class ArticulatoryCombinedTextFrontend:
                         print("context: ", context)
 
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
-                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))", context):
+                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))(\s+|\w+)* \bplus\b", context):
                             print("found negation")
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
@@ -354,7 +354,7 @@ class ArticulatoryCombinedTextFrontend:
                         # Wenn das folgende Adjektiv oder Adverb mit einem Vokal beginnt, machen wr eine Liaison mit /z/
                         elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["a", "e", "i", "o", "u", "y", "h", "à", "è", "ì", "ò", "ù", "â", "ê", "î", "ô", "û"]):
                             pronunciation = "plyz" # liaison
-                        # positive Bedeutung ohne Ausnahme
+                        # positive Bedeutung ohne Ausnahmen
                         else:
                             pronunciation = "plys"
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
