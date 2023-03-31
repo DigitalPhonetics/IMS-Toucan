@@ -12,12 +12,12 @@ from Utility.storage_config import MODELS_DIR
 
 
 class WordEmbeddingExtractor():
-    def __init__(self, cache_dir: str = os.path.join(MODELS_DIR, 'LM'), device=torch.device("cuda")):
+    def __init__(self, cache_dir: str = os.path.join(MODELS_DIR, 'LM'), device=torch.device("cuda")if torch.cuda.is_available() else "cpu"):
         self.tokenizer = CamembertTokenizerFast.from_pretrained('camembert-base', cache_dir=cache_dir)
         self.model = CamembertModel.from_pretrained("camembert-base", cache_dir=cache_dir).to(device)
         self.model.eval()
         self.device = device
-        self.tf = ArticulatoryCombinedTextFrontend(language="fr_no_flair")
+        self.tf = ArticulatoryCombinedTextFrontend(language="fr")
         # phonemizer reduces or expands some words
         # we try to account for this here to get matching sequence lengths
         # more case might have to be added in the future

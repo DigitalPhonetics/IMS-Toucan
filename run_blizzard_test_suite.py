@@ -6,34 +6,8 @@ import torch
 from pedalboard import HighpassFilter
 from pedalboard import LowpassFilter
 from pedalboard import Pedalboard
-
+import numpy
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
-
-
-def phonetically_interesting_sentences_unseen(version,
-                                              system,
-                                              model_id="Meta",
-                                              device="cpu", ):
-    sentences = [
-        "On vous inviterait à chasser l'ours dans les montagnes de la Suisse, que vous diriez: «Très bien!»",
-        "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l’odeur alléché, lui tint à peu près ce langage: Et bonjour, Monsieur du Corbeau, que vous êtes joli! que vous me semblez beau! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois. À ces mots le Corbeau ne se sent pas de joie, et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s’en saisit, et dit: Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l’écoute. Cette leçon vaut bien un fromage sans doute. Le Corbeau honteux et confus jura, mais un peu tard, qu’on ne l’y prendrait plus."
-        "De nombreux membres le considéraient comme un traître de l'organisation et il a reçu plusieurs menaces de mort de la part du groupe. Depuis, les récits populaires ont largement emboîté le pas.",
-        "La révolution survint, les événements se précipitèrent, les familles parlementaires décimées, chassées, traquées, se dispersèrent.",
-        "Quel est ce bonhomme qui me regarde ?",
-        "Mais, soit qu’il n’eût pas remarqué cette manœuvre ou qu’il n’eut osé s’y soumettre, la prière était finie que le nouveau tenait encore sa casquette sur ses deux genoux. ",
-        "Il traîna l'échelle jusqu'à ce trou, dont le diamètre mesurait six pieds environ, et la laissa se dérouler, après avoir solidement attaché son extrémité supérieure.",
-        "En voilà une de ces destinées qui peut se vanter d'être flatteuse! À boire, Chourineur, dit brusquement Fleur-de-Marie après un assez long silence; et elle tendit son verre."
-    ]
-    read_sentences_ad(sentences,
-                      version,
-                      system,
-                      model_id,
-                      device)
-    read_sentences_neb(sentences,
-                       version,
-                       system,
-                       model_id,
-                       device)
 
 
 def read_sentences_ad(sentences,
@@ -46,8 +20,8 @@ def read_sentences_ad(sentences,
     tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav")
-    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=300),
-                                  LowpassFilter(cutoff_frequency_hz=10000)])
+    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=100),
+                                  LowpassFilter(cutoff_frequency_hz=8000)])
     for i, sentence in enumerate(sentences):
         print("Now synthesizing: {}".format(sentence))
         silence = torch.zeros([2000])
@@ -58,8 +32,8 @@ def read_sentences_ad(sentences,
                   duration_scaling_factor=1.0,
                   pitch_variance_scale=1.0,
                   energy_variance_scale=1.0).cpu()
-        wav = torch.cat((silence, wav, silence), 0)
-        wav = [val for val in wav for _ in (0, 1)]
+        wav = torch.cat((silence, wav, silence), 0).cpu().numpy()
+        wav = numpy.array([val for val in wav for _ in (0, 1)])
         sr = 48000
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
@@ -79,8 +53,8 @@ def read_sentences_neb(sentences,
     tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav")
-    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=300),
-                                  LowpassFilter(cutoff_frequency_hz=10000)])
+    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=100),
+                                  LowpassFilter(cutoff_frequency_hz=8000)])
     for i, sentence in enumerate(sentences):
         print("Now synthesizing: {}".format(sentence))
         silence = torch.zeros([2000])
@@ -91,8 +65,8 @@ def read_sentences_neb(sentences,
                   duration_scaling_factor=1.0,
                   pitch_variance_scale=1.2,
                   energy_variance_scale=1.2).cpu()
-        wav = torch.cat((silence, wav, silence), 0)
-        wav = [val for val in wav for _ in (0, 1)]
+        wav = torch.cat((silence, wav, silence), 0).cpu().numpy()
+        wav = numpy.array([val for val in wav for _ in (0, 1)])
         sr = 48000
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
@@ -106,22 +80,33 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    phonetically_interesting_sentences_unseen(version="Component1",
-                                              system="SystemA",
-                                              model_id="AD_finetuned",
-                                              device=exec_device)
+    sentences = ["Depuis plus de dix ans, l’E3 est considéré comme en perte de vitesse, en premier lieu parce que les géants du secteur y présentent de moins en moins leurs nouveautés.",
+                 "Elle pense encore possible de ramener Robert à l'honnêteté.",
+                 "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l’odeur alléché, lui tint à peu près ce langage.",
+                 "Il avait les cheveux coupés droit sur le front, comme un chantre de village, l’air raisonnable et fort embarrassé."
+                 # "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l’odeur alléché, lui tint à peu près ce langage: Et bonjour, Monsieur du Corbeau, que vous êtes joli! que vous me semblez beau! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois. À ces mots le Corbeau ne se sent pas de joie, et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s’en saisit, et dit: Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l’écoute. Cette leçon vaut bien un fromage sans doute. Le Corbeau honteux et confus jura, mais un peu tard, qu’on ne l’y prendrait plus."
+                 ]
 
-    phonetically_interesting_sentences_unseen(version="Component1",
-                                              system="SystemB",
-                                              model_id="AD_finetuned_with_word",
-                                              device=exec_device)
+    read_sentences_ad(version="Component1",
+                      system="SystemA",
+                      model_id="AD_finetuned",
+                      device=exec_device,
+                      sentences=sentences)
 
-    phonetically_interesting_sentences_unseen(version="Component1",
-                                              system="SystemA",
-                                              model_id="NEB_finetuned",
-                                              device=exec_device)
+    read_sentences_ad(version="Component1",
+                      system="SystemB",
+                      model_id="AD_finetuned_with_word",
+                      device=exec_device,
+                      sentences=sentences)
 
-    phonetically_interesting_sentences_unseen(version="Component1",
-                                              system="SystemB",
-                                              model_id="NEB_finetuned_with_word",
-                                              device=exec_device)
+    read_sentences_neb(version="Component1",
+                       system="SystemA",
+                       model_id="NEB_finetuned",
+                       device=exec_device,
+                       sentences=sentences)
+
+    read_sentences_neb(version="Component1",
+                       system="SystemB",
+                       model_id="NEB_finetuned_with_word",
+                       device=exec_device,
+                       sentences=sentences)
