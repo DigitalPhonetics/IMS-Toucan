@@ -323,13 +323,13 @@ class ArticulatoryCombinedTextFrontend:
             phones = ''  # we'll bulid the phone string incrementally
             chunk_to_phonemize = ''
             labels = sentence.get_labels()
-            print(labels)
+            #print(labels)
             for i, label in enumerate(labels):
                 token = label.data_point.text
                 pos = label.value
                 # disambiguate homographs
                 if token in self.homographs or token.lower() in self.homographs:  # This is really ineffective, but we need to check identity and lowercase, otherwise we won't find homographs at beginning of sentences if written in upper case
-                    print("found homograph: ", token, "\t POS: ", pos)
+                    #print("found homograph: ", token, "\t POS: ", pos)
                     wiki_pos = self.poet_to_wiktionary.get(pos, pos)
                     resolved = False
 
@@ -337,18 +337,18 @@ class ArticulatoryCombinedTextFrontend:
                     if token == "plus" and wiki_pos == "adverbe":
                         # for utterances with multiple sentences, we use only the sentence that contains the current plus as context
                         l_punct, r_punct = find_punctuation(labels, i)
-                        print(l_punct, r_punct)
+                        #print(l_punct, r_punct)
                         context = sentence[l_punct + 1:r_punct].text
-                        print("context: ", context)
+                        #print("context: ", context)
 
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
                         if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))", context):
-                            print("found negation")
+                            #print("found negation")
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
                         # Außer wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, dann sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
                         elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["b", "c", "d", "f", "g", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
-                            print("plus before adjective or adverb")
+                            #print("plus before adjective or adverb")
                             # print(sentence[i+1].text[0])
                             pronunciation = "ply"
                         # Wenn das folgende Adjektiv oder Adverb mit einem Vokal beginnt, machen wr eine Liaison mit /z/
@@ -372,28 +372,28 @@ class ArticulatoryCombinedTextFrontend:
                     # no candidates were found for POS tag, we don't need to check anything further
                     if len(candidates) == 0:
                         chunk_to_phonemize += token + " "
-                        print(f"no matching candidates found for {token}: {pos}")
+                        #print(f"no matching candidates found for {token}: {pos}")
                         continue
 
                     # resolve if there are multiple pronunciations for one entry. For now, ignore lists
                     pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
                     if len(pronunciation_set) == 1:  # all entries have the same pronunciation, so we can just take it
                         pronunciation = pronunciation_set.pop()
-                        print(f"All entries have the same pronunciation for {token}", pronunciation)
+                        #print(f"All entries have the same pronunciation for {token}", pronunciation)
                         resolved = True
                     else:  # TODO: needs further action
-                        print("There are different pronunciations in the entries for ", token)
+                        #print("There are different pronunciations in the entries for ", token)
 
                         for entry in candidates:
                             if "pos_details" in entry and entry['pos_details'] == pos:
                                 pronunciation = entry['pronunciation']
                                 resolved = True
-                                print(f"found pos details for {token} ({pos}): {pronunciation}")
+                                #print(f"found pos details for {token} ({pos}): {pronunciation}")
                                 break  # we found our match, no need to look further
                             elif "default" in entry and entry['default'] == "True":
                                 pronunciation = entry['pronunciation']  # found default pronunciation, but keep searching for matching pos_details
                                 resolved = True
-                                print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
+                                #print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
 
                     # we found a homograph and could resolve it, so let's phonemize everything up to this point
                     if resolved == True:
@@ -484,7 +484,8 @@ class ArticulatoryCombinedTextFrontend:
             ("꜒", "˥"),
             # symbols that indicate a pause or silence
             ('"', "~"),
-            (" - ", "~"),
+            (" - ", "~ "),
+            ("- ", "~ "),
             ("-", ""),
             ("…", "."),
             (":", "~"),
