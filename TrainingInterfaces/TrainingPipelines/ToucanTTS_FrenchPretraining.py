@@ -42,7 +42,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinal")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinalFinal")
     os.makedirs(save_dir, exist_ok=True)
 
     train_sets = list()
@@ -64,7 +64,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
-                                                lang="fr",
+                                                lang="fr_no_flair",
                                                 sentence_embedding_extractor=sentence_embedding_extractor))
 
     chunk_count = 5
@@ -72,17 +72,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     for index in range(chunk_count):
         train_sets.append(prepare_fastspeech_corpus(transcript_dict=mls_chunks[index],
                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"),
-                                                    lang="fr",
+                                                    lang="fr_no_flair",
                                                     sentence_embedding_extractor=sentence_embedding_extractor))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                                lang="fr",
+                                                lang="fr_no_flair",
                                                 sentence_embedding_extractor=sentence_embedding_extractor))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
-                                                lang="fr",
+                                                lang="fr_no_flair",
                                                 sentence_embedding_extractor=sentence_embedding_extractor))
 
     if sentence_embedding_extractor is not None:
