@@ -4,13 +4,11 @@ import time
 
 import torch
 import torch.multiprocessing
-import torch.multiprocessing
 import wandb
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Preprocessing.WordEmbeddingExtractor import WordEmbeddingExtractor
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.SpectrogramDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler

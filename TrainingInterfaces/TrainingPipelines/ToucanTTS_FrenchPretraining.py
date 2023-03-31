@@ -27,17 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     random.seed(131714)
     torch.random.manual_seed(131714)
 
-    from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
-    # has to be imported down here, because it messes with environment variables
-
     print("Preparing")
-
-    use_sent_embs = False
-
-    if use_sent_embs:
-        sentence_embedding_extractor = SentenceEmbeddingExtractor()
-    else:
-        sentence_embedding_extractor = None
 
     if model_dir is not None:
         save_dir = model_dir
@@ -72,27 +62,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     for index in range(chunk_count):
         train_sets.append(prepare_fastspeech_corpus(transcript_dict=mls_chunks[index],
                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"),
-                                                    lang="fr_no_flair",
-                                                    sentence_embedding_extractor=sentence_embedding_extractor))
+                                                    lang="fr_no_flair"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                                lang="fr_no_flair",
-                                                sentence_embedding_extractor=sentence_embedding_extractor))
+                                                lang="fr_no_flair"))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
-                                                lang="fr_no_flair",
-                                                sentence_embedding_extractor=sentence_embedding_extractor))
+                                                lang="fr_no_flair"))
 
-    if sentence_embedding_extractor is not None:
-        # free GPU memory
-        del sentence_embedding_extractor
-
-    if use_sent_embs:
-        model = ToucanTTS(sent_embed_dim=768)
-    else:
-        model = ToucanTTS(lang_embs=None)
+    model = ToucanTTS(lang_embs=None)
 
     if use_wandb:
         wandb.init(
@@ -109,9 +89,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
-               warmup_steps=8000,
-               postnet_start_steps=9000,
-               steps=120000,
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()
