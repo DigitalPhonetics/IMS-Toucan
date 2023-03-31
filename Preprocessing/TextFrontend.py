@@ -110,9 +110,10 @@ class ArticulatoryCombinedTextFrontend:
         elif language == "fr":
             from flair.models import SequenceTagger
             import flair
+            flair.device = torch.device('cpu')  # set flair to cpu because it causes errors on gpu
             # have to import down here, because this import sets the cuda visible devices GLOBALLY for some reason.
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = french_spacing
+            self.expand_abbreviations = remove_french_spacing
             # add POS Tagger for Blizzard Challenge
             flair.cache_root = Path(f"{PREPROCESSING_DIR}/.flair")
             self.pos_tagger = SequenceTagger.load("qanastek/pos-french-camembert-flair")
@@ -125,7 +126,7 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr_no_flair":
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = french_spacing
+            self.expand_abbreviations = remove_french_spacing
             if not silent:
                 print("Created a French Text-Frontend")
 
@@ -306,7 +307,6 @@ class ArticulatoryCombinedTextFrontend:
 
         return torch.Tensor(phones_vector, device=device)
 
-
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False, resolve_homographs=True):
         # expand abbreviations
         utt = self.expand_abbreviations(text)
@@ -338,7 +338,7 @@ class ArticulatoryCombinedTextFrontend:
                         # for utterances with multiple sentences, we use only the sentence that contains the current plus as context
                         l_punct, r_punct = find_punctuation(labels, i)
                         print(l_punct, r_punct)
-                        context = sentence[l_punct+1:r_punct].text
+                        context = sentence[l_punct + 1:r_punct].text
                         print("context: ", context)
 
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
@@ -353,8 +353,8 @@ class ArticulatoryCombinedTextFrontend:
                             pronunciation = "ply"
                         # Wenn das folgende Adjektiv oder Adverb mit einem Vokal beginnt, machen wr eine Liaison mit /z/
                         elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["a", "e", "i", "o", "u", "y", "h", "à", "è", "ì", "ò", "ù", "â", "ê", "î", "ô", "û"]):
-                            pronunciation = "plyz" # liaison
-                        # positive Bedeutung ohne Ausnahmen
+                            pronunciation = "plyz"  # liaison
+                        # positive Bedeutung ohne Ausnahme
                         else:
                             pronunciation = "plys"
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
@@ -588,26 +588,29 @@ def english_text_expansion(text):
     return text
 
 
-def french_spacing(text):
-    text = text.replace("»", '"').replace("«", '"')
-    for punc in ["!", ";", ":", ".", ",", "?"]:
+def remove_french_spacing(text):
+    text = text.replace(" »", '"').replace("« ", '"')
+    for punc in ["!", ";", ":", ".", ",", "?", "-"]:
         text = text.replace(f" {punc}", punc)
+        text = text.replace(f" {punc}", punc)  # some sentences have two spaces in front of punctuation marks
     return text
+
 
 def find_punctuation(labels, index):
     # Find punctuation to the left
     left_punctuation_index = -1
-    for i in range(index-1, -1, -1):
+    for i in range(index - 1, -1, -1):
         if labels[i].value in ["YPFOR", "PUNCT"]:
             left_punctuation_index = i
             break
     # Find punctuation to the right
     right_punctuation_index = len(labels) - 1
-    for i in range(index+1, len(labels)):
-        if labels[i].value in ["YPFOR", "PUNCT"]: #in [".", "!", "?", ",", ":", ";", "(", ")", "-", "«", "»", '"', '"']:
+    for i in range(index + 1, len(labels)):
+        if labels[i].value in ["YPFOR", "PUNCT"]:  # in [".", "!", "?", ",", ":", ";", "(", ")", "-", "«", "»", '"', '"']:
             right_punctuation_index = i
             break
     return left_punctuation_index, right_punctuation_index
+
 
 def convert_kanji_to_pinyin_mandarin(text):
     return " ".join([x[0] for x in pinyin(text)])

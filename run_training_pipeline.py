@@ -9,6 +9,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning import run as 
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning_with_discr import run as addisc
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning_with_sents import run as adsent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretrainingWordEmbs import run as frenchword
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
@@ -28,6 +29,7 @@ pipeline_dict = {
     "nancy"    : nancy,
     "nebsent"  : nebsent,
     "french"   : french,
+    "frenchword": frenchword,
     "neb"      : toucanneb,
     "ad"       : toucanad,
     "nebdisc"  : nebdisc,
