@@ -2,6 +2,7 @@ import time
 
 import torch
 import wandb
+from torch.utils.data import ConcatDataset
 
 from Preprocessing.SentenceEmbeddingExtractor import SentenceEmbeddingExtractor
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
@@ -35,10 +36,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     os.makedirs(save_dir, exist_ok=True)
     sentence_embedding_extractor = None
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
+    train_sets = list()
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
                                           lang="fr",
-                                          sentence_embedding_extractor=sentence_embedding_extractor)
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
+
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_long(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_long"),
+                                                lang="fr",
+                                          sentence_embedding_extractor=sentence_embedding_extractor))
 
     model = ToucanTTS(word_embed_dim=768)
     if use_wandb:
@@ -48,7 +56,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
-               datasets=[train_set],
+               datasets=[ConcatDataset(train_sets)],
                device=device,
                save_directory=save_dir,
                eval_lang="fr",
