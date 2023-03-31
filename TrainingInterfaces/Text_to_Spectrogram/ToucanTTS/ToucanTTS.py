@@ -446,7 +446,7 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0)
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
         sentence_embeddings = sentence_embedding.unsqueeze(0).to(x.device) if sentence_embedding is not None else None
-        word_embeddings = word_embedding.unsqueeze(0).to(x.device)
+        word_embeddings = None
 
         before_outs, \
         after_outs, \
