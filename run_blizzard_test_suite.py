@@ -12,8 +12,7 @@ from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 def read_sentences_ad(sentences,
                       version,
-                      system,
-                      model_id,
+                      model_id="AD_finetuned_final",
                       device="cpu"):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
@@ -39,14 +38,13 @@ def read_sentences_ad(sentences,
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
         wav = pyln.normalize.loudness(wav, loudness, -32.0)
-        sf.write(file=f"audios/{version}/AD-{version}-Sentence{i}-{system}.wav",
+        sf.write(file=f"audios/{version}/AD-{version}-Sentence{i}.wav",
                  data=wav, samplerate=sr)
 
 
 def read_sentences_neb(sentences,
                        version,
-                       system,
-                       model_id,
+                       model_id="NEB_finetuned_final",
                        device="cpu"):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
@@ -72,7 +70,7 @@ def read_sentences_neb(sentences,
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
         wav = pyln.normalize.loudness(wav, loudness, -28.0)
-        sf.write(file=f"audios/{version}/NEB-{version}-Sentence{i}-{system}.wav",
+        sf.write(file=f"audios/{version}/NEB-{version}-Sentence{i}.wav",
                  data=wav, samplerate=sr)
 
 
@@ -87,26 +85,10 @@ if __name__ == '__main__':
                  "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l’odeur alléché, lui tint à peu près ce langage: Et bonjour, Monsieur du Corbeau, que vous êtes joli! que vous me semblez beau! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois. À ces mots le Corbeau ne se sent pas de joie, et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s’en saisit, et dit: Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l’écoute. Cette leçon vaut bien un fromage sans doute. Le Corbeau honteux et confus jura, mais un peu tard, qu’on ne l’y prendrait plus."
                  ]
 
-    read_sentences_ad(version="Component1",
-                      system="SystemA",
-                      model_id="AD_finetuned",
+    read_sentences_ad(version="Final",
                       device=exec_device,
                       sentences=sentences)
 
-    read_sentences_ad(version="Component1",
-                      system="SystemB",
-                      model_id="AD_finetuned_with_word",
-                      device=exec_device,
-                      sentences=sentences)
-
-    read_sentences_neb(version="Component1",
-                       system="SystemA",
-                       model_id="NEB_finetuned",
-                       device=exec_device,
-                       sentences=sentences)
-
-    read_sentences_neb(version="Component1",
-                       system="SystemB",
-                       model_id="NEB_finetuned_with_word",
+    read_sentences_neb(version="Final",
                        device=exec_device,
                        sentences=sentences)
