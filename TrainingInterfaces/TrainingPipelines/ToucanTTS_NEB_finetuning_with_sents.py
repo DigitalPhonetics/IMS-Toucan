@@ -2,7 +2,7 @@ import time
 
 import torch
 import wandb
-
+from torch.utils.data import ConcatDataset
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
@@ -57,7 +57,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
-               datasets=[train_set],
+               datasets=[ConcatDataset(train_sets)],
                device=device,
                save_directory=save_dir,
                eval_lang="fr",
