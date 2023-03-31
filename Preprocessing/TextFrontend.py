@@ -342,8 +342,8 @@ class ArticulatoryCombinedTextFrontend:
                         #print("context: ", context)
 
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
-                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))", context):
-                            #print("found negation")
+                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))(\s+|\w+)* \bplus\b", context):
+                            print("found negation")
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
                         # Außer wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, dann sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
