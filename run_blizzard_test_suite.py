@@ -17,7 +17,7 @@ def read_sentences_ad(sentences,
                       device="cpu"):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=False)
+    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, embedding_model_path="Models/ToucanTTS_AD_finetuned_final/embedding_function.pt", faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/DIVERS_BOOK_AD_04_0001_143.wav")
     effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=100),
@@ -39,7 +39,7 @@ def read_sentences_ad(sentences,
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
         wav = pyln.normalize.loudness(wav, loudness, -32.0)
-        sf.write(file=f"audios/{version}/AD-{version}-Sentence{i}-{system}.mp3",
+        sf.write(file=f"audios/{version}/AD-{version}-Sentence{i}-{system}.wav",
                  data=wav, samplerate=sr)
 
 
@@ -50,7 +50,7 @@ def read_sentences_neb(sentences,
                        device="cpu"):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=False)
+    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, embedding_model_path="Models/ToucanTTS_NEB_finetuned_final/embedding_function.pt", faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/ES_LMP_NEB_02_0002_117.wav")
     effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=100),
@@ -72,7 +72,7 @@ def read_sentences_neb(sentences,
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
         wav = pyln.normalize.loudness(wav, loudness, -28.0)
-        sf.write(file=f"audios/{version}/NEB-{version}-Sentence{i}-{system}.mp3",
+        sf.write(file=f"audios/{version}/NEB-{version}-Sentence{i}-{system}.wav",
                  data=wav, samplerate=sr)
 
 

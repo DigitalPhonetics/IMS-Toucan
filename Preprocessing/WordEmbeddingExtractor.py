@@ -3,8 +3,7 @@ import os
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from transformers import CamembertModel
-from transformers import CamembertTokenizerFast
+
 
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import remove_french_spacing
@@ -13,6 +12,9 @@ from Utility.storage_config import MODELS_DIR
 
 class WordEmbeddingExtractor():
     def __init__(self, cache_dir: str = os.path.join(MODELS_DIR, 'LM'), device=torch.device("cuda")if torch.cuda.is_available() else "cpu"):
+        # import camembert down here, because the globally set the cuda ID
+        from transformers import CamembertModel
+        from transformers import CamembertTokenizerFast
         self.tokenizer = CamembertTokenizerFast.from_pretrained('camembert-base', cache_dir=cache_dir)
         self.model = CamembertModel.from_pretrained("camembert-base", cache_dir=cache_dir).to(device)
         self.model.eval()

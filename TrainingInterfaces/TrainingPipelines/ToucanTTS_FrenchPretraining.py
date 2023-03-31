@@ -92,7 +92,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if use_sent_embs:
         model = ToucanTTS(sent_embed_dim=768)
     else:
-        model = ToucanTTS()
+        model = ToucanTTS(lang_embs=None)
 
     if use_wandb:
         wandb.init(

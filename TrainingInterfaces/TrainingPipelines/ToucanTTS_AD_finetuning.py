@@ -45,7 +45,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_long"),
                                                 lang="fr"))
 
-    model = ToucanTTS()
+    model = ToucanTTS(lang_embs=None)
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -58,7 +58,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                eval_lang="fr",
                path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinalFinal", "best.pt"),
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinalFinal", "embedding_function.pt"),
                fine_tune=True,
                resume=resume,
                use_wandb=use_wandb,
