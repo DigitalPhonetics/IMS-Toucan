@@ -161,7 +161,8 @@ def train_loop(net,
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
-            if step_counter > postnet_start_steps:
+            if step_counter > postnet_start_steps + 500:
+                # start logging late so the magnitude difference is smaller
                 glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
@@ -227,7 +228,7 @@ def train_loop(net,
                                                                           default_emb=default_embedding,
                                                                           default_sent_emb=default_sentence_embedding,
                                                                           default_word_emb=default_word_embeddings,
-                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
+                                                                          run_postflow=step_counter - 5 > postnet_start_steps or fine_tune)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)

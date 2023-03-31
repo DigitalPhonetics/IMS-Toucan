@@ -135,3 +135,26 @@ def create_cache(pttd, cachedir, lang):
     prepare_fastspeech_corpus(transcript_dict=pttd,
                               corpus_dir=cachedir,
                               lang=lang)
+
+
+"""
+    from Preprocessing.TextFrontend import get_feature_to_index_lookup
+    word_embedding_extractor = WordEmbeddingExtractor()
+    for dataset in train_sets:
+        remove_ids = list()
+        for index in range(len(dataset)):
+            phonemes, length, _, _, _, _, _, _, _, _, sentence = dataset[index]
+            word_boundaries_batch = []
+            for batch_id, batch in enumerate([phonemes]):
+                word_boundaries = []
+                for phoneme_index, phoneme_vector in enumerate(batch):
+                    if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                        word_boundaries.append(phoneme_index)
+                word_boundaries.append([length][batch_id].cpu().numpy() - 1)  # marker for last word of sentence
+            word_embedding, sentence_lens = word_embedding_extractor.encode(sentences=[sentence])
+            print(f"{len(word_boundaries)}    -    {len(word_embedding[0])}")
+            if len(word_boundaries) != len(word_embedding[0]):
+                print(f"marked for removing: {index}")
+                remove_ids.append(index)
+        dataset.remove_samples(remove_ids)
+"""

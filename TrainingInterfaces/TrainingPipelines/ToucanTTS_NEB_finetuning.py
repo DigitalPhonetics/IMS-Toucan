@@ -31,7 +31,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_NEB_finetune")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_NEB_finetune_Final")
     os.makedirs(save_dir, exist_ok=True)
 
     train_sets = list()
@@ -61,7 +61,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                device=device,
                save_directory=save_dir,
                eval_lang="fr",
-               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining", "best.pt"),
+               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinal", "best.pt"),
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=True,
                resume=resume,
