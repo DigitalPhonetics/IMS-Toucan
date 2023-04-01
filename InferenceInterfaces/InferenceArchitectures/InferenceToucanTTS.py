@@ -2,6 +2,7 @@ import torch
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
+from Layers.PostNet import PostNet
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
@@ -19,7 +20,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=384,
+                 attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -169,12 +170,20 @@ class ToucanTTS(torch.nn.Module):
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
+        self.conv_postnet = PostNet(idim=0,
+                                    odim=output_spectrogram_channels,
+                                    n_layers=5,
+                                    n_chans=256,
+                                    n_filts=5,
+                                    use_batch_norm=True,
+                                    dropout_rate=0.5)
+
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
             kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=22,  # post_glow_n_blocks (original 12 in paper)
+            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
             n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
@@ -272,10 +281,12 @@ class ToucanTTS(torch.nn.Module):
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
+        refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
+
         # refine spectrogram
         refined_spectrogram = self.post_flow(tgt_mels=None,
                                              infer=True,
-                                             mel_out=decoded_spectrogram,
+                                             mel_out=refined_spectrogram,
                                              encoded_texts=upsampled_enriched_encoded_texts,
                                              tgt_nonpadding=None).squeeze()
 
