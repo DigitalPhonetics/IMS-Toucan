@@ -54,8 +54,9 @@ def map_to_wiktionary_pos():
 
         # adjectif numéral
         'NUM': 'adjectif numéral',
-        'DINTMS': 'adjectif',
-        'DINTFS': 'adjectif',
+        'DINTMS': 'adjectif numéral',
+        'DINTFS': 'adjectif numéral',
+        'CHIF': 'adjectif numéral',
 
         # onomatopée -> ignore this, there is only one instance in homograph list
 

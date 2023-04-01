@@ -296,7 +296,8 @@
         "dire",
         "grp=3",
         "sub.i.3p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "di.sɑ̃",
@@ -313,7 +314,8 @@
     {
       "pronunciation": "ɛm",
       "pos": "nom de famille",
-      "meta": []
+      "meta": [],
+      "default": "True"
     },
     {
       "pronunciation": "ɛmz",
@@ -333,12 +335,13 @@
     {
       "pronunciation": "ɡɛjm",
       "pos": "nom",
-      "pos_details": "NFS",
       "meta": [
         "fr-rég",
         "ɡɛm",
         "f"
-      ]
+      ],
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
       "pronunciation": "ɡam",
@@ -346,7 +349,8 @@
       "meta": [
         "fr-rég",
         "ɡam"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "ɡɛm",
@@ -382,7 +386,8 @@
         "ɡɑ̃.ba",
         "s=gamba",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɡɑ̃.ba",
@@ -402,7 +407,8 @@
         "fr-rég",
         "ɡɛt",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɡat",
@@ -416,16 +422,14 @@
   ],
   "gamer": [
     {
-      "pronunciation": [
-        "ɡɛ.mœʁ",
-        "ɡe.mœʁ"
-      ],
+      "pronunciation": "ɡɛ.mœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
         "gɛ.mœʁ",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɡɛ.me",
@@ -437,10 +441,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ɡɛ.me",
-        "ɡe.me"
-      ],
+      "pronunciation": "ɡɛ.me",
       "pos": "verbe",
       "meta": [
         "i",
@@ -577,7 +578,8 @@
         "fr-rég",
         "ʁo",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɔt",
@@ -598,7 +600,8 @@
         "ʁo",
         "s=rot",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɔt",
@@ -870,10 +873,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "va.lɔ̃",
-        "wa.lɔ̃"
-      ],
+      "pronunciation": "wa.lɔ̃",
       "pos": "nom de famille",
       "meta": []
     }
@@ -886,7 +886,8 @@
         "fr-rég",
         "pɛn",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "pe.ne",
@@ -946,7 +947,8 @@
       "pos": "nom",
       "meta": [
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "pe.ne",
@@ -989,10 +991,7 @@
   ],
   "case": [
     {
-      "pronunciation": [
-        "kaz",
-        "kɑz"
-      ],
+      "pronunciation": "kɑz",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -1000,7 +999,8 @@
         "pron2=kɑz",
         "f"
       ],
-      "pos_details": "NFS"
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
       "pronunciation": "kes",
@@ -1206,10 +1206,7 @@
       "default": "True"
     },
     {
-      "pronunciation": [
-        "kan.sɛl",
-        "kɑ̃n.sɛl"
-      ],
+      "pronunciation": "kan.sɛl",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -1264,7 +1261,8 @@
         "sp=oui",
         "m",
         "sp"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ka.sis",
@@ -1303,10 +1301,7 @@
   ],
   "camp": [
     {
-      "pronunciation": [
-        "kɑ̃",
-        "kɑ̃p"
-      ],
+      "pronunciation":"kɑ̃",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -1314,7 +1309,8 @@
         "m",
         "Canada",
         "nocat=1"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "kɑ̃mp",
@@ -1533,10 +1529,7 @@
   ],
   "Cassis": [
     {
-      "pronunciation": [
-        "ka.si",
-        "ka.sis"
-      ],
+      "pronunciation": "ka.sis",
       "pos": "nom propre",
       "meta": [
         "fr-inv",
@@ -3127,7 +3120,8 @@
         "détriter",
         "ind.i.1p=oui",
         "sub.p.1p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "de.tʁi.sjɔ̃",
@@ -3281,7 +3275,8 @@
         "déconvier",
         "ind.p.3p=oui",
         "sub.p.3p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "de.kɔ̃.vjɛ̃",
@@ -3303,7 +3298,8 @@
         "détriter",
         "ind.i.2p=oui",
         "sub.p.2p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "de.tʁi.sje",
@@ -3909,7 +3905,8 @@
         "ind.p.3p=oui",
         "sub.p.3p=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɔb.vjɛ̃",
@@ -3997,7 +3994,8 @@
         "fr-rég",
         "ɔ.ʁit",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "o.ʁit",
@@ -4564,7 +4562,8 @@
         "renvier",
         "ind.p.3p=oui",
         "sub.p.3p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɑ̃.vjɛ̃",
@@ -4587,7 +4586,8 @@
         "represser",
         "ind.p.3p=oui",
         "sub.p.3p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁə.pʁɛ.sɑ̃",
@@ -4626,7 +4626,8 @@
         "rentasser",
         "ind.i.2p=oui",
         "sub.p.2p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɑ̃.ta.sje",
@@ -4650,7 +4651,8 @@
         "sub.p.1s=oui",
         "sub.p.3s=oui",
         "imp.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɑ̃.tas",
@@ -4701,7 +4703,8 @@
         "reconvenir",
         "grp=3",
         "ind.p.3s=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "rewriter": [
@@ -4806,7 +4809,8 @@
         "rentasser",
         "ind.p.2s=oui",
         "sub.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɑ̃.tas",
@@ -4827,7 +4831,8 @@
         "rentasser",
         "ind.i.1p=oui",
         "sub.p.1p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɑ̃.ta.sjɔ̃",
@@ -4869,7 +4874,8 @@
         "rentasser",
         "ind.p.3p=oui",
         "sub.p.3p=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɑ̃.tas",
@@ -4951,10 +4957,7 @@
   ],
   "damas": [
     {
-      "pronunciation": [
-        "da.ma",
-        "da.mas"
-      ],
+      "pronunciation": "da.mas",
       "pos": "nom",
       "meta": [
         "m",
@@ -5049,7 +5052,8 @@
         "m",
         "anglicisme",
         "fr"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "backer": [
@@ -5177,7 +5181,8 @@
         "fr-rég",
         "bo",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bod",
@@ -5242,10 +5247,7 @@
   ],
   "boxer": [
     {
-      "pronunciation": [
-        "bɔk.sɛʁ",
-        "bɔk.sœʁ"
-      ],
+      "pronunciation": "bɔk.sɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -5307,7 +5309,8 @@
         "pron2=bo.los",
         "m",
         "sp"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bɔ.lo",
@@ -5362,7 +5365,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bwe",
@@ -6198,10 +6202,7 @@
   ],
   "pointer": [
     {
-      "pronunciation": [
-        "pwɛ̃.tɛʁ",
-        "pɔjn.tœʁ"
-      ],
+      "pronunciation": "pwɛ̃.tɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -6735,7 +6736,8 @@
         "impers=oui",
         "grp=3",
         "ind.p.3s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "kɔ̃.vi",
@@ -7148,10 +7150,7 @@
   ],
   "package": [
     {
-      "pronunciation": [
-        "pa.kɛdʒ",
-        "pa.kadʒ"
-      ],
+      "pronunciation": "pa.kɛdʒ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -7404,10 +7403,7 @@
   ],
   "patas": [
     {
-      "pronunciation": [
-        "pa.tɑ",
-        "pa.tas"
-      ],
+      "pronunciation": "pa.tɑ",
       "pos": "nom",
       "meta": [
         "m"
@@ -7490,10 +7486,7 @@
   ],
   "toaster": [
     {
-      "pronunciation": [
-        "tɔs.te",
-        "tos.te"
-      ],
+      "pronunciation": "tɔs.te",
       "pos": "verbe",
       "meta": [
         "t",
@@ -8276,7 +8269,8 @@
         "aʁ.ke.ɛ̃",
         "inv_titre=msing",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "aʁ.ʃe.ɛ̃",
@@ -9169,10 +9163,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "i.pɛʁ",
-        "aj.pe"
-      ],
+      "pronunciation": "aj.pe",
       "pos": "verbe",
       "meta": [
         "invar",
@@ -9524,13 +9515,7 @@
       ]
     },
     {
-      "pronunciation": [
-        [
-          "mɛʁ.dʒe",
-          "mɛʁ.ʒe"
-        ],
-        "mœʁ.dʒe"
-      ],
+      "pronunciation": "mɛʁ.dʒe",
       "pos": "verbe",
       "meta": [
         "FR",
@@ -9560,7 +9545,8 @@
       "pos": "nom propre",
       "meta": [
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "an",
@@ -9869,7 +9855,8 @@
         "mɔʁ",
         "f",
         "invariable"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "mɔʁt",
@@ -9950,7 +9937,9 @@
         "sp=1",
         "m",
         "sp"
-      ]
+      ],
+      "pos_details": "NMS",
+      "default": "True"
     },
     {
       "pronunciation": "fils",
@@ -10196,7 +10185,8 @@
         "sp=oui",
         "m",
         "sp"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "mɔn",
@@ -10256,7 +10246,8 @@
       "meta": [
         "m",
         "sp"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "u.ʁu",
@@ -10266,7 +10257,8 @@
         "s=uru",
         "u.ʁu",
         "m"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "urgent": [
@@ -10337,10 +10329,7 @@
   ],
   "bumper": [
     {
-      "pronunciation": [
-        "bœm.pəʁ",
-        "bœm.pe"
-      ],
+      "pronunciation": "bœm.pe",
       "pos": "verbe",
       "meta": [
         "fr-rég",
@@ -10356,10 +10345,7 @@
   ],
   "bulldozer": [
     {
-      "pronunciation": [
-        "byl.do.zɛʁ",
-        "bul.do.zœʁ"
-      ],
+      "pronunciation": "byl.do.zɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -10369,10 +10355,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "byl.do.ze",
-        "bul.do.ze"
-      ],
+      "pronunciation": "byl.do.ze",
       "pos": "verbe",
       "meta": [
         "t",
@@ -10494,7 +10477,8 @@
         "fr-rég",
         "by.by",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bu.bu",
@@ -10536,7 +10520,8 @@
         "fr-accord-en",
         "aʁ.ke.",
         "ms=archéen"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "aʁ.ʃe.ɛn",
@@ -10555,7 +10540,8 @@
       "meta": [
         "fr-accord-en",
         "aʁ.ke."
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "aʁ.ʃe.ɛ̃",
@@ -10624,7 +10610,8 @@
         "aʁ.ke",
         "m",
         "f"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "archées": [
@@ -10657,7 +10644,8 @@
         "fr-accord-en",
         "aʁ.ke.",
         "ms=archéen"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "aʁ.ʃe.ɛ̃",
@@ -10677,7 +10665,8 @@
         "fr-accord-en",
         "aʁ.ke.",
         "ms=archéen"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "aʁ.ʃe.ɛn",
@@ -10699,7 +10688,8 @@
         "sp=1",
         "m",
         "sp"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "aʁ.ɡy",
@@ -10709,7 +10699,8 @@
         "aʁ.ɡy",
         "s=argu",
         "m"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "arthroscanner": [
@@ -10736,18 +10727,12 @@
   ],
   "Colas": [
     {
-      "pronunciation": [
-        "kɔ.lɑs",
-        "kɔ.las"
-      ],
+      "pronunciation": "kɔ.lɑs",
       "pos": "nom de famille",
       "meta": []
     },
     {
-      "pronunciation": [
-        "kɔ.lɑ",
-        "kɔ.la"
-      ],
+      "pronunciation": "kɔ.lɑ",
       "pos": "nom propre",
       "meta": [
         "m"
@@ -10808,10 +10793,7 @@
   ],
   "dominions": [
     {
-      "pronunciation": [
-        "dɔ.mi.njɔn",
-        "dɔ.mi.njɔ̃"
-      ],
+      "pronunciation": "dɔ.mi.njɔn",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -10860,7 +10842,8 @@
         "fr-rég",
         "dɔ̃",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "dɔn",
@@ -10922,28 +10905,7 @@
   ],
   "plus": [
     {
-      "pronunciation": [
-        [
-          [
-            [
-              [
-                [
-                  [
-                    "ply",
-                    "plys"
-                  ],
-                  "plys"
-                ],
-                "plys"
-              ],
-              "ply"
-            ],
-            "plys"
-          ],
-          "ply"
-        ],
-        "ply"
-      ],
+      "pronunciation": "ply",
       "pos": "adverbe",
       "meta": [
         "fr-inv",
@@ -10999,7 +10961,8 @@
         "ind.p.2s=oui",
         "sub.p.2s=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɑ̃.tas",
@@ -11022,7 +10985,8 @@
         "ind.i.2p=oui",
         "sub.p.2p=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɑ̃.ta.sje",
@@ -11045,7 +11009,8 @@
         "ind.i.1p=oui",
         "sub.p.1p=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɑ̃.ta.sjɔ̃",
@@ -11068,7 +11033,8 @@
         "ind.p.3p=oui",
         "sub.p.3p=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɑ̃.tas",
@@ -11094,7 +11060,8 @@
         "sub.p.3s=oui",
         "imp.p.2s=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɑ̃.tas",
@@ -11109,10 +11076,7 @@
   ],
   "Millet": [
     {
-      "pronunciation": [
-        "mi.lɛ",
-        "mi.jɛ"
-      ],
+      "pronunciation": "mi.jɛ",
       "pos": "nom de famille",
       "meta": []
     }
@@ -11225,10 +11189,7 @@
   ],
   "racer": [
     {
-      "pronunciation": [
-        "ʁa.sœʁ",
-        "ʁɛ.sœʁ"
-      ],
+      "pronunciation": "ʁa.sœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11416,13 +11377,11 @@
         "fr-rég",
         "ʁav",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
-      "pronunciation": [
-        "ʁɛv",
-        "ʁev"
-      ],
+      "pronunciation": "ʁɛv",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11453,7 +11412,8 @@
         "ʁav",
         "s=rave",
         "f"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁɛv",
@@ -11526,10 +11486,7 @@
   ],
   "tuner": [
     {
-      "pronunciation": [
-        "ty.nɛʁ",
-        "ty.nœʁ"
-      ],
+      "pronunciation": "ty.nɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11580,13 +11537,11 @@
         "mɛ̃",
         "f"
       ],
-      "pos_details": "NFS"
+      "pos_details": "NFS",
+      "default": "True"
     },
     {
-      "pronunciation": [
-        "mɛjn",
-        "mɛn"
-      ],
+      "pronunciation": "mɛjn",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11655,13 +11610,7 @@
   ],
   "manager": [
     {
-      "pronunciation": [
-        [
-          "ma.na.dʒœʁ",
-          "ma.na.dʒɛʁ"
-        ],
-        "ma.na.ʒœʁ"
-      ],
+      "pronunciation": "ma.na.ʒœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11672,10 +11621,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ma.na.dʒe",
-        "ma.na.ʒe"
-      ],
+      "pronunciation": "ma.na.dʒe",
       "pos": "verbe",
       "meta": [
         "t",
@@ -11747,7 +11693,8 @@
         "mɛl",
         "s=mail",
         "m"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "machisme": [
@@ -11804,17 +11751,15 @@
       ]
     },
     {
-      "pronunciation": [
-        "mɛjl",
-        "mɛl"
-      ],
+      "pronunciation": "mɛl",
       "pos": "nom",
       "meta": [
         "fr-rég",
         "mɛjl",
         "pron2=mɛl",
         "m"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "scooter": [
@@ -11826,7 +11771,8 @@
         "sku.tœʁ",
         "m",
         "tradit"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "skɔ.tɛʁ",
@@ -11874,10 +11820,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ska.nœʁ",
-        "ska.nɛʁ"
-      ],
+      "pronunciation": "ska.nɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -11984,7 +11927,8 @@
         "fr-verbe-flexion",
         "driller",
         "ppmp=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "dʁi.le",
@@ -12006,7 +11950,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "dʁi.le",
@@ -12068,7 +12013,8 @@
       "meta": [
         "m",
         "invar"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "adductions": [
@@ -12225,7 +12171,8 @@
         "dɔ̃",
         "inv_titre=Nom propre",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "dɔn",
@@ -12285,7 +12232,8 @@
         "tʃa.tʃa",
         "s=chacha",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʃa.ʃa",
@@ -12352,7 +12300,8 @@
         "fr-rég",
         "tʃa.tʃa",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʃa.ʃa",
@@ -12413,7 +12362,8 @@
         "fr-rég",
         "tʃa.tʃa",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʃa.ʃa",
@@ -12477,7 +12427,8 @@
         "sub.p.1s=oui",
         "sub.p.3s=oui",
         "imp.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʃat",
@@ -12562,10 +12513,7 @@
   ],
   "chatter": [
     {
-      "pronunciation": [
-        "ʃa.te",
-        "tʃa.te"
-      ],
+      "pronunciation": "tʃa.te",
       "pos": "verbe",
       "meta": [
         "i",
@@ -12597,7 +12545,8 @@
       "pos": "nom",
       "meta": [
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tʃi",
@@ -12640,13 +12589,7 @@
   ],
   "chin": [
     {
-      "pronunciation": [
-        [
-          "ʃin",
-          "ʃ"
-        ],
-        "tʃin"
-      ],
+      "pronunciation": "tʃin",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -12661,7 +12604,8 @@
         "fr-rég",
         "ʃin",
         "m"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "chatté": [
@@ -12672,7 +12616,8 @@
         "fr-verbe-flexion",
         "chatter",
         "pp=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʃa.te",
@@ -12701,7 +12646,8 @@
         "fr-verbe-flexion",
         "chatter",
         "ppr=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "chut": [
@@ -12753,10 +12699,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ʃa.lɑ̃.ʒe",
-        "tʃa.lɛn.dʒe"
-      ],
+      "pronunciation": "ʃa.lɑ̃.ʒe",
       "pos": "verbe",
       "meta": [
         "t",
@@ -12775,7 +12718,8 @@
         "fr-rég",
         "ʃɑ̃",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʃɑ̃p",
@@ -12793,7 +12737,8 @@
         "fr-rég",
         "ʃa",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tʃat",
@@ -12836,7 +12781,8 @@
         "s=chai",
         "ʃɛ",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "tʃaj",
@@ -12909,7 +12855,8 @@
         "fr-rég",
         "ʒɛ",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "dʒɛt",
@@ -12930,7 +12877,8 @@
         "ʒɛ",
         "s=jet",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "dʒɛt",
@@ -13013,7 +12961,8 @@
         "sp=1",
         "bi.ɡɔs",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bi.ɡo",
@@ -13033,7 +12982,8 @@
         "bi.ɡo",
         "s=bigo",
         "m"
-      ]
+      ],
+      "pos_details": "NMP"
     }
   ],
   "bident": [
@@ -13181,7 +13131,8 @@
         "bis",
         "m",
         "invar"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "bi",
@@ -13206,10 +13157,7 @@
   ],
   "bitter": [
     {
-      "pronunciation": [
-        "bi.tɛʁ",
-        "bi.tœʁ"
-      ],
+      "pronunciation": "bi.tɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -13308,10 +13256,7 @@
   ],
   "ester": [
     {
-      "pronunciation": [
-        "ɛs.te",
-        "ɛ.te"
-      ],
+      "pronunciation": "ɛs.te",
       "pos": "verbe",
       "meta": [
         "i",
@@ -13396,10 +13341,7 @@
   ],
   "Bourg": [
     {
-      "pronunciation": [
-        "buʁ",
-        "buʁk"
-      ],
+      "pronunciation": "buʁ",
       "pos": "nom propre",
       "meta": [
         "fr-inv",
@@ -13647,7 +13589,8 @@
       "pos": "adjectif",
       "meta": [
         "mf"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ɡʁa.vɔ",
@@ -13754,7 +13697,8 @@
         "m",
         "invar",
         "tradit"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "lim",
@@ -13764,7 +13708,8 @@
         "s=lime",
         "lim",
         "f"
-      ]
+      ],
+      "pos_details": "NFP"
     },
     {
       "pronunciation": "lim",
@@ -13790,7 +13735,8 @@
       "pos": "nom",
       "meta": [
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "lajv",
@@ -13815,16 +13761,6 @@
         "lis",
         "m",
         "invar"
-      ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "nom",
-      "meta": [
-        "fr-rég",
-        "s=li",
-        "",
-        "m"
       ]
     },
     {
@@ -13870,7 +13806,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "pʁɛ.te",
@@ -13898,13 +13835,11 @@
         "sub.p.1s=oui",
         "sub.p.3s=oui",
         "imp.p.2s=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
-      "pronunciation": [
-        "pʁe.sɑ̃",
-        "pʁɛ.sɑ̃"
-      ],
+      "pronunciation": "pʁe.sɑ̃",
       "pos": "verbe",
       "meta": [
         "fr-verbe-flexion",
@@ -14235,19 +14170,6 @@
         "grp=1",
         "fr"
       ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "t",
-        "fr",
-        "i",
-        "fr",
-        "conj",
-        "grp=1",
-        "fr"
-      ]
     }
   ],
   "vivace": [
@@ -14257,7 +14179,8 @@
       "meta": [
         "fr-rég",
         "vi.vas"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "vi.va.tʃe",
@@ -14412,7 +14335,9 @@
         "tiʁ",
         "s=tir",
         "m"
-      ]
+      ],
+      "pos_details": "NMP",
+      "default": "True"
     }
   ],
   "Laos": [
@@ -14491,7 +14416,9 @@
         "fr-accord-en",
         "sa.pj",
         "ms=sapien"
-      ]
+      ],
+      "pos_details": "ADJMP",
+      "default": "True"
     }
   ],
   "Thaïs": [
@@ -14525,7 +14452,8 @@
         "ind.p.3p=oui",
         "sub.p.3p=oui",
         "'=oui"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "a.vɛ",
@@ -14543,7 +14471,8 @@
         "m",
         "invar",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "av",
@@ -14800,10 +14729,7 @@
   ],
   "setter": [
     {
-      "pronunciation": [
-        "sɛ.tœʁ",
-        "sɛ.tɛʁ"
-      ],
+      "pronunciation": "sɛ.tɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -14834,7 +14760,8 @@
         "sp=1",
         "m",
         "sp"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "sɑ̃s",
@@ -14883,7 +14810,8 @@
       "meta": [
         "mf",
         "invar"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "sɛpt",
@@ -14920,10 +14848,7 @@
   ],
   "quadra": [
     {
-      "pronunciation": [
-        "kwa.dʁa",
-        "ka.dʁa"
-      ],
+      "pronunciation": "kwa.dʁa",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -14945,10 +14870,7 @@
   ],
   "quadrillions": [
     {
-      "pronunciation": [
-        "kwa.dʁi.ljɔ̃",
-        "ka.dʁi.ljɔ̃"
-      ],
+      "pronunciation": "kwa.dʁi.ljɔ̃",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -15007,7 +14929,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "quadrant": [
@@ -15112,7 +15035,8 @@
         "fr-inv",
         "pe.se",
         "invar"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "sniper": [
@@ -15222,7 +15146,8 @@
     {
       "pronunciation": "ɛm",
       "pos": "nom de famille",
-      "meta": []
+      "meta": [],
+      "default": "True"
     },
     {
       "pronunciation": "ɛmz",
@@ -15271,10 +15196,7 @@
   ],
   "équipollent": [
     {
-      "pronunciation": [
-        "e.ki.pɔ.lɑ̃",
-        "e.kɥi.pɔ.lɑ̃"
-      ],
+      "pronunciation": "e.ki.pɔ.lɑ̃",
       "pos": "adjectif",
       "meta": [
         "fr-accord-cons",
@@ -15284,10 +15206,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "e.ki.pɔl",
-        "e.kɥi.pɔl"
-      ],
+      "pronunciation": "e.ki.pɔl",
       "pos": "verbe",
       "meta": [
         "fr-verbe-flexion",
@@ -15432,7 +15351,8 @@
         "conjugaison",
         "fr",
         "groupe=1"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "runner": [
@@ -15575,15 +15495,6 @@
         "ind.i.1p=oui",
         "sub.p.1p=oui"
       ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "fr-verbe-flexion",
-        "puter",
-        "sub.i.1p=oui"
-      ]
     }
   ],
   "purulent": [
@@ -15647,7 +15558,8 @@
         "pɔ̃ʃ",
         "m",
         "tradit"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "putassent": [
@@ -15659,15 +15571,6 @@
         "putasser",
         "ind.p.3p=oui",
         "sub.p.3p=oui"
-      ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "fr-verbe-flexion",
-        "puter",
-        "sub.i.3p=oui"
       ]
     }
   ],
@@ -15705,15 +15608,6 @@
         "ind.i.2p=oui",
         "sub.p.2p=oui"
       ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "fr-verbe-flexion",
-        "puter",
-        "sub.i.2p=oui"
-      ]
     }
   ],
   "putasses": [
@@ -15735,15 +15629,6 @@
         "putasser",
         "ind.p.2s=oui",
         "sub.p.2s=oui"
-      ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "fr-verbe-flexion",
-        "puter",
-        "sub.i.2s=oui"
       ]
     }
   ],
@@ -15786,7 +15671,8 @@
         "fr-rég",
         "pyb",
         "f"
-      ]
+      ],
+      "pos_details": "NFS"
     },
     {
       "pronunciation": "pœb",
@@ -15795,7 +15681,9 @@
         "fr-rég",
         "pœb",
         "m"
-      ]
+      ],
+      "pos_details": "NMS",
+      "default": "True"
     }
   ],
   "puncher": [
@@ -15809,7 +15697,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "pɔn.t͡ʃe",
@@ -15851,24 +15740,20 @@
       "pos": "nom",
       "meta": [
         "f"
-      ]
+      ],
+      "pos_details": "NFP"
     },
     {
       "pronunciation": "pœb",
       "pos": "nom",
       "meta": [
         "m"
-      ]
+      ],
+      "pos_details": "NMP",
+      "default": "True"
     }
   ],
   "puter": [
-    {
-      "pronunciation": "",
-      "pos": "nom",
-      "meta": [
-        "m"
-      ]
-    },
     {
       "pronunciation": "py.te",
       "pos": "verbe",
@@ -15878,18 +15763,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "i",
-        "fr",
-        "conj",
-        "grp=1",
-        "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "pœ.te",
@@ -15916,7 +15791,7 @@
       ]
     },
     {
-      "pronunciation": "tɑs",
+      "pronunciation": "py.tas",
       "pos": "verbe",
       "meta": [
         "fr-verbe-flexion",
@@ -15926,15 +15801,6 @@
         "sub.p.1s=oui",
         "sub.p.3s=oui",
         "imp.p.2s=oui"
-      ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "verbe",
-      "meta": [
-        "fr-verbe-flexion",
-        "puter",
-        "sub.i.1s=oui"
       ]
     }
   ],
@@ -15946,7 +15812,9 @@
         "fr-inv",
         "kʁe.pi",
         "m"
-      ]
+      ],
+      "pos_details": "NMS",
+      "default": "True"
     },
     {
       "pronunciation": "kʁe.pis",
@@ -15955,7 +15823,8 @@
         "fr-inv",
         "kʁe.pis",
         "f"
-      ]
+      ],
+      "pos_details": "NFS"
     },
     {
       "pronunciation": "kʁe.pi",
@@ -15965,7 +15834,8 @@
         "kʁe.pi",
         "s=crépi",
         "m"
-      ]
+      ],
+      "pos_details": "NMP"
     },
     {
       "pronunciation": "kʁe.pi",
@@ -15989,15 +15859,8 @@
         "fr-rég",
         "kʁɔ̃",
         "m"
-      ]
-    },
-    {
-      "pronunciation": "",
-      "pos": "nom",
-      "meta": [
-        "fr-rég",
-        "m"
-      ]
+      ], 
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "kʁɔn",
@@ -16006,7 +15869,9 @@
         "fr-rég",
         "kʁɔn",
         "f"
-      ]
+      ],
+      "pos_details": "NFS",
+      "default": "True"
     }
   ],
   "cracker": [
@@ -16095,7 +15960,8 @@
         "kʁa.do",
         "s=crado",
         "mf"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "crawler": [
@@ -16140,7 +16006,8 @@
         "fr-rég",
         "sɑ̃",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "sɛnt",
@@ -16163,7 +16030,8 @@
         "f",
         "sigle",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "si.bi",
@@ -16316,7 +16184,8 @@
         "lo.tos",
         "m",
         "invar"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "lo.to",
@@ -16325,7 +16194,8 @@
         "fr-rég",
         "s=loto",
         "lo.to"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "loutrons": [
@@ -16337,7 +16207,8 @@
         "lu.tʁɔ̃",
         "s=loutron",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "lu.tʁɔn",
@@ -16358,7 +16229,9 @@
         "fr-inv",
         "lɔ.ɡɔs",
         "m"
-      ]
+      ],
+      "pos_details": "NMS",
+      "default": "True"
     },
     {
       "pronunciation": "lo.ɡo",
@@ -16368,7 +16241,8 @@
         "s=logo",
         "lo.ɡo",
         "m"
-      ]
+      ],
+      "pos_details": "NMP"
     }
   ],
   "lotions": [
@@ -16402,7 +16276,8 @@
         "fr-inv",
         "lɔ.ʁis",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "lɔ.ʁi",
@@ -16423,7 +16298,8 @@
         "fr-rég",
         "lu.tʁɔ̃",
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "lu.tʁɔn",
@@ -16464,7 +16340,8 @@
       "meta": [
         "fr-inv",
         "ʒɑ̃"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʒɛ̃s",
@@ -16560,7 +16437,8 @@
         "fr-verbe-flexion",
         "réenter",
         "sub.i.3p=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "résolver": [
@@ -16722,7 +16600,8 @@
         "fr-verbe-flexion",
         "réenter",
         "sub.i.1p=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "réentassiez": [
@@ -16743,7 +16622,8 @@
         "fr-verbe-flexion",
         "réenter",
         "sub.i.2p=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "réticent": [
@@ -16807,7 +16687,8 @@
         "fr-verbe-flexion",
         "réenter",
         "sub.i.2s=oui"
-      ]
+      ],
+      "default": "True"
     }
   ],
   "rédemptions": [
@@ -16950,13 +16831,7 @@
   ],
   "halant": [
     {
-      "pronunciation": [
-        [
-          "a.lɑ̃t",
-          "ka"
-        ],
-        "k"
-      ],
+      "pronunciation": "a.lɑ̃t",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -16990,7 +16865,8 @@
       "pos": "nom",
       "meta": [
         "m"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "an",
@@ -17090,10 +16966,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "ʁi.zœʁ",
-        "ʁaj.zœʁ"
-      ],
+      "pronunciation": "ʁi.zœʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -17131,7 +17004,8 @@
       "pos": "nom",
       "meta": [
         "m"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "ʁib",
@@ -17141,7 +17015,9 @@
         "ʁib",
         "s=ribe",
         "f"
-      ]
+      ],
+      "pos_details": "NFP",
+      "default": "True"
     }
   ],
   "rider": [
@@ -17154,7 +17030,8 @@
         "conj",
         "grp=1",
         "fr"
-      ]
+      ],
+      "default": "True"
     },
     {
       "pronunciation": "ʁaj.deʁ",
@@ -17221,7 +17098,8 @@
         "la",
         "sp=oui",
         "m"
-      ]
+      ],
+      "pos_details": "NMS"
     },
     {
       "pronunciation": "lak",
@@ -17231,7 +17109,8 @@
         "s=lac",
         "lak",
         "m"
-      ]
+      ],
+     "default": "True"
     }
   ],
   "lamer": [
@@ -17369,10 +17248,7 @@
       "default": "True"
     },
     {
-      "pronunciation": [
-        "maʁ.ti.nɛ",
-        "maʁ.ti.ne"
-      ],
+      "pronunciation": "maʁ.ti.nɛ",
       "pos": "nom de famille",
       "meta": [
         "mf"
@@ -17391,10 +17267,7 @@
       "default": "True"
     },
     {
-      "pronunciation": [
-        "mej.lis",
-        "ma.i.lis"
-      ],
+      "pronunciation": "mej.lis",
       "pos": "nom propre",
       "meta": [
         "fr-inv",
@@ -17759,13 +17632,7 @@
   ],
   "joker": [
     {
-      "pronunciation": [
-        [
-          "ʒɔ.kɛʁ",
-          "dʒɔ.kɛʁ"
-        ],
-        "dʒoʊ̯.kœʁ"
-      ],
+      "pronunciation": "ʒɔ.kɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",
@@ -17778,10 +17645,7 @@
       ]
     },
     {
-      "pronunciation": [
-        "dʒɔ.ke",
-        "dʒoʊ̯.ke"
-      ],
+      "pronunciation": "dʒɔ.ke",
       "pos": "verbe",
       "meta": [
         "CA",
@@ -18478,10 +18342,7 @@
   ],
   "taser": [
     {
-      "pronunciation": [
-        "ta.zɛʁ",
-        "ta.zœʁ"
-      ],
+      "pronunciation": "ta.zɛʁ",
       "pos": "nom",
       "meta": [
         "fr-rég",

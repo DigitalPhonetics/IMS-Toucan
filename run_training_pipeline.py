@@ -6,14 +6,10 @@ from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning import run as toucanad
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning_with_discr import run as addisc
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_AD_finetuning_with_sents import run as adsent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_FrenchPretraining import run as french
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning import run as toucanneb
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning_with_discr import run as nebdisc
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_NEB_finetuning_with_sents import run as nebsent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
@@ -26,13 +22,9 @@ pipeline_dict = {
     "ps_it"    : ps_integration_test,
     # regular ToucanTTS pipelines
     "nancy"    : nancy,
-    "nebsent"  : nebsent,
     "french"   : french,
     "neb"      : toucanneb,
     "ad"       : toucanad,
-    "nebdisc"  : nebdisc,
-    "addisc"   : addisc,
-    "adsent"   : adsent,
     "meta"     : meta,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"  : hifi_codo,

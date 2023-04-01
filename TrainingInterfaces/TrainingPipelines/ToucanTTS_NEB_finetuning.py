@@ -31,7 +31,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_NEB_finetune")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_NEB_finetune_FinalFinal")
     os.makedirs(save_dir, exist_ok=True)
 
     train_sets = list()
@@ -44,12 +44,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_long"),
                                                 lang="fr"))
 
-
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e"),
                                                 lang="fr"))
 
-    model = ToucanTTS()
+    model = ToucanTTS(lang_embs=None)
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -61,10 +60,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                device=device,
                save_directory=save_dir,
                eval_lang="fr",
-               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_blizzard_pretraining", "best.pt"),
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinalFinal", "best.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "ToucanTTS_FrenchPretrainingFinalFinal", "embedding_function.pt"),
                fine_tune=True,
                resume=resume,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               use_discriminator=True)
     if use_wandb:
         wandb.finish()

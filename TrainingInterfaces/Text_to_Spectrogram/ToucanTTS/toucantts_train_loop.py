@@ -4,7 +4,6 @@ import time
 
 import torch
 import torch.multiprocessing
-import torch.multiprocessing
 import wandb
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
@@ -23,7 +22,7 @@ from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence embedding
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence embedding, sentence string
     try:
         sentence_embeddings = torch.stack([datapoint[9] for datapoint in batch])
     except TypeError:
@@ -37,7 +36,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]),
-            sentence_embeddings)
+            sentence_embeddings,
+            [datapoint[10] for datapoint in batch])
 
 
 def train_loop(net,
@@ -67,8 +67,8 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.eval()
-    style_embedding_function.requires_grad_(False)
+    style_embedding_function.train()
+    style_embedding_function.requires_grad_(True)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -85,6 +85,7 @@ def train_loop(net,
         optimizer = torch.optim.Adam([p for name, p in net.named_parameters() if 'post_flow' not in name] + list(discriminator.parameters()), lr=lr)
     else:
         optimizer = torch.optim.Adam([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr)
+    optimizer.add_param_group({"params": style_embedding_function.parameters()})
     postflow_optimizer = torch.optim.Adam(net.post_flow.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     epoch = 0
@@ -125,6 +126,7 @@ def train_loop(net,
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
                 sentence_embedding=batch[9].to(device) if batch[9] is not None else None,
+                word_embedding=None,
                 lang_ids=batch[8].to(device),
                 return_mels=True,
                 run_glow=step_counter > postnet_start_steps or fine_tune)
@@ -154,12 +156,14 @@ def train_loop(net,
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
-            if step_counter > postnet_start_steps:
+            if step_counter > postnet_start_steps + 500:
+                # start logging late so the magnitude difference is smaller
                 glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
             train_loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_(style_embedding_function.parameters(), 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
 
@@ -187,6 +191,9 @@ def train_loop(net,
             "default_emb"       : default_embedding,
             "default_sent_emb"  : default_sentence_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+        torch.save({
+            "style_emb_func": style_embedding_function.state_dict()
+        }, os.path.join(save_directory, "embedding_function.pt"))
         delete_old_checkpoints(save_directory, keep=5)
 
         print("Epoch:              {}".format(epoch))
@@ -216,7 +223,7 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           default_sent_emb=default_sentence_embedding,
-                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
+                                                                          run_postflow=step_counter - 5 > postnet_start_steps or fine_tune)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -232,14 +239,15 @@ def train_loop(net,
             # DONE
             return
 
-        if step_counter > postnet_start_steps * 2:
+        if step_counter > 3 * postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
-            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
-            averaged_model, default_embed, default_sent_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-            save_model_for_use(model=averaged_model, default_embed=default_embed, default_sent_embed=default_sent_embed, name=os.path.join(save_directory, "best.pt"))
+            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
+            averaged_model, default_embed, default_sent_embed, default_word_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+            save_model_for_use(model=averaged_model, default_embed=default_embed, default_sent_embed=default_sent_embed, default_word_embed=default_word_embed, name=os.path.join(save_directory, "best.pt"))
             check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
             net.load_state_dict(check_dict["model"])
 
+        style_embedding_function.train()
         net.train()
 
 

@@ -14,6 +14,7 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from Preprocessing.WordEmbeddingExtractor import WordEmbeddingExtractor
 from Utility.storage_config import MODELS_DIR
 
 
@@ -22,6 +23,7 @@ class ToucanTTSInterface(torch.nn.Module):
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 embedding_model_path=None,
                  vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
                  faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",  # initial language of the model, can be changed later with the setter methods
@@ -64,7 +66,13 @@ class ToucanTTSInterface(torch.nn.Module):
                     try:
                         self.phone2mel = ToucanTTS(weights=checkpoint["model"], sent_embed_dim=768)  # multi speaker multi language + sentence embeddings
                     except RuntimeError:
-                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, sent_embed_dim=768)  # multi speaker single language + sentence embeddings
+                        try:
+                            self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, sent_embed_dim=768)  # multi speaker single language + sentence embeddings
+                        except RuntimeError:
+                            try:
+                                self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768)  # multi speaker multi language + word embeddings
+                            except RuntimeError:
+                                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, word_embed_dim=768)  # multi speaker single language + word embeddings
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -73,7 +81,10 @@ class ToucanTTSInterface(torch.nn.Module):
         #  load mel to style models     #
         #################################
         self.style_embedding_function = StyleEmbedding()
-        check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
+        if embedding_model_path is None:
+            check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
+        else:
+            check_dict = torch.load(embedding_model_path, map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
 
@@ -95,6 +106,12 @@ class ToucanTTSInterface(torch.nn.Module):
             self.default_sentence_embedding = checkpoint["default_sent_emb"].to(self.device)
         except KeyError:
             self.default_sentence_embedding = None
+        try:
+            self.default_word_embeddings = checkpoint["default_word_emb"].to(self.device)
+        except KeyError:
+            self.default_word_embeddings = None
+        if self.default_word_embeddings is not None:
+            self.word_embedding_extractor = WordEmbeddingExtractor()
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
@@ -163,11 +180,18 @@ class ToucanTTSInterface(torch.nn.Module):
                                    lower values decrease variance of the energy curve.
         """
         with torch.inference_mode():
+            if self.default_word_embeddings is not None:
+                print("Extracting word embs...")
+                word_embeddings, _ = self.word_embedding_extractor.encode([text])
+                word_embeddings = word_embeddings.squeeze()
+            else:
+                word_embeddings = None
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
                                                            sentence_embedding=self.default_sentence_embedding,
+                                                           word_embedding=word_embeddings,
                                                            durations=durations,
                                                            pitch=pitch,
                                                            energy=energy,

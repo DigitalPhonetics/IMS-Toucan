@@ -110,9 +110,10 @@ class ArticulatoryCombinedTextFrontend:
         elif language == "fr":
             from flair.models import SequenceTagger
             import flair
+            flair.device = torch.device('cpu')  # set flair to cpu because it causes errors on gpu
             # have to import down here, because this import sets the cuda visible devices GLOBALLY for some reason.
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = french_spacing
+            self.expand_abbreviations = remove_french_spacing
             # add POS Tagger for Blizzard Challenge
             flair.cache_root = Path(f"{PREPROCESSING_DIR}/.flair")
             self.pos_tagger = SequenceTagger.load("qanastek/pos-french-camembert-flair")
@@ -125,7 +126,7 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr_no_flair":
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = french_spacing
+            self.expand_abbreviations = remove_french_spacing
             if not silent:
                 print("Created a French Text-Frontend")
 
@@ -314,37 +315,56 @@ class ArticulatoryCombinedTextFrontend:
         if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
             phones = pinyin_to_ipa(utt)
         elif self.language == "fr" and resolve_homographs:
+            debug_printing = False
             from flair.data import Sentence
             sentence = Sentence(utt)
             self.pos_tagger.predict(sentence)
-            # print(sentence.to_tagged_string())
+            if debug_printing:
+                print(sentence.to_tagged_string())
 
             phones = ''  # we'll bulid the phone string incrementally
             chunk_to_phonemize = ''
             labels = sentence.get_labels()
+            if debug_printing:
+                print(labels)
             for i, label in enumerate(labels):
                 token = label.data_point.text
                 pos = label.value
                 # disambiguate homographs
                 if token in self.homographs or token.lower() in self.homographs:  # This is really ineffective, but we need to check identity and lowercase, otherwise we won't find homographs at beginning of sentences if written in upper case
-                    print("found homograph: ", token, "\t POS: ", pos)
+                    if debug_printing:
+                        print("found homograph: ", token, "\t POS: ", pos)
                     wiki_pos = self.poet_to_wiktionary.get(pos, pos)
                     resolved = False
 
                     # 'plus' is tricky and needs special treatment
                     if token == "plus" and wiki_pos == "adverbe":
+                        # for utterances with multiple sentences, we use only the sentence that contains the current plus as context
+                        l_punct, r_punct = find_punctuation(labels, i)
+                        if debug_printing:
+                            print(l_punct, r_punct)
+                        context = sentence[l_punct + 1:r_punct].text
+                        if debug_printing:
+                            print("context: ", context)
+
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
-                        if re.search(r"(\b(ne|non)\b)", text) or re.search(r"\bn(\’|\')", text):
-                            # print("found negation")
-                            pronunciation = "ply"
-                        # Wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
-                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["b", "c", "d", "f", "g", "h", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
-                            # print("plus before adjective or adverb")
-                            # print(sentence[i+1].text[0])
+                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))(\s+|\w+)* \bplus\b", context):
+                            if debug_printing:
+                                print("found negation")
                             pronunciation = "ply"
                         # Wenn plus eine positive Bedeutung hat (d. h. es bedeutet ‘mehr’, ‘zusätzlich’), sprechen wir das -s am Ende aus.
+                        # Außer wenn auf plus ein Adjektiv oder ein Adverb folgt, das mit einem Konsonaten beginnt, dann sprechen wir das -s nicht aus, auch wenn die Bedeutung positiv ist.
+                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["b", "c", "d", "f", "g", "j", "k", "l", "m", "n", "p", "q", "r", "s", "t", "v", "w", "x", "z"]):
+                            if debug_printing:
+                                print("plus before adjective or adverb")
+                                print(sentence[i + 1].text[0])
+                            pronunciation = "ply"
+                        # Wenn das folgende Adjektiv oder Adverb mit einem Vokal beginnt, machen wr eine Liaison mit /z/
+                        elif i < len(sentence) and (labels[i + 1].value in ["ADV", 'ADJ', 'ADJMS', 'ADJFS', 'ADJMP', 'ADJFP']) and (sentence[i + 1].text[0].lower() in ["a", "e", "i", "o", "u", "y", "h", "à", "è", "ì", "ò", "ù", "â", "ê", "î", "ô", "û"]):
+                            pronunciation = "plyz"  # liaison
+                        # positive Bedeutung ohne Ausnahme
                         else:
-                            pronunciation = "plys"  # in theory, there is also a difference between /plys/ and /plyz/ but maybe we can ignore this?
+                            pronunciation = "plys"
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
                         phones += " " + pronunciation + " "
                         chunk_to_phonemize = " "
@@ -355,33 +375,39 @@ class ArticulatoryCombinedTextFrontend:
                         candidates = [entry for entry in self.homographs[token] if entry['pos'] == wiki_pos]
                     except KeyError:
                         candidates = [entry for entry in self.homographs[token.lower()] if entry['pos'] == wiki_pos]
-                    # print(candidates)
+                    if debug_printing:
+                        print(candidates)
 
                     # no candidates were found for POS tag, we don't need to check anything further
                     if len(candidates) == 0:
-                        chunk_to_phonemize += token
-                        print(f"no matching candidates found for {token}: {pos}")
+                        chunk_to_phonemize += token + " "
+                        if debug_printing:
+                            print(f"no matching candidates found for {token}: {pos}")
                         continue
 
                     # resolve if there are multiple pronunciations for one entry. For now, ignore lists
                     pronunciation_set = set(entry['pronunciation'] for entry in candidates if not type(entry['pronunciation']) == list)
                     if len(pronunciation_set) == 1:  # all entries have the same pronunciation, so we can just take it
                         pronunciation = pronunciation_set.pop()
-                        print(f"All entries have the same pronunciation for {token}", pronunciation)
+                        if debug_printing:
+                            print(f"All entries have the same pronunciation for {token}", pronunciation)
                         resolved = True
                     else:  # TODO: needs further action
-                        print("There are different pronunciations in the entries for ", token)
+                        if debug_printing:
+                            print("There are different pronunciations in the entries for ", token)
 
                         for entry in candidates:
                             if "pos_details" in entry and entry['pos_details'] == pos:
                                 pronunciation = entry['pronunciation']
                                 resolved = True
-                                print(f"found pos details for {token} ({pos}): {pronunciation}")
+                                if debug_printing:
+                                    print(f"found pos details for {token} ({pos}): {pronunciation}")
                                 break  # we found our match, no need to look further
                             elif "default" in entry and entry['default'] == "True":
                                 pronunciation = entry['pronunciation']  # found default pronunciation, but keep searching for matching pos_details
                                 resolved = True
-                                print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
+                                if debug_printing:
+                                    print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
 
                     # we found a homograph and could resolve it, so let's phonemize everything up to this point
                     if resolved == True:
@@ -391,6 +417,7 @@ class ArticulatoryCombinedTextFrontend:
                         chunk_to_phonemize = " "
                     else:  # there is a homograph, but we couldn't resolve it, add it to chunk and let espeak handle it when chunk is phonemized
                         chunk_to_phonemize += token + " "
+                        # next line always printed, regardless of debug printing status
                         print(f"Couldn't disambiguate homograph {token} ({pos}). Fall back on espeak.")
                 else:  # no homograph found
                     chunk_to_phonemize += token + " "
@@ -472,7 +499,8 @@ class ArticulatoryCombinedTextFrontend:
             ("꜒", "˥"),
             # symbols that indicate a pause or silence
             ('"', "~"),
-            (" - ", "~"),
+            (" - ", "~ "),
+            ("- ", "~ "),
             ("-", ""),
             ("…", "."),
             (":", "~"),
@@ -576,11 +604,28 @@ def english_text_expansion(text):
     return text
 
 
-def french_spacing(text):
-    text = text.replace("»", '"').replace("«", '"')
-    for punc in ["!", ";", ":", ".", ",", "?"]:
+def remove_french_spacing(text):
+    text = text.replace(" »", '"').replace("« ", '"')
+    for punc in ["!", ";", ":", ".", ",", "?", "-"]:
         text = text.replace(f" {punc}", punc)
+        text = text.replace(f" {punc}", punc)  # some sentences have two spaces in front of punctuation marks
     return text
+
+
+def find_punctuation(labels, index):
+    # Find punctuation to the left
+    left_punctuation_index = -1
+    for i in range(index - 1, -1, -1):
+        if labels[i].value in ["YPFOR", "PUNCT"]:
+            left_punctuation_index = i
+            break
+    # Find punctuation to the right
+    right_punctuation_index = len(labels) - 1
+    for i in range(index + 1, len(labels)):
+        if labels[i].value in ["YPFOR", "PUNCT"]:  # in [".", "!", "?", ",", ":", ";", "(", ")", "-", "«", "»", '"', '"']:
+            right_punctuation_index = i
+            break
+    return left_punctuation_index, right_punctuation_index
 
 
 def convert_kanji_to_pinyin_mandarin(text):
