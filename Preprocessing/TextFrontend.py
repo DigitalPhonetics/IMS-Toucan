@@ -322,7 +322,7 @@ class ArticulatoryCombinedTextFrontend:
             if debug_printing:
                 print(sentence.to_tagged_string())
 
-            phones = ''  # we'll bulid the phone string incrementally
+            phones = ''  # we'll build the phone string incrementally
             chunk_to_phonemize = ''
             labels = sentence.get_labels()
             if debug_printing:
@@ -406,8 +406,7 @@ class ArticulatoryCombinedTextFrontend:
                             elif "default" in entry and entry['default'] == "True":
                                 pronunciation = entry['pronunciation']  # found default pronunciation, but keep searching for matching pos_details
                                 resolved = True
-                                if debug_printing:
-                                    print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
+                                print(f"found default pronunciation for {token} ({pos}): {pronunciation}")
 
                     # we found a homograph and could resolve it, so let's phonemize everything up to this point
                     if resolved == True:
