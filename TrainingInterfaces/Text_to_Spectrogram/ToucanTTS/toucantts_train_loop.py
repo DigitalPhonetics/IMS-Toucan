@@ -67,8 +67,8 @@ def train_loop(net,
     style_embedding_function = StyleEmbedding().to(device)
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.train()
-    style_embedding_function.requires_grad_(True)
+    style_embedding_function.eval()
+    style_embedding_function.requires_grad_(False)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -85,7 +85,6 @@ def train_loop(net,
         optimizer = torch.optim.Adam([p for name, p in net.named_parameters() if 'post_flow' not in name] + list(discriminator.parameters()), lr=lr)
     else:
         optimizer = torch.optim.Adam([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr)
-    optimizer.add_param_group({"params": style_embedding_function.parameters()})
     postflow_optimizer = torch.optim.Adam(net.post_flow.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     epoch = 0
@@ -163,7 +162,6 @@ def train_loop(net,
             optimizer.zero_grad()
             train_loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-            torch.nn.utils.clip_grad_norm_(style_embedding_function.parameters(), 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
 
@@ -247,7 +245,6 @@ def train_loop(net,
             check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
             net.load_state_dict(check_dict["model"])
 
-        style_embedding_function.train()
         net.train()
 
 

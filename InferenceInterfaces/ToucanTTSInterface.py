@@ -13,8 +13,8 @@ from InferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import Toucan
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
-from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Preprocessing.WordEmbeddingExtractor import WordEmbeddingExtractor
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.storage_config import MODELS_DIR
 
 
@@ -102,16 +102,8 @@ class ToucanTTSInterface(torch.nn.Module):
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
-        try:
-            self.default_sentence_embedding = checkpoint["default_sent_emb"].to(self.device)
-        except KeyError:
-            self.default_sentence_embedding = None
-        try:
-            self.default_word_embeddings = checkpoint["default_word_emb"].to(self.device)
-        except KeyError:
-            self.default_word_embeddings = None
-        if self.default_word_embeddings is not None:
-            self.word_embedding_extractor = WordEmbeddingExtractor()
+        self.default_sentence_embedding = None
+        self.default_word_embeddings = None
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
