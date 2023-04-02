@@ -156,7 +156,7 @@ def train_loop(net,
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
-            if step_counter > postnet_start_steps + 500:
+            if step_counter > postnet_start_steps + 500 or fine_tune:
                 # start logging late so the magnitude difference is smaller
                 glow_losses_total.append(glow_loss.item())
 
@@ -167,7 +167,7 @@ def train_loop(net,
             optimizer.step()
             scheduler.step()
 
-            if step_counter > postnet_start_steps:
+            if step_counter > postnet_start_steps or fine_tune:
                 postflow_optimizer.zero_grad()
                 glow_loss.backward()
                 torch.nn.utils.clip_grad_norm_(net.post_flow.parameters(), 1.0, error_if_nonfinite=False)
@@ -228,7 +228,7 @@ def train_loop(net,
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
                 })
-                if step_counter > postnet_start_steps:
+                if step_counter > postnet_start_steps or fine_tune:
                     wandb.log({
                         "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
                     })

@@ -37,36 +37,43 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_sets = list()
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_long(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_long"),
-                                                lang="fr_no_flair"))
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_long_silence_removed(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_long_sil_cleaned"),
+                                                lang="fr_no_flair",
+                                                ctc_selection=False))
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_long(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_long"),
-                                                lang="fr_no_flair"))
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_long_silence_removed(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_long_sil_cleaned"),
+                                                lang="fr_no_flair",
+                                                ctc_selection=False))
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e"),
-                                                lang="fr_no_flair"))
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e_sil_cleaned"),
+                                                lang="fr_no_flair",
+                                                ctc_selection=False))
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
-                                                lang="fr_no_flair"))
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_silence_removed(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_sil_cleaned"),
+                                                lang="fr_no_flair",
+                                                ctc_selection=False))
 
     chunk_count = 5
     mls_chunks = split_dictionary(read_mls(), split_n=chunk_count)
     for index in range(chunk_count):
         train_sets.append(prepare_fastspeech_corpus(transcript_dict=mls_chunks[index],
                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_french_female_chunk_{index}"),
-                                                    lang="fr_no_flair"))
+                                                    lang="fr_no_flair",
+                                                    ctc_selection=False))
 
-    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
-                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
-                                                lang="fr_no_flair"))
+    train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_silence_removed(),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_sil_cleaned"),
+                                                lang="fr_no_flair",
+                                                ctc_selection=False))
 
     train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
-                                                lang="fr_no_flair"))
+                                                lang="fr_no_flair",
+                                                ctc_selection=False))
 
     model = ToucanTTS(lang_embs=None)
 
@@ -82,7 +89,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                eval_lang="fr",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(save_dir, "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb)
