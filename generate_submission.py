@@ -44,7 +44,7 @@ def ad_submission(device="cpu", verbose=False):
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
-        wav = pyln.normalize.loudness(wav, loudness, -32.0)
+        wav = pyln.normalize.loudness(wav, loudness, -33.0)
         wav = float2pcm(wav)
         sf.write(file=f"2023-SH1_submission_directory/AD_test/wav/{filename}.wav",
                  data=wav,
