@@ -16,7 +16,7 @@ def ad_submission(device="cpu", verbose=False):
                              faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/AD_REFERENCE.wav")
-    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=80),
+    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=200),
                                   LowpassFilter(cutoff_frequency_hz=12000)])
     print("generating AD_test")
     with open("2023-SH1_submission_directory/AD_test/AD_test.csv", encoding="utf8", mode="r") as f:
@@ -86,7 +86,7 @@ def neb_submission(device="cpu", verbose=False):
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
-        wav = pyln.normalize.loudness(wav, loudness, -28.0)
+        wav = pyln.normalize.loudness(wav, loudness, -29.0)
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test/wav/{filename}.wav",
                  data=wav,
@@ -118,7 +118,7 @@ def neb_submission(device="cpu", verbose=False):
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
-        wav = pyln.normalize.loudness(wav, loudness, -28.0)
+        wav = pyln.normalize.loudness(wav, loudness, -29.0)
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_sus/wav/{filename}.wav",
                  data=wav,
@@ -150,7 +150,7 @@ def neb_submission(device="cpu", verbose=False):
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
-        wav = pyln.normalize.loudness(wav, loudness, -28.0)
+        wav = pyln.normalize.loudness(wav, loudness, -29.0)
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_par/wav/{filename}.wav",
                  data=wav,
@@ -182,7 +182,7 @@ def neb_submission(device="cpu", verbose=False):
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
-        wav = pyln.normalize.loudness(wav, loudness, -28.0)
+        wav = pyln.normalize.loudness(wav, loudness, -29.0)
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_list/wav/{filename}.wav",
                  data=wav,
@@ -214,7 +214,7 @@ def neb_submission(device="cpu", verbose=False):
         wav = effects(wav, sr)
         meter = pyln.Meter(sr)
         loudness = meter.integrated_loudness(wav)
-        wav = pyln.normalize.loudness(wav, loudness, -28.0)
+        wav = pyln.normalize.loudness(wav, loudness, -29.0)
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_homos/wav/{filename}.wav",
                  data=wav,
