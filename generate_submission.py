@@ -17,7 +17,7 @@ def ad_submission(device="cpu", verbose=False):
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/AD_REFERENCE.wav")
     effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=80),
-                                  LowpassFilter(cutoff_frequency_hz=10000)])
+                                  LowpassFilter(cutoff_frequency_hz=12000)])
     print("generating AD_test")
     with open("2023-SH1_submission_directory/AD_test/AD_test.csv", encoding="utf8", mode="r") as f:
         prompts = f.read()
@@ -57,8 +57,8 @@ def neb_submission(device="cpu", verbose=False):
                              faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/NEB_REFERENCE.wav")
-    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=80),
-                                  LowpassFilter(cutoff_frequency_hz=10000)])
+    effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=60),
+                                  LowpassFilter(cutoff_frequency_hz=12000)])
 
     print("generating NEB_test")
     with open("2023-FH1_submission_directory/NEB_test/NEB_test.csv", encoding="utf8", mode="r") as f:

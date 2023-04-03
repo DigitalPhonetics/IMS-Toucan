@@ -348,7 +348,7 @@ class ArticulatoryCombinedTextFrontend:
                             print("context: ", context)
 
                         # Wenn plus eine negative Bedeutung hat (d. h. es bedeutet ‘nicht(s) mehr’, ‘keine mehr’) sprechen wir das -s am Ende nicht aus.
-                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))(\s+|\w+)* \bplus\b", context):
+                        if re.search(r"((\b(ne|non|Ne|Non)\b)|\b(n|N)('|’))", context):
                             if debug_printing:
                                 print("found negation")
                             pronunciation = "ply"
