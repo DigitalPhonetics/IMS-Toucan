@@ -17,7 +17,7 @@ def read_sentences_ad(sentences,
                       device="cpu"):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, embedding_model_path="Models/ToucanTTS_AD_finetuned_final/embedding_function.pt", faster_vocoder=False)
+    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, embedding_model_path="Models/ToucanTTS_AD/embedding_function.pt", faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/AD_REFERENCE.wav")
     effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=100),
@@ -49,7 +49,7 @@ def read_sentences_neb(sentences,
                        device="cpu"):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, embedding_model_path="Models/ToucanTTS_NEB_finetuned_final/embedding_function.pt", faster_vocoder=False)
+    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, embedding_model_path="Models/ToucanTTS_NEB/embedding_function.pt", faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/NEB_REFERENCE.wav")
     effects = Pedalboard(plugins=[HighpassFilter(cutoff_frequency_hz=50),

@@ -13,7 +13,7 @@ from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 def ad_submission(device="cpu", verbose=False):
     tts = ToucanTTSInterface(device=device, tts_model_path="AD_finetuned_final",
-                             embedding_model_path="Models/ToucanTTS_AD_finetuned_final/embedding_function.pt",
+                             embedding_model_path="Models/ToucanTTS_AD/embedding_function.pt",
                              faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/AD_REFERENCE.wav")
@@ -55,7 +55,7 @@ def ad_submission(device="cpu", verbose=False):
 
 def neb_submission(device="cpu", verbose=False):
     tts = ToucanTTSInterface(device=device, tts_model_path="NEB_finetuned_final",
-                             embedding_model_path="Models/ToucanTTS_NEB_finetuned_final/embedding_function.pt",
+                             embedding_model_path="Models/ToucanTTS_NEB/embedding_function.pt",
                              faster_vocoder=False)
     tts.set_language("fr")
     tts.set_utterance_embedding("audios/blizzard_references/NEB_REFERENCE.wav")
