@@ -412,7 +412,7 @@ class ArticulatoryCombinedTextFrontend:
                     if resolved == True:
                         chunk_to_phonemize += token  # we add the homograph token and replace it later, because we don't want to lose liaisons etc.
                         phones += self.phonemizer_backend.phonemize([chunk_to_phonemize], strip=True)[0]
-                        phones = phones.rsplit(" ", 1)[0] + " " + pronunciation + " "  # remove espeak phonemes for homograph token and replace them with gold phonemes
+                        phones = phones.rsplit(" ", 1)[0] + " " + pronunciation.replace(".", "") + " "  # remove espeak phonemes for homograph token and replace them with gold phonemes
                         chunk_to_phonemize = " "
                     else:  # there is a homograph, but we couldn't resolve it, add it to chunk and let espeak handle it when chunk is phonemized
                         chunk_to_phonemize += token + " "

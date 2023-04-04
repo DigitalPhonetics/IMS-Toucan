@@ -79,20 +79,9 @@ if __name__ == '__main__':
     print(f"running on {exec_device}")
 
     sentences = [
-        "Mes fils ont cassé mes fils de pêche.",
-        "Il était une fois un meunier qui avait trois fils. A sa mort, ses biens furent partagés entre ses fils.",
-        "Ne vous affligez point, mon maître, vous n’avez qu’à me donner un sac, et me faire faire une "
-        "belle paire de bottes et vous verrez que vous n’êtes pas le plus mal doté des trois. Le plus "
-        "jeune fils très surpris d’entendre le chat parler, fit ce que ce dernier lui demandait.",
-        "Si vous préparez la crème anglaise la veille, elle n'en sera que plus parfumée et plus savoureuse.",
-        "La baguette magique agitée opportunément pour chercher à se faire élire ne suffit plus, ne convainc plus.",
-        "Ce stage est un plus pour votre CV."
+        "Maître Corbeau, sur un arbre perché, tenait en son bec un fromage. Maître Renard, par l’odeur alléché, lui tint à peu près ce langage: Et bonjour, Monsieur du Corbeau, que vous êtes joli! que vous me semblez beau! Sans mentir, si votre ramage se rapporte à votre plumage, vous êtes le Phénix des hôtes de ces bois. À ces mots le Corbeau ne se sent pas de joie, et pour montrer sa belle voix, il ouvre un large bec, laisse tomber sa proie. Le Renard s’en saisit, et dit: Mon bon Monsieur, apprenez que tout flatteur vit aux dépens de celui qui l’écoute. Cette leçon vaut bien un fromage sans doute. Le Corbeau honteux et confus jura, mais un peu tard, qu’on ne l’y prendrait plus.",
     ]
 
-    read_sentences_ad(version="Final2",
-                      device=exec_device,
-                      sentences=sentences)
-
-    read_sentences_neb(version="Final2",
+    read_sentences_neb(version="corbeau",
                        device=exec_device,
                        sentences=sentences)

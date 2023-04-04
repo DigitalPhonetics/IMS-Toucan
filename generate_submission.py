@@ -6,6 +6,7 @@ import torch
 from pedalboard import HighpassFilter
 from pedalboard import LowpassFilter
 from pedalboard import Pedalboard
+from tqdm import tqdm
 
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
@@ -26,7 +27,7 @@ def ad_submission(device="cpu", verbose=False):
         if prompt.strip() != "":
             filename_to_prompt[prompt.split("|")[0]] = prompt.split("|")[1]
 
-    for filename in filename_to_prompt:
+    for filename in tqdm(filename_to_prompt):
         prompt = filename_to_prompt[filename][1:].replace("§", " ").replace("#", " ").replace("»", '"').replace("«", '"').replace(":", ",").replace("  ", " ")
         if verbose:
             print(f"Now synthesizing: {prompt}")
@@ -48,7 +49,8 @@ def ad_submission(device="cpu", verbose=False):
         wav = float2pcm(wav)
         sf.write(file=f"2023-SH1_submission_directory/AD_test/wav/{filename}.wav",
                  data=wav,
-                 samplerate=sr)
+                 samplerate=sr,
+                 subtype='PCM_16')
 
 
 def neb_submission(device="cpu", verbose=False):
@@ -68,7 +70,7 @@ def neb_submission(device="cpu", verbose=False):
         if prompt.strip() != "":
             filename_to_prompt[prompt.split("|")[0]] = prompt.split("|")[1]
 
-    for filename in filename_to_prompt:
+    for filename in tqdm(filename_to_prompt):
         prompt = filename_to_prompt[filename][1:].replace("§", " ").replace("#", " ").replace("»", '"').replace("«", '"').replace(":", ",").replace("  ", " ")
         if verbose:
             print(f"Now synthesizing: {prompt}")
@@ -90,7 +92,8 @@ def neb_submission(device="cpu", verbose=False):
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test/wav/{filename}.wav",
                  data=wav,
-                 samplerate=sr)
+                 samplerate=sr,
+                 subtype='PCM_16')
 
     print("generating NEB_test_sus")
     with open("2023-FH1_submission_directory/NEB_test_sus/NEB_test_sus.csv", encoding="utf8", mode="r") as f:
@@ -100,7 +103,7 @@ def neb_submission(device="cpu", verbose=False):
         if prompt.strip() != "":
             filename_to_prompt[prompt.split("|")[0]] = prompt.split("|")[1]
 
-    for filename in filename_to_prompt:
+    for filename in tqdm(filename_to_prompt):
         prompt = filename_to_prompt[filename][1:].replace("§", " ").replace("#", " ").replace("»", '"').replace("«", '"').replace(":", ",").replace("  ", " ")
         if verbose:
             print(f"Now synthesizing: {prompt}")
@@ -122,7 +125,8 @@ def neb_submission(device="cpu", verbose=False):
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_sus/wav/{filename}.wav",
                  data=wav,
-                 samplerate=sr)
+                 samplerate=sr,
+                 subtype='PCM_16')
 
     print("generating NEB_test_par")
     with open("2023-FH1_submission_directory/NEB_test_par/NEB_test_par.csv", encoding="utf8", mode="r") as f:
@@ -132,7 +136,7 @@ def neb_submission(device="cpu", verbose=False):
         if prompt.strip() != "":
             filename_to_prompt[prompt.split("|")[0]] = prompt.split("|")[1]
 
-    for filename in filename_to_prompt:
+    for filename in tqdm(filename_to_prompt):
         prompt = filename_to_prompt[filename][1:].replace("§", " ").replace("#", " ").replace("»", '"').replace("«", '"').replace(":", ",").replace("  ", " ")
         if verbose:
             print(f"Now synthesizing: {prompt}")
@@ -154,7 +158,8 @@ def neb_submission(device="cpu", verbose=False):
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_par/wav/{filename}.wav",
                  data=wav,
-                 samplerate=sr)
+                 samplerate=sr,
+                 subtype='PCM_16')
 
     print("generating NEB_test_list")
     with open("2023-FH1_submission_directory/NEB_test_list/NEB_test_list.csv", encoding="utf8", mode="r") as f:
@@ -164,7 +169,7 @@ def neb_submission(device="cpu", verbose=False):
         if prompt.strip() != "":
             filename_to_prompt[prompt.split("|")[0]] = prompt.split("|")[1]
 
-    for filename in filename_to_prompt:
+    for filename in tqdm(filename_to_prompt):
         prompt = filename_to_prompt[filename][1:].replace("§", " ").replace("#", " ").replace("»", '"').replace("«", '"').replace(":", ",").replace("  ", " ")
         if verbose:
             print(f"Now synthesizing: {prompt}")
@@ -186,7 +191,8 @@ def neb_submission(device="cpu", verbose=False):
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_list/wav/{filename}.wav",
                  data=wav,
-                 samplerate=sr)
+                 samplerate=sr,
+                 subtype='PCM_16')
 
     print("generating NEB_test_homos")
     with open("2023-FH1_submission_directory/NEB_test_homos/NEB_test_homos.csv", encoding="utf8", mode="r") as f:
@@ -196,7 +202,7 @@ def neb_submission(device="cpu", verbose=False):
         if prompt.strip() != "":
             filename_to_prompt[prompt.split("|")[0]] = prompt.split("|")[1]
 
-    for filename in filename_to_prompt:
+    for filename in tqdm(filename_to_prompt):
         prompt = filename_to_prompt[filename][1:].replace("§", " ").replace("#", " ").replace("»", '"').replace("«", '"').replace(":", ",").replace("  ", " ")
         if verbose:
             print(f"Now synthesizing: {prompt}")
@@ -218,7 +224,8 @@ def neb_submission(device="cpu", verbose=False):
         wav = float2pcm(wav)
         sf.write(file=f"2023-FH1_submission_directory/NEB_test_homos/wav/{filename}.wav",
                  data=wav,
-                 samplerate=sr)
+                 samplerate=sr,
+                 subtype='PCM_16')
 
 
 def float2pcm(sig, dtype='int16'):
