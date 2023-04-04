@@ -13,7 +13,6 @@ from InferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import Toucan
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
-from Preprocessing.WordEmbeddingExtractor import WordEmbeddingExtractor
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.storage_config import MODELS_DIR
 
