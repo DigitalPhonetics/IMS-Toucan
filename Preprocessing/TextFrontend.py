@@ -14,7 +14,6 @@ from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Preprocessing.articulatory_features import get_phone_to_id
 from Preprocessing.french_pos import map_to_wiktionary_pos
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 class ArticulatoryCombinedTextFrontend:
@@ -115,7 +114,7 @@ class ArticulatoryCombinedTextFrontend:
             self.g2p_lang = "fr-fr"
             self.expand_abbreviations = remove_french_spacing
             # add POS Tagger for Blizzard Challenge
-            flair.cache_root = Path(f"{PREPROCESSING_DIR}/.flair")
+            flair.cache_root = Path("./Corpora/.flair")
             self.pos_tagger = SequenceTagger.load("qanastek/pos-french-camembert-flair")
             self.homographs = load_json_from_path("Preprocessing/french_homographs_preprocessed.json")
             self.homograph_list = list(self.homographs.keys())

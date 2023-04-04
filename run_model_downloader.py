@@ -16,19 +16,19 @@ def report(block_number, read_size, total_size):
 
 def download_models():
     #############
-    print("Downloading Aligner Model")
-    os.makedirs(os.path.join(MODELS_DIR, "Aligner"), exist_ok=True)
+    print("Downloading ToucanTTS AD Model")
+    os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_AD"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.4/aligner.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")),
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.b/ad.pt",
+        filename=os.path.abspath(os.path.join(MODELS_DIR, "ToucanTTS_AD", "best.pt")),
         reporthook=report)
 
     #############
-    print("Downloading Multilingual PortaSpeech Model")
-    os.makedirs(os.path.join(MODELS_DIR, "PortaSpeech_Meta"), exist_ok=True)
+    print("Downloading ToucanTTS NEB Model")
+    os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_NEB"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.4/PortaSpeech_Meta.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "PortaSpeech_Meta", "best.pt")),
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.b/neb.pt",
+        filename=os.path.abspath(os.path.join(MODELS_DIR, "ToucanTTS_NEB", "best.pt")),
         reporthook=report)
 
     #############
@@ -43,16 +43,8 @@ def download_models():
     print("Downloading Embedding Model")
     os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.4/embedding_function.pt",
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.b/embedding_function.pt",
         filename=os.path.abspath(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")),
-        reporthook=report)
-
-    #############
-    print("Downloading Embedding GAN")
-    os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
-    filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.4/embedding_gan.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt")),
         reporthook=report)
 
 
