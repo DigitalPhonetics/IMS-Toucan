@@ -24,7 +24,7 @@ class VariancePredictor(torch.nn.Module, ABC):
 
     def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, bias=True, dropout_rate=0.5, utt_embed_dim=None):
         """
-        Initilize duration predictor module.
+        Initialize duration predictor module.
 
         Args:
             idim (int): Input dimension.
