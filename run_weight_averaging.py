@@ -8,24 +8,8 @@ import torch
 
 from TrainingInterfaces.Spectrogram_to_Wave.BigVGAN.BigVGAN import BigVGAN
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from Utility.storage_config import MODELS_DIR
-
-
-def load_net_porta(path):
-    check_dict = torch.load(path, map_location=torch.device("cpu"))
-    try:
-        net = PortaSpeech()
-        net.load_state_dict(check_dict["model"])
-    except RuntimeError:
-        try:
-            net = PortaSpeech(lang_embs=None)
-            net.load_state_dict(check_dict["model"])
-        except RuntimeError:
-            net = PortaSpeech(lang_embs=None, utt_embed_dim=None)
-            net.load_state_dict(check_dict["model"])
-    return net, check_dict["default_emb"]
 
 
 def load_net_toucan(path):
@@ -135,13 +119,6 @@ def make_best_in_all():
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
                 save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
-
-            elif "PortaSpeech" in model_dir:
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
-                if checkpoint_paths is None:
-                    continue
-                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_porta)
-                save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(MODELS_DIR, model_dir, "best.pt"))
             elif "ToucanTTS" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
@@ -163,8 +140,6 @@ def show_all_models_params():
     print("Number of (trainable) Parameters in the HiFiGAN Generator: {}".format(count_parameters(HiFiGANGenerator())))
     from TrainingInterfaces.Spectrogram_to_Wave.BigVGAN.BigVGAN import BigVGAN
     print("Number of (trainable) Parameters in the BigVGAN Generator: {}".format(count_parameters(BigVGAN())))
-    from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.PortaSpeech import PortaSpeech
-    print("Number of (trainable) Parameters in PortaSpeech: {}".format(count_parameters(PortaSpeech())))
 
 
 if __name__ == '__main__':

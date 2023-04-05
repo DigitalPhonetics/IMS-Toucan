@@ -133,7 +133,7 @@ def train_loop(train_dataset,
             "tts_model"    : tiny_tts.state_dict(),
             "tts_optimizer": optim_tts.state_dict(),
             "step_counter" : step_counter,
-            },
+        },
             os.path.join(save_directory, "aligner.pt"))
         print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))

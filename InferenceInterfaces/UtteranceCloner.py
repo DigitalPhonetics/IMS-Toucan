@@ -5,7 +5,7 @@ import torch
 from torch.optim import SGD
 from tqdm import tqdm
 
-from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
+from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -19,7 +19,7 @@ from Utility.storage_config import MODELS_DIR
 class UtteranceCloner:
 
     def __init__(self, model_id, device):
-        self.tts = PortaSpeechInterface(device=device, tts_model_path=model_id)
+        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.device = device

@@ -6,9 +6,9 @@ from torch.nn import Tanh
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
+from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.Glow import Glow
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from Utility.utils import make_non_pad_mask
 
@@ -153,13 +153,21 @@ class ToucanTTS(torch.nn.Module):
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
+        self.conv_postnet = PostNet(idim=0,
+                                    odim=output_spectrogram_channels,
+                                    n_layers=5,
+                                    n_chans=256,
+                                    n_filts=5,
+                                    use_batch_norm=True,
+                                    dropout_rate=0.5)
+
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
-            kernel_size=3,  # post_glow_kernel_size
+            kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -228,10 +236,12 @@ class ToucanTTS(torch.nn.Module):
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
+        refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
+
         # refine spectrogram
         refined_spectrogram = self.post_flow(tgt_mels=None,
                                              infer=True,
-                                             mel_out=decoded_spectrogram,
+                                             mel_out=refined_spectrogram,
                                              encoded_texts=upsampled_enriched_encoded_texts,
                                              tgt_nonpadding=None).squeeze()
 
@@ -289,19 +299,19 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         before_outs, \
-            after_outs, \
-            predicted_durations, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text.unsqueeze(0),
-                                               text_length,
-                                               gold_durations=durations,
-                                               gold_pitch=pitch,
-                                               gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale,
-                                               pause_duration_scaling_factor=pause_duration_scaling_factor)
+        after_outs, \
+        predicted_durations, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           text_length,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
         if return_duration_pitch_energy:
             return after_outs, predicted_durations, pitch_predictions, energy_predictions
         return after_outs

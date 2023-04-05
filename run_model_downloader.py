@@ -24,11 +24,11 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Multilingual PortaSpeech Model")
-    os.makedirs(os.path.join(MODELS_DIR, "PortaSpeech_Meta"), exist_ok=True)
+    print("Downloading Multilingual ToucanTTS Model")
+    os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_Meta"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.4/PortaSpeech_Meta.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "PortaSpeech_Meta", "best.pt")),
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.4/ToucanTTS_Meta.pt",
+        filename=os.path.abspath(os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt")),
         reporthook=report)
 
     #############

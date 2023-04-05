@@ -53,7 +53,7 @@ class Aligner(torch.nn.Module):
             nn.Dropout(p=0.5),
             BatchNormConv(conv_dim, conv_dim, 3),
             nn.Dropout(p=0.5),
-            ])
+        ])
         self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="en")

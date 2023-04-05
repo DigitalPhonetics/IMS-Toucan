@@ -152,7 +152,7 @@ class HiFiGANMultiPeriodDiscriminator(torch.nn.Module):
                      "nonlinear_activation_params": {"negative_slope": 0.1},
                      "use_weight_norm"            : True,
                      "use_spectral_norm"          : False,
-                     }, ):
+                 }, ):
         """
         Initialize HiFiGANMultiPeriodDiscriminator module.
 
@@ -330,7 +330,7 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
                      "kernel_size": 4,
                      "stride"     : 2,
                      "padding"    : 2,
-                     },
+                 },
                  discriminator_params={
                      "in_channels"                : 1,
                      "out_channels"               : 1,
@@ -342,7 +342,7 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
                      "downsample_scales"          : [2, 2, 4, 4, 1],
                      "nonlinear_activation"       : "LeakyReLU",
                      "nonlinear_activation_params": {"negative_slope": 0.1},
-                     },
+                 },
                  follow_official_norm=False, ):
         """
         Initialize HiFiGAN multi-scale discriminator module.
@@ -400,7 +400,7 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
                      "kernel_size": 4,
                      "stride"     : 2,
                      "padding"    : 2,
-                     },
+                 },
                  scale_discriminator_params={
                      "in_channels"                : 1,
                      "out_channels"               : 1,
@@ -412,7 +412,7 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
                      "downsample_scales"          : [4, 4, 4, 4, 1],
                      "nonlinear_activation"       : "LeakyReLU",
                      "nonlinear_activation_params": {"negative_slope": 0.1},
-                     },
+                 },
                  follow_official_norm=True,
                  # Multi-period discriminator related
                  periods=[2, 3, 5, 7, 11],
@@ -428,7 +428,7 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
                      "nonlinear_activation_params": {"negative_slope": 0.1},
                      "use_weight_norm"            : True,
                      "use_spectral_norm"          : False,
-                     }, ):
+                 }, ):
         """
         Initialize HiFiGAN multi-scale + multi-period discriminator module.
 
@@ -480,7 +480,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                      "kernel_size": 4,
                      "stride"     : 2,
                      "padding"    : 2,
-                     },
+                 },
                  scale_discriminator_params={
                      "in_channels"                : 1,
                      "out_channels"               : 1,
@@ -492,7 +492,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                      "downsample_scales"          : [4, 4, 4, 4, 1],
                      "nonlinear_activation"       : "LeakyReLU",
                      "nonlinear_activation_params": {"negative_slope": 0.1},
-                     },
+                 },
                  follow_official_norm=True,
                  # Multi-period discriminator related
                  periods=[2, 3, 5, 7, 11],
@@ -508,7 +508,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                      "nonlinear_activation_params": {"negative_slope": 0.1},
                      "use_weight_norm"            : True,
                      "use_spectral_norm"          : False,
-                     },
+                 },
                  # CoMB discriminator related
                  kernels=[[7, 11, 11, 11, 11, 5],
                           [11, 21, 21, 21, 21, 5],

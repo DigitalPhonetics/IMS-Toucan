@@ -106,7 +106,7 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "fr":
             self.g2p_lang = "fr-fr"
-            self.expand_abbreviations = french_spacing
+            self.expand_abbreviations = remove_french_spacing
             if not silent:
                 print("Created a French Text-Frontend")
 
@@ -370,7 +370,8 @@ class ArticulatoryCombinedTextFrontend:
             ("꜒", "˥"),
             # symbols that indicate a pause or silence
             ('"', "~"),
-            (" - ", "~"),
+            (" - ", "~ "),
+            ("- ", "~ "),
             ("-", ""),
             ("…", "."),
             (":", "~"),
@@ -474,9 +475,9 @@ def english_text_expansion(text):
     return text
 
 
-def french_spacing(text):
-    text = text.replace("»", '"').replace("«", '"')
-    for punc in ["!", ";", ":", ".", ",", "?"]:
+def remove_french_spacing(text):
+    text = text.replace(" »", '"').replace("« ", '"')
+    for punc in ["!", ";", ":", ".", ",", "?", "-"]:
         text = text.replace(f" {punc}", punc)
     return text
 

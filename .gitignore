@@ -12,11 +12,14 @@ split/
 singing/
 toucan_conda_venv/
 venv/
+vis/
+
 
 *_graph
 app.py
 gradio*
 *playground*
+run_phonemizer.py
 
 *.pt
 *.out

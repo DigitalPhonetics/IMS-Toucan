@@ -189,7 +189,7 @@ def train_loop(net,
                 "scaler"      : scaler.state_dict(),
                 "scheduler"   : scheduler.state_dict(),
                 "default_emb" : default_embedding,
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net,
                                                           device,
@@ -200,7 +200,7 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
-                    })
+                })
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(cycle_losses_this_epoch) != 0:
@@ -213,7 +213,7 @@ def train_loop(net,
                 "cycle_loss"      : sum(cycle_losses_this_epoch) / len(cycle_losses_this_epoch) if len(
                     cycle_losses_this_epoch) != 0 else 0.0,
                 "Steps"           : step_counter,
-                })
+            })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
             return

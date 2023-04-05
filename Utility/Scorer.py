@@ -108,11 +108,11 @@ class TTSScorer:
         self.nans_removed = False
         self.current_dset = None
 
-    def score(self, path_to_portaspeech_dataset, lang_id):
+    def score(self, path_to_toucantts_dataset, lang_id):
         """
         call this to update the path_to_score dict with scores for this dataset
         """
-        dataset = prepare_fastspeech_corpus(dict(), path_to_portaspeech_dataset, lang_id)
+        dataset = prepare_fastspeech_corpus(dict(), path_to_toucantts_dataset, lang_id)
         self.current_dset = dataset
         self.nans = list()
         self.nan_indexes = list()

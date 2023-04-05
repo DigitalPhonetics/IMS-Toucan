@@ -371,8 +371,8 @@ def finetune_model(dataset, device, path_to_embed=os.path.join(MODELS_DIR, "Embe
         if step % 100 == 0:
             wandb.log({
                 "contrastive": sum(con_losses) / len(con_losses),
-                "triplet":     sum(non_con_losses) / len(non_con_losses),
-                "Steps":       step
+                "triplet"    : sum(non_con_losses) / len(non_con_losses),
+                "Steps"      : step
             })
 
             print(f"\nStep: {step}")

@@ -107,15 +107,15 @@ class ReferenceEncoder(torch.nn.Module):
     """
 
     def __init__(
-            self,
-            idim=80,
-            conv_layers: int = 6,
-            conv_chans_list=(32, 32, 64, 64, 128, 128),
-            conv_kernel_size: int = 3,
-            conv_stride: int = 2,
-            gst_layers: int = 1,
-            gst_units: int = 128,
-            ):
+        self,
+        idim=80,
+        conv_layers: int = 6,
+        conv_chans_list=(32, 32, 64, 64, 128, 128),
+        conv_kernel_size: int = 3,
+        conv_stride: int = 2,
+        gst_layers: int = 1,
+        gst_units: int = 128,
+    ):
         """Initialize reference encoder module."""
         super(ReferenceEncoder, self).__init__()
 
@@ -187,13 +187,13 @@ class StyleTokenLayer(torch.nn.Module):
     """
 
     def __init__(
-            self,
-            ref_embed_dim: int = 128,
-            gst_tokens: int = 10,
-            gst_token_dim: int = 128,
-            gst_heads: int = 4,
-            dropout_rate: float = 0.0,
-            ):
+        self,
+        ref_embed_dim: int = 128,
+        gst_tokens: int = 10,
+        gst_token_dim: int = 128,
+        gst_heads: int = 4,
+        dropout_rate: float = 0.0,
+    ):
         """Initialize style token layer module."""
         super(StyleTokenLayer, self).__init__()
 

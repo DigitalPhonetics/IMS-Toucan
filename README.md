@@ -169,9 +169,9 @@ Now you need to add your newly created pipeline to the pipeline dictionary in th
 *run* function from the pipeline you just created and give it a meaningful name. Now in the
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
 
-### Build a PortaSpeech Pipeline
+### Build a ToucanTTS Pipeline
 
-What we call PortaSpeech is actually mostly FastSpeech 2, but with a couple of changes, such as the normalizing flow
+What we call ToucanTTS is actually mostly FastSpeech 2, but with a couple of changes, such as the normalizing flow
 based PostNet that was introduced in PortaSpeech. We found the VAE used in PortaSpeech too unstable for low-resource
 cases, so we continue experimenting with those in experimental branches of the toolkit.
 
@@ -200,7 +200,7 @@ analogous to what is there already. Now back in the pipeline, change the
 matches your data.
 
 The arguments that are given to the train loop are meant for the case of finetuning from a pretrained model. If you want
-to train from scratch, have a look at a different pipeline that has PortaSpeech in its name and look at the arguments
+to train from scratch, have a look at a different pipeline that has ToucanTTS in its name and look at the arguments
 used there.
 
 Once this is done, we are almost done, now we just need to make it available to the

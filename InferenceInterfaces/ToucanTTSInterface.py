@@ -22,6 +22,7 @@ class ToucanTTSInterface(torch.nn.Module):
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 embedding_model_path=None,
                  vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
                  faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",  # initial language of the model, can be changed later with the setter methods
@@ -67,7 +68,10 @@ class ToucanTTSInterface(torch.nn.Module):
         #  load mel to style models     #
         #################################
         self.style_embedding_function = StyleEmbedding()
-        check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
+        if embedding_model_path is None:
+            check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
+        else:
+            check_dict = torch.load(embedding_model_path, map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
 
@@ -282,7 +286,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                pitch_variance_scale=pitch_variance_scale,
                                                energy_variance_scale=energy_variance_scale).cpu()), 0)
                     wav = torch.cat((wav, silence), 0)
-        soundfile.write(file=file_location, data=wav.cpu().numpy(), samplerate=24000)
+        wav = [val for val in wav for _ in (0, 1)]
+        soundfile.write(file=file_location, data=wav, samplerate=48000)
 
     def read_aloud(self,
                    text,
@@ -299,8 +304,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    pitch_variance_scale=pitch_variance_scale,
                    energy_variance_scale=energy_variance_scale).cpu()
         wav = torch.cat((wav, torch.zeros([12000])), 0)
-        if not blocking:
-            sounddevice.play(wav.numpy(), samplerate=24000)
-        else:
-            sounddevice.play(torch.cat((wav, torch.zeros([6000])), 0).numpy(), samplerate=24000)
+        wav = [val for val in wav for _ in (0, 1)]
+        sounddevice.play(wav, samplerate=48000)
+        if blocking:
             sounddevice.wait()

@@ -5,8 +5,8 @@ import torch.distributions as dist
 from torch import nn
 from torch.nn import functional as F
 
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech import glow_utils
-from TrainingInterfaces.Text_to_Spectrogram.PortaSpeech.wavenet import WN
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS import glow_utils
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.wavenet import WN
 
 
 class ActNorm(nn.Module):

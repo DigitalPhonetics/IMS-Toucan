@@ -198,7 +198,7 @@ def train_loop(net,
                 "scheduler"   : scheduler.state_dict(),
                 "step_counter": step,
                 "default_emb" : default_embedding,
-                },
+            },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step)))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net=net,
@@ -214,7 +214,7 @@ def train_loop(net,
                         cycle_losses_total) != 0 else 0.0,
                     "Steps"           : step,
                     "progress_plot"   : wandb.Image(path_to_most_recent_plot)
-                    })
+                })
             train_losses_total = list()
             cycle_losses_total = list()
             net.train()

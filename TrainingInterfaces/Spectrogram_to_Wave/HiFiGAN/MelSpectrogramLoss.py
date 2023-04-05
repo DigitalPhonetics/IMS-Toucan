@@ -54,7 +54,7 @@ class MelSpectrogram(torch.nn.Module):
             "center"    : self.center,
             "normalized": self.normalized,
             "onesided"  : self.onesided,
-            }
+        }
         self.stft_params["return_complex"] = False
 
         self.log_base = log_base

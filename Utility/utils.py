@@ -66,7 +66,7 @@ def plot_progress_spec(net,
                                                        lang_id=get_language_id(lang).to(device))
 
     if before_and_after_postnet:
-        # PortaSpeech case, because there it's more interesting
+        # ToucanTTS case, because there it's more interesting
         spec_before, spec_after = spec
 
         spec = spec_before.transpose(0, 1).to("cpu").numpy()

@@ -6,6 +6,7 @@ from torch.nn import Tanh
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
+from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
@@ -26,7 +27,7 @@ class ToucanTTS(torch.nn.Module):
     - Word boundaries are modeled explicitly in the encoder end removed before the decoder
     - Speaker embedding conditioning is derived from GST and Adaspeech 4
     - Responsiveness of variance predictors to utterance embedding is increased through conditional layer norm
-    - The final output receives a WGAN discriminator feedback signal TODO
+    - The final output receives a GAN discriminator feedback signal
 
     Contributions inspired from elsewhere:
     - The PostNet is also a normalizing flow, like in PortaSpeech
@@ -95,14 +96,12 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=64,
-                 detach_postflow=True,
                  lang_embs=8000):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
         self.output_spectrogram_channels = output_spectrogram_channels
         self.attention_dimension = attention_dimension
-        self.detach_postflow = detach_postflow
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
@@ -177,13 +176,21 @@ class ToucanTTS(torch.nn.Module):
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
+        self.conv_postnet = PostNet(idim=0,
+                                    odim=output_spectrogram_channels,
+                                    n_layers=5,
+                                    n_chans=256,
+                                    n_filts=5,
+                                    use_batch_norm=True,
+                                    dropout_rate=0.5)
+
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
-            kernel_size=3,  # post_glow_kernel_size
+            kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -228,24 +235,24 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         before_outs, \
-            after_outs, \
-            predicted_durations, \
-            predicted_pitch, \
-            predicted_energy, \
-            glow_loss = self._forward(text_tensors=text_tensors,
-                                      text_lengths=text_lengths,
-                                      gold_speech=gold_speech,
-                                      speech_lengths=speech_lengths,
-                                      gold_durations=gold_durations,
-                                      gold_pitch=gold_pitch,
-                                      gold_energy=gold_energy,
-                                      utterance_embedding=utterance_embedding,
-                                      is_inference=False,
-                                      lang_ids=lang_ids,
-                                      run_glow=run_glow)
+        after_outs, \
+        predicted_durations, \
+        predicted_pitch, \
+        predicted_energy, \
+        glow_loss = self._forward(text_tensors=text_tensors,
+                                  text_lengths=text_lengths,
+                                  gold_speech=gold_speech,
+                                  speech_lengths=speech_lengths,
+                                  gold_durations=gold_durations,
+                                  gold_pitch=gold_pitch,
+                                  gold_energy=gold_energy,
+                                  utterance_embedding=utterance_embedding,
+                                  is_inference=False,
+                                  lang_ids=lang_ids,
+                                  run_glow=run_glow)
 
         # calculate loss
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
+        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=after_outs,
                                                                          # if a regular PostNet is used, the post-PostNet outs have to go here. The flow has its own loss though, so we hard-code this to None
                                                                          before_outs=before_outs,
                                                                          gold_spectrograms=gold_speech,
@@ -311,7 +318,7 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
+            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             energy_predictions = self.energy_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             predicted_durations = self.duration_predictor(encoded_texts, padding_mask=padding_masks, utt_embed=utterance_embedding)
 
@@ -326,35 +333,36 @@ class ToucanTTS(torch.nn.Module):
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
-        # refine spectrogram (requires warmup, so it's not always on)
-        refined_spectrogram = None
+        refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
+
+        # refine spectrogram further with a normalizing flow (requires warmup, so it's not always on)
         glow_loss = None
         if run_glow:
             if is_inference:
                 refined_spectrogram = self.post_flow(tgt_mels=None,
                                                      infer=is_inference,
-                                                     mel_out=decoded_spectrogram,
+                                                     mel_out=refined_spectrogram,
                                                      encoded_texts=upsampled_enriched_encoded_texts,
                                                      tgt_nonpadding=None).squeeze()
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=decoded_spectrogram.detach() if self.detach_postflow else decoded_spectrogram,
-                                           encoded_texts=upsampled_enriched_encoded_texts.detach() if self.detach_postflow else upsampled_enriched_encoded_texts,
+                                           mel_out=refined_spectrogram.detach(),
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \
-                refined_spectrogram.squeeze(), \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze(), \
-                energy_predictions.squeeze()
+                   refined_spectrogram.squeeze(), \
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze(), \
+                   energy_predictions.squeeze()
         else:
             return decoded_spectrogram, \
-                refined_spectrogram, \
-                predicted_durations, \
-                pitch_predictions, \
-                energy_predictions, \
-                glow_loss
+                   refined_spectrogram, \
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions, \
+                   glow_loss
 
     @torch.inference_mode()
     def inference(self,
@@ -386,16 +394,16 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         before_outs, \
-            after_outs, \
-            duration_predictions, \
-            pitch_predictions, \
-            energy_predictions = self._forward(xs,
-                                               ilens,
-                                               ys,
-                                               is_inference=True,
-                                               utterance_embedding=utterance_embeddings,
-                                               lang_ids=lang_id,
-                                               run_glow=run_postflow)  # (1, L, odim)
+        after_outs, \
+        duration_predictions, \
+        pitch_predictions, \
+        energy_predictions = self._forward(xs,
+                                           ilens,
+                                           ys,
+                                           is_inference=True,
+                                           utterance_embedding=utterance_embeddings,
+                                           lang_ids=lang_id,
+                                           run_glow=run_postflow)  # (1, L, odim)
         self.train()
         if after_outs is None:
             after_outs = before_outs

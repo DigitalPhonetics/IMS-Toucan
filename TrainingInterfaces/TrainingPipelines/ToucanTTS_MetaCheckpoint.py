@@ -15,7 +15,7 @@ from Utility.storage_config import PREPROCESSING_DIR
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
     # It is not recommended training this yourself or to finetune this, but you can.
-    # The recommended use is to download the pretrained model from the github release
+    # The recommended use is to download the pretrained model from the GitHub release
     # page and finetune to your desired data
 
     datasets = list()
@@ -137,12 +137,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
                                                      lang="fr"))
 
-    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad"),
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_silence_removed(),
+                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_silence_removed"),
                                                      lang="fr"))
 
-    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb"),
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed(),
+                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e_silence_removed"),
+                                                     lang="fr"))
+
+    french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_silence_removed(),
+                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_silence_removed"),
                                                      lang="fr"))
 
     french_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),

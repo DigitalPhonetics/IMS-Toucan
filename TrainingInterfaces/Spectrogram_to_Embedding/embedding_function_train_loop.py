@@ -158,17 +158,17 @@ def train_loop(net,
                 "scheduler"     : scheduler.state_dict(),
                 "default_emb"   : default_embedding,
                 "style_emb_func": style_embedding_function.state_dict()
-                }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             torch.save({
                 "style_emb_func": style_embedding_function.state_dict()
-                }, os.path.join(save_directory, "embedding_function.pt"))
+            }, os.path.join(save_directory, "embedding_function.pt"))
             delete_old_checkpoints(save_directory, keep=5)
             path_to_most_recent_plot = plot_progress_spec(net, device, save_dir=save_directory, step=step_counter,
                                                           lang=lang, default_emb=default_embedding)
             if use_wandb:
                 wandb.log({
                     "progress_plot": wandb.Image(path_to_most_recent_plot)
-                    })
+                })
         print("Epoch:              {}".format(epoch))
         print("Spectrogram Loss:   {}".format(sum(train_losses_this_epoch) / len(train_losses_this_epoch)))
         if len(reg_losses_this_epoch) != 0:
@@ -181,7 +181,7 @@ def train_loop(net,
                 "basis_reg_loss"  : sum(reg_losses_this_epoch) / len(reg_losses_this_epoch) if len(
                     reg_losses_this_epoch) != 0 else 0.0,
                 "Steps"           : step_counter,
-                })
+            })
         if step_counter > steps and epoch % epochs_per_save == 0:
             # DONE
             return

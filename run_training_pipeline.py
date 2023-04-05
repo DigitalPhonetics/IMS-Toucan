@@ -9,7 +9,7 @@ from TrainingInterfaces.TrainingPipelines.Avocodo_combined import run as hifi_co
 from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as ps_integration_test
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
@@ -20,7 +20,7 @@ pipeline_dict = {
     "fine_ex"  : fine_tuning_example,
     # integration tests
     "fs_it"    : fs_integration_test,
-    "ps_it"    : ps_integration_test,
+    "tt_it"    : tt_integration_test,
     # regular ToucanTTS pipelines
     "nancy"    : nancy,
     "meta"     : meta,

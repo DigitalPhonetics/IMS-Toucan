@@ -3,7 +3,7 @@ import os
 import torch
 
 from InferenceInterfaces.Controllability.GAN import GanWrapper
-from InferenceInterfaces.PortaSpeechInterface import PortaSpeechInterface
+from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Utility.storage_config import MODELS_DIR
 
 
@@ -16,7 +16,7 @@ class ControllableInterface:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = PortaSpeechInterface(device=self.device, tts_model_path="Meta")
+        self.model = ToucanTTSInterface(device=self.device, tts_model_path="Meta")
         self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
         self.generated_speaker_embeds = list()
         self.available_artificial_voices = available_artificial_voices
