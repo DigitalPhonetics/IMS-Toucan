@@ -8,6 +8,7 @@ import torch
 
 from TrainingInterfaces.Spectrogram_to_Wave.BigVGAN.BigVGAN import BigVGAN
 from TrainingInterfaces.Spectrogram_to_Wave.HiFiGAN.HiFiGAN import HiFiGANGenerator
+from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.StochasticToucanTTS import StochasticToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from Utility.storage_config import MODELS_DIR
 
@@ -15,15 +16,27 @@ from Utility.storage_config import MODELS_DIR
 def load_net_toucan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     try:
-        net = ToucanTTS()
-        net.load_state_dict(check_dict["model"])
-    except RuntimeError:
         try:
-            net = ToucanTTS(lang_embs=None)
+            net = ToucanTTS()
             net.load_state_dict(check_dict["model"])
         except RuntimeError:
-            net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
+            try:
+                net = ToucanTTS(lang_embs=None)
+                net.load_state_dict(check_dict["model"])
+            except RuntimeError:
+                net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
+                net.load_state_dict(check_dict["model"])
+    except RuntimeError:
+        try:
+            net = StochasticToucanTTS()
             net.load_state_dict(check_dict["model"])
+        except RuntimeError:
+            try:
+                net = StochasticToucanTTS(lang_embs=None)
+                net.load_state_dict(check_dict["model"])
+            except RuntimeError:
+                net = StochasticToucanTTS(lang_embs=None, utt_embed_dim=None)
+                net.load_state_dict(check_dict["model"])
     return net, check_dict["default_emb"]
 
 

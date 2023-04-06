@@ -15,7 +15,7 @@ from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
 
 
-class ToucanTTS(torch.nn.Module):
+class StochasticToucanTTS(torch.nn.Module):
     """
     ToucanTTS module, which is mostly just a FastSpeech 2 module,
     but with lots of designs from different architectures accumulated
@@ -354,8 +354,8 @@ class ToucanTTS(torch.nn.Module):
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=refined_spectrogram.detach(),
-                                           encoded_texts=upsampled_enriched_encoded_texts.detach(),
+                                           mel_out=refined_spectrogram.detach().clone(),
+                                           encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \
@@ -425,7 +425,7 @@ class ToucanTTS(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    print(sum(p.numel() for p in ToucanTTS().parameters() if p.requires_grad))
+    print(sum(p.numel() for p in StochasticToucanTTS().parameters() if p.requires_grad))
 
     print(" TESTING TRAINING ")
 
@@ -443,7 +443,7 @@ if __name__ == '__main__':
     dummy_utterance_embed = torch.randn([3, 64])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
-    model = ToucanTTS()
+    model = StochasticToucanTTS()
     l1, dl, pl, el, gl = model(dummy_text_batch,
                                dummy_text_lens,
                                dummy_speech_batch,
@@ -480,7 +480,7 @@ if __name__ == '__main__':
     dummy_utterance_embed = torch.randn([2, 64])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
 
-    model = ToucanTTS()
+    model = StochasticToucanTTS()
     l1, dl, pl, el, gl = model(dummy_text_batch,
                                dummy_text_lens,
                                dummy_speech_batch,
@@ -499,6 +499,6 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
     dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
-    print(ToucanTTS().inference(dummy_text_batch,
-                                utterance_embedding=dummy_utterance_embed,
-                                lang_id=dummy_language_id).shape)
+    print(StochasticToucanTTS().inference(dummy_text_batch,
+                                          utterance_embedding=dummy_utterance_embed,
+                                          lang_id=dummy_language_id).shape)
