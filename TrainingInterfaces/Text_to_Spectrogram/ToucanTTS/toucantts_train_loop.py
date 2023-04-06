@@ -184,13 +184,12 @@ def train_loop(net,
                 "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                 "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 5) if len(glow_losses_total) != 0 else None,
-                "Steps"        : step_counter,
-            })
+            }, step=step_counter)
             if use_discriminator:
                 wandb.log({
                     "critic_loss"   : round(sum(discriminator_losses_total) / len(discriminator_losses_total), 5),
                     "generator_loss": round(sum(generator_losses_total) / len(generator_losses_total), 5),
-                })
+                }, step=step_counter)
 
         try:
             path_to_most_recent_plot_before, \
@@ -204,11 +203,11 @@ def train_loop(net,
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
-                })
+                }, step=step_counter)
                 if step_counter > postnet_start_steps or fine_tune:
                     wandb.log({
                         "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
-                    })
+                    }, step=step_counter)
         except IndexError:
             print("generating progress plots failed.")
 

@@ -203,8 +203,7 @@ def train_loop(net,
                     "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                     "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                     "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
-                    "Steps"        : step_counter
-                })
+                }, step=step_counter)
 
             try:
                 path_to_most_recent_plot_before, \
@@ -218,11 +217,11 @@ def train_loop(net,
                 if use_wandb:
                     wandb.log({
                         "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
-                    })
+                    }, step=step_counter)
                     if step_counter > postnet_start_steps:
                         wandb.log({
                             "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
-                        })
+                        }, step=step_counter)
             except IndexError:
                 print("generating progress plots failed.")
 
@@ -232,9 +231,9 @@ def train_loop(net,
             energy_losses_total = list()
             glow_losses_total = list()
 
-            if step_counter > 2 * postnet_start_steps:
+            if step_counter > 3 * postnet_start_steps:
                 # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
-                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=3)
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
                 save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
                 check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)

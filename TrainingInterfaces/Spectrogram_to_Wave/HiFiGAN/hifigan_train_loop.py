@@ -165,7 +165,6 @@ def train_loop(generator,
 
         # LOGGING
         log_dict = dict()
-        log_dict["Steps"] = step_counter
         log_dict["Generator Loss"] = round(sum(generator_losses) / len(generator_losses), 3)
         log_dict["Mel Loss"] = round(sum(mel_losses) / len(mel_losses), 3)
         if len(feat_match_losses) > 0:
@@ -180,4 +179,4 @@ def train_loop(generator,
             print(f"{key}: {log_dict[key]}")
 
         if use_wandb:
-            wandb.log(log_dict)
+            wandb.log(log_dict, step=step_counter)
