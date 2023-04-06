@@ -355,6 +355,7 @@ class ArticulatoryCombinedTextFrontend:
             ("ɬ", "s"),  # lateral
             ("ɮ", "z"),  # lateral
             ('ɺ', 'ɾ'),  # lateral
+            ('ʲ', 'j'),  # decomposed palatalization
             ('\u02CC', ""),  # secondary stress
             ('\u030B', "˥"),
             ('\u0301', "˦"),
@@ -380,7 +381,7 @@ class ArticulatoryCombinedTextFrontend:
         ]
         unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
                                       '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
-                                      '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ', 'ʲ',
+                                      '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ',
                                       '̚', '↗', 'ꜛ', '̻', '̥', 'ˁ', '̘', '͡', '̺'}
         # TODO support more of these. Problem: bridge over to aligner ID lookups after modifying the feature vector
         #  https://en.wikipedia.org/wiki/IPA_number
