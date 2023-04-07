@@ -2,8 +2,8 @@ import time
 
 import torch
 import wandb
-from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.ToucanTTS import StochasticToucanTTS
 
+from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.StochasticToucanTTS import StochasticToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.path_to_transcript_dicts import *
