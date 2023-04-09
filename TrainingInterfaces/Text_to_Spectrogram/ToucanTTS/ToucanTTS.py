@@ -309,8 +309,6 @@ class ToucanTTS(torch.nn.Module):
                     pitch_predictions[0][phoneme_index] = 0.0
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     predicted_durations[0][phoneme_index] = 0
-            print(energy_predictions.shape)
-            print(predicted_durations.shape)
             # enriching the text with pitch and energy info
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
             embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
