@@ -17,7 +17,7 @@ from Utility.utils import make_pad_mask
 
 class StochasticToucanTTS(torch.nn.Module):
     """
-    ToucanTTS module, which is mostly just a FastSpeech 2 module,
+    StochasticToucanTTS module, which is mostly just a FastSpeech 2 module,
     but with lots of designs from different architectures accumulated
     and some major components added to put a large focus on multilinguality.
 
@@ -27,16 +27,15 @@ class StochasticToucanTTS(torch.nn.Module):
     - Speaker embedding conditioning is derived from GST and Adaspeech 4
     - Responsiveness of variance predictors to utterance embedding is increased through conditional layer norm
     - The final output receives a GAN discriminator feedback signal
+    - Stochastic Duration Prediction through a normalizing flow
+    - Stochastic Pitch Prediction through a normalizing flow
+    - Stochastic Energy prediction through a normalizing flow
 
     Contributions inspired from elsewhere:
     - The PostNet is also a normalizing flow, like in PortaSpeech
     - Pitch and energy values are averaged per-phone, as in FastPitch to enable great controllability
     - The encoder and decoder are Conformers
 
-    Things that were tried, but showed inferior performance:
-    - Stochastic Duration Prediction
-    - Stochastic Pitch Prediction
-    - Stochastic Energy prediction
     """
 
     def __init__(self,

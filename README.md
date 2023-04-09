@@ -47,6 +47,12 @@ names.
   reduced, in practice, the vocoder produces much fewer artifacts.
 - Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
   ever! Just follow the `finetuning_example.py` pipeline.
+- We now have the option of choosing between Avocodo and [BigVGAN](https://arxiv.org/abs/2206.04658), which has an improved  
+  generator over HiFiGAN. It is significantly slower on CPU, but the quality is the best I have heard at the time of writing
+  this. The speed on GPU is fine, just for CPU inference you might want to stick with Avocodo.
+- We compile a bunch of quality enhancements from all our previous works so far into one very stable and nice sounding
+  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge 2023,
+  you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
 
 ### 2022
 
@@ -149,16 +155,16 @@ appropriate names.
 
 ## Creating a new Pipeline 🦆
 
-### Build an Avocodo Pipeline
+### Build an Avocodo/BigVGAN Pipeline
 
 This should not be necessary, because we provide a pretrained model and one of the key benefits of vocoders in general
 is how incredibly speaker independent they are. But in case you want to train your own anyway, here are the
 instructions: You will need a function to return the list of all the absolute paths to each of
-the audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for FastSpeech
-2 training, you can simply take the keys of the dict and transform them into a list.
+the audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for ToucanTTS training,
+you can simply take the keys of the dict and transform them into a list.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Avocodo in its name. We
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Avocodo or BigVGAN in its name. We
 will use this as reference and only make the necessary changes to use the new dataset. Look out for a variable called
 *model_save_dir*. This is the default directory that checkpoints will be saved into, unless you specify another one when
 calling the training script. Change it to whatever you like. Then pass the list of paths to the instanciation of the
@@ -173,7 +179,8 @@ Now you need to add your newly created pipeline to the pipeline dictionary in th
 
 What we call ToucanTTS is actually mostly FastSpeech 2, but with a couple of changes, such as the normalizing flow
 based PostNet that was introduced in PortaSpeech. We found the VAE used in PortaSpeech too unstable for low-resource
-cases, so we continue experimenting with those in experimental branches of the toolkit.
+cases, so we continue experimenting with those in experimental branches of the toolkit. There are a bunch of other
+changes that mostly relate to low-resource scenarios. For more info, have a look at the ToucanTTS docstring.
 
 In the directory called
 *Utility* there is a file called
