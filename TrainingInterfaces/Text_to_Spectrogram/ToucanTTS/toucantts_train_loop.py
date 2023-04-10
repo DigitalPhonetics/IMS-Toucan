@@ -174,9 +174,10 @@ def train_loop(net,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         delete_old_checkpoints(save_directory, keep=5)
 
-        print("Epoch:              {}".format(epoch))
-        print("Time elapsed:       {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Steps:              {}".format(step_counter))
+        print("\nEpoch:                  {}".format(epoch))
+        print("Time elapsed:           {} Minutes".format(round((time.time() - start_time) / 60)))
+        print("Reconstruction Loss:    {}".format(round(sum(l1_losses_total) / len(l1_losses_total), 3)))
+        print("Steps:                  {}\n".format(step_counter))
         if use_wandb:
             wandb.log({
                 "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
@@ -211,10 +212,6 @@ def train_loop(net,
         except IndexError:
             print("generating progress plots failed.")
 
-        if step_counter > steps:
-            # DONE
-            return
-
         if step_counter > 3 * postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
@@ -222,6 +219,9 @@ def train_loop(net,
             save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
             check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
             net.load_state_dict(check_dict["model"])
+
+        if step_counter > steps:
+            return  # DONE
 
         net.train()
 

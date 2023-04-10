@@ -184,7 +184,8 @@ def train_loop(net,
             default_embedding = style_embedding_function(
                 batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
-            print(f"\nTotal Steps: {step_counter}")
+            print("Reconstruction Loss:    {}".format(round(sum(l1_losses_total) / len(l1_losses_total), 3)))
+            print("Steps:                  {}\n".format(step_counter))
             torch.save({
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
