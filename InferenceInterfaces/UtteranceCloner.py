@@ -17,11 +17,18 @@ from Utility.storage_config import MODELS_DIR
 
 
 class UtteranceCloner:
+    """
+    Clone the prosody of an utterance, but exchange the speaker (or don't)
 
-    def __init__(self, model_id, device):
-        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
+    Useful for Privacy Applications
+    """
+
+    def __init__(self, model_id, device, language="en", speed_over_quality=False):
+        if (device == torch.device("cpu") or device == "cpu") and not speed_over_quality:
+            print("Warning: You are running BigVGAN on CPU. Consider either switching to GPU or setting the speed_over_quality option to True.")
+        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=speed_over_quality)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
-        self.tf = ArticulatoryCombinedTextFrontend(language="en")
+        self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"]
@@ -153,12 +160,12 @@ class UtteranceCloner:
         start_sil = torch.zeros([silence_frames_start * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
         end_sil = torch.zeros([silence_frames_end * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
         cloned_speech = self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy)
-        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
+        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=24000)
+            sf.write(file=filename_of_result, data=cloned_utt, samplerate=24000)
         if clone_speaker_identity:
             self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
-        return cloned_utt.cpu().numpy()
+        return cloned_utt
 
     def biblical_accurate_angel_mode(self,
                                      path_to_reference_audio,
@@ -178,8 +185,8 @@ class UtteranceCloner:
             self.tts.set_utterance_embedding(path_to_reference_audio=path)
             list_of_cloned_speeches.append(self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy))
         cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
-        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0)
+        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt.cpu().numpy(), samplerate=24000)
+            sf.write(file=filename_of_result, data=cloned_utt, samplerate=24000)
         self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
-        return cloned_utt.cpu().numpy()
+        return cloned_utt

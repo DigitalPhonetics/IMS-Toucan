@@ -119,4 +119,6 @@ class ControllableInterface:
                               energy_variance_scale=energy_variance_scale,
                               pause_duration_scaling_factor=pause_duration_scaling_factor,
                               return_plot_as_filepath=True)
-        return 24000, wav, fig
+        wav = wav.cpu().numpy()
+        wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
+        return 48000, wav, fig

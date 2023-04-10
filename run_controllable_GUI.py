@@ -120,7 +120,7 @@ class TTSWebUI:
                                                  0.0,  # slider 4 did not have a meaningful interpretation, too many properties mixed
                                                  emb5,
                                                  emb6)
-        return (sr, float2pcm(wav.cpu().numpy())), fig
+        return (sr, float2pcm(wav)), fig
 
 
 if __name__ == '__main__':

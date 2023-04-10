@@ -16,7 +16,5 @@ if __name__ == '__main__':
                                     filename_of_result="audios/test_cloned_angelic.wav",
                                     list_of_speaker_references_for_ensemble=["audios/speaker_references_for_testing/female_high_voice.wav",
                                                                              "audios/speaker_references_for_testing/female_mid_voice.wav",
-                                                                             "audios/speaker_references_for_testing/male_low_voice.wav",
-                                                                             "audios/LibriTTS/174/168635/174_168635_000019_000001.wav",
-                                                                             "audios/test.wav"],
+                                                                             "audios/speaker_references_for_testing/male_low_voice.wav"],
                                     lang="en")
