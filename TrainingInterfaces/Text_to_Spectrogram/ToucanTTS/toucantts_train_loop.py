@@ -22,7 +22,7 @@ from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence string
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -31,7 +31,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
-            torch.stack([datapoint[8] for datapoint in batch]))
+            torch.stack([datapoint[8] for datapoint in batch]),
+            [datapoint[9] for datapoint in batch])
 
 
 def train_loop(net,
@@ -49,7 +50,8 @@ def train_loop(net,
                steps,
                use_wandb,
                postnet_start_steps,
-               use_discriminator
+               use_discriminator,
+               use_sent_emb=False
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -63,6 +65,13 @@ def train_loop(net,
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
+
+    if use_sent_emb:
+        print("Using sentence embeddings.")
+        from Preprocessing.sentence_embeddings.LEALLASentenceEmbeddingExtractor import LEALLASentenceEmbeddingExtractor as SentenceEmbeddingExtractor
+        sentence_embedding_extractor = SentenceEmbeddingExtractor()
+    else:
+        sentence_embedding_extractor = None
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -101,13 +110,18 @@ def train_loop(net,
         energy_losses_total = list()
         generator_losses_total = list()
         discriminator_losses_total = list()
+        sent_style_losses_total = list()
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                        batch_of_spectrogram_lengths=batch[3].to(device))
+            if use_sent_emb:
+                sentence_embedding = sentence_embedding_extractor.encode(sentences=batch[9]).to(device)
+            else:
+                sentence_embedding = None
 
-            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
+            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
                 gold_speech=batch[2].to(device),
@@ -116,6 +130,7 @@ def train_loop(net,
                 gold_pitch=batch[6].to(device),  # mind the switched order
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
+                sentence_embedding=sentence_embedding,
                 lang_ids=batch[8].to(device),
                 return_mels=True,
                 run_glow=step_counter > postnet_start_steps or fine_tune)
@@ -143,6 +158,10 @@ def train_loop(net,
             if glow_loss is not None:
                 if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
                     train_loss = train_loss + glow_loss
+            if sent_style_loss is not None:
+                if not torch.isnan(sent_style_loss):
+                    train_loss = train_loss + sent_style_loss
+                sent_style_losses_total.append(sent_style_loss.item())
 
             l1_losses_total.append(l1_loss.item())
             duration_losses_total.append(duration_loss.item())
@@ -185,6 +204,7 @@ def train_loop(net,
                 "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                 "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 5) if len(glow_losses_total) != 0 else None,
+                "sentence_style_loss": round(sum(sent_style_losses_total) / len(sent_style_losses_total), 5) if len(sent_style_losses_total) != 0 else None,
             }, step=step_counter)
             if use_discriminator:
                 wandb.log({
@@ -200,6 +220,7 @@ def train_loop(net,
                                                                           step=step_counter,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
+                                                                          sentence_embedding_extractor=sentence_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
