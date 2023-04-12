@@ -24,8 +24,58 @@ def load_net_toucan(path):
                 net = ToucanTTS(lang_embs=None)
                 net.load_state_dict(check_dict["model"])
             except RuntimeError:
-                net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
-                net.load_state_dict(check_dict["model"])
+                try:
+                    net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
+                    net.load_state_dict(check_dict["model"])
+                except RuntimeError:
+                    print("Loading sent emb architecture")
+                    lang_embs=8000
+                    utt_embed_dim=64
+                    sent_embed_dim=192
+                    sent_embed_adaptation=True
+                    sent_embed_encoder=False
+                    sent_embed_decoder=False
+                    sent_embed_each=False
+                    sent_embed_postnet=False
+                    concat_sent_style=False
+                    use_concat_projection=False
+                    if "a01" in path:
+                        sent_embed_encoder=True
+                    if "a02" in path:
+                        sent_embed_encoder=True
+                        sent_embed_decoder=True
+                    if "a03" in path:
+                        sent_embed_encoder=True
+                        sent_embed_decoder=True
+                        sent_embed_postnet=True
+                    if "a04" in path:
+                        sent_embed_encoder=True
+                        sent_embed_each=True
+                    if "a05" in path:
+                        sent_embed_encoder=True
+                        sent_embed_decoder=True
+                        sent_embed_each=True
+                    if "a06" in path:
+                        sent_embed_encoder=True
+                        sent_embed_decoder=True
+                        sent_embed_each=True
+                        sent_embed_postnet=True
+                    if "a07" in path:
+                        concat_sent_style=True
+                        use_concat_projection=True
+                    if "a08" in path:
+                        concat_sent_style=True
+                    net = ToucanTTS(lang_embs=lang_embs, 
+                                    utt_embed_dim=utt_embed_dim,
+                                    sent_embed_dim=sent_embed_dim,
+                                    sent_embed_adaptation=sent_embed_adaptation,
+                                    sent_embed_encoder=sent_embed_encoder,
+                                    sent_embed_decoder=sent_embed_decoder,
+                                    sent_embed_each=sent_embed_each,
+                                    sent_embed_postnet=sent_embed_postnet,
+                                    concat_sent_style=concat_sent_style,
+                                    use_concat_projection=use_concat_projection)
+                    net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
             net = StochasticToucanTTS()

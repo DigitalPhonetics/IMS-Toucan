@@ -36,7 +36,7 @@ class EncoderLayer(nn.Module):
 
     """
 
-    def __init__(self, size, self_attn, feed_forward, feed_forward_macaron, conv_module, dropout_rate, normalize_before=True, concat_after=False, ):
+    def __init__(self, size, self_attn, feed_forward, feed_forward_macaron, conv_module, dropout_rate, normalize_before=True, concat_after=False, sent_embed_dim=None):
         super(EncoderLayer, self).__init__()
         self.self_attn = self_attn
         self.feed_forward = feed_forward
@@ -58,8 +58,12 @@ class EncoderLayer(nn.Module):
         self.concat_after = concat_after
         if self.concat_after:
             self.concat_linear = nn.Linear(size + size, size)
+        
+        self.sent_embed_dim = sent_embed_dim
+        if self.sent_embed_dim is not None:
+            self.hs_emb_projection_sent = torch.nn.Linear(size + sent_embed_dim, size)
 
-    def forward(self, x_input, mask, cache=None):
+    def forward(self, x_input, mask, sentence_embedding, cache=None):
         """
         Compute encoded features.
 
@@ -79,6 +83,9 @@ class EncoderLayer(nn.Module):
             x, pos_emb = x_input[0], x_input[1]
         else:
             x, pos_emb = x_input, None
+
+        if self.sent_embed_dim is not None:
+            x = self._integrate_with_sent_embed(hs=x, sent_embeddings=sentence_embedding)
 
         # whether to use macaron style
         if self.feed_forward_macaron is not None:
@@ -139,6 +146,12 @@ class EncoderLayer(nn.Module):
             x = torch.cat([cache, x], dim=1)
 
         if pos_emb is not None:
-            return (x, pos_emb), mask
+            return (x, pos_emb), mask, sentence_embedding
 
-        return x, mask
+        return x, mask, sentence_embedding
+    
+    def _integrate_with_sent_embed(self, hs, sent_embeddings):
+            # concat hidden states with sentence embeds and then apply projection
+            embeddings_expanded = torch.nn.functional.normalize(sent_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+            hs = self.hs_emb_projection_sent(torch.cat([hs, embeddings_expanded], dim=-1))
+            return hs

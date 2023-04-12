@@ -2,6 +2,8 @@ import torch
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
+from torch.nn import LeakyReLU
+from torch.nn import LayerNorm
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
@@ -44,7 +46,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=192,
+                 attention_dimension=384,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -96,7 +98,16 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=64,
-                 lang_embs=8000):
+                 lang_embs=8000,
+                 sent_embed_dim=None,
+                 sent_embed_adaptation=False,
+                 sent_embed_encoder=False,
+                 sent_embed_decoder=False,
+                 sent_embed_each=False,
+                 sent_embed_postnet=False,
+                 concat_sent_style=False,
+                 use_concat_projection=False,
+                 use_sent_style_loss=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -105,6 +116,29 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.use_sent_embed = sent_embed_dim is not None
+        self.sent_embed_adaptation = sent_embed_adaptation and self.use_sent_embed
+        self.concat_sent_style = concat_sent_style and self.multispeaker_model and self.use_sent_embed
+        self.use_concat_projection = use_concat_projection and self.concat_sent_style
+        self.use_sent_style_loss = use_sent_style_loss and self.multispeaker_model and self.use_sent_embed
+        self.sent_embed_postnet = sent_embed_postnet and self.use_sent_embed
+
+        if self.use_sent_embed:
+            if self.sent_embed_adaptation:
+                self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim),
+                                                                LeakyReLU(),
+                                                                Linear(sent_embed_dim, sent_embed_dim),
+                                                                LeakyReLU(),
+                                                                Linear(sent_embed_dim, sent_embed_dim),
+                                                                LayerNorm(sent_embed_dim))
+                #sent_embed_dim = sent_embed_dim_adapted
+            if self.concat_sent_style:
+                if self.use_concat_projection:
+                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim +sent_embed_dim, utt_embed_dim + sent_embed_dim),
+                                                            LayerNorm(utt_embed_dim + sent_embed_dim))
+                    utt_embed_dim = utt_embed_dim + sent_embed_dim
+                else:
+                    utt_embed_dim = utt_embed_dim + sent_embed_dim
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
@@ -125,6 +159,8 @@ class ToucanTTS(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
+                                 sent_embed_dim=sent_embed_dim if sent_embed_encoder or sent_embed_each else None,
+                                 sent_embed_each=sent_embed_each,
                                  use_output_norm=True)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
@@ -172,9 +208,16 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
+                                 sent_embed_dim=sent_embed_dim if sent_embed_decoder or sent_embed_each else None,
+                                 sent_embed_each=sent_embed_each,
                                  use_output_norm=False)
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
+
+        if self.sent_embed_postnet:
+            self.decoder_out_sent_emb_projection = Sequential(Linear(output_spectrogram_channels + sent_embed_dim,
+                                                                    output_spectrogram_channels),
+                                                            LayerNorm(output_spectrogram_channels))
 
         self.conv_postnet = PostNet(idim=0,
                                     odim=output_spectrogram_channels,
@@ -206,6 +249,9 @@ class ToucanTTS(torch.nn.Module):
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
         self.criterion = ToucanTTSLoss()
+        if self.use_sent_style_loss:
+            print("Using sentence style loss")
+            self.mse_criterion = torch.nn.MSELoss(reduction='mean')
 
     def forward(self,
                 text_tensors,
@@ -216,6 +262,7 @@ class ToucanTTS(torch.nn.Module):
                 gold_pitch,
                 gold_energy,
                 utterance_embedding,
+                sentence_embedding=None,
                 return_mels=False,
                 lang_ids=None,
                 run_glow=True
@@ -239,7 +286,8 @@ class ToucanTTS(torch.nn.Module):
         predicted_durations, \
         predicted_pitch, \
         predicted_energy, \
-        glow_loss = self._forward(text_tensors=text_tensors,
+        glow_loss, \
+        sent_style_loss = self._forward(text_tensors=text_tensors,
                                   text_lengths=text_lengths,
                                   gold_speech=gold_speech,
                                   speech_lengths=speech_lengths,
@@ -247,6 +295,7 @@ class ToucanTTS(torch.nn.Module):
                                   gold_pitch=gold_pitch,
                                   gold_energy=gold_energy,
                                   utterance_embedding=utterance_embedding,
+                                  sentence_embedding=sentence_embedding,
                                   is_inference=False,
                                   lang_ids=lang_ids,
                                   run_glow=run_glow)
@@ -268,8 +317,8 @@ class ToucanTTS(torch.nn.Module):
         if return_mels:
             if after_outs is None:
                 after_outs = before_outs
-            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, after_outs
-        return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss
+            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss, after_outs,
+        return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss
 
     def _forward(self,
                  text_tensors,
@@ -281,21 +330,56 @@ class ToucanTTS(torch.nn.Module):
                  gold_energy=None,
                  is_inference=False,
                  utterance_embedding=None,
+                 sentence_embedding=None,
                  lang_ids=None,
                  run_glow=True):
 
         if not self.multilingual_model:
             lang_ids = None
 
+        if self.use_sent_style_loss:
+            if utterance_embedding is None:
+                raise TypeError("utterance embedding is None")
+            sentence_embedding_gold = utterance_embedding
+
         if not self.multispeaker_model:
             utterance_embedding = None
         else:
             utterance_embedding = torch.nn.functional.normalize(utterance_embedding)
 
+        if not self.use_sent_embed:
+            sentence_embedding = None
+        else:
+            sentence_embedding = torch.nn.functional.normalize(sentence_embedding)
+            if self.sent_embed_adaptation:
+                # forward sentence embedding adaptation
+                sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+
+        if self.concat_sent_style:
+            if self.use_sent_style_loss:
+                utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
+                                                   sent_embeddings=sentence_embedding if is_inference else sentence_embedding_gold, 
+                                                   projection=self.style_embedding_projection if self.use_concat_projection else None)
+            else:
+                utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
+                                                        sent_embeddings=sentence_embedding, 
+                                                        projection=self.style_embedding_projection if self.use_concat_projection else None)
+
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         padding_masks = make_pad_mask(text_lengths, device=text_lengths.device)
-        encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
+        if self.use_sent_style_loss:
+            encoded_texts, _ = self.encoder(text_tensors,
+                                            text_masks,
+                                            utterance_embedding=utterance_embedding,
+                                            sentence_embedding=sentence_embedding if is_inference else sentence_embedding_gold,
+                                            lang_ids=lang_ids)  # (B, Tmax, adim)
+        else:
+            encoded_texts, _ = self.encoder(text_tensors,
+                                            text_masks,
+                                            utterance_embedding=utterance_embedding,
+                                            sentence_embedding=sentence_embedding,
+                                            lang_ids=lang_ids)  # (B, Tmax, adim)
 
         if is_inference:
             # predicting pitch, energy and durations
@@ -331,7 +415,14 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks)
+        if self.use_sent_style_loss:
+            decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, 
+                                            decoder_masks,
+                                            sentence_embedding=sentence_embedding if is_inference else sentence_embedding_gold)
+        else:
+            decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, 
+                                            decoder_masks,
+                                            sentence_embedding=sentence_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
         refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
@@ -339,6 +430,15 @@ class ToucanTTS(torch.nn.Module):
         # refine spectrogram further with a normalizing flow (requires warmup, so it's not always on)
         glow_loss = None
         if run_glow:
+            if self.sent_embed_postnet:
+                if self.use_sent_style_loss:
+                    refined_spectrogram = _integrate_with_sent_embed(hs=refined_spectrogram,
+                                                                    sent_embeddings=sentence_embedding if is_inference else sentence_embedding_gold,
+                                                                    projection=self.decoder_out_sent_emb_projection)
+                else:
+                    refined_spectrogram = _integrate_with_sent_embed(hs=refined_spectrogram,
+                                                                    sent_embeddings=sentence_embedding,
+                                                                    projection=self.decoder_out_sent_emb_projection)
             if is_inference:
                 refined_spectrogram = self.post_flow(tgt_mels=None,
                                                      infer=is_inference,
@@ -351,6 +451,12 @@ class ToucanTTS(torch.nn.Module):
                                            mel_out=refined_spectrogram.detach().clone(),
                                            encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
                                            tgt_nonpadding=decoder_masks)
+                
+        if self.use_sent_style_loss:
+            sent_style_loss = self.mse_criterion(sentence_embedding, sentence_embedding_gold)
+        else:
+            sent_style_loss = None
+        
         if is_inference:
             return decoded_spectrogram.squeeze(), \
                    refined_spectrogram.squeeze(), \
@@ -363,13 +469,15 @@ class ToucanTTS(torch.nn.Module):
                    predicted_durations, \
                    pitch_predictions, \
                    energy_predictions, \
-                   glow_loss
+                   glow_loss, \
+                   sent_style_loss
 
     @torch.inference_mode()
     def inference(self,
                   text,
                   speech=None,
                   utterance_embedding=None,
+                  sentence_embedding=None,
                   return_duration_pitch_energy=False,
                   lang_id=None,
                   run_postflow=True):
@@ -393,6 +501,7 @@ class ToucanTTS(torch.nn.Module):
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
+        sentence_embeddings = sentence_embedding.unsqueeze(0).to(x.device) if sentence_embedding is not None else None
 
         before_outs, \
         after_outs, \
@@ -403,6 +512,7 @@ class ToucanTTS(torch.nn.Module):
                                            ys,
                                            is_inference=True,
                                            utterance_embedding=utterance_embeddings,
+                                           sentence_embedding=sentence_embeddings,
                                            lang_ids=lang_id,
                                            run_glow=run_postflow)  # (1, L, odim)
         self.train()
@@ -416,6 +526,19 @@ class ToucanTTS(torch.nn.Module):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
+
+def _concat_sent_utt(utt_embeddings, sent_embeddings, projection):
+    if projection is not None:
+        utt_embeddings_enriched = projection(torch.cat([utt_embeddings, sent_embeddings], dim=1))
+    else:
+        utt_embeddings_enriched = torch.cat([utt_embeddings, sent_embeddings], dim=1)
+    return utt_embeddings_enriched
+
+def _integrate_with_sent_embed(hs, sent_embeddings, projection):
+    # concat hidden states with sent embeds and then apply projection
+    embeddings_expanded = sent_embeddings.unsqueeze(1).expand(-1, hs.size(1), -1)
+    hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
+    return hs
 
 
 if __name__ == '__main__':
