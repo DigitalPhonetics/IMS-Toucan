@@ -284,7 +284,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                duration_scaling_factor=duration_scaling_factor,
                                                pitch_variance_scale=pitch_variance_scale,
                                                energy_variance_scale=energy_variance_scale).cpu()), 0)
-                    wav = torch.cat((wav, silence), 0)
+                    wav = torch.cat((wav, silence), 0).numpy()
         wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
         soundfile.write(file=file_location, data=wav, samplerate=48000)
 
@@ -302,8 +302,9 @@ class ToucanTTSInterface(torch.nn.Module):
                    duration_scaling_factor=duration_scaling_factor,
                    pitch_variance_scale=pitch_variance_scale,
                    energy_variance_scale=energy_variance_scale).cpu()
-        wav = torch.cat((wav, torch.zeros([12000])), 0)
-        wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
+        orig_wav = torch.cat((wav, torch.zeros([12000])), 0).numpy()
+        wav = [val for val in orig_wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
+
         sounddevice.play(wav, samplerate=48000)
         if blocking:
             sounddevice.wait()
