@@ -159,7 +159,7 @@ class ToucanTTS(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
-                                 sent_embed_dim=sent_embed_dim if sent_embed_encoder or sent_embed_each else None,
+                                 sent_embed_dim=sent_embed_dim if sent_embed_encoder else None,
                                  sent_embed_each=sent_embed_each,
                                  use_output_norm=True)
 
@@ -208,7 +208,7 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 sent_embed_dim=sent_embed_dim if sent_embed_decoder or sent_embed_each else None,
+                                 sent_embed_dim=sent_embed_dim if sent_embed_decoder else None,
                                  sent_embed_each=sent_embed_each,
                                  use_output_norm=False)
 
