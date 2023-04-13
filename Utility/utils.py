@@ -185,14 +185,14 @@ def plot_progress_spec_toucantts(net,
                                  step,
                                  lang,
                                  default_emb,
-                                 sentence_embedding_extractor=None,
+                                 sent_embs=None,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
         return None
-    if sentence_embedding_extractor is not None:
-        sentence_embedding = sentence_embedding_extractor.encode([sentence]).squeeze()
+    if sent_embs is not None:
+        sentence_embedding = sent_embs[sentence]
     else:
         sentence_embedding = None
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)

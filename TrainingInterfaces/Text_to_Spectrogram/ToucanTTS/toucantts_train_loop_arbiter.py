@@ -24,7 +24,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                steps=80000,  # how many updates to run until training is completed
                postnet_start_steps=9000,  # how many warmup steps before the postnet starts training
                use_discriminator=True,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
-               use_sent_emb=False
+               sent_embs=None
                ):
     if type(datasets) != list:
         datasets = [datasets]
@@ -62,4 +62,4 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            use_wandb=use_wandb,
                            postnet_start_steps=postnet_start_steps,
                            use_discriminator=use_discriminator,
-                           use_sent_emb=use_sent_emb)
+                           sent_embs=sent_embs)

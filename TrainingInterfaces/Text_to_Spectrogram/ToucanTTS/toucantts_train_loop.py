@@ -51,7 +51,7 @@ def train_loop(net,
                use_wandb,
                postnet_start_steps,
                use_discriminator,
-               use_sent_emb=False
+               sent_embs=None
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -65,13 +65,6 @@ def train_loop(net,
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
-
-    if use_sent_emb:
-        print("Using sentence embeddings.")
-        from Preprocessing.sentence_embeddings.LEALLASentenceEmbeddingExtractor import LEALLASentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-        sentence_embedding_extractor = SentenceEmbeddingExtractor()
-    else:
-        sentence_embedding_extractor = None
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -116,8 +109,9 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                        batch_of_spectrogram_lengths=batch[3].to(device))
-            if use_sent_emb:
-                sentence_embedding = sentence_embedding_extractor.encode(sentences=batch[9]).to(device)
+            if sent_embs is not None:
+                sentences = batch[9]
+                sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
             else:
                 sentence_embedding = None
 
@@ -220,7 +214,7 @@ def train_loop(net,
                                                                           step=step_counter,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
-                                                                          sentence_embedding_extractor=sentence_embedding_extractor,
+                                                                          sent_embs=sent_embs,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
