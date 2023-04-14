@@ -343,8 +343,9 @@ class Glow(nn.Module):
         x_recon = mel_out.transpose(1, 2)
         g = x_recon
         B, _, T = g.shape
-        g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
-        g = self.g_proj(g)
+        if encoded_texts is not None and self.text_condition_channels != 0:
+            g = torch.cat([g, encoded_texts.transpose(1, 2)], 1)
+            g = self.g_proj(g)
         prior_dist = self.prior_dist
         if not infer:
             y_lengths = tgt_nonpadding.sum(-1)
