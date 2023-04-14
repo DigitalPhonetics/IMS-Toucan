@@ -10,7 +10,6 @@ from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
 from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
-from TrainingInterfaces.TrainingPipelines.TinyStochasticToucanTTS_Nancy import run as tinynancystoch
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
@@ -26,7 +25,6 @@ pipeline_dict = {
     # regular ToucanTTS pipelines
     "nancy"         : nancy,
     "nancystoch"    : nancystoch,
-    "tinynancystoch": tinynancystoch,
     "meta"          : meta,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
