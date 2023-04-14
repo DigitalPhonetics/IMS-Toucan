@@ -77,6 +77,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=12,  # YOU MIGHT GET OUT OF MEMORY ISSUES ON SMALL GPUs, IF SO, DECREASE THIS.
                eval_lang="de",  # THE LANGUAGE YOUR PROGRESS PLOTS WILL BE MADE IN
                warmup_steps=500,
+               lr=1e-5,  # if you have enough data (over ~1000 datapoints) you can increase this up to 1e-3 and it will still be stable, but learn quicker.
                # DOWNLOAD THESE INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY
                path_to_checkpoint=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") if resume_checkpoint is None else resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
