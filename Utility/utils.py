@@ -10,12 +10,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.multiprocessing
-import torch.multiprocessing
 from matplotlib.lines import Line2D
 
 import Layers.ConditionalLayerNorm
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
+
+
+def float2pcm(sig, dtype='int16'):
+    """
+    https://gist.github.com/HudsonHuang/fbdf8e9af7993fe2a91620d3fb86a182
+    """
+    sig = np.asarray(sig)
+    if sig.dtype.kind != 'f':
+        raise TypeError("'sig' must be a float array")
+    dtype = np.dtype(dtype)
+    if dtype.kind not in 'iu':
+        raise TypeError("'dtype' must be an integer type")
+    i = np.iinfo(dtype)
+    abs_max = 2 ** (i.bits - 1)
+    offset = i.min + abs_max
+    return (sig * abs_max + offset).clip(i.min, i.max).astype(dtype)
 
 
 def make_estimated_durations_usable_for_inference(xs, offset=1.0):

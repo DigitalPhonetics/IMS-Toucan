@@ -149,7 +149,7 @@ class FastSpeechDataset(Dataset):
             # done with datapoint creation
             # =============================
 
-            if ctc_selection:
+            if ctc_selection and len(self.datapoints) > 300:  # for less than 300 datapoints, we should not throw away anything.
                 # now we can filter out some bad datapoints based on the CTC scores we collected
                 mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
                 std_dev = statistics.stdev(self.ctc_losses)

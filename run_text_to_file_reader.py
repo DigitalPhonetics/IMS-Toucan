@@ -16,7 +16,7 @@ def read_texts(model_id, sentence, filename, device="cpu", language="en", speake
     del tts
 
 
-def the_raven(version, model_id="Meta", exec_device="cpu", speed_over_quality=True):
+def the_raven(version, model_id="Meta", exec_device="cpu", speed_over_quality=True, speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -37,7 +37,7 @@ def the_raven(version, model_id="Meta", exec_device="cpu", speed_over_quality=Tr
                filename=f"audios/the_raven_{version}.wav",
                device=exec_device,
                language="en",
-               speaker_reference=None,
+               speaker_reference=speaker_reference,
                faster_vocoder=speed_over_quality)
 
 
@@ -45,4 +45,7 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    the_raven(version="MetaBaseline", model_id="Meta", exec_device=exec_device, speed_over_quality=exec_device != "cuda")
+    the_raven(version="MetaBaseline",
+              model_id="Meta",
+              exec_device=exec_device,
+              speed_over_quality=exec_device != "cuda")

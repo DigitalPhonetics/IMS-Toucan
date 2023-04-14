@@ -15,6 +15,7 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.storage_config import MODELS_DIR
+from Utility.utils import float2pcm
 
 
 class ToucanTTSInterface(torch.nn.Module):
@@ -147,7 +148,6 @@ class ToucanTTSInterface(torch.nn.Module):
         else:
             self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
         self.mel2wav.remove_weight_norm()
-        self.mel2wav = torch.jit.trace(self.mel2wav, torch.randn([80, 5]).to(torch.device(device)))
 
         ################################
         #  set defaults                #
@@ -316,9 +316,11 @@ class ToucanTTSInterface(torch.nn.Module):
                      silent=False,
                      dur_list=None,
                      pitch_list=None,
-                     energy_list=None):
+                     energy_list=None,
+                     increased_compatibility_mode=True):
         """
         Args:
+            increased_compatibility_mode: Whether to export audio as 16bit integer 48kHz audio for maximum compatibility across systems and devices
             silent: Whether to be verbose about the process
             text_list: A list of strings to be read
             file_location: The path and name of the file it should be saved to
@@ -341,32 +343,25 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         if not energy_list:
             energy_list = []
-        wav = None
         silence = torch.zeros([10600])
+        wav = silence.clone()
         for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
-                if wav is None:
-                    wav = self(text,
-                               durations=durations.to(self.device) if durations is not None else None,
-                               pitch=pitch.to(self.device) if pitch is not None else None,
-                               energy=energy.to(self.device) if energy is not None else None,
-                               duration_scaling_factor=duration_scaling_factor,
-                               pitch_variance_scale=pitch_variance_scale,
-                               energy_variance_scale=energy_variance_scale).cpu()
-                    wav = torch.cat((wav, silence), 0)
-                else:
-                    wav = torch.cat((wav, self(text,
-                                               durations=durations.to(self.device) if durations is not None else None,
-                                               pitch=pitch.to(self.device) if pitch is not None else None,
-                                               energy=energy.to(self.device) if energy is not None else None,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale).cpu()), 0)
-                    wav = torch.cat((wav, silence), 0)
-        wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-        soundfile.write(file=file_location, data=wav, samplerate=48000)
+                spoken_sentence = self(text,
+                                       durations=durations.to(self.device) if durations is not None else None,
+                                       pitch=pitch.to(self.device) if pitch is not None else None,
+                                       energy=energy.to(self.device) if energy is not None else None,
+                                       duration_scaling_factor=duration_scaling_factor,
+                                       pitch_variance_scale=pitch_variance_scale,
+                                       energy_variance_scale=energy_variance_scale).cpu()
+                wav = torch.cat((wav, spoken_sentence, silence), 0)
+        if increased_compatibility_mode:
+            wav = [val for val in wav.numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
+            soundfile.write(file=file_location, data=float2pcm(wav), samplerate=48000, subtype="PCM_16")
+        else:
+            soundfile.write(file=file_location, data=wav, samplerate=24000)
 
     def read_aloud(self,
                    text,
@@ -374,7 +369,8 @@ class ToucanTTSInterface(torch.nn.Module):
                    duration_scaling_factor=1.0,
                    pitch_variance_scale=1.0,
                    energy_variance_scale=1.0,
-                   blocking=False):
+                   blocking=False,
+                   increased_compatibility_mode=True):
         if text.strip() == "":
             return
         wav = self(text,
@@ -382,8 +378,11 @@ class ToucanTTSInterface(torch.nn.Module):
                    duration_scaling_factor=duration_scaling_factor,
                    pitch_variance_scale=pitch_variance_scale,
                    energy_variance_scale=energy_variance_scale).cpu()
-        wav = torch.cat((wav, torch.zeros([12000])), 0)
-        wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-        sounddevice.play(wav, samplerate=48000)
+        wav = torch.cat((wav, torch.zeros([12000])), 0).numpy()
+        if increased_compatibility_mode:
+            wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
+            sounddevice.play(float2pcm(wav), samplerate=48000)
+        else:
+            sounddevice.play(wav, samplerate=24000)
         if blocking:
             sounddevice.wait()
