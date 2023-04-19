@@ -70,14 +70,25 @@ class ToucanTTSInterface(torch.nn.Module):
                     self.use_lang_id = True
                     lang_embs=8000
                     utt_embed_dim=64
-                    sent_embed_dim=192
-                    sent_embed_adaptation=True
+
+                    if "laser" in tts_model_path:
+                        sent_embed_dim = 1024
+                    if "lealla" in tts_model_path:
+                        sent_embed_dim = 192
+                    if "para" in tts_model_path:
+                        sent_embed_dim = 768
+                    if "mpnet" in tts_model_path:
+                        sent_embed_dim = 768
+                    if "bertcls" in tts_model_path:
+                        sent_embed_dim = 768
+
                     sent_embed_encoder=False
                     sent_embed_decoder=False
                     sent_embed_each=False
                     sent_embed_postnet=False
                     concat_sent_style=False
                     use_concat_projection=False
+                    self.replace_utt_sent_emb = False
                     if "a01" in tts_model_path:
                         sent_embed_encoder=True
                     if "a02" in tts_model_path:
@@ -104,11 +115,28 @@ class ToucanTTSInterface(torch.nn.Module):
                         use_concat_projection=True
                     if "a08" in tts_model_path:
                         concat_sent_style=True
+                    if "a09" in tts_model_path:
+                        sent_embed_encoder=True
+                        sent_embed_decoder=True
+                        sent_embed_each=True
+                        sent_embed_postnet=True
+                        concat_sent_style=True
+                        use_concat_projection=True
+                    if "a10" in tts_model_path:
+                        lang_embs = None
+                        utt_embed_dim = 192
+                        sent_embed_dim = None
+                        self.replace_utt_sent_emb = True
+                    if "a11" in tts_model_path:
+                        sent_embed_encoder=True
+                        concat_sent_style=True
+                        use_concat_projection=True
+                        
                     self.phone2mel = ToucanTTS(weights=checkpoint["model"],
                                                 lang_embs=lang_embs, 
                                                 utt_embed_dim=utt_embed_dim,
                                                 sent_embed_dim=sent_embed_dim,
-                                                sent_embed_adaptation=sent_embed_adaptation,
+                                                sent_embed_adaptation="noadapt" not in tts_model_path,
                                                 sent_embed_encoder=sent_embed_encoder,
                                                 sent_embed_decoder=sent_embed_decoder,
                                                 sent_embed_each=sent_embed_each,
@@ -183,6 +211,8 @@ class ToucanTTSInterface(torch.nn.Module):
             print(f"Using sentence embedding of given prompt: {prompt}")
             prompt_embedding = self.sentence_embedding_extractor.encode([prompt]).squeeze().to(self.device)
             self.sentence_embedding = prompt_embedding
+            if self.replace_utt_sent_emb:
+                self.default_utterance_embedding = self.sentence_embedding
         else:
             print("Skipping setting sentence embedding.")
 
@@ -230,6 +260,8 @@ class ToucanTTSInterface(torch.nn.Module):
             if self.use_sent_emb and self.sentence_embedding is None:
                 print("Using sentence embedding of input text.")
                 sentence_embedding = self.sentence_embedding_extractor.encode([text]).squeeze().to(self.device)
+                if self.replace_utt_sent_emb:
+                    self.default_utterance_embedding = sentence_embedding
             else:
                 sentence_embedding = self.sentence_embedding
             mel, durations, pitch, energy = self.phone2mel(phones,

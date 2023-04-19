@@ -125,18 +125,17 @@ class ToucanTTS(torch.nn.Module):
 
         if self.use_sent_embed:
             if self.sent_embed_adaptation:
-                self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim),
-                                                                LeakyReLU(),
-                                                                Linear(sent_embed_dim, sent_embed_dim),
-                                                                LeakyReLU(),
-                                                                Linear(sent_embed_dim, sent_embed_dim),
-                                                                LayerNorm(sent_embed_dim))
-                #sent_embed_dim = sent_embed_dim_adapted
+                self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
+                                                                Tanh(),
+                                                                Linear(sent_embed_dim // 2, 768))
+                sent_embed_dim = 768
             if self.concat_sent_style:
+                self.utt_embed_bottleneck = Sequential(Linear(utt_embed_dim, 32), Tanh(), Linear(32, 4))
+                utt_embed_dim = 4 # hard bottleneck
                 if self.use_concat_projection:
-                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim +sent_embed_dim, utt_embed_dim + sent_embed_dim),
-                                                            LayerNorm(utt_embed_dim + sent_embed_dim))
-                    utt_embed_dim = utt_embed_dim + sent_embed_dim
+                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 512),
+                                                            LayerNorm(512))
+                    utt_embed_dim = 512
                 else:
                     utt_embed_dim = utt_embed_dim + sent_embed_dim
 
@@ -356,6 +355,7 @@ class ToucanTTS(torch.nn.Module):
                 sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
 
         if self.concat_sent_style:
+            utterance_embedding = self.utt_embed_bottleneck(utterance_embedding)
             if self.use_sent_style_loss:
                 utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
                                                    sent_embeddings=sentence_embedding if is_inference else sentence_embedding_gold, 
@@ -500,7 +500,7 @@ class ToucanTTS(torch.nn.Module):
             ys = y.unsqueeze(0)
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
-        utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
+        utterance_embeddings = utterance_embedding.unsqueeze(0).to(x.device) if utterance_embedding is not None else None
         sentence_embeddings = sentence_embedding.unsqueeze(0).to(x.device) if sentence_embedding is not None else None
 
         before_outs, \

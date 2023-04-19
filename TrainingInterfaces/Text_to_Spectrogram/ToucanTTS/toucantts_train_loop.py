@@ -51,7 +51,8 @@ def train_loop(net,
                use_wandb,
                postnet_start_steps,
                use_discriminator,
-               sent_embs=None
+               sent_embs=None,
+               replace_utt_sent_emb=False
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -114,6 +115,9 @@ def train_loop(net,
                 sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
             else:
                 sentence_embedding = None
+
+            if replace_utt_sent_emb:
+                style_embedding = sentence_embedding
 
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
@@ -178,6 +182,8 @@ def train_loop(net,
         default_embedding = style_embedding_function(
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+        if replace_utt_sent_emb:
+            default_embedding = sent_embs[train_dataset[0][9]]
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
