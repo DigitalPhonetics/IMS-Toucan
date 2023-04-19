@@ -148,8 +148,12 @@ class TTSScorer:
                 self.tts = ToucanTTS(lang_embs=None)
                 self.tts.load_state_dict(weights)
             except RuntimeError:
-                self.tts = ToucanTTS(lang_embs=None, utt_embed_dim=None)
-                self.tts.load_state_dict(weights)
+                try:
+                    self.tts = ToucanTTS(lang_embs=None, utt_embed_dim=None)
+                    self.tts.load_state_dict(weights)
+                except RuntimeError:
+                    self.tts = ToucanTTS(sent_embed_dim=1024, sent_embed_adaptation=True, sent_embed_encoder=True, concat_sent_style=True, use_concat_projection=True)
+                    self.tts.load_state_dict(weights)
         self.style_embedding_function = StyleEmbedding().to(device)
         check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
