@@ -59,7 +59,7 @@ def test_sentence(version, model_id="Meta", exec_device="cpu", speaker_reference
     tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, sent_emb_extractor=sent_emb_extractor)
     tts.set_language("en")
     #sentence = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-    sentence = "I am really happy."
+    sentence = "But yours, your regard was new compared with; Fanny, think of me!"
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
     if prompt is not None:
@@ -85,15 +85,15 @@ if __name__ == '__main__':
         #from Preprocessing.sentence_embeddings.LEALLASentenceEmbeddingExtractor import LEALLASentenceEmbeddingExtractor as SentenceEmbeddingExtractor
 
         #from Preprocessing.sentence_embeddings.LASERSentenceEmbeddingExtractor import LASERSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-        #from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-        from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
+        from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
+        #from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
 
-        sent_emb_extractor = SentenceEmbeddingExtractor(pooling="cls")
+        sent_emb_extractor = SentenceEmbeddingExtractor(model="mpnet")
     else:
         sent_emb_extractor = None
 
     if use_speaker_reference:
-        speaker_reference = "/mount/resources/speech/corpora/Blizzard2013/train/segmented/wavn/CA-BB-07-04.wav"
+        speaker_reference = "/mount/resources/speech/corpora/Blizzard2013/train/segmented/wavn/CA-MP3-15-164.wav"
     else:
         speaker_reference = None
 
@@ -121,8 +121,9 @@ if __name__ == '__main__':
     #poem(version="ToucanTTS_02_Blizzard2013_sent_emb_a11", model_id="02_Blizzard2013_sent_emb_a11", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_lealla", model_id="03_Blizzard2013_sent_emb_a11_lealla", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_laser", model_id="03_Blizzard2013_sent_emb_a11_laser", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
-    poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_bertcls", model_id="03_Blizzard2013_sent_emb_a11_bertcls", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_bertcls", model_id="03_Blizzard2013_sent_emb_a11_bertcls", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_para", model_id="03_Blizzard2013_sent_emb_a11_para", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_mpnet", model_id="03_Blizzard2013_sent_emb_a11_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 
     #poem(version="ToucanTTS_01_PromptSpeech", model_id="01_PromptSpeech", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
     #poem(version="ToucanTTS_01_PromptSpeech_sent_emb_a07_noadapt", model_id="01_PromptSpeech_sent_emb_a07_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
@@ -137,3 +138,9 @@ if __name__ == '__main__':
     #test_sentence(version="ToucanTTS_02_Blizzard2013_sent_emb_a11", model_id="02_Blizzard2013_sent_emb_a11", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 
     #test_sentence(version="ToucanTTS_01_PromptSpeech_sent_emb_a05", model_id="01_PromptSpeech_sent_emb_a05", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+
+    #test_sentence(version="ToucanTTS_01_Blizzard2013", model_id="01_Blizzard2013", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
+    #test_sentence(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_bertcls", model_id="03_Blizzard2013_sent_emb_a11_bertcls", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #test_sentence(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_laser", model_id="03_Blizzard2013_sent_emb_a11_laser", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #test_sentence(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_lealla", model_id="03_Blizzard2013_sent_emb_a11_lealla", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #test_sentence(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_para", model_id="03_Blizzard2013_sent_emb_a11_para", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
