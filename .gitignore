@@ -13,6 +13,8 @@ singing/
 toucan_conda_venv/
 venv/
 vis/
+wandb/
+testing*
 
 
 *_graph
