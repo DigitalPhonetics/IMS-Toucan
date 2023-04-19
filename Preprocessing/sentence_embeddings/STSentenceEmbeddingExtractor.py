@@ -8,7 +8,7 @@ from Preprocessing.sentence_embeddings.SentenceEmbeddingExtractor import Sentenc
 class STSentenceEmbeddingExtractor(SentenceEmbeddingExtractor):
     def __init__(self, model:str='para', cache_dir:str=""):
         super().__init__()
-        assert model in ['para', 'para_mini', 'distil', 'bloom', 'camembert']
+        assert model in ['para', 'para_mini', 'distil', 'bloom', 'camembert', 'mpnet']
         os.environ["TOKENIZERS_PARALLELISM"] = 'False'
         if cache_dir:
             self.cache_dir = cache_dir
@@ -22,6 +22,8 @@ class STSentenceEmbeddingExtractor(SentenceEmbeddingExtractor):
             self.model = SentenceTransformer('bigscience-data/sgpt-bloom-1b7-nli', cache_folder=self.cache_dir)
         if model == 'camembert':
             self.model = SentenceTransformer('dangvantuan/sentence-camembert-base', cache_folder=self.cache_dir)
+        if model == 'mpnet':
+            self.model = SentenceTransformer('sentence-transformers/all-mpnet-base-v2', cache_folder=self.cache_dir)
     
     def encode(self, sentences: list[str]) -> torch.Tensor:
         return torch.as_tensor(self.model.encode(sentences))
