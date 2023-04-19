@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_mpnet"
+    name = "ToucanTTS_03_LibriTTS_sent_emb_a11_mpnet"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -51,8 +51,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "libritts"),
                                           lang="en",
                                           save_imgs=False)
     
@@ -72,7 +72,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         embed_type = "bertcls"
         sent_embed_dim = 768
 
-    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")):
+    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "libritts", f"sent_emb_cache_{embed_type}.pt")):
         if embed_type == "lealla":
             import tensorflow as tf
             gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -96,16 +96,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         atf = ArticulatoryCombinedTextFrontend(language="en")
         example_sentence = atf.get_example_sentence(lang="en")
         sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=[example_sentence]).squeeze()
-        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt"))
-        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")}')
+        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "libritts", f"sent_emb_cache_{embed_type}.pt"))
+        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "libritts", f"sent_emb_cache_{embed_type}.pt")}')
         if embed_type == "lealla":
             print("Please restart and use saved sentence embeddings because tensorflow won't release GPU memory for training.")
             return
         else:
             del sentence_embedding_extractor
     else:
-        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")}.')
-        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt"), map_location='cpu')
+        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "libritts", f"sent_emb_cache_{embed_type}.pt")}.')
+        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "libritts", f"sent_emb_cache_{embed_type}.pt"), map_location='cpu')
     
     if sent_embs is None:
         raise TypeError("Sentence embeddings are None.")

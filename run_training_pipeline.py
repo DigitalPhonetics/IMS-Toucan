@@ -18,6 +18,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_emb import
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech import run as promptspeech
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import run as promptspeech_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS_sent_emb import run as libri_sent
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -36,6 +37,7 @@ pipeline_dict = {
     "promptspeech": promptspeech,
     "promptspeech_sent": promptspeech_sent,
     "libri" : libri,
+    "libri_sent" : libri_sent,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"   : hifi_codo,
     "bigvgan"   : bigvgan,
