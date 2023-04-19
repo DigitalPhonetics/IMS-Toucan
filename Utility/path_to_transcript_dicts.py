@@ -2,6 +2,7 @@ import glob
 import os
 import random
 from pathlib import Path
+from tqdm import tqdm
 
 
 def limit_to_n(path_to_transcript_dict, n=40000):
@@ -241,7 +242,7 @@ def build_path_to_transcript_dict_promptspeech():
     promptspeech_train_df = pd.read_csv('/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/PromptSpeech_training.csv')
     promptspeech_files = list(promptspeech_train_df['item_name'])
     path_to_transcript = dict()
-    for speaker in os.listdir(path_train):
+    for speaker in tqdm(os.listdir(path_train)):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
             for file in os.listdir(os.path.join(path_train, speaker, chapter)):
                 if file.endswith("normalized.txt"):
@@ -252,6 +253,27 @@ def build_path_to_transcript_dict_promptspeech():
                         wav_file = file.split(".")[0] + ".wav"
                         path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
     return path_to_transcript
+
+def build_sent_to_prompt_dict_promptspeech():
+    # PromptSpeech uses a subset of LibriTTS
+    path_train = "/mount/resources/speech/corpora/LibriTTS/all_clean"
+    import pandas as pd
+    # TODO make promptspeech train file available in resources
+    promptspeech_train_df = pd.read_csv('/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/PromptSpeech_training.csv')
+    promptspeech_files = list(promptspeech_train_df['item_name'])
+    promptspeech_prompts = list(promptspeech_train_df['style_prompt'])
+    sent_to_prompt = dict()
+    for speaker in tqdm(os.listdir(path_train)):
+        for chapter in os.listdir(os.path.join(path_train, speaker)):
+            for file in os.listdir(os.path.join(path_train, speaker, chapter)):
+                if file.endswith("normalized.txt"):
+                    # only process files in filenames
+                    if file.split(".")[0] in promptspeech_files:
+                        with open(os.path.join(path_train, speaker, chapter, file), 'r', encoding='utf8') as tf:
+                            transcript = tf.read()
+                        prompt = promptspeech_prompts[promptspeech_files.index(file.split(".")[0])]
+                        sent_to_prompt[transcript] = prompt
+    return sent_to_prompt
 
 
 def build_path_to_transcript_dict_libritts_other500():
