@@ -2,6 +2,7 @@ import time
 
 import torch
 import wandb
+import tensorflow as tf
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
@@ -11,6 +12,8 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+
+import sys
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
@@ -22,6 +25,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
         device = torch.device(f"cuda")
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -29,7 +34,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_mpnet"
+    name = "ToucanTTS_01_PromptSpeech_sent_emb_a07_noadapt"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -41,8 +46,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     a08: concatenate with style embedding
     a09: a06 + a07
     a10: replace style embedding with sentence embedding (no style embedding, no language embedding, single speaker single language case)
-    a11: a01 + a07
     loss: additionally use sentence style loss
+    noadapt: no adaptation layers
     """
 
     if model_dir is not None:
@@ -51,61 +56,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_promptspeech(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "promptspeech"),
                                           lang="en",
                                           save_imgs=False)
-    
-    if "laser" in name:
-        embed_type = "laser"
-        sent_embed_dim = 1024
-    if "lealla" in name:
-        embed_type = "lealla"
-        sent_embed_dim = 192
-    if "para" in name:
-        embed_type = "para"
-        sent_embed_dim = 768
-    if "mpnet" in name:
-        embed_type = "mpnet"
-        sent_embed_dim = 768
-    if "bertcls" in name:
-        embed_type = "bertcls"
-        sent_embed_dim = 768
-
-    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")):
-        if embed_type == "lealla":
-            import tensorflow as tf
-            gpus = tf.config.experimental.list_physical_devices('GPU')
-            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-            from Preprocessing.sentence_embeddings.LEALLASentenceEmbeddingExtractor import LEALLASentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor()
-        if embed_type == "laser":
-            from Preprocessing.sentence_embeddings.LASERSentenceEmbeddingExtractor import LASERSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor()
-        if embed_type == "para":
-            from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(model="para")
-        if embed_type == "mpnet":
-            from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(model="mpnet")
-        if embed_type == "bertcls":
-            from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
-
-        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor)
+    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "promptspeech", "sent_emb_cache.pt")):
+        from Preprocessing.sentence_embeddings.LEALLASentenceEmbeddingExtractor import LEALLASentenceEmbeddingExtractor as SentenceEmbeddingExtractor
+        sentence_embedding_extractor = SentenceEmbeddingExtractor()
+        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor, promptspeech=True)
         atf = ArticulatoryCombinedTextFrontend(language="en")
         example_sentence = atf.get_example_sentence(lang="en")
-        sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=[example_sentence]).squeeze()
-        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt"))
-        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")}')
-        if embed_type == "lealla":
-            print("Please restart ans use saved sentence embeddings because tensorflow won't release GPU memory for training.")
-            return
-        else:
-            del sentence_embedding_extractor
+        sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=["Normal pitched, normal speaking, normal volume, man"]).squeeze()
+        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "promptspeech", "sent_emb_cache.pt"))
+        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "promptspeech", "sent_emb_cache.pt")}')
+        return
     else:
-        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")}.')
-        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt"), map_location='cpu')
+        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "promptspeech", "sent_emb_cache.pt")}.')
+        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "promptspeech", "sent_emb_cache.pt"), map_location='cpu')
     
     if sent_embs is None:
         raise TypeError("Sentence embeddings are None.")
@@ -120,6 +87,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_embs=8000
     utt_embed_dim=64
+    sent_embed_dim=192
 
     if "a01" in name:
         sent_embed_encoder=True
@@ -159,10 +127,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         utt_embed_dim = 192
         sent_embed_dim = None
         replace_utt_sent_emb = True
-    if "a11" in name:
-        sent_embed_encoder=True
-        concat_sent_style=True
-        use_concat_projection=True
 
     model = ToucanTTS(lang_embs=lang_embs, 
                     utt_embed_dim=utt_embed_dim,

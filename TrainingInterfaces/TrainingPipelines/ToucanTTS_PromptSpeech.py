@@ -10,8 +10,6 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
-import sys
-
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
     if gpu_id == "cpu":
@@ -29,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_Blizzard2013"
+    name = "ToucanTTS_01_PromptSpeech"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -37,8 +35,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_promptspeech(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "promptspeech"),
                                           lang="en",
                                           save_imgs=False)
 

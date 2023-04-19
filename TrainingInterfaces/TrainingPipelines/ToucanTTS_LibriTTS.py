@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_Blizzard2013"
+    name = "ToucanTTS_01_LibriTTS"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -37,8 +37,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "libritts"),
                                           lang="en",
                                           save_imgs=False)
 
