@@ -82,7 +82,8 @@ class ToucanTTS(torch.nn.Module):
                  sent_embed_each=False,
                  sent_embed_postnet=False,
                  concat_sent_style=False,
-                 use_concat_projection=False):
+                 use_concat_projection=False,
+                 use_sent_style_loss=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -96,14 +97,23 @@ class ToucanTTS(torch.nn.Module):
         self.sent_embed_adaptation = sent_embed_adaptation and self.use_sent_embed
         self.concat_sent_style = concat_sent_style and self.multispeaker_model and self.use_sent_embed
         self.use_concat_projection = use_concat_projection and self.concat_sent_style
+        self.use_sent_style_loss = use_sent_style_loss and self.multispeaker_model and self.use_sent_embed
         self.sent_embed_postnet = sent_embed_postnet and self.use_sent_embed
 
         if self.use_sent_embed:
             if self.sent_embed_adaptation:
-                self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
-                                                                Tanh(),
-                                                                Linear(sent_embed_dim // 2, 768))
-                sent_embed_dim = 768
+                if self.use_sent_style_loss:
+                    self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
+                                                                    Tanh(),
+                                                                    Linear(sent_embed_dim // 2, sent_embed_dim // 4),
+                                                                    Tanh(),
+                                                                    Linear(sent_embed_dim // 4, 64))
+                    sent_embed_dim = 64
+                else:
+                    self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
+                                                                    Tanh(),
+                                                                    Linear(sent_embed_dim // 2, 768))
+                    sent_embed_dim = 768
             if self.concat_sent_style:
                 self.utt_embed_bottleneck = Sequential(Linear(utt_embed_dim, 32), Tanh(), Linear(32, 4))
                 utt_embed_dim = 4 # hard bottleneck

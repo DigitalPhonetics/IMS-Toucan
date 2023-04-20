@@ -142,7 +142,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                 sent_embed_each=sent_embed_each,
                                                 sent_embed_postnet=sent_embed_postnet,
                                                 concat_sent_style=concat_sent_style,
-                                                use_concat_projection=use_concat_projection)
+                                                use_concat_projection=use_concat_projection,
+                                                use_sent_style_loss="loss" in tts_model_path)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))

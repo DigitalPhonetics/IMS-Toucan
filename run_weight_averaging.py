@@ -100,7 +100,8 @@ def load_net_toucan(path):
                                     sent_embed_each=sent_embed_each,
                                     sent_embed_postnet=sent_embed_postnet,
                                     concat_sent_style=concat_sent_style,
-                                    use_concat_projection=use_concat_projection)
+                                    use_concat_projection=use_concat_projection,
+                                    use_sent_style_loss="loss" in path)
                     net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
