@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     use_speaker_reference = False
     use_sent_emb = True 
-    use_prompt = False
+    use_prompt = True
 
     if use_sent_emb:
         #import tensorflow
@@ -93,13 +93,13 @@ if __name__ == '__main__':
         sent_emb_extractor = None
 
     if use_speaker_reference:
-        speaker_reference = "/mount/resources/speech/corpora/Blizzard2013/train/segmented/wavn/CA-MP3-15-164.wav"
+        speaker_reference = "/mount/resources/speech/corpora/LibriTTS/all_clean/210/129396/210_129396_000073_000001.wav"
     else:
         speaker_reference = None
 
     if use_prompt:
         #prompt = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-        prompt = "I am really lucky!"
+        prompt = "Provide me with a male voice"
     else:
         prompt = None
 
@@ -123,9 +123,12 @@ if __name__ == '__main__':
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_laser", model_id="03_Blizzard2013_sent_emb_a11_laser", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_bertcls", model_id="03_Blizzard2013_sent_emb_a11_bertcls", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_para", model_id="03_Blizzard2013_sent_emb_a11_para", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
-    poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_mpnet", model_id="03_Blizzard2013_sent_emb_a11_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_mpnet", model_id="03_Blizzard2013_sent_emb_a11_loss_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 
-    #poem(version="ToucanTTS_01_PromptSpeech", model_id="01_PromptSpeech", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
+    poem(version="ToucanTTS_03_PromptSpeech_sent_emb_a11_loss_mpnet", model_id="03_PromptSpeech_sent_emb_a11_loss_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+
+    #poem(version="ToucanTTS_Meta", model_id="Meta", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
+    #poem(version="ToucanTTS_03_LibriTTS_sent_emb_a11_mpnet", model_id="03_LibriTTS_sent_emb_a11_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference,sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_01_PromptSpeech_sent_emb_a07_noadapt", model_id="01_PromptSpeech_sent_emb_a07_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_01_PromptSpeech_sent_emb_a05", model_id="01_PromptSpeech_sent_emb_a05", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 
