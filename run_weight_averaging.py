@@ -42,6 +42,8 @@ def load_net_toucan(path):
                         sent_embed_dim = 768
                     if "bertcls" in path:
                         sent_embed_dim = 768
+                    if "bertlm" in path:
+                        sent_embed_dim = 768
                     
                     sent_embed_encoder=False
                     sent_embed_decoder=False

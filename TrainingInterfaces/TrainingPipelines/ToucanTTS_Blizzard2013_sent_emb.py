@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_mpnet"
+    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_bertlm"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -71,6 +71,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if "bertcls" in name:
         embed_type = "bertcls"
         sent_embed_dim = 768
+    if "bertlm" in name:
+        embed_type = "bertlm"
+        sent_embed_dim = 768
 
     if not os.path.exists(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")):
         if embed_type == "lealla":
@@ -91,6 +94,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         if embed_type == "bertcls":
             from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
+        if embed_type == "bertlm":
+            from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
+            sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="last_mean")
 
         sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor)
         atf = ArticulatoryCombinedTextFrontend(language="en")

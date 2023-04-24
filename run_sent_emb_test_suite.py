@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     use_speaker_reference = False
     use_sent_emb = True 
-    use_prompt = True
+    use_prompt = False
 
     if use_sent_emb:
         #import tensorflow
@@ -125,10 +125,11 @@ if __name__ == '__main__':
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_para", model_id="03_Blizzard2013_sent_emb_a11_para", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_mpnet", model_id="03_Blizzard2013_sent_emb_a11_loss_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 
-    poem(version="ToucanTTS_03_PromptSpeech_sent_emb_a11_loss_mpnet", model_id="03_PromptSpeech_sent_emb_a11_loss_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #poem(version="ToucanTTS_03_PromptSpeech_sent_emb_a11_loss_mpnet", model_id="03_PromptSpeech_sent_emb_a11_loss_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 
     #poem(version="ToucanTTS_Meta", model_id="Meta", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
-    #poem(version="ToucanTTS_03_LibriTTS_sent_emb_a11_mpnet", model_id="03_LibriTTS_sent_emb_a11_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference,sent_emb_extractor=sent_emb_extractor, prompt=prompt)
+    #poem(version="ToucanTTS_01_LibriTTS", model_id="01_LibriTTS", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
+    poem(version="ToucanTTS_03_LibriTTS_sent_emb_a11_mpnet", model_id="03_LibriTTS_sent_emb_a11_mpnet", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference,sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_01_PromptSpeech_sent_emb_a07_noadapt", model_id="01_PromptSpeech_sent_emb_a07_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #poem(version="ToucanTTS_01_PromptSpeech_sent_emb_a05", model_id="01_PromptSpeech_sent_emb_a05", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
 

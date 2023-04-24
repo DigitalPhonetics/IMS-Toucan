@@ -194,6 +194,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                use_wandb=use_wandb,
                sent_embs=sent_embs,
-               replace_utt_sent_emb=replace_utt_sent_emb)
+               replace_utt_sent_emb=replace_utt_sent_emb,
+               steps=200000)
     if use_wandb:
         wandb.finish()
