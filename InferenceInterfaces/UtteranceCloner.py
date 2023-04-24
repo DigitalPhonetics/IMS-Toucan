@@ -145,37 +145,39 @@ class UtteranceCloner:
         return duration, pitch, energy, start_silence, end_silence
 
     def clone_utterance(self,
-                        path_to_reference_audio,
-                        reference_transcription,
+                        path_to_reference_audio_for_intonation,
+                        path_to_reference_audio_for_voice,
+                        transcription_of_intonation_reference,
                         filename_of_result=None,
-                        clone_speaker_identity=True,
                         lang="de"):
-        if clone_speaker_identity:
-            prev_embedding = self.tts.default_utterance_embedding.clone().detach()
-            self.tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio)
-        duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(reference_transcription,
-                                                                                                 path_to_reference_audio,
+        """
+        What is said in path_to_reference_audio_for_intonation has to match the text in the reference_transcription exactly!
+        """
+        self.tts.set_utterance_embedding(path_to_reference_audio=path_to_reference_audio_for_voice)
+        duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(transcription_of_intonation_reference,
+                                                                                                 path_to_reference_audio_for_intonation,
                                                                                                  lang=lang)
         self.tts.set_language(lang)
         start_sil = torch.zeros([silence_frames_start * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
         end_sil = torch.zeros([silence_frames_end * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
-        cloned_speech = self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy)
+        cloned_speech = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
             sf.write(file=filename_of_result, data=cloned_utt, samplerate=24000)
-        if clone_speaker_identity:
-            self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
         return cloned_utt
 
     def biblical_accurate_angel_mode(self,
-                                     path_to_reference_audio,
-                                     reference_transcription,
+                                     path_to_reference_audio_for_intonation,
+                                     transcription_of_intonation_reference,
                                      list_of_speaker_references_for_ensemble,
                                      filename_of_result=None,
                                      lang="de"):
+        """
+        Have multiple voices speak with the exact same intonation simultaneously
+        """
         prev_embedding = self.tts.default_utterance_embedding.clone().detach()
-        duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(reference_transcription,
-                                                                                                 path_to_reference_audio,
+        duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(transcription_of_intonation_reference,
+                                                                                                 path_to_reference_audio_for_intonation,
                                                                                                  lang=lang)
         self.tts.set_language(lang)
         start_sil = torch.zeros([silence_frames_start * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
@@ -183,7 +185,7 @@ class UtteranceCloner:
         list_of_cloned_speeches = list()
         for path in list_of_speaker_references_for_ensemble:
             self.tts.set_utterance_embedding(path_to_reference_audio=path)
-            list_of_cloned_speeches.append(self.tts(reference_transcription, view=False, durations=duration, pitch=pitch, energy=energy))
+            list_of_cloned_speeches.append(self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy))
         cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
