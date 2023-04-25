@@ -6,7 +6,6 @@ from torch.nn import Tanh
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.PostNet import PostNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
@@ -48,13 +47,13 @@ class ToucanTTS(torch.nn.Module):
 
                  # duration predictor
                  duration_predictor_layers=3,
-                 duration_predictor_chans=256,
+                 duration_predictor_chans=192,
                  duration_predictor_kernel_size=3,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
-                 pitch_predictor_layers=7,  # 5 in espnet
-                 pitch_predictor_chans=256,
+                 pitch_predictor_layers=7,
+                 pitch_predictor_chans=192,
                  pitch_predictor_kernel_size=5,
                  pitch_predictor_dropout=0.5,
                  pitch_embed_kernel_size=1,
@@ -62,7 +61,7 @@ class ToucanTTS(torch.nn.Module):
 
                  # energy predictor
                  energy_predictor_layers=2,
-                 energy_predictor_chans=256,
+                 energy_predictor_chans=192,
                  energy_predictor_kernel_size=3,
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
@@ -108,19 +107,19 @@ class ToucanTTS(torch.nn.Module):
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
-                                                    utt_embed_dim=utt_embed_dim)
+                                                    utt_embed_dim=None)
 
         self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
                                                  n_chans=pitch_predictor_chans,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout,
-                                                 utt_embed_dim=utt_embed_dim)
+                                                 utt_embed_dim=None)
 
         self.energy_predictor = VariancePredictor(idim=attention_dimension, n_layers=energy_predictor_layers,
                                                   n_chans=energy_predictor_chans,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout,
-                                                  utt_embed_dim=utt_embed_dim)
+                                                  utt_embed_dim=None)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -153,21 +152,13 @@ class ToucanTTS(torch.nn.Module):
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
-        self.conv_postnet = PostNet(idim=0,
-                                    odim=output_spectrogram_channels,
-                                    n_layers=5,
-                                    n_chans=256,
-                                    n_filts=5,
-                                    use_batch_norm=True,
-                                    dropout_rate=0.5)
-
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
-            kernel_size=5,  # post_glow_kernel_size
+            kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -238,12 +229,10 @@ class ToucanTTS(torch.nn.Module):
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
-        refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
-
         # refine spectrogram
         refined_spectrogram = self.post_flow(tgt_mels=None,
                                              infer=True,
-                                             mel_out=refined_spectrogram,
+                                             mel_out=decoded_spectrogram,
                                              encoded_texts=upsampled_enriched_encoded_texts,
                                              tgt_nonpadding=None).squeeze()
 

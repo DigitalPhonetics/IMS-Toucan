@@ -37,6 +37,7 @@ class VariancePredictor(torch.nn.Module, ABC):
         self.conv = torch.nn.ModuleList()
         self.dropouts = torch.nn.ModuleList()
         self.norms = torch.nn.ModuleList()
+        self.utt_embed_dim = utt_embed_dim
 
         for idx in range(n_layers):
             in_chans = idim if idx == 0 else n_chans
@@ -66,7 +67,7 @@ class VariancePredictor(torch.nn.Module, ABC):
 
         for f, c, d in zip(self.conv, self.norms, self.dropouts):
             xs = f(xs)  # (B, C, Tmax)
-            if utt_embed is not None:
+            if self.utt_embed_dim is not None:
                 xs = c(xs, utt_embed)
             else:
                 xs = c(xs)
