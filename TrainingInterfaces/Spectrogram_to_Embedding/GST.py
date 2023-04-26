@@ -57,24 +57,16 @@ class StyleEncoder(torch.nn.Module):
                                    gst_token_dim=gst_token_dim,
                                    gst_heads=gst_heads, )
 
-    def forward(self, speech, return_all_outs=False, return_only_ref=False):
+    def forward(self, speech):
         """Calculate forward propagation.
         Args:
-            return_only_ref: whether to return only the reference encoder output
-            return_all_outs: return list of all layer's outputs
             speech (Tensor): Batch of padded target features (B, Lmax, odim).
         Returns:
             Tensor: Style token embeddings (B, token_dim).
         """
         ref_embs = self.ref_enc(speech)
-        if return_only_ref and not return_all_outs:
-            return ref_embs
         style_embs = self.stl(ref_embs)
 
-        if return_all_outs:
-            if return_only_ref:
-                return ref_embs, [ref_embs] + [style_embs]
-            return style_embs, [ref_embs] + [style_embs]
         return style_embs
 
     def calculate_ada4_regularization_loss(self):

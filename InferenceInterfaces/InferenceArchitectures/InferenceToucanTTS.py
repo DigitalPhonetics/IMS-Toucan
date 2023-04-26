@@ -226,7 +226,7 @@ class ToucanTTS(torch.nn.Module):
         upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
 
         # decoding spectrogram
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None)
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
         # refine spectrogram

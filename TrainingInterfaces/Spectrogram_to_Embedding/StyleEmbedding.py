@@ -1,6 +1,7 @@
 import torch
 
 from TrainingInterfaces.Spectrogram_to_Embedding.GST import StyleEncoder
+from TrainingInterfaces.Spectrogram_to_Embedding.StyleTTSEncoder import StyleEncoder as StyleTTSEncoder
 
 
 class StyleEmbedding(torch.nn.Module):
@@ -14,18 +15,18 @@ class StyleEmbedding(torch.nn.Module):
     and a simple LSTM baseline. GST turned out to be the best.
     """
 
-    def __init__(self):
+    def __init__(self, embedding_dim=64, style_tts_encoder=True):
         super().__init__()
-        self.gst = StyleEncoder()
+        if style_tts_encoder:
+            self.style_encoder = StyleTTSEncoder(style_dim=embedding_dim)
+        else:
+            self.style_encoder = StyleEncoder(gst_token_dim=embedding_dim)
 
     def forward(self,
                 batch_of_spectrograms,
-                batch_of_spectrogram_lengths,
-                return_all_outs=False,
-                return_only_refs=False):
+                batch_of_spectrogram_lengths):
         """
         Args:
-            return_only_refs: return reference embedding instead of mixed style tokens
             batch_of_spectrograms: b is the batch axis, 80 features per timestep
                                    and l time-steps, which may include padding
                                    for most elements in the batch (b, l, 80)
@@ -33,12 +34,11 @@ class StyleEmbedding(torch.nn.Module):
                                           what the true length is, since they are
                                           all padded to the length of the longest
                                           element in the batch (b, 1)
-            return_all_outs: boolean indicating whether the output will be used for a feature matching loss
         Returns:
-            batch of 256 dimensional embeddings (b,256)
+            batch of n dimensional embeddings (b,n)
         """
 
-        minimum_sequence_length = 812
+        minimum_sequence_length = 640
         specs = list()
         for index, spec_length in enumerate(batch_of_spectrogram_lengths):
             spec = batch_of_spectrograms[index][:spec_length]
@@ -49,19 +49,23 @@ class StyleEmbedding(torch.nn.Module):
                 # make it longer
                 spec = spec.repeat((2, 1))
                 current_spec_length = len(spec)
-            specs.append(spec[:812])
+            specs.append(spec[:minimum_sequence_length])
 
         spec_batch = torch.stack(specs, dim=0)
-        return self.gst(speech=spec_batch,
-                        return_all_outs=return_all_outs,
-                        return_only_ref=return_only_refs)
+        return self.style_encoder(speech=spec_batch)
 
 
 if __name__ == '__main__':
-    style_emb = StyleEmbedding()
-    print(f"GST parameter count: {sum(p.numel() for p in style_emb.gst.parameters() if p.requires_grad)}")
+    style_emb = StyleEmbedding(style_tts_encoder=False)
+    print(f"GST parameter count: {sum(p.numel() for p in style_emb.style_encoder.parameters() if p.requires_grad)}")
 
     seq_length = 398
     print(style_emb(torch.randn(5, seq_length, 80),
-                    torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length]),
-                    return_only_refs=False).shape)
+                    torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)
+
+    style_emb = StyleEmbedding(style_tts_encoder=True)
+    print(f"StyleTTS encoder parameter count: {sum(p.numel() for p in style_emb.style_encoder.parameters() if p.requires_grad)}")
+
+    seq_length = 398
+    print(style_emb(torch.randn(5, seq_length, 80),
+                    torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)

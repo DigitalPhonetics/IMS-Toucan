@@ -112,3 +112,23 @@ class SequentialWrappableConditionalLayerNorm(nn.Module):
         y = scale.unsqueeze(1) * ((x - mean) / var) + bias.unsqueeze(1)
 
         return y
+
+
+class AdaIN1d(nn.Module):
+    """
+    MIT Licensed
+
+    Copyright (c) 2022 Aaron (Yinghao) Li
+    https://github.com/yl4579/StyleTTS/blob/main/models.py
+    """
+
+    def __init__(self, style_dim, num_features):
+        super().__init__()
+        self.norm = nn.InstanceNorm1d(num_features, affine=False)
+        self.fc = nn.Linear(style_dim, num_features * 2)
+
+    def forward(self, x, s):
+        h = self.fc(s)
+        h = h.view(h.size(0), h.size(1), 1)
+        gamma, beta = torch.chunk(h, chunks=2, dim=1)
+        return (1 + gamma.transpose(1, 2)) * self.norm(x) + beta.transpose(1, 2)

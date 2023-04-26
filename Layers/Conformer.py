@@ -5,6 +5,7 @@ Taken from ESPNet
 import torch
 
 from Layers.Attention import RelPositionMultiHeadedAttention
+from Layers.ConditionalLayerNorm import AdaIN1d
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -67,7 +68,8 @@ class Conformer(torch.nn.Module):
             self.output_norm = LayerNorm(attention_dim)
         self.utt_embed = utt_embed
         if utt_embed is not None:
-            self.hs_emb_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
+            self.hs_emb_projection_in = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
+            self.hs_emb_projection_out = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -113,6 +115,9 @@ class Conformer(torch.nn.Module):
             lang_embs = self.language_embedding(lang_ids)
             xs = xs + lang_embs  # offset phoneme representation by language specific offset
 
+        if self.utt_embed:
+            xs = self.hs_emb_projection_in(x=xs, s=utterance_embedding)
+
         xs = self.pos_enc(xs)
 
         xs, masks = self.encoders(xs, masks)
@@ -123,12 +128,6 @@ class Conformer(torch.nn.Module):
             xs = self.output_norm(xs)
 
         if self.utt_embed:
-            xs = self._integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding)
+            xs = self.hs_emb_projection_out(x=xs, s=utterance_embedding)
 
         return xs, masks
-
-    def _integrate_with_utt_embed(self, hs, utt_embeddings):
-        # concat hidden states with spk embeds and then apply projection
-        embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
-        return hs

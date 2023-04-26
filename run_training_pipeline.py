@@ -8,8 +8,9 @@ import torch
 from TrainingInterfaces.TrainingPipelines.Avocodo_combined import run as hifi_codo
 from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
-from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
+from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as gst
 from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Embedding import run as embedding
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
@@ -29,7 +30,8 @@ pipeline_dict = {
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
     "bigvgan"       : bigvgan,
-    # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
+    # training one of the embedding models, GST or StyleTTS (not recommended, best to use provided checkpoint)
+    "gst"           : gst,
     "embedding"     : embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"       : aligner,

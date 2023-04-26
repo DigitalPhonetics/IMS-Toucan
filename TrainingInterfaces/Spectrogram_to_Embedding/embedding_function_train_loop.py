@@ -66,7 +66,9 @@ def train_loop(net,
         steps: how many steps to train before using any of the cycle objectives
     """
     net = net.to(device)
-    style_embedding_function = StyleEmbedding().to(device)
+
+    # this is the train loop for AdaSpeech/GST type style embeddings
+    style_embedding_function = StyleEmbedding(style_tts_encoder=False).to(device)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -106,7 +108,7 @@ def train_loop(net,
         if step_counter < 80000:
             # first, the computationally very expensive style token regularization loss to spread out the vectors
             print("calculating the style token regularization loss. This will take a while.")
-            reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
+            reg_loss = style_embedding_function.style_encoder.calculate_ada4_regularization_loss()
             reg_losses_this_epoch.append(reg_loss.item())
             optimizer.zero_grad()
             scaler.scale(reg_loss).backward()

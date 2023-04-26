@@ -60,6 +60,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
                                                       lang="en"))
 
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "crema_d"),
+                                                      lang="en"))
+
+    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
+                                                      lang="en"))
+
     english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "hifi"),
                                                       lang="en"))
