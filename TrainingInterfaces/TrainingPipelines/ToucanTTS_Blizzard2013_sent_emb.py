@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_bertlm"
+    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_mpnet_pre"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -180,7 +180,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                     sent_embed_postnet=sent_embed_postnet,
                     concat_sent_style=concat_sent_style,
                     use_concat_projection=use_concat_projection,
-                    use_sent_style_loss="loss" in name)
+                    use_sent_style_loss="loss" in name,
+                    pre_embed="_pre" in name)
 
     if use_wandb:
         wandb.init(

@@ -83,7 +83,8 @@ class ToucanTTS(torch.nn.Module):
                  sent_embed_postnet=False,
                  concat_sent_style=False,
                  use_concat_projection=False,
-                 use_sent_style_loss=False):
+                 use_sent_style_loss=False,
+                 pre_embed=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -124,7 +125,10 @@ class ToucanTTS(torch.nn.Module):
                 else:
                     utt_embed_dim = utt_embed_dim + sent_embed_dim
 
-        articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
+            if pre_embed:
+                input_feature_dimensions = 62 + sent_embed_dim
+
+        articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 512 if pre_embed else 100), Tanh(), Linear(512 if pre_embed else 100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
@@ -145,6 +149,7 @@ class ToucanTTS(torch.nn.Module):
                                  lang_embs=lang_embs,
                                  sent_embed_dim=sent_embed_dim if sent_embed_encoder else None,
                                  sent_embed_each=sent_embed_each,
+                                 pre_embed=pre_embed,
                                  use_output_norm=True)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,

@@ -81,6 +81,8 @@ class ToucanTTSInterface(torch.nn.Module):
                         sent_embed_dim = 768
                     if "bertcls" in tts_model_path:
                         sent_embed_dim = 768
+                    if "bertlm" in tts_model_path:
+                        sent_embed_dim = 768
 
                     sent_embed_encoder=False
                     sent_embed_decoder=False
@@ -143,7 +145,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                 sent_embed_postnet=sent_embed_postnet,
                                                 concat_sent_style=concat_sent_style,
                                                 use_concat_projection=use_concat_projection,
-                                                use_sent_style_loss="loss" in tts_model_path)
+                                                use_sent_style_loss="loss" in tts_model_path,
+                                                pre_embed="_pre" in tts_model_path)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))

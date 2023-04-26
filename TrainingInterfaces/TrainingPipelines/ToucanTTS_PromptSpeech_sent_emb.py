@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_PromptSpeech_sent_emb_a11_bertlm"
+    name = "ToucanTTS_03_PromptSpeech_sent_emb_a11_bertlm_pre_loss"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -66,13 +66,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         embed_type = "para"
         sent_embed_dim = 768
     if "mpnet" in name:
-        embed_type = "mpnet"
+        embed_type = "mpnet_prompt"
         sent_embed_dim = 768
     if "bertcls" in name:
         embed_type = "bertcls"
         sent_embed_dim = 768
     if "bertlm" in name:
-        embed_type = "bertlm"
+        embed_type = "bertlm_prompt"
         sent_embed_dim = 768
 
     if not os.path.exists(os.path.join(PREPROCESSING_DIR, "promptspeech", f"sent_emb_cache_{embed_type}.pt")):
@@ -88,20 +88,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         if embed_type == "para":
             from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(model="para")
-        if embed_type == "mpnet":
+        if embed_type == "mpnet" or embed_type == "mpnet_prompt":
             from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(model="mpnet")
         if embed_type == "bertcls":
             from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
-        if embed_type == "bertlm":
+        if embed_type == "bertlm" or embed_type == "bertlm_prompt":
             from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="last_mean")
 
-        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor)
+        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor, promptspeech=True)
         atf = ArticulatoryCombinedTextFrontend(language="en")
         example_sentence = atf.get_example_sentence(lang="en")
-        sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=[example_sentence]).squeeze()
+        sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=["Normal tone, normal volume, normal pace."]).squeeze()
         torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "promptspeech", f"sent_emb_cache_{embed_type}.pt"))
         print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "promptspeech", f"sent_emb_cache_{embed_type}.pt")}')
         if embed_type == "lealla":
@@ -180,7 +180,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                     sent_embed_postnet=sent_embed_postnet,
                     concat_sent_style=concat_sent_style,
                     use_concat_projection=use_concat_projection,
-                    use_sent_style_loss="loss" in name)
+                    use_sent_style_loss="loss" in name,
+                    pre_embed="_pre" in name)
 
     if use_wandb:
         wandb.init(
