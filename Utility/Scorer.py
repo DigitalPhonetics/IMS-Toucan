@@ -132,7 +132,8 @@ class TTSScorer:
                                     gold_energy=energy.unsqueeze(0).to(self.device),
                                     utterance_embedding=style_embedding.to(self.device),
                                     lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
-                                    return_mels=False))
+                                    return_mels=False,
+                                    run_glow=False))
             except TypeError:
                 loss = torch.tensor(torch.nan)
             if torch.isnan(loss):
