@@ -9,7 +9,7 @@ from Layers.DurationPredictor import DurationPredictorLoss
 from Utility.utils import make_non_pad_mask
 
 
-class ToucanTTSLoss(torch.nn.Module):
+class StochasticToucanTTSLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()

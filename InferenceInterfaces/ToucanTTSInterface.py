@@ -353,7 +353,7 @@ class ToucanTTSInterface(torch.nn.Module):
                      dur_list=None,
                      pitch_list=None,
                      energy_list=None,
-                     increased_compatibility_mode=True):
+                     increased_compatibility_mode=False):
         """
         Args:
             increased_compatibility_mode: Whether to export audio as 16bit integer 48kHz audio for maximum compatibility across systems and devices
@@ -406,7 +406,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    pitch_variance_scale=1.0,
                    energy_variance_scale=1.0,
                    blocking=False,
-                   increased_compatibility_mode=True):
+                   increased_compatibility_mode=False):
         if text.strip() == "":
             return
         wav = self(text,

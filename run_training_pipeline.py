@@ -24,10 +24,10 @@ from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     # the finetuning example
-    "fine_ex"   : fine_tuning_example,
+    "fine_ex"       : fine_tuning_example,
     # integration tests
-    "fs_it"     : fs_integration_test,
-    "tt_it"     : tt_integration_test,
+    "fs_it"         : fs_integration_test,
+    "tt_it"         : tt_integration_test,
     # regular ToucanTTS pipelines
     "nancy"     : nancy,
     "nancystoch": nancystoch,
@@ -39,12 +39,12 @@ pipeline_dict = {
     "libri" : libri,
     "libri_sent" : libri_sent,
     # training vocoders (not recommended, best to use provided checkpoint)
-    "avocodo"   : hifi_codo,
-    "bigvgan"   : bigvgan,
+    "avocodo"       : hifi_codo,
+    "bigvgan"       : bigvgan,
     # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
-    "embedding" : embedding,
+    "embedding"     : embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
-    "aligner"   : aligner,
+    "aligner"       : aligner,
 }
 
 if __name__ == '__main__':

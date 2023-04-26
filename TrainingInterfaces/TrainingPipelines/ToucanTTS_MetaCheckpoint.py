@@ -206,6 +206,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                resume=resume,
                fine_tune=finetune,
+               steps=160000,
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

@@ -7,8 +7,8 @@ from Layers.Conformer import Conformer
 from Layers.LengthRegulator import LengthRegulator
 from Layers.PostNet import PostNet
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.StochasticVariancePredictor import StochasticVariancePredictor
-from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
@@ -195,7 +195,7 @@ class StochasticToucanTTS(torch.nn.Module):
         if lang_embs is not None:
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
-        self.criterion = ToucanTTSLoss()
+        self.criterion = StochasticToucanTTSLoss()
 
     def forward(self,
                 text_tensors,
