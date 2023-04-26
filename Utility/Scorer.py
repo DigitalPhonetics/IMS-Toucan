@@ -123,7 +123,7 @@ class TTSScorer:
             style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
                                                             batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
             try:
-                loss = sum(self.tts(text_tensors=text.unsqueeze(0).to(self.device),
+                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = sum(self.tts(text_tensors=text.unsqueeze(0).to(self.device),
                                     text_lengths=text_len.to(self.device),
                                     gold_speech=spec.unsqueeze(0).to(self.device),
                                     speech_lengths=spec_len.to(self.device),
@@ -134,6 +134,7 @@ class TTSScorer:
                                     lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
                                     return_mels=False,
                                     run_glow=False))
+                loss = l1_loss + duration_loss + pitch_loss + energy_loss  # we omit the glow loss
             except TypeError:
                 loss = torch.tensor(torch.nan)
             if torch.isnan(loss):
