@@ -202,13 +202,13 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                          device,
-                                                                          save_dir=save_directory,
-                                                                          step=step_counter,
-                                                                          lang=lang,
-                                                                          default_emb=default_embedding,
-                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
+                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                              device,
+                                                                              save_dir=save_directory,
+                                                                              step=step_counter,
+                                                                              lang=lang,
+                                                                              default_emb=default_embedding,
+                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
@@ -240,9 +240,8 @@ def calc_gan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, 
     # now we have windows that are [batch_size, 200, 80]
     critic_loss = discriminator.calc_discriminator_loss(fake_window.unsqueeze(1), real_window.unsqueeze(1))
     generator_loss = discriminator.calc_generator_feedback(fake_window.unsqueeze(1), real_window.unsqueeze(1))
-    critic_loss = critic_loss
-    generator_loss = generator_loss
-    return critic_loss, generator_loss
+
+    return critic_loss * 20, generator_loss
 
 
 def get_random_window(generated_sequences, real_sequences, lengths):
