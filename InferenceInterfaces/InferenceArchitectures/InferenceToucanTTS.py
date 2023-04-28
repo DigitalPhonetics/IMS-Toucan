@@ -68,7 +68,7 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # additional features
-                 utt_embed_dim=64,
+                 utt_embed_dim=192,
                  detach_postflow=True,
                  lang_embs=8000,
                  weights=None):
