@@ -83,7 +83,7 @@ class ToucanTTS(torch.nn.Module):
         self.multispeaker_model = utt_embed_dim is not None
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
-        self.encoder = Conformer(idim=input_feature_dimensions,
+        self.encoder = Conformer(conformer_type="encoder",
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
                                  linear_units=encoder_units,
@@ -133,7 +133,7 @@ class ToucanTTS(torch.nn.Module):
 
         self.length_regulator = LengthRegulator()
 
-        self.decoder = Conformer(idim=0,
+        self.decoder = Conformer(conformer_type="decoder",
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
                                  linear_units=decoder_units,

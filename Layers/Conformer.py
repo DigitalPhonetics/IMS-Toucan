@@ -46,7 +46,7 @@ class Conformer(torch.nn.Module):
 
     """
 
-    def __init__(self, idim, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
+    def __init__(self, conformer_type, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
                  macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True):
         super(Conformer, self).__init__()
@@ -67,9 +67,12 @@ class Conformer(torch.nn.Module):
         if self.use_output_norm:
             self.output_norm = LayerNorm(attention_dim)
         self.utt_embed = utt_embed
+        self.conformer_type = conformer_type
         if utt_embed is not None:
-            self.hs_emb_projection_in = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
-            self.hs_emb_projection_out = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
+            if conformer_type == "encoder":
+                self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
+            if conformer_type == "decoder":
+                self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: AdaIN1d(style_dim=utt_embed, num_features=attention_dim))
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -115,19 +118,20 @@ class Conformer(torch.nn.Module):
             lang_embs = self.language_embedding(lang_ids)
             xs = xs + lang_embs  # offset phoneme representation by language specific offset
 
-        if self.utt_embed:
-            xs = self.hs_emb_projection_in(x=xs, s=utterance_embedding)
-
         xs = self.pos_enc(xs)
 
-        xs, masks = self.encoders(xs, masks)
+        for encoder_index, encoder in enumerate(self.encoders):
+            if self.utt_embed and self.conformer_type == "decoder":
+                xs = self.decoder_embedding_projections[encoder_index](x=xs, s=utterance_embedding)
+            xs, masks = encoder(xs, masks)
+
         if isinstance(xs, tuple):
             xs = xs[0]
 
         if self.use_output_norm:
             xs = self.output_norm(xs)
 
-        if self.utt_embed:
-            xs = self.hs_emb_projection_out(x=xs, s=utterance_embedding)
+        if self.utt_embed and self.conformer_type == "encoder":
+            xs = self.encoder_embedding_projection(x=xs, s=utterance_embedding)
 
         return xs, masks
