@@ -424,7 +424,7 @@ if __name__ == '__main__':
     dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([3, 64])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([3, 192])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     model = ToucanTTS()
@@ -461,7 +461,7 @@ if __name__ == '__main__':
     dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]]])
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([2, 64])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([2, 192])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
 
     model = ToucanTTS()
@@ -481,7 +481,7 @@ if __name__ == '__main__':
 
     print(" TESTING INFERENCE ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
-    dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([192])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
     print(ToucanTTS().inference(dummy_text_batch,
                                 utterance_embedding=dummy_utterance_embed,

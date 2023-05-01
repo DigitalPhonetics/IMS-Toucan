@@ -121,7 +121,12 @@ class Conformer(torch.nn.Module):
 
         for encoder_index, encoder in enumerate(self.encoders):
             if self.utt_embed and self.conformer_type == "decoder":
-                xs = _integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index])
+                if isinstance(xs, tuple):
+                    x, pos_emb = xs[0], xs[1]
+                    x = _integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index])
+                    xs = (x, pos_emb)
+                else:
+                    xs = _integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index])
             xs, masks = encoder(xs, masks)
 
         if isinstance(xs, tuple):
