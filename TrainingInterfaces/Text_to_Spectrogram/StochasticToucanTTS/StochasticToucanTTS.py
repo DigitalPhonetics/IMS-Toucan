@@ -5,7 +5,6 @@ from torch.nn import Tanh
 
 from Layers.Conformer import Conformer
 from Layers.LengthRegulator import LengthRegulator
-from Layers.PostNet import PostNet
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from TrainingInterfaces.Text_to_Spectrogram.StochasticToucanTTS.StochasticVariancePredictor import StochasticVariancePredictor
@@ -85,7 +84,7 @@ class StochasticToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # additional features
-                 utt_embed_dim=64,
+                 utt_embed_dim=192,
                  lang_embs=8000):
         super().__init__()
 
@@ -97,7 +96,7 @@ class StochasticToucanTTS(torch.nn.Module):
         self.multispeaker_model = utt_embed_dim is not None
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
-        self.encoder = Conformer(idim=input_feature_dimensions,
+        self.encoder = Conformer(conformer_type="encoder",
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
                                  linear_units=encoder_units,
@@ -118,9 +117,9 @@ class StochasticToucanTTS(torch.nn.Module):
                                  use_output_norm=True)
 
         self.duration_flow = StochasticVariancePredictor(in_channels=attention_dimension,
-                                                         kernel_size=5,
+                                                         kernel_size=3,
                                                          p_dropout=0.5,
-                                                         n_flows=6,
+                                                         n_flows=5,
                                                          conditioning_signal_channels=utt_embed_dim)
 
         self.pitch_flow = StochasticVariancePredictor(in_channels=attention_dimension,
@@ -147,7 +146,7 @@ class StochasticToucanTTS(torch.nn.Module):
 
         self.length_regulator = LengthRegulator()
 
-        self.decoder = Conformer(idim=0,
+        self.decoder = Conformer(conformer_type="decoder",
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
                                  linear_units=decoder_units,
@@ -162,25 +161,18 @@ class StochasticToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=False)
+                                 use_output_norm=False,
+                                 utt_embed=utt_embed_dim)
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
-
-        self.conv_postnet = PostNet(idim=0,
-                                    odim=output_spectrogram_channels,
-                                    n_layers=5,
-                                    n_chans=256,
-                                    n_filts=5,
-                                    use_batch_norm=True,
-                                    dropout_rate=0.5)
 
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
-            kernel_size=5,  # post_glow_kernel_size
+            kernel_size=3,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -336,10 +328,8 @@ class StochasticToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks)
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
-
-        refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
 
         # refine spectrogram further with a normalizing flow (requires warmup, so it's not always on)
         glow_loss = None
@@ -347,13 +337,13 @@ class StochasticToucanTTS(torch.nn.Module):
             if is_inference:
                 refined_spectrogram = self.post_flow(tgt_mels=None,
                                                      infer=is_inference,
-                                                     mel_out=refined_spectrogram,
+                                                     mel_out=decoded_spectrogram,
                                                      encoded_texts=upsampled_enriched_encoded_texts,
                                                      tgt_nonpadding=None).squeeze()
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=refined_spectrogram.detach().clone(),
+                                           mel_out=decoded_spectrogram.detach().clone(),
                                            encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
@@ -364,7 +354,7 @@ class StochasticToucanTTS(torch.nn.Module):
                    energy_predictions.squeeze()
         else:
             return decoded_spectrogram, \
-                   refined_spectrogram, \
+                   None, \
                    duration_flow_loss, \
                    pitch_flow_loss, \
                    energy_flow_loss, \
@@ -439,7 +429,7 @@ if __name__ == '__main__':
     dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([3, 64])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([3, 192])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     model = StochasticToucanTTS()
@@ -476,7 +466,7 @@ if __name__ == '__main__':
     dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]]])
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([2, 64])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([2, 192])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
 
     model = StochasticToucanTTS()
@@ -496,7 +486,7 @@ if __name__ == '__main__':
 
     print(" TESTING INFERENCE ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
-    dummy_utterance_embed = torch.randn([64])  # [Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([192])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
     print(StochasticToucanTTS().inference(dummy_text_batch,
                                           utterance_embedding=dummy_utterance_embed,
