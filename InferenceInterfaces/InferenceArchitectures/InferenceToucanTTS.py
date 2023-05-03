@@ -84,7 +84,8 @@ class ToucanTTS(torch.nn.Module):
                  concat_sent_style=False,
                  use_concat_projection=False,
                  use_sent_style_loss=False,
-                 pre_embed=False):
+                 pre_embed=False,
+                 word_embed_dim=None):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -100,6 +101,7 @@ class ToucanTTS(torch.nn.Module):
         self.use_concat_projection = use_concat_projection and self.concat_sent_style
         self.use_sent_style_loss = use_sent_style_loss and self.multispeaker_model and self.use_sent_embed
         self.sent_embed_postnet = sent_embed_postnet and self.use_sent_embed
+        self.use_word_embed = word_embed_dim is not None
 
         if self.use_sent_embed:
             if self.sent_embed_adaptation:
@@ -150,6 +152,7 @@ class ToucanTTS(torch.nn.Module):
                                  sent_embed_dim=sent_embed_dim if sent_embed_encoder else None,
                                  sent_embed_each=sent_embed_each,
                                  pre_embed=pre_embed,
+                                 word_embed_dim=word_embed_dim,
                                  use_output_norm=True)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
@@ -244,6 +247,7 @@ class ToucanTTS(torch.nn.Module):
                  duration_scaling_factor=1.0,
                  utterance_embedding=None,
                  sentence_embedding=None,
+                 word_embedding=None,
                  lang_ids=None,
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
@@ -265,6 +269,20 @@ class ToucanTTS(torch.nn.Module):
                 # forward sentence embedding adaptation
                 sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
 
+        if not self.use_word_embed:
+            word_embedding = None
+            word_boundaries_batch = None
+        else:
+            # get word boundaries
+            word_boundaries_batch = []
+            for batch_id, batch in enumerate(text_tensors):
+                word_boundaries = []
+                for phoneme_index, phoneme_vector in enumerate(batch):
+                    if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                        word_boundaries.append(phoneme_index)
+                word_boundaries.append(text_lengths[batch_id].cpu().numpy()-1) # marker for last word of sentence
+                word_boundaries_batch.append(torch.tensor(word_boundaries))
+
         if self.concat_sent_style:
             utterance_embedding = self.utt_embed_bottleneck(utterance_embedding)
             utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
@@ -277,6 +295,8 @@ class ToucanTTS(torch.nn.Module):
                                         text_masks,
                                         utterance_embedding=utterance_embedding,
                                         sentence_embedding=sentence_embedding,
+                                        word_embedding=word_embedding,
+                                        word_boundaries=word_boundaries_batch,
                                         lang_ids=lang_ids)
 
         # predicting pitch, energy and durations
@@ -337,6 +357,7 @@ class ToucanTTS(torch.nn.Module):
                 energy=None,
                 utterance_embedding=None,
                 sentence_embedding=None,
+                word_embedding=None,
                 return_duration_pitch_energy=False,
                 lang_id=None,
                 duration_scaling_factor=1.0,
@@ -392,6 +413,7 @@ class ToucanTTS(torch.nn.Module):
                                            gold_energy=energy,
                                            utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None,
                                            sentence_embedding=sentence_embedding.unsqueeze(0) if sentence_embedding is not None else None,
+                                           word_embedding=word_embedding.unsqueeze(0) if word_embedding is not None else None,
                                            lang_ids=lang_id,
                                            duration_scaling_factor=duration_scaling_factor,
                                            pitch_variance_scale=pitch_variance_scale,

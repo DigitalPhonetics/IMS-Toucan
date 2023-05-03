@@ -27,7 +27,8 @@ class ToucanTTSInterface(torch.nn.Module):
                  vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
                  faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",  # initial language of the model, can be changed later with the setter methods
-                 sent_emb_extractor=None
+                 sent_emb_extractor=None,
+                 word_emb_extractor=None,
                  ):
         super().__init__()
         self.device = device
@@ -55,6 +56,7 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         self.use_lang_id = True
         self.use_sent_emb = False
+        self.use_word_emb = False
         try:
             self.phone2mel = ToucanTTS(weights=checkpoint["model"])  # multi speaker multi language
         except RuntimeError:
@@ -65,88 +67,92 @@ class ToucanTTSInterface(torch.nn.Module):
                 try:
                     self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
                 except RuntimeError:
-                    print("Loading sent emb architecture")
-                    self.use_sent_emb = True
-                    self.use_lang_id = True
-                    lang_embs=8000
-                    utt_embed_dim=64
+                    try:
+                        self.use_word_emb = True
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768)
+                    except RuntimeError:
+                        print("Loading sent emb architecture")
+                        self.use_sent_emb = True
+                        self.use_lang_id = True
+                        lang_embs=8000
+                        utt_embed_dim=64
 
-                    if "laser" in tts_model_path:
-                        sent_embed_dim = 1024
-                    if "lealla" in tts_model_path:
-                        sent_embed_dim = 192
-                    if "para" in tts_model_path:
-                        sent_embed_dim = 768
-                    if "mpnet" in tts_model_path:
-                        sent_embed_dim = 768
-                    if "bertcls" in tts_model_path:
-                        sent_embed_dim = 768
-                    if "bertlm" in tts_model_path:
-                        sent_embed_dim = 768
+                        if "laser" in tts_model_path:
+                            sent_embed_dim = 1024
+                        if "lealla" in tts_model_path:
+                            sent_embed_dim = 192
+                        if "para" in tts_model_path:
+                            sent_embed_dim = 768
+                        if "mpnet" in tts_model_path:
+                            sent_embed_dim = 768
+                        if "bertcls" in tts_model_path:
+                            sent_embed_dim = 768
+                        if "bertlm" in tts_model_path:
+                            sent_embed_dim = 768
 
-                    sent_embed_encoder=False
-                    sent_embed_decoder=False
-                    sent_embed_each=False
-                    sent_embed_postnet=False
-                    concat_sent_style=False
-                    use_concat_projection=False
-                    self.replace_utt_sent_emb = False
-                    if "a01" in tts_model_path:
-                        sent_embed_encoder=True
-                    if "a02" in tts_model_path:
-                        sent_embed_encoder=True
-                        sent_embed_decoder=True
-                    if "a03" in tts_model_path:
-                        sent_embed_encoder=True
-                        sent_embed_decoder=True
-                        sent_embed_postnet=True
-                    if "a04" in tts_model_path:
-                        sent_embed_encoder=True
-                        sent_embed_each=True
-                    if "a05" in tts_model_path:
-                        sent_embed_encoder=True
-                        sent_embed_decoder=True
-                        sent_embed_each=True
-                    if "a06" in tts_model_path:
-                        sent_embed_encoder=True
-                        sent_embed_decoder=True
-                        sent_embed_each=True
-                        sent_embed_postnet=True
-                    if "a07" in tts_model_path:
-                        concat_sent_style=True
-                        use_concat_projection=True
-                    if "a08" in tts_model_path:
-                        concat_sent_style=True
-                    if "a09" in tts_model_path:
-                        sent_embed_encoder=True
-                        sent_embed_decoder=True
-                        sent_embed_each=True
-                        sent_embed_postnet=True
-                        concat_sent_style=True
-                        use_concat_projection=True
-                    if "a10" in tts_model_path:
-                        lang_embs = None
-                        utt_embed_dim = 192
-                        sent_embed_dim = None
-                        self.replace_utt_sent_emb = True
-                    if "a11" in tts_model_path:
-                        sent_embed_encoder=True
-                        concat_sent_style=True
-                        use_concat_projection=True
-                        
-                    self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                                lang_embs=lang_embs, 
-                                                utt_embed_dim=utt_embed_dim,
-                                                sent_embed_dim=sent_embed_dim,
-                                                sent_embed_adaptation="noadapt" not in tts_model_path,
-                                                sent_embed_encoder=sent_embed_encoder,
-                                                sent_embed_decoder=sent_embed_decoder,
-                                                sent_embed_each=sent_embed_each,
-                                                sent_embed_postnet=sent_embed_postnet,
-                                                concat_sent_style=concat_sent_style,
-                                                use_concat_projection=use_concat_projection,
-                                                use_sent_style_loss="loss" in tts_model_path,
-                                                pre_embed="_pre" in tts_model_path)
+                        sent_embed_encoder=False
+                        sent_embed_decoder=False
+                        sent_embed_each=False
+                        sent_embed_postnet=False
+                        concat_sent_style=False
+                        use_concat_projection=False
+                        self.replace_utt_sent_emb = False
+                        if "a01" in tts_model_path:
+                            sent_embed_encoder=True
+                        if "a02" in tts_model_path:
+                            sent_embed_encoder=True
+                            sent_embed_decoder=True
+                        if "a03" in tts_model_path:
+                            sent_embed_encoder=True
+                            sent_embed_decoder=True
+                            sent_embed_postnet=True
+                        if "a04" in tts_model_path:
+                            sent_embed_encoder=True
+                            sent_embed_each=True
+                        if "a05" in tts_model_path:
+                            sent_embed_encoder=True
+                            sent_embed_decoder=True
+                            sent_embed_each=True
+                        if "a06" in tts_model_path:
+                            sent_embed_encoder=True
+                            sent_embed_decoder=True
+                            sent_embed_each=True
+                            sent_embed_postnet=True
+                        if "a07" in tts_model_path:
+                            concat_sent_style=True
+                            use_concat_projection=True
+                        if "a08" in tts_model_path:
+                            concat_sent_style=True
+                        if "a09" in tts_model_path:
+                            sent_embed_encoder=True
+                            sent_embed_decoder=True
+                            sent_embed_each=True
+                            sent_embed_postnet=True
+                            concat_sent_style=True
+                            use_concat_projection=True
+                        if "a10" in tts_model_path:
+                            lang_embs = None
+                            utt_embed_dim = 192
+                            sent_embed_dim = None
+                            self.replace_utt_sent_emb = True
+                        if "a11" in tts_model_path:
+                            sent_embed_encoder=True
+                            concat_sent_style=True
+                            use_concat_projection=True
+                            
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"],
+                                                    lang_embs=lang_embs, 
+                                                    utt_embed_dim=utt_embed_dim,
+                                                    sent_embed_dim=sent_embed_dim,
+                                                    sent_embed_adaptation="noadapt" not in tts_model_path,
+                                                    sent_embed_encoder=sent_embed_encoder,
+                                                    sent_embed_decoder=sent_embed_decoder,
+                                                    sent_embed_each=sent_embed_each,
+                                                    sent_embed_postnet=sent_embed_postnet,
+                                                    concat_sent_style=concat_sent_style,
+                                                    use_concat_projection=use_concat_projection,
+                                                    use_sent_style_loss="loss" in tts_model_path,
+                                                    pre_embed="_pre" in tts_model_path)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -171,6 +177,16 @@ class ToucanTTSInterface(torch.nn.Module):
                 self.sentence_embedding_extractor = sent_emb_extractor
             else:
                 raise KeyError("Please specify a sentence embedding extractor.")
+            
+        #################################
+        #  load word emb extractor     #
+        #################################
+        self.word_embedding_extractor = None
+        if self.use_word_emb:
+            if word_emb_extractor is not None:
+                self.word_embedding_extractor = word_emb_extractor
+            else:
+                raise KeyError("Please specify a word embedding extractor.")
 
         ################################
         #  load mel to wave model      #
@@ -268,10 +284,17 @@ class ToucanTTSInterface(torch.nn.Module):
                     self.default_utterance_embedding = sentence_embedding
             else:
                 sentence_embedding = self.sentence_embedding
+            if self.use_word_emb:
+                print("Extracting word embeddings.")
+                word_embeddings, _ = self.word_embedding_extractor.encode([text])
+                word_embeddings = word_embeddings.squeeze().to(self.device)
+            else:
+                word_embeddings = None
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
                                                            sentence_embedding=sentence_embedding,
+                                                           word_embedding=word_embeddings,
                                                            durations=durations,
                                                            pitch=pitch,
                                                            energy=energy,

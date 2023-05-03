@@ -52,7 +52,8 @@ def train_loop(net,
                postnet_start_steps,
                use_discriminator,
                sent_embs=None,
-               replace_utt_sent_emb=False
+               replace_utt_sent_emb=False,
+               word_embedding_extractor=None
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -118,6 +119,12 @@ def train_loop(net,
 
             if replace_utt_sent_emb:
                 style_embedding = sentence_embedding
+            
+            if word_embedding_extractor is not None:
+                word_embedding, sentence_lens = word_embedding_extractor.encode(sentences=batch[9])
+                word_embedding = word_embedding.to(device)
+            else:
+                word_embedding, sentence_lens = None
 
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
@@ -129,6 +136,7 @@ def train_loop(net,
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
                 sentence_embedding=sentence_embedding,
+                word_embedding=word_embedding,
                 lang_ids=batch[8].to(device),
                 return_mels=True,
                 run_glow=step_counter > postnet_start_steps or fine_tune)
@@ -221,6 +229,7 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           sent_embs=sent_embs,
+                                                                          word_embedding_extractor=word_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({

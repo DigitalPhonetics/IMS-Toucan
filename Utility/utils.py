@@ -201,6 +201,7 @@ def plot_progress_spec_toucantts(net,
                                  lang,
                                  default_emb,
                                  sent_embs=None,
+                                 word_embedding_extractor=None,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     sentence = tf.get_example_sentence(lang=lang)
@@ -210,12 +211,18 @@ def plot_progress_spec_toucantts(net,
         sentence_embedding = sent_embs[sentence]
     else:
         sentence_embedding = None
+    if word_embedding_extractor is not None:
+        word_embedding, _ = word_embedding_extractor.encode([sentence])
+        word_embedding = word_embedding.squeeze()
+    else:
+        word_embedding = None
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
     if run_postflow:
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,
                                                                           utterance_embedding=default_emb,
                                                                           sentence_embedding=sentence_embedding,
+                                                                          word_embedding=word_embedding,
                                                                           lang_id=get_language_id(lang).to(device),
                                                                           run_postflow=run_postflow)
     else:
@@ -223,6 +230,7 @@ def plot_progress_spec_toucantts(net,
                                                                           return_duration_pitch_energy=True,
                                                                           utterance_embedding=default_emb,
                                                                           sentence_embedding=sentence_embedding,
+                                                                          word_embedding=word_embedding,
                                                                           lang_id=get_language_id(lang).to(device))
     spec = spec_before.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
