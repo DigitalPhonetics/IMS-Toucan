@@ -9,6 +9,7 @@ from TrainingInterfaces.TrainingPipelines.Avocodo_combined import run as hifi_co
 from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest import run as fs_integration_test
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
+from TrainingInterfaces.TrainingPipelines.GST_Blizzard2013 import run as b_embedding
 from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
@@ -19,6 +20,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech import run as p
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import run as promptspeech_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS_sent_emb import run as libri_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_word_emb import run as blizzard2013_word
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -34,6 +36,7 @@ pipeline_dict = {
     "meta"      : meta,
     "blizzard2013": blizzard2013,
     "blizzard2013_sent": blizzard2013_sent,
+    "blizzard2013_word": blizzard2013_word,
     "promptspeech": promptspeech,
     "promptspeech_sent": promptspeech_sent,
     "libri" : libri,
@@ -43,6 +46,7 @@ pipeline_dict = {
     "bigvgan"       : bigvgan,
     # training the GST embedding jointly with FastSpeech 2 on expressive data (not recommended, best to use provided checkpoint)
     "embedding"     : embedding,
+    "b_embedding"   : b_embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"       : aligner,
 }
