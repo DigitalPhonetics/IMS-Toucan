@@ -17,6 +17,18 @@ from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
 
+def integrate_with_utt_embed(hs, utt_embeddings, projection, embedding_training):
+    if not embedding_training:
+        # concat hidden states with spk embeds and then apply projection
+        embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
+        hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
+    else:
+        # in this case we don't want to normalize the embeddings to now impair the gradient flow
+        dimensionality_corrected_utt_embeddings = projection(utt_embeddings)
+        hs = hs + dimensionality_corrected_utt_embeddings.unsqueeze(1)
+    return hs
+
+
 def float2pcm(sig, dtype='int16'):
     """
     https://gist.github.com/HudsonHuang/fbdf8e9af7993fe2a91620d3fb86a182

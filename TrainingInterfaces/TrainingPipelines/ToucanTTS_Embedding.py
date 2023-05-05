@@ -56,7 +56,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = ConcatDataset(datasets)
 
-    model = ToucanTTS()
+    model = ToucanTTS(train_utt_embs=True)  # if we set this to true, a different embedding integration method will be used to give us a better embedding function
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -73,6 +73,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=finetune,
                steps=160000,
                resume=resume,
+               postnet_start_steps=120000,  # don't need this, because the gradient is cut out.
                use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

@@ -6,8 +6,8 @@ from abc import ABC
 
 import torch
 
-from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
+from Utility.utils import integrate_with_utt_embed
 
 
 class VariancePredictor(torch.nn.Module, ABC):
@@ -22,7 +22,15 @@ class VariancePredictor(torch.nn.Module, ABC):
 
     """
 
-    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, bias=True, dropout_rate=0.5, utt_embed_dim=None):
+    def __init__(self,
+                 idim,
+                 n_layers=2,
+                 n_chans=384,
+                 kernel_size=3,
+                 bias=True,
+                 dropout_rate=0.5,
+                 utt_embed_dim=None,
+                 train_utt_embs=False):
         """
         Initialize duration predictor module.
 
@@ -37,16 +45,22 @@ class VariancePredictor(torch.nn.Module, ABC):
         self.conv = torch.nn.ModuleList()
         self.dropouts = torch.nn.ModuleList()
         self.norms = torch.nn.ModuleList()
+        self.embedding_projections = torch.nn.ModuleList()
         self.utt_embed_dim = utt_embed_dim
+        self.train_utt_embs = train_utt_embs
 
         for idx in range(n_layers):
+            if utt_embed_dim is not None:
+                if train_utt_embs:
+                    self.embedding_projections += [torch.nn.Linear(utt_embed_dim, idim)]
+                else:
+                    self.embedding_projections += [torch.nn.Linear(utt_embed_dim + idim, idim)]
+            else:
+                self.embedding_projections += [lambda x: x]
             in_chans = idim if idx == 0 else n_chans
             self.conv += [torch.nn.Sequential(torch.nn.Conv1d(in_chans, n_chans, kernel_size, stride=1, padding=(kernel_size - 1) // 2, bias=bias, ),
                                               torch.nn.ReLU())]
-            if utt_embed_dim is not None:
-                self.norms += [ConditionalLayerNorm(normal_shape=n_chans, speaker_embedding_dim=utt_embed_dim, dim=1)]
-            else:
-                self.norms += [LayerNorm(n_chans, dim=1)]
+            self.norms += [LayerNorm(n_chans, dim=1)]
             self.dropouts += [torch.nn.Dropout(dropout_rate)]
 
         self.linear = torch.nn.Linear(n_chans, 1)
@@ -65,12 +79,11 @@ class VariancePredictor(torch.nn.Module, ABC):
         """
         xs = xs.transpose(1, -1)  # (B, idim, Tmax)
 
-        for f, c, d in zip(self.conv, self.norms, self.dropouts):
+        for f, c, d, p in zip(self.conv, self.norms, self.dropouts, self.embedding_projections):
             xs = f(xs)  # (B, C, Tmax)
             if self.utt_embed_dim is not None:
-                xs = c(xs, utt_embed)
-            else:
-                xs = c(xs)
+                xs = integrate_with_utt_embed(hs=xs.transpose(1, 2), utt_embeddings=utt_embed, projection=p, embedding_training=self.train_utt_embs).transpose(1, 2)
+            xs = c(xs)
             xs = d(xs)
 
         xs = self.linear(xs.transpose(1, 2))  # (B, Tmax, 1)

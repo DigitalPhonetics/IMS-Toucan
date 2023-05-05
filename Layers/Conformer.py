@@ -12,6 +12,7 @@ from Layers.MultiLayeredConv1d import MultiLayeredConv1d
 from Layers.MultiSequential import repeat
 from Layers.PositionalEncoding import RelPositionalEncoding
 from Layers.Swish import Swish
+from Utility.utils import integrate_with_utt_embed
 
 
 class Conformer(torch.nn.Module):
@@ -47,7 +48,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, conformer_type, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True, train_utt_embs=False):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -67,11 +68,18 @@ class Conformer(torch.nn.Module):
             self.output_norm = LayerNorm(attention_dim)
         self.utt_embed = utt_embed
         self.conformer_type = conformer_type
+        self.train_utt_embs = train_utt_embs
         if utt_embed is not None:
             if conformer_type == "encoder":
-                self.encoder_embedding_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
+                if train_utt_embs:
+                    self.encoder_embedding_projection = torch.nn.Linear(utt_embed, attention_dim)
+                else:
+                    self.encoder_embedding_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
             if conformer_type == "decoder":
-                self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
+                if train_utt_embs:
+                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(utt_embed, attention_dim))
+                else:
+                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -123,10 +131,10 @@ class Conformer(torch.nn.Module):
             if self.utt_embed and self.conformer_type == "decoder":
                 if isinstance(xs, tuple):
                     x, pos_emb = xs[0], xs[1]
-                    x = _integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index])
+                    x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.train_utt_embs)
                     xs = (x, pos_emb)
                 else:
-                    xs = _integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index])
+                    xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.train_utt_embs)
             xs, masks = encoder(xs, masks)
 
         if isinstance(xs, tuple):
@@ -136,13 +144,6 @@ class Conformer(torch.nn.Module):
             xs = self.output_norm(xs)
 
         if self.utt_embed and self.conformer_type == "encoder":
-            xs = _integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.encoder_embedding_projection)
+            xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.encoder_embedding_projection, embedding_training=self.train_utt_embs)
 
         return xs, masks
-
-
-def _integrate_with_utt_embed(hs, utt_embeddings, projection):
-    # concat hidden states with spk embeds and then apply projection
-    embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-    hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
-    return hs

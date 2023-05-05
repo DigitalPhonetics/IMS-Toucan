@@ -72,15 +72,15 @@ class ToucanTTS(torch.nn.Module):
                  transformer_dec_attn_dropout_rate=0.2,
 
                  # duration predictor
-                 duration_predictor_layers=3,
+                 duration_predictor_layers=5,
                  duration_predictor_chans=192,
-                 duration_predictor_kernel_size=3,
+                 duration_predictor_kernel_size=7,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
                  pitch_predictor_layers=7,
                  pitch_predictor_chans=192,
-                 pitch_predictor_kernel_size=5,
+                 pitch_predictor_kernel_size=7,
                  pitch_predictor_dropout=0.5,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
@@ -95,7 +95,8 @@ class ToucanTTS(torch.nn.Module):
 
                  # additional features
                  utt_embed_dim=192,
-                 lang_embs=8000):
+                 lang_embs=8000,
+                 train_utt_embs=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -124,25 +125,29 @@ class ToucanTTS(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
-                                 use_output_norm=True)
+                                 use_output_norm=True,
+                                 train_utt_embs=train_utt_embs)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
-                                                    utt_embed_dim=None)
+                                                    utt_embed_dim=utt_embed_dim,
+                                                    train_utt_embs=train_utt_embs)
 
         self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
                                                  n_chans=pitch_predictor_chans,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout,
-                                                 utt_embed_dim=None)
+                                                 utt_embed_dim=utt_embed_dim,
+                                                 train_utt_embs=train_utt_embs)
 
         self.energy_predictor = VariancePredictor(idim=attention_dimension, n_layers=energy_predictor_layers,
                                                   n_chans=energy_predictor_chans,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout,
-                                                  utt_embed_dim=None)
+                                                  utt_embed_dim=utt_embed_dim,
+                                                  train_utt_embs=train_utt_embs)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -172,16 +177,17 @@ class ToucanTTS(torch.nn.Module):
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
                                  use_output_norm=False,
-                                 utt_embed=utt_embed_dim)
+                                 utt_embed=utt_embed_dim,
+                                 train_utt_embs=train_utt_embs)
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=192,  # post_glow_hidden
-            kernel_size=3,  # post_glow_kernel_size
+            kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
+            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
             n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
@@ -428,6 +434,35 @@ if __name__ == '__main__':
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     model = ToucanTTS()
+    l1, dl, pl, el, gl = model(dummy_text_batch,
+                               dummy_text_lens,
+                               dummy_speech_batch,
+                               dummy_speech_lens,
+                               dummy_durations,
+                               dummy_pitch,
+                               dummy_energy,
+                               utterance_embedding=dummy_utterance_embed,
+                               lang_ids=dummy_language_id)
+
+    loss = l1 + gl + dl + pl + el
+    print(loss)
+    loss.backward()
+
+    print(" batchsize 3 with embeds ")
+    dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
+    dummy_text_lens = torch.LongTensor([2, 3, 3])
+
+    dummy_speech_batch = torch.randn([3, 30, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_lens = torch.LongTensor([10, 30, 20])
+
+    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])
+    dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
+    dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
+
+    dummy_utterance_embed = torch.randn([3, 192])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
+
+    model = ToucanTTS(train_utt_embs=True)
     l1, dl, pl, el, gl = model(dummy_text_batch,
                                dummy_text_lens,
                                dummy_speech_batch,

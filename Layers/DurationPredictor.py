@@ -5,8 +5,8 @@
 
 import torch
 
-from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
+from Utility.utils import integrate_with_utt_embed
 
 
 class DurationPredictor(torch.nn.Module):
@@ -29,7 +29,14 @@ class DurationPredictor(torch.nn.Module):
 
     """
 
-    def __init__(self, idim, n_layers=2, n_chans=384, kernel_size=3, dropout_rate=0.1, offset=1.0, utt_embed_dim=None):
+    def __init__(self, idim,
+                 n_layers=2,
+                 n_chans=384,
+                 kernel_size=3,
+                 dropout_rate=0.1,
+                 offset=1.0,
+                 utt_embed_dim=None,
+                 train_utt_embs=False):
         """
         Initialize duration predictor module.
 
@@ -47,16 +54,22 @@ class DurationPredictor(torch.nn.Module):
         self.conv = torch.nn.ModuleList()
         self.dropouts = torch.nn.ModuleList()
         self.norms = torch.nn.ModuleList()
-        self.utt_emb_dim = utt_embed_dim
+        self.embedding_projections = torch.nn.ModuleList()
+        self.utt_embed_dim = utt_embed_dim
+        self.train_utt_embs = train_utt_embs
 
         for idx in range(n_layers):
+            if utt_embed_dim is not None:
+                if train_utt_embs:
+                    self.embedding_projections += [torch.nn.Linear(utt_embed_dim, idim)]
+                else:
+                    self.embedding_projections += [torch.nn.Linear(utt_embed_dim + idim, idim)]
+            else:
+                self.embedding_projections += [lambda x: x]
             in_chans = idim if idx == 0 else n_chans
             self.conv += [torch.nn.Sequential(torch.nn.Conv1d(in_chans, n_chans, kernel_size, stride=1, padding=(kernel_size - 1) // 2, ),
                                               torch.nn.ReLU())]
-            if utt_embed_dim is not None:
-                self.norms += [ConditionalLayerNorm(normal_shape=n_chans, speaker_embedding_dim=utt_embed_dim, dim=1)]
-            else:
-                self.norms += [LayerNorm(n_chans, dim=1)]
+            self.norms += [LayerNorm(n_chans, dim=1)]
             self.dropouts += [torch.nn.Dropout(dropout_rate)]
 
         self.linear = torch.nn.Linear(n_chans, 1)
@@ -64,12 +77,11 @@ class DurationPredictor(torch.nn.Module):
     def _forward(self, xs, x_masks=None, is_inference=False, utt_embed=None):
         xs = xs.transpose(1, -1)  # (B, idim, Tmax)
 
-        for f, c, d in zip(self.conv, self.norms, self.dropouts):
+        for f, c, d, p in zip(self.conv, self.norms, self.dropouts, self.embedding_projections):
             xs = f(xs)  # (B, C, Tmax)
-            if self.utt_emb_dim is not None:
-                xs = c(xs, utt_embed)
-            else:
-                xs = c(xs)
+            if self.utt_embed_dim is not None:
+                xs = integrate_with_utt_embed(hs=xs.transpose(1, 2), utt_embeddings=utt_embed, projection=p, embedding_training=self.train_utt_embs).transpose(1, 2)
+            xs = c(xs)
             xs = d(xs)
 
         # NOTE: targets are transformed to log domain in the loss calculation, so this will learn to predict in the log space, which makes the value range easier to handle.
