@@ -23,7 +23,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_Embedding")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_EmbeddingAda")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
@@ -56,7 +56,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = ConcatDataset(datasets)
 
-    model = ToucanTTS(train_utt_embs=True)  # if we set this to true, a different embedding integration method will be used to give us a better embedding function
+    model = ToucanTTS(use_conditional_layernorm_embedding_integration=True)  # if we set this to true, a different embedding integration method will be used to give us a better embedding function
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,

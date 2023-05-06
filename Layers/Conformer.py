@@ -5,6 +5,7 @@ Taken from ESPNet
 import torch
 
 from Layers.Attention import RelPositionMultiHeadedAttention
+from Layers.ConditionalLayerNorm import AdaIN1d
 from Layers.Convolution import ConvolutionModule
 from Layers.EncoderLayer import EncoderLayer
 from Layers.LayerNorm import LayerNorm
@@ -48,7 +49,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, conformer_type, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True, train_utt_embs=False):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True, use_conditional_layernorm_embedding_integration=False):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -68,16 +69,16 @@ class Conformer(torch.nn.Module):
             self.output_norm = LayerNorm(attention_dim)
         self.utt_embed = utt_embed
         self.conformer_type = conformer_type
-        self.train_utt_embs = train_utt_embs
+        self.use_conditional_layernorm_embedding_integration = use_conditional_layernorm_embedding_integration
         if utt_embed is not None:
             if conformer_type == "encoder":
-                if train_utt_embs:
-                    self.encoder_embedding_projection = torch.nn.Linear(utt_embed, attention_dim)
+                if use_conditional_layernorm_embedding_integration:
+                    self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
                 else:
                     self.encoder_embedding_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
             if conformer_type == "decoder":
-                if train_utt_embs:
-                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(utt_embed, attention_dim))
+                if use_conditional_layernorm_embedding_integration:
+                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: AdaIN1d(style_dim=utt_embed, num_features=attention_dim))
                 else:
                     self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
         if lang_embs is not None:
@@ -131,10 +132,10 @@ class Conformer(torch.nn.Module):
             if self.utt_embed and self.conformer_type == "decoder":
                 if isinstance(xs, tuple):
                     x, pos_emb = xs[0], xs[1]
-                    x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.train_utt_embs)
+                    x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
                     xs = (x, pos_emb)
                 else:
-                    xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.train_utt_embs)
+                    xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
             xs, masks = encoder(xs, masks)
 
         if isinstance(xs, tuple):
@@ -144,6 +145,6 @@ class Conformer(torch.nn.Module):
             xs = self.output_norm(xs)
 
         if self.utt_embed and self.conformer_type == "encoder":
-            xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.encoder_embedding_projection, embedding_training=self.train_utt_embs)
+            xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.encoder_embedding_projection, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         return xs, masks

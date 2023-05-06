@@ -24,8 +24,7 @@ def integrate_with_utt_embed(hs, utt_embeddings, projection, embedding_training)
         hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
     else:
         # in this case we don't want to normalize the embeddings to now impair the gradient flow
-        dimensionality_corrected_utt_embeddings = projection(utt_embeddings)
-        hs = hs + dimensionality_corrected_utt_embeddings.unsqueeze(1)
+        hs = projection(hs, utt_embeddings)
     return hs
 
 

@@ -96,7 +96,7 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,
                  lang_embs=8000,
-                 train_utt_embs=False):
+                 use_conditional_layernorm_embedding_integration=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -126,28 +126,28 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
                                  use_output_norm=True,
-                                 train_utt_embs=train_utt_embs)
+                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
                                                     utt_embed_dim=utt_embed_dim,
-                                                    train_utt_embs=train_utt_embs)
+                                                    use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
                                                  n_chans=pitch_predictor_chans,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout,
                                                  utt_embed_dim=utt_embed_dim,
-                                                 train_utt_embs=train_utt_embs)
+                                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.energy_predictor = VariancePredictor(idim=attention_dimension, n_layers=energy_predictor_layers,
                                                   n_chans=energy_predictor_chans,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout,
                                                   utt_embed_dim=utt_embed_dim,
-                                                  train_utt_embs=train_utt_embs)
+                                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -178,7 +178,7 @@ class ToucanTTS(torch.nn.Module):
                                  cnn_module_kernel=conformer_decoder_kernel_size,
                                  use_output_norm=False,
                                  utt_embed=utt_embed_dim,
-                                 train_utt_embs=train_utt_embs)
+                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
@@ -462,7 +462,7 @@ if __name__ == '__main__':
     dummy_utterance_embed = torch.randn([3, 192])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
-    model = ToucanTTS(train_utt_embs=True)
+    model = ToucanTTS(use_conditional_layernorm_embedding_integration=True)
     l1, dl, pl, el, gl = model(dummy_text_batch,
                                dummy_text_lens,
                                dummy_speech_batch,

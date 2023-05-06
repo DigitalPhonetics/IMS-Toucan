@@ -6,6 +6,7 @@ from abc import ABC
 
 import torch
 
+from Layers.ConditionalLayerNorm import AdaIN1d
 from Layers.LayerNorm import LayerNorm
 from Utility.utils import integrate_with_utt_embed
 
@@ -30,7 +31,7 @@ class VariancePredictor(torch.nn.Module, ABC):
                  bias=True,
                  dropout_rate=0.5,
                  utt_embed_dim=None,
-                 train_utt_embs=False):
+                 use_conditional_layernorm_embedding_integration=False):
         """
         Initialize duration predictor module.
 
@@ -47,12 +48,12 @@ class VariancePredictor(torch.nn.Module, ABC):
         self.norms = torch.nn.ModuleList()
         self.embedding_projections = torch.nn.ModuleList()
         self.utt_embed_dim = utt_embed_dim
-        self.train_utt_embs = train_utt_embs
+        self.use_conditional_layernorm_embedding_integration = use_conditional_layernorm_embedding_integration
 
         for idx in range(n_layers):
             if utt_embed_dim is not None:
-                if train_utt_embs:
-                    self.embedding_projections += [torch.nn.Linear(utt_embed_dim, idim)]
+                if use_conditional_layernorm_embedding_integration:
+                    self.embedding_projections += [AdaIN1d(style_dim=utt_embed_dim, num_features=idim)]
                 else:
                     self.embedding_projections += [torch.nn.Linear(utt_embed_dim + idim, idim)]
             else:
@@ -82,7 +83,7 @@ class VariancePredictor(torch.nn.Module, ABC):
         for f, c, d, p in zip(self.conv, self.norms, self.dropouts, self.embedding_projections):
             xs = f(xs)  # (B, C, Tmax)
             if self.utt_embed_dim is not None:
-                xs = integrate_with_utt_embed(hs=xs.transpose(1, 2), utt_embeddings=utt_embed, projection=p, embedding_training=self.train_utt_embs).transpose(1, 2)
+                xs = integrate_with_utt_embed(hs=xs.transpose(1, 2), utt_embeddings=utt_embed, projection=p, embedding_training=self.use_conditional_layernorm_embedding_integration).transpose(1, 2)
             xs = c(xs)
             xs = d(xs)
 
