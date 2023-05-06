@@ -49,7 +49,8 @@ def train_loop(net,
                steps,
                use_wandb,
                postnet_start_steps,
-               use_discriminator
+               use_discriminator,
+               train_embed
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -62,8 +63,9 @@ def train_loop(net,
     if path_to_embed_model is not None:
         check_dict = torch.load(path_to_embed_model, map_location=device)
         style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        style_embedding_function.eval()
-        style_embedding_function.requires_grad_(False)
+        if not train_embed:
+            style_embedding_function.eval()
+            style_embedding_function.requires_grad_(False)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -80,7 +82,7 @@ def train_loop(net,
         optimizer = torch.optim.Adam(list(net.parameters()) + list(discriminator.parameters()), lr=lr)
     else:
         optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    if path_to_embed_model is None:
+    if path_to_embed_model is None or train_embed:
         optimizer.add_param_group({"params": style_embedding_function.parameters()})
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
@@ -176,7 +178,7 @@ def train_loop(net,
             "scheduler"   : scheduler.state_dict(),
             "default_emb" : default_embedding,
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-        if path_to_embed_model is None:
+        if path_to_embed_model is None or train_embed:
             torch.save({
                 "style_emb_func": style_embedding_function.state_dict()
             }, os.path.join(save_directory, "embedding_function.pt"))
