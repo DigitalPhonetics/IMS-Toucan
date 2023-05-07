@@ -1,5 +1,5 @@
 """
-Taken from ESPNet
+Taken from ESPNet, but heavily modified
 """
 
 import torch
@@ -71,16 +71,15 @@ class Conformer(torch.nn.Module):
         self.conformer_type = conformer_type
         self.use_conditional_layernorm_embedding_integration = use_conditional_layernorm_embedding_integration
         if utt_embed is not None:
-            if conformer_type == "encoder":
+            if conformer_type == "encoder":  # the encoder gets an additional conditioning signal added to its output
                 if use_conditional_layernorm_embedding_integration:
                     self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
                 else:
                     self.encoder_embedding_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
-            if conformer_type == "decoder":
-                if use_conditional_layernorm_embedding_integration:
-                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: AdaIN1d(style_dim=utt_embed, num_features=attention_dim))
-                else:
-                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
+            if use_conditional_layernorm_embedding_integration:
+                self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: AdaIN1d(style_dim=utt_embed, num_features=attention_dim))
+            else:
+                self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
 
@@ -129,7 +128,7 @@ class Conformer(torch.nn.Module):
         xs = self.pos_enc(xs)
 
         for encoder_index, encoder in enumerate(self.encoders):
-            if self.utt_embed and self.conformer_type == "decoder":
+            if self.utt_embed:
                 if isinstance(xs, tuple):
                     x, pos_emb = xs[0], xs[1]
                     x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
