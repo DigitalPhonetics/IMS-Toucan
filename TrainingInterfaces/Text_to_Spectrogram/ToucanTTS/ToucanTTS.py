@@ -43,8 +43,8 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=192,
-                 attention_heads=4,
+                 attention_dimension=384,
+                 attention_heads=6,  # used to be 4
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
@@ -73,13 +73,11 @@ class ToucanTTS(torch.nn.Module):
 
                  # duration predictor
                  duration_predictor_layers=5,
-                 duration_predictor_chans=192,
                  duration_predictor_kernel_size=7,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
                  pitch_predictor_layers=7,
-                 pitch_predictor_chans=192,
                  pitch_predictor_kernel_size=7,
                  pitch_predictor_dropout=0.5,
                  pitch_embed_kernel_size=1,
@@ -87,7 +85,6 @@ class ToucanTTS(torch.nn.Module):
 
                  # energy predictor
                  energy_predictor_layers=2,
-                 energy_predictor_chans=192,
                  energy_predictor_kernel_size=3,
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
@@ -129,21 +126,21 @@ class ToucanTTS(torch.nn.Module):
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
-                                                    n_chans=duration_predictor_chans,
+                                                    n_chans=attention_dimension,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
                                                     utt_embed_dim=utt_embed_dim,
                                                     use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
-                                                 n_chans=pitch_predictor_chans,
+                                                 n_chans=attention_dimension,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout,
                                                  utt_embed_dim=utt_embed_dim,
                                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.energy_predictor = VariancePredictor(idim=attention_dimension, n_layers=energy_predictor_layers,
-                                                  n_chans=energy_predictor_chans,
+                                                  n_chans=attention_dimension,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout,
                                                   utt_embed_dim=utt_embed_dim,
