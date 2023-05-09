@@ -124,7 +124,8 @@ def train_loop(net,
                 word_embedding, sentence_lens = word_embedding_extractor.encode(sentences=batch[9])
                 word_embedding = word_embedding.to(device)
             else:
-                word_embedding, sentence_lens = None
+                word_embedding = None
+                sentence_lens = None
 
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),

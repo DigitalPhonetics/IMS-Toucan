@@ -231,7 +231,8 @@ def plot_progress_spec_toucantts(net,
                                                                           utterance_embedding=default_emb,
                                                                           sentence_embedding=sentence_embedding,
                                                                           word_embedding=word_embedding,
-                                                                          lang_id=get_language_id(lang).to(device))
+                                                                          lang_id=get_language_id(lang).to(device),
+                                                                          run_postflow=False)
     spec = spec_before.transpose(0, 1).to("cpu").numpy()
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     os.makedirs(os.path.join(save_dir, "spec_before"), exist_ok=True)
