@@ -21,6 +21,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS_sent_emb import run as libri_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_word_emb import run as blizzard2013_word
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_word_emb import run as blizzard2013_sent_word
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -37,6 +38,7 @@ pipeline_dict = {
     "blizzard2013": blizzard2013,
     "blizzard2013_sent": blizzard2013_sent,
     "blizzard2013_word": blizzard2013_word,
+    "blizzard2013_sent_word" : blizzard2013_sent_word,
     "promptspeech": promptspeech,
     "promptspeech_sent": promptspeech_sent,
     "libri" : libri,
