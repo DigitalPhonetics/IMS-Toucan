@@ -24,7 +24,7 @@ class AlignerDataset(Dataset):
                  lang,
                  loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                  min_len_in_seconds=1,
-                 max_len_in_seconds=20,
+                 max_len_in_seconds=15,
                  cut_silences=False,
                  do_loudnorm=True,
                  rebuild_cache=False,
@@ -76,7 +76,7 @@ class AlignerDataset(Dataset):
                 process.join()
             self.datapoints = list(self.datapoints)
             tensored_datapoints = list()
-            # we had to turn all of the tensors to numpy arrays to avoid shared memory
+            # we had to turn all the tensors to numpy arrays to avoid shared memory
             # issues. Now that the multi-processing is over, we can convert them back
             # to tensors to save on conversions in the future.
             print("Converting into convenient format...")
