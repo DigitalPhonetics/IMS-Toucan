@@ -33,84 +33,89 @@ def load_net_toucan(path):
                         net = ToucanTTS(word_embed_dim=768)
                         net.load_state_dict(check_dict["model"])
                     except RuntimeError:
-                        print("Loading sent emb architecture")
-                        lang_embs=8000
-                        utt_embed_dim=64
+                        try:
+                            print("Loading word emb architecture")
+                            net = ToucanTTS(word_embed_dim=768, lang_embs=None, utt_embed_dim=None)
+                            net.load_state_dict(check_dict["model"])
+                        except RuntimeError:
+                            print("Loading sent emb architecture")
+                            lang_embs=8000
+                            utt_embed_dim=64
 
-                        if "laser" in path:
-                            sent_embed_dim = 1024
-                        if "lealla" in path:
-                            sent_embed_dim = 192
-                        if "para" in path:
-                            sent_embed_dim = 768
-                        if "mpnet" in path:
-                            sent_embed_dim = 768
-                        if "bertcls" in path:
-                            sent_embed_dim = 768
-                        if "bertlm" in path:
-                            sent_embed_dim = 768
-                        
-                        sent_embed_encoder=False
-                        sent_embed_decoder=False
-                        sent_embed_each=False
-                        sent_embed_postnet=False
-                        concat_sent_style=False
-                        use_concat_projection=False
-                        if "a01" in path:
-                            sent_embed_encoder=True
-                        if "a02" in path:
-                            sent_embed_encoder=True
-                            sent_embed_decoder=True
-                        if "a03" in path:
-                            sent_embed_encoder=True
-                            sent_embed_decoder=True
-                            sent_embed_postnet=True
-                        if "a04" in path:
-                            sent_embed_encoder=True
-                            sent_embed_each=True
-                        if "a05" in path:
-                            sent_embed_encoder=True
-                            sent_embed_decoder=True
-                            sent_embed_each=True
-                        if "a06" in path:
-                            sent_embed_encoder=True
-                            sent_embed_decoder=True
-                            sent_embed_each=True
-                            sent_embed_postnet=True
-                        if "a07" in path:
-                            concat_sent_style=True
-                            use_concat_projection=True
-                        if "a08" in path:
-                            concat_sent_style=True
-                        if "a09" in path:
-                            sent_embed_encoder=True
-                            sent_embed_decoder=True
-                            sent_embed_each=True
-                            sent_embed_postnet=True
-                            concat_sent_style=True
-                            use_concat_projection=True
-                        if "a10" in path:
-                            lang_embs = None
-                            utt_embed_dim = 192
-                            sent_embed_dim = None
-                        if "a11" in path:
-                            sent_embed_encoder=True
-                            concat_sent_style=True
-                            use_concat_projection=True
+                            if "laser" in path:
+                                sent_embed_dim = 1024
+                            if "lealla" in path:
+                                sent_embed_dim = 192
+                            if "para" in path:
+                                sent_embed_dim = 768
+                            if "mpnet" in path:
+                                sent_embed_dim = 768
+                            if "bertcls" in path:
+                                sent_embed_dim = 768
+                            if "bertlm" in path:
+                                sent_embed_dim = 768
+                            
+                            sent_embed_encoder=False
+                            sent_embed_decoder=False
+                            sent_embed_each=False
+                            sent_embed_postnet=False
+                            concat_sent_style=False
+                            use_concat_projection=False
+                            if "a01" in path:
+                                sent_embed_encoder=True
+                            if "a02" in path:
+                                sent_embed_encoder=True
+                                sent_embed_decoder=True
+                            if "a03" in path:
+                                sent_embed_encoder=True
+                                sent_embed_decoder=True
+                                sent_embed_postnet=True
+                            if "a04" in path:
+                                sent_embed_encoder=True
+                                sent_embed_each=True
+                            if "a05" in path:
+                                sent_embed_encoder=True
+                                sent_embed_decoder=True
+                                sent_embed_each=True
+                            if "a06" in path:
+                                sent_embed_encoder=True
+                                sent_embed_decoder=True
+                                sent_embed_each=True
+                                sent_embed_postnet=True
+                            if "a07" in path:
+                                concat_sent_style=True
+                                use_concat_projection=True
+                            if "a08" in path:
+                                concat_sent_style=True
+                            if "a09" in path:
+                                sent_embed_encoder=True
+                                sent_embed_decoder=True
+                                sent_embed_each=True
+                                sent_embed_postnet=True
+                                concat_sent_style=True
+                                use_concat_projection=True
+                            if "a10" in path:
+                                lang_embs = None
+                                utt_embed_dim = 192
+                                sent_embed_dim = None
+                            if "a11" in path:
+                                sent_embed_encoder=True
+                                concat_sent_style=True
+                                use_concat_projection=True
 
-                        net = ToucanTTS(lang_embs=lang_embs, 
-                                        utt_embed_dim=utt_embed_dim,
-                                        sent_embed_dim=sent_embed_dim,
-                                        sent_embed_adaptation="noadapt" not in path,
-                                        sent_embed_encoder=sent_embed_encoder,
-                                        sent_embed_decoder=sent_embed_decoder,
-                                        sent_embed_each=sent_embed_each,
-                                        sent_embed_postnet=sent_embed_postnet,
-                                        concat_sent_style=concat_sent_style,
-                                        use_concat_projection=use_concat_projection,
-                                        use_sent_style_loss="loss" in path,
-                                        pre_embed="_pre" in path)
-                        net.load_state_dict(check_dict["model"])
+                            net = ToucanTTS(lang_embs=lang_embs, 
+                                            utt_embed_dim=utt_embed_dim,
+                                            sent_embed_dim=sent_embed_dim,
+                                            sent_embed_adaptation="noadapt" not in path,
+                                            sent_embed_encoder=sent_embed_encoder,
+                                            sent_embed_decoder=sent_embed_decoder,
+                                            sent_embed_each=sent_embed_each,
+                                            sent_embed_postnet=sent_embed_postnet,
+                                            concat_sent_style=concat_sent_style,
+                                            use_concat_projection=use_concat_projection,
+                                            use_sent_style_loss="loss" in path,
+                                            pre_embed="_pre" in path)
+                            net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
             net = StochasticToucanTTS()

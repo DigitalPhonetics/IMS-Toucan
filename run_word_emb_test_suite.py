@@ -101,4 +101,4 @@ if __name__ == '__main__':
     else:
         speaker_reference = None
 
-    poem(version="ToucanTTS_01_Blizzard2013_word_emb_bert", model_id="01_Blizzard2013_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
+    test_controllable(version="ToucanTTS_02_Blizzard2013_word_emb_bert", model_id="02_Blizzard2013_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
