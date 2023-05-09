@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a11_mpnet_pre"
+    name = "ToucanTTS_03_Blizzard2013_sent_emb_a12_loss_bertcls"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -42,6 +42,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     a09: a06 + a07
     a10: replace style embedding with sentence embedding (no style embedding, no language embedding, single speaker single language case)
     a11: a01 + a07
+    a12: integrate before encoder and use sentence embedding instead of style embedding (can be constrained with loss)
     loss: additionally use sentence style loss
     """
 
@@ -123,6 +124,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     concat_sent_style=False
     use_concat_projection=False
     replace_utt_sent_emb = False
+    style_sent = False
 
     lang_embs=8000
     utt_embed_dim=64
@@ -169,6 +171,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         sent_embed_encoder=True
         concat_sent_style=True
         use_concat_projection=True
+    if "a12" in name:
+        sent_embed_encoder=True
+        style_sent=True
+
 
     model = ToucanTTS(lang_embs=lang_embs, 
                     utt_embed_dim=utt_embed_dim,
@@ -181,7 +187,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                     concat_sent_style=concat_sent_style,
                     use_concat_projection=use_concat_projection,
                     use_sent_style_loss="loss" in name,
-                    pre_embed="_pre" in name)
+                    pre_embed="_pre" in name,
+                    style_sent=style_sent)
 
     if use_wandb:
         wandb.init(
@@ -196,7 +203,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=4,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "Blizzard2013_Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,

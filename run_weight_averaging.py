@@ -61,6 +61,7 @@ def load_net_toucan(path):
                             sent_embed_postnet=False
                             concat_sent_style=False
                             use_concat_projection=False
+                            style_sent=False
                             if "a01" in path:
                                 sent_embed_encoder=True
                             if "a02" in path:
@@ -102,6 +103,9 @@ def load_net_toucan(path):
                                 sent_embed_encoder=True
                                 concat_sent_style=True
                                 use_concat_projection=True
+                            if "a12" in path:
+                                sent_embed_encoder=True
+                                style_sent=True
 
                             net = ToucanTTS(lang_embs=lang_embs, 
                                             utt_embed_dim=utt_embed_dim,
@@ -114,7 +118,8 @@ def load_net_toucan(path):
                                             concat_sent_style=concat_sent_style,
                                             use_concat_projection=use_concat_projection,
                                             use_sent_style_loss="loss" in path,
-                                            pre_embed="_pre" in path)
+                                            pre_embed="_pre" in path,
+                                            style_sent=style_sent)
                             net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
