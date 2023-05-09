@@ -10,8 +10,6 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
-import sys
-
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
     if gpu_id == "cpu":
@@ -29,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_Blizzard2013"
+    name = "ToucanTTS_02_Blizzard2013"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -56,7 +54,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=4,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "Blizzard2013_Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb)

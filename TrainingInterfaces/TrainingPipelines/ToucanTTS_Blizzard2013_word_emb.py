@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_Blizzard2013_word_emb_bert"
+    name = "ToucanTTS_02_Blizzard2013_word_emb_bert"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -48,7 +48,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         word_embedding_extractor = BERTWordEmbeddingExtractor()
         word_embed_dim = 768
 
-    model = ToucanTTS(word_embed_dim=word_embed_dim)
+    model = ToucanTTS(word_embed_dim=word_embed_dim, lang_embs=None, utt_embed_dim=None)
 
     if use_wandb:
         wandb.init(

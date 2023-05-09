@@ -53,7 +53,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               batch_size=16,
+               batch_size=8,
                lang="en",
                lr=0.001,
                epochs_per_save=1,
