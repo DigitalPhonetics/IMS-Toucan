@@ -21,7 +21,7 @@ def to_mono(x):
 
 class AudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False, device="cpu", fmax_for_spec=8000):
+    def __init__(self, input_sr, output_sr=None, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False, do_loudnorm=False, device="cpu", fmax_for_spec=8000):
         """
         The parameters are by default set up to do well
         on a 16kHz signal. A different sampling rate may
@@ -30,6 +30,7 @@ class AudioPreprocessor:
         doubling n_fft)
         """
         self.cut_silence = cut_silence
+        self.do_loudnorm = do_loudnorm
         self.device = device
         self.sr = input_sr
         self.new_sr = output_sr
@@ -122,7 +123,8 @@ class AudioPreprocessor:
         order that makes sense.
         """
         audio = to_mono(audio)
-        audio = self.normalize_loudness(audio)
+        if self.do_loudnorm:
+            audio = self.normalize_loudness(audio)
         audio = torch.Tensor(audio).to(self.device)
         audio = self.resample(audio)
         if self.cut_silence:

@@ -25,7 +25,8 @@ class AlignerDataset(Dataset):
                  loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
-                 cut_silences=True,
+                 cut_silences=False,
+                 do_loudnorm=True,
                  rebuild_cache=False,
                  verbose=False,
                  device="cpu",
@@ -64,6 +65,7 @@ class AlignerDataset(Dataset):
                                   min_len_in_seconds,
                                   max_len_in_seconds,
                                   cut_silences,
+                                  do_loudnorm,
                                   verbose,
                                   "cpu",
                                   phone_input,
@@ -94,10 +96,7 @@ class AlignerDataset(Dataset):
             self.speaker_embeddings = list()
             speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                           run_opts={"device": str(device)},
-                                                                          savedir=os.path.join(
-                                                                              MODELS_DIR,
-                                                                              "Embedding",
-                                                                              "speechbrain_speaker_embedding_ecapa"))
+                                                                          savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
             with torch.no_grad():
                 for wave in tqdm(norm_waves):
                     self.speaker_embeddings.append(
@@ -106,7 +105,7 @@ class AlignerDataset(Dataset):
             # save to cache
             if len(self.datapoints) == 0:
                 raise RuntimeError
-            torch.save((self.datapoints, norm_waves, self.speaker_embeddings, filepaths),
+            torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
         else:
             # just load the datapoints from cache
@@ -123,6 +122,7 @@ class AlignerDataset(Dataset):
                               min_len,
                               max_len,
                               cut_silences,
+                              do_loudnorm,
                               verbose,
                               device,
                               phone_input,
@@ -131,7 +131,7 @@ class AlignerDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
-                               cut_silence=cut_silences, device=device)
+                               cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":

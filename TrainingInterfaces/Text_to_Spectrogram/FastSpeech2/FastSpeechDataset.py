@@ -1,6 +1,7 @@
 import os
 import statistics
 
+import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -25,6 +26,7 @@ class FastSpeechDataset(Dataset):
                  min_len_in_seconds=1,
                  max_len_in_seconds=20,
                  cut_silence=False,
+                 do_loudnorm=False,
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False,
@@ -41,12 +43,13 @@ class FastSpeechDataset(Dataset):
                                min_len_in_seconds=min_len_in_seconds,
                                max_len_in_seconds=max_len_in_seconds,
                                cut_silences=cut_silence,
+                               do_loudnorm=do_loudnorm,
                                rebuild_cache=rebuild_cache,
                                device=device)
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
             dataset = datapoints[0]
-            norm_waves = datapoints[1]
+            # index 1 is deprecated
             # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner, we don't need them anymore
             filepaths = datapoints[3]
 
@@ -62,18 +65,20 @@ class FastSpeechDataset(Dataset):
             # ==========================================
 
             acoustic_model = acoustic_model.to(device)
-            parsel = Parselmouth(reduction_factor=reduction_factor, fs=16000)
-            energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000)
+            _, _orig_sr = sf.read(filepaths[0])
+            parsel = Parselmouth(reduction_factor=reduction_factor, fs=_orig_sr)
+            energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=_orig_sr)
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
 
             for index in tqdm(range(len(dataset))):
-                norm_wave = norm_waves[index]
-                norm_wave_length = torch.LongTensor([len(norm_wave)])
+                filepath = filepaths[index]
+                raw_wave, sr = sf.read(filepath)
+                if _orig_sr != sr:
+                    print(f"Not all files have the same sampling rate! Please fix and re-run.  -- triggered by {filepath}")
 
-                if len(norm_wave) / 16000 < min_len_in_seconds and ctc_selection:
-                    continue
+                norm_wave_length = torch.LongTensor([len(raw_wave)])
 
                 text = dataset[index][0]
                 melspec = dataset[index][2]
@@ -117,14 +122,14 @@ class FastSpeechDataset(Dataset):
                             cached_duration[phoneme_index] = new_dur_2
                     last_vec = vec
 
-                cached_energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
+                cached_energy = energy_calc(input_waves=torch.tensor(raw_wave).unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
                                             text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                cached_pitch = parsel(input_waves=norm_wave.unsqueeze(0),
+                cached_pitch = parsel(input_waves=torch.tensor(raw_wave).unsqueeze(0),
                                       input_waves_lengths=norm_wave_length,
                                       feats_lengths=melspec_length,
                                       text=text,
@@ -152,12 +157,11 @@ class FastSpeechDataset(Dataset):
                 # now we can filter out some bad datapoints based on the CTC scores we collected
                 mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
                 std_dev = statistics.stdev(self.ctc_losses)
-                threshold = mean_ctc + (std_dev * 2.5)
+                threshold = mean_ctc + (std_dev * 3.5)
                 for index in range(len(self.ctc_losses), 0, -1):
                     if self.ctc_losses[index - 1] > threshold:
                         self.datapoints.pop(index - 1)
-                        print(
-                            f"Removing datapoint {index - 1}, because the CTC loss is 2.5 standard deviations higher than the mean. \n ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
+                        print(f"Removing datapoint {index - 1}, because the CTC loss is 3.5 standard deviations higher than the mean. \n ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             # save to cache
             if len(self.datapoints) > 0:
@@ -176,14 +180,14 @@ class FastSpeechDataset(Dataset):
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            self.datapoints[index][2], \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            self.datapoints[index][7], \
-            self.language_id
+               self.datapoints[index][1], \
+               self.datapoints[index][2], \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               self.datapoints[index][7], \
+               self.language_id
 
     def __len__(self):
         return len(self.datapoints)
