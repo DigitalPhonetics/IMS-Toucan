@@ -121,14 +121,14 @@ class TTSDataset(Dataset):
                             cached_duration[phoneme_index] = new_dur_2
                     last_vec = vec
 
-                cached_energy = energy_calc(input_waves=torch.tensor(raw_wave).unsqueeze(0),
+                cached_energy = energy_calc(input_waves=torch.Tensor(raw_wave).unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
                                             text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                cached_pitch = parsel(input_waves=torch.tensor(raw_wave).unsqueeze(0),
+                cached_pitch = parsel(input_waves=torch.Tensor(raw_wave).unsqueeze(0),
                                       input_waves_lengths=norm_wave_length,
                                       feats_lengths=melspec_length,
                                       text=text,
