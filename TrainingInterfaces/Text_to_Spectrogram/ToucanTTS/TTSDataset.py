@@ -126,14 +126,14 @@ class TTSDataset(Dataset):
                                             feats_lengths=melspec_length,
                                             text=text,
                                             durations=cached_duration.unsqueeze(0),
-                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
+                                            durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().float()
 
                 cached_pitch = parsel(input_waves=torch.Tensor(raw_wave).unsqueeze(0),
                                       input_waves_lengths=norm_wave_length,
                                       feats_lengths=melspec_length,
                                       text=text,
                                       durations=cached_duration.unsqueeze(0),
-                                      durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
+                                      durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().float()
 
                 self.datapoints.append([datapoint[0],
                                         datapoint[1],
@@ -161,12 +161,13 @@ class TTSDataset(Dataset):
                         print(f"Removing datapoint {index - 1}, because the CTC loss is 3.5 standard deviations higher than the mean. \n ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             # save to cache
+            os.makedirs(os.path.join(cache_dir, f"tts_datapoints/"), exist_ok=True)
             if len(self.datapoints) > 0:
                 self.datapoint_feature_dump_list = list()
                 for index, datapoint in enumerate(self.datapoints):
                     torch.save(datapoint,
-                               os.path.join(cache_dir, f"tts_datapoint_{index}.pt"))
-                    self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"tts_datapoint_{index}.pt"))
+                               os.path.join(cache_dir, f"tts_datapoints/tts_datapoint_{index}.pt"))
+                    self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"tts_datapoints/tts_datapoint_{index}.pt"))
                 torch.save(self.datapoint_feature_dump_list,
                            os.path.join(cache_dir, "tts_train_cache.pt"))
                 del self.datapoints

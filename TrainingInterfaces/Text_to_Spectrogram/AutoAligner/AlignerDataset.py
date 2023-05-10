@@ -107,10 +107,11 @@ class AlignerDataset(Dataset):
                 raise RuntimeError
 
             self.datapoint_feature_dump_list = list()
+            os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
             for index, (datapoint, speaker_embedding, filepath) in enumerate(zip(self.datapoints, self.speaker_embeddings, filepaths)):
                 torch.save((datapoint, speaker_embedding, filepath),
-                           os.path.join(cache_dir, f"aligner_datapoint_{index}.pt"))
-                self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"aligner_datapoint_{index}.pt"))
+                           os.path.join(cache_dir, f"aligner_datapoints/aligner_datapoint_{index}.pt"))
+                self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"aligner_datapoints/aligner_datapoint_{index}.pt"))
 
             torch.save(self.datapoint_feature_dump_list,
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
