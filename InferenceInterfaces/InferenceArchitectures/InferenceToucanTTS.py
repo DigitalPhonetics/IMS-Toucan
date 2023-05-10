@@ -85,7 +85,8 @@ class ToucanTTS(torch.nn.Module):
                  use_concat_projection=False,
                  use_sent_style_loss=False,
                  pre_embed=False,
-                 word_embed_dim=None):
+                 word_embed_dim=None,
+                 style_sent=False):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -102,10 +103,11 @@ class ToucanTTS(torch.nn.Module):
         self.use_sent_style_loss = use_sent_style_loss and self.multispeaker_model and self.use_sent_embed
         self.sent_embed_postnet = sent_embed_postnet and self.use_sent_embed
         self.use_word_embed = word_embed_dim is not None
+        self.style_sent = style_sent
 
         if self.use_sent_embed:
             if self.sent_embed_adaptation:
-                if self.use_sent_style_loss:
+                if self.use_sent_style_loss or self.style_sent:
                     self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
                                                                     Tanh(),
                                                                     Linear(sent_embed_dim // 2, sent_embed_dim // 4),
@@ -268,6 +270,7 @@ class ToucanTTS(torch.nn.Module):
             if self.sent_embed_adaptation:
                 # forward sentence embedding adaptation
                 sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+            utterance_embedding = sentence_embedding if self.style_sent else utterance_embedding
 
         if not self.use_word_embed:
             word_embedding = None
