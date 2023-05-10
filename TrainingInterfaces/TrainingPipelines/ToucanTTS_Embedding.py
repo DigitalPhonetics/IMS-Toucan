@@ -6,7 +6,7 @@ from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
-from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
@@ -28,31 +28,31 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "crema_d"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "crema_d"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
-                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
+                                       lang="en"))
 
     train_set = ConcatDataset(datasets)
 

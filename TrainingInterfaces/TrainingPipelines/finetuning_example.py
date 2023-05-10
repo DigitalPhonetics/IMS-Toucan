@@ -12,7 +12,7 @@ from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
-from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
@@ -40,13 +40,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # =    German Data      =
     # =======================
     german_datasets = list()
-    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
-                                                     lang="de"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
+                                              lang="de"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
 
-    german_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
-                                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
-                                                     lang="de"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
+                                              lang="de"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
 
     all_train_sets.append(ConcatDataset(german_datasets))
 
@@ -54,13 +54,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # =    English Data      =
     # ========================
     english_datasets = list()
-    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                                      lang="en"))
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
+                                               lang="en"))
 
-    english_datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
-                                                      lang="en"))
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
+                                               lang="en"))
 
     all_train_sets.append(ConcatDataset(english_datasets))
 

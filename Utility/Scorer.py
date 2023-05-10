@@ -1,79 +1,18 @@
 """
 This module is meant to find potentially problematic samples
-in the data you are using. There are two types: The alignment
-scorer and the TTS scorer. The alignment scorer can help you
-find mispronunciations or errors in the labels. The TTS scorer
-can help you find outliers in the audio part of text-audio pairs.
+in the data you are using and help you remove them.
 """
 
-import math
 import os
 
 import torch
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import get_language_id
-from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
-from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.storage_config import MODELS_DIR
-
-
-class AlignmentScorer:
-
-    def __init__(self, path_to_aligner_model, device):
-        self.path_to_score = dict()
-        self.device = device
-        self.nans = list()
-        self.aligner = Aligner()
-        self.aligner.load_state_dict(torch.load(path_to_aligner_model, map_location='cpu')["asr_model"])
-        self.aligner.to(self.device)
-
-    def score(self, path_to_aligner_dataset):
-        """
-        call this to update the path_to_score dict with scores for this dataset
-        """
-        datapoints = torch.load(path_to_aligner_dataset, map_location='cpu')
-        dataset = datapoints[0]
-        filepaths = datapoints[3]
-        self.nans = list()
-        self.path_to_score = dict()
-        for index in tqdm(range(len(dataset))):
-            text = dataset[index][0]
-            melspec = dataset[index][2]
-            text_without_word_boundaries = list()
-            for phoneme_index, vector in enumerate(text):
-                if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
-                    text_without_word_boundaries.append(vector.numpy().tolist())
-            matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
-            _, ctc_loss = self.aligner.inference(mel=melspec.to(self.device),
-                                                 tokens=matrix_without_word_boundaries.to(self.device),
-                                                 save_img_for_debug=None,
-                                                 return_ctc=True)
-            if math.isnan(ctc_loss):
-                self.nans.append(filepaths[index])
-            self.path_to_score[filepaths[index]] = ctc_loss
-        if len(self.nans) > 0:
-            print("The following filepaths had an infinite loss:")
-            for path in self.nans:
-                print(path)
-
-    def show_samples_with_highest_loss(self, n=-1):
-        """
-        NaN samples will always be shown.
-        To see all samples, pass -1, otherwise n samples will be shown.
-        """
-        if len(self.nans) > 0:
-            print("The following filepaths had an infinite loss:")
-            for path in self.nans:
-                print(path)
-            print("\n\n")
-
-        for index, path in enumerate(sorted(self.path_to_score, key=self.path_to_score.get, reverse=True)):
-            if index < n or n == -1:
-                print(f"Loss: {round(self.path_to_score[path], 3)} - Path: {path}")
 
 
 class TTSScorer:
@@ -112,14 +51,16 @@ class TTSScorer:
         """
         call this to update the path_to_score dict with scores for this dataset
         """
-        dataset = prepare_fastspeech_corpus(dict(), path_to_toucantts_dataset, lang_id)
+        dataset = prepare_tts_corpus(dict(), path_to_toucantts_dataset, lang_id)
         self.current_dset = dataset
         self.nans = list()
         self.nan_indexes = list()
         self.path_to_score = dict()
         self.path_to_id = dict()
+
         for index in tqdm(range(len(dataset.datapoints))):
-            text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
+            datapoint = torch.load(dataset.datapoint_feature_dump_list[index], map_location='cpu')
+            text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = datapoint
             style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
                                                             batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
             try:

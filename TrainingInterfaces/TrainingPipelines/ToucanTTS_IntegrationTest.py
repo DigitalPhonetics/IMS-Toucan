@@ -9,7 +9,7 @@ import wandb
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
-from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
@@ -29,10 +29,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_IntegrationTest")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "IntegrationTest"),
-                                          lang="en",
-                                          save_imgs=True)
+    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
+                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "IntegrationTest"),
+                                   lang="en",
+                                   save_imgs=True)
 
     model = ToucanTTS()
     if use_wandb:

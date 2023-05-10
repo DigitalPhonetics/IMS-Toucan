@@ -105,13 +105,20 @@ class AlignerDataset(Dataset):
             # save to cache
             if len(self.datapoints) == 0:
                 raise RuntimeError
-            torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
+
+            self.datapoint_feature_dump_list = list()
+            for index, (datapoint, speaker_embedding, filepath) in enumerate(zip(self.datapoints, self.speaker_embeddings, filepaths)):
+                torch.save((datapoint, speaker_embedding, filepath),
+                           os.path.join(cache_dir, f"aligner_datapoint_{index}.pt"))
+                self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"datapoint_{index}.pt"))
+
+            torch.save(self.datapoint_feature_dump_list,
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
+            del self.datapoints
+            del self.speaker_embeddings
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-            self.speaker_embeddings = self.datapoints[2]
-            self.datapoints = self.datapoints[0]
+            self.datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
@@ -190,14 +197,17 @@ class AlignerDataset(Dataset):
         self.datapoints += process_internal_dataset_chunk
 
     def __getitem__(self, index):
-        text_vector = self.datapoints[index][0]
+        path_to_datapoint_file = self.datapoint_feature_dump_list[index]
+        datapoint, speaker_embedding, filepath = torch.load(path_to_datapoint_file, map_location='cpu')
+
+        text_vector = datapoint[0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         return tokens, \
                torch.LongTensor([len(tokens)]), \
-               self.datapoints[index][2], \
-               self.datapoints[index][3], \
-               self.speaker_embeddings[index]
+               datapoint[2], \
+               datapoint[3], \
+               speaker_embedding
 
     def __len__(self):
-        return len(self.datapoints)
+        return len(self.datapoint_feature_dump_list)

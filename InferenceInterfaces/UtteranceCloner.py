@@ -10,9 +10,9 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.DurationCalculator import DurationCalculator
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.EnergyCalculator import EnergyCalculator
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.PitchCalculator import Parselmouth
 from Utility.storage_config import MODELS_DIR
 
 

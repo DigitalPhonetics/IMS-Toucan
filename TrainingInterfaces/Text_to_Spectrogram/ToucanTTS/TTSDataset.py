@@ -10,12 +10,12 @@ from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.DurationCalculator import DurationCalculator
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.EnergyCalculator import EnergyCalculator
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.PitchCalculator import Parselmouth
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.DurationCalculator import DurationCalculator
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.EnergyCalculator import EnergyCalculator
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.PitchCalculator import Parselmouth
 
 
-class FastSpeechDataset(Dataset):
+class TTSDataset(Dataset):
 
     def __init__(self,
                  path_to_transcript_dict,
@@ -46,12 +46,8 @@ class FastSpeechDataset(Dataset):
                                do_loudnorm=do_loudnorm,
                                rebuild_cache=rebuild_cache,
                                device=device)
-            datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+            datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
-            dataset = datapoints[0]
-            # index 1 is deprecated
-            # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner, we don't need them anymore
-            filepaths = datapoints[3]
 
             print("... building dataset cache ...")
             self.datapoints = list()
@@ -65,24 +61,27 @@ class FastSpeechDataset(Dataset):
             # ==========================================
 
             acoustic_model = acoustic_model.to(device)
-            _, _orig_sr = sf.read(filepaths[0])
+            initial_file = datapoint_feature_dump_list[0]
+            _, _, filepath = torch.load(initial_file, map_location='cpu')
+
+            _, _orig_sr = sf.read(filepath)
             parsel = Parselmouth(reduction_factor=reduction_factor, fs=_orig_sr)
             energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=_orig_sr)
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
 
-            for index in tqdm(range(len(dataset))):
-                filepath = filepaths[index]
+            for index in tqdm(range(len(datapoint_feature_dump_list))):
+                datapoint, _, filepath = torch.load(datapoint_feature_dump_list[index], map_location='cpu')
                 raw_wave, sr = sf.read(filepath)
                 if _orig_sr != sr:
                     print(f"Not all files have the same sampling rate! Please fix and re-run.  -- triggered by {filepath}")
 
                 norm_wave_length = torch.LongTensor([len(raw_wave)])
 
-                text = dataset[index][0]
-                melspec = dataset[index][2]
-                melspec_length = dataset[index][3]
+                text = datapoint[0]
+                melspec = datapoint[2]
+                melspec_length = datapoint[3]
 
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
                 # We note the index of word boundaries and insert durations of 0 afterwards
@@ -136,17 +135,15 @@ class FastSpeechDataset(Dataset):
                                       durations=cached_duration.unsqueeze(0),
                                       durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                prosodic_condition = None
-
-                self.datapoints.append([dataset[index][0],
-                                        dataset[index][1],
-                                        dataset[index][2],
-                                        dataset[index][3],
+                self.datapoints.append([datapoint[0],
+                                        datapoint[1],
+                                        datapoint[2],
+                                        datapoint[3],
                                         cached_duration.cpu(),
                                         cached_energy,
                                         cached_pitch,
-                                        prosodic_condition,
-                                        filepaths[index]])
+                                        None,  # this used to be the prosodic condition, but is now deprecated
+                                        filepath])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -165,35 +162,43 @@ class FastSpeechDataset(Dataset):
 
             # save to cache
             if len(self.datapoints) > 0:
-                torch.save(self.datapoints, os.path.join(cache_dir, "fast_train_cache.pt"))
+                self.datapoint_feature_dump_list = list()
+                for index, datapoint in enumerate(self.datapoints):
+                    torch.save(datapoint,
+                               os.path.join(cache_dir, f"tts_datapoint_{index}.pt"))
+                    self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"datapoint_{index}.pt"))
+                torch.save(self.datapoint_feature_dump_list,
+                           os.path.join(cache_dir, "tts_train_cache.pt"))
+                del self.datapoints
             else:
                 import sys
                 print("No datapoints were prepared! Exiting...")
                 sys.exit()
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "fast_train_cache.pt"), map_location='cpu')
+            self.datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "tts_train_cache.pt"), map_location='cpu')
 
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
         print(f"Prepared a FastSpeech dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def __getitem__(self, index):
-        return self.datapoints[index][0], \
-               self.datapoints[index][1], \
-               self.datapoints[index][2], \
-               self.datapoints[index][3], \
-               self.datapoints[index][4], \
-               self.datapoints[index][5], \
-               self.datapoints[index][6], \
-               self.datapoints[index][7], \
+        datapoint = torch.load(self.datapoint_feature_dump_list[index], map_location='cpu')
+        return datapoint[0], \
+               datapoint[1], \
+               datapoint[2], \
+               datapoint[3], \
+               datapoint[4], \
+               datapoint[5], \
+               datapoint[6], \
+               datapoint[7], \
                self.language_id
 
     def __len__(self):
-        return len(self.datapoints)
+        return len(self.datapoint_feature_dump_list)
 
     def remove_samples(self, list_of_samples_to_remove):
         for remove_id in sorted(list_of_samples_to_remove, reverse=True):
             self.datapoints.pop(remove_id)
-        torch.save(self.datapoints, os.path.join(self.cache_dir, "fast_train_cache.pt"))
+        torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
         print("Dataset updated!")

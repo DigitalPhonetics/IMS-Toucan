@@ -3,7 +3,7 @@ import torch.multiprocessing
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.AlignerDataset import AlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
-from TrainingInterfaces.Text_to_Spectrogram.FastSpeech2.FastSpeechDataset import FastSpeechDataset
+from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.TTSDataset import TTSDataset
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
@@ -14,24 +14,24 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device):
                           device=device)
 
 
-def prepare_fastspeech_corpus(transcript_dict,
-                              corpus_dir,
-                              lang,
-                              ctc_selection=True,  # heuristically removes some samples which might be problematic.
-                              # For small datasets it's best to turn this off and instead inspect the data with the scorer, if there are any issues.
-                              fine_tune_aligner=True,
-                              use_reconstruction=True,
-                              phone_input=False,
-                              save_imgs=False):
+def prepare_tts_corpus(transcript_dict,
+                       corpus_dir,
+                       lang,
+                       ctc_selection=True,  # heuristically removes some samples which might be problematic.
+                       # For small datasets it's best to turn this off and instead inspect the data with the scorer, if there are any issues.
+                       fine_tune_aligner=True,
+                       use_reconstruction=True,
+                       phone_input=False,
+                       save_imgs=False):
     """
     create an aligner dataset,
     fine-tune an aligner,
-    create a fastspeech dataset,
+    create a TTS dataset,
     return it.
 
-    Skips parts that have been done before.
+    Automatically skips parts that have been done before.
     """
-    if not os.path.exists(os.path.join(corpus_dir, "fast_train_cache.pt")):
+    if not os.path.exists(os.path.join(corpus_dir, "tts_train_cache.pt")):
         if fine_tune_aligner:
             aligner_dir = os.path.join(corpus_dir, "Aligner")
             aligner_loc = os.path.join(corpus_dir, "Aligner", "aligner.pt")
@@ -64,10 +64,10 @@ def prepare_fastspeech_corpus(transcript_dict,
             aligner_loc = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
     else:
         aligner_loc = None
-    return FastSpeechDataset(transcript_dict,
-                             acoustic_checkpoint_path=aligner_loc,
-                             cache_dir=corpus_dir,
-                             device=torch.device("cuda"),
-                             lang=lang,
-                             ctc_selection=ctc_selection,
-                             save_imgs=save_imgs)
+    return TTSDataset(transcript_dict,
+                      acoustic_checkpoint_path=aligner_loc,
+                      cache_dir=corpus_dir,
+                      device=torch.device("cuda"),
+                      lang=lang,
+                      ctc_selection=ctc_selection,
+                      save_imgs=save_imgs)

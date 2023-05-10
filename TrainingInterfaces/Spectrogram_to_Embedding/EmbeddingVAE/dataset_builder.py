@@ -5,7 +5,7 @@ from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.corpus_preparation import prepare_tts_corpus
 
 
 def build_speaker_embed_dataset():
@@ -16,71 +16,71 @@ def build_speaker_embed_dataset():
     embed.to(device)
     datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "Nancy"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "Nancy"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "ravdess"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "ravdess"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "esds"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "esds"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "ravdess"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "ravdess"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "esds"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "esds"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "ravdess"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "ravdess"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "esds"),
-                                              lang="en",
-                                              ctc_selection=False))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "esds"),
+                                       lang="en",
+                                       ctc_selection=False))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "libri_all_clean"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "libri_all_clean"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "mls_porto"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "mls_porto"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "mls_spanish"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "mls_spanish"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "mls_polish"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "mls_polish"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "mls_italian"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "mls_italian"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "mls_french"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "mls_french"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "mls_dutch"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "mls_dutch"),
+                                       lang="en"))
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict={},
-                                              corpus_dir=os.path.join("Corpora", "hui_others"),
-                                              lang="en"))
+    datasets.append(prepare_tts_corpus(transcript_dict={},
+                                       corpus_dir=os.path.join("Corpora", "hui_others"),
+                                       lang="en"))
 
     train_set = ConcatDataset(datasets)
 

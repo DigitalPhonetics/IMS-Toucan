@@ -13,6 +13,7 @@ singing/
 toucan_conda_venv/
 venv/
 vis/
+Utility/storage_config.py
 
 
 *_graph
