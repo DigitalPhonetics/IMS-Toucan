@@ -24,6 +24,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_word_emb import
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_word_emb import run as blizzard2013_sent_word
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
+from TrainingInterfaces.TrainingPipelines.SentEmbAdaptor_Blizzard2013 import run as adapt
 
 pipeline_dict = {
     # the finetuning example
@@ -51,6 +52,8 @@ pipeline_dict = {
     "b_embedding"   : b_embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"       : aligner,
+    # training the sentence embedding adaptor
+    "adapt"         : adapt,
 }
 
 if __name__ == '__main__':
