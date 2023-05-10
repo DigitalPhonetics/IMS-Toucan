@@ -166,7 +166,7 @@ class TTSDataset(Dataset):
                 for index, datapoint in enumerate(self.datapoints):
                     torch.save(datapoint,
                                os.path.join(cache_dir, f"tts_datapoint_{index}.pt"))
-                    self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"datapoint_{index}.pt"))
+                    self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"tts_datapoint_{index}.pt"))
                 torch.save(self.datapoint_feature_dump_list,
                            os.path.join(cache_dir, "tts_train_cache.pt"))
                 del self.datapoints
