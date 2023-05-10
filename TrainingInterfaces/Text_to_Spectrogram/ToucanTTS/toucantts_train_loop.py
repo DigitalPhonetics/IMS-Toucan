@@ -10,6 +10,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from TrainingInterfaces.Text_to_Embedding.SentenceEmbeddingAdaptor import SentenceEmbeddingAdaptor
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.SpectrogramDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
@@ -53,7 +54,8 @@ def train_loop(net,
                use_discriminator,
                sent_embs=None,
                replace_utt_sent_emb=False,
-               word_embedding_extractor=None
+               word_embedding_extractor=None,
+               use_adapted_embs=False
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -67,6 +69,15 @@ def train_loop(net,
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
+
+    if use_adapted_embs:
+        sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64).to(device)
+        check_dict = torch.load("Models/SentEmbAdaptor_01_Blizzard2013_emoBERTcls/adaptor.pt", map_location=device)
+        sentence_embedding_adaptor.load_state_dict(check_dict["model"])
+        sentence_embedding_adaptor.eval()
+        sentence_embedding_adaptor.requires_grad_(False)
+    else:
+        sentence_embedding_adaptor = None
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -114,6 +125,8 @@ def train_loop(net,
             if sent_embs is not None:
                 sentences = batch[9]
                 sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
+                if sentence_embedding_adaptor is not None:
+                    sentence_embedding = sentence_embedding_adaptor(sentence_embedding=sentence_embedding, return_emb=True)
             else:
                 sentence_embedding = None
 
@@ -188,6 +201,7 @@ def train_loop(net,
         # EPOCH IS OVER
         net.eval()
         style_embedding_function.eval()
+        sentence_embedding_adaptor.eval()
         default_embedding = style_embedding_function(
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
@@ -230,6 +244,7 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           sent_embs=sent_embs,
+                                                                          sent_emb_adaptor=sentence_embedding_adaptor,
                                                                           word_embedding_extractor=word_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:

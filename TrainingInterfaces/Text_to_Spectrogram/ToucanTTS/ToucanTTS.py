@@ -374,7 +374,8 @@ class ToucanTTS(torch.nn.Module):
             if self.sent_embed_adaptation:
                 # forward sentence embedding adaptation
                 sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
-            utterance_embedding = sentence_embedding if self.style_sent and is_inference else utterance_embedding
+            #utterance_embedding = sentence_embedding if self.style_sent and is_inference else utterance_embedding
+            utterance_embedding = sentence_embedding if self.style_sent else utterance_embedding
 
         if not self.use_word_embed:
             word_embedding = None
@@ -394,7 +395,7 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding = self.utt_embed_bottleneck(utterance_embedding)
             if self.use_sent_style_loss:
                 utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
-                                                   sent_embeddings=sentence_embedding if is_inference else sentence_embedding_gold, 
+                                                   sent_embeddings=sentence_embedding, 
                                                    projection=self.style_embedding_projection if self.use_concat_projection else None)
             else:
                 utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
@@ -408,7 +409,7 @@ class ToucanTTS(torch.nn.Module):
             encoded_texts, _ = self.encoder(text_tensors,
                                             text_masks,
                                             utterance_embedding=utterance_embedding,
-                                            sentence_embedding=sentence_embedding if is_inference else sentence_embedding_gold,
+                                            sentence_embedding=sentence_embedding,
                                             word_embedding=word_embedding,
                                             word_boundaries=word_boundaries_batch,
                                             lang_ids=lang_ids)  # (B, Tmax, adim)
@@ -458,7 +459,7 @@ class ToucanTTS(torch.nn.Module):
         if self.use_sent_style_loss:
             decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, 
                                             decoder_masks,
-                                            sentence_embedding=sentence_embedding if is_inference else sentence_embedding_gold)
+                                            sentence_embedding=sentence_embedding)
         else:
             decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, 
                                             decoder_masks,
@@ -473,7 +474,7 @@ class ToucanTTS(torch.nn.Module):
             if self.sent_embed_postnet:
                 if self.use_sent_style_loss:
                     refined_spectrogram = _integrate_with_sent_embed(hs=refined_spectrogram,
-                                                                    sent_embeddings=sentence_embedding if is_inference else sentence_embedding_gold,
+                                                                    sent_embeddings=sentence_embedding,
                                                                     projection=self.decoder_out_sent_emb_projection)
                 else:
                     refined_spectrogram = _integrate_with_sent_embed(hs=refined_spectrogram,

@@ -201,6 +201,7 @@ def plot_progress_spec_toucantts(net,
                                  lang,
                                  default_emb,
                                  sent_embs=None,
+                                 sent_emb_adaptor=None,
                                  word_embedding_extractor=None,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
@@ -209,6 +210,8 @@ def plot_progress_spec_toucantts(net,
         return None
     if sent_embs is not None:
         sentence_embedding = sent_embs[sentence]
+        if sent_emb_adaptor is not None:
+            sentence_embedding = sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0).to(device), return_emb=True).squeeze(0)
     else:
         sentence_embedding = None
     if word_embedding_extractor is not None:

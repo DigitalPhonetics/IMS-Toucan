@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a12_loss_bertcls"
+    name = "ToucanTTS_03_Blizzard2013_sent_emb_a12_emoBERTcls_noadapt_adapted"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -75,6 +75,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if "bertlm" in name:
         embed_type = "bertlm"
         sent_embed_dim = 768
+    if "emoBERTcls" in name:
+        embed_type = "emoBERTcls"
+        sent_embed_dim = 768
 
     if not os.path.exists(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")):
         if embed_type == "lealla":
@@ -98,6 +101,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         if embed_type == "bertlm":
             from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="last_mean")
+        if embed_type == "emoBERTcls":
+            from Preprocessing.sentence_embeddings.EmotionRoBERTaSentenceEmbeddingExtractor import EmotionRoBERTaSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
+            sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
 
         sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor)
         atf = ArticulatoryCombinedTextFrontend(language="en")
@@ -178,7 +184,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     model = ToucanTTS(lang_embs=lang_embs, 
                     utt_embed_dim=utt_embed_dim,
-                    sent_embed_dim=sent_embed_dim,
+                    sent_embed_dim=64 if "adapted" in name else sent_embed_dim,
                     sent_embed_adaptation="noadapt" not in name,
                     sent_embed_encoder=sent_embed_encoder,
                     sent_embed_decoder=sent_embed_decoder,
@@ -208,6 +214,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                use_wandb=use_wandb,
                sent_embs=sent_embs,
-               replace_utt_sent_emb=replace_utt_sent_emb)
+               replace_utt_sent_emb=replace_utt_sent_emb,
+               use_adapted_embs="adapted" in name)
     if use_wandb:
         wandb.finish()
