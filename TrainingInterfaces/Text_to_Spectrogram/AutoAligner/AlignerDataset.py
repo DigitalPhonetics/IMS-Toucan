@@ -121,7 +121,7 @@ class AlignerDataset(Dataset):
             self.datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
-        print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
+        print(f"Prepared an Aligner dataset with {len(self.datapoint_feature_dump_list)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
                               path_list,

@@ -180,7 +180,7 @@ class TTSDataset(Dataset):
 
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
-        print(f"Prepared a FastSpeech dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
+        print(f"Prepared a FastSpeech dataset with {len(self.datapoint_feature_dump_list)} datapoints in {cache_dir}.")
 
     def __getitem__(self, index):
         datapoint = torch.load(self.datapoint_feature_dump_list[index], map_location='cpu')
