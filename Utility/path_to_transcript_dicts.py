@@ -573,64 +573,8 @@ def build_file_list_singing_voice_audio_database():
     return file_list
 
 
-def build_path_to_transcript_dict_blizzard2023_ad():
-    root = "/mount/resources/speech/corpora/Blizzard2023/AD"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace("»", '"').replace("« ", '"')
-    return path_to_transcript
-
-
 def build_path_to_transcript_dict_blizzard2023_ad_silence_removed():
     root = "/mount/resources/speech/corpora/Blizzard2023/AD_silence_removed"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_blizzard2023_ad_long():
-    root = "/mount/arbeitsdaten45/projekte/asr-4/denisopl/Blizzard2023/15sec/output/AD"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_blizzard2023_ad_long_silence_removed():
-    root = "/mount/resources/speech/corpora/Blizzard2023/ad_long_silence_removed"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_blizzard2023_neb():
-    root = "/mount/resources/speech/corpora/Blizzard2023/NEB"
     path_to_transcript = dict()
     with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
         lookup = file.read()
@@ -657,20 +601,6 @@ def build_path_to_transcript_dict_blizzard2023_neb_silence_removed():
     return path_to_transcript
 
 
-def build_path_to_transcript_dict_blizzard2023_neb_e():
-    root = "/mount/resources/speech/corpora/Blizzard2023/enhanced_NEB_subset"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
 def build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed():
     root = "/mount/resources/speech/corpora/Blizzard2023/enhanced_NEB_subset_silence_removed"
     path_to_transcript = dict()
@@ -682,50 +612,6 @@ def build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed():
             wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
             if os.path.exists(wav_path):
                 path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_blizzard2023_neb_long():
-    root = "/mount/arbeitsdaten45/projekte/asr-4/denisopl/Blizzard2023/15sec/output/NEB"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_blizzard2023_neb_long_silence_removed():
-    root = "/mount/resources/speech/corpora/Blizzard2023/neb_long_silence_removed"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_blizzard2023_neb_tiny_test():
-    root = "/mount/resources/speech/corpora/Blizzard2023/NEB"
-    path_to_transcript = dict()
-    with open(os.path.join(root, "transcript.tsv"), "r", encoding="utf8") as file:
-        lookup = file.read()
-    for line in lookup.split("\n"):
-        if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, line.split("\t")[0].split("/")[-1])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript.replace("§", "").replace("#", "").replace("~", "").replace(" »", '"').replace("« ", '"').replace("»", '"').replace("«", '"')
-            if len(path_to_transcript.keys()) > 50:
-                break
     return path_to_transcript
 
 
@@ -742,32 +628,6 @@ def build_path_to_transcript_dict_synpaflex_norm_subset():
         wav_path = str((path_obj.parent.parent / path_obj.name[:-9]).with_suffix(".wav"))
         if Path(wav_path).exists():
             path_to_transcript[wav_path] = norm_transcript
-    return path_to_transcript
-
-
-def build_path_to_transcript_dict_synpaflex_all():
-    """
-    Contributed by https://github.com/tomschelsen
-    modified by Flux to capture all audios
-    """
-    root = "/mount/resources/speech/corpora/synpaflex-corpus/5/v0.1/"
-    path_to_transcript = dict()
-    for wav_path in glob.iglob(os.path.join(root, "**/*.wav"), recursive=True):
-        # two cases: either the txt lie in the txt subdir, or they lie in the txt subdir of the parent node
-        file_id = str(wav_path).split("/")[-1].rstrip(".wav")
-        wav_dir = "/".join(str(wav_path).split("/")[:-1])
-        wav_parent_dir = "/".join(str(wav_path).split("/")[:-2])
-
-        text_path = wav_dir + "/txt/" + file_id + "_norm.txt"
-        if not Path(text_path).exists():
-            text_path = wav_dir + "/txt/" + file_id + ".txt"
-            if not Path(text_path).exists():
-                text_path = wav_parent_dir + "/txt/" + file_id + ".wav"
-
-        if Path(text_path).exists():
-            with open(text_path, "r", encoding="utf8") as file:
-                norm_transcript = file.read()
-        path_to_transcript[wav_path] = norm_transcript
     return path_to_transcript
 
 
@@ -824,6 +684,19 @@ def build_path_to_transcript_dict_EmoV_DB():
         if file.endswith(".wav"):
             path_to_transcript[root + file] = identifier_to_sent[file[-14:-10]]
     return path_to_transcript
+
+
+def build_path_to_transcript_dict_ryanspeech():
+    root = "/mount/resources/speech/corpora/RyanSpeech"
+    path_to_transcript_dict = dict()
+    with open(root + "/metadata.csv", mode="r", encoding="utf8") as f:
+        transcripts = f.read().split("\n")
+    for transcript in transcripts:
+        if transcript.strip() != "":
+            parsed_line = transcript.split("|")
+            audio_file = f"{root}/wavs/{parsed_line[0]}.wav"
+            path_to_transcript_dict[audio_file] = parsed_line[2]
+    return path_to_transcript_dict
 
 
 if __name__ == '__main__':
