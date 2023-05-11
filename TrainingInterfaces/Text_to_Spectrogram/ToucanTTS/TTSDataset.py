@@ -46,7 +46,7 @@ class TTSDataset(Dataset):
                                do_loudnorm=do_loudnorm,
                                rebuild_cache=rebuild_cache,
                                device=device)
-            datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+            aligner_datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for fastspeech.
 
             print("... building dataset cache ...")
@@ -60,8 +60,8 @@ class TTSDataset(Dataset):
             # actual creation of datapoints starts here
             # ==========================================
 
-            acoustic_model = acoustic_model.to(device)
-            initial_file = datapoint_feature_dump_list[0]
+            acoustic_model = acoustic_model.to(device).eval()
+            initial_file = aligner_datapoint_feature_dump_list[0]
             _, _, filepath = torch.load(initial_file, map_location='cpu')
 
             _, _orig_sr = sf.read(filepath)
@@ -71,8 +71,8 @@ class TTSDataset(Dataset):
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
 
-            for index in tqdm(range(len(datapoint_feature_dump_list))):
-                datapoint, _, filepath = torch.load(datapoint_feature_dump_list[index], map_location='cpu')
+            for index in tqdm(range(len(aligner_datapoint_feature_dump_list))):
+                datapoint, _, filepath = torch.load(aligner_datapoint_feature_dump_list[index], map_location='cpu')
                 raw_wave, sr = sf.read(filepath)
                 if _orig_sr != sr:
                     print(f"Not all files have the same sampling rate! Please fix and re-run.  -- triggered by {filepath}")

@@ -143,11 +143,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang="de",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fluxsing(),
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "flux_sing"),
-                                           lang="en",
-                                           device=device))
-
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "css10_chinese"),
                                            lang="cmn",
@@ -173,7 +168,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                   device=device,
                   save_directory=save_dir,
                   steps=500000,
-                  batch_size=32,
+                  batch_size=64,
                   path_to_checkpoint=resume_checkpoint,
                   fine_tune=finetune,
                   debug_img_path=save_dir_aligner,

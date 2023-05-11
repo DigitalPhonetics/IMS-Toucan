@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.TinyTTS import TinyTTS
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.SpectrogramReconstructor import SpectrogramReconstructor
 
 
 def collate_and_pad(batch):
@@ -59,7 +59,7 @@ def train_loop(train_dataset,
     asr_model = Aligner().to(device)
     optim_asr = RAdam(asr_model.parameters(), lr=0.0001)
 
-    tiny_tts = TinyTTS().to(device)
+    tiny_tts = SpectrogramReconstructor().to(device)
     optim_tts = RAdam(tiny_tts.parameters(), lr=0.0001)
 
     step_counter = 0

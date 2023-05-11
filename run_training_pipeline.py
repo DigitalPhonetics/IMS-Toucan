@@ -5,14 +5,14 @@ import sys
 
 import torch
 
-from TrainingInterfaces.TrainingPipelines.BigVGAN_combined import run as bigvgan
+from TrainingInterfaces.TrainingPipelines.AlignerPipeline import run as aligner
+from TrainingInterfaces.TrainingPipelines.BigVGANPipeline import run as bigvgan
 from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Embedding import run as embedding
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
-from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
 pipeline_dict = {
     # the finetuning example
