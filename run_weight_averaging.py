@@ -35,7 +35,7 @@ def load_net_toucan(path):
                     except RuntimeError:
                         try:
                             print("Loading word emb architecture")
-                            net = ToucanTTS(word_embed_dim=768, lang_embs=None, utt_embed_dim=None)
+                            net = ToucanTTS(word_embed_dim=768, utt_embed_dim=None, lang_embs=None)
                             net.load_state_dict(check_dict["model"])
                         except RuntimeError:
                             try:
@@ -50,7 +50,7 @@ def load_net_toucan(path):
                                 net.load_state_dict(check_dict["model"])
                             except RuntimeError:
                                 print("Loading sent emb architecture")
-                                lang_embs=8000
+                                lang_embs=None
                                 utt_embed_dim=64
 
                                 if "laser" in path:
@@ -64,6 +64,8 @@ def load_net_toucan(path):
                                 if "bertcls" in path:
                                     sent_embed_dim = 768
                                 if "bertlm" in path:
+                                    sent_embed_dim = 768
+                                if "emoBERTcls" in path:
                                     sent_embed_dim = 768
                                 
                                 sent_embed_encoder=False
@@ -117,10 +119,12 @@ def load_net_toucan(path):
                                 if "a12" in path:
                                     sent_embed_encoder=True
                                     style_sent=True
+                                    if "noadapt" in path:
+                                        utt_embed_dim = 768
 
                                 net = ToucanTTS(lang_embs=lang_embs, 
                                                 utt_embed_dim=utt_embed_dim,
-                                                sent_embed_dim=sent_embed_dim,
+                                                sent_embed_dim=64 if "adapted" in path else sent_embed_dim,
                                                 sent_embed_adaptation="noadapt" not in path,
                                                 sent_embed_encoder=sent_embed_encoder,
                                                 sent_embed_decoder=sent_embed_decoder,

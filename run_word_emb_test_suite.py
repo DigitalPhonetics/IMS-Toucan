@@ -55,7 +55,7 @@ def test_sentence(version, model_id="Meta", exec_device="cpu", speaker_reference
     tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, word_emb_extractor=word_emb_extractor)
     tts.set_language("en")
     #sentence = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-    sentence = "But yours, your regard was new compared with; Fanny, think of me!"
+    sentence = "Did he drive a red car to work? No he drove a blue car to work."
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
     tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav")
@@ -101,4 +101,4 @@ if __name__ == '__main__':
     else:
         speaker_reference = None
 
-    test_controllable(version="ToucanTTS_02_Blizzard2013_word_emb_bert", model_id="02_Blizzard2013_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
+    test_sentence(version="ToucanTTS_02_Blizzard2013_word_emb_bert", model_id="02_Blizzard2013_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
