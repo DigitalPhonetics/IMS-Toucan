@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_02_Blizzard2013"
+    name = "ToucanTTS_03_Blizzard2013"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -40,7 +40,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           lang="en",
                                           save_imgs=False)
 
-    model = ToucanTTS()
+    model = ToucanTTS(lang_embs=None, utt_embed_dim=None)
     if use_wandb:
         wandb.init(
             name=f"{name}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,

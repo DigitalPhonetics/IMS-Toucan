@@ -275,6 +275,43 @@ def build_sent_to_prompt_dict_promptspeech():
                         sent_to_prompt[transcript] = prompt
     return sent_to_prompt
 
+def build_path_to_transcript_dict_emovdb_sam():
+    import csv, glob
+    path_train = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB_Sam"
+    with open("/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB_Sam/transcripts.csv", 'r') as f:
+        reader = csv.reader(f)
+        id_to_transcript_dict = {rows[0]:rows[1] for rows in reader}
+    path_to_transcript = dict()
+    for file in glob.glob(os.path.join(path_train, "*.wav")):
+        sentence_id = os.path.splitext(os.path.basename(file))[0].split("-16bit")[0].split("_")[-1]
+        path_to_transcript[file] = id_to_transcript_dict[sentence_id]
+    return path_to_transcript
+
+def build_path_to_prompt_dict_emovdb_sam():
+    import csv, glob, json
+    path_train = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB_Sam"
+    path_to_prompt = dict()
+    with open("/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmotionLines/Friends/friends_train.json") as f:
+        d = json.load(f)
+    emotion_prompts = {"amused": list(), "anger": list(), "disgust": list(), "neutral": list()}
+    for dialogue in d:
+        for utterance in dialogue:
+            prompt = utterance["utterance"]
+            emotion = utterance["emotion"]
+            if emotion == "joy":
+                emotion_prompts["amused"].append(prompt)
+            if emotion == "anger":
+                emotion_prompts["anger"].append(prompt)
+            if emotion == "disgust":
+                emotion_prompts["disgust"].append(prompt)
+            if emotion == "neutral":
+                emotion_prompts["neutral"].append(prompt)
+    for file in glob.glob(os.path.join(path_train, "*.wav")):
+        emotion = os.path.splitext(os.path.basename(file))[0].split("-16bit")[0].split("_")[0].lower()
+        prompt = random.choice(emotion_prompts[emotion])
+        path_to_prompt[file] = prompt
+    return path_to_prompt
+
 
 def build_path_to_transcript_dict_libritts_other500():
     path_train = "/mount/resources/asr-data/LibriTTS/train-other-500"
@@ -296,6 +333,15 @@ def build_path_to_transcript_dict_ljspeech():
         with open("/mount/resources/speech/corpora/LJSpeech/16kHz/txt/" + transcript_file, 'r', encoding='utf8') as tf:
             transcript = tf.read()
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.rstrip(".txt") + ".wav"
+        path_to_transcript[wav_path] = transcript
+    return limit_to_n(path_to_transcript)
+
+def build_path_to_transcript_dict_3xljspeech():
+    path_to_transcript = dict()
+    for transcript_file in os.listdir("/mount/arbeitsdaten/synthesis/attention_projects/LJSpeech_3xlong_stripped/txt_long"):
+        with open("/mount/arbeitsdaten/synthesis/attention_projects/LJSpeech_3xlong_stripped/txt_long/" + transcript_file, 'r', encoding='utf8') as tf:
+            transcript = tf.read()
+        wav_path = "/mount/arbeitsdaten/synthesis/attention_projects/LJSpeech_3xlong_stripped/wav_long/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
     return limit_to_n(path_to_transcript)
 

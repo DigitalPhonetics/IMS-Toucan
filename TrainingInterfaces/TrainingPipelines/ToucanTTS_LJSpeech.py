@@ -19,7 +19,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
-        device = torch.device(f"cuda")
+        device = torch.device("cuda")
 
     torch.manual_seed(131714)
     random.seed(131714)
@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_02_Blizzard2013_word_emb_emoBERT"
+    name = "ToucanTTS_03_LJSpeech"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -35,25 +35,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
                                           lang="en",
                                           save_imgs=False)
-    
-    word_embedding_extractor = None
-    word_embed_dim = None
-    
-    if "_bert" in name:
-        from Preprocessing.word_embeddings.BERTWordEmbeddingExtractor import BERTWordEmbeddingExtractor
-        word_embedding_extractor = BERTWordEmbeddingExtractor()
-        word_embed_dim = 768
-    if "_emoBERT" in name:
-        from Preprocessing.word_embeddings.EmotionRoBERTaWordEmbeddingExtractor import EmotionRoBERTaWordEmbeddingExtractor
-        word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
-        word_embed_dim = 768
 
-    model = ToucanTTS(word_embed_dim=word_embed_dim, utt_embed_dim=None)
-
+    model = ToucanTTS(lang_embs=None, utt_embed_dim=None)
     if use_wandb:
         wandb.init(
             name=f"{name}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -64,13 +51,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=4,
+               batch_size=8,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Blizzard2013_Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
-               use_wandb=use_wandb,
-               word_embedding_extractor=word_embedding_extractor)
+               use_wandb=use_wandb)
     if use_wandb:
         wandb.finish()

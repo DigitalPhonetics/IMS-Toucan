@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_02_Blizzard2013_word_emb_emoBERT"
+    name = "ToucanTTS_02_EmoVDBSam_word_emb_emoBERT"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -35,8 +35,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_emovdb_sam(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_sam"),
                                           lang="en",
                                           save_imgs=False)
     
@@ -52,7 +52,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
         word_embed_dim = 768
 
-    model = ToucanTTS(word_embed_dim=word_embed_dim, utt_embed_dim=None)
+    model = ToucanTTS(lang_embs=None, utt_embed_dim=None, word_embed_dim=word_embed_dim)
 
     if use_wandb:
         wandb.init(
@@ -67,7 +67,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=4,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Blizzard2013_Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,

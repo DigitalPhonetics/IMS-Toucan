@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_Blizzard2013_sent_emb_a12_emoBERTcls"
+    name = "ToucanTTS_03_EmoVDBSam_sent_emb_a12_emoBERTcls_noadapt"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -52,8 +52,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_emovdb_sam(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_sam"),
                                           lang="en",
                                           save_imgs=False)
     
@@ -79,7 +79,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         embed_type = "emoBERTcls"
         sent_embed_dim = 768
 
-    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")):
+    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")):
         if embed_type == "lealla":
             import tensorflow as tf
             gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -105,20 +105,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             from Preprocessing.sentence_embeddings.EmotionRoBERTaSentenceEmbeddingExtractor import EmotionRoBERTaSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
 
-        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor)
+        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor, emovdb=True)
         atf = ArticulatoryCombinedTextFrontend(language="en")
         example_sentence = atf.get_example_sentence(lang="en")
         sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=[example_sentence]).squeeze()
-        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt"))
-        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")}')
+        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt"))
+        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")}')
         if embed_type == "lealla":
             print("Please restart and use saved sentence embeddings because tensorflow won't release GPU memory for training.")
             return
         else:
             del sentence_embedding_extractor
     else:
-        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt")}.')
-        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "blizzard2013", f"sent_emb_cache_{embed_type}.pt"), map_location='cpu')
+        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")}.')
+        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt"), map_location='cpu')
     
     if sent_embs is None:
         raise TypeError("Sentence embeddings are None.")
@@ -132,7 +132,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     replace_utt_sent_emb = False
     style_sent = False
 
-    lang_embs=8000
+    lang_embs=None
     utt_embed_dim=64
 
     if "a01" in name:
@@ -180,6 +180,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if "a12" in name:
         sent_embed_encoder=True
         style_sent=True
+        if "noadapt" in name:
+            utt_embed_dim = 768
 
 
     model = ToucanTTS(lang_embs=lang_embs, 
@@ -209,7 +211,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=4,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Blizzard2013_Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
