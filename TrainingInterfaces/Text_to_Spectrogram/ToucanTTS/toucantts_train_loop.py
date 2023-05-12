@@ -201,7 +201,8 @@ def train_loop(net,
         # EPOCH IS OVER
         net.eval()
         style_embedding_function.eval()
-        sentence_embedding_adaptor.eval()
+        if sentence_embedding_adaptor is not None:
+            sentence_embedding_adaptor.eval()
         default_embedding = style_embedding_function(
             batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()

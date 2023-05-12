@@ -29,6 +29,7 @@ class ToucanTTSInterface(torch.nn.Module):
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  sent_emb_extractor=None,
                  word_emb_extractor=None,
+                 sent_emb_adaptor=None
                  ):
         super().__init__()
         self.device = device
@@ -111,6 +112,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                     sent_embed_dim = 768
                                 if "bertlm" in tts_model_path:
                                     sent_embed_dim = 768
+                                if "emoBERTcls" in tts_model_path:
+                                    sent_embed_dim = 768
 
                                 sent_embed_encoder=False
                                 sent_embed_decoder=False
@@ -169,7 +172,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                 self.phone2mel = ToucanTTS(weights=checkpoint["model"],
                                                             lang_embs=lang_embs, 
                                                             utt_embed_dim=utt_embed_dim,
-                                                            sent_embed_dim=sent_embed_dim,
+                                                            sent_embed_dim=64 if "adapted" in tts_model_path else sent_embed_dim,
                                                             sent_embed_adaptation="noadapt" not in tts_model_path,
                                                             sent_embed_encoder=sent_embed_encoder,
                                                             sent_embed_decoder=sent_embed_decoder,
@@ -204,6 +207,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 self.sentence_embedding_extractor = sent_emb_extractor
             else:
                 raise KeyError("Please specify a sentence embedding extractor.")
+            self.sent_emb_adaptor = sent_emb_adaptor.to(self.device) if sent_emb_adaptor is not None else None
             
         #################################
         #  load word emb extractor     #
@@ -258,6 +262,8 @@ class ToucanTTSInterface(torch.nn.Module):
             print(f"Using sentence embedding of given prompt: {prompt}")
             prompt_embedding = self.sentence_embedding_extractor.encode([prompt]).squeeze().to(self.device)
             self.sentence_embedding = prompt_embedding
+            if self.sent_emb_adaptor is not None:
+                self.sentence_embedding = self.sent_emb_adaptor(sentence_embedding=self.sentence_embedding.unsqueeze(0), return_emb=True).squeeze(0)
             if self.replace_utt_sent_emb:
                 self.default_utterance_embedding = self.sentence_embedding
         else:
@@ -307,6 +313,8 @@ class ToucanTTSInterface(torch.nn.Module):
             if self.use_sent_emb and self.sentence_embedding is None:
                 print("Using sentence embedding of input text.")
                 sentence_embedding = self.sentence_embedding_extractor.encode([text]).squeeze().to(self.device)
+                if self.sent_emb_adaptor is not None:
+                    sentence_embedding = self.sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0), return_emb=True).squeeze(0)
                 if self.replace_utt_sent_emb:
                     self.default_utterance_embedding = sentence_embedding
             else:
