@@ -55,7 +55,7 @@ def test_sentence(version, model_id="Meta", exec_device="cpu", speaker_reference
     tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, word_emb_extractor=word_emb_extractor)
     tts.set_language("en")
     #sentence = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-    sentence = "Did he drive a red car to work? No he drove a blue car to work."
+    sentence = "result in some degree of interference with the personal liberty of those involved."
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
     tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav")
@@ -74,14 +74,14 @@ def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_refer
                                   'She laughed and said: This is so funny.',
                                   'No, this is horrible!',
                                   'I am so sad, why is this so depressing?',
-                                  'Be careful!, Cried the woman',
+                                  'Be careful, cried the woman.',
                                   'This makes me feel bad.']):
         tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/Controllable_{i}.wav")
 
 
 if __name__ == '__main__':
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"8"
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"5"
     exec_device = "cuda:0" if torch.cuda.is_available() else "cpu"
     #exec_device = "cpu"
     print(f"running on {exec_device}")
@@ -92,6 +92,8 @@ if __name__ == '__main__':
     if use_word_emb:
         from Preprocessing.word_embeddings.BERTWordEmbeddingExtractor import BERTWordEmbeddingExtractor
         word_embedding_extractor = BERTWordEmbeddingExtractor()
+        #from Preprocessing.word_embeddings.EmotionRoBERTaWordEmbeddingExtractor import EmotionRoBERTaWordEmbeddingExtractor
+        #word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
     else:
         word_embedding_extractor = None
 
@@ -101,4 +103,4 @@ if __name__ == '__main__':
     else:
         speaker_reference = None
 
-    test_sentence(version="ToucanTTS_02_Blizzard2013_word_emb_bert", model_id="02_Blizzard2013_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
+    test_sentence(version="ToucanTTS_02_LJSpeech_word_emb_bert", model_id="02_LJSpeech_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
