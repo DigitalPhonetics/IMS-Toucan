@@ -23,6 +23,7 @@ class BERTWordEmbeddingExtractor(WordEmbeddingExtractor):
         self.device = device
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.merge_tokens = set()
+        self.expand_tokens = set()
 
     def encode(self, sentences: list[str]) -> np.ndarray:
         if type(sentences) == str:
@@ -38,6 +39,7 @@ class BERTWordEmbeddingExtractor(WordEmbeddingExtractor):
                 #print(phone_string)
                 #print(len(phone_string.split()))
                 self.merge_tokens.update(self.get_merge_tokens(sent))
+                self.expand_tokens.update(self.get_expand_tokens(sent))
         # tokenize and encode sentences
         encoded_input = self.tokenizer(sentences, padding=True, return_tensors='pt').to(self.device)
         with torch.no_grad():
@@ -76,6 +78,11 @@ class BERTWordEmbeddingExtractor(WordEmbeddingExtractor):
                         merged_embedding = torch.stack([word_embeddings[i], word_embeddings[i + 1]]).mean(dim=0).unsqueeze(0)
                         merged_embeddings = torch.cat([merged_embeddings, merged_embedding])
                     merged = True
+                elif t1 in self.expand_tokens:
+                    if i == 0:
+                        merged_embeddings = torch.cat([word_embeddings[i].unsqueeze(0), word_embeddings[i].unsqueeze(0)])
+                    else:
+                        merged_embeddings = torch.cat([merged_embeddings, word_embeddings[i].unsqueeze(0), word_embeddings[i].unsqueeze(0)])
                 else:
                     if i == 0:
                         merged_embeddings = word_embeddings[i].unsqueeze(0)
@@ -98,8 +105,16 @@ class BERTWordEmbeddingExtractor(WordEmbeddingExtractor):
             phonemized = self.tf.get_phone_string(' '.join([w1, w2]))
             if len(phonemized.split()) < 2:
                 merge_tokens.append((w1, w2))
-            if len(phonemized.split()) > 2:
-                print(sentence)
-                print(w1)
-                print(w2)
         return merge_tokens
+    
+    def get_expand_tokens(self, sentence:str):
+        w_list = sentence.split()
+        expand_tokens = []
+        for w in w_list:
+            phonemized = self.tf.get_phone_string(w)
+            if len(phonemized.split()) == 2:
+                expand_tokens.append(w)
+            if len(phonemized.split()) > 2:
+                print(w)
+                print(phonemized)
+        return expand_tokens
