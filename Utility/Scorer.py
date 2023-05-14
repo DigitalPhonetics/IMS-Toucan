@@ -193,7 +193,7 @@ class TTSScorer:
                                             lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
                                             return_mels=False,
                                             run_glow=False)
-                loss = l1_loss + duration_loss + pitch_loss + energy_loss + glow_loss
+                loss = l1_loss + duration_loss + pitch_loss + energy_loss
             except TypeError:
                 loss = torch.tensor(torch.nan)
             if torch.isnan(loss):
