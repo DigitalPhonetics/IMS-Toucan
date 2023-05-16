@@ -309,6 +309,23 @@ def build_path_to_transcript_dict_ljspeech():
     return path_to_transcript
 
 
+def build_path_to_transcript_dict_jenny():
+    """
+    https://www.kaggle.com/datasets/noml4u/jenny-tts-dataset
+    https://github.com/dioco-group/jenny-tts-dataset
+
+    Dataset of Speaker Jenny (Dioco) with an Irish accent
+    """
+    path_to_transcript = dict()
+    with open("/mount/resources/speech/corpora/Jenny/metadata.csv", encoding="utf8") as f:
+        transcriptions = f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript["/mount/resources/speech/corpora/Jenny/" + line.split("|")[0] + ".flac"] = line.split("|")[1]
+    return path_to_transcript
+
+
 # GERMAN
 
 def build_path_to_transcript_dict_mls_german():

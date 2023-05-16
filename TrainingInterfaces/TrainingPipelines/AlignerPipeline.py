@@ -88,6 +88,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang="en",
                                            device=device))
 
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_jenny(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "jenny"),
+                                           lang="en",
+                                           device=device))
+
     chunk_count = 20
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_gigaspeech(), split_n=chunk_count)
     for index in range(chunk_count):
