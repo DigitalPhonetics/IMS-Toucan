@@ -346,6 +346,8 @@ class ArticulatoryCombinedTextFrontend:
             ("\t", " "),
             ("¡", ""),
             ("¿", ""),
+            ("«", '"'),
+            ("»", '"'),
             # unifying some phoneme representations
             ("ɫ", "l"),  # alveolopalatal
             ("ɚ", "ə"),
