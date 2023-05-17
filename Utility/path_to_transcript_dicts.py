@@ -613,6 +613,40 @@ def build_path_to_transcript_dict_ESDS():
                         path_to_transcript_dict[f"{root}/{speaker_dir}/{emo_dir}/{filename}.wav"] = text
     return path_to_transcript_dict
 
+def build_path_to_transcript_dict_CREMA_D():
+    identifier_to_sent = {"IEO": "It's eleven o'clock.",
+                          "TIE": "That is exactly what happened.",
+                          "IOM": "I'm on my way to the meeting.",
+                          "IWW": "I wonder what this is about.",
+                          "TAI": "The airplane is almost full.",
+                          "MTI": "Maybe tomorrow it will be cold.",
+                          "IWL": "I would like a new alarm clock.",
+                          "ITH": "I think, I have a doctor's appointment.",
+                          "DFA": "Don't forget a jacket.",
+                          "ITS": "I think, I've seen this before.",
+                          "TSI": "The surface is slick.",
+                          "WSI": "We'll stop in a couple of minutes."}
+    root = "/mount/resources/speech/corpora/CREMA_D/"
+    path_to_transcript = dict()
+    for file in os.listdir(root):
+        if file.endswith(".wav"):
+            path_to_transcript[root + file] = identifier_to_sent[file.split("_")[1]]
+    return path_to_transcript
+
+def build_path_to_transcript_dict_EmoV_DB():
+    root = "/mount/resources/speech/corpora/EmoV_DB/"
+    path_to_transcript = dict()
+    with open(os.path.join(root, "labels.txt"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    identifier_to_sent = dict()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            identifier_to_sent[line.split()[0]] = " ".join(line.split()[1:])
+    for file in os.listdir(root):
+        if file.endswith(".wav"):
+            path_to_transcript[root + file] = identifier_to_sent[file[-14:-10]]
+    return path_to_transcript
+
 
 def build_path_to_transcript_dict_blizzard_2013():
     path_to_transcript = dict()
