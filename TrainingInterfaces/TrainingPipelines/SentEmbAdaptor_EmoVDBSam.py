@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "SentEmbAdaptor_01_EmoVDBSam_emoBERTcls"
+    name = "SentEmbAdaptor_01_EmoVDBSam_emoBERTcls_yelp"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -60,7 +60,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         embed_type = "bertlm"
         sent_embed_dim = 768
     if "emoBERTcls" in name:
-        embed_type = "emoBERTcls"
+        if "yelp" in name:
+            embed_type = "emoBERTcls_yelp"
+        else:
+            embed_type = "emoBERTcls"
         sent_embed_dim = 768
 
     if not os.path.exists(os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")):
@@ -89,10 +92,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             from Preprocessing.sentence_embeddings.EmotionRoBERTaSentenceEmbeddingExtractor import EmotionRoBERTaSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
             sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
 
-        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor)
-        atf = ArticulatoryCombinedTextFrontend(language="en")
-        example_sentence = atf.get_example_sentence(lang="en")
-        sent_embs[example_sentence] = sentence_embedding_extractor.encode(sentences=[example_sentence]).squeeze()
+        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor, emovdb=True)
+        sent_embs["example_sentence"] = sentence_embedding_extractor.encode(sentences=["This is a test sentence."]).squeeze()
         torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt"))
         print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")}')
         if embed_type == "lealla":
@@ -128,6 +129,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                steps=200000,
                use_wandb=use_wandb,
-               sent_embs=sent_embs)
+               sent_embs=sent_embs,
+               random_emb="yelp" in name,
+               emovdb=True)
     if use_wandb:
         wandb.finish()

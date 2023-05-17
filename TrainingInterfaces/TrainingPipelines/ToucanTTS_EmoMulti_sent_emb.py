@@ -2,6 +2,7 @@ import time
 
 import torch
 import wandb
+from torch.utils.data import ConcatDataset
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
@@ -29,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_EmoVDBSam_sent_emb_a12_emoBERTcls_yelp"
+    name = "ToucanTTS_03_EmoMulti_sent_emb_a11_emoBERTcls_xvect"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -52,11 +53,55 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_emovdb_sam(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_sam"),
+    datasets = list()
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
                                           lang="en",
-                                          save_imgs=False)
+                                          save_imgs=False))
     
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "cremad"),
+                                          lang="en",
+                                          save_imgs=False))
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
+                                          lang="en",
+                                          save_imgs=False))
+    
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
+                                          lang="en",
+                                          save_imgs=False))
+    
+    train_set = ConcatDataset(datasets)
+
+    if "_xvect" in name:
+        if not os.path.exists(os.path.join(save_dir, "xvect.pt")):
+            print("Extracting xvect from audio")
+            import torchaudio
+            from speechbrain.pretrained import EncoderClassifier
+            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
+            path_to_xvect = {}
+            for index in tqdm(range(len(train_set))):
+                path = train_set[index][10]
+                wave, sr = torchaudio.load(path)
+                # mono
+                wave = torch.mean(wave, dim=0, keepdim=True)
+                # resampling
+                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                wave = wave.squeeze(0)
+                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
+                path_to_xvect[path] = embedding
+            torch.save(path_to_xvect, os.path.join(save_dir, "xvect.pt"))
+            del classifier
+        else:
+            print(f"Loading xvect embeddings from {os.path.join(MODELS_DIR, 'ToucanTTS_01_EmoMulti_xvect', 'xvect.pt')}")
+            path_to_xvect = torch.load(os.path.join(save_dir, "xvect.pt"), map_location='cpu')
+    else:
+        path_to_xvect = None
+
     if "laser" in name:
         embed_type = "laser"
         sent_embed_dim = 1024
@@ -76,53 +121,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         embed_type = "bertlm"
         sent_embed_dim = 768
     if "emoBERTcls" in name:
-        if "yelp" in name:
-            embed_type = "emoBERTcls_yelp"
-        else:
-            embed_type = "emoBERTcls"
+        embed_type = "emoBERTcls"
         sent_embed_dim = 768
 
-    if not os.path.exists(os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")):
-        if embed_type == "lealla":
-            import tensorflow as tf
-            gpus = tf.config.experimental.list_physical_devices('GPU')
-            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-            from Preprocessing.sentence_embeddings.LEALLASentenceEmbeddingExtractor import LEALLASentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor()
-        if embed_type == "laser":
-            from Preprocessing.sentence_embeddings.LASERSentenceEmbeddingExtractor import LASERSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor()
-        if embed_type == "para":
-            from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(model="para")
-        if embed_type == "mpnet":
-            from Preprocessing.sentence_embeddings.STSentenceEmbeddingExtractor import STSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(model="mpnet")
-        if embed_type == "bertcls":
-            from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
-        if embed_type == "bertlm":
-            from Preprocessing.sentence_embeddings.BERTSentenceEmbeddingExtractor import BERTSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="last_mean")
-        if embed_type == "emoBERTcls":
-            from Preprocessing.sentence_embeddings.EmotionRoBERTaSentenceEmbeddingExtractor import EmotionRoBERTaSentenceEmbeddingExtractor as SentenceEmbeddingExtractor
-            sentence_embedding_extractor = SentenceEmbeddingExtractor(pooling="cls")
-
-        sent_embs = extract_sent_embs(train_set=train_set, sent_emb_extractor=sentence_embedding_extractor, emovdb=True)
-        sent_embs["example_sentence"] = sentence_embedding_extractor.encode(sentences=["This is a test sentence."]).squeeze()
-        torch.save(sent_embs, os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt"))
-        print(f'Saved sentence embeddings in {os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")}')
-        if embed_type == "lealla":
-            print("Please restart and use saved sentence embeddings because tensorflow won't release GPU memory for training.")
-            return
-        else:
-            del sentence_embedding_extractor
-    else:
-        print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt")}.')
-        sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "emovdb_sam", f"sent_emb_cache_{embed_type}.pt"), map_location='cpu')
-    
-    if sent_embs is None:
-        raise TypeError("Sentence embeddings are None.")
+    sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_{embed_type}.pt"), map_location='cpu')
 
     sent_embed_encoder=False
     sent_embed_decoder=False
@@ -134,7 +136,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     style_sent = False
 
     lang_embs=None
-    utt_embed_dim=64
+    utt_embed_dim=512
 
     if "a01" in name:
         sent_embed_encoder=True
@@ -212,12 +214,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=12,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "EmoVDBSam_Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "EmoMulti_Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
                sent_embs=sent_embs,
-               random_emb="yelp" in name,
+               random_emb=True,
                emovdb=True,
                replace_utt_sent_emb=replace_utt_sent_emb,
                use_adapted_embs="adapted" in name)
