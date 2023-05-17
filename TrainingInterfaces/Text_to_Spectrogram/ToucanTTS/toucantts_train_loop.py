@@ -23,7 +23,7 @@ from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence string
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence string, filepath
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -33,7 +33,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]),
-            [datapoint[9] for datapoint in batch])
+            [datapoint[9] for datapoint in batch],
+            [datapoint[10] for datapoint in batch])
 
 
 def train_loop(net,
@@ -53,9 +54,12 @@ def train_loop(net,
                postnet_start_steps,
                use_discriminator,
                sent_embs=None,
+               random_emb=False,
+               emovdb=False,
                replace_utt_sent_emb=False,
                word_embedding_extractor=None,
-               use_adapted_embs=False
+               use_adapted_embs=False,
+               path_to_xvect=None
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -72,7 +76,7 @@ def train_loop(net,
 
     if use_adapted_embs:
         sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64).to(device)
-        check_dict = torch.load("Models/SentEmbAdaptor_01_Blizzard2013_emoBERTcls/adaptor.pt", map_location=device)
+        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoVDBSam_emoBERTcls_yelp/adaptor.pt", map_location=device)
         sentence_embedding_adaptor.load_state_dict(check_dict["model"])
         sentence_embedding_adaptor.eval()
         sentence_embedding_adaptor.requires_grad_(False)
@@ -120,11 +124,26 @@ def train_loop(net,
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
-            style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                       batch_of_spectrogram_lengths=batch[3].to(device))
+            if path_to_xvect is not None:
+                filepaths = batch[10]
+                embeddings = []
+                for path in filepaths:
+                    embeddings.append(path_to_xvect[path])
+                style_embedding = torch.stack(embeddings).to(device)
+            else:
+                style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                        batch_of_spectrogram_lengths=batch[3].to(device))
             if sent_embs is not None:
-                sentences = batch[9]
-                sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
+                if emovdb:
+                    filepaths = batch[10]
+                    if random_emb:
+                        emotions = [get_emotion_from_path(path) for path in filepaths]
+                        sentence_embedding = torch.stack([random.choice(sent_embs[emotion]) for emotion in emotions]).to(device)
+                    else:
+                        sentence_embedding = torch.stack([sent_embs[path] for path in filepaths]).to(device)
+                else:
+                    sentences = batch[9]
+                    sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
                 if sentence_embedding_adaptor is not None:
                     sentence_embedding = sentence_embedding_adaptor(sentence_embedding=sentence_embedding, return_emb=True)
             else:
@@ -203,11 +222,20 @@ def train_loop(net,
         style_embedding_function.eval()
         if sentence_embedding_adaptor is not None:
             sentence_embedding_adaptor.eval()
-        default_embedding = style_embedding_function(
-            batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
-            batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+        if path_to_xvect is not None:
+            default_embedding = path_to_xvect[train_dataset[0][10]]
+        else:
+            default_embedding = style_embedding_function(
+                batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+                batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         if replace_utt_sent_emb:
-            default_embedding = sent_embs[train_dataset[0][9]]
+            if emovdb:
+                if random_emb:
+                    default_embedding = sent_embs["neutral"][0]
+                else:
+                    default_embedding = sent_embs[train_dataset[0][10]]
+            else:
+                default_embedding = sent_embs[train_dataset[0][9]]
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
@@ -245,6 +273,8 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           sent_embs=sent_embs,
+                                                                          random_emb=random_emb,
+                                                                          emovdb=emovdb,
                                                                           sent_emb_adaptor=sentence_embedding_adaptor,
                                                                           word_embedding_extractor=word_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
@@ -309,3 +339,48 @@ def get_random_window(generated_sequences, real_sequences, lengths):
         generated_windows.append(fake_spec_unpadded[start:start + window_size].unsqueeze(0))
         real_windows.append(real_spec_unpadded[start:start + window_size].unsqueeze(0))
     return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0)
+
+def get_emotion_from_path(path):
+    if "EmoV_DB" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
+        if emotion == "amused":
+            emotion = "joy"
+    if "CREMA_D" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split('_')[2]
+        if emotion == "ANG":
+            emotion = "anger"
+        if emotion == "DIS":
+            emotion = "disgust"
+        if emotion == "FEA":
+            emotion = "fear"
+        if emotion == "HAP":
+            emotion = "joy"
+        if emotion == "NEU":
+            emotion = "neutral"
+        if emotion == "SAD":
+            emotion = "sadness"
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        emotion = os.path.basename(os.path.dirname(path)).lower()
+        if emotion == "angry":
+            emotion = "anger"
+        if emotion == "happy":
+            emotion = "joy"
+        if emotion == "sad":
+            emotion = "sadness"
+    if "RAVDESS" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split('-')[2]
+        if emotion == "01":
+            emotion = "neutral"
+        if emotion == "03":
+            emotion = "joy"
+        if emotion == "04":
+            emotion = "sadness"
+        if emotion == "05":
+            emotion = "anger"
+        if emotion == "06":
+            emotion = "fear"
+        if emotion == "07":
+            emotion = "disgust"
+        if emotion == "08":
+            emotion = "surprise"
+    return emotion
