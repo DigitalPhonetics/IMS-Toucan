@@ -1,5 +1,6 @@
 import os
 import time
+import random
 
 import torch
 import torch.multiprocessing
@@ -15,10 +16,11 @@ from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 
 def collate_and_pad(batch):
-    # speech, speech_len, sentence string
+    # speech, speech_len, sentence string, filepaths
     return (pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-            [datapoint[9] for datapoint in batch])
+            [datapoint[9] for datapoint in batch],
+            [datapoint[10] for datapoint in batch])
 
 def train_loop(net,
                train_dataset,
@@ -33,7 +35,9 @@ def train_loop(net,
                resume,
                steps,
                use_wandb,
-               sent_embs=None):
+               sent_embs=None,
+               random_emb=False,
+               emovdb=False):
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
@@ -75,8 +79,16 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_spectrograms=batch[0].to(device),
                                                        batch_of_spectrogram_lengths=batch[1].to(device))
-            sentences = batch[2]
-            sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
+            if emovdb:
+                filepaths = batch[3]
+                if random_emb:
+                    emotions = [os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower() for path in filepaths]
+                    sentence_embedding = torch.stack([random.choice(sent_embs[emotion]) for emotion in emotions]).to(device)
+                else:
+                    sentence_embedding = torch.stack([sent_embs[path] for path in filepaths]).to(device)
+            else:
+                sentences = batch[2]
+                sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
 
             sent_style_loss = net(style_embedding=style_embedding,
                                   sentence_embedding=sentence_embedding)
