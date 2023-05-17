@@ -79,7 +79,7 @@ def build_path_to_transcript_dict_mls_english():
 def build_path_to_transcript_dict_gigaspeech():
     path_to_transcript = dict()
     root = "/mount/resources/speech/corpora/GigaSpeech/"
-    with open(os.path.join(root, "transcripts.txt"), "r", encoding="utf8") as file:
+    with open(os.path.join(root, "transcripts_only_clean_samples.txt"), "r", encoding="utf8") as file:
         lookup = file.read()
     for line in lookup.split("\n"):
         if line.strip() != "":
