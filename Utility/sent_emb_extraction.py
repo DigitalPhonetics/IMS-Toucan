@@ -1,4 +1,7 @@
 from tqdm import tqdm
+import torch
+import os
+from Utility.storage_config import PREPROCESSING_DIR
 
 def extract_sent_embs(train_set, sent_emb_extractor, promptspeech=False, emovdb=False):
     sent_embs = {}
@@ -14,11 +17,13 @@ def extract_sent_embs(train_set, sent_emb_extractor, promptspeech=False, emovdb=
         if promptspeech:
             prompt = sent_to_prompt_dict[sentence]
             sent_emb = sent_emb_extractor.encode(sentences=[prompt]).squeeze()
+            sent_embs[sentence] = sent_emb
         elif emovdb:
             filename = train_set[index][10]
             prompt = path_to_prompt_dict[filename]
             sent_emb = sent_emb_extractor.encode(sentences=[prompt]).squeeze()
+            sent_embs[filename] = sent_emb
         else:
             sent_emb = sent_emb_extractor.encode(sentences=[sentence]).squeeze()
-        sent_embs[sentence] = sent_emb
+            sent_embs[sentence] = sent_emb
     return sent_embs
