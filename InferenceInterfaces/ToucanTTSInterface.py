@@ -76,7 +76,7 @@ class ToucanTTSInterface(torch.nn.Module):
                         try:
                             self.use_word_emb = True
                             self.use_lang_id = False
-                            self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768, lang_embs=None, utt_embed_dim=None)
+                            self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768, utt_embed_dim=None)
                         except RuntimeError:
                             try:
                                 self.use_word_emb = True
@@ -97,7 +97,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                 self.use_word_emb = False
                                 self.use_sent_emb = True
                                 self.use_lang_id = True
-                                lang_embs=8000
+                                lang_embs=None
                                 utt_embed_dim=64
 
                                 if "laser" in tts_model_path:
@@ -168,6 +168,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                 if "a12" in tts_model_path:
                                     sent_embed_encoder=True
                                     style_sent=True
+                                    if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
+                                        utt_embed_dim = 768
                                     
                                 self.phone2mel = ToucanTTS(weights=checkpoint["model"],
                                                             lang_embs=lang_embs, 
@@ -192,7 +194,7 @@ class ToucanTTSInterface(torch.nn.Module):
         #################################
         self.style_embedding_function = StyleEmbedding()
         if embedding_model_path is None:
-            check_dict = torch.load(os.path.join(MODELS_DIR, "Blizzard2013_Embedding", "embedding_function.pt"), map_location="cpu")
+            check_dict = torch.load(os.path.join(MODELS_DIR, "EmoVDBSam_Embedding", "embedding_function.pt"), map_location="cpu")
         else:
             check_dict = torch.load(embedding_model_path, map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
