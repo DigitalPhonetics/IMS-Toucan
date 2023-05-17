@@ -201,6 +201,8 @@ def plot_progress_spec_toucantts(net,
                                  lang,
                                  default_emb,
                                  sent_embs=None,
+                                 random_emb=False,
+                                 emovdb=False,
                                  sent_emb_adaptor=None,
                                  word_embedding_extractor=None,
                                  run_postflow=True):
@@ -209,7 +211,13 @@ def plot_progress_spec_toucantts(net,
     if sentence is None:
         return None
     if sent_embs is not None:
-        sentence_embedding = sent_embs[sentence]
+        if emovdb:
+            if random_emb:
+                sentence_embedding = sent_embs["neutral"][0]
+            else:
+                sentence_embedding = sent_embs["example_sentence"]
+        else:
+            sentence_embedding = sent_embs[sentence]
         if sent_emb_adaptor is not None:
             sentence_embedding = sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0).to(device), return_emb=True).squeeze(0)
     else:
