@@ -119,7 +119,7 @@ def load_net_toucan(path):
                                 if "a12" in path:
                                     sent_embed_encoder=True
                                     style_sent=True
-                                    if "noadapt" in path:
+                                    if "noadapt" in path and "adapted" not in path:
                                         utt_embed_dim = 768
 
                                 net = ToucanTTS(lang_embs=lang_embs, 

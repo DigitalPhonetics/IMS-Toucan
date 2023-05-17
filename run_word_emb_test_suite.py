@@ -90,10 +90,10 @@ if __name__ == '__main__':
     use_word_emb = True
 
     if use_word_emb:
-        from Preprocessing.word_embeddings.BERTWordEmbeddingExtractor import BERTWordEmbeddingExtractor
-        word_embedding_extractor = BERTWordEmbeddingExtractor()
-        #from Preprocessing.word_embeddings.EmotionRoBERTaWordEmbeddingExtractor import EmotionRoBERTaWordEmbeddingExtractor
-        #word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
+        #from Preprocessing.word_embeddings.BERTWordEmbeddingExtractor import BERTWordEmbeddingExtractor
+        #word_embedding_extractor = BERTWordEmbeddingExtractor()
+        from Preprocessing.word_embeddings.EmotionRoBERTaWordEmbeddingExtractor import EmotionRoBERTaWordEmbeddingExtractor
+        word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
     else:
         word_embedding_extractor = None
 
@@ -103,4 +103,4 @@ if __name__ == '__main__':
     else:
         speaker_reference = None
 
-    test_sentence(version="ToucanTTS_02_LJSpeech_word_emb_bert", model_id="02_LJSpeech_word_emb_bert", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)
+    test_controllable(version="ToucanTTS_02_Blizzard2013_word_emb_emoBERT", model_id="02_Blizzard2013_word_emb_emoBERT", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, word_emb_extractor=word_embedding_extractor)

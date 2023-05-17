@@ -11,6 +11,7 @@ from TrainingInterfaces.TrainingPipelines.FastSpeech2Embedding_IntegrationTest i
 from TrainingInterfaces.TrainingPipelines.GST_FastSpeech2 import run as embedding
 from TrainingInterfaces.TrainingPipelines.GST_Blizzard2013 import run as b_embedding
 from TrainingInterfaces.TrainingPipelines.GST_EmoVDBSam import run as emo_embedding
+from TrainingInterfaces.TrainingPipelines.GST_EmoMulti import run as emomulti_embedding
 from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
@@ -20,8 +21,14 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_emb import
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_word_emb import run as blizzard2013_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_word_emb import run as blizzard2013_sent_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam import run as emo
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_sent_emb import run as emo_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam import run as emo_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_word_emb import run as emo_word
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB import run as emovdb
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_CremaD import run as cremad
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess import run as ravdess
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti import run as emomulti
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_emb import run as emomulti_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech import run as promptspeech
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import run as promptspeech_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
@@ -56,6 +63,12 @@ pipeline_dict = {
     "emo_word"      : emo_word,
     "lj"            : lj,
     "lj_word"       : lj_word,
+    "emovdb"        : emovdb,
+    "cremad"        : cremad,
+    "ravdess"       : ravdess,
+    "esds"          : esds,
+    "emomulti"      : emomulti,
+    "emomulti_sent"      : emomulti_sent,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
     "bigvgan"       : bigvgan,
@@ -63,6 +76,7 @@ pipeline_dict = {
     "embedding"     : embedding,
     "b_embedding"   : b_embedding,
     "emo_embedding" : emo_embedding,
+    "emomulti_embedding" : emomulti_embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"       : aligner,
     # training the sentence embedding adaptor
