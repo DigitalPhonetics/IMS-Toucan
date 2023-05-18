@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sounddevice
 import soundfile
 import torch
+import torchaudio
 
 from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceBigVGAN import BigVGAN
@@ -29,7 +30,8 @@ class ToucanTTSInterface(torch.nn.Module):
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  sent_emb_extractor=None,
                  word_emb_extractor=None,
-                 sent_emb_adaptor=None
+                 sent_emb_adaptor=None,
+                 xvect_model=None
                  ):
         super().__init__()
         self.device = device
@@ -66,125 +68,129 @@ class ToucanTTSInterface(torch.nn.Module):
                 self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
             except RuntimeError:
                 try:
-                    self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+                    self.use_lang_id = False
+                    self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=512)  # multi speaker single language, xvect
                 except RuntimeError:
                     try:
-                        self.use_word_emb = True
-                        self.use_lang_id = True
-                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768)
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
                     except RuntimeError:
                         try:
                             self.use_word_emb = True
-                            self.use_lang_id = False
-                            self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768, utt_embed_dim=None)
+                            self.use_lang_id = True
+                            self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768)
                         except RuntimeError:
                             try:
                                 self.use_word_emb = True
-                                self.use_sent_emb = True
-                                self.use_lang_id = True
-                                self.replace_utt_sent_emb = False
-                                print("Loading sent word emb architecture")
-                                self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                                            sent_embed_dim=768,
-                                                            sent_embed_adaptation="noadapt" not in tts_model_path,
-                                                            sent_embed_encoder=True,
-                                                            use_sent_style_loss="loss" in tts_model_path,
-                                                            pre_embed="_pre" in tts_model_path,
-                                                            style_sent=True,
-                                                            word_embed_dim=768)
+                                self.use_lang_id = False
+                                self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768, utt_embed_dim=None)
                             except RuntimeError:
-                                print("Loading sent emb architecture")
-                                self.use_word_emb = False
-                                self.use_sent_emb = True
-                                self.use_lang_id = True
-                                lang_embs=None
-                                utt_embed_dim=64
+                                try:
+                                    self.use_word_emb = True
+                                    self.use_sent_emb = True
+                                    self.use_lang_id = True
+                                    self.replace_utt_sent_emb = False
+                                    print("Loading sent word emb architecture")
+                                    self.phone2mel = ToucanTTS(weights=checkpoint["model"],
+                                                                sent_embed_dim=768,
+                                                                sent_embed_adaptation="noadapt" not in tts_model_path,
+                                                                sent_embed_encoder=True,
+                                                                use_sent_style_loss="loss" in tts_model_path,
+                                                                pre_embed="_pre" in tts_model_path,
+                                                                style_sent=True,
+                                                                word_embed_dim=768)
+                                except RuntimeError:
+                                    print("Loading sent emb architecture")
+                                    self.use_word_emb = False
+                                    self.use_sent_emb = True
+                                    self.use_lang_id = True
+                                    lang_embs=None
+                                    utt_embed_dim=512 if "_xvect" in tts_model_path else 64
 
-                                if "laser" in tts_model_path:
-                                    sent_embed_dim = 1024
-                                if "lealla" in tts_model_path:
-                                    sent_embed_dim = 192
-                                if "para" in tts_model_path:
-                                    sent_embed_dim = 768
-                                if "mpnet" in tts_model_path:
-                                    sent_embed_dim = 768
-                                if "bertcls" in tts_model_path:
-                                    sent_embed_dim = 768
-                                if "bertlm" in tts_model_path:
-                                    sent_embed_dim = 768
-                                if "emoBERTcls" in tts_model_path:
-                                    sent_embed_dim = 768
+                                    if "laser" in tts_model_path:
+                                        sent_embed_dim = 1024
+                                    if "lealla" in tts_model_path:
+                                        sent_embed_dim = 192
+                                    if "para" in tts_model_path:
+                                        sent_embed_dim = 768
+                                    if "mpnet" in tts_model_path:
+                                        sent_embed_dim = 768
+                                    if "bertcls" in tts_model_path:
+                                        sent_embed_dim = 768
+                                    if "bertlm" in tts_model_path:
+                                        sent_embed_dim = 768
+                                    if "emoBERTcls" in tts_model_path:
+                                        sent_embed_dim = 768
 
-                                sent_embed_encoder=False
-                                sent_embed_decoder=False
-                                sent_embed_each=False
-                                sent_embed_postnet=False
-                                concat_sent_style=False
-                                use_concat_projection=False
-                                self.replace_utt_sent_emb = False
-                                style_sent = False
-                                if "a01" in tts_model_path:
-                                    sent_embed_encoder=True
-                                if "a02" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    sent_embed_decoder=True
-                                if "a03" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    sent_embed_decoder=True
-                                    sent_embed_postnet=True
-                                if "a04" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    sent_embed_each=True
-                                if "a05" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    sent_embed_decoder=True
-                                    sent_embed_each=True
-                                if "a06" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    sent_embed_decoder=True
-                                    sent_embed_each=True
-                                    sent_embed_postnet=True
-                                if "a07" in tts_model_path:
-                                    concat_sent_style=True
-                                    use_concat_projection=True
-                                if "a08" in tts_model_path:
-                                    concat_sent_style=True
-                                if "a09" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    sent_embed_decoder=True
-                                    sent_embed_each=True
-                                    sent_embed_postnet=True
-                                    concat_sent_style=True
-                                    use_concat_projection=True
-                                if "a10" in tts_model_path:
-                                    lang_embs = None
-                                    utt_embed_dim = 192
-                                    sent_embed_dim = None
-                                    self.replace_utt_sent_emb = True
-                                if "a11" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    concat_sent_style=True
-                                    use_concat_projection=True
-                                if "a12" in tts_model_path:
-                                    sent_embed_encoder=True
-                                    style_sent=True
-                                    if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
-                                        utt_embed_dim = 768
-                                    
-                                self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                                            lang_embs=lang_embs, 
-                                                            utt_embed_dim=utt_embed_dim,
-                                                            sent_embed_dim=64 if "adapted" in tts_model_path else sent_embed_dim,
-                                                            sent_embed_adaptation="noadapt" not in tts_model_path,
-                                                            sent_embed_encoder=sent_embed_encoder,
-                                                            sent_embed_decoder=sent_embed_decoder,
-                                                            sent_embed_each=sent_embed_each,
-                                                            sent_embed_postnet=sent_embed_postnet,
-                                                            concat_sent_style=concat_sent_style,
-                                                            use_concat_projection=use_concat_projection,
-                                                            use_sent_style_loss="loss" in tts_model_path,
-                                                            pre_embed="_pre" in tts_model_path,
-                                                            style_sent=style_sent)
+                                    sent_embed_encoder=False
+                                    sent_embed_decoder=False
+                                    sent_embed_each=False
+                                    sent_embed_postnet=False
+                                    concat_sent_style=False
+                                    use_concat_projection=False
+                                    self.replace_utt_sent_emb = False
+                                    style_sent = False
+                                    if "a01" in tts_model_path:
+                                        sent_embed_encoder=True
+                                    if "a02" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        sent_embed_decoder=True
+                                    if "a03" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        sent_embed_decoder=True
+                                        sent_embed_postnet=True
+                                    if "a04" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        sent_embed_each=True
+                                    if "a05" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        sent_embed_decoder=True
+                                        sent_embed_each=True
+                                    if "a06" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        sent_embed_decoder=True
+                                        sent_embed_each=True
+                                        sent_embed_postnet=True
+                                    if "a07" in tts_model_path:
+                                        concat_sent_style=True
+                                        use_concat_projection=True
+                                    if "a08" in tts_model_path:
+                                        concat_sent_style=True
+                                    if "a09" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        sent_embed_decoder=True
+                                        sent_embed_each=True
+                                        sent_embed_postnet=True
+                                        concat_sent_style=True
+                                        use_concat_projection=True
+                                    if "a10" in tts_model_path:
+                                        lang_embs = None
+                                        utt_embed_dim = 192
+                                        sent_embed_dim = None
+                                        self.replace_utt_sent_emb = True
+                                    if "a11" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        concat_sent_style=True
+                                        use_concat_projection=True
+                                    if "a12" in tts_model_path:
+                                        sent_embed_encoder=True
+                                        style_sent=True
+                                        if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
+                                            utt_embed_dim = 768
+                                        
+                                    self.phone2mel = ToucanTTS(weights=checkpoint["model"],
+                                                                lang_embs=lang_embs, 
+                                                                utt_embed_dim=utt_embed_dim,
+                                                                sent_embed_dim=64 if "adapted" in tts_model_path else sent_embed_dim,
+                                                                sent_embed_adaptation="noadapt" not in tts_model_path,
+                                                                sent_embed_encoder=sent_embed_encoder,
+                                                                sent_embed_decoder=sent_embed_decoder,
+                                                                sent_embed_each=sent_embed_each,
+                                                                sent_embed_postnet=sent_embed_postnet,
+                                                                concat_sent_style=concat_sent_style,
+                                                                use_concat_projection=use_concat_projection,
+                                                                use_sent_style_loss="loss" in tts_model_path,
+                                                                pre_embed="_pre" in tts_model_path,
+                                                                style_sent=style_sent)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -194,11 +200,13 @@ class ToucanTTSInterface(torch.nn.Module):
         #################################
         self.style_embedding_function = StyleEmbedding()
         if embedding_model_path is None:
-            check_dict = torch.load(os.path.join(MODELS_DIR, "EmoVDBSam_Embedding", "embedding_function.pt"), map_location="cpu")
+            check_dict = torch.load(os.path.join(MODELS_DIR, "EmoMulti_Embedding", "embedding_function.pt"), map_location="cpu")
         else:
             check_dict = torch.load(embedding_model_path, map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
+        
+        self.xvect_model = xvect_model if xvect_model is not None else None
 
         #################################
         #  load sent emb extractor     #
@@ -251,13 +259,23 @@ class ToucanTTSInterface(torch.nn.Module):
             self.default_utterance_embedding = embedding.squeeze().to(self.device)
             return
         assert os.path.exists(path_to_reference_audio)
-        wave, sr = soundfile.read(path_to_reference_audio)
-        if sr != self.audio_preprocessor.sr:
-            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
-        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
-        spec_len = torch.LongTensor([len(spec)])
-        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
+        if self.xvect_model is not None:
+            print("Extracting xvect from reference audio.")
+            wave, sr = torchaudio.load(path_to_reference_audio)
+            # mono
+            wave = torch.mean(wave, dim=0, keepdim=True)
+            # resampling
+            wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+            wave = wave.squeeze(0)
+            self.default_utterance_embedding = self.xvect_model.encode_batch(wave).squeeze(0).squeeze(0)
+        else:
+            wave, sr = soundfile.read(path_to_reference_audio)
+            if sr != self.audio_preprocessor.sr:
+                self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
+            spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
+            spec_len = torch.LongTensor([len(spec)])
+            self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
+                                                                            spec_len.unsqueeze(0).to(self.device)).squeeze()
         
     def set_sentence_embedding(self, prompt:str):
         if self.use_sent_emb:

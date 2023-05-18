@@ -120,11 +120,12 @@ class ToucanTTS(torch.nn.Module):
                                                                     Linear(sent_embed_dim // 2, 768))
                     sent_embed_dim = 768
             if self.concat_sent_style:
-                self.utt_embed_bottleneck = Sequential(Linear(utt_embed_dim, 32), Tanh(), Linear(32, 4))
-                utt_embed_dim = 4 # hard bottleneck
+                #self.utt_embed_bottleneck = Sequential(Linear(utt_embed_dim, 32), Tanh(), Linear(32, 4))
+                #utt_embed_dim = 4 # hard bottleneck
                 if self.use_concat_projection:
-                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 512),
-                                                            LayerNorm(512))
+                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 128),
+                                                                 Tanh(),
+                                                                 Linear(128, 512))
                     utt_embed_dim = 512
                 else:
                     utt_embed_dim = utt_embed_dim + sent_embed_dim
@@ -287,7 +288,7 @@ class ToucanTTS(torch.nn.Module):
                 word_boundaries_batch.append(torch.tensor(word_boundaries))
 
         if self.concat_sent_style:
-            utterance_embedding = self.utt_embed_bottleneck(utterance_embedding)
+            #utterance_embedding = self.utt_embed_bottleneck(utterance_embedding)
             utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
                                                     sent_embeddings=sentence_embedding, 
                                                     projection=self.style_embedding_projection if self.use_concat_projection else None)
