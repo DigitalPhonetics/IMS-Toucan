@@ -68,15 +68,16 @@ def train_loop(net,
     if use_discriminator:
         discriminator = SpectrogramDiscriminator().to(device)
 
-    style_embedding_function = StyleEmbedding().to(device)
-    check_dict = torch.load(path_to_embed_model, map_location=device)
-    style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.eval()
-    style_embedding_function.requires_grad_(False)
+    if path_to_xvect is None:
+        style_embedding_function = StyleEmbedding().to(device)
+        check_dict = torch.load(path_to_embed_model, map_location=device)
+        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        style_embedding_function.eval()
+        style_embedding_function.requires_grad_(False)
 
     if use_adapted_embs:
         sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64).to(device)
-        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoVDBSam_emoBERTcls_yelp/adaptor.pt", map_location=device)
+        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoMulti_emoBERTcls/adaptor.pt", map_location=device)
         sentence_embedding_adaptor.load_state_dict(check_dict["model"])
         sentence_embedding_adaptor.eval()
         sentence_embedding_adaptor.requires_grad_(False)
@@ -219,7 +220,8 @@ def train_loop(net,
 
         # EPOCH IS OVER
         net.eval()
-        style_embedding_function.eval()
+        if path_to_xvect is None:
+            style_embedding_function.eval()
         if sentence_embedding_adaptor is not None:
             sentence_embedding_adaptor.eval()
         if path_to_xvect is not None:
@@ -345,6 +347,8 @@ def get_emotion_from_path(path):
         emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
         if emotion == "amused":
             emotion = "joy"
+        if emotion == "sleepiness":
+            raise NameError("emotion sleepiness should not be included")
     if "CREMA_D" in path:
         emotion = os.path.splitext(os.path.basename(path))[0].split('_')[2]
         if emotion == "ANG":
@@ -371,6 +375,8 @@ def get_emotion_from_path(path):
         emotion = os.path.splitext(os.path.basename(path))[0].split('-')[2]
         if emotion == "01":
             emotion = "neutral"
+        if emotion == "02":
+            raise NameError("emotion calm should not be included")
         if emotion == "03":
             emotion = "joy"
         if emotion == "04":

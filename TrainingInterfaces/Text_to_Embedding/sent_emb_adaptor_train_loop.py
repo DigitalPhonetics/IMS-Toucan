@@ -82,7 +82,7 @@ def train_loop(net,
             if emovdb:
                 filepaths = batch[3]
                 if random_emb:
-                    emotions = [os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower() for path in filepaths]
+                    emotions = [get_emotion_from_path(path) for path in filepaths]
                     sentence_embedding = torch.stack([random.choice(sent_embs[emotion]) for emotion in emotions]).to(device)
                 else:
                     sentence_embedding = torch.stack([sent_embs[path] for path in filepaths]).to(device)
@@ -128,3 +128,52 @@ def train_loop(net,
             return  # DONE
         
         net.train()
+
+def get_emotion_from_path(path):
+    if "EmoV_DB" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
+        if emotion == "amused":
+            emotion = "joy"
+        if emotion == "sleepiness":
+            raise NameError("emotion sleepiness should not be included")
+    if "CREMA_D" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split('_')[2]
+        if emotion == "ANG":
+            emotion = "anger"
+        if emotion == "DIS":
+            emotion = "disgust"
+        if emotion == "FEA":
+            emotion = "fear"
+        if emotion == "HAP":
+            emotion = "joy"
+        if emotion == "NEU":
+            emotion = "neutral"
+        if emotion == "SAD":
+            emotion = "sadness"
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        emotion = os.path.basename(os.path.dirname(path)).lower()
+        if emotion == "angry":
+            emotion = "anger"
+        if emotion == "happy":
+            emotion = "joy"
+        if emotion == "sad":
+            emotion = "sadness"
+    if "RAVDESS" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split('-')[2]
+        if emotion == "01":
+            emotion = "neutral"
+        if emotion == "02":
+            raise NameError("emotion calm should not be included")
+        if emotion == "03":
+            emotion = "joy"
+        if emotion == "04":
+            emotion = "sadness"
+        if emotion == "05":
+            emotion = "anger"
+        if emotion == "06":
+            emotion = "fear"
+        if emotion == "07":
+            emotion = "disgust"
+        if emotion == "08":
+            emotion = "surprise"
+    return emotion
