@@ -39,6 +39,7 @@ from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 from TrainingInterfaces.TrainingPipelines.SentEmbAdaptor_Blizzard2013 import run as adapt
 from TrainingInterfaces.TrainingPipelines.SentEmbAdaptor_EmoVDBSam import run as adapt_emo
+from TrainingInterfaces.TrainingPipelines.SentEmbAdaptor_EmoMulti import run as adapt_emomulti
 
 pipeline_dict = {
     # the finetuning example
@@ -82,6 +83,7 @@ pipeline_dict = {
     # training the sentence embedding adaptor
     "adapt"         : adapt,
     "adapt_emo"     : adapt_emo,
+    "adapt_emomulti"     : adapt_emomulti,
 }
 
 if __name__ == '__main__':
