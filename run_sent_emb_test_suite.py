@@ -66,10 +66,10 @@ def test_sentence(version, model_id="Meta", exec_device="cpu", speaker_reference
         tts.set_sentence_embedding(prompt)
     tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav")
 
-def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False, sent_emb_extractor=None, prompt:str=None, make_preprompt=False, sent_emb_adaptor=None):
+def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False, sent_emb_extractor=None, prompt:str=None, make_preprompt=False, sent_emb_adaptor=None, xvect_model=None):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, sent_emb_extractor=sent_emb_extractor, sent_emb_adaptor=sent_emb_adaptor)
+    tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, sent_emb_extractor=sent_emb_extractor, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
     tts.set_language("en")
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
@@ -130,10 +130,11 @@ if __name__ == '__main__':
     #exec_device = "cpu"
     print(f"running on {exec_device}")
 
-    use_speaker_reference = False
+    use_speaker_reference = True
     use_sent_emb = True 
-    use_prompt = True
-    use_sent_emb_adaptor = True
+    use_prompt = False
+    use_sent_emb_adaptor = False
+    use_xvect = True
 
     if use_sent_emb:
         #import tensorflow
@@ -153,16 +154,17 @@ if __name__ == '__main__':
         sent_emb_extractor = None
 
     if use_speaker_reference:
-        speaker_reference = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB_Sam/anger_367-392_0382-16bit.wav"
+        speaker_reference = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Angry/0014_000351.wav"
         #speaker_reference = "/mount/resources/speech/corpora/LibriTTS/all_clean/1638/84448/1638_84448_000057_000006.wav"
     else:
         speaker_reference = None
 
     if use_prompt:
         #prompt = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-        prompt = "I am so angry!"
+        #prompt = "I am so angry!"
         #prompt = "Roar with laughter, this is funny."
         #prompt = "Ew, this is disgusting."
+        prompt = "Wow! What a surprise!."
     else:
         prompt = None
 
@@ -173,6 +175,12 @@ if __name__ == '__main__':
         sent_emb_adaptor.load_state_dict(check_dict["model"])
     else:
         sent_emb_adaptor = None
+
+    if use_xvect:
+        from speechbrain.pretrained import EncoderClassifier
+        xvect_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": exec_device})
+    else:
+        xvect_model = None
 
     #test_controllable(version="ToucanTTS_03_Blizzard2013", model_id="03_Blizzard2013", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
     #test_sentence(version="ToucanTTS_02_Blizzard2013", model_id="02_Blizzard2013", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
@@ -187,9 +195,9 @@ if __name__ == '__main__':
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a12_loss_bertcls_keep", model_id="03_Blizzard2013_sent_emb_a12_loss_bertcls_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
-    test_controllable(version="ToucanTTS_03_EmoVDBSam_sent_emb_a12_emoBERTcls_yelp_noadapt_adapted_prompt", model_id="03_EmoVDBSam_sent_emb_a12_emoBERTcls_yelp_noadapt_adapted", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor)
+    test_controllable(version="ToucanTTS_04_EmoMulti_sent_emb_a11_emoBERTcls_xvect_ref", model_id="04_EmoMulti_sent_emb_a11_emoBERTcls_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
 
-    #test_controllable(version="ToucanTTS_02_EmoVDBSam_ref", model_id="02_EmoVDBSam", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
+    #test_controllable(version="ToucanTTS_01_EmoMulti_xvect_ref", model_id="01_EmoMulti_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
 
     #test_controllable(version="ToucanTTS_01_PromptSpeech_ref", model_id="01_PromptSpeech", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
     #test_controllable(version="ToucanTTS_03_PromptSpeech_sent_emb_a11_bertlm", model_id="03_PromptSpeech_sent_emb_a11_bertlm", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
