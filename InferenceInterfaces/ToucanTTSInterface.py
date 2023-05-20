@@ -3,6 +3,8 @@ import os
 
 import librosa.display as lbd
 import matplotlib.pyplot as plt
+import numpy
+import pyloudnorm
 import sounddevice
 import soundfile
 import torch
@@ -84,6 +86,7 @@ class ToucanTTSInterface(torch.nn.Module):
         else:
             self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
         self.mel2wav.remove_weight_norm()
+        self.meter = pyloudnorm.Meter(24000)
 
         ################################
         #  set defaults                #
@@ -167,6 +170,15 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
             mel = mel.transpose(0, 1)
             wave = self.mel2wav(mel)
+
+        try:
+            loudness = self.meter.integrated_loudness(wave)
+            loud_normed = pyloudnorm.normalize.loudness(wave, loudness, -24.0)
+            peak = numpy.amax(numpy.abs(loud_normed))
+            wave = numpy.divide(loud_normed, peak)  # peak normed wave
+        except ValueError:
+            # if the audio is too short, a value error will arise
+            pass
 
         if view or return_plot_as_filepath:
             from Utility.utils import cumsum_durations

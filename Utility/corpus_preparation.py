@@ -8,9 +8,13 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
 
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device):
-    return AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
-                          cut_silences=True,
+def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnorm=True, cut_silences=True):
+    return AlignerDataset(transcript_dict,
+                          cache_dir=corpus_dir,
+                          lang=lang,
+                          loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
+                          cut_silences=cut_silences,
+                          do_loudnorm=do_loudnorm,
                           device=device)
 
 

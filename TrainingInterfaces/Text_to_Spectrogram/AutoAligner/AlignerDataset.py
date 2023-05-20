@@ -1,5 +1,4 @@
 import os
-import random
 import warnings
 
 import soundfile as sf
@@ -45,9 +44,6 @@ class AlignerDataset(Dataset):
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
-            with open(os.path.join(cache_dir, "files_used.txt"), encoding='utf8', mode="w") as files_used_note:
-                files_used_note.write(str(key_list))
-            random.shuffle(key_list)
             # build cache
             print("... building dataset cache ...")
             self.datapoints = resource_manager.list()
