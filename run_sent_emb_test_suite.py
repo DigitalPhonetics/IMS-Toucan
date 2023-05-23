@@ -125,16 +125,17 @@ def test_promptspeech(version, model_id="Meta", exec_device="cpu", speaker_refer
 
 if __name__ == '__main__':
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"5,2"
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
     exec_device = "cuda:0" if torch.cuda.is_available() else "cpu"
     #exec_device = "cpu"
     print(f"running on {exec_device}")
 
     use_speaker_reference = True
     use_sent_emb = True 
-    use_prompt = False
+    use_prompt = True
     use_sent_emb_adaptor = False
-    use_xvect = True
+    use_xvect = False
+    use_ecapa = True
 
     if use_sent_emb:
         #import tensorflow
@@ -154,24 +155,24 @@ if __name__ == '__main__':
         sent_emb_extractor = None
 
     if use_speaker_reference:
-        speaker_reference = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Angry/0014_000351.wav"
+        speaker_reference = "/mount/resources/speech/corpora/EmoV_DB/anger_393-420_0398-16bit.wav"
         #speaker_reference = "/mount/resources/speech/corpora/LibriTTS/all_clean/1638/84448/1638_84448_000057_000006.wav"
     else:
         speaker_reference = None
 
     if use_prompt:
         #prompt = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-        #prompt = "I am so angry!"
+        prompt = "I am so angry!"
         #prompt = "Roar with laughter, this is funny."
         #prompt = "Ew, this is disgusting."
-        prompt = "Wow! What a surprise!."
+        #prompt = "Wow! What a surprise!."
     else:
         prompt = None
 
     if use_sent_emb_adaptor:
         from TrainingInterfaces.Text_to_Embedding.SentenceEmbeddingAdaptor import SentenceEmbeddingAdaptor
-        sent_emb_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64)
-        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoVDBSam_emoBERTcls_yelp/adaptor.pt", map_location=exec_device)
+        sent_emb_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64, speaker_embed_dim=512)
+        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoMulti_emoBERTcls_xvect/adaptor.pt", map_location=exec_device)
         sent_emb_adaptor.load_state_dict(check_dict["model"])
     else:
         sent_emb_adaptor = None
@@ -181,6 +182,14 @@ if __name__ == '__main__':
         xvect_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": exec_device})
     else:
         xvect_model = None
+
+    if use_ecapa:
+        from speechbrain.pretrained import EncoderClassifier
+        ecapa_model = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir="./Models/Embedding/spkrec-ecapa-voxceleb", run_opts={"device": exec_device})
+    else:
+        ecapa_model = None
+    if ecapa_model is not None:
+        xvect_model = ecapa_model
 
     #test_controllable(version="ToucanTTS_03_Blizzard2013", model_id="03_Blizzard2013", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
     #test_sentence(version="ToucanTTS_02_Blizzard2013", model_id="02_Blizzard2013", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
@@ -195,7 +204,8 @@ if __name__ == '__main__':
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a12_loss_bertcls_keep", model_id="03_Blizzard2013_sent_emb_a12_loss_bertcls_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
-    test_controllable(version="ToucanTTS_04_EmoMulti_sent_emb_a11_emoBERTcls_xvect_ref", model_id="04_EmoMulti_sent_emb_a11_emoBERTcls_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
+    #test_controllable(version="ToucanTTS_07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt_ref_prompt2", model_id="07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
+    test_controllable(version="ToucanTTS_05_EmoVDB_sent_emb_a11_emoBERTcls_ecapa_ref_prompt", model_id="05_EmoVDB_sent_emb_a11_emoBERTcls_ecapa", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
 
     #test_controllable(version="ToucanTTS_01_EmoMulti_xvect_ref", model_id="01_EmoMulti_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
 
