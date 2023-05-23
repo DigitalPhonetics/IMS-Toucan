@@ -37,7 +37,8 @@ def train_loop(net,
                use_wandb,
                sent_embs=None,
                random_emb=False,
-               emovdb=False):
+               emovdb=False,
+               path_to_xvect=None):
     net = net.to(device)
 
     style_embedding_function = StyleEmbedding().to(device)
@@ -89,9 +90,17 @@ def train_loop(net,
             else:
                 sentences = batch[2]
                 sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
+            
+            if path_to_xvect is not None:
+                filepaths = batch[3]
+                embeddings = []
+                for path in filepaths:
+                    embeddings.append(path_to_xvect[path])
+                speaker_embedding = torch.stack(embeddings).to(device)
 
             sent_style_loss = net(style_embedding=style_embedding,
-                                  sentence_embedding=sentence_embedding)
+                                  sentence_embedding=sentence_embedding,
+                                  speaker_embedding=speaker_embedding)
             if sent_style_loss is not None:
                 if not torch.isnan(sent_style_loss):
                     train_loss = train_loss + sent_style_loss

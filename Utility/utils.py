@@ -219,7 +219,9 @@ def plot_progress_spec_toucantts(net,
         else:
             sentence_embedding = sent_embs[sentence]
         if sent_emb_adaptor is not None:
-            sentence_embedding = sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0).to(device), return_emb=True).squeeze(0)
+            sentence_embedding = sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0).to(device),
+                                                  speaker_embedding=default_emb.unsqueeze(0).to(device) if sent_emb_adaptor.speaker_embed_dim is not None else None,
+                                                  return_emb=True).squeeze(0)
     else:
         sentence_embedding = None
     if word_embedding_extractor is not None:

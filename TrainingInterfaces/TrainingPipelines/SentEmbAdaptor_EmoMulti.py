@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "SentEmbAdaptor_01_EmoMulti_emoBERTcls"
+    name = "SentEmbAdaptor_01_EmoMulti_emoBERTcls_xvect"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -81,10 +81,38 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         embed_type = "emoBERTcls"
         sent_embed_dim = 768
 
+    if "_xvect" in name:
+        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt")):
+            print("Extracting xvect from audio")
+            # TODO run on GPU
+            import torchaudio
+            from speechbrain.pretrained import EncoderClassifier
+            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
+            path_to_xvect = {}
+            for index in tqdm(range(len(train_set))):
+                path = train_set[index][10]
+                wave, sr = torchaudio.load(path)
+                # mono
+                wave = torch.mean(wave, dim=0, keepdim=True)
+                # resampling
+                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                wave = wave.squeeze(0)
+                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
+                path_to_xvect[path] = embedding
+            torch.save(path_to_xvect, os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"))
+            del classifier
+        else:
+            print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_emomulti', 'xvect.pt')}")
+            path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"), map_location='cpu')
+    else:
+        path_to_xvect = None
+
     print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_{embed_type}.pt")}')
     sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_{embed_type}.pt"), map_location='cpu')
     
-    model = SentenceEmbeddingAdaptor(sent_embed_dim=sent_embed_dim, utt_embed_dim=64)
+    model = SentenceEmbeddingAdaptor(sent_embed_dim=sent_embed_dim, 
+                                     utt_embed_dim=64, 
+                                     speaker_embed_dim=512 if "_xvect" in name else None)
 
     if use_wandb:
         wandb.init(
@@ -107,6 +135,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                sent_embs=sent_embs,
                random_emb=True,
-               emovdb=True)
+               emovdb=True,
+               path_to_xvect=path_to_xvect)
     if use_wandb:
         wandb.finish()
