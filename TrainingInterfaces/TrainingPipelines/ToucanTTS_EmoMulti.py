@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_EmoMulti_xvect"
+    name = "ToucanTTS_02_EmoMulti"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -87,7 +87,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         path_to_xvect = None
 
-    model = ToucanTTS(lang_embs=None, utt_embed_dim=512)
+    model = ToucanTTS(lang_embs=None, utt_embed_dim=64)
     if use_wandb:
         wandb.init(
             name=f"{name}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -105,7 +105,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
-               path_to_xvect=path_to_xvect,
-               steps=120000)
+               path_to_xvect=path_to_xvect)
     if use_wandb:
         wandb.finish()

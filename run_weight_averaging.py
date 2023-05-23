@@ -55,7 +55,12 @@ def load_net_toucan(path):
                                 except RuntimeError:
                                     print("Loading sent emb architecture")
                                     lang_embs=None
-                                    utt_embed_dim=512 if "_xvect" in path else 64
+                                    if "_xvect" in path and "_adapted" not in path:
+                                        utt_embed_dim = 512
+                                    elif "_ecapa" in path and "_adapted" not in path:
+                                        utt_embed_dim = 192
+                                    else:
+                                        utt_embed_dim = 64
 
                                     if "laser" in path:
                                         sent_embed_dim = 1024
@@ -122,6 +127,10 @@ def load_net_toucan(path):
                                         use_concat_projection=True
                                     if "a12" in path:
                                         sent_embed_encoder=True
+                                        style_sent=True
+                                        if "noadapt" in path and "adapted" not in path:
+                                            utt_embed_dim = 768
+                                    if "a13" in path:
                                         style_sent=True
                                         if "noadapt" in path and "adapted" not in path:
                                             utt_embed_dim = 768

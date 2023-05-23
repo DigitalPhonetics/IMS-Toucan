@@ -108,25 +108,25 @@ class ToucanTTS(torch.nn.Module):
         if self.use_sent_embed:
             if self.sent_embed_adaptation:
                 if self.use_sent_style_loss or self.style_sent:
+                    self.sentence_embedding_adaptation = Linear(sent_embed_dim, 512)
+                    sent_embed_dim = 512
+                else:
                     self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
                                                                     Tanh(),
                                                                     Linear(sent_embed_dim // 2, sent_embed_dim // 4),
                                                                     Tanh(),
                                                                     Linear(sent_embed_dim // 4, 64))
                     sent_embed_dim = 64
-                else:
-                    self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
-                                                                    Tanh(),
-                                                                    Linear(sent_embed_dim // 2, 768))
-                    sent_embed_dim = 768
             if self.concat_sent_style:
                 #self.utt_embed_bottleneck = Sequential(Linear(utt_embed_dim, 32), Tanh(), Linear(32, 4))
                 #utt_embed_dim = 4 # hard bottleneck
+                #self.utt_embed_bottleneck = Sequential(Linear(utt_embed_dim, 16),
+                 #                                      Tanh(),
+                  #                                     Linear(16, 512))
+                #utt_embed_dim = 512
                 if self.use_concat_projection:
-                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 128),
-                                                                 Tanh(),
-                                                                 Linear(128, 512))
-                    utt_embed_dim = 512
+                    self.style_embedding_projection = Linear(utt_embed_dim + sent_embed_dim, 128)
+                    utt_embed_dim = 128
                 else:
                     utt_embed_dim = utt_embed_dim + sent_embed_dim
 
@@ -271,6 +271,7 @@ class ToucanTTS(torch.nn.Module):
             if self.sent_embed_adaptation:
                 # forward sentence embedding adaptation
                 sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+                utterance_embedding_decoder = utterance_embedding
             utterance_embedding = sentence_embedding if self.style_sent else utterance_embedding
 
         if not self.use_word_embed:

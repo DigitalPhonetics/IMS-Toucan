@@ -76,8 +76,8 @@ def train_loop(net,
         style_embedding_function.requires_grad_(False)
 
     if use_adapted_embs:
-        sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64).to(device)
-        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoMulti_emoBERTcls/adaptor.pt", map_location=device)
+        sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64, speaker_embed_dim=512 if path_to_xvect is not None else None).to(device)
+        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoMulti_emoBERTcls_xvect/adaptor.pt", map_location=device)
         sentence_embedding_adaptor.load_state_dict(check_dict["model"])
         sentence_embedding_adaptor.eval()
         sentence_embedding_adaptor.requires_grad_(False)
@@ -146,7 +146,9 @@ def train_loop(net,
                     sentences = batch[9]
                     sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
                 if sentence_embedding_adaptor is not None:
-                    sentence_embedding = sentence_embedding_adaptor(sentence_embedding=sentence_embedding, return_emb=True)
+                    sentence_embedding = sentence_embedding_adaptor(sentence_embedding=sentence_embedding,
+                                                                    speaker_embedding=style_embedding if sentence_embedding_adaptor.speaker_embed_dim is not None else None,
+                                                                    return_emb=True)
             else:
                 sentence_embedding = None
 
@@ -343,7 +345,7 @@ def get_random_window(generated_sequences, real_sequences, lengths):
     return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0)
 
 def get_emotion_from_path(path):
-    if "EmoV_DB" in path:
+    if "EmoV_DB" in path or "EmoVDB_Sam" in path:
         emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
         if emotion == "amused":
             emotion = "joy"

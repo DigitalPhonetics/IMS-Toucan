@@ -61,17 +61,25 @@ class ToucanTTSInterface(torch.nn.Module):
         self.use_sent_emb = False
         self.use_word_emb = False
         try:
+            if "sent_emb" in tts_model_path:
+                raise RuntimeError
             self.phone2mel = ToucanTTS(weights=checkpoint["model"])  # multi speaker multi language
         except RuntimeError:
             try:
+                if "sent_emb" in tts_model_path:
+                    raise RuntimeError
                 self.use_lang_id = False
                 self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
             except RuntimeError:
                 try:
+                    if "sent_emb" in tts_model_path:
+                        raise RuntimeError
                     self.use_lang_id = False
                     self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=512)  # multi speaker single language, xvect
                 except RuntimeError:
                     try:
+                        if "sent_emb" in tts_model_path:
+                            raise RuntimeError
                         self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
                     except RuntimeError:
                         try:
@@ -104,7 +112,12 @@ class ToucanTTSInterface(torch.nn.Module):
                                     self.use_sent_emb = True
                                     self.use_lang_id = True
                                     lang_embs=None
-                                    utt_embed_dim=512 if "_xvect" in tts_model_path else 64
+                                    if "_xvect" in tts_model_path and "_adapted" not in tts_model_path:
+                                        utt_embed_dim = 512
+                                    elif "_ecapa" in tts_model_path and "_adapted" not in tts_model_path:
+                                        utt_embed_dim = 192
+                                    else:
+                                        utt_embed_dim = 64
 
                                     if "laser" in tts_model_path:
                                         sent_embed_dim = 1024
@@ -173,6 +186,10 @@ class ToucanTTSInterface(torch.nn.Module):
                                         use_concat_projection=True
                                     if "a12" in tts_model_path:
                                         sent_embed_encoder=True
+                                        style_sent=True
+                                        if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
+                                            utt_embed_dim = 768
+                                    if "a13" in tts_model_path:
                                         style_sent=True
                                         if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
                                             utt_embed_dim = 768
@@ -283,7 +300,9 @@ class ToucanTTSInterface(torch.nn.Module):
             prompt_embedding = self.sentence_embedding_extractor.encode([prompt]).squeeze().to(self.device)
             self.sentence_embedding = prompt_embedding
             if self.sent_emb_adaptor is not None:
-                self.sentence_embedding = self.sent_emb_adaptor(sentence_embedding=self.sentence_embedding.unsqueeze(0), return_emb=True).squeeze(0)
+                self.sentence_embedding = self.sent_emb_adaptor(sentence_embedding=self.sentence_embedding.unsqueeze(0),
+                                                                speaker_embedding=self.default_utterance_embedding.unsqueeze(0) if self.sent_emb_adaptor.speaker_embed_dim is not None else None,
+                                                                return_emb=True).squeeze(0)
             if self.replace_utt_sent_emb:
                 self.default_utterance_embedding = self.sentence_embedding
         else:
@@ -334,7 +353,9 @@ class ToucanTTSInterface(torch.nn.Module):
                 print("Using sentence embedding of input text.")
                 sentence_embedding = self.sentence_embedding_extractor.encode([text]).squeeze().to(self.device)
                 if self.sent_emb_adaptor is not None:
-                    sentence_embedding = self.sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0), return_emb=True).squeeze(0)
+                    sentence_embedding = self.sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0),
+                                                               speaker_embedding=self.default_utterance_embedding.unsqueeze(0) if self.sent_emb_adaptor.speaker_embed_dim is not None else None,
+                                                               return_emb=True).squeeze(0)
                 if self.replace_utt_sent_emb:
                     self.default_utterance_embedding = sentence_embedding
             else:

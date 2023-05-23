@@ -30,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_05_EmoMulti_sent_emb_a11_emoBERTcls_ecapa"
+    name = "ToucanTTS_05_EmoVDB_sent_emb_a11_emoBERTcls_ecapa"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -61,70 +61,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           lang="en",
                                           save_imgs=False))
     
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "cremad"),
-                                          lang="en",
-                                          save_imgs=False))
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
-                                          lang="en",
-                                          save_imgs=False))
-    
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
-                                          lang="en",
-                                          save_imgs=False))
-    
     train_set = ConcatDataset(datasets)
 
     if "_xvect" in name:
-        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt")):
-            print("Extracting xvect from audio")
-            import torchaudio
-            from speechbrain.pretrained import EncoderClassifier
-            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
-            path_to_xvect = {}
-            for index in tqdm(range(len(train_set))):
-                path = train_set[index][10]
-                wave, sr = torchaudio.load(path)
-                # mono
-                wave = torch.mean(wave, dim=0, keepdim=True)
-                # resampling
-                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
-                wave = wave.squeeze(0)
-                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
-                path_to_xvect[path] = embedding
-            torch.save(path_to_xvect, os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"))
-            del classifier
-        else:
-            print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_emomulti', 'xvect.pt')}")
-            path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"), map_location='cpu')
+        print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_emomulti', 'xvect.pt')}")
+        path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"), map_location='cpu')
     else:
         path_to_xvect = None
-    
+
     if "_ecapa" in name:
-        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt")):
-            print("Extracting ecapa from audio")
-            import torchaudio
-            from speechbrain.pretrained import EncoderClassifier
-            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir="./Models/Embedding/spkrec-ecapa-voxceleb", run_opts={"device": device})
-            path_to_ecapa = {}
-            for index in tqdm(range(len(train_set))):
-                path = train_set[index][10]
-                wave, sr = torchaudio.load(path)
-                # mono
-                wave = torch.mean(wave, dim=0, keepdim=True)
-                # resampling
-                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
-                wave = wave.squeeze(0)
-                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
-                path_to_ecapa[path] = embedding
-            torch.save(path_to_ecapa, os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"))
-            del classifier
-        else:
-            print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
-            path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
+        print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
+        path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
     else:
         path_to_ecapa = None
     if path_to_ecapa is not None:

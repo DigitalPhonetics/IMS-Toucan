@@ -21,9 +21,10 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_emb import
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_word_emb import run as blizzard2013_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Blizzard2013_sent_word_emb import run as blizzard2013_sent_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam import run as emo
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam import run as emo_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_sent_emb import run as emo_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_word_emb import run as emo_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB import run as emovdb
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB_sent_emb import run as emovdb_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_CremaD import run as cremad
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess import run as ravdess
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
@@ -65,6 +66,7 @@ pipeline_dict = {
     "lj"            : lj,
     "lj_word"       : lj_word,
     "emovdb"        : emovdb,
+    "emovdb_sent"   : emovdb_sent,
     "cremad"        : cremad,
     "ravdess"       : ravdess,
     "esds"          : esds,
