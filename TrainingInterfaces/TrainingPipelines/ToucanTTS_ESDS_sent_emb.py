@@ -7,11 +7,9 @@ from torch.utils.data import ConcatDataset
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
-from Utility.sent_emb_extraction import extract_sent_embs
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
-from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
@@ -30,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_EmoVDB_sent_emb_a13_emoBERTcls_xvect_static"
+    name = "ToucanTTS_06c_ESDS_sent_emb_a11_emoBERTcls_xvect"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -56,8 +54,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
                                           lang="en",
                                           save_imgs=False))
     
@@ -71,9 +69,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             from speechbrain.pretrained import EncoderClassifier
             classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
             xvect_list = []
-            audio_paths = ["/mount/resources/speech/corpora/EmoV_DB/Neutral_1-28_0024-16bit.wav", 
-                            "/mount/resources/speech/corpora/EmoV_DB/neutral_1-28_0025-16bit.wav", 
-                            "/mount/resources/speech/corpora/EmoV_DB/neutral_449-476_0471-16bit.wav"]
+            audio_paths = []
             for path in audio_paths:
                 wave, sr = torchaudio.load(path)
                 # mono
@@ -87,6 +83,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             xvect_list = None
     else:
         path_to_xvect = None
+        xvect_list = None
 
     if "_ecapa" in name:
         print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
@@ -189,7 +186,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         style_sent=True
         utt_embed_dim = sent_embed_dim
         if "noadapt" in name and "adapted" not in name:
-            utt_embed_dim = sent_embed_dim
+            utt_embed_dim = 768
 
 
     model = ToucanTTS(lang_embs=lang_embs, 
@@ -217,7 +214,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=12,
+               batch_size=16,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "EmoMulti_Embedding", "embedding_function.pt"),
@@ -229,6 +226,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                emovdb=True,
                replace_utt_sent_emb=replace_utt_sent_emb,
                use_adapted_embs="adapted" in name,
-               path_to_xvect=path_to_xvect)
+               path_to_xvect=path_to_xvect,
+               static_speaker_embed="_static" in name)
     if use_wandb:
         wandb.finish()

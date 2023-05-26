@@ -25,6 +25,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_sent_emb import ru
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_word_emb import run as emo_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB import run as emovdb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB_sent_emb import run as emovdb_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS_sent_emb import run as esds_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_CremaD import run as cremad
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess import run as ravdess
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
@@ -70,6 +71,7 @@ pipeline_dict = {
     "cremad"        : cremad,
     "ravdess"       : ravdess,
     "esds"          : esds,
+    "esds_sent"     : esds_sent,
     "emomulti"      : emomulti,
     "emomulti_sent"      : emomulti_sent,
     # training vocoders (not recommended, best to use provided checkpoint)

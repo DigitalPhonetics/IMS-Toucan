@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_EmoVDB"
+    name = "ToucanTTS_01_EmoVDB_ecapa"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -39,8 +39,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
                                           lang="en",
                                           save_imgs=False)
+    
+    if "_ecapa" in name:
+        print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
+        path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
+    else:
+        path_to_ecapa = None
+    if path_to_ecapa is not None:
+        path_to_xvect = path_to_ecapa
 
-    model = ToucanTTS(lang_embs=None)
+    if "_xvect" in name:
+        utt_embed_dim = 512
+    elif "_ecapa" in name:
+        utt_embed_dim = 192
+    else:
+        utt_embed_dim = 64
+
+    model = ToucanTTS(lang_embs=None, utt_embed_dim=utt_embed_dim)
     if use_wandb:
         import wandb
         wandb.init(
@@ -52,12 +67,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=4,
+               batch_size=8,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_embed_model=os.path.join(MODELS_DIR, "EmoVDB_Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               path_to_xvect=path_to_xvect)
     if use_wandb:
         wandb.finish()

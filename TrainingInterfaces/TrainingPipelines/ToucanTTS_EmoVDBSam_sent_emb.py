@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_03_EmoVDBSam_sent_emb_a12_emoBERTcls_random"
+    name = "ToucanTTS_05_EmoVDBSam_sent_emb_a05_emoBERTcls"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -113,6 +113,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         sent_embed_encoder=True
         sent_embed_decoder=True
         sent_embed_each=True
+        utt_embed_dim=None
     if "a06" in name:
         sent_embed_encoder=True
         sent_embed_decoder=True
@@ -170,7 +171,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=12,
+               batch_size=8,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "EmoVDBSam_Embedding", "embedding_function.pt"),

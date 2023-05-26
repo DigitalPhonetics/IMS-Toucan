@@ -66,13 +66,15 @@ def test_sentence(version, model_id="Meta", exec_device="cpu", speaker_reference
         tts.set_sentence_embedding(prompt)
     tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav")
 
-def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False, sent_emb_extractor=None, prompt:str=None, make_preprompt=False, sent_emb_adaptor=None, xvect_model=None):
+def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False, sent_emb_extractor=None, prompt:str=None, make_preprompt=False, sent_emb_adaptor=None, xvect_model=None, speaker_id=None):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
     tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, sent_emb_extractor=sent_emb_extractor, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
     tts.set_language("en")
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
 
     for i, sentence in enumerate(['I am so happy to see you!',
                                   'Today is a beautiful day and the sun is shining.',
@@ -83,7 +85,9 @@ def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_refer
                                   'Be careful!, Cried the woman',
                                   'This makes me feel bad.',
                                   'Oh happy day!',
-                                  'Well, this sucks.']):
+                                  'Well, this sucks.',
+                                  'I am so angry!',
+                                  'What a surprise!']):
         if prompt is not None:
             if make_preprompt:
                 prompt = prompt + ' ' + sentence
@@ -130,12 +134,18 @@ if __name__ == '__main__':
     #exec_device = "cpu"
     print(f"running on {exec_device}")
 
-    use_speaker_reference = True
+    use_speaker_reference = False
     use_sent_emb = True 
-    use_prompt = True
+    use_prompt = False
     use_sent_emb_adaptor = False
     use_xvect = False
-    use_ecapa = True
+    use_ecapa = False
+    use_speaker_id = True
+
+    if use_speaker_id:
+        speaker_id = 4
+    else:
+        speaker_id = None
 
     if use_sent_emb:
         #import tensorflow
@@ -155,17 +165,18 @@ if __name__ == '__main__':
         sent_emb_extractor = None
 
     if use_speaker_reference:
-        speaker_reference = "/mount/resources/speech/corpora/EmoV_DB/anger_393-420_0398-16bit.wav"
+        speaker_reference = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0011/Angry/0011_000400.wav"
         #speaker_reference = "/mount/resources/speech/corpora/LibriTTS/all_clean/1638/84448/1638_84448_000057_000006.wav"
     else:
         speaker_reference = None
 
     if use_prompt:
         #prompt = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
-        prompt = "I am so angry!"
+        #prompt = "I am so angry!"
         #prompt = "Roar with laughter, this is funny."
         #prompt = "Ew, this is disgusting."
-        #prompt = "Wow! What a surprise!."
+        prompt = "Wow, what a surprise!."
+        #prompt = "This is very sad."
     else:
         prompt = None
 
@@ -205,9 +216,9 @@ if __name__ == '__main__':
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt_ref_prompt2", model_id="07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
-    test_controllable(version="ToucanTTS_05_EmoVDB_sent_emb_a11_emoBERTcls_ecapa_ref_prompt", model_id="05_EmoVDB_sent_emb_a11_emoBERTcls_ecapa", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
+    test_controllable(version="ToucanTTS_06_ESDS_sent_emb_a11_emoBERTcls_static", model_id="06_ESDS_sent_emb_a11_emoBERTcls_static", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
 
-    #test_controllable(version="ToucanTTS_01_EmoMulti_xvect_ref", model_id="01_EmoMulti_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
+    #test_controllable(version="ToucanTTS_01_ESDS_xvect", model_id="01_ESDS_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
 
     #test_controllable(version="ToucanTTS_01_PromptSpeech_ref", model_id="01_PromptSpeech", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference)
     #test_controllable(version="ToucanTTS_03_PromptSpeech_sent_emb_a11_bertlm", model_id="03_PromptSpeech_sent_emb_a11_bertlm", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
