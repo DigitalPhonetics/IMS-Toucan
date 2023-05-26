@@ -59,7 +59,8 @@ def train_loop(net,
                replace_utt_sent_emb=False,
                word_embedding_extractor=None,
                use_adapted_embs=False,
-               path_to_xvect=None
+               path_to_xvect=None,
+               static_speaker_embed=False
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -151,6 +152,12 @@ def train_loop(net,
                                                                     return_emb=True)
             else:
                 sentence_embedding = None
+            
+            if static_speaker_embed:
+                filepaths = batch[10]
+                speaker_ids = torch.LongTensor([get_speakerid_from_path(path) for path in filepaths]).to(device)
+            else:
+                speaker_ids = None
 
             if replace_utt_sent_emb:
                 style_embedding = sentence_embedding
@@ -171,6 +178,7 @@ def train_loop(net,
                 gold_pitch=batch[6].to(device),  # mind the switched order
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
+                speaker_id=speaker_ids,
                 sentence_embedding=sentence_embedding,
                 word_embedding=word_embedding,
                 lang_ids=batch[8].to(device),
@@ -276,6 +284,7 @@ def train_loop(net,
                                                                           step=step_counter,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
+                                                                          static_speaker_embed=static_speaker_embed,
                                                                           sent_embs=sent_embs,
                                                                           random_emb=random_emb,
                                                                           emovdb=emovdb,
@@ -392,3 +401,28 @@ def get_emotion_from_path(path):
         if emotion == "08":
             emotion = "surprise"
     return emotion
+
+def get_speakerid_from_path(path):
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        if speaker == "0011":
+            speaker_id = 0
+        if speaker == "0012":
+            speaker_id = 1
+        if speaker == "0013":
+            speaker_id = 2
+        if speaker == "0014":
+            speaker_id = 3
+        if speaker == "0015":
+            speaker_id = 4
+        if speaker == "0016":
+            speaker_id = 5
+        if speaker == "0017":
+            speaker_id = 6
+        if speaker == "0018":
+            speaker_id = 7
+        if speaker == "0019":
+            speaker_id = 8
+        if speaker == "0020":
+            speaker_id = 9
+    return speaker_id

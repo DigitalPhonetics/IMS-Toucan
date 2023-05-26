@@ -100,6 +100,7 @@ def load_net_toucan(path):
                                         sent_embed_encoder=True
                                         sent_embed_decoder=True
                                         sent_embed_each=True
+                                        utt_embed_dim=None if "_xvect" not in path else utt_embed_dim
                                     if "a06" in path:
                                         sent_embed_encoder=True
                                         sent_embed_decoder=True
@@ -132,6 +133,7 @@ def load_net_toucan(path):
                                             utt_embed_dim = 768
                                     if "a13" in path:
                                         style_sent=True
+                                        utt_embed_dim = sent_embed_dim
                                         if "noadapt" in path and "adapted" not in path:
                                             utt_embed_dim = 768
 
@@ -147,7 +149,8 @@ def load_net_toucan(path):
                                                     use_concat_projection=use_concat_projection,
                                                     use_sent_style_loss="loss" in path,
                                                     pre_embed="_pre" in path,
-                                                    style_sent=style_sent)
+                                                    style_sent=style_sent,
+                                                    static_speaker_embed="_static" in path)
                                     net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
@@ -255,7 +258,7 @@ def make_best_in_all():
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
                 save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
-            elif "ToucanTTS" in model_dir:
+            elif "ToucanTTS_06_ESDS_sent_emb_a11_emoBERTcls_static" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue

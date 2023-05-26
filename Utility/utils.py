@@ -200,6 +200,7 @@ def plot_progress_spec_toucantts(net,
                                  step,
                                  lang,
                                  default_emb,
+                                 static_speaker_embed=False,
                                  sent_embs=None,
                                  random_emb=False,
                                  emovdb=False,
@@ -224,6 +225,10 @@ def plot_progress_spec_toucantts(net,
                                                   return_emb=True).squeeze(0)
     else:
         sentence_embedding = None
+    if static_speaker_embed:
+        speaker_id = torch.LongTensor([0])
+    else:
+        speaker_id = None
     if word_embedding_extractor is not None:
         word_embedding, _ = word_embedding_extractor.encode([sentence])
         word_embedding = word_embedding.squeeze()
@@ -234,6 +239,7 @@ def plot_progress_spec_toucantts(net,
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,
                                                                           utterance_embedding=default_emb,
+                                                                          speaker_id=speaker_id,
                                                                           sentence_embedding=sentence_embedding,
                                                                           word_embedding=word_embedding,
                                                                           lang_id=get_language_id(lang).to(device),
@@ -242,6 +248,7 @@ def plot_progress_spec_toucantts(net,
         spec_before, spec_after, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                                           return_duration_pitch_energy=True,
                                                                           utterance_embedding=default_emb,
+                                                                          speaker_id=speaker_id,
                                                                           sentence_embedding=sentence_embedding,
                                                                           word_embedding=word_embedding,
                                                                           lang_id=get_language_id(lang).to(device),

@@ -142,6 +142,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                     use_concat_projection=False
                                     self.replace_utt_sent_emb = False
                                     style_sent = False
+                                    static_speaker_embed="_static" in tts_model_path
                                     if "a01" in tts_model_path:
                                         sent_embed_encoder=True
                                     if "a02" in tts_model_path:
@@ -158,6 +159,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                         sent_embed_encoder=True
                                         sent_embed_decoder=True
                                         sent_embed_each=True
+                                        utt_embed_dim=None if "_xvect" not in tts_model_path else utt_embed_dim
                                     if "a06" in tts_model_path:
                                         sent_embed_encoder=True
                                         sent_embed_decoder=True
@@ -191,6 +193,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                             utt_embed_dim = 768
                                     if "a13" in tts_model_path:
                                         style_sent=True
+                                        utt_embed_dim = sent_embed_dim
                                         if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
                                             utt_embed_dim = 768
                                         
@@ -207,7 +210,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                                 use_concat_projection=use_concat_projection,
                                                                 use_sent_style_loss="loss" in tts_model_path,
                                                                 pre_embed="_pre" in tts_model_path,
-                                                                style_sent=style_sent)
+                                                                style_sent=style_sent,
+                                                                static_speaker_embed=static_speaker_embed)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -259,6 +263,10 @@ class ToucanTTSInterface(torch.nn.Module):
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        if static_speaker_embed:
+            self.default_speaker_id = torch.LongTensor([0]).to(self.device)
+        else:
+            self.default_speaker_id = None
         self.sentence_embedding = None
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
@@ -307,6 +315,9 @@ class ToucanTTSInterface(torch.nn.Module):
                 self.default_utterance_embedding = self.sentence_embedding
         else:
             print("Skipping setting sentence embedding.")
+    
+    def set_speaker_id(self, id:int):
+        self.default_speaker_id = torch.LongTensor([id]).to(self.device)
 
     def set_language(self, lang_id):
         """
@@ -369,6 +380,7 @@ class ToucanTTSInterface(torch.nn.Module):
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
+                                                           speaker_id=self.default_speaker_id,
                                                            sentence_embedding=sentence_embedding,
                                                            word_embedding=word_embeddings,
                                                            durations=durations,

@@ -30,7 +30,8 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                replace_utt_sent_emb=False,
                word_embedding_extractor=None,
                use_adapted_embs=False,
-               path_to_xvect=None
+               path_to_xvect=None,
+               static_speaker_embed=False
                ):
     if type(datasets) != list:
         datasets = [datasets]
@@ -74,4 +75,5 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            replace_utt_sent_emb=replace_utt_sent_emb,
                            word_embedding_extractor=word_embedding_extractor,
                            use_adapted_embs=use_adapted_embs,
-                           path_to_xvect=path_to_xvect)
+                           path_to_xvect=path_to_xvect,
+                           static_speaker_embed=static_speaker_embed)
