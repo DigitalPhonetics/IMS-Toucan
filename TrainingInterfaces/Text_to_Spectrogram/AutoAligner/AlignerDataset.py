@@ -20,7 +20,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
+                 loading_processes=max(os.cpu_count() // 1.5, 1),
                  min_len_in_seconds=1,
                  max_len_in_seconds=15,
                  cut_silences=False,
@@ -35,6 +35,7 @@ class AlignerDataset(Dataset):
             print(f"skipping {cache_dir}")
             return
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
+            os.makedirs(cache_dir, exist_ok=True)
             speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                           run_opts={"device": str(device)},
                                                                           savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
@@ -91,7 +92,6 @@ class AlignerDataset(Dataset):
                 raise RuntimeError
 
             self.datapoint_feature_dump_list = list()
-            os.makedirs(cache_dir, exist_ok=True)
             os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
             for index, (datapoint, speaker_embedding) in tqdm(enumerate(zip(self.datapoints, self.speaker_embeddings))):
                 torch.save(([torch.Tensor(datapoint[0]),
