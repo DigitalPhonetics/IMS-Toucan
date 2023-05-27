@@ -3,7 +3,6 @@ import warnings
 
 import soundfile as sf
 import torch
-from numpy import trim_zeros
 from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
@@ -31,8 +30,14 @@ class AlignerDataset(Dataset):
                  device="cpu",
                  phone_input=False,
                  allow_unknown_symbols=False):
-        os.makedirs(cache_dir, exist_ok=True)
+        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+        if os.path.exists(cache_dir):
+            print(f"skipping {cache_dir}")
+            return
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
+            speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                          run_opts={"device": str(device)},
+                                                                          savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
             if cut_silences:
                 torch.set_num_threads(1)
                 torch.hub.load(repo_or_dir='snakers4/silero-vad',
@@ -70,54 +75,40 @@ class AlignerDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-            self.datapoints = list(self.datapoints)
-            tensored_datapoints = list()
             # we had to turn all the tensors to numpy arrays to avoid shared memory
             # issues. Now that the multi-processing is over, we can convert them back
             # to tensors to save on conversions in the future.
-            print("Converting into convenient format...")
-            norm_waves = list()
-            filepaths = list()
-            for datapoint in tqdm(self.datapoints):
-                tensored_datapoints.append([torch.Tensor(datapoint[0]),
-                                            torch.LongTensor(datapoint[1]),
-                                            torch.Tensor(datapoint[2]),
-                                            torch.LongTensor(datapoint[3])])
-                norm_waves.append(torch.Tensor(datapoint[-2]))
-                filepaths.append(datapoint[-1])
-
-            self.datapoints = tensored_datapoints
 
             # add speaker embeddings
             self.speaker_embeddings = list()
-            speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                          run_opts={"device": str(device)},
-                                                                          savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
             with torch.no_grad():
-                for wave in tqdm(norm_waves):
+                for datapoint in tqdm(self.datapoints):
                     self.speaker_embeddings.append(
-                        speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
+                        speaker_embedding_func_ecapa.encode_batch(wavs=torch.Tensor(datapoint[-2]).to(device).unsqueeze(0)).squeeze().cpu())
 
             # save to cache
             if len(self.datapoints) == 0:
                 raise RuntimeError
 
             self.datapoint_feature_dump_list = list()
+            os.makedirs(cache_dir, exist_ok=True)
             os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
-            for index, (datapoint, speaker_embedding, filepath) in enumerate(zip(self.datapoints, self.speaker_embeddings, filepaths)):
-                torch.save((datapoint, speaker_embedding, filepath),
+            for index, (datapoint, speaker_embedding) in tqdm(enumerate(zip(self.datapoints, self.speaker_embeddings))):
+                torch.save(([torch.Tensor(datapoint[0]),
+                             torch.LongTensor(datapoint[1]),
+                             torch.Tensor(datapoint[2]),
+                             torch.LongTensor(datapoint[3])],
+                            speaker_embedding,
+                            datapoint[-1]),
                            os.path.join(cache_dir, f"aligner_datapoints/aligner_datapoint_{index}.pt"))
                 self.datapoint_feature_dump_list.append(os.path.join(cache_dir, f"aligner_datapoints/aligner_datapoint_{index}.pt"))
 
             torch.save(self.datapoint_feature_dump_list,
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
-            del self.datapoints
-            del self.speaker_embeddings
         else:
             # just load the datapoints from cache
             self.datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
 
-        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         print(f"Prepared an Aligner dataset with {len(self.datapoint_feature_dump_list)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -132,17 +123,19 @@ class AlignerDataset(Dataset):
                               phone_input,
                               allow_unknown_symbols):
         process_internal_dataset_chunk = list()
-        tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
+        assumed_sr = sr
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
                                cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
                 continue
-
             try:
                 wave, sr = sf.read(path)
+                if sr != assumed_sr:
+                    print(f"{path} has an unexpected samplingrate: {sr} vs. {assumed_sr} --> skipping")
+                    continue
             except:
                 print(f"Problem with an audio file: {path}")
                 continue
@@ -159,19 +152,17 @@ class AlignerDataset(Dataset):
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
-            if not (min_len <= dur_in_seconds <= max_len):
+            if not (min_len <= dur_in_seconds <= max_len):  # duration may have changed because of the VAD
                 if verbose:
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
-            norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
-
             try:
                 try:
-                    cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                 except KeyError:
-                    cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                     if not allow_unknown_symbols:
                         continue  # we skip sentences with unknown symbols
             except ValueError:
@@ -180,7 +171,6 @@ class AlignerDataset(Dataset):
             except KeyError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
-
             cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
                                                         explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()

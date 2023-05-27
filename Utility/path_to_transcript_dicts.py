@@ -40,13 +40,10 @@ def build_path_to_transcript_dict_multi_ling_librispeech_template(root):
         lookup = file.read()
     for line in lookup.split("\n"):
         if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_folders = line.split("\t")[0].split("_")
-            wav_path = os.path.join(root, "audio", wav_folders[0], wav_folders[1], line.split("\t")[0] + ".flac")
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript
-            else:
-                print(f"not found: {wav_path}")
+            fields = line.split("\t")
+            wav_folders = fields[0].split("_")
+            wav_path = f"{root}/audio/{wav_folders[0]}/{wav_folders[1]}/{fields[0]}.flac"
+            path_to_transcript[wav_path] = fields[1]
     return path_to_transcript
 
 
@@ -83,10 +80,10 @@ def build_path_to_transcript_dict_gigaspeech():
         lookup = file.read()
     for line in lookup.split("\n"):
         if line.strip() != "":
-            norm_transcript = line.split("\t")[1]
-            wav_path = os.path.join(root, "wavs", line.split("\t")[0])
-            if os.path.exists(wav_path):
-                path_to_transcript[wav_path] = norm_transcript
+            fields = line.split("\t")
+            norm_transcript = fields[1]
+            wav_path = os.path.join(root, "wavs", fields[0])
+            path_to_transcript[wav_path] = norm_transcript
     return path_to_transcript
 
 
