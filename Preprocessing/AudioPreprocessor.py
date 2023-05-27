@@ -56,10 +56,8 @@ class AudioPreprocessor:
             torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
             # this to false globally during model loading rather than using inference mode or no_grad
             self.silero_model = self.silero_model.to(self.device)
-        else:
-            self.device = "cpu"  # if we don't run the VAD model, there's simply no reason to use the GPU.
         if output_sr is not None and output_sr != input_sr:
-            self.resample = Resample(orig_freq=input_sr, new_freq=output_sr)
+            self.resample = Resample(orig_freq=input_sr, new_freq=output_sr).to(self.device)
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
@@ -125,11 +123,11 @@ class AudioPreprocessor:
         audio = to_mono(audio)
         if self.do_loudnorm:
             audio = self.normalize_loudness(audio)
-        audio = torch.Tensor(audio)
+        audio = torch.Tensor(audio).to(self.device)
         audio = self.resample(audio)
         if self.cut_silence:
             audio = self.cut_silence_from_audio(audio)
-        return audio
+        return audio.to("cpu")
 
     def visualize_cleaning(self, unclean_audio):
         """
