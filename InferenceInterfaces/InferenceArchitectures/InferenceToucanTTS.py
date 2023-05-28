@@ -158,8 +158,10 @@ class ToucanTTS(torch.nn.Module):
                                                                 Tanh(),
                                                                 Linear(64, 32),
                                                                 Tanh(),
-                                                                Linear(32, 16))
-                    utt_embed_dim = 16
+                                                                Linear(32, 16),
+                                                                Tanh(),
+                                                                Linear(16, 8))
+                    utt_embed_dim = 8
                 else:
                     self.utt_embed_bottleneck = None
                 if self.use_concat_projection:
