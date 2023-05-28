@@ -2,7 +2,6 @@ import os
 
 import torch
 import torch.multiprocessing
-from numpy import trim_zeros
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
@@ -22,10 +21,9 @@ class ProsodicConditionExtractor:
 
     def extract_condition_from_reference_wave(self, wave, already_normalized=False):
         if already_normalized:
-            norm_wave = wave.numpy()
+            norm_wave = wave
         else:
-            norm_wave = self.ap.audio_to_wave_tensor(normalize=True, audio=wave)
-            norm_wave = trim_zeros(norm_wave.numpy())
+            norm_wave = self.ap.normalize_audio(audio=wave)
         spec = self.ap.audio_to_mel_spec_tensor(norm_wave, explicit_sampling_rate=self.sr).transpose(0, 1)
         spec_batch = torch.stack([spec] * 5, dim=0)
         spec_len_batch = torch.LongTensor([len(spec)] * 5)

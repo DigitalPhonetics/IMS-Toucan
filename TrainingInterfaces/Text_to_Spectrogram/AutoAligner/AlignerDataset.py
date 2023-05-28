@@ -125,8 +125,7 @@ class AlignerDataset(Dataset):
         process_internal_dataset_chunk = list()
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024,
-                               cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
+        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
@@ -148,7 +147,7 @@ class AlignerDataset(Dataset):
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
-                    norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                    norm_wave = ap.normalize_audio(audio=wave)
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000

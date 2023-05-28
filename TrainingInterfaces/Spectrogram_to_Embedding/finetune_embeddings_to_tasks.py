@@ -34,7 +34,7 @@ class Dataset:
                 except RuntimeError:
                     print(f"bad file: {file}")
                     continue
-                if sr != self.ap.sr:
+                if sr != self.ap.input_sr:
                     self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000)
                 spec = self.ap.audio_to_mel_spec_tensor(wav, normalize=True).transpose(0, 1)
                 if label not in self.label_to_specs:

@@ -53,10 +53,10 @@ class UtteranceCloner:
         wave, sr = sf.read(ref_audio_path)
         if self.tf.language != lang:
             self.tf = ArticulatoryCombinedTextFrontend(language=lang)
-        if self.ap.sr != sr:
+        if self.ap.input_sr != sr:
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=False)
         try:
-            norm_wave = self.ap.audio_to_wave_tensor(normalize=True, audio=wave)
+            norm_wave = self.ap.normalize_audio(audio=wave)
         except ValueError:
             print('Something went wrong, the reference wave might be too short.')
             raise RuntimeError
