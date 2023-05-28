@@ -35,7 +35,7 @@ class AudioPreprocessor:
                                                   normalized=False,
                                                   center=True,
                                                   pad_mode='reflect',
-                                                  mel_scale='htk')
+                                                  mel_scale='htk').to(self.device)
         if cut_silence:
             torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
             # careful: assumes 16kHz or 8kHz audio
@@ -99,7 +99,7 @@ class AudioPreprocessor:
         audio = self.resample(audio)
         if self.cut_silence:
             audio = self.cut_leading_and_trailing_silence(audio)
-        return audio.to("cpu")
+        return audio
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True, explicit_sampling_rate=None):
         """
