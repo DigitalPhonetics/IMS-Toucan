@@ -7,7 +7,6 @@ import torch
 from torch.utils.data import Dataset
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.AudioPreprocessor import to_mono
 
 
 class HiFiGANDataset(Dataset):
@@ -21,10 +20,9 @@ class HiFiGANDataset(Dataset):
         self.desired_samplingrate = desired_samplingrate
         self.melspec_ap = AudioPreprocessor(input_sr=self.desired_samplingrate,
                                             output_sr=16000,
-                                            melspec_buckets=80,
-                                            hop_length=256,
-                                            n_fft=1024,
-                                            cut_silence=False)
+                                            melspec_buckets=128,
+                                            cut_silence=False,
+                                            do_loudnorm=False)
         # hop length of spec loss should be same as the product of the upscale factors
         # samples per segment must be a multiple of hop length of spec loss
         self.paths = list_of_paths
@@ -41,9 +39,8 @@ class HiFiGANDataset(Dataset):
 
         path = self.paths[index]
         wave, sr = sf.read(path)
-        wave = to_mono(wave)
         if sr != self.desired_samplingrate:
-            wave = librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate)
+            wave = librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate)  # this could be much faster using e.g. torchaudio
 
         while len(wave) < self.samples_per_segment + 50:  # + 50 is just to be extra sure
             # catch files that are too short to apply meaningful signal processing and make them longer

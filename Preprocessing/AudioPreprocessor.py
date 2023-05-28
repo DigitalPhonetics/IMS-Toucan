@@ -24,9 +24,9 @@ class AudioPreprocessor:
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
         self.wave_to_spectrogram = MelSpectrogram(sample_rate=output_sr,
-                                                  n_fft=400,
-                                                  win_length=400,
-                                                  hop_length=200,
+                                                  n_fft=1024,
+                                                  win_length=1024,
+                                                  hop_length=256,
                                                   f_min=0.0,
                                                   f_max=output_sr // 2,
                                                   pad=0,
@@ -115,9 +115,9 @@ class AudioPreprocessor:
             return self.wave_to_spectrogram(audio)
         print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
         return MelSpectrogram(sample_rate=explicit_sampling_rate,
-                              n_fft=400,
-                              win_length=400,
-                              hop_length=200,
+                              n_fft=1024,
+                              win_length=1024,
+                              hop_length=256,
                               f_min=0.0,
                               f_max=explicit_sampling_rate // 2,
                               pad=0,
