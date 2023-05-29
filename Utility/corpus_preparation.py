@@ -12,7 +12,7 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnor
     return AlignerDataset(transcript_dict,
                           cache_dir=corpus_dir,
                           lang=lang,
-                          loading_processes=int(max(os.cpu_count() // 1.5, 1)),
+                          loading_processes=int(max(os.cpu_count() // 2, 1)),
                           cut_silences=cut_silences,
                           do_loudnorm=do_loudnorm,
                           device=device)

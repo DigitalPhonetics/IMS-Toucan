@@ -102,7 +102,7 @@ def train_loop(train_dataset,
 
             if use_reconstruction:
                 speaker_embeddings_expanded = torch.nn.functional.normalize(speaker_embeddings).unsqueeze(1).expand(-1, pred.size(1), -1)
-                tts_lambda = min([5, step_counter / 2000])  # super simple schedule
+                tts_lambda = min([0.1, step_counter / 10000])  # super simple schedule
                 reconstruction_loss = tiny_tts(x=torch.cat([pred, speaker_embeddings_expanded], dim=-1),
                                                # combine ASR prediction with speaker embeddings to allow for reconstruction loss on multiple speakers
                                                lens=mel_len,

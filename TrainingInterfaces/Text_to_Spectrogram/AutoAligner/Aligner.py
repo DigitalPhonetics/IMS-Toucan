@@ -74,26 +74,6 @@ class Aligner(torch.nn.Module):
 
         return x
 
-    @torch.no_grad()
-    def label_speech(self, speech):
-        # theoretically possible, but doesn't work well at all. Would probably require a beamsearch
-        probabilities_of_phones_over_frames = self(speech.unsqueeze(0)).squeeze()[:, :73]
-        smoothed_phone_probs_over_frames = list()
-        for index, _ in enumerate(probabilities_of_phones_over_frames):
-            access_safe_prev_index = max(0, index - 1)
-            access_safe_next_index = min(index + 1, len(probabilities_of_phones_over_frames) - 1)
-            smoothed_probs = (probabilities_of_phones_over_frames[access_safe_prev_index] +
-                              probabilities_of_phones_over_frames[access_safe_next_index] +
-                              probabilities_of_phones_over_frames[index]) / 3
-            smoothed_phone_probs_over_frames.append(smoothed_probs.unsqueeze(0))
-        print(torch.cat(smoothed_phone_probs_over_frames))
-        _, phone_ids_over_frames = torch.max(torch.cat(smoothed_phone_probs_over_frames), dim=1)
-        phone_ids = torch.unique_consecutive(phone_ids_over_frames)
-        phones = list()
-        for id_of_phone in phone_ids:
-            phones.append(self.tf.id_to_phone[int(id_of_phone)])
-        return "".join(phones)
-
     @torch.inference_mode()
     def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
         if not train:

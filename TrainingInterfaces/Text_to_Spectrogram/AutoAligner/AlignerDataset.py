@@ -20,7 +20,7 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=int(max(os.cpu_count() // 1.5, 1)),
+                 loading_processes=int(max(os.cpu_count() // 2, 1)),
                  min_len_in_seconds=1,
                  max_len_in_seconds=15,
                  cut_silences=False,
