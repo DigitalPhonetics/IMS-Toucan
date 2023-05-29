@@ -34,7 +34,7 @@ class TTSDataset(Dataset):
                  save_imgs=False):
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
-        if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
                 AlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
                                cache_dir=cache_dir,
