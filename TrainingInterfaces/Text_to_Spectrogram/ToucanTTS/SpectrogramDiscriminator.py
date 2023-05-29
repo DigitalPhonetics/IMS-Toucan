@@ -66,7 +66,7 @@ class DiscriminatorNet(nn.Module):
 
         self.out = nn.utils.weight_norm(nn.Conv2d(32, 1, 3, 1, 1))
 
-        self.fc = nn.Linear(1000, 1)  # this needs to be changed everytime the window length is changes. It would be nice if this could be done dynamically.
+        self.fc = nn.Linear(1600, 1)  # this needs to be changed everytime the window length is changes. It would be nice if this could be done dynamically.
 
     def forward(self, y):
         feature_maps = list()
@@ -85,8 +85,8 @@ class DiscriminatorNet(nn.Module):
 
 if __name__ == '__main__':
     d = SpectrogramDiscriminator()
-    fake = torch.randn([2, 100, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
-    real = torch.randn([2, 100, 80])  # [Batch, Sequence Length, Spectrogram Buckets]
+    fake = torch.randn([2, 100, 128])  # [Batch, Sequence Length, Spectrogram Buckets]
+    real = torch.randn([2, 100, 128])  # [Batch, Sequence Length, Spectrogram Buckets]
 
     critic_loss = d.calc_discriminator_loss((fake.unsqueeze(1)), real.unsqueeze(1))
     generator_loss = d.calc_generator_feedback(fake.unsqueeze(1), real.unsqueeze(1))
