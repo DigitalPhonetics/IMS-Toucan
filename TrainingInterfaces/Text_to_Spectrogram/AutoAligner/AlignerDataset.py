@@ -71,7 +71,7 @@ class AlignerDataset(Dataset):
                                   cut_silences,
                                   do_loudnorm,
                                   verbose,
-                                  "cpu",
+                                  device,
                                   phone_input,
                                   allow_unknown_symbols),
                             daemon=True))
