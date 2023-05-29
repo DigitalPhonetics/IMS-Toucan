@@ -20,7 +20,7 @@ class BigVGAN(torch.nn.Module):
     # this is the main BigVGAN model. Applies anti-aliased periodic activation for resblocks.
 
     def __init__(self,
-                 num_mels=80,
+                 num_mels=128,
                  upsample_initial_channel=512,
                  upsample_rates=(8, 6, 4, 2),  # CAREFUL: Avocodo discriminator assumes that there are always 4 upsample scales, because it takes intermediate results.
                  upsample_kernel_sizes=(16, 12, 8, 4),
@@ -122,4 +122,4 @@ def get_padding(kernel_size, dilation=1):
 
 
 if __name__ == '__main__':
-    print(BigVGAN()(torch.randn([1, 80, 100]))[0].shape)
+    print(BigVGAN()(torch.randn([1, 128, 100]))[0].shape)

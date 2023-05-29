@@ -13,7 +13,7 @@ from Layers.ResidualBlock import HiFiGANResidualBlock as ResidualBlock
 class HiFiGANGenerator(torch.nn.Module):
 
     def __init__(self,
-                 in_channels=80,
+                 in_channels=128,
                  out_channels=1,
                  channels=512,
                  kernel_size=7,
