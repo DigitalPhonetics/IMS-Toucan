@@ -21,14 +21,14 @@ class AlignerDataset(Dataset):
                  path_to_transcript_dict,
                  cache_dir,
                  lang,
-                 loading_processes=int(max(os.cpu_count() // 2, 1)),
+                 loading_processes,
+                 cut_silences,
+                 do_loudnorm,
+                 device,
                  min_len_in_seconds=1,
                  max_len_in_seconds=15,
-                 cut_silences=False,
-                 do_loudnorm=True,
                  rebuild_cache=False,
                  verbose=False,
-                 device="cpu",
                  phone_input=False,
                  allow_unknown_symbols=False):
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
