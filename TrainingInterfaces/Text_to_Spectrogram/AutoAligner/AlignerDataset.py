@@ -1,4 +1,5 @@
 import os
+import random
 import warnings
 
 import soundfile as sf
@@ -50,6 +51,7 @@ class AlignerDataset(Dataset):
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
+            fisher_yates_shuffle(key_list)
             # build cache
             print("... building dataset cache ...")
             self.datapoints = resource_manager.list()
@@ -197,3 +199,9 @@ class AlignerDataset(Dataset):
 
     def __len__(self):
         return len(self.datapoint_feature_dump_list)
+
+
+def fisher_yates_shuffle(lst):
+    for i in range(len(lst) - 1, 0, -1):
+        j = random.randint(0, i)
+        lst[i], lst[j] = lst[j], lst[i]
