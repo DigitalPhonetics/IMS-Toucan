@@ -12,6 +12,7 @@ from tqdm import tqdm
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.SpectrogramDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
+from Utility.diverse_losses import RedundancyReduction
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec_toucantts
@@ -83,7 +84,9 @@ def train_loop(net,
     else:
         optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     if path_to_embed_model is None or train_embed:
+        embedding_regularization_loss = RedundancyReduction(vector_dimensions=style_embedding_function.embedding_dim)
         optimizer.add_param_group({"params": style_embedding_function.parameters()})
+        optimizer.add_param_group({"params": embedding_regularization_loss.parameters()})
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     epoch = 0
@@ -112,7 +115,6 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                        batch_of_spectrogram_lengths=batch[3].to(device))
-
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
@@ -138,6 +140,8 @@ def train_loop(net,
                 discriminator_losses_total.append(discriminator_loss.item())
                 generator_losses_total.append(generator_loss.item())
 
+            if path_to_embed_model is None or train_embed and step_counter < warmup_steps * 2:
+                train_loss = train_loss + embedding_regularization_loss(style_embedding, style_embedding)
             if not torch.isnan(l1_loss):
                 train_loss = train_loss + l1_loss
             if not torch.isnan(duration_loss):
@@ -204,13 +208,13 @@ def train_loop(net,
 
         try:
             path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                              device,
-                                                                              save_dir=save_directory,
-                                                                              step=step_counter,
-                                                                              lang=lang,
-                                                                              default_emb=default_embedding,
-                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
+            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
+                                                                          device,
+                                                                          save_dir=save_directory,
+                                                                          step=step_counter,
+                                                                          lang=lang,
+                                                                          default_emb=default_embedding,
+                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({
                     "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)

@@ -7,6 +7,20 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
+class RedundancyReduction(torch.nn.Module):
+
+    def __init__(self, lambd=1e-5, vector_dimensions=256):
+        super().__init__()
+        self.lambd = lambd
+        self.bn = torch.nn.BatchNorm1d(vector_dimensions, affine=False)
+
+    def forward(self, z1, z2):
+        c = self.bn(z1).T @ self.bn(z2)
+        c.div_(z1.size(0))
+        off_diag = off_diagonal(c).pow_(2).sum()
+        return self.lambd * off_diag
+
+
 class BarlowTwinsLoss(torch.nn.Module):
 
     def __init__(self, lambd=1e-5, vector_dimensions=256):

@@ -17,6 +17,7 @@ class StyleEmbedding(torch.nn.Module):
 
     def __init__(self, embedding_dim=192, style_tts_encoder=True):
         super().__init__()
+        self.embedding_dim = embedding_dim
         if style_tts_encoder:
             self.style_encoder = StyleTTSEncoder(style_dim=embedding_dim)
         else:

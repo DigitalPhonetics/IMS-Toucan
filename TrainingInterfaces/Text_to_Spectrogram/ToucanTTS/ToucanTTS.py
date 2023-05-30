@@ -93,7 +93,7 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=False):
+                 use_conditional_layernorm_embedding_integration=True):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
