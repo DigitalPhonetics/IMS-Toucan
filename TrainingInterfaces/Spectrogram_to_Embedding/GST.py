@@ -6,7 +6,7 @@ import torch
 from Layers.Attention import MultiHeadedAttention as BaseMultiHeadedAttention
 
 
-class StyleEncoder(torch.nn.Module):
+class GSTStyleEncoder(torch.nn.Module):
     """Style encoder.
     This module is style encoder introduced in `Style Tokens: Unsupervised Style
     Modeling, Control and Transfer in End-to-End Speech Synthesis`.
@@ -42,7 +42,7 @@ class StyleEncoder(torch.nn.Module):
         gst_units: int = 256,
     ):
         """Initialize global style encoder module."""
-        super(StyleEncoder, self).__init__()
+        super(GSTStyleEncoder, self).__init__()
 
         self.num_tokens = gst_tokens
         self.ref_enc = ReferenceEncoder(idim=idim,

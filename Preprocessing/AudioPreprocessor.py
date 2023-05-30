@@ -112,25 +112,38 @@ class AudioPreprocessor:
         if explicit_sampling_rate is None or explicit_sampling_rate == self.output_sr:
             if normalize:
                 audio = self.normalize_audio(audio)
-            return self.wave_to_spectrogram(audio)
+            return torch.log10(self.wave_to_spectrogram(audio))
         print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
-        return MelSpectrogram(sample_rate=explicit_sampling_rate,
-                              n_fft=1024,
-                              win_length=1024,
-                              hop_length=256,
-                              f_min=0.0,
-                              f_max=explicit_sampling_rate // 2,
-                              pad=0,
-                              n_mels=self.melspec_buckets,
-                              power=2.0,
-                              normalized=False,
-                              center=True,
-                              pad_mode='reflect',
-                              mel_scale='htk')(audio)
+        return torch.log10(MelSpectrogram(sample_rate=explicit_sampling_rate,
+                                          n_fft=1024,
+                                          win_length=1024,
+                                          hop_length=256,
+                                          f_min=0.0,
+                                          f_max=explicit_sampling_rate // 2,
+                                          pad=0,
+                                          n_mels=self.melspec_buckets,
+                                          power=2.0,
+                                          normalized=False,
+                                          center=True,
+                                          pad_mode='reflect',
+                                          mel_scale='htk')(audio))
 
 
 if __name__ == '__main__':
     import soundfile
 
-    wav, sr = soundfile.read("../audios/test.wav")
+    wav, sr = soundfile.read("../audios/ad00_0004.wav")
     ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True)
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
+    import librosa.display as lbd
+
+    lbd.specshow(ap.audio_to_mel_spec_tensor(wav).cpu().numpy(),
+                 ax=ax,
+                 sr=16000,
+                 cmap='GnBu',
+                 y_axis='mel',
+                 x_axis=None,
+                 hop_length=256)
+    plt.show()

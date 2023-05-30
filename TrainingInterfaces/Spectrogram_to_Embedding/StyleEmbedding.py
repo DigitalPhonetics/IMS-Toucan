@@ -1,6 +1,6 @@
 import torch
 
-from TrainingInterfaces.Spectrogram_to_Embedding.GST import StyleEncoder
+from TrainingInterfaces.Spectrogram_to_Embedding.GST import GSTStyleEncoder
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleTTSEncoder import StyleEncoder as StyleTTSEncoder
 
 
@@ -20,16 +20,16 @@ class StyleEmbedding(torch.nn.Module):
         if style_tts_encoder:
             self.style_encoder = StyleTTSEncoder(style_dim=embedding_dim)
         else:
-            self.style_encoder = StyleEncoder(gst_token_dim=embedding_dim)
+            self.style_encoder = GSTStyleEncoder(gst_token_dim=embedding_dim)
 
     def forward(self,
                 batch_of_spectrograms,
                 batch_of_spectrogram_lengths):
         """
         Args:
-            batch_of_spectrograms: b is the batch axis, 80 features per timestep
+            batch_of_spectrograms: b is the batch axis, 128 features per timestep
                                    and l time-steps, which may include padding
-                                   for most elements in the batch (b, l, 80)
+                                   for most elements in the batch (b, l, 128)
             batch_of_spectrogram_lengths: indicate for every element in the batch,
                                           what the true length is, since they are
                                           all padded to the length of the longest
@@ -60,12 +60,12 @@ if __name__ == '__main__':
     print(f"GST parameter count: {sum(p.numel() for p in style_emb.style_encoder.parameters() if p.requires_grad)}")
 
     seq_length = 398
-    print(style_emb(torch.randn(5, seq_length, 80),
+    print(style_emb(torch.randn(5, seq_length, 128),
                     torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)
 
     style_emb = StyleEmbedding(style_tts_encoder=True)
     print(f"StyleTTS encoder parameter count: {sum(p.numel() for p in style_emb.style_encoder.parameters() if p.requires_grad)}")
 
     seq_length = 398
-    print(style_emb(torch.randn(5, seq_length, 80),
+    print(style_emb(torch.randn(5, seq_length, 128),
                     torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)
