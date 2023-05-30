@@ -84,7 +84,7 @@ def train_loop(net,
     else:
         optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     if path_to_embed_model is None or train_embed:
-        embedding_regularization_loss = RedundancyReduction(vector_dimensions=style_embedding_function.embedding_dim)
+        embedding_regularization_loss = RedundancyReduction(vector_dimensions=style_embedding_function.embedding_dim).to(device)
         optimizer.add_param_group({"params": style_embedding_function.parameters()})
         optimizer.add_param_group({"params": embedding_regularization_loss.parameters()})
 
