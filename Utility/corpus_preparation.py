@@ -8,14 +8,15 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
 
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnorm=True, cut_silences=True):
+def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnorm=True, cut_silences=True, phone_input=False):
     return AlignerDataset(transcript_dict,
                           cache_dir=corpus_dir,
                           lang=lang,
                           loading_processes=4,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
                           cut_silences=cut_silences,
                           do_loudnorm=do_loudnorm,
-                          device=device)
+                          device=device,
+                          phone_input=phone_input)
 
 
 def prepare_tts_corpus(transcript_dict,
@@ -41,7 +42,7 @@ def prepare_tts_corpus(transcript_dict,
             aligner_loc = os.path.join(corpus_dir, "Aligner", "aligner.pt")
 
             if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
-                aligner_datapoints = AlignerDataset(transcript_dict, cache_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
+                aligner_datapoints = prepare_aligner_corpus(transcript_dict, corpus_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
                 if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):
                     train_aligner(train_dataset=aligner_datapoints,
                                   device=torch.device("cuda"),
