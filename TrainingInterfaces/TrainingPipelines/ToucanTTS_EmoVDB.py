@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_EmoVDB_ecapa"
+    name = "ToucanTTS_TEST_EmoVDB"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -35,8 +35,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
+    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"),
                                           lang="en",
                                           save_imgs=False)
     
@@ -45,6 +45,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
     else:
         path_to_ecapa = None
+        path_to_xvect = None
     if path_to_ecapa is not None:
         path_to_xvect = path_to_ecapa
 
@@ -67,7 +68,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=8,
+               batch_size=16,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "EmoVDB_Embedding", "embedding_function.pt"),

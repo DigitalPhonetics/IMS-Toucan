@@ -7,11 +7,9 @@ from torch.utils.data import ConcatDataset
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
-from Utility.sent_emb_extraction import extract_sent_embs
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
-from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
@@ -30,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_06_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static"
+    name = "ToucanTTS_06_Ravdess_sent_emb_a11_emoBERTcls_static"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -56,8 +54,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
                                           lang="en",
                                           save_imgs=False))
     
@@ -170,7 +168,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         style_sent=True
         utt_embed_dim = sent_embed_dim
         if "noadapt" in name and "adapted" not in name:
-            utt_embed_dim = sent_embed_dim
+            utt_embed_dim = 768
 
 
     model = ToucanTTS(lang_embs=lang_embs, 

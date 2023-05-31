@@ -30,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_05_EmoMulti_sent_emb_a11_emoBERTcls_ecapa"
+    name = "ToucanTTS_06_EmoMulti_sent_emb_a11_emoBERTcls_static"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -56,8 +56,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"),
                                           lang="en",
                                           save_imgs=False))
     
@@ -237,7 +237,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                     use_concat_projection=use_concat_projection,
                     use_sent_style_loss="loss" in name,
                     pre_embed="_pre" in name,
-                    style_sent=style_sent)
+                    style_sent=style_sent,
+                    static_speaker_embed="_static" in name)
 
     if use_wandb:
         wandb.init(
@@ -261,6 +262,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                emovdb=True,
                replace_utt_sent_emb=replace_utt_sent_emb,
                use_adapted_embs="adapted" in name,
-               path_to_xvect=path_to_xvect)
+               path_to_xvect=path_to_xvect,
+               static_speaker_embed="_static" in name)
     if use_wandb:
         wandb.finish()
