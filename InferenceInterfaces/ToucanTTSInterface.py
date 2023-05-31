@@ -95,7 +95,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                 try:
                                     self.use_word_emb = True
                                     self.use_sent_emb = True
-                                    self.use_lang_id = True
+                                    self.use_lang_id = False
                                     self.replace_utt_sent_emb = False
                                     print("Loading sent word emb architecture")
                                     self.phone2mel = ToucanTTS(weights=checkpoint["model"],
@@ -110,7 +110,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                     print("Loading sent emb architecture")
                                     self.use_word_emb = False
                                     self.use_sent_emb = True
-                                    self.use_lang_id = True
+                                    self.use_lang_id = False
                                     lang_embs=None
                                     if "_xvect" in tts_model_path and "_adapted" not in tts_model_path:
                                         utt_embed_dim = 512
