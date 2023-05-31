@@ -143,7 +143,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 20
+        speaker_id = 3
     else:
         speaker_id = None
 
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt_ref_prompt2", model_id="07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
-    test_controllable(version="ToucanTTS_06_CremaD_sent_emb_a11_emoBERTcls_static", model_id="06_CremaD_sent_emb_a11_emoBERTcls_static", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
+    test_controllable(version="ToucanTTS_06_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static", model_id="06_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
 
     #test_controllable(version="ToucanTTS_01_ESDS_xvect", model_id="01_ESDS_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
 
