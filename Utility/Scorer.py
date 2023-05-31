@@ -131,7 +131,7 @@ class TTSScorer:
     def __init__(self,
                  path_to_model,
                  device,
-                 path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")
+                 path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "EmoVDB_Embedding", "embedding_function.pt")
                  ):
         self.device = device
         self.path_to_score = dict()

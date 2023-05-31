@@ -25,10 +25,12 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_sent_emb import ru
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDBSam_word_emb import run as emo_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB import run as emovdb
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoVDB_sent_emb import run as emovdb_sent
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS_sent_emb import run as esds_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_CremaD import run as cremad
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_CremaD_sent_emb import run as cremad_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess import run as ravdess
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess_sent_emb import run as ravdess_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS_sent_emb import run as esds_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti import run as emomulti
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_emb import run as emomulti_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech import run as promptspeech
@@ -69,7 +71,9 @@ pipeline_dict = {
     "emovdb"        : emovdb,
     "emovdb_sent"   : emovdb_sent,
     "cremad"        : cremad,
+    "cremad_sent"   : cremad_sent,
     "ravdess"       : ravdess,
+    "ravdess_sent"  : ravdess_sent,
     "esds"          : esds,
     "esds_sent"     : esds_sent,
     "emomulti"      : emomulti,

@@ -146,8 +146,8 @@ class ToucanTTS(torch.nn.Module):
                                                         Linear(8, 4))
                 '''
             if self.static_speaker_embed:
-                self.speaker_embedding = torch.nn.Embedding(10, 16)
-                utt_embed_dim = 16
+                self.speaker_embedding = torch.nn.Embedding(91, 32)
+                utt_embed_dim = 32
             if self.concat_sent_style:
                 if not self.static_speaker_embed:
                     self.utt_embed_bottleneck = Sequential(Linear(512, 256), 
@@ -158,10 +158,8 @@ class ToucanTTS(torch.nn.Module):
                                                                 Tanh(),
                                                                 Linear(64, 32),
                                                                 Tanh(),
-                                                                Linear(32, 16),
-                                                                Tanh(),
-                                                                Linear(16, 8))
-                    utt_embed_dim = 8
+                                                                Linear(32, 16))
+                    utt_embed_dim = 16
                 else:
                     self.utt_embed_bottleneck = None
                 if self.use_concat_projection:
