@@ -8,7 +8,7 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
 
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnorm=True, cut_silences=True, phone_input=False):
+def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnorm=True, cut_silences=True, phone_input=False, speaker_embedding_func=None):
     return AlignerDataset(transcript_dict,
                           cache_dir=corpus_dir,
                           lang=lang,
@@ -16,7 +16,8 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnor
                           cut_silences=cut_silences,
                           do_loudnorm=do_loudnorm,
                           device=device,
-                          phone_input=phone_input)
+                          phone_input=phone_input,
+                          speaker_embedding_func=speaker_embedding_func)
 
 
 def prepare_tts_corpus(transcript_dict,

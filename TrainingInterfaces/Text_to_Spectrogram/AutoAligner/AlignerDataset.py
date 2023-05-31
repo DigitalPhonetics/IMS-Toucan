@@ -30,16 +30,15 @@ class AlignerDataset(Dataset):
                  rebuild_cache=False,
                  verbose=False,
                  phone_input=False,
-                 allow_unknown_symbols=False):
+                 allow_unknown_symbols=False,
+                 speaker_embedding_func=None):
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
-        if os.path.exists(cache_dir):
-            print(f"skipping {cache_dir}")
-            return
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             os.makedirs(cache_dir, exist_ok=True)
-            speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                          run_opts={"device": str(device)},
-                                                                          savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+            if speaker_embedding_func is None:
+                speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                        run_opts={"device": str(device)},
+                                                                        savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
             if cut_silences:
                 torch.set_num_threads(1)
                 torch.hub.load(repo_or_dir='snakers4/silero-vad',
@@ -84,10 +83,9 @@ class AlignerDataset(Dataset):
 
             # add speaker embeddings
             self.speaker_embeddings = list()
-            with torch.no_grad():
+            with torch.inference_mode():
                 for datapoint in tqdm(self.datapoints):
-                    self.speaker_embeddings.append(
-                        speaker_embedding_func_ecapa.encode_batch(wavs=torch.Tensor(datapoint[-2]).to(device).unsqueeze(0)).squeeze().cpu())
+                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=torch.Tensor(datapoint[-2]).to(device).unsqueeze(0)).squeeze().cpu())
 
             # save to cache
             if len(self.datapoints) == 0:
@@ -192,10 +190,10 @@ class AlignerDataset(Dataset):
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         return tokens, \
-               torch.LongTensor([len(tokens)]), \
-               datapoint[2], \
-               datapoint[3], \
-               speaker_embedding
+            torch.LongTensor([len(tokens)]), \
+            datapoint[2], \
+            datapoint[3], \
+            speaker_embedding
 
     def __len__(self):
         return len(self.datapoint_feature_dump_list)
