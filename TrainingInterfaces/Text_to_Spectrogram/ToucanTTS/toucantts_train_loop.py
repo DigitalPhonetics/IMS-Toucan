@@ -354,7 +354,7 @@ def get_random_window(generated_sequences, real_sequences, lengths):
     return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0)
 
 def get_emotion_from_path(path):
-    if "EmoV_DB" in path or "EmoVDB_Sam" in path:
+    if "EmoV_DB" in path or "EmoVDB" in path or "EmoVDB_Sam" in path:
         emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
         if emotion == "amused":
             emotion = "joy"
@@ -403,6 +403,16 @@ def get_emotion_from_path(path):
     return emotion
 
 def get_speakerid_from_path(path):
+    speaker_id = None
+    if "EmoVDB" in path:
+        if "bea" in path:
+            speaker_id = 0
+        if "jenie" in path:
+            speaker_id = 1
+        if "josh" in path:
+            speaker_id = 2
+        if "sam" in path:
+            speaker_id = 3
     if "Emotional_Speech_Dataset_Singapore" in path:
         speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
         if speaker == "0011":
@@ -425,4 +435,16 @@ def get_speakerid_from_path(path):
             speaker_id = 8
         if speaker == "0020":
             speaker_id = 9
+    if "CREMA_D" in path:
+        speaker = os.path.basename(path).split('_')[0]
+        for i, sp_id in enumerate(range(1001, 1092)):
+            if int(speaker) == sp_id:
+                speaker_id = i
+    if "RAVDESS" in path:
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
+        speaker_id = int(speaker) - 1
+    
+    if speaker_id is None:
+        raise TypeError('speaker id could not be extracted from filename')
+
     return speaker_id

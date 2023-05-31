@@ -647,6 +647,23 @@ def build_path_to_transcript_dict_EmoV_DB():
             path_to_transcript[root + file] = identifier_to_sent[file[-14:-10]]
     return path_to_transcript
 
+def build_path_to_transcript_dict_EmoV_DB_Speaker():
+    import csv, glob
+    root = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB"
+    with open(os.path.join(root, "labels.txt"), "r", encoding="utf8") as file:
+        lookup = file.read()
+    id_to_transcript_dict = dict()
+    for line in lookup.split("\n"):
+        if line.strip() != "":
+            id_to_transcript_dict[line.split()[0]] = " ".join(line.split()[1:])
+    path_to_transcript = dict()
+    for speaker_dir in os.listdir(root):
+        if speaker_dir != "labels.txt":
+            for audio_file in os.listdir(os.path.join(root, speaker_dir)):
+                sentence_id = os.path.splitext(os.path.basename(audio_file))[0].split("-16bit")[0].split("_")[-1]
+                path_to_transcript[os.path.join(root, speaker_dir, audio_file)] = id_to_transcript_dict[sentence_id]
+    return path_to_transcript
+
 
 def build_path_to_transcript_dict_blizzard_2013():
     path_to_transcript = dict()
