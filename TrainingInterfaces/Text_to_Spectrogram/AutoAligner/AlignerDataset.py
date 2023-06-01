@@ -85,7 +85,7 @@ class AlignerDataset(Dataset):
             self.speaker_embeddings = list()
             with torch.inference_mode():
                 for datapoint in tqdm(self.datapoints):
-                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=torch.Tensor(datapoint[-2]).to(device).unsqueeze(0)).squeeze().cpu())
+                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=datapoint[-2].unsqueeze(0)).squeeze().cpu())
 
             # save to cache
             if len(self.datapoints) == 0:
@@ -178,7 +178,7 @@ class AlignerDataset(Dataset):
                                                    cached_text_len,
                                                    cached_speech,
                                                    cached_speech_len,
-                                                   norm_wave.cpu().detach().numpy(),
+                                                   norm_wave,
                                                    path])
         self.datapoints += process_internal_dataset_chunk
 
