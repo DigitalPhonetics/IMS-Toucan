@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     # ENGLISH
 
-    chunk_count = 5
+    chunk_count = 10
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
     for index in range(chunk_count):
         datasets.append(prepare_aligner_corpus(transcript_dict=chunks[index],
@@ -114,7 +114,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            device=device,
                                            speaker_embedding_func=speaker_embedding_func))
 
-    chunk_count = 3
+    chunk_count = 6
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_gigaspeech(), split_n=chunk_count)
     for index in range(chunk_count):
         datasets.append(prepare_aligner_corpus(transcript_dict=chunks[index],
