@@ -30,15 +30,13 @@ class AlignerDataset(Dataset):
                  rebuild_cache=False,
                  verbose=False,
                  phone_input=False,
-                 allow_unknown_symbols=False,
-                 speaker_embedding_func=None):
+                 allow_unknown_symbols=False):
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             os.makedirs(cache_dir, exist_ok=True)
-            if speaker_embedding_func is None:
-                speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                        run_opts={"device": str(device)},
-                                                                        savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+            _ = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                               run_opts={"device": str(device)},
+                                               savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
             if cut_silences:
                 torch.set_num_threads(1)
                 torch.hub.load(repo_or_dir='snakers4/silero-vad',
@@ -74,8 +72,7 @@ class AlignerDataset(Dataset):
                                   verbose,
                                   device,
                                   phone_input,
-                                  allow_unknown_symbols,
-                                  speaker_embedding_func),
+                                  allow_unknown_symbols),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -118,8 +115,10 @@ class AlignerDataset(Dataset):
                               verbose,
                               device,
                               phone_input,
-                              allow_unknown_symbols,
-                              speaker_embedding_func):
+                              allow_unknown_symbols):
+        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                run_opts={"device": str(device)},
+                                                                savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
         process_internal_dataset_chunk = list()
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
