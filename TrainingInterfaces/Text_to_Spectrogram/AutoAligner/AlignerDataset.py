@@ -54,6 +54,8 @@ class AlignerDataset(Dataset):
             # build cache
             print("... building dataset cache ...")
             self.datapoints = resource_manager.list()
+            self.speaker_embeddings = resource_manager.list()
+
             # make processes
             key_splits = list()
             process_list = list()
@@ -72,7 +74,8 @@ class AlignerDataset(Dataset):
                                   verbose,
                                   device,
                                   phone_input,
-                                  allow_unknown_symbols),
+                                  allow_unknown_symbols,
+                                  speaker_embedding_func),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -80,12 +83,6 @@ class AlignerDataset(Dataset):
             # we had to turn all the tensors to numpy arrays to avoid shared memory
             # issues. Now that the multi-processing is over, we can convert them back
             # to tensors to save on conversions in the future.
-
-            # add speaker embeddings
-            self.speaker_embeddings = list()
-            with torch.inference_mode():
-                for datapoint in tqdm(self.datapoints):
-                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=datapoint[-2].unsqueeze(0)).squeeze().cpu())
 
             # save to cache
             if len(self.datapoints) == 0:
@@ -121,7 +118,8 @@ class AlignerDataset(Dataset):
                               verbose,
                               device,
                               phone_input,
-                              allow_unknown_symbols):
+                              allow_unknown_symbols,
+                              speaker_embedding_func):
         process_internal_dataset_chunk = list()
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
@@ -159,9 +157,9 @@ class AlignerDataset(Dataset):
             transcript = self.path_to_transcript_dict[path]
             try:
                 try:
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu()
                 except KeyError:
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu()
                     if not allow_unknown_symbols:
                         continue  # we skip sentences with unknown symbols
             except ValueError:
@@ -170,15 +168,17 @@ class AlignerDataset(Dataset):
             except KeyError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
-            cached_text_len = torch.LongTensor([len(cached_text)]).numpy()
+            cached_text_len = torch.LongTensor([len(cached_text)])
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
-                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
-            cached_speech_len = torch.LongTensor([len(cached_speech)]).numpy()
+                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu()
+            with torch.inference_mode():
+                self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=norm_wave.unsqueeze(0)).squeeze().cpu())
+            cached_speech_len = torch.LongTensor([len(cached_speech)])
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_text_len,
                                                    cached_speech,
                                                    cached_speech_len,
-                                                   norm_wave,
+                                                   None,
                                                    path])
         self.datapoints += process_internal_dataset_chunk
 
