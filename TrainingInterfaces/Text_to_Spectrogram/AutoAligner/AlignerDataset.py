@@ -64,7 +64,6 @@ class AlignerDataset(Dataset):
                 process_list.append(
                     Process(target=self.cache_builder_process,
                             args=(key_split,
-                                  lang,
                                   min_len_in_seconds,
                                   max_len_in_seconds,
                                   cut_silences,
@@ -88,10 +87,10 @@ class AlignerDataset(Dataset):
             self.datapoint_feature_dump_list = list()
             os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
             for index, (datapoint, speaker_embedding) in tqdm(enumerate(zip(self.datapoints, self.speaker_embeddings))):
-                torch.save(([torch.Tensor(datapoint[0]),
-                             torch.LongTensor(datapoint[1]),
-                             torch.Tensor(datapoint[2]),
-                             torch.LongTensor(datapoint[3])],
+                torch.save(([datapoint[0],
+                             datapoint[1],
+                             datapoint[2],
+                             datapoint[3]],
                             speaker_embedding,
                             datapoint[-1]),
                            os.path.join(cache_dir, f"aligner_datapoints/aligner_datapoint_{index}.pt"))
@@ -107,7 +106,6 @@ class AlignerDataset(Dataset):
 
     def cache_builder_process(self,
                               path_list,
-                              lang,
                               min_len,
                               max_len,
                               cut_silences,
@@ -156,9 +154,9 @@ class AlignerDataset(Dataset):
             transcript = self.path_to_transcript_dict[path]
             try:
                 try:
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu()
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                 except KeyError:
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu()
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
                     if not allow_unknown_symbols:
                         continue  # we skip sentences with unknown symbols
             except ValueError:
@@ -169,9 +167,9 @@ class AlignerDataset(Dataset):
                 continue
             cached_text_len = torch.LongTensor([len(cached_text)])
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
-                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu()
+                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             with torch.inference_mode():
-                self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=norm_wave.unsqueeze(0)).squeeze().cpu())
+                self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=norm_wave.unsqueeze(0)).squeeze().cpu().numpy())
             cached_speech_len = torch.LongTensor([len(cached_speech)])
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_text_len,
@@ -185,14 +183,14 @@ class AlignerDataset(Dataset):
         path_to_datapoint_file = self.datapoint_feature_dump_list[index]
         datapoint, speaker_embedding, filepath = torch.load(path_to_datapoint_file, map_location='cpu')
 
-        text_vector = datapoint[0]
+        text_vector = torch.Tensor(datapoint[0])
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         return tokens, \
             torch.LongTensor([len(tokens)]), \
-            datapoint[2], \
-            datapoint[3], \
-            speaker_embedding
+            torch.Tensor(datapoint[2]), \
+            torch.LongTensor(datapoint[3]), \
+            torch.Tensor(speaker_embedding)
 
     def __len__(self):
         return len(self.datapoint_feature_dump_list)
