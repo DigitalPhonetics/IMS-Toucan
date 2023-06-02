@@ -52,7 +52,6 @@ class AlignerDataset(Dataset):
             # build cache
             print("... building dataset cache ...")
             self.datapoints = resource_manager.list()
-            self.speaker_embeddings = resource_manager.list()
 
             # make processes
             key_splits = list()
@@ -76,9 +75,16 @@ class AlignerDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-            # we had to turn all the tensors to numpy arrays to avoid shared memory
-            # issues. Now that the multi-processing is over, we can convert them back
-            # to tensors to save on conversions in the future.
+
+            # now we add speaker embeddings
+            self.speaker_embeddings = list()
+            speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                    run_opts={"device": str(device)},
+                                                                    savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+            with torch.inference_mode():
+                for datapoint in tqdm(self.datapoints):
+                    norm_wave = torch.Tensor(datapoint[-2])
+                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=norm_wave.unsqueeze(0).to(device)).squeeze().cpu().numpy())
 
             # save to cache
             if len(self.datapoints) == 0:
@@ -114,10 +120,7 @@ class AlignerDataset(Dataset):
                               device,
                               phone_input,
                               allow_unknown_symbols):
-        speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                run_opts={"device": str(device)},
-                                                                savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
-        process_internal_dataset_chunk = list()
+
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
@@ -168,16 +171,13 @@ class AlignerDataset(Dataset):
             cached_text_len = torch.LongTensor([len(cached_text)])
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
                                                         explicit_sampling_rate=16000).transpose(0, 1).cpu().numpy()
-            with torch.inference_mode():
-                self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=norm_wave.unsqueeze(0)).squeeze().cpu().numpy())
             cached_speech_len = torch.LongTensor([len(cached_speech)])
-            process_internal_dataset_chunk.append([cached_text,
-                                                   cached_text_len,
-                                                   cached_speech,
-                                                   cached_speech_len,
-                                                   None,
-                                                   path])
-        self.datapoints += process_internal_dataset_chunk
+            self.datapoints.append([cached_text,
+                                    cached_text_len,
+                                    cached_speech,
+                                    cached_speech_len,
+                                    norm_wave.cpu().numpy(),
+                                    path])
 
     def __getitem__(self, index):
         path_to_datapoint_file = self.datapoint_feature_dump_list[index]
@@ -187,10 +187,10 @@ class AlignerDataset(Dataset):
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         return tokens, \
-            torch.LongTensor([len(tokens)]), \
-            torch.Tensor(datapoint[2]), \
-            torch.LongTensor(datapoint[3]), \
-            torch.Tensor(speaker_embedding)
+               torch.LongTensor([len(tokens)]), \
+               torch.Tensor(datapoint[2]), \
+               torch.LongTensor(datapoint[3]), \
+               torch.Tensor(speaker_embedding)
 
     def __len__(self):
         return len(self.datapoint_feature_dump_list)
