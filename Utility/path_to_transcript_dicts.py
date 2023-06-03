@@ -82,7 +82,7 @@ def build_path_to_transcript_dict_gigaspeech():
         if line.strip() != "":
             fields = line.split("\t")
             norm_transcript = fields[1]
-            wav_path = os.path.join(root, "wavs", fields[0])
+            wav_path = fields[0]
             path_to_transcript[wav_path] = norm_transcript
     return path_to_transcript
 
