@@ -46,7 +46,7 @@ class AlignerDataset(Dataset):
                                verbose=False)  # download and cache for it to be loaded and used later
                 torch.set_grad_enabled(True)
             resource_manager = Manager()
-            self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
+            self.path_to_transcript_dict = dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
             fisher_yates_shuffle(key_list)
             # build cache
@@ -127,8 +127,6 @@ class AlignerDataset(Dataset):
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
 
         for path in tqdm(path_list):
-            if self.path_to_transcript_dict[path].strip() == "":
-                continue
             try:
                 wave, sr = sf.read(path)
                 if sr != assumed_sr:
@@ -146,23 +144,19 @@ class AlignerDataset(Dataset):
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
-                    norm_wave = ap.normalize_audio(audio=wave)
+                    norm_wave = ap.normalize_audio(audio=wave)  # now we can be sure that the wave is 16kHz
             except ValueError:
                 continue
-            dur_in_seconds = len(norm_wave) / 16000
-            if not (min_len <= dur_in_seconds <= max_len):  # duration may have changed because of the VAD
-                if verbose:
-                    print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
-                continue
+
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
             try:
                 try:
                     cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu()
                 except KeyError:
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu()
                     if not allow_unknown_symbols:
                         continue  # we skip sentences with unknown symbols
+                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu()
             except ValueError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
@@ -170,8 +164,7 @@ class AlignerDataset(Dataset):
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
             cached_text_len = torch.LongTensor([len(cached_text)])
-            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False,
-                                                        explicit_sampling_rate=16000).transpose(0, 1).cpu()
+            cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu()
             cached_speech_len = torch.LongTensor([len(cached_speech)])
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_text_len,
