@@ -95,7 +95,7 @@ if __name__ == '__main__':
     random.seed(131714)
     torch.random.manual_seed(131714)
 
-    torch.multiprocessing.set_sharing_strategy('file_system')
+    torch.multiprocessing.set_sharing_strategy('file_descriptor')
     torch.multiprocessing.set_start_method('spawn')
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
