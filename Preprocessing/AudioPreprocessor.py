@@ -44,7 +44,7 @@ class AudioPreprocessor:
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
-        self.jit_log_mel_spec = torch.jit.trace(self.wave_to_spectrogram, torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000)).to(device)
+        self.jit_log_mel_spec = torch.jit.trace_module(mod=self.wave_to_spectrogram, inputs={"forward": torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000)}).to(device)
 
     def cut_leading_and_trailing_silence(self, audio):
         """
