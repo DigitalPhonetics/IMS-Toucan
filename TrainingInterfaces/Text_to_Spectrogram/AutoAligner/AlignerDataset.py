@@ -60,9 +60,13 @@ class AlignerDataset(Dataset):
                 key_splits.append(
                     key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
             for key_split in key_splits:
+                transcript_list = list()
+                for path_key in key_split:
+                    transcript_list.append(self.path_to_transcript_dict[path_key])
                 process_list.append(
                     Process(target=self.cache_builder_process,
                             args=(key_split,
+                                  transcript_list,
                                   min_len_in_seconds,
                                   max_len_in_seconds,
                                   cut_silences,
@@ -70,7 +74,8 @@ class AlignerDataset(Dataset):
                                   verbose,
                                   device,
                                   phone_input,
-                                  allow_unknown_symbols),
+                                  allow_unknown_symbols,
+                                  lang),
                             daemon=True))
                 process_list[-1].start()
             for process in process_list:
@@ -94,9 +99,9 @@ class AlignerDataset(Dataset):
             os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
             for index, (datapoint, speaker_embedding) in tqdm(enumerate(zip(self.datapoints, self.speaker_embeddings))):
                 torch.save(([datapoint[0],
+                             torch.LongTensor([len(datapoint[0])]),
                              datapoint[1],
-                             datapoint[2],
-                             datapoint[3]],
+                             torch.LongTensor([len(datapoint[1])])],
                             speaker_embedding,
                             datapoint[-1]),
                            os.path.join(cache_dir, f"aligner_datapoints/aligner_datapoint_{index}.pt"))
@@ -112,6 +117,7 @@ class AlignerDataset(Dataset):
 
     def cache_builder_process(self,
                               path_list,
+                              transcript_list,
                               min_len,
                               max_len,
                               cut_silences,
@@ -119,14 +125,17 @@ class AlignerDataset(Dataset):
                               verbose,
                               device,
                               phone_input,
-                              allow_unknown_symbols):
+                              allow_unknown_symbols,
+                              lang):
 
         process_internal_dataset_chunk = list()
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
+        tf = ArticulatoryCombinedTextFrontend(language=lang)
+        warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
 
-        for path in tqdm(path_list):
+        for path, transcript in tqdm(zip(path_list, transcript_list)):
             try:
                 wave, sr = sf.read(path)
                 if sr != assumed_sr:
@@ -143,33 +152,27 @@ class AlignerDataset(Dataset):
                 continue
             try:
                 with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
                     norm_wave = ap.normalize_audio(audio=wave)  # now we can be sure that the wave is 16kHz
             except ValueError:
                 continue
 
             # raw audio preprocessing is done
-            transcript = self.path_to_transcript_dict[path]
             try:
                 try:
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu()
+                    cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0)
                 except KeyError:
                     if not allow_unknown_symbols:
                         continue  # we skip sentences with unknown symbols
-                    cached_text = self.tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu()
+                    cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0)
             except ValueError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
             except KeyError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
-            cached_text_len = torch.LongTensor([len(cached_text)])
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu()
-            cached_speech_len = torch.LongTensor([len(cached_speech)])
             process_internal_dataset_chunk.append([cached_text,
-                                                   cached_text_len,
                                                    cached_speech,
-                                                   cached_speech_len,
                                                    norm_wave.cpu(),
                                                    path])
         self.datapoints += process_internal_dataset_chunk

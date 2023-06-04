@@ -27,7 +27,7 @@ class AudioPreprocessor:
                                                   n_fft=1024,
                                                   win_length=1024,
                                                   hop_length=256,
-                                                  f_min=0.0,
+                                                  f_min=40.0,
                                                   f_max=output_sr // 2,
                                                   pad=0,
                                                   n_mels=self.melspec_buckets,
@@ -57,6 +57,7 @@ class AudioPreprocessor:
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
+        self.jit_log_mel_spec = torch.jit.trace(self.log_mel_spec, torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000))
 
     def cut_leading_and_trailing_silence(self, audio):
         """
@@ -95,11 +96,14 @@ class AudioPreprocessor:
         """
         if self.do_loudnorm:
             audio = self.normalize_loudness(audio)
-        audio = torch.Tensor(audio).to(self.device)
+        audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
         audio = self.resample(audio)
         if self.cut_silence:
             audio = self.cut_leading_and_trailing_silence(audio)
         return audio
+
+    def log_mel_spec(self, audio: torch.tensor):
+        return torch.log10(self.wave_to_spectrogram(audio))
 
     def audio_to_mel_spec_tensor(self, audio, normalize=True, explicit_sampling_rate=None):
         """
@@ -112,7 +116,7 @@ class AudioPreprocessor:
         if explicit_sampling_rate is None or explicit_sampling_rate == self.output_sr:
             if normalize:
                 audio = self.normalize_audio(audio)
-            return torch.log10(self.wave_to_spectrogram(audio))
+            return self.jit_log_mel_spec(audio)
         print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
         return torch.log10(MelSpectrogram(sample_rate=explicit_sampling_rate,
                                           n_fft=1024,
