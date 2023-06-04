@@ -7,9 +7,11 @@ from torch.utils.data import ConcatDataset
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
 from Utility.corpus_preparation import prepare_fastspeech_corpus
+from Utility.sent_emb_extraction import extract_sent_embs
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
@@ -28,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_06s_ESDS_sent_emb_a11_emoBERTcls_xvect"
+    name = "ToucanTTS_06_EmoMulti_sent_emb_a11_emoBERTcls_static_pretrain"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -54,23 +56,23 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
                                           lang="en",
                                           save_imgs=False))
     
     train_set = ConcatDataset(datasets)
 
     if "_xvect" in name:
-        print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_emomulti', 'xvect.pt')}")
-        path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"), map_location='cpu')
-        if "_static" in name:
+        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt")):
+            print("Extracting xvect from audio")
+            os.makedirs(os.path.join(PREPROCESSING_DIR, "xvect_emomulti"), exist_ok=True)
             import torchaudio
             from speechbrain.pretrained import EncoderClassifier
             classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
-            xvect_list = []
-            audio_paths = []
-            for path in audio_paths:
+            path_to_xvect = {}
+            for index in tqdm(range(len(train_set))):
+                path = train_set[index][10]
                 wave, sr = torchaudio.load(path)
                 # mono
                 wave = torch.mean(wave, dim=0, keepdim=True)
@@ -78,16 +80,37 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
                 wave = wave.squeeze(0)
                 embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
-                xvect_list.append(embedding)
+                path_to_xvect[path] = embedding
+            torch.save(path_to_xvect, os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"))
+            del classifier
         else:
-            xvect_list = None
+            print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_emomulti', 'xvect.pt')}")
+            path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"), map_location='cpu')
     else:
         path_to_xvect = None
-        xvect_list = None
-
+    
     if "_ecapa" in name:
-        print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
-        path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
+        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt")):
+            print("Extracting ecapa from audio")
+            import torchaudio
+            from speechbrain.pretrained import EncoderClassifier
+            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir="./Models/Embedding/spkrec-ecapa-voxceleb", run_opts={"device": device})
+            path_to_ecapa = {}
+            for index in tqdm(range(len(train_set))):
+                path = train_set[index][10]
+                wave, sr = torchaudio.load(path)
+                # mono
+                wave = torch.mean(wave, dim=0, keepdim=True)
+                # resampling
+                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                wave = wave.squeeze(0)
+                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
+                path_to_ecapa[path] = embedding
+            torch.save(path_to_ecapa, os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"))
+            del classifier
+        else:
+            print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
+            path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
     else:
         path_to_ecapa = None
     if path_to_ecapa is not None:
@@ -184,7 +207,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             utt_embed_dim = 768
     if "a13" in name:
         style_sent=True
-        utt_embed_dim = sent_embed_dim
         if "noadapt" in name and "adapted" not in name:
             utt_embed_dim = 768
 
@@ -214,10 +236,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=16,
+               batch_size=8,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "EmoMulti_Embedding", "embedding_function.pt"),
+               path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
@@ -227,6 +249,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                replace_utt_sent_emb=replace_utt_sent_emb,
                use_adapted_embs="adapted" in name,
                path_to_xvect=path_to_xvect,
-               static_speaker_embed="_static" in name)
+               static_speaker_embed="_static" in name,
+               steps=20000)
     if use_wandb:
         wandb.finish()

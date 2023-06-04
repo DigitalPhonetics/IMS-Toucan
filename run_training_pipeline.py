@@ -33,6 +33,8 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS_sent_emb import run as esds_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti import run as emomulti
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_emb import run as emomulti_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_word_emb import run as emomulti_sent_word
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_emb_pretrain import run as emomulti_sent_pre
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech import run as promptspeech
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import run as promptspeech_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
@@ -78,6 +80,8 @@ pipeline_dict = {
     "esds_sent"     : esds_sent,
     "emomulti"      : emomulti,
     "emomulti_sent"      : emomulti_sent,
+    "emomulti_sent_word" : emomulti_sent_word,
+    "emomulti_sent_pre" : emomulti_sent_pre,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
     "bigvgan"       : bigvgan,

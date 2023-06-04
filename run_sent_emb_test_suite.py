@@ -134,16 +134,16 @@ if __name__ == '__main__':
     #exec_device = "cpu"
     print(f"running on {exec_device}")
 
-    use_speaker_reference = False
+    use_speaker_reference = True
     use_sent_emb = True 
     use_prompt = False
     use_sent_emb_adaptor = False
-    use_xvect = False
+    use_xvect = True
     use_ecapa = False
-    use_speaker_id = True
+    use_speaker_id = False
 
     if use_speaker_id:
-        speaker_id = 3
+        speaker_id = 46
     else:
         speaker_id = None
 
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         sent_emb_extractor = None
 
     if use_speaker_reference:
-        speaker_reference = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0015/Angry/0015_000363.wav"
+        speaker_reference = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB/sam/amused_1-28_0010-16bit.wav"
         #speaker_reference = "/mount/resources/speech/corpora/LibriTTS/all_clean/1638/84448/1638_84448_000057_000006.wav"
     else:
         speaker_reference = None
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt_ref_prompt2", model_id="07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
-    test_controllable(version="ToucanTTS_06_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static", model_id="06_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
+    test_controllable(version="ToucanTTS_06b_EmoMulti_sent_emb_a11_emoBERTcls_xvect", model_id="06b_EmoMulti_sent_emb_a11_emoBERTcls_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
 
     #test_controllable(version="ToucanTTS_01_ESDS_xvect", model_id="01_ESDS_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
 

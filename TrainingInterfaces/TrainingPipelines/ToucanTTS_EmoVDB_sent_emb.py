@@ -30,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_06_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static"
+    name = "ToucanTTS_06_2_EmoVDB_speaker_sent_emb_a11_emoBERTcls_static"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder

@@ -27,7 +27,7 @@ exec_device = "cuda" if torch.cuda.is_available() else "cpu"
 tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_TEST_EmoVDB", "checkpoint_576.pt"), device=exec_device)
 tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"), lang_id="en")
 tts_scorer.show_samples_with_highest_loss(50)
-tts_scorer.remove_samples_with_highest_loss(20)
+#tts_scorer.remove_samples_with_highest_loss(50)
 
 #train_sets = list()
 #train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),

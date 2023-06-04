@@ -30,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_06_EmoMulti_sent_emb_a11_emoBERTcls_static"
+    name = "ToucanTTS_06_EmoMulti_sent_emb_a11_emoBERTcls_static_SE"
     """
     a01: integrate before encoder
     a02: integrate before encoder and decoder
@@ -81,6 +81,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if "_xvect" in name:
         if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt")):
             print("Extracting xvect from audio")
+            os.makedirs(os.path.join(PREPROCESSING_DIR, "xvect_emomulti"), exist_ok=True)
             import torchaudio
             from speechbrain.pretrained import EncoderClassifier
             classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
@@ -253,7 +254,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=12,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "EmoMulti_Embedding", "embedding_function.pt"),
+               path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
