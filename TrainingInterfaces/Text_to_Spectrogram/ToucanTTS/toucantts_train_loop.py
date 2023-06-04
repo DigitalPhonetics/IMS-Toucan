@@ -69,12 +69,14 @@ def train_loop(net,
     if use_discriminator:
         discriminator = SpectrogramDiscriminator().to(device)
 
-    if path_to_xvect is None:
+    if path_to_embed_model is not None:
         style_embedding_function = StyleEmbedding().to(device)
         check_dict = torch.load(path_to_embed_model, map_location=device)
         style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         style_embedding_function.eval()
         style_embedding_function.requires_grad_(False)
+    else:
+        style_embedding_function = None
 
     if use_adapted_embs:
         sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64, speaker_embed_dim=512 if path_to_xvect is not None else None).to(device)
@@ -132,9 +134,11 @@ def train_loop(net,
                 for path in filepaths:
                     embeddings.append(path_to_xvect[path])
                 style_embedding = torch.stack(embeddings).to(device)
-            else:
+            elif style_embedding_function is not None:
                 style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
                                                         batch_of_spectrogram_lengths=batch[3].to(device))
+            else:
+                style_embedding = None
             if sent_embs is not None:
                 if emovdb:
                     filepaths = batch[10]
@@ -155,7 +159,7 @@ def train_loop(net,
             
             if static_speaker_embed:
                 filepaths = batch[10]
-                speaker_ids = torch.LongTensor([get_speakerid_from_path(path) for path in filepaths]).to(device)
+                speaker_ids = torch.LongTensor([get_speakerid_from_path_all(path) for path in filepaths]).to(device)
             else:
                 speaker_ids = None
 
@@ -230,16 +234,17 @@ def train_loop(net,
 
         # EPOCH IS OVER
         net.eval()
-        if path_to_xvect is None:
+        if style_embedding_function is not None:
             style_embedding_function.eval()
         if sentence_embedding_adaptor is not None:
             sentence_embedding_adaptor.eval()
         if path_to_xvect is not None:
             default_embedding = path_to_xvect[train_dataset[0][10]]
-        else:
+        elif style_embedding_function is not None:
             default_embedding = style_embedding_function(
                 batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+        else: default_embedding = None
         if replace_utt_sent_emb:
             if emovdb:
                 if random_emb:
@@ -354,6 +359,7 @@ def get_random_window(generated_sequences, real_sequences, lengths):
     return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0)
 
 def get_emotion_from_path(path):
+    emotion = None
     if "EmoV_DB" in path or "EmoVDB" in path or "EmoVDB_Sam" in path:
         emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
         if emotion == "amused":
@@ -400,6 +406,12 @@ def get_emotion_from_path(path):
             emotion = "disgust"
         if emotion == "08":
             emotion = "surprise"
+    if "LJSpeech" in path:
+        emotion = "neutral"
+
+    if emotion is None:
+        raise TypeError('emotion could not be extracted from filename')
+    
     return emotion
 
 def get_speakerid_from_path(path):
@@ -443,6 +455,55 @@ def get_speakerid_from_path(path):
     if "RAVDESS" in path:
         speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
         speaker_id = int(speaker) - 1
+    
+    if speaker_id is None:
+        raise TypeError('speaker id could not be extracted from filename')
+
+    return speaker_id
+
+def get_speakerid_from_path_all(path):
+    speaker_id = None
+    if "CREMA_D" in path:
+        speaker = os.path.basename(path).split('_')[0]
+        for i, sp_id in enumerate(range(1001, 1092)):
+            if int(speaker) == sp_id:
+                speaker_id = i
+    if "RAVDESS" in path:
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
+        speaker_id = int(speaker) -1 + 91
+    if "EmoVDB" in path:
+        if "bea" in path:
+            speaker_id = 0 + 91 + 24
+        if "jenie" in path:
+            speaker_id = 1 + 91 + 24
+        if "josh" in path:
+            speaker_id = 2 + 91 + 24
+        if "sam" in path:
+            speaker_id = 3 + 91 + 24
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        if speaker == "0011":
+            speaker_id = 0 + 91 + 24 + 4
+        if speaker == "0012":
+            speaker_id = 1 + 91 + 24 + 4
+        if speaker == "0013":
+            speaker_id = 2 + 91 + 24 + 4
+        if speaker == "0014":
+            speaker_id = 3 + 91 + 24 + 4
+        if speaker == "0015":
+            speaker_id = 4 + 91 + 24 + 4
+        if speaker == "0016":
+            speaker_id = 5 + 91 + 24 + 4
+        if speaker == "0017":
+            speaker_id = 6 + 91 + 24 + 4
+        if speaker == "0018":
+            speaker_id = 7 + 91 + 24 + 4
+        if speaker == "0019":
+            speaker_id = 8 + 91 + 24 + 4
+        if speaker == "0020":
+            speaker_id = 9 + 91 + 24 + 4
+    if "LJSpeech" in path:
+        speaker_id = 129
     
     if speaker_id is None:
         raise TypeError('speaker id could not be extracted from filename')
