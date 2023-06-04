@@ -135,7 +135,8 @@ class AlignerDataset(Dataset):
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
 
-        for path, transcript in tqdm(zip(path_list, transcript_list)):
+        for path_index, path in tqdm(enumerate(path_list)):
+            transcript = transcript_list[path_index]
             try:
                 wave, sr = sf.read(path)
                 if sr != assumed_sr:
