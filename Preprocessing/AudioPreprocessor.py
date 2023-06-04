@@ -7,7 +7,7 @@ from torchaudio.transforms import Resample
 
 class AudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=None, melspec_buckets=128, cut_silence=False, do_loudnorm=False, device="cpu"):
+    def __init__(self, input_sr, output_sr=None, cut_silence=False, do_loudnorm=False, device="cpu"):
         """
         The parameters are by default set up to do well
         on a 16kHz signal. A different sampling rate may
@@ -20,22 +20,9 @@ class AudioPreprocessor:
         self.device = device
         self.input_sr = input_sr
         self.output_sr = output_sr
-        self.melspec_buckets = melspec_buckets
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
-        self.wave_to_spectrogram = MelSpectrogram(sample_rate=output_sr,
-                                                  n_fft=1024,
-                                                  win_length=1024,
-                                                  hop_length=256,
-                                                  f_min=40.0,
-                                                  f_max=output_sr // 2,
-                                                  pad=0,
-                                                  n_mels=self.melspec_buckets,
-                                                  power=2.0,
-                                                  normalized=False,
-                                                  center=True,
-                                                  pad_mode='reflect',
-                                                  mel_scale='htk').to(self.device)
+        self.wave_to_spectrogram = LogMelSpec(output_sr).to(device)
         if cut_silence:
             torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
             # careful: assumes 16kHz or 8kHz audio
@@ -57,7 +44,7 @@ class AudioPreprocessor:
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
-        self.jit_log_mel_spec = torch.jit.trace(self.log_mel_spec, torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000).to(device))
+        self.jit_log_mel_spec = torch.jit.trace(self.wave_to_spectrogram, torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000).to(device)).to(device)
 
     def cut_leading_and_trailing_silence(self, audio):
         """
@@ -102,9 +89,6 @@ class AudioPreprocessor:
             audio = self.cut_leading_and_trailing_silence(audio)
         return audio
 
-    def log_mel_spec(self, audio: torch.tensor):
-        return torch.log10(self.wave_to_spectrogram(audio))
-
     def audio_to_mel_spec_tensor(self, audio, normalize=True, explicit_sampling_rate=None):
         """
         explicit_sampling_rate is for when
@@ -118,19 +102,28 @@ class AudioPreprocessor:
                 audio = self.normalize_audio(audio)
             return self.jit_log_mel_spec(audio)
         print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
-        return torch.log10(MelSpectrogram(sample_rate=explicit_sampling_rate,
-                                          n_fft=1024,
-                                          win_length=1024,
-                                          hop_length=256,
-                                          f_min=40.0,
-                                          f_max=explicit_sampling_rate // 2,
-                                          pad=0,
-                                          n_mels=self.melspec_buckets,
-                                          power=2.0,
-                                          normalized=False,
-                                          center=True,
-                                          pad_mode='reflect',
-                                          mel_scale='htk')(audio))
+        return LogMelSpec(sr=explicit_sampling_rate).to(self.device)(audio)
+
+
+class LogMelSpec(torch.nn.Module):
+    def __init__(self, sr, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.spec = MelSpectrogram(sample_rate=sr,
+                                   n_fft=1024,
+                                   win_length=1024,
+                                   hop_length=256,
+                                   f_min=40.0,
+                                   f_max=sr // 2,
+                                   pad=0,
+                                   n_mels=128,
+                                   power=2.0,
+                                   normalized=False,
+                                   center=True,
+                                   pad_mode='reflect',
+                                   mel_scale='htk')
+
+    def forward(self, audio):
+        return torch.log10(self.spec(audio))
 
 
 if __name__ == '__main__':
