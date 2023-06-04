@@ -262,7 +262,10 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #  set defaults                #
         ################################
-        self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        try:
+            self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        except KeyError:
+            self.default_utterance_embedding = None
         if static_speaker_embed:
             self.default_speaker_id = torch.LongTensor([0]).to(self.device)
         else:
