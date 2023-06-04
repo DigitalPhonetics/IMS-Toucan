@@ -22,7 +22,7 @@ class AudioPreprocessor:
         self.output_sr = output_sr
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
-        self.wave_to_spectrogram = LogMelSpec(output_sr).to(device)
+        self.wave_to_spectrogram = LogMelSpec(output_sr)
         if cut_silence:
             torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
             # careful: assumes 16kHz or 8kHz audio
@@ -44,7 +44,7 @@ class AudioPreprocessor:
             self.final_sr = output_sr
         else:
             self.resample = lambda x: x
-        self.jit_log_mel_spec = torch.jit.trace(self.wave_to_spectrogram, torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000).to(device)).to(device)
+        self.jit_log_mel_spec = torch.jit.trace(self.wave_to_spectrogram, torch.tensor([0.0, 0.3, 0.7, 0.3] * 4000)).to(device)
 
     def cut_leading_and_trailing_silence(self, audio):
         """
