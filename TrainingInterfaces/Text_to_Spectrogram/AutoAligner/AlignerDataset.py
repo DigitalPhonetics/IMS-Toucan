@@ -83,11 +83,11 @@ class AlignerDataset(Dataset):
             print("pooling results...")
             self.datapoints = [x for x in [y for y in self.datapoints]]  # unpack into a joint list
             print("converting text to tensors...")
-            text_tensors = [torch.Tensor(x[0]) for x in self.datapoints]  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
+            text_tensors = [x[0] for x in self.datapoints]  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
             print("converting specs to tensors...")
-            speech_tensors = [torch.Tensor(x[1]) for x in self.datapoints]
+            speech_tensors = [x[1] for x in self.datapoints]
             print("converting waves to tensors...")
-            norm_waves = [torch.Tensor(x[2]) for x in self.datapoints]
+            norm_waves = [x[2] for x in self.datapoints]
             print("unpacking file list...")
             filepaths = [x[3] for x in self.datapoints]
             del self.datapoints
@@ -100,7 +100,7 @@ class AlignerDataset(Dataset):
                                                                     savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
             with torch.inference_mode():
                 for norm_wave in tqdm(norm_waves):
-                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=norm_wave.unsqueeze(0).to(device)).squeeze().cpu())
+                    self.speaker_embeddings.append(speaker_embedding_func.encode_batch(wavs=torch.Tensor(norm_wave).unsqueeze(0).to(device)).squeeze().cpu())
 
             # save to cache
             if len(self.speaker_embeddings) == 0:
@@ -109,9 +109,9 @@ class AlignerDataset(Dataset):
             self.datapoint_feature_dump_list = list()
             os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
             for index, (filepath, speech_tensor, text_tensor, speaker_embedding) in tqdm(enumerate(zip(filepaths, speech_tensors, text_tensors, self.speaker_embeddings)), total=len(filepaths)):
-                torch.save(([text_tensor,
+                torch.save(([torch.Tensor(text_tensor),
                              torch.LongTensor([len(text_tensor)]),
-                             speech_tensor,
+                             torch.Tensor(speech_tensor),
                              torch.LongTensor([len(speech_tensor)])],
                             speaker_embedding,
                             filepath),
