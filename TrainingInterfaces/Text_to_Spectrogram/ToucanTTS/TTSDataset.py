@@ -101,11 +101,6 @@ class TTSDataset(Dataset):
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
-                for index_of_word_boundary in indexes_of_word_boundaries:
-                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
-                                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
-                                                 cached_duration[index_of_word_boundary:]])
-
                 last_vec = None
                 for phoneme_index, vec in enumerate(text):
                     if last_vec is not None:
@@ -120,6 +115,11 @@ class TTSDataset(Dataset):
                             cached_duration[phoneme_index - 1] = new_dur_1
                             cached_duration[phoneme_index] = new_dur_2
                     last_vec = vec
+
+                for index_of_word_boundary in indexes_of_word_boundaries:
+                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
+                                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
+                                                 cached_duration[index_of_word_boundary:]])
 
                 cached_energy = energy_calc(input_waves=torch.Tensor(raw_wave).unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
