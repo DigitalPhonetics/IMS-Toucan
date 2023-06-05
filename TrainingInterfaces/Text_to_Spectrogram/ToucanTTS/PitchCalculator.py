@@ -113,6 +113,6 @@ class Parselmouth(torch.nn.Module):
         if text is not None:
             for i, vector in enumerate(text):
                 if vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    x_avg[i] = torch.tensor(0.0)
+                    x_avg[i] = torch.tensor(0.0, device=x.device)
 
         return torch.stack(x_avg)

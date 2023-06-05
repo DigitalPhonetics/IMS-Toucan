@@ -3,6 +3,7 @@ import os
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
+from torchaudio.transforms import Resample
 from tqdm import tqdm
 
 from Preprocessing.TextFrontend import get_language_id
@@ -62,8 +63,10 @@ class TTSDataset(Dataset):
             _, _, filepath = torch.load(initial_file, map_location='cpu')
 
             _, _orig_sr = sf.read(filepath)
-            parsel = Parselmouth(reduction_factor=reduction_factor, fs=_orig_sr)
-            energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=_orig_sr)
+            resampler = Resample(orig_freq=_orig_sr, new_freq=16000).to(device)
+
+            parsel = Parselmouth(reduction_factor=reduction_factor, fs=16000).to(device)
+            energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=16000).to(device)
             dc = DurationCalculator(reduction_factor=reduction_factor)
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
@@ -71,6 +74,7 @@ class TTSDataset(Dataset):
             for index in tqdm(range(len(aligner_datapoint_feature_dump_list))):
                 datapoint, _, filepath = torch.load(aligner_datapoint_feature_dump_list[index], map_location='cpu')
                 raw_wave, sr = sf.read(filepath)
+                raw_wave = resampler(torch.tensor(raw_wave).to(device))
                 if _orig_sr != sr:
                     print(f"Not all files have the same sampling rate! Please fix and re-run.  -- triggered by {filepath}")
 
@@ -98,35 +102,14 @@ class TTSDataset(Dataset):
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
-                last_vec = None
-                for phoneme_index, vec in enumerate(text):
-                    if last_vec is not None:
-                        if torch.equal(last_vec, vec):
-                            # we found a case of repeating phonemes!
-                            # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                            total_dur = cached_duration[phoneme_index - 1] + cached_duration[phoneme_index]
-                            new_dur_1 = int((total_dur / 5) * 3)
-                            cached_duration[phoneme_index - 1] = new_dur_1
-                            cached_duration[phoneme_index] = total_dur - new_dur_1
-                    last_vec = vec
-
                 # adding 0 durations for the word boundaries at the indexes we noted down previously
-                new_size = cached_duration.size(0) + len(indexes_of_word_boundaries)  # Calculate the size of the new tensor
-                new_tensor = torch.zeros(new_size, dtype=cached_duration.dtype)  # Create a new tensor with the desired size
-                inserted_index = 0
-                for i, idx in enumerate(indexes_of_word_boundaries):
-                    new_tensor[inserted_index:idx] = cached_duration[inserted_index:idx]
-                    new_tensor[idx] = torch.LongTensor([0])
-                    inserted_index = idx + 1
-                new_tensor[inserted_index:] = cached_duration[indexes_of_word_boundaries[-1] + 1:]  # Copy the remaining values after the last index
+                filler = torch.LongTensor([0])
+                for index_of_word_boundary in indexes_of_word_boundaries:
+                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
+                                                 filler,  # insert a 0 duration wherever there is a word boundary
+                                                 cached_duration[index_of_word_boundary:]])
 
-                # the following lines are the previous solution, but concatenations are slow compared to creating a new tensor with the correct size and filling it.
-                # for index_of_word_boundary in indexes_of_word_boundaries:
-                #    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
-                #                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
-                #                                 cached_duration[index_of_word_boundary:]])
-
-                input_wave = torch.Tensor(raw_wave).unsqueeze(0)
+                input_wave = raw_wave.unsqueeze(0)
                 cached_energy = energy_calc(input_waves=input_wave,
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
