@@ -45,12 +45,17 @@ def load_net_toucan(path):
                                 try:
                                     print("Loading sent word emb architecture")
                                     net = ToucanTTS(sent_embed_dim=768,
+                                                    utt_embed_dim=64,
+                                                    lang_embs=None,
                                                     sent_embed_adaptation="noadapt" not in path,
                                                     sent_embed_encoder=True,
+                                                    concat_sent_style=True,
+                                                    use_concat_projection=True,
                                                     use_sent_style_loss="loss" in path,
                                                     pre_embed="_pre" in path,
-                                                    style_sent=True,
-                                                    word_embed_dim=768)
+                                                    style_sent=False,
+                                                    word_embed_dim=768,
+                                                    static_speaker_embed="_static" in path)
                                     net.load_state_dict(check_dict["model"])
                                 except RuntimeError:
                                     print("Loading sent emb architecture")
