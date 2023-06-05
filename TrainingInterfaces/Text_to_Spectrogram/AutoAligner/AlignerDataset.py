@@ -81,7 +81,12 @@ class AlignerDataset(Dataset):
             for process in process_list:
                 process.join()
             print("pooling results...")
-            self.datapoints = [x for x in [y for y in self.datapoints]]  # unpack into a joint list
+            pooled_datapoints = list()
+            for chunk in self.datapoints:
+                for datapoint in chunk:
+                    pooled_datapoints.append(datapoint)  # unpack into a joint list
+            self.datapoints = pooled_datapoints
+            del pooled_datapoints
             print("converting text to tensors...")
             text_tensors = [x[0] for x in self.datapoints]  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
             print("converting specs to tensors...")
