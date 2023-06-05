@@ -80,6 +80,7 @@ class AlignerDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
+            self.datapoints = [x for x in [y for y in self.datapoints]]  # unpack into a joint list
 
             # now we add speaker embeddings
             self.speaker_embeddings = list()
@@ -175,7 +176,7 @@ class AlignerDataset(Dataset):
                                                    cached_speech.numpy(),
                                                    norm_wave.cpu().numpy(),
                                                    path])
-        self.datapoints = self.datapoints + process_internal_dataset_chunk
+        self.datapoints.append(process_internal_dataset_chunk)
 
     def __getitem__(self, index):
         path_to_datapoint_file = self.datapoint_feature_dump_list[index]
