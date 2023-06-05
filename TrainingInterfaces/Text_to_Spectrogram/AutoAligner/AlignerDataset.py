@@ -82,10 +82,13 @@ class AlignerDataset(Dataset):
                 process.join()
             print("pooling results...")
             self.datapoints = [x for x in [y for y in self.datapoints]]  # unpack into a joint list
-            print("converting to tensors...")
-            text_tensors = torch.Tensor([x[0] for x in self.datapoints])  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
-            speech_tensors = torch.Tensor([x[1] for x in self.datapoints])
-            norm_waves = torch.Tensor([x[2] for x in self.datapoints])
+            print("converting text to tensors...")
+            text_tensors = [torch.Tensor(x[0]) for x in self.datapoints]  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
+            print("converting specs to tensors...")
+            speech_tensors = [torch.Tensor(x[1]) for x in self.datapoints]
+            print("converting waves to tensors...")
+            norm_waves = [torch.Tensor(x[2]) for x in self.datapoints]
+            print("unpacking file list...")
             filepaths = [x[3] for x in self.datapoints]
             del self.datapoints
             print("done!")
