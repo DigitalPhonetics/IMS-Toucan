@@ -22,33 +22,27 @@ def build_speaker_embed_dataset():
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "ravdess"),
-                                       lang="en",
-                                       ctc_selection=False))
+                                       lang="en"))
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "esds"),
-                                       lang="en",
-                                       ctc_selection=False))
+                                       lang="en"))
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "ravdess"),
-                                       lang="en",
-                                       ctc_selection=False))
+                                       lang="en"))
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "esds"),
-                                       lang="en",
-                                       ctc_selection=False))
+                                       lang="en"))
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "ravdess"),
-                                       lang="en",
-                                       ctc_selection=False))
+                                       lang="en"))
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "esds"),
-                                       lang="en",
-                                       ctc_selection=False))
+                                       lang="en"))
 
     datasets.append(prepare_tts_corpus(transcript_dict={},
                                        corpus_dir=os.path.join("Corpora", "libri_all_clean"),

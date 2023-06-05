@@ -1,5 +1,4 @@
 import os
-import statistics
 
 import soundfile as sf
 import torch
@@ -30,7 +29,6 @@ class TTSDataset(Dataset):
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False,
-                 ctc_selection=True,
                  save_imgs=False):
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
@@ -51,7 +49,6 @@ class TTSDataset(Dataset):
 
             print("... building dataset cache ...")
             self.datapoints = list()
-            self.ctc_losses = list()
 
             acoustic_model = Aligner()
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
@@ -94,41 +91,50 @@ class TTSDataset(Dataset):
                         indexes_of_word_boundaries.append(phoneme_index)
                 matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-                alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
-                                                                    tokens=matrix_without_word_boundaries.to(device),
-                                                                    save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
-                                                                    return_ctc=True)
+                alignment_path = acoustic_model.inference(mel=melspec.to(device),
+                                                          tokens=matrix_without_word_boundaries.to(device),
+                                                          save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
+                                                          return_ctc=False)
 
                 cached_duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
                 last_vec = None
                 for phoneme_index, vec in enumerate(text):
                     if last_vec is not None:
-                        if last_vec.numpy().tolist() == vec.numpy().tolist():
+                        if torch.equal(last_vec, vec):
                             # we found a case of repeating phonemes!
                             # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                            dur_1 = cached_duration[phoneme_index - 1]
-                            dur_2 = cached_duration[phoneme_index]
-                            total_dur = dur_1 + dur_2
+                            total_dur = cached_duration[phoneme_index - 1] + cached_duration[phoneme_index]
                             new_dur_1 = int((total_dur / 5) * 3)
-                            new_dur_2 = total_dur - new_dur_1
                             cached_duration[phoneme_index - 1] = new_dur_1
-                            cached_duration[phoneme_index] = new_dur_2
+                            cached_duration[phoneme_index] = total_dur - new_dur_1
                     last_vec = vec
 
-                for index_of_word_boundary in indexes_of_word_boundaries:
-                    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
-                                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
-                                                 cached_duration[index_of_word_boundary:]])
+                # adding 0 durations for the word boundaries at the indexes we noted down previously
+                new_size = cached_duration.size(0) + len(indexes_of_word_boundaries)  # Calculate the size of the new tensor
+                new_tensor = torch.zeros(new_size, dtype=cached_duration.dtype)  # Create a new tensor with the desired size
+                inserted_index = 0
+                for i, idx in enumerate(indexes_of_word_boundaries):
+                    new_tensor[inserted_index:idx] = cached_duration[inserted_index:idx]
+                    new_tensor[idx] = torch.LongTensor([0])
+                    inserted_index = idx + 1
+                new_tensor[inserted_index:] = cached_duration[indexes_of_word_boundaries[-1] + 1:]  # Copy the remaining values after the last index
 
-                cached_energy = energy_calc(input_waves=torch.Tensor(raw_wave).unsqueeze(0),
+                # the following lines are the previous solution, but concatenations are slow compared to creating a new tensor with the correct size and filling it.
+                # for index_of_word_boundary in indexes_of_word_boundaries:
+                #    cached_duration = torch.cat([cached_duration[:index_of_word_boundary],
+                #                                 torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
+                #                                 cached_duration[index_of_word_boundary:]])
+
+                input_wave = torch.Tensor(raw_wave).unsqueeze(0)
+                cached_energy = energy_calc(input_waves=input_wave,
                                             input_waves_lengths=norm_wave_length,
                                             feats_lengths=melspec_length,
                                             text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu().float()
 
-                cached_pitch = parsel(input_waves=torch.Tensor(raw_wave).unsqueeze(0),
+                cached_pitch = parsel(input_waves=input_wave,
                                       input_waves_lengths=norm_wave_length,
                                       feats_lengths=melspec_length,
                                       text=text,
@@ -144,21 +150,10 @@ class TTSDataset(Dataset):
                                         cached_pitch,
                                         None,  # this used to be the prosodic condition, but is now deprecated
                                         filepath])
-                self.ctc_losses.append(ctc_loss)
 
             # =============================
             # done with datapoint creation
             # =============================
-
-            if ctc_selection and len(self.datapoints) > 300:  # for less than 300 datapoints, we should not throw away anything.
-                # now we can filter out some bad datapoints based on the CTC scores we collected
-                mean_ctc = sum(self.ctc_losses) / len(self.ctc_losses)
-                std_dev = statistics.stdev(self.ctc_losses)
-                threshold = mean_ctc + (std_dev * 3.5)
-                for index in range(len(self.ctc_losses), 0, -1):
-                    if self.ctc_losses[index - 1] > threshold:
-                        self.datapoints.pop(index - 1)
-                        print(f"Removing datapoint {index - 1}, because the CTC loss is 3.5 standard deviations higher than the mean. \n ctc: {round(self.ctc_losses[index - 1], 4)} vs. mean: {round(mean_ctc, 4)}")
 
             # save to cache
             os.makedirs(os.path.join(cache_dir, f"tts_datapoints/"), exist_ok=True)

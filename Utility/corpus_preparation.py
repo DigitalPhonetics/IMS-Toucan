@@ -22,7 +22,6 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnor
 def prepare_tts_corpus(transcript_dict,
                        corpus_dir,
                        lang,
-                       ctc_selection=True,  # heuristically removes some samples which might be problematic.
                        # For small datasets it's best to turn this off and instead inspect the data with the scorer, if there are any issues.
                        fine_tune_aligner=True,
                        use_reconstruction=True,
@@ -74,5 +73,4 @@ def prepare_tts_corpus(transcript_dict,
                       cache_dir=corpus_dir,
                       device=torch.device("cuda"),
                       lang=lang,
-                      ctc_selection=ctc_selection,
                       save_imgs=save_imgs)

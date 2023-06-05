@@ -74,8 +74,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
-                                               lang="en",
-                                               ctc_selection=False))
+                                               lang="en"))
 
     english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
