@@ -98,9 +98,9 @@ class AlignerDataset(Dataset):
             self.datapoint_feature_dump_list = list()
             os.makedirs(os.path.join(cache_dir, f"aligner_datapoints/"), exist_ok=True)
             for index, (datapoint, speaker_embedding) in tqdm(enumerate(zip(self.datapoints, self.speaker_embeddings))):
-                torch.save(([datapoint[0],
+                torch.save(([torch.Tensor(datapoint[0]),
                              torch.LongTensor([len(datapoint[0])]),
-                             datapoint[1],
+                             torch.Tensor(datapoint[1]),
                              torch.LongTensor([len(datapoint[1])])],
                             speaker_embedding,
                             datapoint[-1]),
@@ -171,9 +171,9 @@ class AlignerDataset(Dataset):
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
             cached_speech = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1).cpu()
-            process_internal_dataset_chunk.append([cached_text,
-                                                   cached_speech,
-                                                   norm_wave.cpu(),
+            process_internal_dataset_chunk.append([cached_text.numpy(),
+                                                   cached_speech.numpy(),
+                                                   norm_wave.cpu().numpy(),
                                                    path])
         self.datapoints = self.datapoints + process_internal_dataset_chunk
 
