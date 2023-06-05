@@ -175,7 +175,7 @@ class AlignerDataset(Dataset):
                                                    cached_speech,
                                                    norm_wave.cpu(),
                                                    path])
-        self.datapoints += process_internal_dataset_chunk
+        self.datapoints = self.datapoints + process_internal_dataset_chunk
 
     def __getitem__(self, index):
         path_to_datapoint_file = self.datapoint_feature_dump_list[index]
