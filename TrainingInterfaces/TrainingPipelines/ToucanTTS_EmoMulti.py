@@ -59,6 +59,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           lang="en",
                                           save_imgs=False))
     
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
+                                          lang="en",
+                                          save_imgs=False))
+    
     train_set = ConcatDataset(datasets)
 
     if "_xvect" in name:

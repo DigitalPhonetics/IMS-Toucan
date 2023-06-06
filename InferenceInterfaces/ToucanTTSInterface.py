@@ -97,15 +97,21 @@ class ToucanTTSInterface(torch.nn.Module):
                                     self.use_sent_emb = True
                                     self.use_lang_id = False
                                     self.replace_utt_sent_emb = False
+                                    static_speaker_embed="_static" in tts_model_path
                                     print("Loading sent word emb architecture")
                                     self.phone2mel = ToucanTTS(weights=checkpoint["model"],
                                                                 sent_embed_dim=768,
+                                                                utt_embed_dim=64,
+                                                                lang_embs=None,
                                                                 sent_embed_adaptation="noadapt" not in tts_model_path,
                                                                 sent_embed_encoder=True,
+                                                                concat_sent_style=True,
+                                                                use_concat_projection=True,
                                                                 use_sent_style_loss="loss" in tts_model_path,
                                                                 pre_embed="_pre" in tts_model_path,
-                                                                style_sent=True,
-                                                                word_embed_dim=768)
+                                                                style_sent=False,
+                                                                word_embed_dim=768,
+                                                                static_speaker_embed=static_speaker_embed)
                                 except RuntimeError:
                                     print("Loading sent emb architecture")
                                     self.use_word_emb = False
@@ -211,7 +217,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                                 use_sent_style_loss="loss" in tts_model_path,
                                                                 pre_embed="_pre" in tts_model_path,
                                                                 style_sent=style_sent,
-                                                                static_speaker_embed=static_speaker_embed)
+                                                                static_speaker_embed=static_speaker_embed,
+                                                                use_se="_SE" in tts_model_path)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))

@@ -76,10 +76,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           lang="en",
                                           save_imgs=False))
 
-    #datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
-     #                                     corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
-      #                                    lang="en",
-       #                                   save_imgs=False))
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
+                                          lang="en",
+                                          save_imgs=False))
     
     train_set = ConcatDataset(datasets)
 
@@ -257,7 +257,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=6,
+               batch_size=12,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=None,

@@ -66,10 +66,10 @@ def test_sentence(version, model_id="Meta", exec_device="cpu", speaker_reference
         tts.set_sentence_embedding(prompt)
     tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav")
 
-def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False, sent_emb_extractor=None, prompt:str=None, make_preprompt=False, sent_emb_adaptor=None, xvect_model=None, speaker_id=None):
+def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_reference=None, vocoder_model_path=None, biggan=False, sent_emb_extractor=None, word_emb_extractor=None, prompt:str=None, make_preprompt=False, sent_emb_adaptor=None, xvect_model=None, speaker_id=None):
     os.makedirs("audios", exist_ok=True)
     os.makedirs(f"audios/{version}", exist_ok=True)
-    tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, sent_emb_extractor=sent_emb_extractor, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
+    tts = ToucanTTSInterface(device=exec_device, tts_model_path=model_id, vocoder_model_path=vocoder_model_path, faster_vocoder=not biggan, sent_emb_extractor=sent_emb_extractor, word_emb_extractor=word_emb_extractor, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
     tts.set_language("en")
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
@@ -82,12 +82,13 @@ def test_controllable(version, model_id="Meta", exec_device="cpu", speaker_refer
                                   'She laughed and said: This is so funny.',
                                   'No, this is horrible!',
                                   'I am so sad, why is this so depressing?',
-                                  'Be careful!, Cried the woman',
+                                  'Be careful, cried the woman.',
                                   'This makes me feel bad.',
                                   'Oh happy day!',
                                   'Well, this sucks.',
                                   'I am so angry!',
-                                  'What a surprise!']):
+                                  'What a surprise!',
+                                  'I am so sad.']):
         if prompt is not None:
             if make_preprompt:
                 prompt = prompt + ' ' + sentence
@@ -129,21 +130,22 @@ def test_promptspeech(version, model_id="Meta", exec_device="cpu", speaker_refer
 
 if __name__ == '__main__':
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"1"
     exec_device = "cuda:0" if torch.cuda.is_available() else "cpu"
     #exec_device = "cpu"
     print(f"running on {exec_device}")
 
-    use_speaker_reference = True
-    use_sent_emb = True 
+    use_speaker_reference = False
+    use_sent_emb = True
+    use_word_emb = False
     use_prompt = False
     use_sent_emb_adaptor = False
-    use_xvect = True
+    use_xvect = False
     use_ecapa = False
-    use_speaker_id = False
+    use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 46
+        speaker_id = 1 + 91 + 24
     else:
         speaker_id = None
 
@@ -163,6 +165,12 @@ if __name__ == '__main__':
         #sent_emb_extractor = SentenceEmbeddingExtractor()
     else:
         sent_emb_extractor = None
+
+    if use_word_emb:
+        from Preprocessing.word_embeddings.EmotionRoBERTaWordEmbeddingExtractor import EmotionRoBERTaWordEmbeddingExtractor
+        word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
+    else:
+        word_embedding_extractor = None
 
     if use_speaker_reference:
         speaker_reference = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/EmoVDB/sam/amused_1-28_0010-16bit.wav"
@@ -216,7 +224,7 @@ if __name__ == '__main__':
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", model_id="03_Blizzard2013_sent_emb_a11_loss_bertcls_style_keep", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt)
     #test_controllable(version="ToucanTTS_07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt_ref_prompt2", model_id="07_EmoMulti_sent_emb_a11_emoBERTcls_xvect_noadapt", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model)
-    test_controllable(version="ToucanTTS_06b_EmoMulti_sent_emb_a11_emoBERTcls_xvect", model_id="06b_EmoMulti_sent_emb_a11_emoBERTcls_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
+    test_controllable(version="ToucanTTS_06_EmoMulti_sent_emb_a11_emoBERTcls_static_SE", model_id="06_EmoMulti_sent_emb_a11_emoBERTcls_static_SE", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, sent_emb_extractor=sent_emb_extractor, word_emb_extractor=word_embedding_extractor, prompt=prompt, sent_emb_adaptor=sent_emb_adaptor, xvect_model=xvect_model, speaker_id=speaker_id)
 
     #test_controllable(version="ToucanTTS_01_ESDS_xvect", model_id="01_ESDS_xvect", exec_device=exec_device, vocoder_model_path=None, biggan=True, speaker_reference=speaker_reference, xvect_model=xvect_model)
 

@@ -155,7 +155,8 @@ def load_net_toucan(path):
                                                     use_sent_style_loss="loss" in path,
                                                     pre_embed="_pre" in path,
                                                     style_sent=style_sent,
-                                                    static_speaker_embed="_static" in path)
+                                                    static_speaker_embed="_static" in path,
+                                                    use_se="_SE" in path)
                                     net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
