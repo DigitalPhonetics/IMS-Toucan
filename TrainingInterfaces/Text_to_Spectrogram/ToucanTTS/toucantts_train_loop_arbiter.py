@@ -26,10 +26,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                use_discriminator=True,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
                sent_embs=None,
                random_emb=False,
-               emovdb=False,
-               replace_utt_sent_emb=False,
                word_embedding_extractor=None,
-               use_adapted_embs=False,
                path_to_xvect=None,
                static_speaker_embed=False
                ):
@@ -71,9 +68,6 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            use_discriminator=use_discriminator,
                            sent_embs=sent_embs,
                            random_emb=random_emb,
-                           emovdb=emovdb,
-                           replace_utt_sent_emb=replace_utt_sent_emb,
                            word_embedding_extractor=word_embedding_extractor,
-                           use_adapted_embs=use_adapted_embs,
                            path_to_xvect=path_to_xvect,
                            static_speaker_embed=static_speaker_embed)

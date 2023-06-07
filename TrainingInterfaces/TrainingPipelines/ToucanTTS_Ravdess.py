@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_Ravdess"
+    name = "ToucanTTS_04_Ravdess_static"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -40,7 +40,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           lang="en",
                                           save_imgs=False)
 
-    model = ToucanTTS(lang_embs=None)
+    model = ToucanTTS(lang_embs=None,
+                      utt_embed_dim=512,
+                      static_speaker_embed=True)
     if use_wandb:
         wandb.init(
             name=f"{name}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -54,9 +56,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                batch_size=16,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
+               path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               static_speaker_embed=True)
     if use_wandb:
         wandb.finish()

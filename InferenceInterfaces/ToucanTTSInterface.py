@@ -30,7 +30,6 @@ class ToucanTTSInterface(torch.nn.Module):
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  sent_emb_extractor=None,
                  word_emb_extractor=None,
-                 sent_emb_adaptor=None,
                  xvect_model=None
                  ):
         super().__init__()
@@ -59,6 +58,7 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         self.use_lang_id = True
         self.use_sent_emb = False
+        self.static_speaker_embed=False
         self.use_word_emb = False
         try:
             if "sent_emb" in tts_model_path:
@@ -69,156 +69,37 @@ class ToucanTTSInterface(torch.nn.Module):
                 if "sent_emb" in tts_model_path:
                     raise RuntimeError
                 self.use_lang_id = False
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
+                self.phone2mel = ToucanTTS(weights=checkpoint["model"], 
+                                           lang_embs=None)  # multi speaker single language
             except RuntimeError:
                 try:
                     if "sent_emb" in tts_model_path:
                         raise RuntimeError
                     self.use_lang_id = False
-                    self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=512)  # multi speaker single language, xvect
+                    self.phone2mel = ToucanTTS(weights=checkpoint["model"], 
+                                               lang_embs=None, 
+                                               utt_embed_dim=None)  # single speaker, single language
                 except RuntimeError:
                     try:
                         if "sent_emb" in tts_model_path:
                             raise RuntimeError
-                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+                        print("Loading baseline architecture")
+                        self.use_lang_id = False
+                        self.static_speaker_embed = True
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], 
+                                                   lang_embs=None, 
+                                                   utt_embed_dim=512,
+                                                   static_speaker_embed=self.static_speaker_embed)
                     except RuntimeError:
-                        try:
-                            self.use_word_emb = True
-                            self.use_lang_id = True
-                            self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768)
-                        except RuntimeError:
-                            try:
-                                self.use_word_emb = True
-                                self.use_lang_id = False
-                                self.phone2mel = ToucanTTS(weights=checkpoint["model"], word_embed_dim=768, utt_embed_dim=None)
-                            except RuntimeError:
-                                try:
-                                    self.use_word_emb = True
-                                    self.use_sent_emb = True
-                                    self.use_lang_id = False
-                                    self.replace_utt_sent_emb = False
-                                    static_speaker_embed="_static" in tts_model_path
-                                    print("Loading sent word emb architecture")
-                                    self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                                                sent_embed_dim=768,
-                                                                utt_embed_dim=64,
-                                                                lang_embs=None,
-                                                                sent_embed_adaptation="noadapt" not in tts_model_path,
-                                                                sent_embed_encoder=True,
-                                                                concat_sent_style=True,
-                                                                use_concat_projection=True,
-                                                                use_sent_style_loss="loss" in tts_model_path,
-                                                                pre_embed="_pre" in tts_model_path,
-                                                                style_sent=False,
-                                                                word_embed_dim=768,
-                                                                static_speaker_embed=static_speaker_embed)
-                                except RuntimeError:
-                                    print("Loading sent emb architecture")
-                                    self.use_word_emb = False
-                                    self.use_sent_emb = True
-                                    self.use_lang_id = False
-                                    lang_embs=None
-                                    if "_xvect" in tts_model_path and "_adapted" not in tts_model_path:
-                                        utt_embed_dim = 512
-                                    elif "_ecapa" in tts_model_path and "_adapted" not in tts_model_path:
-                                        utt_embed_dim = 192
-                                    else:
-                                        utt_embed_dim = 64
-
-                                    if "laser" in tts_model_path:
-                                        sent_embed_dim = 1024
-                                    if "lealla" in tts_model_path:
-                                        sent_embed_dim = 192
-                                    if "para" in tts_model_path:
-                                        sent_embed_dim = 768
-                                    if "mpnet" in tts_model_path:
-                                        sent_embed_dim = 768
-                                    if "bertcls" in tts_model_path:
-                                        sent_embed_dim = 768
-                                    if "bertlm" in tts_model_path:
-                                        sent_embed_dim = 768
-                                    if "emoBERTcls" in tts_model_path:
-                                        sent_embed_dim = 768
-
-                                    sent_embed_encoder=False
-                                    sent_embed_decoder=False
-                                    sent_embed_each=False
-                                    sent_embed_postnet=False
-                                    concat_sent_style=False
-                                    use_concat_projection=False
-                                    self.replace_utt_sent_emb = False
-                                    style_sent = False
-                                    static_speaker_embed="_static" in tts_model_path
-                                    if "a01" in tts_model_path:
-                                        sent_embed_encoder=True
-                                    if "a02" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        sent_embed_decoder=True
-                                    if "a03" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        sent_embed_decoder=True
-                                        sent_embed_postnet=True
-                                    if "a04" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        sent_embed_each=True
-                                    if "a05" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        sent_embed_decoder=True
-                                        sent_embed_each=True
-                                        utt_embed_dim=None if "_xvect" not in tts_model_path else utt_embed_dim
-                                    if "a06" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        sent_embed_decoder=True
-                                        sent_embed_each=True
-                                        sent_embed_postnet=True
-                                    if "a07" in tts_model_path:
-                                        concat_sent_style=True
-                                        use_concat_projection=True
-                                    if "a08" in tts_model_path:
-                                        concat_sent_style=True
-                                    if "a09" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        sent_embed_decoder=True
-                                        sent_embed_each=True
-                                        sent_embed_postnet=True
-                                        concat_sent_style=True
-                                        use_concat_projection=True
-                                    if "a10" in tts_model_path:
-                                        lang_embs = None
-                                        utt_embed_dim = 192
-                                        sent_embed_dim = None
-                                        self.replace_utt_sent_emb = True
-                                    if "a11" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        concat_sent_style=True
-                                        use_concat_projection=True
-                                    if "a12" in tts_model_path:
-                                        sent_embed_encoder=True
-                                        style_sent=True
-                                        if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
-                                            utt_embed_dim = 768
-                                    if "a13" in tts_model_path:
-                                        style_sent=True
-                                        utt_embed_dim = sent_embed_dim
-                                        if "noadapt" in tts_model_path and "adapted" not in tts_model_path:
-                                            utt_embed_dim = 768
-                                        
-                                    self.phone2mel = ToucanTTS(weights=checkpoint["model"],
-                                                                lang_embs=lang_embs, 
-                                                                utt_embed_dim=utt_embed_dim,
-                                                                sent_embed_dim=64 if "adapted" in tts_model_path else sent_embed_dim,
-                                                                sent_embed_adaptation="noadapt" not in tts_model_path,
-                                                                sent_embed_encoder=sent_embed_encoder,
-                                                                sent_embed_decoder=sent_embed_decoder,
-                                                                sent_embed_each=sent_embed_each,
-                                                                sent_embed_postnet=sent_embed_postnet,
-                                                                concat_sent_style=concat_sent_style,
-                                                                use_concat_projection=use_concat_projection,
-                                                                use_sent_style_loss="loss" in tts_model_path,
-                                                                pre_embed="_pre" in tts_model_path,
-                                                                style_sent=style_sent,
-                                                                static_speaker_embed=static_speaker_embed,
-                                                                use_se="_SE" in tts_model_path)
+                        print("Loading sent emb architecture")
+                        self.use_lang_id = False
+                        self.use_sent_emb = True
+                        self.static_speaker_embed = True
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"],
+                                                    lang_embs=None, 
+                                                    utt_embed_dim=512,
+                                                    sent_embed_dim=768,
+                                                    static_speaker_embed=self.static_speaker_embed)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -226,13 +107,13 @@ class ToucanTTSInterface(torch.nn.Module):
         #################################
         #  load mel to style models     #
         #################################
-        self.style_embedding_function = StyleEmbedding()
-        if embedding_model_path is None:
-            check_dict = torch.load(os.path.join(MODELS_DIR, "EmoMulti_Embedding", "embedding_function.pt"), map_location="cpu")
-        else:
+        if embedding_model_path is not None:
+            self.style_embedding_function = StyleEmbedding()
             check_dict = torch.load(embedding_model_path, map_location="cpu")
-        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        self.style_embedding_function.to(self.device)
+            self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+            self.style_embedding_function.to(self.device)
+        else:
+            self.style_embedding_function = None
         
         self.xvect_model = xvect_model if xvect_model is not None else None
 
@@ -245,7 +126,6 @@ class ToucanTTSInterface(torch.nn.Module):
                 self.sentence_embedding_extractor = sent_emb_extractor
             else:
                 raise KeyError("Please specify a sentence embedding extractor.")
-            self.sent_emb_adaptor = sent_emb_adaptor.to(self.device) if sent_emb_adaptor is not None else None
             
         #################################
         #  load word emb extractor     #
@@ -273,7 +153,7 @@ class ToucanTTSInterface(torch.nn.Module):
             self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         except KeyError:
             self.default_utterance_embedding = None
-        if static_speaker_embed:
+        if self.static_speaker_embed:
             self.default_speaker_id = torch.LongTensor([0]).to(self.device)
         else:
             self.default_speaker_id = None
@@ -281,7 +161,8 @@ class ToucanTTSInterface(torch.nn.Module):
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
-        self.style_embedding_function.eval()
+        if self.style_embedding_function is not None:
+            self.style_embedding_function.eval()
         if self.use_lang_id:
             self.lang_id = get_language_id(language)
         else:
@@ -317,12 +198,6 @@ class ToucanTTSInterface(torch.nn.Module):
             print(f"Using sentence embedding of given prompt: {prompt}")
             prompt_embedding = self.sentence_embedding_extractor.encode([prompt]).squeeze().to(self.device)
             self.sentence_embedding = prompt_embedding
-            if self.sent_emb_adaptor is not None:
-                self.sentence_embedding = self.sent_emb_adaptor(sentence_embedding=self.sentence_embedding.unsqueeze(0),
-                                                                speaker_embedding=self.default_utterance_embedding.unsqueeze(0) if self.sent_emb_adaptor.speaker_embed_dim is not None else None,
-                                                                return_emb=True).squeeze(0)
-            if self.replace_utt_sent_emb:
-                self.default_utterance_embedding = self.sentence_embedding
         else:
             print("Skipping setting sentence embedding.")
     
@@ -373,12 +248,6 @@ class ToucanTTSInterface(torch.nn.Module):
             if self.use_sent_emb and self.sentence_embedding is None:
                 print("Using sentence embedding of input text.")
                 sentence_embedding = self.sentence_embedding_extractor.encode([text]).squeeze().to(self.device)
-                if self.sent_emb_adaptor is not None:
-                    sentence_embedding = self.sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0),
-                                                               speaker_embedding=self.default_utterance_embedding.unsqueeze(0) if self.sent_emb_adaptor.speaker_embed_dim is not None else None,
-                                                               return_emb=True).squeeze(0)
-                if self.replace_utt_sent_emb:
-                    self.default_utterance_embedding = sentence_embedding
             else:
                 sentence_embedding = self.sentence_embedding
             if self.use_word_emb:

@@ -27,7 +27,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_01_ESDS_xvect"
+    name = "ToucanTTS_04_ESDS_static"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -61,7 +61,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         utt_embed_dim = 64
 
-    model = ToucanTTS(lang_embs=None, utt_embed_dim=utt_embed_dim)
+    model = ToucanTTS(lang_embs=None, 
+                      utt_embed_dim=512,
+                      static_speaker_embed=True)
     if use_wandb:
         import wandb
         wandb.init(
@@ -73,13 +75,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               batch_size=12,
+               batch_size=16,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=os.path.join(MODELS_DIR, "EmoVDB_Embedding", "embedding_function.pt"),
+               path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
-               path_to_xvect=path_to_xvect)
+               path_to_xvect=path_to_xvect,
+               static_speaker_embed=True)
     if use_wandb:
         wandb.finish()

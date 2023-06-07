@@ -22,7 +22,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  output_spectrogram_channels=80,
-                 attention_dimension=384,
+                 attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -77,18 +77,7 @@ class ToucanTTS(torch.nn.Module):
                  lang_embs=8000,
                  weights=None,
                  sent_embed_dim=None,
-                 sent_embed_adaptation=False,
-                 sent_embed_encoder=False,
-                 sent_embed_decoder=False,
-                 sent_embed_each=False,
-                 sent_embed_postnet=False,
-                 concat_sent_style=False,
-                 use_concat_projection=False,
-                 use_se=False,
-                 use_sent_style_loss=False,
-                 pre_embed=False,
                  word_embed_dim=None,
-                 style_sent=False,
                  static_speaker_embed=False):
         super().__init__()
 
@@ -100,86 +89,27 @@ class ToucanTTS(torch.nn.Module):
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
         self.use_sent_embed = sent_embed_dim is not None
-        self.sent_embed_adaptation = sent_embed_adaptation and self.use_sent_embed
-        self.concat_sent_style = concat_sent_style and self.multispeaker_model and self.use_sent_embed
-        self.use_concat_projection = use_concat_projection and self.concat_sent_style
-        self.use_se = use_se and self.concat_sent_style
-        self.use_sent_style_loss = use_sent_style_loss and self.multispeaker_model and self.use_sent_embed
-        self.sent_embed_postnet = sent_embed_postnet and self.use_sent_embed
         self.use_word_embed = word_embed_dim is not None
-        self.style_sent = style_sent
         self.static_speaker_embed = static_speaker_embed
 
+        if self.static_speaker_embed:
+            # emovdb - 4, cremad - 91, esds - 10, ravdess - 24, ljspeech - 1
+            self.speaker_embedding = torch.nn.Embedding(4 + 91 + 10 + 24 + 1, utt_embed_dim)
+
         if self.use_sent_embed:
-            if self.sent_embed_adaptation:
-                if self.use_sent_style_loss or self.style_sent:
-                    
-                    self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
-                                                                    Tanh(),
-                                                                    Linear(sent_embed_dim // 2, sent_embed_dim // 4),
-                                                                    Tanh(),
-                                                                    Linear(sent_embed_dim // 4, 64))
-                    sent_embed_dim = 64
-                    '''
-                    self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
-                                                                    Tanh(),
-                                                                    Linear(sent_embed_dim // 2, sent_embed_dim))
-                    sent_embed_dim = sent_embed_dim
-                    '''
-                else:
-                    self.sentence_embedding_adaptation = Sequential(Linear(sent_embed_dim, sent_embed_dim // 2),
-                                                                    Tanh(),
-                                                                    Linear(sent_embed_dim // 2, sent_embed_dim // 4),
-                                                                    Tanh(),
-                                                                    Linear(sent_embed_dim // 4, 64))
-                    sent_embed_dim = 64
-                '''
-                self.utt_embed_bottleneck = Sequential(Linear(512, 256), 
-                                                        Tanh(), 
-                                                        Linear(256, 128),
-                                                        Tanh(),
-                                                        Linear(128, 64),
-                                                        Tanh(),
-                                                        Linear(64, 32),
-                                                        Tanh(),
-                                                        Linear(32, 16),
-                                                        Tanh(),
-                                                        Linear(16, 8),
-                                                        Tanh(),
-                                                        Linear(8, 4))
-                '''
-            if self.static_speaker_embed:
-                self.speaker_embedding = torch.nn.Embedding(130, 16)
-                utt_embed_dim = 16
-            if self.concat_sent_style:
-                if not self.static_speaker_embed:
-                    self.utt_embed_bottleneck = Sequential(Linear(512, 256), 
-                                                                Tanh(), 
-                                                                Linear(256, 128),
-                                                                Tanh(),
-                                                                Linear(128, 64),
-                                                                Tanh(),
-                                                                Linear(64, 32),
-                                                                Tanh(),
-                                                                Linear(32, 16))
-                    utt_embed_dim = 16
-                else:
-                    self.utt_embed_bottleneck = None
-                if self.use_se:
-                    self.se_block = torchvision.ops.SqueezeExcitation(utt_embed_dim + sent_embed_dim, 16)
-                else:
-                    self.se_block = None
-                if self.use_concat_projection:
-                    self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 64),
-                                                                 LayerNorm(64))
-                    utt_embed_dim = 64
-                else:
-                    utt_embed_dim = utt_embed_dim + sent_embed_dim
+            self.sentence_embedding_adaptation = Linear(sent_embed_dim, 512)
+            sent_embed_dim = 512
 
-            if pre_embed:
-                input_feature_dimensions = 62 + sent_embed_dim
+            self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 512),
+                                                         Tanh(),
+                                                         Linear(512, 192))
+            utt_embed_dim = 192
+        else:
+            if utt_embed_dim is not None:
+                self.speaker_embedding_adaptation = Linear(utt_embed_dim, 192)
+                utt_embed_dim = 192
 
-        articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 512 if pre_embed else 100), Tanh(), Linear(512 if pre_embed else 100, attention_dimension))
+        articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(idim=input_feature_dimensions,
                                  attention_dim=attention_dimension,
                                  attention_heads=attention_heads,
@@ -198,9 +128,6 @@ class ToucanTTS(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
-                                 sent_embed_dim=sent_embed_dim if sent_embed_encoder else None,
-                                 sent_embed_each=sent_embed_each,
-                                 pre_embed=pre_embed,
                                  word_embed_dim=word_embed_dim,
                                  use_output_norm=True)
 
@@ -249,17 +176,10 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 utt_embed=None,
-                                 sent_embed_dim=sent_embed_dim if sent_embed_decoder else None,
-                                 sent_embed_each=sent_embed_each,
+                                 utt_embed=utt_embed_dim,
                                  use_output_norm=False)
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
-
-        if self.sent_embed_postnet:
-            self.decoder_out_sent_emb_projection = Sequential(Linear(output_spectrogram_channels + sent_embed_dim,
-                                                                    output_spectrogram_channels),
-                                                            LayerNorm(output_spectrogram_channels))
 
         self.conv_postnet = PostNet(idim=0,
                                     odim=output_spectrogram_channels,
@@ -317,15 +237,12 @@ class ToucanTTS(torch.nn.Module):
 
         if not self.use_sent_embed:
             sentence_embedding = None
-            utterance_embedding_decoder = None
+            utterance_embedding = self.speaker_embedding_adaptation(utterance_embedding)
         else:
             sentence_embedding = torch.nn.functional.normalize(sentence_embedding)
-            if self.sent_embed_adaptation:
-                # forward sentence embedding adaptation
-                sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
-                #utterance_embedding_decoder = self.utt_embed_bottleneck(utterance_embedding)
-                utterance_embedding_decoder = None
-            utterance_embedding = sentence_embedding if self.style_sent else utterance_embedding
+            # forward sentence embedding adaptation
+            sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
+            utterance_embedding = self.style_embedding_projection(torch.cat([utterance_embedding, sentence_embedding], dim=1))
 
         if not self.use_word_embed:
             word_embedding = None
@@ -341,20 +258,11 @@ class ToucanTTS(torch.nn.Module):
                 word_boundaries.append(text_lengths[batch_id].cpu().numpy()-1) # marker for last word of sentence
                 word_boundaries_batch.append(torch.tensor(word_boundaries))
 
-        if self.concat_sent_style:
-            if self.utt_embed_bottleneck is not None:
-                utterance_embedding = self.utt_embed_bottleneck(utterance_embedding)
-            utterance_embedding = _concat_sent_utt(utt_embeddings=utterance_embedding, 
-                                                    sent_embeddings=sentence_embedding, 
-                                                    projection=self.style_embedding_projection if self.use_concat_projection else None,
-                                                    se_block=self.se_block)
-
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         encoded_texts, _ = self.encoder(text_tensors,
                                         text_masks,
                                         utterance_embedding=utterance_embedding,
-                                        sentence_embedding=sentence_embedding,
                                         word_embedding=word_embedding,
                                         word_boundaries=word_boundaries_batch,
                                         lang_ids=lang_ids)
@@ -391,17 +299,12 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, 
                                         None,
-                                        utterance_embedding=utterance_embedding_decoder,
-                                        sentence_embedding=sentence_embedding)
+                                        utterance_embedding=utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
         refined_spectrogram = decoded_spectrogram + self.conv_postnet(decoded_spectrogram.transpose(1, 2)).transpose(1, 2)
 
         # refine spectrogram
-        if self.sent_embed_postnet:
-            refined_spectrogram = _integrate_with_sent_embed(hs=refined_spectrogram,
-                                                            sent_embeddings=sentence_embedding,
-                                                            projection=self.decoder_out_sent_emb_projection)
         refined_spectrogram = self.post_flow(tgt_mels=None,
                                              infer=True,
                                              mel_out=refined_spectrogram,
@@ -496,21 +399,6 @@ class ToucanTTS(torch.nn.Module):
                 return
 
         self.apply(remove_weight_norm)
-
-def _concat_sent_utt(utt_embeddings, sent_embeddings, projection, se_block=None):
-    utt_embeddings_enriched = torch.cat([utt_embeddings, sent_embeddings], dim=1)
-    if se_block is not None:
-        utt_embeddings_enriched = se_block(utt_embeddings_enriched.transpose(0, 1).unsqueeze(-1)).squeeze(-1).transpose(0, 1)
-    if projection is not None:
-        utt_embeddings_enriched = projection(utt_embeddings_enriched)
-    return utt_embeddings_enriched
-
-def _integrate_with_sent_embed(hs, sent_embeddings, projection):
-    # concat hidden states with sent embeds and then apply projection
-    embeddings_expanded = sent_embeddings.unsqueeze(1).expand(-1, hs.size(1), -1)
-    hs = projection(torch.cat([hs, embeddings_expanded], dim=-1))
-    return hs
-
 
 
 def _scale_variance(sequence, scale):

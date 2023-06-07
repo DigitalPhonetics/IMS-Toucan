@@ -203,8 +203,6 @@ def plot_progress_spec_toucantts(net,
                                  static_speaker_embed=False,
                                  sent_embs=None,
                                  random_emb=False,
-                                 emovdb=False,
-                                 sent_emb_adaptor=None,
                                  word_embedding_extractor=None,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
@@ -212,17 +210,10 @@ def plot_progress_spec_toucantts(net,
     if sentence is None:
         return None
     if sent_embs is not None:
-        if emovdb:
-            if random_emb:
-                sentence_embedding = sent_embs["neutral"][0]
-            else:
-                sentence_embedding = sent_embs["example_sentence"]
+        if random_emb:
+            sentence_embedding = sent_embs["neutral"][0]
         else:
             sentence_embedding = sent_embs[sentence]
-        if sent_emb_adaptor is not None:
-            sentence_embedding = sent_emb_adaptor(sentence_embedding=sentence_embedding.unsqueeze(0).to(device),
-                                                  speaker_embedding=default_emb.unsqueeze(0).to(device) if sent_emb_adaptor.speaker_embed_dim is not None else None,
-                                                  return_emb=True).squeeze(0)
     else:
         sentence_embedding = None
     if static_speaker_embed:
@@ -703,6 +694,207 @@ def curve_smoother(curve):
         else:
             new_curve.append(0)
     return new_curve
+
+def get_speakerid_from_path(path):
+    speaker_id = None
+    if "EmoVDB" in path:
+        if "bea" in path:
+            speaker_id = 0
+        if "jenie" in path:
+            speaker_id = 1
+        if "josh" in path:
+            speaker_id = 2
+        if "sam" in path:
+            speaker_id = 3
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        if speaker == "0011":
+            speaker_id = 0
+        if speaker == "0012":
+            speaker_id = 1
+        if speaker == "0013":
+            speaker_id = 2
+        if speaker == "0014":
+            speaker_id = 3
+        if speaker == "0015":
+            speaker_id = 4
+        if speaker == "0016":
+            speaker_id = 5
+        if speaker == "0017":
+            speaker_id = 6
+        if speaker == "0018":
+            speaker_id = 7
+        if speaker == "0019":
+            speaker_id = 8
+        if speaker == "0020":
+            speaker_id = 9
+    if "CREMA_D" in path:
+        speaker = os.path.basename(path).split('_')[0]
+        for i, sp_id in enumerate(range(1001, 1092)):
+            if int(speaker) == sp_id:
+                speaker_id = i
+    if "RAVDESS" in path:
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
+        speaker_id = int(speaker) - 1
+    
+    if speaker_id is None:
+        raise TypeError('speaker id could not be extracted from filename')
+
+    return speaker_id
+
+def get_emotion_from_path(path):
+    emotion = None
+    if "EmoV_DB" in path or "EmoVDB" in path or "EmoVDB_Sam" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
+        if emotion == "amused":
+            emotion = "joy"
+        if emotion == "sleepiness":
+            raise NameError("emotion sleepiness should not be included")
+    if "CREMA_D" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split('_')[2]
+        if emotion == "ANG":
+            emotion = "anger"
+        if emotion == "DIS":
+            emotion = "disgust"
+        if emotion == "FEA":
+            emotion = "fear"
+        if emotion == "HAP":
+            emotion = "joy"
+        if emotion == "NEU":
+            emotion = "neutral"
+        if emotion == "SAD":
+            emotion = "sadness"
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        emotion = os.path.basename(os.path.dirname(path)).lower()
+        if emotion == "angry":
+            emotion = "anger"
+        if emotion == "happy":
+            emotion = "joy"
+        if emotion == "sad":
+            emotion = "sadness"
+    if "RAVDESS" in path:
+        emotion = os.path.splitext(os.path.basename(path))[0].split('-')[2]
+        if emotion == "01":
+            emotion = "neutral"
+        if emotion == "02":
+            raise NameError("emotion calm should not be included")
+        if emotion == "03":
+            emotion = "joy"
+        if emotion == "04":
+            emotion = "sadness"
+        if emotion == "05":
+            emotion = "anger"
+        if emotion == "06":
+            emotion = "fear"
+        if emotion == "07":
+            emotion = "disgust"
+        if emotion == "08":
+            emotion = "surprise"
+    if "LJSpeech" in path:
+        emotion = "neutral"
+
+    if emotion is None:
+        raise TypeError('emotion could not be extracted from filename')
+    
+    return emotion
+
+def get_speakerid_from_path(path):
+    speaker_id = None
+    if "LJSpeech" in path:
+        speaker_id = 0
+    if "EmoVDB" in path:
+        if "bea" in path:
+            speaker_id = 0
+        if "jenie" in path:
+            speaker_id = 1
+        if "josh" in path:
+            speaker_id = 2
+        if "sam" in path:
+            speaker_id = 3
+    if "Emotional_Speech_Dataset_Singapore" in path:
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        if speaker == "0011":
+            speaker_id = 0
+        if speaker == "0012":
+            speaker_id = 1
+        if speaker == "0013":
+            speaker_id = 2
+        if speaker == "0014":
+            speaker_id = 3
+        if speaker == "0015":
+            speaker_id = 4
+        if speaker == "0016":
+            speaker_id = 5
+        if speaker == "0017":
+            speaker_id = 6
+        if speaker == "0018":
+            speaker_id = 7
+        if speaker == "0019":
+            speaker_id = 8
+        if speaker == "0020":
+            speaker_id = 9
+    if "CREMA_D" in path:
+        speaker = os.path.basename(path).split('_')[0]
+        for i, sp_id in enumerate(range(1001, 1092)):
+            if int(speaker) == sp_id:
+                speaker_id = i
+    if "RAVDESS" in path:
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
+        speaker_id = int(speaker) - 1
+    
+    if speaker_id is None:
+        raise TypeError('speaker id could not be extracted from filename')
+
+    return speaker_id
+
+def get_speakerid_from_path_all(path):
+    speaker_id = None
+    if "LJSpeech" in path: # 1 speaker
+        speaker_id = 0
+    if "CREMA_D" in path: # 91 speakers
+        speaker = os.path.basename(path).split('_')[0]
+        for i, sp_id in enumerate(range(1001, 1092)):
+            if int(speaker) == sp_id:
+                speaker_id = i + 1
+    if "RAVDESS" in path: # 24 speakers
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
+        speaker_id = int(speaker) -1 + + 1 + 91
+    if "EmoVDB" in path: # 4 speakers
+        if "bea" in path:
+            speaker_id = 0 + 1 + 91 + 24
+        if "jenie" in path:
+            speaker_id = 1 + 1 + 91 + 24
+        if "josh" in path:
+            speaker_id = 2 + 1 + 91 + 24
+        if "sam" in path:
+            speaker_id = 3 + 1 + 91 + 24
+    if "Emotional_Speech_Dataset_Singapore" in path: # 10 speakers
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        if speaker == "0011":
+            speaker_id = 0 + 1 + 91 + 24 + 4
+        if speaker == "0012":
+            speaker_id = 1 + 1 + 91 + 24 + 4
+        if speaker == "0013":
+            speaker_id = 2 + 1 + 91 + 24 + 4
+        if speaker == "0014":
+            speaker_id = 3 + 1 + 91 + 24 + 4
+        if speaker == "0015":
+            speaker_id = 4 + 1 + 91 + 24 + 4
+        if speaker == "0016":
+            speaker_id = 5 + 1 + 91 + 24 + 4
+        if speaker == "0017":
+            speaker_id = 6 + 1 + 91 + 24 + 4
+        if speaker == "0018":
+            speaker_id = 7 + 1 + 91 + 24 + 4
+        if speaker == "0019":
+            speaker_id = 8 + 1 + 91 + 24 + 4
+        if speaker == "0020":
+            speaker_id = 9 + 1 + 91 + 24 + 4
+    
+    if speaker_id is None:
+        raise TypeError('speaker id could not be extracted from filename')
+
+    return speaker_id
 
 
 if __name__ == '__main__':

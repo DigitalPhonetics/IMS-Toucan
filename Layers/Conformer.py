@@ -65,10 +65,7 @@ class Conformer(torch.nn.Module):
                  zero_triu=False,
                  use_output_norm=True,
                  utt_embed=None, 
-                 lang_embs=None, 
-                 sent_embed_dim=None,
-                 sent_embed_each=False, # integrate before each layer
-                 pre_embed=False,
+                 lang_embs=None,
                  word_embed_dim=None,
                  ):
         super(Conformer, self).__init__()
@@ -89,17 +86,12 @@ class Conformer(torch.nn.Module):
         if self.use_output_norm:
             self.output_norm = LayerNorm(attention_dim)
         self.utt_embed = utt_embed
-        self.sent_embed_dim = sent_embed_dim
-        self.sent_embed_each= sent_embed_each
-        self.pre_embed = pre_embed
         self.word_embed_dim = word_embed_dim
 
         if self.utt_embed is not None:
             self.hs_emb_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
-        if self.sent_embed_dim is not None and not self.pre_embed:
-            self.hs_emb_projection_sent = torch.nn.Linear(attention_dim + self.sent_embed_dim, attention_dim)
         if self.word_embed_dim is not None:
             self.word_phoneme_projection = torch.nn.Linear(attention_dim + word_embed_dim, attention_dim)
 
@@ -119,15 +111,13 @@ class Conformer(torch.nn.Module):
                                                                      positionwise_layer(*positionwise_layer_args),
                                                                      positionwise_layer(*positionwise_layer_args) if macaron_style else None,
                                                                      convolution_layer(*convolution_layer_args) if use_cnn_module else None, dropout_rate,
-                                                                     normalize_before, concat_after,
-                                                                     sent_embed_dim=self.sent_embed_dim if self.sent_embed_each else None))
+                                                                     normalize_before, concat_after))
 
     def forward(self,
                 xs,
                 masks,
                 utterance_embedding=None,
                 lang_ids=None,
-                sentence_embedding=None,
                 word_embedding=None,
                 word_boundaries=None):
         """
@@ -141,9 +131,6 @@ class Conformer(torch.nn.Module):
             torch.Tensor: Output tensor (#batch, time, attention_dim).
             torch.Tensor: Mask tensor (#batch, time).
         """
-
-        if self.sent_embed_dim is not None and not self.sent_embed_each and self.pre_embed:
-            xs = self._pre_with_sent_embed(hs=xs, sent_embeddings=sentence_embedding)
 
         if self.embed is not None:
             xs = self.embed(xs)
@@ -180,13 +167,10 @@ class Conformer(torch.nn.Module):
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
             xs = xs + lang_embs  # offset phoneme representation by language specific offset
-        
-        if self.sent_embed_dim is not None and not self.sent_embed_each and not self.pre_embed:
-            xs = self._integrate_with_sent_embed(hs=xs, sent_embeddings=sentence_embedding)
 
         xs = self.pos_enc(xs)
 
-        xs, masks, sentence_embedding = self.encoders(xs, masks, sentence_embedding)
+        xs, masks = self.encoders(xs, masks)
         if isinstance(xs, tuple):
             xs = xs[0]
 
@@ -202,18 +186,6 @@ class Conformer(torch.nn.Module):
         # concat hidden states with spk embeds and then apply projection
         embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
-        return hs
-    
-    def _integrate_with_sent_embed(self, hs, sent_embeddings):
-        # concat hidden states with sentence embeds and then apply projection
-        embeddings_expanded = torch.nn.functional.normalize(sent_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection_sent(torch.cat([hs, embeddings_expanded], dim=-1))
-        return hs
-    
-    def _pre_with_sent_embed(self, hs, sent_embeddings):
-        # concat hidden states with sentence embeds and then apply projection
-        embeddings_expanded = torch.nn.functional.normalize(sent_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = torch.cat([hs, embeddings_expanded], dim=-1)
         return hs
     
     def _cat_with_word_embed(self, phoneme_embeddings, word_embedding):

@@ -19,6 +19,7 @@ from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from Utility.corpus_preparation import prepare_fastspeech_corpus
 from Utility.storage_config import MODELS_DIR
+from Utility.utils import get_speakerid_from_path_all, get_speakerid_from_path
 
 
 class AlignmentScorer:
@@ -131,7 +132,8 @@ class TTSScorer:
     def __init__(self,
                  path_to_model,
                  device,
-                 path_to_embedding_checkpoint=os.path.join(MODELS_DIR, "EmoVDB_Embedding", "embedding_function.pt")
+                 path_to_embedding_checkpoint=None,
+                 static_speaker_embed=False,
                  ):
         self.device = device
         self.path_to_score = dict()
@@ -152,13 +154,17 @@ class TTSScorer:
                     self.tts = ToucanTTS(lang_embs=None, utt_embed_dim=None)
                     self.tts.load_state_dict(weights)
                 except RuntimeError:
-                    self.tts = ToucanTTS(sent_embed_dim=1024, sent_embed_adaptation=True, sent_embed_encoder=True, concat_sent_style=True, use_concat_projection=True)
+                    self.tts = ToucanTTS(lang_embs=None, utt_embed_dim=512, static_speaker_embed=True)
                     self.tts.load_state_dict(weights)
-        self.style_embedding_function = StyleEmbedding().to(device)
-        check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
-        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        if path_to_embedding_checkpoint is not None:
+            self.style_embedding_function = StyleEmbedding().to(device)
+            check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
+            self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+            self.style_embedding_function.to(device)
+        else:
+            self.style_embedding_function = None
         self.tts.to(self.device)
-        self.style_embedding_function.to(device)
+        self.static_speaker_embed = static_speaker_embed
         self.nans_removed = False
         self.current_dset = None
 
@@ -174,22 +180,29 @@ class TTSScorer:
         self.path_to_id = dict()
         for index in tqdm(range(len(dataset.datapoints))):
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
-            style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
-                                                            batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
+            if self.style_embedding_function is not None:
+                style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
+                                                                batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
+            else:
+                style_embedding = None
+            if self.static_speaker_embed:
+                speaker_id = torch.LongTensor([get_speakerid_from_path(filepath)]).to(self.device)
+            else:
+                speaker_id = None
             try:
                 l1_loss, \
                 duration_loss, \
                 pitch_loss, \
                 energy_loss, \
-                glow_loss, \
-                sent_style_loss = self.tts(text_tensors=text.unsqueeze(0).to(self.device),
+                glow_loss = self.tts(text_tensors=text.unsqueeze(0).to(self.device),
                                             text_lengths=text_len.to(self.device),
                                             gold_speech=spec.unsqueeze(0).to(self.device),
                                             speech_lengths=spec_len.to(self.device),
                                             gold_durations=duration.unsqueeze(0).to(self.device),
                                             gold_pitch=pitch.unsqueeze(0).to(self.device),
                                             gold_energy=energy.unsqueeze(0).to(self.device),
-                                            utterance_embedding=style_embedding.to(self.device),
+                                            utterance_embedding=style_embedding.to(self.device) if style_embedding is not None else None,
+                                            speaker_id=speaker_id,
                                             lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
                                             return_mels=False,
                                             run_glow=False)

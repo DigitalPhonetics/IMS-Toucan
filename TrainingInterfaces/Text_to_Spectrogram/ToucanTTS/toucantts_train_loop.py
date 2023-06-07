@@ -20,6 +20,7 @@ from run_weight_averaging import average_checkpoints
 from run_weight_averaging import get_n_recent_checkpoints_paths
 from run_weight_averaging import load_net_toucan
 from run_weight_averaging import save_model_for_use
+from Utility.utils import get_emotion_from_path, get_speakerid_from_path, get_speakerid_from_path_all
 
 
 def collate_and_pad(batch):
@@ -55,10 +56,7 @@ def train_loop(net,
                use_discriminator,
                sent_embs=None,
                random_emb=False,
-               emovdb=False,
-               replace_utt_sent_emb=False,
                word_embedding_extractor=None,
-               use_adapted_embs=False,
                path_to_xvect=None,
                static_speaker_embed=False
                ):
@@ -77,15 +75,6 @@ def train_loop(net,
         style_embedding_function.requires_grad_(False)
     else:
         style_embedding_function = None
-
-    if use_adapted_embs:
-        sentence_embedding_adaptor = SentenceEmbeddingAdaptor(sent_embed_dim=768, utt_embed_dim=64, speaker_embed_dim=512 if path_to_xvect is not None else None).to(device)
-        check_dict = torch.load("Models/SentEmbAdaptor_01_EmoMulti_emoBERTcls_xvect/adaptor.pt", map_location=device)
-        sentence_embedding_adaptor.load_state_dict(check_dict["model"])
-        sentence_embedding_adaptor.eval()
-        sentence_embedding_adaptor.requires_grad_(False)
-    else:
-        sentence_embedding_adaptor = None
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -124,10 +113,10 @@ def train_loop(net,
         energy_losses_total = list()
         generator_losses_total = list()
         discriminator_losses_total = list()
-        sent_style_losses_total = list()
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
+
             if path_to_xvect is not None:
                 filepaths = batch[10]
                 embeddings = []
@@ -139,21 +128,15 @@ def train_loop(net,
                                                         batch_of_spectrogram_lengths=batch[3].to(device))
             else:
                 style_embedding = None
+
             if sent_embs is not None:
-                if emovdb:
+                if random_emb:
                     filepaths = batch[10]
-                    if random_emb:
-                        emotions = [get_emotion_from_path(path) for path in filepaths]
-                        sentence_embedding = torch.stack([random.choice(sent_embs[emotion]) for emotion in emotions]).to(device)
-                    else:
-                        sentence_embedding = torch.stack([sent_embs[path] for path in filepaths]).to(device)
+                    emotions = [get_emotion_from_path(path) for path in filepaths]
+                    sentence_embedding = torch.stack([random.choice(sent_embs[emotion]) for emotion in emotions]).to(device)
                 else:
                     sentences = batch[9]
                     sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
-                if sentence_embedding_adaptor is not None:
-                    sentence_embedding = sentence_embedding_adaptor(sentence_embedding=sentence_embedding,
-                                                                    speaker_embedding=style_embedding if sentence_embedding_adaptor.speaker_embed_dim is not None else None,
-                                                                    return_emb=True)
             else:
                 sentence_embedding = None
             
@@ -162,9 +145,6 @@ def train_loop(net,
                 speaker_ids = torch.LongTensor([get_speakerid_from_path_all(path) for path in filepaths]).to(device)
             else:
                 speaker_ids = None
-
-            if replace_utt_sent_emb:
-                style_embedding = sentence_embedding
             
             if word_embedding_extractor is not None:
                 word_embedding, sentence_lens = word_embedding_extractor.encode(sentences=batch[9])
@@ -173,7 +153,7 @@ def train_loop(net,
                 word_embedding = None
                 sentence_lens = None
 
-            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, sent_style_loss, generated_spectrograms = net(
+            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
                 gold_speech=batch[2].to(device),
@@ -212,10 +192,6 @@ def train_loop(net,
             if glow_loss is not None:
                 if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
                     train_loss = train_loss + glow_loss
-            if sent_style_loss is not None:
-                if not torch.isnan(sent_style_loss):
-                    train_loss = train_loss + sent_style_loss
-                sent_style_losses_total.append(sent_style_loss.item())
 
             l1_losses_total.append(l1_loss.item())
             duration_losses_total.append(duration_loss.item())
@@ -234,25 +210,18 @@ def train_loop(net,
 
         # EPOCH IS OVER
         net.eval()
+
         if style_embedding_function is not None:
             style_embedding_function.eval()
-        if sentence_embedding_adaptor is not None:
-            sentence_embedding_adaptor.eval()
         if path_to_xvect is not None:
             default_embedding = path_to_xvect[train_dataset[0][10]]
         elif style_embedding_function is not None:
             default_embedding = style_embedding_function(
                 batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
                 batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
-        else: default_embedding = None
-        if replace_utt_sent_emb:
-            if emovdb:
-                if random_emb:
-                    default_embedding = sent_embs["neutral"][0]
-                else:
-                    default_embedding = sent_embs[train_dataset[0][10]]
-            else:
-                default_embedding = sent_embs[train_dataset[0][9]]
+        else: 
+            default_embedding = None
+
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
@@ -273,7 +242,6 @@ def train_loop(net,
                 "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                 "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 5) if len(glow_losses_total) != 0 else None,
-                "sentence_style_loss": round(sum(sent_style_losses_total) / len(sent_style_losses_total), 5) if len(sent_style_losses_total) != 0 else None,
             }, step=step_counter)
             if use_discriminator:
                 wandb.log({
@@ -292,8 +260,6 @@ def train_loop(net,
                                                                           static_speaker_embed=static_speaker_embed,
                                                                           sent_embs=sent_embs,
                                                                           random_emb=random_emb,
-                                                                          emovdb=emovdb,
-                                                                          sent_emb_adaptor=sentence_embedding_adaptor,
                                                                           word_embedding_extractor=word_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
@@ -357,155 +323,3 @@ def get_random_window(generated_sequences, real_sequences, lengths):
         generated_windows.append(fake_spec_unpadded[start:start + window_size].unsqueeze(0))
         real_windows.append(real_spec_unpadded[start:start + window_size].unsqueeze(0))
     return torch.cat(generated_windows, dim=0), torch.cat(real_windows, dim=0)
-
-def get_emotion_from_path(path):
-    emotion = None
-    if "EmoV_DB" in path or "EmoVDB" in path or "EmoVDB_Sam" in path:
-        emotion = os.path.splitext(os.path.basename(path))[0].split("-16bit")[0].split("_")[0].lower()
-        if emotion == "amused":
-            emotion = "joy"
-        if emotion == "sleepiness":
-            raise NameError("emotion sleepiness should not be included")
-    if "CREMA_D" in path:
-        emotion = os.path.splitext(os.path.basename(path))[0].split('_')[2]
-        if emotion == "ANG":
-            emotion = "anger"
-        if emotion == "DIS":
-            emotion = "disgust"
-        if emotion == "FEA":
-            emotion = "fear"
-        if emotion == "HAP":
-            emotion = "joy"
-        if emotion == "NEU":
-            emotion = "neutral"
-        if emotion == "SAD":
-            emotion = "sadness"
-    if "Emotional_Speech_Dataset_Singapore" in path:
-        emotion = os.path.basename(os.path.dirname(path)).lower()
-        if emotion == "angry":
-            emotion = "anger"
-        if emotion == "happy":
-            emotion = "joy"
-        if emotion == "sad":
-            emotion = "sadness"
-    if "RAVDESS" in path:
-        emotion = os.path.splitext(os.path.basename(path))[0].split('-')[2]
-        if emotion == "01":
-            emotion = "neutral"
-        if emotion == "02":
-            raise NameError("emotion calm should not be included")
-        if emotion == "03":
-            emotion = "joy"
-        if emotion == "04":
-            emotion = "sadness"
-        if emotion == "05":
-            emotion = "anger"
-        if emotion == "06":
-            emotion = "fear"
-        if emotion == "07":
-            emotion = "disgust"
-        if emotion == "08":
-            emotion = "surprise"
-    if "LJSpeech" in path:
-        emotion = "neutral"
-
-    if emotion is None:
-        raise TypeError('emotion could not be extracted from filename')
-    
-    return emotion
-
-def get_speakerid_from_path(path):
-    speaker_id = None
-    if "EmoVDB" in path:
-        if "bea" in path:
-            speaker_id = 0
-        if "jenie" in path:
-            speaker_id = 1
-        if "josh" in path:
-            speaker_id = 2
-        if "sam" in path:
-            speaker_id = 3
-    if "Emotional_Speech_Dataset_Singapore" in path:
-        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
-        if speaker == "0011":
-            speaker_id = 0
-        if speaker == "0012":
-            speaker_id = 1
-        if speaker == "0013":
-            speaker_id = 2
-        if speaker == "0014":
-            speaker_id = 3
-        if speaker == "0015":
-            speaker_id = 4
-        if speaker == "0016":
-            speaker_id = 5
-        if speaker == "0017":
-            speaker_id = 6
-        if speaker == "0018":
-            speaker_id = 7
-        if speaker == "0019":
-            speaker_id = 8
-        if speaker == "0020":
-            speaker_id = 9
-    if "CREMA_D" in path:
-        speaker = os.path.basename(path).split('_')[0]
-        for i, sp_id in enumerate(range(1001, 1092)):
-            if int(speaker) == sp_id:
-                speaker_id = i
-    if "RAVDESS" in path:
-        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
-        speaker_id = int(speaker) - 1
-    
-    if speaker_id is None:
-        raise TypeError('speaker id could not be extracted from filename')
-
-    return speaker_id
-
-def get_speakerid_from_path_all(path):
-    speaker_id = None
-    if "CREMA_D" in path:
-        speaker = os.path.basename(path).split('_')[0]
-        for i, sp_id in enumerate(range(1001, 1092)):
-            if int(speaker) == sp_id:
-                speaker_id = i
-    if "RAVDESS" in path:
-        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
-        speaker_id = int(speaker) -1 + 91
-    if "EmoVDB" in path:
-        if "bea" in path:
-            speaker_id = 0 + 91 + 24
-        if "jenie" in path:
-            speaker_id = 1 + 91 + 24
-        if "josh" in path:
-            speaker_id = 2 + 91 + 24
-        if "sam" in path:
-            speaker_id = 3 + 91 + 24
-    if "Emotional_Speech_Dataset_Singapore" in path:
-        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
-        if speaker == "0011":
-            speaker_id = 0 + 91 + 24 + 4
-        if speaker == "0012":
-            speaker_id = 1 + 91 + 24 + 4
-        if speaker == "0013":
-            speaker_id = 2 + 91 + 24 + 4
-        if speaker == "0014":
-            speaker_id = 3 + 91 + 24 + 4
-        if speaker == "0015":
-            speaker_id = 4 + 91 + 24 + 4
-        if speaker == "0016":
-            speaker_id = 5 + 91 + 24 + 4
-        if speaker == "0017":
-            speaker_id = 6 + 91 + 24 + 4
-        if speaker == "0018":
-            speaker_id = 7 + 91 + 24 + 4
-        if speaker == "0019":
-            speaker_id = 8 + 91 + 24 + 4
-        if speaker == "0020":
-            speaker_id = 9 + 91 + 24 + 4
-    if "LJSpeech" in path:
-        speaker_id = 129
-    
-    if speaker_id is None:
-        raise TypeError('speaker id could not be extracted from filename')
-
-    return speaker_id
