@@ -123,6 +123,7 @@ class ToucanTTS(torch.nn.Module):
             self.sentence_embedding_adaptation = Linear(sent_embed_dim, 512)
             sent_embed_dim = 512
 
+            self.squeeze_excitation = torchvision.ops.SqueezeExcitation(utt_embed_dim + sent_embed_dim, 192)
             self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 512),
                                                          Tanh(),
                                                          Linear(512, 192))
@@ -339,7 +340,9 @@ class ToucanTTS(torch.nn.Module):
             sentence_embedding = torch.nn.functional.normalize(sentence_embedding)
             # forward sentence embedding adaptation
             sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
-            utterance_embedding = self.style_embedding_projection(torch.cat([utterance_embedding, sentence_embedding], dim=1))
+            utterance_embedding = torch.cat([utterance_embedding, sentence_embedding], dim=1)
+            utterance_embedding = self.squeeze_excitation(utterance_embedding.transpose(0, 1).unsqueeze(-1)).squeeze(-1).transpose(0, 1)
+            utterance_embedding = self.style_embedding_projection(utterance_embedding)
 
         if not self.use_word_embed:
             word_embedding = None
