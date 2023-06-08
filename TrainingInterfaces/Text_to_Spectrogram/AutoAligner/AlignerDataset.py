@@ -47,21 +47,8 @@ class AlignerDataset(Dataset):
                 torch.set_grad_enabled(True)
             resource_manager = Manager()
             self.path_to_transcript_dict = path_to_transcript_dict
-            self.path_to_audio_dict = resource_manager.dict()
-            _, assumed_sr = sf.read(list(path_to_transcript_dict.keys())[0])
-            print("loading all the audios from disk to RAM...")
             key_list = list(self.path_to_transcript_dict.keys())
             fisher_yates_shuffle(key_list)
-            for path in tqdm(key_list):
-                try:
-                    wave, sr = sf.read(path)
-                    if sr != assumed_sr:
-                        print(f"{path} has an unexpected samplingrate: {sr} vs. {assumed_sr} --> skipping")
-                        continue
-                    self.path_to_audio_dict[path] = wave
-                except:
-                    print(f"Problem with an audio file: {path}")
-                    continue
 
             # build cache
             print("... building dataset cache ...")
@@ -159,13 +146,21 @@ class AlignerDataset(Dataset):
                               lang):
 
         process_internal_dataset_chunk = list()
-        _, sr = sf.read(path_list[0])
-        ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
+        _, assumed_sr = sf.read(path_list[0])
+        ap = AudioPreprocessor(input_sr=assumed_sr, output_sr=16000, cut_silence=cut_silences, do_loudnorm=do_loudnorm, device=device)
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
 
         for path, transcript in tqdm(zip(path_list, transcript_list), total=len(path_list)):
-            wave = self.path_to_audio_dict.pop(path)
+            try:
+                wave, sr = sf.read(path)
+                if sr != assumed_sr:
+                    print(f"{path} has an unexpected samplingrate: {sr} vs. {assumed_sr} --> skipping")
+                    continue
+            except:
+                print(f"Problem with an audio file: {path}")
+                continue
+
             dur_in_seconds = len(wave) / sr
             if not (min_len <= dur_in_seconds <= max_len):
                 if verbose:
