@@ -858,7 +858,7 @@ def get_speakerid_from_path_all(path):
                 speaker_id = i + 1
     if "RAVDESS" in path: # 24 speakers
         speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
-        speaker_id = int(speaker) -1 + + 1 + 91
+        speaker_id = int(speaker) -1 + 1 + 91
     if "EmoVDB" in path: # 4 speakers
         if "bea" in path:
             speaker_id = 0 + 1 + 91 + 24

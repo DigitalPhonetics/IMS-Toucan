@@ -20,7 +20,7 @@ from run_weight_averaging import average_checkpoints
 from run_weight_averaging import get_n_recent_checkpoints_paths
 from run_weight_averaging import load_net_toucan
 from run_weight_averaging import save_model_for_use
-from Utility.utils import get_emotion_from_path, get_speakerid_from_path, get_speakerid_from_path_all
+from Utility.utils import get_emotion_from_path, get_speakerid_from_path_all
 
 
 def collate_and_pad(batch):

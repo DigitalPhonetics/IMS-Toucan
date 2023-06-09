@@ -79,7 +79,7 @@ def test_controllable(version, model_id="Meta",
 
 if __name__ == '__main__':
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"2"
     exec_device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 1 + 91 + 24
+        speaker_id = 0
     else:
         speaker_id = None
 
