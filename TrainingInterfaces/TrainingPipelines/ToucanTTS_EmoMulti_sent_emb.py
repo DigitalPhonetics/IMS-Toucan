@@ -64,8 +64,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
                                           lang="en",
                                           save_imgs=False))
+    
+    try:
+        transcript_dict_ljspeech = torch.load(os.path.join(PREPROCESSING_DIR, "ljspeech", "path_to_transcript_dict.pt"), map_location='cpu')
+    except FileNotFoundError:
+        transcript_dict_ljspeech = build_path_to_transcript_dict_ljspeech()
 
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_ljspeech,
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
                                           lang="en",
                                           save_imgs=False))

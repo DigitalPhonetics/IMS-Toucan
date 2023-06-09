@@ -4,6 +4,9 @@ import random
 from pathlib import Path
 from tqdm import tqdm
 
+import torch
+from Utility.storage_config import PREPROCESSING_DIR
+
 
 def limit_to_n(path_to_transcript_dict, n=40000):
     limited_dict = dict()
@@ -334,6 +337,8 @@ def build_path_to_transcript_dict_ljspeech():
             transcript = tf.read()
         wav_path = "/mount/resources/speech/corpora/LJSpeech/16kHz/wav/" + transcript_file.rstrip(".txt") + ".wav"
         path_to_transcript[wav_path] = transcript
+    
+    torch.save(limit_to_n(path_to_transcript), os.path.join(PREPROCESSING_DIR, "ljspeech", "path_to_transcript_dict.pt"))
     return limit_to_n(path_to_transcript)
 
 def build_path_to_transcript_dict_3xljspeech():
