@@ -74,7 +74,7 @@ def test_controllable(version, model_id="Meta",
                                   'Well, this sucks.',
                                   'I am so angry!',
                                   'What a surprise!']):
-        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/Controllable_{i}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/Controllable_{i}.wav", increased_compatibility_mode=True)
 
 
 if __name__ == '__main__':
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 0
+        speaker_id = 3 + 1 + 91 + 24
     else:
         speaker_id = None
 
