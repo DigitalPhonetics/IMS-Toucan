@@ -92,7 +92,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 3 + 1 + 91 + 24
+        speaker_id = 4 + 1 + 91 + 24 + 4
     else:
         speaker_id = None
 
