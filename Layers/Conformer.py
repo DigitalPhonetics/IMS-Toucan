@@ -3,6 +3,7 @@ Taken from ESPNet
 """
 
 import torch
+import torchvision
 from torch.nn.utils.rnn import pad_sequence
 
 from Layers.Attention import RelPositionMultiHeadedAttention
@@ -112,6 +113,8 @@ class Conformer(torch.nn.Module):
                                                                      positionwise_layer(*positionwise_layer_args) if macaron_style else None,
                                                                      convolution_layer(*convolution_layer_args) if use_cnn_module else None, dropout_rate,
                                                                      normalize_before, concat_after))
+        
+        self.squeeze_excitation = torchvision.ops.SqueezeExcitation(attention_dim * 2, attention_dim)
 
     def forward(self,
                 xs,
@@ -185,7 +188,9 @@ class Conformer(torch.nn.Module):
     def _integrate_with_utt_embed(self, hs, utt_embeddings):
         # concat hidden states with spk embeds and then apply projection
         embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
+        hs = torch.cat([hs, embeddings_expanded], dim=-1)
+        hs = self.squeeze_excitation(hs.transpose(0, 2)).transpose(0, 2)
+        hs = self.hs_emb_projection(hs)
         return hs
     
     def _cat_with_word_embed(self, phoneme_embeddings, word_embedding):

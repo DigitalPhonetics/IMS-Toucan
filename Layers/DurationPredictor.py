@@ -4,6 +4,7 @@
 
 
 import torch
+import torchvision
 
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
@@ -58,6 +59,8 @@ class DurationPredictor(torch.nn.Module):
                 self.norms += [LayerNorm(n_chans, dim=1)]
             self.dropouts += [torch.nn.Dropout(dropout_rate)]
 
+        self.squeeze_excitation = torchvision.ops.SqueezeExcitation(256, 128)
+
         self.linear = torch.nn.Linear(n_chans, 1)
 
     def _forward(self, xs, x_masks=None, is_inference=False, utt_embed=None):
@@ -70,6 +73,8 @@ class DurationPredictor(torch.nn.Module):
             else:
                 xs = c(xs)
             xs = d(xs)
+        
+        xs = self.squeeze_excitation(xs.transpose(1, 2).transpose(0, 2)).transpose(0, 2).transpose(1, 2)
 
         # NOTE: targets are transformed to log domain in the loss calculation, so this will learn to predict in the log space, which makes the value range easier to handle.
         xs = self.linear(xs.transpose(1, -1)).squeeze(-1)  # (B, Tmax)

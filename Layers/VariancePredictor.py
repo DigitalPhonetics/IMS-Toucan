@@ -5,6 +5,7 @@
 from abc import ABC
 
 import torch
+import torchvision
 
 from Layers.ConditionalLayerNorm import ConditionalLayerNorm
 from Layers.LayerNorm import LayerNorm
@@ -48,6 +49,8 @@ class VariancePredictor(torch.nn.Module, ABC):
                 self.norms += [LayerNorm(n_chans, dim=1)]
             self.dropouts += [torch.nn.Dropout(dropout_rate)]
 
+        self.squeeze_excitation = torchvision.ops.SqueezeExcitation(256, 128)
+
         self.linear = torch.nn.Linear(n_chans, 1)
 
     def forward(self, xs, padding_mask=None, utt_embed=None):
@@ -71,6 +74,8 @@ class VariancePredictor(torch.nn.Module, ABC):
             else:
                 xs = c(xs)
             xs = d(xs)
+
+        xs = self.squeeze_excitation(xs.transpose(1, 2).transpose(0, 2)).transpose(0, 2).transpose(1, 2)
 
         xs = self.linear(xs.transpose(1, 2))  # (B, Tmax, 1)
 
