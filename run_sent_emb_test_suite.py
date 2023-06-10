@@ -32,8 +32,8 @@ def test_sentence(version,
     if prompt is not None:
         tts.set_sentence_embedding(prompt)
 
-    sentence = "result in some degree of interference with the personal liberty of those involved."
-    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.flac", increased_compatibility_mode=True)
+    sentence = "In my opinion that is a good idea."
+    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav", increased_compatibility_mode=True)
 
 def test_controllable(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     print(f"running on {exec_device}")
 
     use_speaker_reference = False
-    use_sent_emb = True
+    use_sent_emb = False
     use_word_emb = False
     use_prompt = False
     use_xvect = False
@@ -137,8 +137,8 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_controllable(version="ToucanTTS_12_EmoMulti_sent_emb_emoBERTcls_static",
-                      model_id="12_EmoMulti_sent_emb_emoBERTcls_static",
+    test_sentence(version="ToucanTTS_04_EmoMulti_static",
+                      model_id="04_EmoMulti_static",
                       exec_device=exec_device,
                       vocoder_model_path=None,
                       biggan=True,
