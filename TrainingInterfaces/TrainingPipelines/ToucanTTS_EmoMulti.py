@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_04_EmoMulti_static"
+    name = "ToucanTTS_EmoMulti_Baseline_static"
 
     if model_dir is not None:
         save_dir = model_dir
