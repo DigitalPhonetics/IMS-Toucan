@@ -1,5 +1,5 @@
 import torch
-import torchvision
+from torchvision.ops import SqueezeExcitation
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
@@ -123,7 +123,7 @@ class ToucanTTS(torch.nn.Module):
             self.sentence_embedding_adaptation = Linear(sent_embed_dim, 512)
             sent_embed_dim = 512
 
-            self.squeeze_excitation = torchvision.ops.SqueezeExcitation(utt_embed_dim + sent_embed_dim, 192)
+            self.squeeze_excitation = SqueezeExcitation(utt_embed_dim + sent_embed_dim, 192)
             self.style_embedding_projection = Sequential(Linear(utt_embed_dim + sent_embed_dim, 512),
                                                          Tanh(),
                                                          Linear(512, 192))

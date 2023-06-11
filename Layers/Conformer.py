@@ -3,7 +3,7 @@ Taken from ESPNet
 """
 
 import torch
-import torchvision
+from torchvision.ops import SqueezeExcitation
 from torch.nn.utils.rnn import pad_sequence
 
 from Layers.Attention import RelPositionMultiHeadedAttention
@@ -94,6 +94,7 @@ class Conformer(torch.nn.Module):
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
         if self.word_embed_dim is not None:
+            self.squeeze_excitation_word = SqueezeExcitation(attention_dim + word_embed_dim, attention_dim)
             self.word_phoneme_projection = torch.nn.Linear(attention_dim + word_embed_dim, attention_dim)
 
         # self-attention module definition
@@ -114,7 +115,7 @@ class Conformer(torch.nn.Module):
                                                                      convolution_layer(*convolution_layer_args) if use_cnn_module else None, dropout_rate,
                                                                      normalize_before, concat_after))
         
-        self.squeeze_excitation = torchvision.ops.SqueezeExcitation(attention_dim * 2, attention_dim)
+        self.squeeze_excitation_utt = SqueezeExcitation(attention_dim * 2, attention_dim)
 
     def forward(self,
                 xs,
@@ -189,7 +190,7 @@ class Conformer(torch.nn.Module):
         # concat hidden states with spk embeds and then apply projection
         embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = torch.cat([hs, embeddings_expanded], dim=-1)
-        hs = self.squeeze_excitation(hs.transpose(0, 2)).transpose(0, 2)
+        hs = self.squeeze_excitation_utt(hs.transpose(0, 2)).transpose(0, 2)
         hs = self.hs_emb_projection(hs)
         return hs
     
@@ -197,4 +198,7 @@ class Conformer(torch.nn.Module):
         # concat phoneme embeddings with corresponding word embedding and then apply projection
         word_embeddings_expanded = torch.nn.functional.normalize(word_embedding, dim=0).unsqueeze(0).expand(phoneme_embeddings.size(0), -1)
         phoneme_embeddings = torch.cat([phoneme_embeddings, word_embeddings_expanded], dim=-1)
+        print(phoneme_embeddings.shape)
+        #TODO test
+        phoneme_embeddings = self.squeeze_excitation_word(phoneme_embeddings)
         return phoneme_embeddings
