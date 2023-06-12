@@ -319,7 +319,7 @@ def build_path_to_transcript_dict_jenny():
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/Jenny/" + line.split("|")[0] + ".flac"] = line.split("|")[1]
+            path_to_transcript["/mount/resources/speech/corpora/Jenny/" + line.split("|")[0] + "_silence.flac"] = line.split("|")[1]
     return path_to_transcript
 
 
