@@ -225,7 +225,7 @@ def build_path_to_transcript_dict_libritts():
 
 
 def build_path_to_transcript_dict_libritts_all_clean():
-    path_train = "/mount/resources/speech/corpora/LibriTTS/all_clean"
+    path_train = "/mount/resources/speech/corpora/LibriTTS_R/"  # using all files from the "clean" subsets from LibriTTS-R https://arxiv.org/abs/2305.18802
     path_to_transcript = dict()
     for speaker in tqdm(os.listdir(path_train)):
         for chapter in os.listdir(os.path.join(path_train, speaker)):
@@ -235,6 +235,7 @@ def build_path_to_transcript_dict_libritts_all_clean():
                         transcript = tf.read()
                     wav_file = file.split(".")[0] + ".wav"
                     path_to_transcript[os.path.join(path_train, speaker, chapter, wav_file)] = transcript
+    torch.save(path_to_transcript, os.path.join(PREPROCESSING_DIR, "librittsr", "path_to_transcript_dict.pt"))
     return path_to_transcript
 
 def build_path_to_transcript_dict_promptspeech():

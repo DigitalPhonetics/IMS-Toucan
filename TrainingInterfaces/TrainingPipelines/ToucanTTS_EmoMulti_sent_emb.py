@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_12_EmoMulti_sent_emb_emoBERTcls_static_SE3"
+    name = "ToucanTTS_Sent_EmoMulti"
 
     '''
     concat speaker embedding and sentence embedding
@@ -155,7 +155,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                sent_embs=sent_embs,
                random_emb=True,
-               path_to_xvect=path_to_xvect,
+               path_to_xvect=None,
                static_speaker_embed=True)
     if use_wandb:
         wandb.finish()

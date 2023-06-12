@@ -41,6 +41,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech import run as p
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import run as promptspeech_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS_sent_emb import run as libri_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTSR import run as librir
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech import run as lj
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_word_emb import run as lj_word
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
@@ -66,6 +67,7 @@ pipeline_dict = {
     "promptspeech": promptspeech,
     "promptspeech_sent": promptspeech_sent,
     "libri"         : libri,
+    "librir"         : librir,
     "libri_sent"    : libri_sent,
     "emo"           : emo,
     "emo_sent"      : emo_sent,
