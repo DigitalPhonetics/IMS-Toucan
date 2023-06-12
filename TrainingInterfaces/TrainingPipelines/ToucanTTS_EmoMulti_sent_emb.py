@@ -128,8 +128,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if path_to_ecapa is not None:
         path_to_xvect = path_to_ecapa
 
-    print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_emoBERTcls.pt")}')
-    sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_emoBERTcls.pt"), map_location='cpu')
+    print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt")}')
+    sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt"), map_location='cpu')
 
     model = ToucanTTS(lang_embs=None, 
                       utt_embed_dim=512,
