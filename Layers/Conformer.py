@@ -93,10 +93,8 @@ class Conformer(torch.nn.Module):
 
         if self.utt_embed is not None:
             self.hs_emb_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
-            self.squeeze_excitation_utt = SqueezeExcitation(attention_dim + self.utt_embed, attention_dim)
             if self.conformer_encoder:
                 self.encoder_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
-                self.squeeze_excitation_utt_encoder = SqueezeExcitation(attention_dim + self.utt_embed, attention_dim)
 
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
@@ -158,8 +156,7 @@ class Conformer(torch.nn.Module):
         if self.utt_embed is not None:
             xs = self._integrate_with_utt_embed(hs=xs, 
                                                 utt_embeddings=utterance_embedding, 
-                                                projection=self.hs_emb_projection,
-                                                squeeze_excitation=self.squeeze_excitation_utt)
+                                                projection=self.hs_emb_projection)
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
@@ -177,16 +174,14 @@ class Conformer(torch.nn.Module):
         if self.utt_embed is not None and self.conformer_encoder: # only do this in the encoder
             xs = self._integrate_with_utt_embed(hs=xs, 
                                                 utt_embeddings=utterance_embedding, 
-                                                projection=self.encoder_projection,
-                                                squeeze_excitation=self.squeeze_excitation_utt_encoder)
+                                                projection=self.encoder_projection)
 
         return xs, masks
 
-    def _integrate_with_utt_embed(self, hs, utt_embeddings, projection, squeeze_excitation):
+    def _integrate_with_utt_embed(self, hs, utt_embeddings, projection):
         # concat hidden states with spk embeds and then apply projection
         embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
         hs = torch.cat([hs, embeddings_expanded], dim=-1)
-        hs = squeeze_excitation(hs.transpose(0, 2)).transpose(0, 2)
         hs = projection(hs)
         return hs
     
