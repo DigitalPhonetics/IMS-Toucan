@@ -30,23 +30,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_06_EmoMulti_sent_word_emb_a11_emoBERTcls_static"
-    """
-    a01: integrate before encoder
-    a02: integrate before encoder and decoder
-    a03: integrate before encoder and decoder and postnet
-    a04: integrate before each encoder layer
-    a05: integrate before each encoder and decoder layer
-    a06: integrate before each encoder and decoder layer and postnet
-    a07: concatenate with style embedding and apply projection
-    a08: concatenate with style embedding
-    a09: a06 + a07
-    a10: replace style embedding with sentence embedding (no style embedding, no language embedding, single speaker single language case)
-    a11: a01 + a07
-    a12: integrate before encoder and use sentence embedding instead of style embedding (can be constrained with loss)
-    a13: use sentence embedding instead of style embedding (can be constrained with loss or adaptor)
-    loss: additionally use sentence style loss
-    """
+    name = "ToucanTTS_12_EmoMulti_sent_word_emb_emoBERTcls_static_SE2_each"
+
+    '''
+    concat speaker embedding and sentence embedding
+    input for encoder, pitch, energy, variance predictors and decoder
+    '''
 
     if model_dir is not None:
         save_dir = model_dir
@@ -73,6 +62,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
+                                          lang="en",
+                                          save_imgs=False))
+    
+    try:
+        transcript_dict_ljspeech = torch.load(os.path.join(PREPROCESSING_DIR, "ljspeech", "path_to_transcript_dict.pt"), map_location='cpu')
+    except FileNotFoundError:
+        transcript_dict_ljspeech = build_path_to_transcript_dict_ljspeech()
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_ljspeech,
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
                                           lang="en",
                                           save_imgs=False))
     
@@ -131,120 +130,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if path_to_ecapa is not None:
         path_to_xvect = path_to_ecapa
 
-    if "laser" in name:
-        embed_type = "laser"
-        sent_embed_dim = 1024
-    if "lealla" in name:
-        embed_type = "lealla"
-        sent_embed_dim = 192
-    if "para" in name:
-        embed_type = "para"
-        sent_embed_dim = 768
-    if "mpnet" in name:
-        embed_type = "mpnet"
-        sent_embed_dim = 768
-    if "bertcls" in name:
-        embed_type = "bertcls"
-        sent_embed_dim = 768
-    if "bertlm" in name:
-        embed_type = "bertlm"
-        sent_embed_dim = 768
-    if "emoBERTcls" in name:
-        embed_type = "emoBERTcls"
-        sent_embed_dim = 768
+    print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_emoBERTcls.pt")}')
+    sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_emoBERTcls.pt"), map_location='cpu')
 
-    print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_{embed_type}.pt")}')
-    sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_large_sent_embs_{embed_type}.pt"), map_location='cpu')
+    from Preprocessing.word_embeddings.BERTWordEmbeddingExtractor import BERTWordEmbeddingExtractor
+    word_embedding_extractor = BERTWordEmbeddingExtractor()
 
-    from Preprocessing.word_embeddings.EmotionRoBERTaWordEmbeddingExtractor import EmotionRoBERTaWordEmbeddingExtractor
-    word_embedding_extractor = EmotionRoBERTaWordEmbeddingExtractor()
-    word_embed_dim = 768
-
-    sent_embed_encoder=False
-    sent_embed_decoder=False
-    sent_embed_each=False
-    sent_embed_postnet=False
-    concat_sent_style=False
-    use_concat_projection=False
-    replace_utt_sent_emb = False
-    style_sent = False
-
-    lang_embs=None
-    if "_xvect" in name and "_adapted" not in name:
-        utt_embed_dim = 512
-    elif "_ecapa" in name and "_adapted" not in name:
-        utt_embed_dim = 192
-    else:
-        utt_embed_dim = 64
-
-    if "a01" in name:
-        sent_embed_encoder=True
-    if "a02" in name:
-        sent_embed_encoder=True
-        sent_embed_decoder=True
-    if "a03" in name:
-        sent_embed_encoder=True
-        sent_embed_decoder=True
-        sent_embed_postnet=True
-    if "a04" in name:
-        sent_embed_encoder=True
-        sent_embed_each=True
-    if "a05" in name:
-        sent_embed_encoder=True
-        sent_embed_decoder=True
-        sent_embed_each=True
-    if "a06" in name:
-        sent_embed_encoder=True
-        sent_embed_decoder=True
-        sent_embed_each=True
-        sent_embed_postnet=True
-    if "a07" in name:
-        concat_sent_style=True
-        use_concat_projection=True
-    if "a08" in name:
-        concat_sent_style=True
-    if "a09" in name:
-        sent_embed_encoder=True
-        sent_embed_decoder=True
-        sent_embed_each=True
-        sent_embed_postnet=True
-        concat_sent_style=True
-        use_concat_projection=True
-    if "a10" in name:
-        lang_embs = None
-        utt_embed_dim = 192
-        sent_embed_dim = None
-        replace_utt_sent_emb = True
-    if "a11" in name:
-        sent_embed_encoder=True
-        concat_sent_style=True
-        use_concat_projection=True
-    if "a12" in name:
-        sent_embed_encoder=True
-        style_sent=True
-        if "noadapt" in name and "adapted" not in name:
-            utt_embed_dim = 768
-    if "a13" in name:
-        style_sent=True
-        if "noadapt" in name and "adapted" not in name:
-            utt_embed_dim = 768
-
-
-    model = ToucanTTS(lang_embs=lang_embs, 
-                    utt_embed_dim=utt_embed_dim,
-                    sent_embed_dim=64 if "adapted" in name else sent_embed_dim,
-                    sent_embed_adaptation="noadapt" not in name,
-                    sent_embed_encoder=sent_embed_encoder,
-                    sent_embed_decoder=sent_embed_decoder,
-                    sent_embed_each=sent_embed_each,
-                    sent_embed_postnet=sent_embed_postnet,
-                    concat_sent_style=concat_sent_style,
-                    use_concat_projection=use_concat_projection,
-                    use_sent_style_loss="loss" in name,
-                    pre_embed="_pre" in name,
-                    style_sent=style_sent,
-                    static_speaker_embed="_static" in name,
-                    word_embed_dim=word_embed_dim)
+    model = ToucanTTS(lang_embs=None, 
+                      utt_embed_dim=512,
+                      sent_embed_dim=768,
+                      static_speaker_embed=True,
+                      word_embed_dim=768)
 
     if use_wandb:
         wandb.init(
@@ -265,11 +161,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                sent_embs=sent_embs,
                random_emb=True,
-               emovdb=True,
-               replace_utt_sent_emb=replace_utt_sent_emb,
-               use_adapted_embs="adapted" in name,
                path_to_xvect=path_to_xvect,
-               static_speaker_embed="_static" in name,
+               static_speaker_embed=True,
                word_embedding_extractor=word_embedding_extractor)
     if use_wandb:
         wandb.finish()

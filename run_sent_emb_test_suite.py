@@ -73,7 +73,8 @@ def test_controllable(version, model_id="Meta",
                                   'Oh happy day!',
                                   'Well, this sucks.',
                                   'I am so angry!',
-                                  'What a surprise!']):
+                                  'What a surprise!',
+                                  'This is a neutral test sentence with medium length, which should have relatively neutral prosody, and can be used to test the controllability through textual prompts.']):
         tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/Controllable_{i}.wav", increased_compatibility_mode=True)
 
 
@@ -92,7 +93,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 4 + 1 + 91 + 24 + 4
+        speaker_id = 3 + 1 + 91 + 24
     else:
         speaker_id = None
 

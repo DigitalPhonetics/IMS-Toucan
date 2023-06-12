@@ -29,7 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_04_EmoMulti_static"
+    name = "ToucanTTS_04_EmoMulti_static_SE3"
 
     if model_dir is not None:
         save_dir = model_dir
@@ -74,7 +74,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if "_xvect" in name:
         if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt")):
             print("Extracting xvect from audio")
-            # TODO run on GPU
             import torchaudio
             from speechbrain.pretrained import EncoderClassifier
             classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})

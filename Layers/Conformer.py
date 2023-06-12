@@ -3,6 +3,7 @@ Taken from ESPNet
 """
 
 import torch
+from torchvision.ops import SqueezeExcitation
 from torch.nn.utils.rnn import pad_sequence
 
 from Layers.Attention import RelPositionMultiHeadedAttention
@@ -67,12 +68,14 @@ class Conformer(torch.nn.Module):
                  utt_embed=None, 
                  lang_embs=None,
                  word_embed_dim=None,
+                 conformer_encoder=False,
                  ):
         super(Conformer, self).__init__()
 
         activation = Swish()
         self.conv_subsampling_factor = 1
         self.use_output_norm = use_output_norm
+        self.conformer_encoder = conformer_encoder
 
         if isinstance(input_layer, torch.nn.Module):
             self.embed = input_layer
@@ -90,10 +93,18 @@ class Conformer(torch.nn.Module):
 
         if self.utt_embed is not None:
             self.hs_emb_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
+            self.squeeze_excitation_utt = SqueezeExcitation(attention_dim + self.utt_embed, attention_dim)
+            if self.conformer_encoder:
+                self.encoder_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
+                self.squeeze_excitation_utt_encoder = SqueezeExcitation(attention_dim + self.utt_embed, attention_dim)
+
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
+
         if self.word_embed_dim is not None:
-            self.word_phoneme_projection = torch.nn.Linear(attention_dim + word_embed_dim, attention_dim)
+            self.word_embed_adaptation = torch.nn.Linear(word_embed_dim, attention_dim)
+            self.word_phoneme_projection = torch.nn.Linear(attention_dim * 2, attention_dim)
+            self.squeeze_excitation_word = SqueezeExcitation(attention_dim * 2, attention_dim)
 
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
@@ -135,34 +146,20 @@ class Conformer(torch.nn.Module):
         if self.embed is not None:
             xs = self.embed(xs)
 
-        # concat word embs
-        # NOTE there is probably a more elegant and more efficient way, maybe by using pad masks
         if self.word_embed_dim is not None:
-            xs_enhanced = []
-            for batch_id, wbs in enumerate(word_boundaries):
-                w_start = 0
-                phoneme_sequence = []
-                for i, wb_id in enumerate(wbs):
-                    # get phoneme embeddings corresponding to words according to word boundaries
-                    phoneme_embeds = xs[batch_id, w_start:wb_id+1]
-                    # get cooresponding word embedding
-                    try:
-                        word_embed = word_embedding[batch_id, i]
-                    # if mismatch of words and phonemizer is not handled
-                    except IndexError:
-                        # take last word embedding again to avoid errors
-                        word_embed = word_embedding[batch_id, -1]
-                    # concatenate phoneme embeddings with word embedding
-                    phoneme_embeds = self._cat_with_word_embed(phoneme_embeddings=phoneme_embeds, word_embedding=word_embed)
-                    phoneme_sequence.append(phoneme_embeds)
-                    w_start = wb_id+1
-                # put whole phoneme sequence back together
-                phoneme_sequence = torch.cat(phoneme_sequence, dim=0)
-                xs_enhanced.append(phoneme_sequence)
-            # pad phoneme sequences to get whole batch
-            xs_enhanced_padded = pad_sequence(xs_enhanced, batch_first=True)
-            # apply projection
-            xs = self.word_phoneme_projection(xs_enhanced_padded)
+            word_embedding = torch.nn.functional.normalize(word_embedding, dim=0)
+            word_embedding = self.word_embed_adaptation(word_embedding)
+            xs = self._integrate_with_word_embed(xs=xs,
+                                                 word_boundaries=word_boundaries,
+                                                 word_embedding=word_embedding,
+                                                 word_phoneme_projection=self.word_phoneme_projection,
+                                                 word_phoneme_squeeze_excitation=self.squeeze_excitation_word)
+            
+        if self.utt_embed is not None:
+            xs = self._integrate_with_utt_embed(hs=xs, 
+                                                utt_embeddings=utterance_embedding, 
+                                                projection=self.hs_emb_projection,
+                                                squeeze_excitation=self.squeeze_excitation_utt)
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
@@ -177,16 +174,50 @@ class Conformer(torch.nn.Module):
         if self.use_output_norm:
             xs = self.output_norm(xs)
 
-        if self.utt_embed:
-            xs = self._integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding)
+        if self.utt_embed is not None and self.conformer_encoder: # only do this in the encoder
+            xs = self._integrate_with_utt_embed(hs=xs, 
+                                                utt_embeddings=utterance_embedding, 
+                                                projection=self.encoder_projection,
+                                                squeeze_excitation=self.squeeze_excitation_utt_encoder)
 
         return xs, masks
 
-    def _integrate_with_utt_embed(self, hs, utt_embeddings):
+    def _integrate_with_utt_embed(self, hs, utt_embeddings, projection, squeeze_excitation):
         # concat hidden states with spk embeds and then apply projection
         embeddings_expanded = torch.nn.functional.normalize(utt_embeddings).unsqueeze(1).expand(-1, hs.size(1), -1)
-        hs = self.hs_emb_projection(torch.cat([hs, embeddings_expanded], dim=-1))
+        hs = torch.cat([hs, embeddings_expanded], dim=-1)
+        hs = squeeze_excitation(hs.transpose(0, 2)).transpose(0, 2)
+        hs = projection(hs)
         return hs
+    
+    def _integrate_with_word_embed(self, xs, word_boundaries, word_embedding, word_phoneme_projection, word_phoneme_squeeze_excitation):
+        xs_enhanced = []
+        for batch_id, wbs in enumerate(word_boundaries):
+            w_start = 0
+            phoneme_sequence = []
+            for i, wb_id in enumerate(wbs):
+                # get phoneme embeddings corresponding to words according to word boundaries
+                phoneme_embeds = xs[batch_id, w_start:wb_id+1]
+                # get cooresponding word embedding
+                try:
+                    word_embed = word_embedding[batch_id, i]
+                # if mismatch of words and phonemizer is not handled
+                except IndexError:
+                    # take last word embedding again to avoid errors
+                    word_embed = word_embedding[batch_id, -1]
+                # concatenate phoneme embeddings with word embedding
+                phoneme_embeds = self._cat_with_word_embed(phoneme_embeddings=phoneme_embeds, word_embedding=word_embed)
+                phoneme_sequence.append(phoneme_embeds)
+                w_start = wb_id + 1
+            # put whole phoneme sequence back together
+            phoneme_sequence = torch.cat(phoneme_sequence, dim=0)
+            xs_enhanced.append(phoneme_sequence)
+        # pad phoneme sequences to get whole batch
+        xs_enhanced_padded = pad_sequence(xs_enhanced, batch_first=True)
+        # apply projection
+        xs = word_phoneme_squeeze_excitation(xs_enhanced_padded.transpose(0, 2)).transpose(0, 2)
+        xs = word_phoneme_projection(xs_enhanced_padded)
+        return xs
     
     def _cat_with_word_embed(self, phoneme_embeddings, word_embedding):
         # concat phoneme embeddings with corresponding word embedding and then apply projection
