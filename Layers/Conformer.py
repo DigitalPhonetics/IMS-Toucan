@@ -92,8 +92,8 @@ class Conformer(torch.nn.Module):
         self.word_embed_dim = word_embed_dim
 
         if self.utt_embed is not None:
-            self.hs_emb_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + self.utt_embed, attention_dim))
-            self.squeeze_excitations_utt = repeat(num_blocks, lambda lnum: SqueezeExcitation(attention_dim + self.utt_embed, attention_dim))
+            self.hs_emb_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
+            self.squeeze_excitation_utt = SqueezeExcitation(attention_dim + self.utt_embed, attention_dim)
             if self.conformer_encoder:
                 self.encoder_projection = torch.nn.Linear(attention_dim + self.utt_embed, attention_dim)
                 self.squeeze_excitation_utt_encoder = SqueezeExcitation(attention_dim + self.utt_embed, attention_dim)
@@ -154,6 +154,12 @@ class Conformer(torch.nn.Module):
                                                  word_embedding=word_embedding,
                                                  word_phoneme_projection=self.word_phoneme_projection,
                                                  word_phoneme_squeeze_excitation=self.squeeze_excitation_word)
+            
+        if self.utt_embed is not None:
+            xs = self._integrate_with_utt_embed(hs=xs, 
+                                                utt_embeddings=utterance_embedding, 
+                                                projection=self.hs_emb_projection,
+                                                squeeze_excitation=self.squeeze_excitation_utt)
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
@@ -161,23 +167,7 @@ class Conformer(torch.nn.Module):
 
         xs = self.pos_enc(xs)
 
-        for encoder_index, encoder in enumerate(self.encoders):
-            if self.utt_embed is not None:
-                if isinstance(xs, tuple):
-                    x, pos_emb = xs[0], xs[1]
-                    x = self._integrate_with_utt_embed(hs=x, 
-                                                       utt_embeddings=utterance_embedding, 
-                                                       projection=self.hs_emb_projections[encoder_index],
-                                                       squeeze_excitation=self.squeeze_excitations_utt[encoder_index])
-                    xs = (x, pos_emb)
-                else:
-                    xs = self._integrate_with_utt_embed(hs=xs, 
-                                                        utt_embeddings=utterance_embedding,
-                                                        projection=self.hs_emb_projections[encoder_index],
-                                                        squeeze_excitation=self.squeeze_excitations_utt[encoder_index])
-
-            xs, masks = encoder(xs, masks)
-
+        xs, masks = self.encoders(xs, masks)
         if isinstance(xs, tuple):
             xs = xs[0]
 
