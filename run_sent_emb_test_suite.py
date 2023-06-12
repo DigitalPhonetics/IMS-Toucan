@@ -85,7 +85,7 @@ if __name__ == '__main__':
     print(f"running on {exec_device}")
 
     use_speaker_reference = False
-    use_sent_emb = False
+    use_sent_emb = True
     use_word_emb = False
     use_prompt = False
     use_xvect = False
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 0
+        speaker_id = 3 + 1 + 91 + 24
     else:
         speaker_id = None
 
@@ -138,8 +138,8 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_controllable(version="ToucanTTS_04_EmoMulti_static",
-                      model_id="04_EmoMulti_static",
+    test_controllable(version="ToucanTTS_12_EmoMulti_sent_emb_emoBERTcls_static_SE2_each",
+                      model_id="12_EmoMulti_sent_emb_emoBERTcls_static_SE2_each",
                       exec_device=exec_device,
                       vocoder_model_path=None,
                       biggan=True,

@@ -153,7 +153,8 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
                                  word_embed_dim=word_embed_dim,
-                                 use_output_norm=True)
+                                 use_output_norm=True,
+                                 conformer_encoder=True)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=duration_predictor_chans,
@@ -338,7 +339,6 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding = self.speaker_embedding_adaptation(utterance_embedding)
         else:
             sentence_embedding = torch.nn.functional.normalize(sentence_embedding)
-            # forward sentence embedding adaptation
             sentence_embedding = self.sentence_embedding_adaptation(sentence_embedding)
             utterance_embedding = torch.cat([utterance_embedding, sentence_embedding], dim=1)
             utterance_embedding = self.squeeze_excitation(utterance_embedding.transpose(0, 1).unsqueeze(-1)).squeeze(-1).transpose(0, 1)

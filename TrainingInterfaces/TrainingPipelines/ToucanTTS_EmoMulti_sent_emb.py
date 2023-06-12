@@ -30,7 +30,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_12_EmoMulti_sent_emb_emoBERTcls_static_SE2"
+    name = "ToucanTTS_12_EmoMulti_sent_emb_emoBERTcls_static_SE2_each"
 
     '''
     concat speaker embedding and sentence embedding
