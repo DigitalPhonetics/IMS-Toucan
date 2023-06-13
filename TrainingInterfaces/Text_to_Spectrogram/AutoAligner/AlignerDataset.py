@@ -34,6 +34,8 @@ class AlignerDataset(Dataset):
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             os.makedirs(cache_dir, exist_ok=True)
+            if type(path_to_transcript_dict != dict):
+                path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
             _ = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                run_opts={"device": str(device)},
                                                savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))

@@ -44,143 +44,143 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     chinese_datasets = list()
     vietnamese_datasets = list()
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vctk,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "crema_d"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nvidia_hifitts,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "hifi"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
                                                lang="en"))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
+    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ESDS,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
                                                lang="en"))
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
                                               lang="de"))
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
                                               lang="de"))
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hokus(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hokus,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Hokus"),
                                               lang="de"))
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_bernd(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_bernd,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Bernd"),
                                               lang="de"))
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hui_others(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_hui_others,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "hui_others"),
                                               lang="de"))
 
-    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_thorsten(),
+    german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_thorsten,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Thorsten"),
                                               lang="de"))
 
-    greek_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10el(),
+    greek_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10el,
                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Greek"),
                                              lang="el"))
 
-    spanish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train(),
+    spanish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_spanish_blizzard_train,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "spanish_blizzard"),
                                                lang="es"))
 
-    spanish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10es(),
+    spanish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10es,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Spanish"),
                                                lang="es"))
 
-    spanish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish(),
+    spanish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_spanish,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_spanish"),
                                                lang="es"))
 
-    finnish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10fi(),
+    finnish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10fi,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Finnish"),
                                                lang="fi"))
 
-    russian_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10ru(),
+    russian_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10ru,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Russian"),
                                                lang="ru"))
 
-    hungarian_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10hu(),
+    hungarian_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10hu,
                                                  corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Hungarian"),
                                                  lang="hu"))
 
-    dutch_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10nl(),
+    dutch_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10nl,
                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "meta_Dutch"),
                                              lang="nl"))
 
-    dutch_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch(),
+    dutch_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_dutch,
                                              corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_dutch"),
                                              lang="nl"))
 
-    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset(),
+    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_siwis_subset,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "siwis"),
                                               lang="fr"))
 
-    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_silence_removed(),
+    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_ad_silence_removed,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023ad_silence_removed"),
                                               lang="fr"))
 
-    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed(),
+    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_e_silence_removed"),
                                               lang="fr"))
 
-    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_silence_removed(),
+    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_silence_removed,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2023neb_silence_removed"),
                                               lang="fr"))
 
-    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_french(),
+    french_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_french,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_french"),
                                               lang="fr"))  # this contains large portions of Canadian French
 
-    portuguese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese(),
+    portuguese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese,
                                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
                                                   lang="pt-br"))
 
-    polish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish(),
+    polish_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_polish,
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_polish"),
                                               lang="pl"))
 
-    italian_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian(),
+    italian_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_italian,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_italian"),
                                                lang="it"))
 
-    chinese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn(),
+    chinese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "css10_chinese"),
                                                lang="cmn"))
 
-    chinese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_aishell3(),
+    chinese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_aishell3,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "aishell3"),
                                                lang="cmn"))
 
-    vietnamese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS(),
+    vietnamese_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vietTTS,
                                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "vietTTS"),
                                                   lang="vi"))
 
