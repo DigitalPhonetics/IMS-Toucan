@@ -31,7 +31,6 @@ class AlignerDataset(Dataset):
                  verbose=False,
                  phone_input=False,
                  allow_unknown_symbols=False):
-        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             os.makedirs(cache_dir, exist_ok=True)
             if type(path_to_transcript_dict != dict):
@@ -132,6 +131,7 @@ class AlignerDataset(Dataset):
             # just load the datapoints from cache
             self.datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
 
+        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         print(f"Prepared an Aligner dataset with {len(self.datapoint_feature_dump_list)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
