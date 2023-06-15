@@ -12,6 +12,9 @@ from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.articulatory_features import generate_feature_table
+from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from Preprocessing.articulatory_features import get_phone_to_id
 from Utility.storage_config import MODELS_DIR
 
 
@@ -131,7 +134,8 @@ class AlignerDataset(Dataset):
             # just load the datapoints from cache
             self.datapoint_feature_dump_list = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
 
-        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+        self.phone_to_vector = generate_feature_table()
+        self.phone_to_id = get_phone_to_id()
         print(f"Prepared an Aligner dataset with {len(self.datapoint_feature_dump_list)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -198,12 +202,33 @@ class AlignerDataset(Dataset):
                                                    path])
         self.datapoints.append(process_internal_dataset_chunk)
 
+    def text_vectors_to_id_sequence(self, text_vector):
+        """
+        duplicate code from the TextFrontend to avoid pickling errors
+        """
+        tokens = list()
+        for vector in text_vector:
+            if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
+                # we don't include word boundaries when performing alignment, since they are not always present in audio.
+                features = vector.cpu().numpy().tolist()
+                if vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
+                    # for the sake of alignment, we ignore the difference between nasalized vowels and regular vowels
+                    features[get_feature_to_index_lookup()["nasal"]] = 0
+                features = features[13:]
+                # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                for phone in self.phone_to_vector:
+                    if features == self.phone_to_vector[phone][13:]:
+                        tokens.append(self.phone_to_id[phone])
+                        # this is terribly inefficient, but it's fine
+                        break
+        return tokens
+
     def __getitem__(self, index):
         path_to_datapoint_file = self.datapoint_feature_dump_list[index]
         datapoint, speaker_embedding, filepath = torch.load(path_to_datapoint_file, map_location='cpu')
 
         text_vector = datapoint[0]
-        tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
+        tokens = self.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         return tokens, \
             torch.LongTensor([len(tokens)]), \
