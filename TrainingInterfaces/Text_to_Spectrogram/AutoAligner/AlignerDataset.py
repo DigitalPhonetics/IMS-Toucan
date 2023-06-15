@@ -154,6 +154,9 @@ class AlignerDataset(Dataset):
         warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
 
         for path, transcript in tqdm(zip(path_list, transcript_list), total=len(path_list)):
+            if transcript.strip() == "":
+                print(f"problem with the transcription of {path}")
+                continue
             try:
                 wave, sr = sf.read(path)
                 if sr != assumed_sr:
