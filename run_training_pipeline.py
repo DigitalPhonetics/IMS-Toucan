@@ -47,6 +47,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech import run as lj
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_word_emb import run as lj_word
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_sent_emb import run as lj_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Pretraining import run as sent_pre
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Baseline_Pretraining import run as base_pre
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Finetuning import run as sent_fine
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
@@ -95,6 +96,7 @@ pipeline_dict = {
     "emomulti_sent_pre" : emomulti_sent_pre,
     "emomulti_sent_fine" : emomulti_sent_fine,
     "sent_pre"      : sent_pre,
+    "base_pre"      : base_pre,
     "sent_fine"     : sent_fine,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,

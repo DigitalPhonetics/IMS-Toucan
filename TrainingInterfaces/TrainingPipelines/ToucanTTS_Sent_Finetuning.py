@@ -27,7 +27,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     torch.random.manual_seed(131714)
 
     print("Preparing")
-    print("fine")
 
     name = "ToucanTTS_Sent_Finetuning"
 
@@ -86,13 +85,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                batch_size=32,
                eval_lang="en",
-               path_to_checkpoint="/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Models/ToucanTTS_Sent_Pretraining/best.pt",
+               path_to_checkpoint="/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Models/ToucanTTS_Sent_Pretraining/checkpoint_84930.pt",
                path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
                emotion_sent_embs=emotion_sent_embs,
                path_to_xvect=None,
-               static_speaker_embed=True)
+               static_speaker_embed=True,
+               steps=160000)
     if use_wandb:
         wandb.finish()

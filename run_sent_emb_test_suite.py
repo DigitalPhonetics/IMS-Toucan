@@ -3,6 +3,7 @@ import os
 import torch
 
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from Utility.storage_config import PREPROCESSING_DIR
 
 def test_sentence(version, 
                   model_id="Meta", 
@@ -34,6 +35,106 @@ def test_sentence(version,
 
     sentence = "In my opinion that is a good idea."
     tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav", increased_compatibility_mode=True)
+
+def test_tales_emotion(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Tales", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+    if prompt is not None:
+        tts.set_sentence_embedding(prompt)
+
+    emotion_to_sents = torch.load(os.path.join(PREPROCESSING_DIR, "Tales", f"emotion_sentences_top20.pt"), map_location='cpu')
+    for emotion, sents in emotion_to_sents.items():
+        for i, sent in enumerate(sents):
+            tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Tales/{emotion}_{i}.wav", increased_compatibility_mode=True)
+
+def test_yelp_emotion(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Yelp", exist_ok=True)
+    os.makedirs(f"audios/{version}/Yelp_Prompt", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+    if prompt is not None:
+        tts.set_sentence_embedding(prompt)
+
+    emotion_to_sents = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_sentences_top20.pt"), map_location='cpu')
+    for emotion, sents in emotion_to_sents.items():
+        for i, sent in enumerate(sents):
+            tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Yelp_Prompt/{emotion}_{i}.wav", increased_compatibility_mode=True)
+
+def test_gne_emotion(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Headlines", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+    if prompt is not None:
+        tts.set_sentence_embedding(prompt)
+
+    emotion_to_sents = torch.load(os.path.join(PREPROCESSING_DIR, "Headlines", f"emotion_sentences_top20.pt"), map_location='cpu')
+    for emotion, sents in emotion_to_sents.items():
+        for i, sent in enumerate(sents):
+            tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Headlines/{emotion}_{i}.wav", increased_compatibility_mode=True)
 
 def test_controllable(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -89,13 +190,13 @@ if __name__ == '__main__':
     use_speaker_reference = False
     use_sent_emb = True
     use_word_emb = False
-    use_prompt = False
+    use_prompt = True
     use_xvect = False
     use_ecapa = False
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 500
+        speaker_id = 7 + 1 + 91 + 24 + 4
     else:
         speaker_id = None
 
@@ -119,10 +220,11 @@ if __name__ == '__main__':
     if use_prompt:
         #prompt = "I am so angry!"
         #prompt = "Roar with laughter, this is funny."
-        prompt = "Ew, this is disgusting."
+        #prompt = "Ew, this is disgusting."
         #prompt = "What a surprise!"
         #prompt = "This is very sad."
         #prompt = "I am so scared, I fear that."
+        prompt = "I am so heartbroken and can't stop crying."
     else:
         prompt = None
 
@@ -140,8 +242,8 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_controllable(version="ToucanTTS_Sent_Pretraining",
-                      model_id="Sent_Pretraining",
+    test_yelp_emotion(version="ToucanTTS_Sent_Finetuning",
+                      model_id="Sent_Finetuning",
                       exec_device=exec_device,
                       vocoder_model_path=None,
                       biggan=True,
