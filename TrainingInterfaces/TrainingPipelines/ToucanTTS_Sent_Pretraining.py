@@ -28,7 +28,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_Sent_EmoMulti_32"
+    name = "ToucanTTS_Sent_Pretraining"
 
     '''
     concat speaker embedding and sentence embedding
@@ -42,6 +42,26 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
+
+    try:
+        transcript_dict_ljspeech = torch.load(os.path.join(PREPROCESSING_DIR, "ljspeech", "path_to_transcript_dict.pt"), map_location='cpu')
+    except FileNotFoundError:
+        transcript_dict_ljspeech = build_path_to_transcript_dict_ljspeech()
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_ljspeech,
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
+                                          lang="en",
+                                          save_imgs=False))
+
+    try:
+        transcript_dict_librittsr = torch.load(os.path.join(PREPROCESSING_DIR, "librittsr", "path_to_transcript_dict.pt"), map_location='cpu')
+    except FileNotFoundError:
+        transcript_dict_librittsr = build_path_to_transcript_dict_libritts_all_clean()
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_librittsr,
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "librittsr"),
+                                          lang="en",
+                                          save_imgs=False))
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"),
@@ -63,70 +83,15 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           lang="en",
                                           save_imgs=False))
     
-    try:
-        transcript_dict_ljspeech = torch.load(os.path.join(PREPROCESSING_DIR, "ljspeech", "path_to_transcript_dict.pt"), map_location='cpu')
-    except FileNotFoundError:
-        transcript_dict_ljspeech = build_path_to_transcript_dict_ljspeech()
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_ljspeech,
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
-                                          lang="en",
-                                          save_imgs=False))
-    
     train_set = ConcatDataset(datasets)
 
-    if "_xvect" in name:
-        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt")):
-            print("Extracting xvect from audio")
-            os.makedirs(os.path.join(PREPROCESSING_DIR, "xvect_emomulti"), exist_ok=True)
-            import torchaudio
-            from speechbrain.pretrained import EncoderClassifier
-            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
-            path_to_xvect = {}
-            for index in tqdm(range(len(train_set))):
-                path = train_set[index][10]
-                wave, sr = torchaudio.load(path)
-                # mono
-                wave = torch.mean(wave, dim=0, keepdim=True)
-                # resampling
-                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
-                wave = wave.squeeze(0)
-                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
-                path_to_xvect[path] = embedding
-            torch.save(path_to_xvect, os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"))
-            del classifier
-        else:
-            print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_emomulti', 'xvect.pt')}")
-            path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_emomulti", "xvect.pt"), map_location='cpu')
-    else:
-        path_to_xvect = None
-    
-    if "_ecapa" in name:
-        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt")):
-            print("Extracting ecapa from audio")
-            import torchaudio
-            from speechbrain.pretrained import EncoderClassifier
-            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb", savedir="./Models/Embedding/spkrec-ecapa-voxceleb", run_opts={"device": device})
-            path_to_ecapa = {}
-            for index in tqdm(range(len(train_set))):
-                path = train_set[index][10]
-                wave, sr = torchaudio.load(path)
-                # mono
-                wave = torch.mean(wave, dim=0, keepdim=True)
-                # resampling
-                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
-                wave = wave.squeeze(0)
-                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
-                path_to_ecapa[path] = embedding
-            torch.save(path_to_ecapa, os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"))
-            del classifier
-        else:
-            print(f"Loading ecapa embeddings from {os.path.join(PREPROCESSING_DIR, 'ecapa_emomulti', 'ecapa.pt')}")
-            path_to_ecapa = torch.load(os.path.join(PREPROCESSING_DIR, "ecapa_emomulti", "ecapa.pt"), map_location='cpu')
-    else:
-        path_to_ecapa = None
-    if path_to_ecapa is not None:
-        path_to_xvect = path_to_ecapa
+    print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "ljspeech", "sent_embs_emoBERTcls.pt")}.')
+    sent_embs_lj = torch.load(os.path.join(PREPROCESSING_DIR, "ljspeech", "sent_embs_emoBERTcls.pt"), map_location='cpu')
+
+    print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "librittsr", "sent_embs_emoBERTcls.pt")}.')
+    sent_embs_libri = torch.load(os.path.join(PREPROCESSING_DIR, "librittsr", "sent_embs_emoBERTcls.pt"), map_location='cpu')
+
+    sent_embs = sent_embs_libri | sent_embs_lj
 
     print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt")}')
     emotion_sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt"), map_location='cpu')
@@ -153,6 +118,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
+               sent_embs=sent_embs,
                emotion_sent_embs=emotion_sent_embs,
                path_to_xvect=None,
                static_speaker_embed=True)

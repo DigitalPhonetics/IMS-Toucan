@@ -25,7 +25,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                postnet_start_steps=9000,  # how many warmup steps before the postnet starts training
                use_discriminator=True,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
                sent_embs=None,
-               random_emb=False,
+               emotion_sent_embs=None,
                word_embedding_extractor=None,
                path_to_xvect=None,
                static_speaker_embed=False
@@ -67,7 +67,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            postnet_start_steps=postnet_start_steps,
                            use_discriminator=use_discriminator,
                            sent_embs=sent_embs,
-                           random_emb=random_emb,
+                           emotion_sent_embs=emotion_sent_embs,
                            word_embedding_extractor=word_embedding_extractor,
                            path_to_xvect=path_to_xvect,
                            static_speaker_embed=static_speaker_embed)

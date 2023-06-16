@@ -42,8 +42,12 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_PromptSpeech_sent_emb import
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS_sent_emb import run as libri_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTSR import run as librir
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTSR_sent_emb import run as librir_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech import run as lj
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_word_emb import run as lj_word
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_sent_emb import run as lj_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Pretraining import run as sent_pre
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Finetuning import run as sent_fine
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 from TrainingInterfaces.TrainingPipelines.SentEmbAdaptor_Blizzard2013 import run as adapt
@@ -69,11 +73,13 @@ pipeline_dict = {
     "libri"         : libri,
     "librir"         : librir,
     "libri_sent"    : libri_sent,
+    "librir_sent"    : librir_sent,
     "emo"           : emo,
     "emo_sent"      : emo_sent,
     "emo_word"      : emo_word,
     "lj"            : lj,
     "lj_word"       : lj_word,
+    "lj_sent"       : lj_sent,
     "emovdb"        : emovdb,
     "emovdb_sent"   : emovdb_sent,
     "cremad"        : cremad,
@@ -88,6 +94,8 @@ pipeline_dict = {
     "emomulti_word"      : emomulti_word,
     "emomulti_sent_pre" : emomulti_sent_pre,
     "emomulti_sent_fine" : emomulti_sent_fine,
+    "sent_pre"      : sent_pre,
+    "sent_fine"     : sent_fine,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
     "bigvgan"       : bigvgan,

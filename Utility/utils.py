@@ -202,7 +202,6 @@ def plot_progress_spec_toucantts(net,
                                  default_emb,
                                  static_speaker_embed=False,
                                  sent_embs=None,
-                                 random_emb=False,
                                  word_embedding_extractor=None,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
@@ -210,10 +209,10 @@ def plot_progress_spec_toucantts(net,
     if sentence is None:
         return None
     if sent_embs is not None:
-        if random_emb:
-            sentence_embedding = sent_embs["neutral"][0]
-        else:
+        try:
             sentence_embedding = sent_embs[sentence]
+        except KeyError:
+            sentence_embedding = sent_embs["neutral"][0]
     else:
         sentence_embedding = None
     if static_speaker_embed:
@@ -798,7 +797,7 @@ def get_emotion_from_path(path):
     
     return emotion
 
-def get_speakerid_from_path(path):
+def get_speakerid_from_path(path, libri_speakers):
     speaker_id = None
     if "LJSpeech" in path:
         speaker_id = 0
@@ -841,25 +840,30 @@ def get_speakerid_from_path(path):
     if "RAVDESS" in path:
         speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
         speaker_id = int(speaker) - 1
+    if "LibriTTS_R" in path:
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        speaker_id = libri_speakers.index(int(speaker))
     
     if speaker_id is None:
         raise TypeError('speaker id could not be extracted from filename')
 
-    return speaker_id
+    return int(speaker_id)
 
-def get_speakerid_from_path_all(path):
+def get_speakerid_from_path_all(path, libri_speakers):
     speaker_id = None
     if "LJSpeech" in path: # 1 speaker
+        # 0
         speaker_id = 0
     if "CREMA_D" in path: # 91 speakers
+        # 1 - 91
         speaker = os.path.basename(path).split('_')[0]
-        for i, sp_id in enumerate(range(1001, 1092)):
-            if int(speaker) == sp_id:
-                speaker_id = i + 1
+        speaker_id = int(speaker) - 1001 + 1
     if "RAVDESS" in path: # 24 speakers
+        # 92 - 115
         speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
-        speaker_id = int(speaker) -1 + 1 + 91
+        speaker_id = int(speaker) - 1 + 1 + 91
     if "EmoVDB" in path: # 4 speakers
+        # 116 - 119
         if "bea" in path:
             speaker_id = 0 + 1 + 91 + 24
         if "jenie" in path:
@@ -869,6 +873,7 @@ def get_speakerid_from_path_all(path):
         if "sam" in path:
             speaker_id = 3 + 1 + 91 + 24
     if "Emotional_Speech_Dataset_Singapore" in path: # 10 speakers
+        # 120 - 129
         speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
         if speaker == "0011":
             speaker_id = 0 + 1 + 91 + 24 + 4
@@ -890,6 +895,10 @@ def get_speakerid_from_path_all(path):
             speaker_id = 8 + 1 + 91 + 24 + 4
         if speaker == "0020":
             speaker_id = 9 + 1 + 91 + 24 + 4
+    if "LibriTTS_R" in path: # 1230 speakers
+        # 130 - 1359
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        speaker_id = libri_speakers.index(int(speaker)) + 1 + 91 + 24 + 4 + 10
     
     if speaker_id is None:
         raise TypeError('speaker id could not be extracted from filename')

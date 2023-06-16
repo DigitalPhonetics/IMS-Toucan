@@ -72,8 +72,10 @@ def test_controllable(version, model_id="Meta",
                                   'This makes me feel bad.',
                                   'Oh happy day!',
                                   'Well, this sucks.',
+                                  'That smell is disgusting.',
                                   'I am so angry!',
                                   'What a surprise!',
+                                  'I am so scared, I fear the worst.',
                                   'This is a neutral test sentence with medium length, which should have relatively neutral prosody, and can be used to test the controllability through textual prompts.']):
         tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/Controllable_{i}.wav", increased_compatibility_mode=True)
 
@@ -85,7 +87,7 @@ if __name__ == '__main__':
     print(f"running on {exec_device}")
 
     use_speaker_reference = False
-    use_sent_emb = False
+    use_sent_emb = True
     use_word_emb = False
     use_prompt = False
     use_xvect = False
@@ -93,7 +95,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 3 + 1 + 91 + 24
+        speaker_id = 500
     else:
         speaker_id = None
 
@@ -115,12 +117,12 @@ if __name__ == '__main__':
         speaker_reference = None
 
     if use_prompt:
-        #prompt = "Well, she said, if I had had your bringing up I might have had as good a temper as you, but now I don't believe I ever shall."
         #prompt = "I am so angry!"
         #prompt = "Roar with laughter, this is funny."
-        #prompt = "Ew, this is disgusting."
-        prompt = "Wow, what a surprise!."
+        prompt = "Ew, this is disgusting."
+        #prompt = "What a surprise!"
         #prompt = "This is very sad."
+        #prompt = "I am so scared, I fear that."
     else:
         prompt = None
 
@@ -138,8 +140,8 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_sentence(version="ToucanTTS_04_EmoMulti_static",
-                      model_id="04_EmoMulti_static",
+    test_controllable(version="ToucanTTS_Sent_Pretraining",
+                      model_id="Sent_Pretraining",
                       exec_device=exec_device,
                       vocoder_model_path=None,
                       biggan=True,

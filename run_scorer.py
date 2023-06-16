@@ -24,10 +24,10 @@ exec_device = "cuda" if torch.cuda.is_available() else "cpu"
 #alignment_scorer.show_samples_with_highest_loss(n=100)
 #alignment_scorer.remove_samples_with_highest_loss(path_to_aligner_dataset=os.path.join(PREPROCESSING_DIR, "promptspeech", "aligner_train_cache.pt"), n=100)
 
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_04_ESDS_static", "checkpoint_3000.pt"), static_speaker_embed=True, device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "esds"), lang_id="en")
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Baseline_LibriTTSR", "checkpoint_4445.pt"), static_speaker_embed=True, device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "librittsr"), lang_id="en")
 tts_scorer.show_samples_with_highest_loss(1000)
-tts_scorer.remove_samples_with_highest_loss(50)
+tts_scorer.remove_samples_with_highest_loss(500)
 
 #train_sets = list()
 #train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),

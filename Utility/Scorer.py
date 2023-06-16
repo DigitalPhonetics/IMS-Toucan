@@ -178,6 +178,9 @@ class TTSScorer:
         self.nan_indexes = list()
         self.path_to_score = dict()
         self.path_to_id = dict()
+        if self.static_speaker_embed:
+            with open("/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/librittsr/libri_speakers.txt") as f:
+                libri_speakers = sorted([int(line.rstrip()) for line in f])
         for index in tqdm(range(len(dataset.datapoints))):
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
             if self.style_embedding_function is not None:
@@ -186,7 +189,7 @@ class TTSScorer:
             else:
                 style_embedding = None
             if self.static_speaker_embed:
-                speaker_id = torch.LongTensor([get_speakerid_from_path(filepath)]).to(self.device)
+                speaker_id = torch.LongTensor([get_speakerid_from_path(filepath, libri_speakers)]).to(self.device)
             else:
                 speaker_id = None
             try:

@@ -20,7 +20,7 @@ from run_weight_averaging import average_checkpoints
 from run_weight_averaging import get_n_recent_checkpoints_paths
 from run_weight_averaging import load_net_toucan
 from run_weight_averaging import save_model_for_use
-from Utility.utils import get_emotion_from_path, get_speakerid_from_path_all
+from Utility.utils import get_emotion_from_path, get_speakerid_from_path_all, get_speakerid_from_path
 
 
 def collate_and_pad(batch):
@@ -55,7 +55,7 @@ def train_loop(net,
                postnet_start_steps,
                use_discriminator,
                sent_embs=None,
-               random_emb=False,
+               emotion_sent_embs=None,
                word_embedding_extractor=None,
                path_to_xvect=None,
                static_speaker_embed=False
@@ -75,6 +75,10 @@ def train_loop(net,
         style_embedding_function.requires_grad_(False)
     else:
         style_embedding_function = None
+
+    if static_speaker_embed:
+        with open("/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/librittsr/libri_speakers.txt") as f:
+            libri_speakers = sorted([int(line.rstrip()) for line in f])
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -129,20 +133,23 @@ def train_loop(net,
             else:
                 style_embedding = None
 
-            if sent_embs is not None:
-                if random_emb:
-                    filepaths = batch[10]
-                    emotions = [get_emotion_from_path(path) for path in filepaths]
-                    sentence_embedding = torch.stack([random.choice(sent_embs[emotion]) for emotion in emotions]).to(device)
-                else:
-                    sentences = batch[9]
-                    sentence_embedding = torch.stack([sent_embs[sent] for sent in sentences]).to(device)
+            if sent_embs is not None or emotion_sent_embs is not None:
+                filepaths = batch[10]
+                sentences = batch[9]
+                sentence_embeddings = []
+                for path, sentence in zip(filepaths, sentences):
+                    if "LJSpeech" in path or "LibriTTS_R" in path:
+                        sentence_embeddings.append(sent_embs[sentence])
+                    else:
+                        emotion = get_emotion_from_path(path)
+                        sentence_embeddings.append(random.choice(emotion_sent_embs[emotion]))
+                sentence_embedding = torch.stack(sentence_embeddings).to(device)
             else:
                 sentence_embedding = None
             
             if static_speaker_embed:
                 filepaths = batch[10]
-                speaker_ids = torch.LongTensor([get_speakerid_from_path_all(path) for path in filepaths]).to(device)
+                speaker_ids = torch.LongTensor([get_speakerid_from_path_all(path, libri_speakers) for path in filepaths]).to(device)
             else:
                 speaker_ids = None
             
@@ -216,9 +223,8 @@ def train_loop(net,
         if path_to_xvect is not None:
             default_embedding = path_to_xvect[train_dataset[0][10]]
         elif style_embedding_function is not None:
-            default_embedding = style_embedding_function(
-                batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
-                batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+            default_embedding = style_embedding_function(batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+                                                         batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         else: 
             default_embedding = None
 
@@ -258,8 +264,7 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           static_speaker_embed=static_speaker_embed,
-                                                                          sent_embs=sent_embs,
-                                                                          random_emb=random_emb,
+                                                                          sent_embs=sent_embs if sent_embs is not None else emotion_sent_embs,
                                                                           word_embedding_extractor=word_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
