@@ -1,7 +1,9 @@
 import time
 
 import torch
-#import wandb
+import wandb
+from torch.utils.data import ConcatDataset
+from tqdm import tqdm
 
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.toucantts_train_loop_arbiter import train_loop
@@ -27,8 +29,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_Baseline_EmoVDB"
-    print("emovdb")
+    name = "ToucanTTS_Baseline_TESS"
+    print("tess")
 
     if model_dir is not None:
         save_dir = model_dir
@@ -36,23 +38,26 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, name)
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"),
+    datasets = list()
+
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_TESS(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "tess"),
                                           lang="en",
-                                          save_imgs=False)
+                                          save_imgs=False))
+    
+    train_set = ConcatDataset(datasets)
 
     model = ToucanTTS(lang_embs=None, 
                       utt_embed_dim=512,
                       static_speaker_embed=True)
     if use_wandb:
-        import wandb
         wandb.init(
             name=f"{name}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
-               datasets=[train_set],
+               datasets=train_set,
                device=device,
                save_directory=save_dir,
                batch_size=8,

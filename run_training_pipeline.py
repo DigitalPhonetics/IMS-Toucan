@@ -31,6 +31,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess import run as ravdes
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess_sent_emb import run as ravdess_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS_sent_emb import run as esds_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_TESS import run as tess
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti import run as emomulti
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_emb import run as emomulti_sent
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_EmoMulti_sent_word_emb import run as emomulti_sent_word
@@ -89,6 +90,7 @@ pipeline_dict = {
     "ravdess_sent"  : ravdess_sent,
     "esds"          : esds,
     "esds_sent"     : esds_sent,
+    "tess"          : tess,
     "emomulti"      : emomulti,
     "emomulti_sent"      : emomulti_sent,
     "emomulti_sent_word" : emomulti_sent_word,

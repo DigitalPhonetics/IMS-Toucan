@@ -15,7 +15,7 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
+os.environ["CUDA_VISIBLE_DEVICES"] = f"8"
 exec_device = "cuda" if torch.cuda.is_available() else "cpu"
 
 #alignment_scorer = AlignmentScorer(path_to_aligner_model=os.path.join(MODELS_DIR, "Aligner", "aligner.pt"), device=exec_device)
@@ -24,10 +24,11 @@ exec_device = "cuda" if torch.cuda.is_available() else "cpu"
 #alignment_scorer.show_samples_with_highest_loss(n=100)
 #alignment_scorer.remove_samples_with_highest_loss(path_to_aligner_dataset=os.path.join(PREPROCESSING_DIR, "promptspeech", "aligner_train_cache.pt"), n=100)
 
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Baseline_LibriTTSR", "checkpoint_4445.pt"), static_speaker_embed=True, device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "librittsr"), lang_id="en")
+print("emovdb")
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Baseline_EmoVDB", "checkpoint_2024.pt"), static_speaker_embed=True, device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"), lang_id="en")
 tts_scorer.show_samples_with_highest_loss(1000)
-tts_scorer.remove_samples_with_highest_loss(500)
+tts_scorer.remove_samples_with_highest_loss(100)
 
 #train_sets = list()
 #train_sets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),

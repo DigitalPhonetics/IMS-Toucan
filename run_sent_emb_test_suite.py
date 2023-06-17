@@ -101,7 +101,7 @@ def test_yelp_emotion(version, model_id="Meta",
     emotion_to_sents = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_sentences_top20.pt"), map_location='cpu')
     for emotion, sents in emotion_to_sents.items():
         for i, sent in enumerate(sents):
-            tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Yelp_Prompt/{emotion}_{i}.wav", increased_compatibility_mode=True)
+            tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Yelp/{emotion}_{i}.wav", increased_compatibility_mode=True)
 
 def test_gne_emotion(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -190,13 +190,13 @@ if __name__ == '__main__':
     use_speaker_reference = False
     use_sent_emb = True
     use_word_emb = False
-    use_prompt = True
+    use_prompt = False
     use_xvect = False
     use_ecapa = False
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 7 + 1 + 91 + 24 + 4
+        speaker_id = 0 + 1 + 91 + 24
     else:
         speaker_id = None
 

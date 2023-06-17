@@ -789,6 +789,14 @@ def get_emotion_from_path(path):
             emotion = "disgust"
         if emotion == "08":
             emotion = "surprise"
+    if "TESS" in path:
+        emotion = os.path.split(os.path.dirname(path))[1].split('_')[1].lower()
+        if emotion == "angry":
+            emotion = "anger"
+        if emotion == "happy":
+            emotion = "joy"
+        if emotion == "sad":
+            emotion = "sadness"
     if "LJSpeech" in path:
         emotion = "neutral"
 
@@ -843,6 +851,12 @@ def get_speakerid_from_path(path, libri_speakers):
     if "LibriTTS_R" in path:
         speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
         speaker_id = libri_speakers.index(int(speaker))
+    if "TESS" in path:
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[0]
+        if speaker == "OAF":
+            speaker_id = 0
+        if speaker == "YAF":
+            speaker_id = 1
     
     if speaker_id is None:
         raise TypeError('speaker id could not be extracted from filename')
@@ -899,6 +913,62 @@ def get_speakerid_from_path_all(path, libri_speakers):
         # 130 - 1359
         speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
         speaker_id = libri_speakers.index(int(speaker)) + 1 + 91 + 24 + 4 + 10
+    if "TESS" in path: # 2 speakers
+        # 1360 - 1361
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[0]
+        if speaker == "OAF":
+            speaker_id = 0 + 1 + 91 + 24 + 4 + 10 + 1230
+        if speaker == "YAF":
+            speaker_id = 1 + 1 + 91 + 24 + 4 + 10 + 1230
+    
+    if speaker_id is None:
+        raise TypeError('speaker id could not be extracted from filename')
+
+    return speaker_id
+
+def get_speakerid_from_path_all2(path, libri_speakers):
+    speaker_id = None
+    if "LJSpeech" in path: # 1 speaker
+        # 0
+        speaker_id = 0
+    if "RAVDESS" in path: # 24 speakers
+        # 1 - 24
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[1]
+        speaker_id = int(speaker) - 1 + 1
+    if "Emotional_Speech_Dataset_Singapore" in path: # 10 speakers
+        # 25 - 34
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        if speaker == "0011":
+            speaker_id = 0 + 1 + 24
+        if speaker == "0012":
+            speaker_id = 1 + 1 + 24
+        if speaker == "0013":
+            speaker_id = 2 + 1 + 24
+        if speaker == "0014":
+            speaker_id = 3 + 1 + 24
+        if speaker == "0015":
+            speaker_id = 4 + 1 + 24
+        if speaker == "0016":
+            speaker_id = 5 + 1 + 24
+        if speaker == "0017":
+            speaker_id = 6 + 1 + 24
+        if speaker == "0018":
+            speaker_id = 7 + 1 + 24
+        if speaker == "0019":
+            speaker_id = 8 + 1 + 24
+        if speaker == "0020":
+            speaker_id = 9 + 1 + 24
+    if "LibriTTS_R" in path: # 1230 speakers
+        # 35 - 1264
+        speaker = os.path.split(os.path.split(os.path.dirname(path))[0])[1]
+        speaker_id = libri_speakers.index(int(speaker)) + 1 + 24 + 10
+    if "TESS" in path: # 2 speakers
+        # 1265, 1266
+        speaker = os.path.split(os.path.dirname(path))[1].split('_')[0]
+        if speaker == "OAF":
+            speaker_id = 0 + 1 + 24 + 10 + 1230
+        if speaker == "YAF":
+            speaker_id = 1 + 1 + 24 + 10 + 1230
     
     if speaker_id is None:
         raise TypeError('speaker id could not be extracted from filename')

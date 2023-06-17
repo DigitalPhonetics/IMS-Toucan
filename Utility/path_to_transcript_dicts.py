@@ -639,6 +639,17 @@ def build_path_to_transcript_dict_CREMA_D():
             path_to_transcript[root + file] = identifier_to_sent[file.split("_")[1]]
     return path_to_transcript
 
+def build_path_to_transcript_dict_TESS():
+    root = "/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/TESS"
+    path_to_transcript = dict()
+    for subdir in os.listdir(root):
+        for file in os.listdir(os.path.join(root, subdir)):
+            if file.endswith(".wav"):
+                word = file.split('_')[1]
+                transcript = f"Say the word {word}."
+                path_to_transcript[os.path.join(root, subdir, file)] = transcript
+    return path_to_transcript
+
 def build_path_to_transcript_dict_EmoV_DB():
     root = "/mount/resources/speech/corpora/EmoV_DB/"
     path_to_transcript = dict()

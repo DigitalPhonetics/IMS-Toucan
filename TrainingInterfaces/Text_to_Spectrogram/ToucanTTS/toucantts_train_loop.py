@@ -20,7 +20,7 @@ from run_weight_averaging import average_checkpoints
 from run_weight_averaging import get_n_recent_checkpoints_paths
 from run_weight_averaging import load_net_toucan
 from run_weight_averaging import save_model_for_use
-from Utility.utils import get_emotion_from_path, get_speakerid_from_path_all, get_speakerid_from_path
+from Utility.utils import get_emotion_from_path, get_speakerid_from_path_all, get_speakerid_from_path, get_speakerid_from_path_all2
 
 
 def collate_and_pad(batch):
@@ -149,7 +149,7 @@ def train_loop(net,
             
             if static_speaker_embed:
                 filepaths = batch[10]
-                speaker_ids = torch.LongTensor([get_speakerid_from_path_all(path, libri_speakers) for path in filepaths]).to(device)
+                speaker_ids = torch.LongTensor([get_speakerid_from_path_all2(path, libri_speakers) for path in filepaths]).to(device)
             else:
                 speaker_ids = None
             

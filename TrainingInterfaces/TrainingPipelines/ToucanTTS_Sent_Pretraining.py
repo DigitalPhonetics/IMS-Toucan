@@ -28,7 +28,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_Sent_Pretraining"
+    name = "ToucanTTS_Sent_Pretraining_2"
+    print("pretraining")
 
     '''
     concat speaker embedding and sentence embedding
@@ -62,7 +63,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "librittsr"),
                                           lang="en",
                                           save_imgs=False))
-
+    '''
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb_speaker"),
                                           lang="en",
@@ -72,6 +73,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "cremad"),
                                           lang="en",
                                           save_imgs=False))
+    '''
 
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
@@ -80,6 +82,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_ESDS(),
                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
+                                          lang="en",
+                                          save_imgs=False))
+    
+    datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_TESS(),
+                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "tess"),
                                           lang="en",
                                           save_imgs=False))
     

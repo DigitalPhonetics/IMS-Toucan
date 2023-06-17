@@ -116,8 +116,8 @@ class ToucanTTS(torch.nn.Module):
         self.static_speaker_embed = static_speaker_embed
 
         if self.static_speaker_embed:
-            # emovdb - 4, cremad - 91, esds - 10, ravdess - 24, ljspeech - 1, librittsr - 1230
-            self.speaker_embedding = torch.nn.Embedding(4 + 91 + 10 + 24 + 1 + 1230, utt_embed_dim)
+            # emovdb - 4, cremad - 91, esds - 10, ravdess - 24, ljspeech - 1, librittsr - 1230, tess - 2
+            self.speaker_embedding = torch.nn.Embedding(10 + 24 + 1 + 1230 + 2, utt_embed_dim)
 
         if self.use_sent_embed:
             self.sentence_embedding_adaptation = Linear(sent_embed_dim, 512)
