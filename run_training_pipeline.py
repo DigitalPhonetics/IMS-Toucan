@@ -50,6 +50,7 @@ from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_sent_emb import run
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Pretraining import run as sent_pre
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Baseline_Pretraining import run as base_pre
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Finetuning import run as sent_fine
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Baseline_Finetuning import run as base_fine
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 from TrainingInterfaces.TrainingPipelines.SentEmbAdaptor_Blizzard2013 import run as adapt
@@ -100,6 +101,7 @@ pipeline_dict = {
     "sent_pre"      : sent_pre,
     "base_pre"      : base_pre,
     "sent_fine"     : sent_fine,
+    "base_fine"     : base_fine,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
     "bigvgan"       : bigvgan,

@@ -103,6 +103,32 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt")}')
     emotion_sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt"), map_location='cpu')
 
+    if "_xvect" in name:
+        if not os.path.exists(os.path.join(PREPROCESSING_DIR, "xvect_all2", "xvect.pt")):
+            print("Extracting xvect from audio")
+            os.makedirs(os.path.join(PREPROCESSING_DIR, "xvect_all2"), exist_ok=True)
+            import torchaudio
+            from speechbrain.pretrained import EncoderClassifier
+            classifier = EncoderClassifier.from_hparams(source="speechbrain/spkrec-xvect-voxceleb", savedir="./Models/Embedding/spkrec-xvect-voxceleb", run_opts={"device": device})
+            path_to_xvect = {}
+            for index in tqdm(range(len(train_set))):
+                path = train_set[index][10]
+                wave, sr = torchaudio.load(path)
+                # mono
+                wave = torch.mean(wave, dim=0, keepdim=True)
+                # resampling
+                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                wave = wave.squeeze(0)
+                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
+                path_to_xvect[path] = embedding
+            torch.save(path_to_xvect, os.path.join(PREPROCESSING_DIR, "xvect_all2", "xvect.pt"))
+            del classifier
+        else:
+            print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_all2', 'xvect.pt')}")
+            path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_all2", "xvect.pt"), map_location='cpu')
+    else:
+        path_to_xvect = None
+
     model = ToucanTTS(lang_embs=None, 
                       utt_embed_dim=512,
                       sent_embed_dim=768,
@@ -128,6 +154,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                sent_embs=sent_embs,
                emotion_sent_embs=emotion_sent_embs,
                path_to_xvect=None,
-               static_speaker_embed=True)
+               static_speaker_embed=True,
+               steps=120000)
     if use_wandb:
         wandb.finish()

@@ -29,8 +29,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    name = "ToucanTTS_Baseline_Pretraining_2"
-    print("base")
+    name = "ToucanTTS_Baseline_Finetuning_2"
+    print("base finetuning")
 
     if model_dir is not None:
         save_dir = model_dir
@@ -39,26 +39,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
-
-    try:
-        transcript_dict_ljspeech = torch.load(os.path.join(PREPROCESSING_DIR, "ljspeech", "path_to_transcript_dict.pt"), map_location='cpu')
-    except FileNotFoundError:
-        transcript_dict_ljspeech = build_path_to_transcript_dict_ljspeech()
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_ljspeech,
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "ljspeech"),
-                                          lang="en",
-                                          save_imgs=False))
-
-    try:
-        transcript_dict_librittsr = torch.load(os.path.join(PREPROCESSING_DIR, "librittsr", "path_to_transcript_dict.pt"), map_location='cpu')
-    except FileNotFoundError:
-        transcript_dict_librittsr = build_path_to_transcript_dict_libritts_all_clean()
-
-    datasets.append(prepare_fastspeech_corpus(transcript_dict=transcript_dict_librittsr,
-                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "librittsr"),
-                                          lang="en",
-                                          save_imgs=False))
 
     '''
     datasets.append(prepare_fastspeech_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB_Speaker(),
@@ -104,13 +84,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                batch_size=32,
                eval_lang="en",
-               path_to_checkpoint=resume_checkpoint,
+               path_to_checkpoint="/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Models/ToucanTTS_Baseline_Pretraining_2/checkpoint_124660.pt",
                path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
                path_to_xvect=None,
                static_speaker_embed=True,
-               steps=120000)
+               steps=160000)
     if use_wandb:
         wandb.finish()
