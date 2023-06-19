@@ -66,7 +66,7 @@ class ChunkedAlignerDataset(Dataset):
         self.active_chunk = self.chunk_list.pop()
         self.currently_loaded_datapoints = torch.load(os.path.join(cache_dir, f"aligner_train_cache_chunk_{self.active_chunk}.pt"), map_location='cpu')
         fisher_yates_shuffle(self.currently_loaded_datapoints)
-        print(f"Prepared an Aligner dataset in {cache_dir}.")
+        print(f"Prepared an Aligner dataset with {len(self.datapoint_feature_dump_list)} samples in {cache_dir} split over {len(self.chunk_list) + 1} chunks.")
 
     def text_vectors_to_id_sequence(self, text_vector):
         """
