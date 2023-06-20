@@ -51,10 +51,10 @@ def train_loop(train_dataset,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=1,
+                              num_workers=16,
                               pin_memory=False,
                               shuffle=True,
-                              prefetch_factor=32,
+                              prefetch_factor=4,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 

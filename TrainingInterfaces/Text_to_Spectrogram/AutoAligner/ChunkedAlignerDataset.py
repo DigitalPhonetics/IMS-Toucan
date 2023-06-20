@@ -1,5 +1,6 @@
 import os
 import random
+import time
 
 import torch
 from torch.utils.data import Dataset
@@ -66,6 +67,7 @@ class ChunkedAlignerDataset(Dataset):
         self.active_chunk = self.chunk_list.pop()
         self.currently_loaded_datapoints = torch.load(os.path.join(cache_dir, f"aligner_train_cache_chunk_{self.active_chunk}.pt"), map_location='cpu')
         fisher_yates_shuffle(self.currently_loaded_datapoints)
+        self.currently_loading = False
         print(f"Prepared an Aligner dataset with {len(self.datapoint_feature_dump_list)} samples in {cache_dir} split over {len(self.chunk_list) + 1} chunks.")
 
     def text_vectors_to_id_sequence(self, text_vector):
@@ -89,30 +91,39 @@ class ChunkedAlignerDataset(Dataset):
                         break
         return tokens
 
-    def __getitem__(self, _):
-
-        try:
-            datapoint, speaker_embedding, filepath = self.currently_loaded_datapoints.pop()
-        except IndexError:
+    def __getitem__(self, index):
+        if self.num_chunks == 1:
+            datapoint, speaker_embedding, filepath = self.currently_loaded_datapoints[index]
+        else:
             try:
-                self.active_chunk = self.chunk_list.pop()
-                self.currently_loaded_datapoints = torch.load(os.path.join(self.cache_dir, f"aligner_train_cache_chunk_{self.active_chunk}.pt"), map_location='cpu')
-                fisher_yates_shuffle(self.currently_loaded_datapoints)
+                datapoint, speaker_embedding, filepath = self.currently_loaded_datapoints.pop()
             except IndexError:
-                self.chunk_list = list(range(self.num_chunks))
-                self.active_chunk = self.chunk_list.pop()
-                self.currently_loaded_datapoints = torch.load(os.path.join(self.cache_dir, f"aligner_train_cache_chunk_{self.active_chunk}.pt"), map_location='cpu')
-                fisher_yates_shuffle(self.currently_loaded_datapoints)
-            datapoint, speaker_embedding, filepath = self.currently_loaded_datapoints.pop()
+                if self.currently_loading:
+                    while self.currently_loading:
+                        time.sleep(.1)
+                    datapoint, speaker_embedding, filepath = self.currently_loaded_datapoints.pop()
+                else:
+                    self.currently_loading = True  # this is a poor man's semaphore
+                    try:
+                        self.active_chunk = self.chunk_list.pop()
+                        self.currently_loaded_datapoints = torch.load(os.path.join(self.cache_dir, f"aligner_train_cache_chunk_{self.active_chunk}.pt"), map_location='cpu')
+                        fisher_yates_shuffle(self.currently_loaded_datapoints)
+                    except IndexError:
+                        self.chunk_list = list(range(self.num_chunks))
+                        self.active_chunk = self.chunk_list.pop()
+                        self.currently_loaded_datapoints = torch.load(os.path.join(self.cache_dir, f"aligner_train_cache_chunk_{self.active_chunk}.pt"), map_location='cpu')
+                        fisher_yates_shuffle(self.currently_loaded_datapoints)
+                    self.currently_loading = False
+                    datapoint, speaker_embedding, filepath = self.currently_loaded_datapoints.pop()
 
         text_vector = datapoint[0]
         tokens = self.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         return tokens, \
-            torch.LongTensor([len(tokens)]), \
-            datapoint[2], \
-            datapoint[3], \
-            speaker_embedding
+               torch.LongTensor([len(tokens)]), \
+               datapoint[2], \
+               datapoint[3], \
+               speaker_embedding
 
     def __len__(self):
         return len(self.datapoint_feature_dump_list)
