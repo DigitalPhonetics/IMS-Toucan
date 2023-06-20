@@ -28,6 +28,8 @@ class ChunkedAlignerDataset(Dataset):
                  verbose=False,
                  phone_input=False,
                  allow_unknown_symbols=False):
+        if type(path_to_transcript_dict) != dict:
+            path_to_transcript_dict = path_to_transcript_dict()
         self.num_chunks = (len(path_to_transcript_dict) // 10000) + 1
         self.chunk_list = list(range(self.num_chunks))
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")):
