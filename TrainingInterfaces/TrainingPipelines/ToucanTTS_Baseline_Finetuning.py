@@ -84,13 +84,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                batch_size=32,
                eval_lang="en",
-               path_to_checkpoint="/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Models/ToucanTTS_Baseline_Pretraining_2/checkpoint_124660.pt",
+               path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
                path_to_xvect=None,
                static_speaker_embed=True,
-               steps=160000)
+               steps=200000)
     if use_wandb:
         wandb.finish()

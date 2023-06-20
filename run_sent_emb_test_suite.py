@@ -248,6 +248,304 @@ def test_study(version, model_id="Meta",
         for i, sent in enumerate(sents):
             tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/{emotion}_{i}.wav", increased_compatibility_mode=True)
 
+def test_study2(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Study", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+    if prompt is not None:
+        tts.set_sentence_embedding(prompt)
+
+    emotion_to_sents = {"anger":   ["You can't be serious, how dare you not tell me you were going to marry her?",
+                                    "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
+                                    ],
+                        "disgust": ["What a stink, this place stinks like rotten eggs.",
+                                    "The rabbits could not bear him, they could smell him half a mile off."
+                                    ],
+                        "sadness": ["Lily broke up with me last week, in fact, she dumped me.",
+                                    "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+                                    ],
+                        "joy":     ["I really enjoy the beach in the summer.",
+                                    "Then she saw that her deliverance was near, and her heart leapt with joy."
+                                    ],
+                        "surprise":["Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!",
+                                    "He was astonished when he saw them come alone, and asked what had happened to them."
+                                    ],
+                        "fear":    ["I'm scared that she might not come back.",
+                                    "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
+                                    ],
+                        "neutral": ["You can go to the Employment Development Office and pick it up.",
+                                    "So the queen gave him the letter, and said that he might see for himself what was written in it."
+                                    ]
+                        }
+    for emotion, sents in emotion_to_sents.items():
+        for i, sent in enumerate(sents):
+            tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/{emotion}_{i}.flac", increased_compatibility_mode=True)
+
+def test_study2_male(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Study", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+
+        emotion = "anger"
+        sent = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "disgust"
+        sent = "What a stink, this place stinks like rotten eggs."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "sadness"
+        sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "joy"
+        sent = "Then she saw that her deliverance was near, and her heart leapt with joy."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "surprise"
+        sent = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "fear"
+        sent = "I'm scared that she might not come back."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "So the queen gave him the letter, and said that he might see for himself what was written in it."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+def test_study2_male_prompt(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Study", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+
+        emotion = "anger"
+        sent = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
+        prompt = "Then she saw that her deliverance was near, and her heart leapt with joy."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "disgust"
+        sent = "What a stink, this place stinks like rotten eggs."
+        prompt = "I'm scared that she might not come back."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "sadness"
+        sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+        prompt = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "joy"
+        sent = "Then she saw that her deliverance was near, and her heart leapt with joy."
+        prompt = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "surprise"
+        sent = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
+        prompt = "So the queen gave him the letter, and said that he might see for himself what was written in it."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "fear"
+        sent = "I'm scared that she might not come back."
+        prompt = "What a stink, this place stinks like rotten eggs."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "So the queen gave him the letter, and said that he might see for himself what was written in it."
+        prompt = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+def test_study2_female(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Study", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+
+        emotion = "anger"
+        sent = "You can't be serious, how dare you not tell me you were going to marry her?"
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "disgust"
+        sent = "The rabbits could not bear him, they could smell him half a mile off."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "sadness"
+        sent = "Lily broke up with me last week, in fact, she dumped me."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "joy"
+        sent = "I really enjoy the beach in the summer."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "surprise"
+        sent = "He was astonished when he saw them come alone, and asked what had happened to them."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "fear"
+        sent = "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "You can go to the Employment Development Office and pick it up."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+def test_study2_female_prompt(version, model_id="Meta", 
+                      exec_device="cpu", 
+                      speaker_reference=None, 
+                      vocoder_model_path=None, 
+                      biggan=False, 
+                      sent_emb_extractor=None, 
+                      word_emb_extractor=None, 
+                      prompt:str=None, 
+                      xvect_model=None, 
+                      speaker_id=None):
+    os.makedirs("audios", exist_ok=True)
+    os.makedirs(f"audios/{version}", exist_ok=True)
+    os.makedirs(f"audios/{version}/Study", exist_ok=True)
+    tts = ToucanTTSInterface(device=exec_device, 
+                             tts_model_path=model_id, 
+                             vocoder_model_path=vocoder_model_path, 
+                             faster_vocoder=not biggan, 
+                             sent_emb_extractor=sent_emb_extractor, 
+                             word_emb_extractor=word_emb_extractor, 
+                             xvect_model=xvect_model)
+    tts.set_language("en")
+    if speaker_reference is not None:
+        tts.set_utterance_embedding(speaker_reference)
+    if speaker_id is not None:
+        tts.set_speaker_id(speaker_id)
+
+        emotion = "anger"
+        sent = "You can't be serious, how dare you not tell me you were going to marry her?"
+        prompt = "You can go to the Employment Development Office and pick it up."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "disgust"
+        sent = "The rabbits could not bear him, they could smell him half a mile off."
+        prompt = "He was astonished when he saw them come alone, and asked what had happened to them."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "sadness"
+        sent = "Lily broke up with me last week, in fact, she dumped me."
+        prompt = "You can't be serious, how dare you not tell me you were going to marry her?"
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "joy"
+        sent = "I really enjoy the beach in the summer."
+        prompt = "The rabbits could not bear him, they could smell him half a mile off."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "surprise"
+        sent = "He was astonished when he saw them come alone, and asked what had happened to them."
+        prompt = "Lily broke up with me last week, in fact, she dumped me."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "fear"
+        sent = "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
+        prompt = "I really enjoy the beach in the summer."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "You can go to the Employment Development Office and pick it up."
+        prompt = "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
 
 if __name__ == '__main__':
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -264,7 +562,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 7 + 1 + 24
+        speaker_id = 1 + 1 + 24
     else:
         speaker_id = None
 
@@ -310,8 +608,8 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_study(version="ToucanTTS_Baseline_Finetuning_2",
-                      model_id="Baseline_Finetuning_2",
+    test_study2_male(version="ToucanTTS_Baseline_Finetuning_2_80k",
+                      model_id="Baseline_Finetuning_2_80k",
                       exec_device=exec_device,
                       vocoder_model_path=None,
                       biggan=False,

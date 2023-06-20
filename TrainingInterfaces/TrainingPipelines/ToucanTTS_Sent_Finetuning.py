@@ -76,6 +76,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     print(f'Loading sentence embeddings from {os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt")}')
     emotion_sent_embs = torch.load(os.path.join(PREPROCESSING_DIR, "Yelp", f"emotion_prompts_balanced_10000_sent_embs_emoBERTcls.pt"), map_location='cpu')
 
+    if "_xvect" in name:
+        print(f"Loading xvect embeddings from {os.path.join(PREPROCESSING_DIR, 'xvect_all2', 'xvect.pt')}")
+        path_to_xvect = torch.load(os.path.join(PREPROCESSING_DIR, "xvect_all2", "xvect.pt"), map_location='cpu')
+    else:
+        path_to_xvect = None
+
     model = ToucanTTS(lang_embs=None, 
                       utt_embed_dim=512,
                       sent_embed_dim=768,
@@ -93,7 +99,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                batch_size=32,
                eval_lang="en",
-               path_to_checkpoint="/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Models/ToucanTTS_Sent_Pretraining_2/checkpoint_124660.pt",
+               path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
@@ -101,6 +107,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                emotion_sent_embs=emotion_sent_embs,
                path_to_xvect=None,
                static_speaker_embed=True,
-               steps=160000)
+               steps=200000)
     if use_wandb:
         wandb.finish()
