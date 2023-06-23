@@ -33,8 +33,8 @@ def test_sentence(version,
     if prompt is not None:
         tts.set_sentence_embedding(prompt)
 
-    sentence = "In my opinion that is a good idea."
-    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence.wav", increased_compatibility_mode=True)
+    sentence = "The football teams give a tea party."
+    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence0.flac", increased_compatibility_mode=True)
 
 def test_tales_emotion(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -330,31 +330,31 @@ def test_study2_male(version, model_id="Meta",
 
         emotion = "anger"
         sent = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
 
         emotion = "disgust"
-        sent = "What a stink, this place stinks like rotten eggs."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+        sent = "That sounds absolutely disgusting!"
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.wav", increased_compatibility_mode=True)
 
         emotion = "sadness"
         sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
 
         emotion = "joy"
         sent = "Then she saw that her deliverance was near, and her heart leapt with joy."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
 
         emotion = "surprise"
         sent = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.wav", increased_compatibility_mode=True)
 
         emotion = "fear"
         sent = "I'm scared that she might not come back."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.wav", increased_compatibility_mode=True)
 
         emotion = "neutral"
         sent = "So the queen gave him the letter, and said that he might see for himself what was written in it."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
 
 def test_study2_male_prompt(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -389,7 +389,7 @@ def test_study2_male_prompt(version, model_id="Meta",
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
 
         emotion = "disgust"
-        sent = "What a stink, this place stinks like rotten eggs."
+        sent = "That sounds absolutely disgusting!"
         prompt = "I'm scared that she might not come back."
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
@@ -414,7 +414,7 @@ def test_study2_male_prompt(version, model_id="Meta",
 
         emotion = "fear"
         sent = "I'm scared that she might not come back."
-        prompt = "What a stink, this place stinks like rotten eggs."
+        prompt = "That sounds absolutely disgusting!"
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
@@ -554,7 +554,7 @@ if __name__ == '__main__':
     print(f"running on {exec_device}")
 
     use_speaker_reference = False
-    use_sent_emb = False
+    use_sent_emb = True
     use_word_emb = False
     use_prompt = False
     use_xvect = False
@@ -562,7 +562,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 1 + 1 + 24
+        speaker_id = 9
     else:
         speaker_id = None
 
@@ -608,8 +608,8 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_study2_male(version="ToucanTTS_Baseline_Finetuning_2_80k",
-                      model_id="Baseline_Finetuning_2_80k",
+    test_study2_male(version="ToucanTTS_Sent_Finetuning_2_80k",
+                      model_id="Sent_Finetuning_2_80k",
                       exec_device=exec_device,
                       vocoder_model_path=None,
                       biggan=False,
