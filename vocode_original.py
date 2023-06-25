@@ -15,25 +15,23 @@ if __name__ == '__main__':
                     "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0015/Neutral/0015_000148.wav",
                     "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0015/Sad/0015_001088.wav",
                     "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0015/Surprise/0015_001604.wav"]
-    ids_female = [0, 1, 1, 0, 0, 0, 1]
-    emotions_female = ["anger", "joy", "neutral", "sadness", "surprise"]
+    ids_female = [0, 0, 0, 0, 1]
 
-    paths_female2 = ["/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-05-01-01-02-12.wav",
-                     "/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-07-01-01-01-12.wav",
-                     "/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-06-01-01-02-12.wav",
-                     "/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-03-01-02-02-12.wav",
-                     "/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-01-01-02-01-12.wav",
-                     "/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-04-01-02-01-12.wav",
-                     "/mount/resources/speech/corpora/RAVDESS/Actor_12/03-01-08-01-01-01-12.wav"]
-    ids_female2 = [1, 0, 0, 1, 1, 1, 0]
-    emotions_female2 = ["anger", "disgust", "fear", "joy", "neutral", "sadness", "surprise"]
+    paths_male = ["/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Angry/0014_000479.wav",
+                  "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Happy/0014_001048.wav",
+                  "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Neutral/0014_000061.wav",
+                  "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Sad/0014_001169.wav",
+                  "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore/0014/Surprise/0014_001639.wav"]   
+    ids_male = [1, 1, 1, 1, 0]
+
+    emotions = ["anger", "joy", "neutral", "sadness", "surprise"]
 
     vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
     mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path).to(torch.device('cpu'))
     mel2wav.remove_weight_norm()
     mel2wav.eval()
 
-    for i, path in enumerate(paths_female2):
+    for i, path in enumerate(paths_male):
         wave, sr = sf.read(path)
         ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=True, device='cpu')
         norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
@@ -46,4 +44,4 @@ if __name__ == '__main__':
         wav = torch.cat((wav, wave, silence), 0)
 
         wav = [val for val in wav.detach().numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-        soundfile.write(file=f"./audios/Original/female2/orig_{emotions_female2[i]}_{ids_female2[i]}.flac", data=float2pcm(wav), samplerate=48000, subtype="PCM_16")
+        soundfile.write(file=f"./audios/Original/male/orig_{emotions[i]}_{ids_male[i]}.flac", data=float2pcm(wav), samplerate=48000, subtype="PCM_16")

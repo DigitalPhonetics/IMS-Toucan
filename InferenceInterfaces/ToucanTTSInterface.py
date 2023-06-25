@@ -231,7 +231,8 @@ class ToucanTTSInterface(torch.nn.Module):
                 pitch=None,
                 energy=None,
                 input_is_phones=False,
-                return_plot_as_filepath=False):
+                return_plot_as_filepath=False,
+                silent=False):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -246,12 +247,14 @@ class ToucanTTSInterface(torch.nn.Module):
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
             if self.use_sent_emb and self.sentence_embedding is None:
-                print("Using sentence embedding of input text.")
+                if not silent:
+                    print("Using sentence embedding of input text.")
                 sentence_embedding = self.sentence_embedding_extractor.encode([text]).squeeze().to(self.device)
             else:
                 sentence_embedding = self.sentence_embedding
             if self.use_word_emb:
-                print("Extracting word embeddings.")
+                if not silent:
+                    print("Extracting word embeddings.")
                 word_embeddings, _ = self.word_embedding_extractor.encode([text])
                 word_embeddings = word_embeddings.squeeze().to(self.device)
             else:
@@ -381,7 +384,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                        energy=energy.to(self.device) if energy is not None else None,
                                        duration_scaling_factor=duration_scaling_factor,
                                        pitch_variance_scale=pitch_variance_scale,
-                                       energy_variance_scale=energy_variance_scale).cpu()
+                                       energy_variance_scale=energy_variance_scale,
+                                       silent=silent).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         if increased_compatibility_mode:
             wav = [val for val in wav.numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)

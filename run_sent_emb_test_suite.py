@@ -34,7 +34,7 @@ def test_sentence(version,
         tts.set_sentence_embedding(prompt)
 
     sentence = "The football teams give a tea party."
-    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence0.flac", increased_compatibility_mode=True)
+    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence_male.flac", increased_compatibility_mode=True)
 
 def test_tales_emotion(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -330,31 +330,23 @@ def test_study2_male(version, model_id="Meta",
 
         emotion = "anger"
         sent = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
-
-        emotion = "disgust"
-        sent = "That sounds absolutely disgusting!"
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.wav", increased_compatibility_mode=True)
-
-        emotion = "sadness"
-        sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
 
         emotion = "joy"
         sent = "Then she saw that her deliverance was near, and her heart leapt with joy."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
-
-        emotion = "surprise"
-        sent = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.wav", increased_compatibility_mode=True)
-
-        emotion = "fear"
-        sent = "I'm scared that she might not come back."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.wav", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
 
         emotion = "neutral"
         sent = "So the queen gave him the letter, and said that he might see for himself what was written in it."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.wav", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "sadness"
+        sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "surprise"
+        sent = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
 def test_study2_male_prompt(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -384,25 +376,25 @@ def test_study2_male_prompt(version, model_id="Meta",
 
         emotion = "anger"
         sent = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
-        prompt = "Then she saw that her deliverance was near, and her heart leapt with joy."
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
-
-        emotion = "disgust"
-        sent = "That sounds absolutely disgusting!"
-        prompt = "I'm scared that she might not come back."
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
-
-        emotion = "sadness"
-        sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
         prompt = "Really? I can't believe it! It's like a dream come true, I never expected that I would win The Nobel Prize!"
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
 
         emotion = "joy"
         sent = "Then she saw that her deliverance was near, and her heart leapt with joy."
+        prompt = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "So the queen gave him the letter, and said that he might see for himself what was written in it."
         prompt = "The king grew angry, and cried: That is not allowed, he must appear before me and tell his name!"
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+
+        emotion = "sadness"
+        sent = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
+        prompt = "Then she saw that her deliverance was near, and her heart leapt with joy."
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
 
@@ -411,18 +403,6 @@ def test_study2_male_prompt(version, model_id="Meta",
         prompt = "So the queen gave him the letter, and said that he might see for himself what was written in it."
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
-
-        emotion = "fear"
-        sent = "I'm scared that she might not come back."
-        prompt = "That sounds absolutely disgusting!"
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
-
-        emotion = "neutral"
-        sent = "So the queen gave him the letter, and said that he might see for himself what was written in it."
-        prompt = "The sisters mourned as young hearts can mourn, and were especially grieved at the sight of their parents' sorrow."
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
 
 def test_study2_female(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -454,29 +434,21 @@ def test_study2_female(version, model_id="Meta",
         sent = "You can't be serious, how dare you not tell me you were going to marry her?"
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
-        emotion = "disgust"
-        sent = "The rabbits could not bear him, they could smell him half a mile off."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
+        emotion = "joy"
+        sent = "I really enjoy the beach in the summer."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "You can go to the Employment Development Office and pick it up."
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
         emotion = "sadness"
         sent = "Lily broke up with me last week, in fact, she dumped me."
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
-        emotion = "joy"
-        sent = "I really enjoy the beach in the summer."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
-
         emotion = "surprise"
         sent = "He was astonished when he saw them come alone, and asked what had happened to them."
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
-
-        emotion = "fear"
-        sent = "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{1}.flac", increased_compatibility_mode=True)
-
-        emotion = "neutral"
-        sent = "You can go to the Employment Development Office and pick it up."
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
 def test_study2_female_prompt(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -510,21 +482,21 @@ def test_study2_female_prompt(version, model_id="Meta",
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
-        emotion = "disgust"
-        sent = "The rabbits could not bear him, they could smell him half a mile off."
+        emotion = "joy"
+        sent = "I really enjoy the beach in the summer."
         prompt = "He was astonished when he saw them come alone, and asked what had happened to them."
         tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
+
+        emotion = "neutral"
+        sent = "You can go to the Employment Development Office and pick it up."
+        prompt = "I really enjoy the beach in the summer."
+        tts.set_sentence_embedding(prompt)
+        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
         emotion = "sadness"
         sent = "Lily broke up with me last week, in fact, she dumped me."
         prompt = "You can't be serious, how dare you not tell me you were going to marry her?"
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
-
-        emotion = "joy"
-        sent = "I really enjoy the beach in the summer."
-        prompt = "The rabbits could not bear him, they could smell him half a mile off."
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
@@ -533,18 +505,6 @@ def test_study2_female_prompt(version, model_id="Meta",
         prompt = "Lily broke up with me last week, in fact, she dumped me."
         tts.set_sentence_embedding(prompt)
         tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
-
-        emotion = "fear"
-        sent = "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
-        prompt = "I really enjoy the beach in the summer."
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{1}.flac", increased_compatibility_mode=True)
-
-        emotion = "neutral"
-        sent = "You can go to the Employment Development Office and pick it up."
-        prompt = "Peter sat down to rest, he was out of breath and trembling with fright, and he had not the least idea which way to go."
-        tts.set_sentence_embedding(prompt)
-        tts.read_to_file(text_list=[sent], file_location=f"audios/{version}/Study/sent_prompt_{emotion}_{0}.flac", increased_compatibility_mode=True)
 
 
 if __name__ == '__main__':
@@ -562,7 +522,7 @@ if __name__ == '__main__':
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 9
+        speaker_id = 3 + 1 + 24
     else:
         speaker_id = None
 
@@ -608,7 +568,7 @@ if __name__ == '__main__':
     if ecapa_model is not None:
         xvect_model = ecapa_model
 
-    test_study2_male(version="ToucanTTS_Sent_Finetuning_2_80k",
+    test_sentence(version="ToucanTTS_Sent_Finetuning_2_80k",
                       model_id="Sent_Finetuning_2_80k",
                       exec_device=exec_device,
                       vocoder_model_path=None,
