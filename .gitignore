@@ -15,6 +15,7 @@ venv/
 vis/
 wandb/
 testing*
+wav2vec2_checkpoints/
 
 
 *_graph
