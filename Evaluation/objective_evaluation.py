@@ -1,15 +1,21 @@
 import os
 from tqdm import tqdm
 import csv
+from numpy import trim_zeros
+import string
 
 import torch
 import torchaudio
 from torch.nn import CosineSimilarity
 from datasets import load_dataset
 import pandas as pd
+import soundfile as sf
 
 from Utility.storage_config import PREPROCESSING_DIR
+from Utility.utils import get_emotion_from_path
+from Utility.utils import float2pcm
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 def extract_dailydialogue_sentences():
     dataset = load_dataset("daily_dialog", split="train", cache_dir=os.path.join(PREPROCESSING_DIR, 'DailyDialogues'))
@@ -92,25 +98,125 @@ def synthesize_test_sentences(version="Baseline",
 def extract_speaker_embeddings(audio_dir, classifier):
     speaker_embeddings = {}
     for version in tqdm(os.listdir(audio_dir), "Version"):
-        speaker_embeddings[version] = {}
-        for dataset in tqdm(os.listdir(os.path.join(audio_dir, version)), "Dataset"):
-            speaker_embeddings[version][dataset] = {}
-            for audio_file in tqdm(os.listdir(os.path.join(audio_dir, version, dataset)), "Audio File"):
-                emotion = audio_file.split("_")[0]
-                speaker = audio_file.split("_")[3]
-                wave, sr = torchaudio.load(os.path.join(audio_dir, version, dataset, audio_file))
-                # mono
-                wave = torch.mean(wave, dim=0, keepdim=True)
-                # resampling
-                wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
-                wave = wave.squeeze(0)
-                embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
-                if speaker not in speaker_embeddings[version][dataset]:
-                    speaker_embeddings[version][dataset][speaker] = {"anger":[], "joy":[], "neutral":[], "sadness":[], "surprise":[]}
-                else:
+        if version != "Original":
+            speaker_embeddings[version] = {}
+            for dataset in tqdm(os.listdir(os.path.join(audio_dir, version)), "Dataset"):
+                speaker_embeddings[version][dataset] = {}
+                for audio_file in tqdm(os.listdir(os.path.join(audio_dir, version, dataset)), "Audio File"):
+                    emotion = audio_file.split("_")[0]
+                    speaker = audio_file.split("_")[3].split(".wav")[0]
+                    wave, sr = torchaudio.load(os.path.join(audio_dir, version, dataset, audio_file))
+                    # mono
+                    wave = torch.mean(wave, dim=0, keepdim=True)
+                    # resampling
+                    wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                    wave = wave.squeeze(0)
+                    embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
+                    if speaker not in speaker_embeddings[version][dataset]:
+                        speaker_embeddings[version][dataset][speaker] = {"anger":[], "joy":[], "neutral":[], "sadness":[], "surprise":[]}
                     speaker_embeddings[version][dataset][speaker][emotion].append(embedding)
     return speaker_embeddings
+
+def extract_speaker_embeddings_original(audio_dir, classifier):
+    speaker_embeddings = {}
+    for version in os.listdir(audio_dir):
+        if version == "Original":
+            for speaker in tqdm(os.listdir(os.path.join(audio_dir, version)), "Speaker"):
+                speaker_embeddings[speaker] = {}
+                for emotion in os.listdir(os.path.join(audio_dir, version, speaker)):
+                    speaker_embeddings[speaker][emotion] = []
+                    for audio_file in os.listdir(os.path.join(audio_dir, version, speaker, emotion)):
+                        wave, sr = torchaudio.load(os.path.join(audio_dir, version, speaker, emotion, audio_file))
+                        # mono
+                        wave = torch.mean(wave, dim=0, keepdim=True)
+                        # resampling
+                        wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                        wave = wave.squeeze(0)
+                        embedding = classifier.encode_batch(wave).squeeze(0).squeeze(0)
+                        speaker_embeddings[speaker][emotion].append(embedding)
+    return speaker_embeddings
+
+def vocode_original(mel2wav):
+    esds_data_dir = "/mount/resources/speech/corpora/Emotional_Speech_Dataset_Singapore"
+    emotion_to_sent_ids = {"anger":["000363", "000421", "000474"], 
+                           "joy":["000713", "000771", "000824"], 
+                           "neutral":["000013", "000071", "000124"], 
+                           "sadness":["001063", "001121", "001174"], 
+                           "surprise":["001413", "001471", "001524"]}
+    for speaker in tqdm(os.listdir(esds_data_dir), "Speaker"):
+        if speaker.startswith("00"):
+            if int(speaker) > 10:
+                for emotion in tqdm(os.listdir(os.path.join(esds_data_dir, speaker)), "Emotion"):
+                    if not emotion.endswith(".txt") and not emotion.endswith(".DS_Store"):
+                        for audio_file in os.listdir(os.path.join(esds_data_dir, speaker, emotion)):
+                            if audio_file.endswith(".wav"):
+                                emo = get_emotion_from_path(os.path.join(esds_data_dir, speaker, emotion, audio_file))
+                                sent_id = audio_file.split("_")[1].split(".wav")[0]
+                                if sent_id in emotion_to_sent_ids[emo]:
+                                    wave, sr = sf.read(os.path.join(esds_data_dir, speaker, emotion, audio_file))
+                                    ap = AudioPreprocessor(input_sr=sr, output_sr=16000, melspec_buckets=80, hop_length=256, n_fft=1024, cut_silence=True, device='cpu')
+                                    norm_wave = ap.audio_to_wave_tensor(normalize=True, audio=wave)
+                                    norm_wave = torch.tensor(trim_zeros(norm_wave.numpy()))
+                                    spec = ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).cpu()
+
+                                    wave = mel2wav(spec)
+                                    silence = torch.zeros([10600])
+                                    wav = silence.clone()
+                                    wav = torch.cat((wav, wave, silence), 0)
+
+                                    wav = [val for val in wav.detach().numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
+                                    os.makedirs(os.path.join(f"./audios/Evaluation/Original/{speaker}/{emo}"), exist_ok=True)
+                                    sf.write(file=f"./audios/Evaluation/Original/{speaker}/{emo}/{sent_id}.wav", data=float2pcm(wav), samplerate=48000, subtype="PCM_16")
+                        
 
 def speaker_similarity(speaker_embedding1, speaker_embedding2):
     cosine_similarity = CosineSimilarity(dim=-1)
     return cosine_similarity(speaker_embedding1, speaker_embedding2)
+
+def asr_transcribe(audio_dir, processor, model):
+    transcriptions = {}
+    for version in tqdm(os.listdir(audio_dir), "Version"):
+        if version != "Original":
+            transcriptions[version] = {}
+            for dataset in tqdm(os.listdir(os.path.join(audio_dir, version)), "Dataset"):
+                transcriptions[version][dataset] = {}
+                for audio_file in tqdm(os.listdir(os.path.join(audio_dir, version, dataset)), "Audio File"):
+                    emotion = audio_file.split("_")[0]
+                    speaker = audio_file.split("_")[3].split(".wav")[0]
+                    sentence_id = int(audio_file.split("_")[1])
+                    wave, sr = torchaudio.load(os.path.join(audio_dir, version, dataset, audio_file))
+                    # mono
+                    wave = torch.mean(wave, dim=0, keepdim=True)
+                    # resampling
+                    wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+                    wave = wave.squeeze(0)
+                    input_values = processor(wave, sampling_rate=16000, return_tensors="pt", padding="longest").input_values.to(model.device)
+                    with torch.no_grad():
+                        logits = model(input_values).logits
+                    predicted_ids = torch.argmax(logits, dim=-1)
+                    transcription = processor.batch_decode(predicted_ids)
+                    if speaker not in transcriptions[version][dataset]:
+                        transcriptions[version][dataset][speaker] = {"anger":{}, "joy":{}, "neutral":{}, "sadness":{}, "surprise":{}}
+                    transcriptions[version][dataset][speaker][emotion][sentence_id] = transcription
+    return transcriptions
+
+def word_error_rate(target, predicted, wer):
+    target = target.translate(str.maketrans('', '', string.punctuation)).upper()
+    return float(wer(predicted, target))
+
+def classify_speech_emotion(audio_dir, classifier):
+    emotion_classified = {}
+    for version in tqdm(os.listdir(audio_dir), "Version"):
+        if version != "Original":
+            emotion_classified[version] = {}
+            for dataset in tqdm(os.listdir(os.path.join(audio_dir, version)), "Dataset"):
+                emotion_classified[version][dataset] = {}
+                for audio_file in tqdm(os.listdir(os.path.join(audio_dir, version, dataset)), "Audio File"):
+                    emotion = audio_file.split("_")[0]
+                    speaker = audio_file.split("_")[3].split(".wav")[0]
+                    sentence_id = int(audio_file.split("_")[1])
+                    out_prob, score, index, text_lab = classifier.classify_file(os.path.join(audio_dir, version, dataset, audio_file))
+                    if speaker not in emotion_classified[version][dataset]:
+                        emotion_classified[version][dataset][speaker] = {"anger":{}, "joy":{}, "neutral":{}, "sadness":{}, "surprise":{}}
+                    emotion_classified[version][dataset][speaker][emotion][sentence_id] = text_lab[0]
+    return emotion_classified
