@@ -1,9 +1,7 @@
 import dac
 import torch
-from audiotools import AudioSignal
 from dac.model import DAC
 from dac.utils import load_model
-from dac.utils.encode import process as encode
 from torchaudio.transforms import Resample
 
 
@@ -28,20 +26,44 @@ class AudioPreprocessor:
         audio = self.resample(audio)
         return audio
 
+    @torch.inference_mode()
     def audio_to_codec_tensor(self, audio, current_sampling_rate):
         if current_sampling_rate != self.output_sr:
             audio = self.resample_audio(audio, current_sampling_rate)
-        return encode(AudioSignal(audio, sample_rate=self.output_sr, device=self.device), self.device, self.model)
+        elif type(audio) != torch.tensor:
+            audio = torch.Tensor(audio)
+        return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["z"].squeeze()
+
+    @torch.inference_mode()
+    def audio_to_codebook_indexes(self, audio, current_sampling_rate):
+        if current_sampling_rate != self.output_sr:
+            audio = self.resample_audio(audio, current_sampling_rate)
+        elif type(audio) != torch.tensor:
+            audio = torch.Tensor(audio)
+        return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze()
+
+    @torch.inference_mode()
+    def indexes_to_codec_frames(self, codebook_indexes):
+        if len(codebook_indexes.size()) == 2:
+            codebook_indexes = codebook_indexes.unsqueeze(0)
+        return self.model.quantizer.from_codes(codebook_indexes)[0].squeeze()
 
 
 if __name__ == '__main__':
     import soundfile
 
-    wav, sr = soundfile.read("../audios/ad00_0004.wav")
+    wav, sr = soundfile.read("../audios/speaker_references_for_testing/angry.wav")
     ap = AudioPreprocessor(input_sr=sr)
+
+    continuous_codes = ap.audio_to_codec_tensor(wav, current_sampling_rate=sr)
+    codebook_indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+    continuous_codes_from_indexes = ap.indexes_to_codec_frames(codebook_indexes)
+    print(continuous_codes_from_indexes == continuous_codes)
+
     import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
+    plt.imshow(continuous_codes.cpu().numpy(), cmap='GnBu')
+    plt.show()
 
-    plt.imshow(ap.audio_to_codec_tensor(wav, current_sampling_rate=sr)["codes"].cpu().numpy(), cmap='GnBu')
+    plt.imshow(continuous_codes_from_indexes.cpu().numpy(), cmap='GnBu')
     plt.show()
