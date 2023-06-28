@@ -1,6 +1,5 @@
 import os
 import random
-import warnings
 
 import soundfile as sf
 import torch
@@ -145,9 +144,7 @@ class CodecAlignerDataset(Dataset):
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             try:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")  # otherwise we get tons of warnings about an RNN not being in contiguous chunks
-                    norm_wave = resample(wave)
+                norm_wave = resample(torch.tensor(wave))
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
