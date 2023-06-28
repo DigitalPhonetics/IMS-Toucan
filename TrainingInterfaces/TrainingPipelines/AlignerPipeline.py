@@ -26,9 +26,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         datasets.append(prepare_aligner_corpus(transcript_dict=chunks[index],
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
                                                lang="en",
-                                               device=device,
-                                               do_loudnorm=False,
-                                               cut_silences=False))
+                                               device=device))
 
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nancy,
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
@@ -101,9 +99,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         datasets.append(prepare_aligner_corpus(transcript_dict=chunks[index],
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, f"gigaspeech_chunk_{index}"),
                                                lang="en",
-                                               device=device,
-                                               do_loudnorm=False,
-                                               cut_silences=False))
+                                               device=device))
 
     # GERMAN
 

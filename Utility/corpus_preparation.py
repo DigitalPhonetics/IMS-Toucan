@@ -1,22 +1,20 @@
 import torch
 import torch.multiprocessing
 
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.ChunkedAlignerDataset import ChunkedAlignerDataset
+from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.CodecAlignerDataset import CodecAlignerDataset
 from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.autoaligner_train_loop import train_loop as train_aligner
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.TTSDataset import TTSDataset
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
 
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, do_loudnorm=True, cut_silences=True, phone_input=False):
-    return ChunkedAlignerDataset(transcript_dict,
-                                 cache_dir=corpus_dir,
-                                 lang=lang,
-                                 loading_processes=6,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
-                                 cut_silences=cut_silences,
-                                 do_loudnorm=do_loudnorm,
-                                 device=device,
-                                 phone_input=phone_input)
+def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_input=False):
+    return CodecAlignerDataset(transcript_dict,
+                               cache_dir=corpus_dir,
+                               lang=lang,
+                               loading_processes=6,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
+                               device=device,
+                               phone_input=phone_input)
 
 
 def prepare_tts_corpus(transcript_dict,

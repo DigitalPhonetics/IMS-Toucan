@@ -5,7 +5,7 @@ from dac.utils import load_model
 from torchaudio.transforms import Resample
 
 
-class AudioPreprocessor:
+class CodecAudioPreprocessor:
 
     def __init__(self, input_sr, output_sr=44100, device="cpu"):
         self.device = device
@@ -58,11 +58,11 @@ class AudioPreprocessor:
 if __name__ == '__main__':
     import soundfile
 
-    wav, sr = soundfile.read("../audios/speaker_references_for_testing/angry.wav")
-    ap = AudioPreprocessor(input_sr=sr)
+    wav, sr = soundfile.read("../audios/96.wav")
+    ap = CodecAudioPreprocessor(input_sr=sr)
 
     codebook_indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
     continuous_codes_from_indexes = ap.indexes_to_codec_frames(codebook_indexes)
 
     reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes).cpu().numpy()
-    soundfile.write(file="../audios/speaker_references_for_testing/angry_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
+    soundfile.write(file="../audios/96_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
