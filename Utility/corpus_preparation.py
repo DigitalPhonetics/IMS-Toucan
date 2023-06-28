@@ -12,7 +12,7 @@ def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_inpu
     return CodecAlignerDataset(transcript_dict,
                                cache_dir=corpus_dir,
                                lang=lang,
-                               loading_processes=6,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
+                               loading_processes=4,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
                                device=device,
                                phone_input=phone_input)
 
