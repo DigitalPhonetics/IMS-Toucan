@@ -48,6 +48,12 @@ class AudioPreprocessor:
             codebook_indexes = codebook_indexes.unsqueeze(0)
         return self.model.quantizer.from_codes(codebook_indexes)[0].squeeze()
 
+    @torch.inference_mode()
+    def codes_to_audio(self, continuous_codes):
+        if len(continuous_codes.size()) == 2:
+            continuous_codes = continuous_codes.unsqueeze(0)
+        return self.model.decode(continuous_codes)["audio"].squeeze()
+
 
 if __name__ == '__main__':
     import soundfile
@@ -55,15 +61,8 @@ if __name__ == '__main__':
     wav, sr = soundfile.read("../audios/speaker_references_for_testing/angry.wav")
     ap = AudioPreprocessor(input_sr=sr)
 
-    continuous_codes = ap.audio_to_codec_tensor(wav, current_sampling_rate=sr)
     codebook_indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
     continuous_codes_from_indexes = ap.indexes_to_codec_frames(codebook_indexes)
-    print(continuous_codes_from_indexes == continuous_codes)
 
-    import matplotlib.pyplot as plt
-
-    plt.imshow(continuous_codes.cpu().numpy(), cmap='GnBu')
-    plt.show()
-
-    plt.imshow(continuous_codes_from_indexes.cpu().numpy(), cmap='GnBu')
-    plt.show()
+    reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes).cpu().numpy()
+    soundfile.write(file="../audios/speaker_references_for_testing/angry_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
