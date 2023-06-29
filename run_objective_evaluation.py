@@ -127,6 +127,14 @@ if __name__ == '__main__':
                         cosine_similarities.append(cosine_similarity)
                     speaker_similarities[version][dataset][speaker][emotion] = median(cosine_similarities)
 
+    for version, datasets in speaker_similarities.items():
+        overall_sim = []
+        for dataset, speakers in datasets.items():
+            for speaker, emotions in speakers.items():
+                overall_sim.extend(list(emotions.values()))
+        overall_sim = mean(overall_sim)
+        print(f"Speaker Similarity {version}: {overall_sim}")
+
     # calculate word error rate
     print("Calculating word error rate...")
     if not os.path.exists(os.path.join(PREPROCESSING_DIR, "Evaluation", "transcriptions.pt")):
@@ -153,18 +161,34 @@ if __name__ == '__main__':
                         wer.append(word_error_rate(test_sentences[dataset][emotion][sentence_id], transcript, wer_calc))
                         wers[version][dataset][speaker][emotion] = median(wer)
 
+    for version, datasets in wers.items():
+        overall_wer = []
+        for dataset, speakers in datasets.items():
+            for speaker, emotions in speakers.items():
+                overall_wer.extend(list(emotions.values()))
+        overall_wer = mean(overall_wer)
+        print(f"Word Error Rate {version}: {overall_wer}")
+
     # speech emotion recognition
     if not os.path.exists(os.path.join(PREPROCESSING_DIR, "Evaluation", "predicted_emotions.pt")):
         print("Speech emotion recognition...")
-        classifier = foreign_class(source="speechbrain/emotion-recognition-wav2vec2-IEMOCAP", 
-                                pymodule_file="custom_interface.py", 
-                                classname="CustomEncoderWav2vec2Classifier", 
-                                savedir="./Models/Emotion_Recognition",
-                                run_opts={"device":device})
+        classifier = foreign_class(source=os.path.join(MODELS_DIR, "Emotion_Recognition"), 
+                                   pymodule_file="custom_interface.py",
+                                   classname="CustomEncoderWav2vec2Classifier",
+                                   savedir=os.path.join(MODELS_DIR, "Emotion_Recognition"),
+                                   run_opts={"device":device})
         # shape {version: {dataset: {speaker: {emotion: {sentence_id: predicted emotion}}}}}
         predicted_emotions = classify_speech_emotion("./audios/Evaluation", classifier)
         torch.save(predicted_emotions, os.path.join(PREPROCESSING_DIR, "Evaluation", "predicted_emotions.pt"))
     else:
         predicted_emotions = torch.load(os.path.join(PREPROCESSING_DIR, "Evaluation", "predicted_emotions.pt"), map_location='cpu')
 
-    print(predicted_emotions)
+    accuracy = accuracy_emotion(predicted_emotions)
+
+    for version, datasets in accuracy.items():
+        overall_acc = []
+        for dataset, speakers in datasets.items():
+            for speaker, emotions in speakers.items():
+                overall_acc.extend(list(emotions.values()))
+        overall_acc = mean(overall_acc)
+        print(f"Emotion Recognition Accuracy {version}: {overall_acc}")

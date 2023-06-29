@@ -25,6 +25,10 @@ if __name__ == '__main__':
     emotion_baseline = emotion(data, "B")
     emotion_proposed = emotion(data, "S")
     emotion_prompt = emotion(data, "P")
+    va_original = valence_arousal(data, "O")
+    va_baseline = valence_arousal(data, "B")
+    va_proposed = valence_arousal(data, "S")
+    va_prompt = valence_arousal(data, "P")
 
     for v, d in sd.items():
         barplot_counts(d, v, os.path.join(save_dir, f"{v}.png"))
@@ -40,6 +44,16 @@ if __name__ == '__main__':
         barplot_counts(d, v, os.path.join(save_dir, f"proposed_{v}.png"))
     for v, d in emotion_prompt.items():
         barplot_counts(d, v, os.path.join(save_dir, f"prompt_{v}.png"))
+
+    barplot_counts_all(emotion_original, os.path.join(save_dir, f"emotion_original.png"))
+    barplot_counts_all(emotion_baseline, os.path.join(save_dir, f"emotion_baseline.png"))
+    barplot_counts_all(emotion_proposed, os.path.join(save_dir, f"emotion_proposed.png"))
+    barplot_counts_all(emotion_prompt, os.path.join(save_dir, f"emotion_prompt.png"))
+
+    heatmap_counts_all(emotion_original, os.path.join(save_dir, f"heatmap_emotion_original.png"), "m")
+    heatmap_counts_all(emotion_baseline, os.path.join(save_dir, f"heatmap_emotion_baseline.png"), "m")
+    heatmap_counts_all(emotion_proposed, os.path.join(save_dir, f"heatmap_emotion_proposed.png"), "m")
+    heatmap_counts_all(emotion_prompt, os.path.join(save_dir, f"heatmap_emotion_prompt.png"), "m")
     
     barplot_mean_ratings(sim_mean, os.path.join(save_dir, f"sim_mean.png"))
     barplot_mean_ratings(mos_original, os.path.join(save_dir, f"mos_original.png"))
@@ -47,3 +61,8 @@ if __name__ == '__main__':
     barplot_mean_ratings(mos_proposed, os.path.join(save_dir, f"mos_proposed.png"))
     barplot_mean_ratings(mos_prompt, os.path.join(save_dir, f"mos_prompt.png"))
     barplot_mean_ratings(mos, os.path.join(save_dir, f"mos.png"))
+
+    scatterplot_va(va_original, os.path.join(save_dir, f"va_original.png"))
+    scatterplot_va(va_baseline, os.path.join(save_dir, f"va_baseline.png"))
+    scatterplot_va(va_proposed, os.path.join(save_dir, f"va_proposed.png"))
+    scatterplot_va(va_prompt, os.path.join(save_dir, f"va_prompt.png"))

@@ -3,6 +3,8 @@ from tqdm import tqdm
 import csv
 from numpy import trim_zeros
 import string
+import subprocess
+import time
 
 import torch
 import torchaudio
@@ -171,7 +173,7 @@ def vocode_original(mel2wav):
 
 def speaker_similarity(speaker_embedding1, speaker_embedding2):
     cosine_similarity = CosineSimilarity(dim=-1)
-    return cosine_similarity(speaker_embedding1, speaker_embedding2)
+    return cosine_similarity(speaker_embedding1, speaker_embedding2).numpy()
 
 def asr_transcribe(audio_dir, processor, model):
     transcriptions = {}
@@ -219,4 +221,22 @@ def classify_speech_emotion(audio_dir, classifier):
                     if speaker not in emotion_classified[version][dataset]:
                         emotion_classified[version][dataset][speaker] = {"anger":{}, "joy":{}, "neutral":{}, "sadness":{}, "surprise":{}}
                     emotion_classified[version][dataset][speaker][emotion][sentence_id] = text_lab[0]
+                # wav2vec2 saves wav files, they have to be deleted such they are not used again for the nex dataset and version, since they are named the same
+                command = 'rm *ESDS*.wav'
+                process = subprocess.Popen(command, shell=True)
+                process.wait()
+                time.sleep(10) # ensure that files are deleted before next iteration
     return emotion_classified
+
+def accuracy_emotion(predicted_emotions):
+    accuracy = {}
+    for version, datasets in predicted_emotions.items():
+        accuracy[version] = {}
+        for dataset, speakers in datasets.items():
+            accuracy[version][dataset] = {}
+            for speaker, emotions in speakers.items():
+                accuracy[version][dataset][speaker] = {}
+                for emotion, sent_ids in emotions.items():
+                    count_correct = sum(1 for v in sent_ids.values() if v == emotion)
+                    accuracy[version][dataset][speaker][emotion] = count_correct / len(sent_ids)
+    return accuracy
