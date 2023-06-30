@@ -1,13 +1,14 @@
-import dac
 import torch
-from dac.model import DAC
-from dac.utils import load_model
+
 from torchaudio.transforms import Resample
 
 
 class CodecAudioPreprocessor:
 
     def __init__(self, input_sr, output_sr=44100, device="cpu"):
+        import dac  # have to do the imports down here, since it otherwise globally reserves GPU 0 instead of the correct one
+        from dac.model import DAC
+        from dac.utils import load_model
         self.device = device
         self.input_sr = input_sr
         self.output_sr = output_sr
