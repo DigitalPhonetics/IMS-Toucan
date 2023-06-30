@@ -7,7 +7,7 @@ from Utility.utils import make_non_pad_mask
 class SpectrogramReconstructor(torch.nn.Module):
 
     def __init__(self,
-                 n_mels=1024,
+                 n_mels=72,
                  num_symbols=145,
                  speaker_embedding_dim=192,
                  hidden_dim=128):

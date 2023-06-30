@@ -47,23 +47,28 @@ class CodecAudioPreprocessor:
     def indexes_to_codec_frames(self, codebook_indexes):
         if len(codebook_indexes.size()) == 2:
             codebook_indexes = codebook_indexes.unsqueeze(0)
-        return self.model.quantizer.from_codes(codebook_indexes)[0].squeeze()
+        return self.model.quantizer.from_codes(codebook_indexes)[1].squeeze()
 
     @torch.inference_mode()
     def codes_to_audio(self, continuous_codes):
-        if len(continuous_codes.size()) == 2:
-            continuous_codes = continuous_codes.unsqueeze(0)
-        return self.model.decode(continuous_codes)["audio"].squeeze()
+        z_q = 0.0
+        z_ps = torch.split(continuous_codes, self.model.codebook_dim, dim=0)
+        for i, z_p in zip(range(self.model.n_codebooks), z_ps):
+            z_q_i = self.model.quantizer.quantizers[i].out_proj(z_p)
+            z_q = z_q + z_q_i
+        return self.model.decode(z_q.unsqueeze(0))["audio"].squeeze()
 
 
 if __name__ == '__main__':
     import soundfile
 
-    wav, sr = soundfile.read("../audios/96.wav")
+    wav, sr = soundfile.read("../audios/ad00_0004.wav")
     ap = CodecAudioPreprocessor(input_sr=sr)
 
     codebook_indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+
     continuous_codes_from_indexes = ap.indexes_to_codec_frames(codebook_indexes)
 
     reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes).cpu().numpy()
-    soundfile.write(file="../audios/96_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
+
+    soundfile.write(file="../audios/ad00_0004_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
