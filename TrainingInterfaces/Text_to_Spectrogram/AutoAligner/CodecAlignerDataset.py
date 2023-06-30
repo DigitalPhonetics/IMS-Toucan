@@ -105,7 +105,7 @@ class CodecAlignerDataset(Dataset):
             self.datapoints = self.datapoints[0]
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
-        self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
+        self.ap = None
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -177,18 +177,20 @@ class CodecAlignerDataset(Dataset):
         self.result_pool.append(process_internal_dataset_chunk)
 
     def __getitem__(self, index):
+        if self.ap is None:
+            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
         speech_indexes = self.datapoints[index][1]
         speech_len = torch.LongTensor([len(speech_indexes)])
-        speech = self.ap.indexes_to_codec_frames.transpose(0, 1).detach()
+        speech = self.ap.indexes_to_codec_frames(speech_indexes.int()).transpose(0, 1).detach()
         return tokens, \
-               token_len, \
-               speech, \
-               speech_len, \
-               self.speaker_embeddings[index]
+            token_len, \
+            speech, \
+            speech_len, \
+            self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)
