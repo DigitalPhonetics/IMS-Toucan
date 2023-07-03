@@ -80,7 +80,7 @@ class TTSDataset(Dataset):
                 norm_wave_length = torch.LongTensor([len(raw_wave)])
 
                 text = dataset[index][0]
-                melspec = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1)).transpose(0, 1).detach()
+                melspec = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1).to(device)).transpose(0, 1).detach()
                 melspec_length = torch.LongTensor([len(dataset[index][1])])
 
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
