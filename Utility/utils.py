@@ -74,7 +74,7 @@ def plot_progress_spec_toucantts(net,
                                  default_emb,
                                  run_postflow=True):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
-    cap = CodecAudioPreprocessor(input_sr=-1)  # just used for inversion
+    cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # just used for inversion
     ap = AudioPreprocessor(input_sr=44100, output_sr=16000)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:

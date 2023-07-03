@@ -72,7 +72,7 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #  load code to wave model     #
         ################################
-        self.codec_wrapper = CodecAudioPreprocessor(input_sr=44100)
+        self.codec_wrapper = CodecAudioPreprocessor(input_sr=44100, device=device)
         self.spectrogram_wrapper = AudioPreprocessor(input_sr=44100, output_sr=16000)
         self.meter = pyloudnorm.Meter(44100)
 

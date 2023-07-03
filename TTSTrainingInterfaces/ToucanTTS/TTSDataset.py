@@ -135,13 +135,13 @@ class TTSDataset(Dataset):
                                       durations=cached_duration.unsqueeze(0),
                                       durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                self.datapoints.append([dataset[index][0],  # text tensor
+                self.datapoints.append([dataset[index][0].float(),  # text tensor
                                         torch.LongTensor([len(dataset[index][0])]),  # length of text tensor
                                         dataset[index][1],  # codec tensor (in index form)
                                         torch.LongTensor([len(dataset[index][1])]),  # length of codec tensor
                                         cached_duration.cpu(),  # duration
-                                        cached_energy,  # energy
-                                        cached_pitch,  # pitch
+                                        cached_energy.float(),  # energy
+                                        cached_pitch.float(),  # pitch
                                         None,  # deprecated,
                                         filepaths[index]  # path to the associated original raw audio file
                                         ])

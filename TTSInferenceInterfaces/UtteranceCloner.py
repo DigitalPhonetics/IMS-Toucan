@@ -29,7 +29,7 @@ class UtteranceCloner:
             print("Warning: You are running BigVGAN on CPU. Consider either switching to GPU or setting the speed_over_quality option to True.")
         self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=speed_over_quality)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=False)
-        self.cap = CodecAudioPreprocessor(input_sr=16000)
+        self.cap = CodecAudioPreprocessor(input_sr=16000, device=device)
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
