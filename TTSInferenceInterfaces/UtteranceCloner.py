@@ -6,11 +6,11 @@ from torch.optim import SGD
 from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
-from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from TTSInferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from TTSTrainingInterfaces.ToucanTTS.DurationCalculator import DurationCalculator
 from TTSTrainingInterfaces.ToucanTTS.EnergyCalculator import EnergyCalculator
 from TTSTrainingInterfaces.ToucanTTS.PitchCalculator import Parselmouth

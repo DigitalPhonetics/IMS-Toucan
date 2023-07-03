@@ -1,7 +1,7 @@
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.init_weights import weights_init_D
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.init_weights import weights_init_G
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.resnet_1 import ResNet_D
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.resnet_1 import ResNet_G
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.init_weights import weights_init_D
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.init_weights import weights_init_G
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.resnet_1 import ResNet_D
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.resnet_1 import ResNet_G
 
 
 def init_resnet(parameters):

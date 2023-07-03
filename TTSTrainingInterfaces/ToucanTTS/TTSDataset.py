@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
 from Aligner.CodecAlignerDataset import CodecAlignerDataset
+from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.DurationCalculator import DurationCalculator
@@ -25,13 +26,12 @@ class TTSDataset(Dataset):
                  loading_processes=os.cpu_count() if os.cpu_count() is not None else 30,
                  min_len_in_seconds=1,
                  max_len_in_seconds=15,
-                 cut_silence=False,
-                 do_loudnorm=True,
                  reduction_factor=1,
                  device=torch.device("cpu"),
                  rebuild_cache=False,
                  ctc_selection=True,
                  save_imgs=False):
+        self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1)
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
@@ -47,7 +47,7 @@ class TTSDataset(Dataset):
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for tts.
             dataset = datapoints[0]
-            # index 1 is deprecated  # TODO what is saved has changed and needs to be adapted
+            # index 1 is deprecated
             # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner, we don't need them anymore
             filepaths = datapoints[3]
 
@@ -79,8 +79,8 @@ class TTSDataset(Dataset):
                 norm_wave_length = torch.LongTensor([len(raw_wave)])
 
                 text = dataset[index][0]
-                melspec = dataset[index][2]
-                melspec_length = dataset[index][3]
+                melspec = self.codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1)).transpose(0, 1).detach()
+                melspec_length = torch.LongTensor([len(dataset[index][1])])
 
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
                 # We note the index of word boundaries and insert durations of 0 afterwards
@@ -134,17 +134,16 @@ class TTSDataset(Dataset):
                                       durations=cached_duration.unsqueeze(0),
                                       durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                prosodic_condition = None
-
-                self.datapoints.append([dataset[index][0],
-                                        dataset[index][1],
-                                        dataset[index][2],
-                                        dataset[index][3],
-                                        cached_duration.cpu(),
-                                        cached_energy,
-                                        cached_pitch,
-                                        prosodic_condition,
-                                        filepaths[index]])
+                self.datapoints.append([dataset[index][0],  # text tensor
+                                        torch.LongTensor([len(dataset[index][0])]),  # length of text tensor
+                                        dataset[index][1],  # codec tensor (in index form)
+                                        torch.LongTensor([len(dataset[index][1])]),  # length of codec tensor
+                                        cached_duration.cpu(),  # duration
+                                        cached_energy,  # energy
+                                        cached_pitch,  # pitch
+                                        None,  # deprecated,
+                                        filepaths[index]  # path to the associated original raw audio file
+                                        ])
                 self.ctc_losses.append(ctc_loss)
 
             # =============================
@@ -179,7 +178,7 @@ class TTSDataset(Dataset):
     def __getitem__(self, index):
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
-               self.datapoints[index][2], \
+               self.codec_wrapper.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
                self.datapoints[index][3], \
                self.datapoints[index][4], \
                self.datapoints[index][5], \

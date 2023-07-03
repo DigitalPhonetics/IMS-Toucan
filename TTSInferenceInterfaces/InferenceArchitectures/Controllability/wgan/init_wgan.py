@@ -1,7 +1,7 @@
 import torch
 
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.resnet_init import init_resnet
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.wgan_qc import WassersteinGanQuadraticCost
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.resnet_init import init_resnet
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.wgan_qc import WassersteinGanQuadraticCost
 
 
 def create_wgan(parameters, device, optimizer='adam'):

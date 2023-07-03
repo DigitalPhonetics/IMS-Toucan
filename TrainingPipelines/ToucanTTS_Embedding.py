@@ -23,7 +23,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_EmbeddingAda")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_Embedding")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
@@ -68,7 +68,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                    save_directory=save_dir,
                    eval_lang="en",
                    path_to_checkpoint=resume_checkpoint,
-                   path_to_embed_model=f"{save_dir}/embedding_function.pt",  # if we set this to None, we train the embedding function jointly from scratch
+                   path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
                    fine_tune=finetune,
                    steps=50000,
                    resume=resume,

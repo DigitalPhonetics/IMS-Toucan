@@ -9,11 +9,11 @@ import soundfile
 import torch
 
 from EmbeddingModel.StyleEmbedding import StyleEmbedding
-from InferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
+from TTSInferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
 from Utility.storage_config import MODELS_DIR
 from Utility.utils import float2pcm
 
@@ -24,8 +24,6 @@ class ToucanTTSInterface(torch.nn.Module):
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  embedding_model_path=None,
-                 vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
-                 faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  ):
         super().__init__()
@@ -33,11 +31,6 @@ class ToucanTTSInterface(torch.nn.Module):
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
-        if vocoder_model_path is None:
-            if faster_vocoder:
-                vocoder_model_path = os.path.join(MODELS_DIR, "Avocodo", "best.pt")
-            else:
-                vocoder_model_path = os.path.join(MODELS_DIR, "BigVGAN", "best.pt")
 
         ################################
         #   build text to phone        #
@@ -246,7 +239,6 @@ class ToucanTTSInterface(torch.nn.Module):
                      energy_list=None):
         """
         Args:
-            increased_compatibility_mode: Whether to export audio as 16bit integer 48kHz audio for maximum compatibility across systems and devices
             silent: Whether to be verbose about the process
             text_list: A list of strings to be read
             file_location: The path and name of the file it should be saved to

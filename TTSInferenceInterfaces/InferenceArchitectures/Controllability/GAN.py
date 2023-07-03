@@ -1,6 +1,6 @@
 import torch
 
-from InferenceInterfaces.InferenceArchitectures.Controllability.wgan.init_wgan import create_wgan
+from TTSInferenceInterfaces.InferenceArchitectures.Controllability.wgan.init_wgan import create_wgan
 
 
 class GanWrapper:

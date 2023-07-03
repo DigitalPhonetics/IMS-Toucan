@@ -1,6 +1,6 @@
 import gradio as gr
 
-from InferenceInterfaces.ControllableInterface import ControllableInterface
+from TTSInferenceInterfaces.ControllableInterface import ControllableInterface
 from Utility.utils import float2pcm
 
 
