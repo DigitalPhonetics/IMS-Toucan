@@ -69,6 +69,11 @@ if __name__ == '__main__':
 
     continuous_codes_from_indexes = ap.indexes_to_codec_frames(codebook_indexes)
 
+    import matplotlib.pyplot as plt
+
+    plt.imshow(continuous_codes_from_indexes.cpu().numpy(), cmap='GnBu')
+    plt.show()
+
     reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes).cpu().numpy()
 
     soundfile.write(file="../audios/ad00_0004_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
