@@ -52,7 +52,7 @@ class TTSDataset(Dataset):
             filepaths = datapoints[3]
 
             print("... building dataset cache ...")
-            codec_wrapper = CodecAudioPreprocessor(input_sr=-1)
+            codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
             self.datapoints = list()
             self.ctc_losses = list()
 
