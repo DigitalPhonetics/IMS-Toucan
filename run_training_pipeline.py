@@ -88,9 +88,9 @@ if __name__ == '__main__':
         device = torch.device("cuda")
         print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device.")
 
-    torch.manual_seed(131714)
-    random.seed(131714)
-    torch.random.manual_seed(131714)
+    torch.manual_seed(9665)
+    random.seed(9665)
+    torch.random.manual_seed(9665)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     torch.multiprocessing.set_start_method('spawn')

@@ -187,10 +187,10 @@ class CodecAlignerDataset(Dataset):
         speech_len = torch.LongTensor([len(speech_indexes)])
         speech = self.ap.indexes_to_codec_frames(speech_indexes.int().transpose(0, 1)).transpose(0, 1).detach()
         return tokens, \
-               token_len, \
-               speech, \
-               speech_len, \
-               self.speaker_embeddings[index]
+            token_len, \
+            speech, \
+            speech_len, \
+            self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)

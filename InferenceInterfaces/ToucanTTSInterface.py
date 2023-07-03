@@ -3,7 +3,6 @@ import os
 
 import librosa.display as lbd
 import matplotlib.pyplot as plt
-import numpy
 import pyloudnorm
 import sounddevice
 import soundfile
@@ -138,7 +137,8 @@ class ToucanTTSInterface(torch.nn.Module):
                 pitch=None,
                 energy=None,
                 input_is_phones=False,
-                return_plot_as_filepath=False):
+                return_plot_as_filepath=False,
+                loudness_in_db=-24.0):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -168,9 +168,7 @@ class ToucanTTSInterface(torch.nn.Module):
 
         try:
             loudness = self.meter.integrated_loudness(wave)
-            loud_normed = pyloudnorm.normalize.loudness(wave, loudness, -24.0)
-            peak = numpy.amax(numpy.abs(loud_normed))
-            wave = numpy.divide(loud_normed, peak)  # peak normed wave
+            wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
         except ValueError:
             # if the audio is too short, a value error will arise
             pass
