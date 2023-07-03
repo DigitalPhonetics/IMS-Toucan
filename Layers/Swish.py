@@ -8,7 +8,7 @@ import torch
 
 class Swish(torch.nn.Module):
     """
-    Construct an Swish activation function for Conformer.
+    Construct a Swish activation function for Conformer.
     """
 
     def forward(self, x):
