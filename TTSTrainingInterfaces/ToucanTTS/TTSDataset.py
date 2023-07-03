@@ -31,7 +31,7 @@ class TTSDataset(Dataset):
                  rebuild_cache=False,
                  ctc_selection=True,
                  save_imgs=False):
-        self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1)
+        self.ap = None
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
@@ -52,6 +52,7 @@ class TTSDataset(Dataset):
             filepaths = datapoints[3]
 
             print("... building dataset cache ...")
+            codec_wrapper = CodecAudioPreprocessor(input_sr=-1)
             self.datapoints = list()
             self.ctc_losses = list()
 
@@ -79,7 +80,7 @@ class TTSDataset(Dataset):
                 norm_wave_length = torch.LongTensor([len(raw_wave)])
 
                 text = dataset[index][0]
-                melspec = self.codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1)).transpose(0, 1).detach()
+                melspec = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1)).transpose(0, 1).detach()
                 melspec_length = torch.LongTensor([len(dataset[index][1])])
 
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
@@ -176,9 +177,11 @@ class TTSDataset(Dataset):
         print(f"Prepared a TTS dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def __getitem__(self, index):
+        if self.ap is None:
+            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
-               self.codec_wrapper.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
+               self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
                self.datapoints[index][3], \
                self.datapoints[index][4], \
                self.datapoints[index][5], \
