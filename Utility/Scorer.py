@@ -8,9 +8,9 @@ import os
 import torch
 from tqdm import tqdm
 
+from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.TextFrontend import get_language_id
-from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.ToucanTTS import ToucanTTS
+from TTSTrainingInterfaces.ToucanTTS.ToucanTTS import ToucanTTS
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.storage_config import MODELS_DIR
 

@@ -1,0 +1,1 @@
+This is an experimental version of the TTS that uses normalizing flows to predict the prosody explicitly, so that we can still have the controllability of the explicit prosody predictors, however a much better naturalness and livelyness that what we get from a deterministic predictor.

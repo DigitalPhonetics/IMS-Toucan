@@ -5,14 +5,13 @@ import sys
 
 import torch
 
-from TrainingInterfaces.TrainingPipelines.AlignerPipeline import run as aligner
-from TrainingInterfaces.TrainingPipelines.BigVGANPipeline import run as bigvgan
-from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_Embedding import run as embedding
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
-from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
-from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
+from TrainingPipelines.AlignerPipeline import run as aligner
+from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
+from TrainingPipelines.ToucanTTS_Embedding import run as embedding
+from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
+from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
+from TrainingPipelines.ToucanTTS_Nancy import run as nancy
+from TrainingPipelines.finetuning_example import run as fine_tuning_example
 
 pipeline_dict = {
     # the finetuning example
@@ -23,8 +22,6 @@ pipeline_dict = {
     "nancy"             : nancy,
     "nancystoch"        : nancystoch,
     "meta"              : meta,
-    # training vocoders (not recommended, best to use provided checkpoint)
-    "bigvgan"           : bigvgan,
     # training one of the embedding models, GST or StyleTTS (not recommended, best to use provided checkpoint)
     "embedding"         : embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)

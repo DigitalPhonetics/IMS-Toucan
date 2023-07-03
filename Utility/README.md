@@ -1,0 +1,1 @@
+This directory includes general utility scripts that include additional losses for certain tasks, the scheduler, and the interfaces to the files on the disks, as well as the scorer, which can help in finding samples that might be causing problems for the TTS.

@@ -1,0 +1,1 @@
+Everything that is concerned with training and using the aligner model is contained in this directory. It is recommended to use the universal aligner model that we supply in the GitHub releases. 

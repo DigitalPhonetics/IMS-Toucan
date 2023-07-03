@@ -3,8 +3,8 @@ import os
 import torch
 import torch.multiprocessing
 
+from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.storage_config import MODELS_DIR
 
 

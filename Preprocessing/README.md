@@ -1,0 +1,1 @@
+This directory contains scripts that wrap around text processing and audio processing to allow for high-level interactions with the feature extraction.

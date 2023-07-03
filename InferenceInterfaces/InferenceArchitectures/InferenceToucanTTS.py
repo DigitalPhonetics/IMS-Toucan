@@ -8,7 +8,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.Glow import Glow
+from TTSTrainingInterfaces.ToucanTTS.Glow import Glow
 from Utility.utils import make_non_pad_mask
 
 
@@ -17,7 +17,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 output_spectrogram_channels=80,
+                 output_spectrogram_channels=72,
                  attention_dimension=192,
                  attention_heads=6,
                  positionwise_conv_kernel_size=1,
@@ -161,21 +161,20 @@ class ToucanTTS(torch.nn.Module):
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
-        self.post_flow = Glow(
-            in_channels=output_spectrogram_channels,
-            hidden_channels=192,  # post_glow_hidden
-            kernel_size=5,  # post_glow_kernel_size
-            dilation_rate=1,
-            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
-            n_split=4,
-            n_sqz=2,
-            text_condition_channels=attention_dimension,
-            share_cond_layers=False,  # post_share_cond_layers
-            share_wn_layers=4,
-            sigmoid_scale=False,
-            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
-        )
+        self.post_flow = Glow(in_channels=output_spectrogram_channels,
+                              hidden_channels=192,  # post_glow_hidden
+                              kernel_size=5,  # post_glow_kernel_size
+                              dilation_rate=1,
+                              n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
+                              n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+                              n_split=4,
+                              n_sqz=2,
+                              text_condition_channels=attention_dimension,
+                              share_cond_layers=False,  # post_share_cond_layers
+                              share_wn_layers=4,
+                              sigmoid_scale=False,
+                              condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
+                              )
 
         self.load_state_dict(weights)
         self.eval()

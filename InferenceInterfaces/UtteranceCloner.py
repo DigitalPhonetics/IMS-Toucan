@@ -5,14 +5,15 @@ import torch
 from torch.optim import SGD
 from tqdm import tqdm
 
+from Aligner.Aligner import Aligner
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TrainingInterfaces.Text_to_Spectrogram.AutoAligner.Aligner import Aligner
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.DurationCalculator import DurationCalculator
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.EnergyCalculator import EnergyCalculator
-from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.PitchCalculator import Parselmouth
+from TTSTrainingInterfaces.ToucanTTS.DurationCalculator import DurationCalculator
+from TTSTrainingInterfaces.ToucanTTS.EnergyCalculator import EnergyCalculator
+from TTSTrainingInterfaces.ToucanTTS.PitchCalculator import Parselmouth
 from Utility.storage_config import MODELS_DIR
 
 
@@ -28,6 +29,7 @@ class UtteranceCloner:
             print("Warning: You are running BigVGAN on CPU. Consider either switching to GPU or setting the speed_over_quality option to True.")
         self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=speed_over_quality)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=False)
+        self.cap = CodecAudioPreprocessor(input_sr=16000)
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
@@ -69,7 +71,7 @@ class UtteranceCloner:
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
         text = self.tf.string_to_tensor(transcript, handle_missing=False).squeeze(0)
-        melspec = self.ap.audio_to_mel_spec_tensor(audio=norm_wave, normalize=False, explicit_sampling_rate=16000).transpose(0, 1)
+        melspec = self.cap.audio_to_codec_tensor(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1)
         melspec_length = torch.LongTensor([len(melspec)]).numpy()
 
         if on_line_fine_tune:
@@ -149,7 +151,7 @@ class UtteranceCloner:
                         path_to_reference_audio_for_voice,
                         transcription_of_intonation_reference,
                         filename_of_result=None,
-                        lang="de"):
+                        lang="en"):
         """
         What is said in path_to_reference_audio_for_intonation has to match the text in the reference_transcription exactly!
         """
@@ -158,12 +160,12 @@ class UtteranceCloner:
                                                                                                  path_to_reference_audio_for_intonation,
                                                                                                  lang=lang)
         self.tts.set_language(lang)
-        start_sil = torch.zeros([silence_frames_start * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
-        end_sil = torch.zeros([silence_frames_end * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
+        start_sil = torch.zeros([int(silence_frames_start * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
+        end_sil = torch.zeros([int(silence_frames_end * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
         cloned_speech = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt, samplerate=24000)
+            sf.write(file=filename_of_result, data=cloned_utt, samplerate=44100)
         return cloned_utt
 
     def biblical_accurate_angel_mode(self,
@@ -180,8 +182,8 @@ class UtteranceCloner:
                                                                                                  path_to_reference_audio_for_intonation,
                                                                                                  lang=lang)
         self.tts.set_language(lang)
-        start_sil = torch.zeros([silence_frames_start * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
-        end_sil = torch.zeros([silence_frames_end * 3]).to(self.device)  # timestamps are from 16kHz, but now we're using 48kHz, so upsampling required
+        start_sil = torch.zeros([int(silence_frames_start * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
+        end_sil = torch.zeros([int(silence_frames_end * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
         list_of_cloned_speeches = list()
         for path in list_of_speaker_references_for_ensemble:
             self.tts.set_utterance_embedding(path_to_reference_audio=path)
@@ -189,6 +191,6 @@ class UtteranceCloner:
         cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt, samplerate=24000)
+            sf.write(file=filename_of_result, data=cloned_utt, samplerate=44100)
         self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
         return cloned_utt

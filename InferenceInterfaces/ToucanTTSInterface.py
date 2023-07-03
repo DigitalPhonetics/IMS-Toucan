@@ -9,13 +9,12 @@ import sounddevice
 import soundfile
 import torch
 
-from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
-from InferenceInterfaces.InferenceArchitectures.InferenceBigVGAN import BigVGAN
+from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from InferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
-from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
 from Utility.storage_config import MODELS_DIR
 from Utility.utils import float2pcm
 
@@ -79,20 +78,16 @@ class ToucanTTSInterface(torch.nn.Module):
         self.style_embedding_function.to(self.device)
 
         ################################
-        #  load mel to wave model      #
+        #  load code to wave model     #
         ################################
-        if faster_vocoder:
-            self.mel2wav = HiFiGANGenerator(path_to_weights=vocoder_model_path).to(torch.device(device))
-        else:
-            self.mel2wav = BigVGAN(path_to_weights=vocoder_model_path).to(torch.device(device))
-        self.mel2wav.remove_weight_norm()
-        self.meter = pyloudnorm.Meter(24000)
+        self.codec_wrapper = CodecAudioPreprocessor(input_sr=44100)
+        self.spectrogram_wrapper = AudioPreprocessor(input_sr=44100, output_sr=16000)
+        self.meter = pyloudnorm.Meter(44100)
 
         ################################
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
-        self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
         self.style_embedding_function.eval()
@@ -110,8 +105,8 @@ class ToucanTTSInterface(torch.nn.Module):
         assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
         if sr != self.audio_preprocessor.input_sr:
-            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
-        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
+            self.codec_wrapper = CodecAudioPreprocessor(input_sr=sr, device=self.device)
+        spec = self.codec_wrapper.audio_to_codec_tensor(wave).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
                                                                          spec_len.unsqueeze(0).to(self.device)).squeeze()
@@ -157,19 +152,19 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
-            mel, durations, pitch, energy = self.phone2mel(phones,
-                                                           return_duration_pitch_energy=True,
-                                                           utterance_embedding=self.default_utterance_embedding,
-                                                           durations=durations,
-                                                           pitch=pitch,
-                                                           energy=energy,
-                                                           lang_id=self.lang_id,
-                                                           duration_scaling_factor=duration_scaling_factor,
-                                                           pitch_variance_scale=pitch_variance_scale,
-                                                           energy_variance_scale=energy_variance_scale,
-                                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
-            mel = mel.transpose(0, 1)
-            wave = self.mel2wav(mel)
+            codec_frames, durations, pitch, energy = self.phone2mel(phones,
+                                                                    return_duration_pitch_energy=True,
+                                                                    utterance_embedding=self.default_utterance_embedding,
+                                                                    durations=durations,
+                                                                    pitch=pitch,
+                                                                    energy=energy,
+                                                                    lang_id=self.lang_id,
+                                                                    duration_scaling_factor=duration_scaling_factor,
+                                                                    pitch_variance_scale=pitch_variance_scale,
+                                                                    energy_variance_scale=energy_variance_scale,
+                                                                    pause_duration_scaling_factor=pause_duration_scaling_factor)
+            codec_frames = codec_frames.transpose(0, 1)
+            wave = self.codec_wrapper.codes_to_audio(codec_frames)
 
         try:
             loudness = self.meter.integrated_loudness(wave)
@@ -184,11 +179,12 @@ class ToucanTTSInterface(torch.nn.Module):
             from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
             ax[0].plot(wave.cpu().numpy())
+            mel = self.spectrogram_wrapper.audio_to_mel_spec_tensor(wave)
             lbd.specshow(mel.cpu().numpy(),
                          ax=ax[1],
                          sr=16000,
                          cmap='GnBu',
-                         y_axis='mel',
+                         y_axis='Mel',
                          x_axis=None,
                          hop_length=256)
             ax[0].yaxis.set_visible(False)
@@ -249,8 +245,7 @@ class ToucanTTSInterface(torch.nn.Module):
                      silent=False,
                      dur_list=None,
                      pitch_list=None,
-                     energy_list=None,
-                     increased_compatibility_mode=False):
+                     energy_list=None):
         """
         Args:
             increased_compatibility_mode: Whether to export audio as 16bit integer 48kHz audio for maximum compatibility across systems and devices
@@ -276,7 +271,7 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         if not energy_list:
             energy_list = []
-        silence = torch.zeros([10600])
+        silence = torch.zeros([28600])
         wav = silence.clone()
         for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":
@@ -290,11 +285,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                        pitch_variance_scale=pitch_variance_scale,
                                        energy_variance_scale=energy_variance_scale).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
-        if increased_compatibility_mode:
-            wav = [val for val in wav.numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-            soundfile.write(file=file_location, data=float2pcm(wav), samplerate=48000, subtype="PCM_16")
-        else:
-            soundfile.write(file=file_location, data=wav, samplerate=24000)
+        soundfile.write(file=file_location, data=float2pcm(wav), samplerate=44100, subtype="PCM_16")
 
     def read_aloud(self,
                    text,
@@ -302,8 +293,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    duration_scaling_factor=1.0,
                    pitch_variance_scale=1.0,
                    energy_variance_scale=1.0,
-                   blocking=False,
-                   increased_compatibility_mode=False):
+                   blocking=False):
         if text.strip() == "":
             return
         wav = self(text,
@@ -311,11 +301,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    duration_scaling_factor=duration_scaling_factor,
                    pitch_variance_scale=pitch_variance_scale,
                    energy_variance_scale=energy_variance_scale).cpu()
-        wav = torch.cat((wav, torch.zeros([12000])), 0).numpy()
-        if increased_compatibility_mode:
-            wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-            sounddevice.play(float2pcm(wav), samplerate=48000)
-        else:
-            sounddevice.play(wav, samplerate=24000)
+        wav = torch.cat((torch.zeros([20000]), wav, torch.zeros([20000])), 0).numpy()
+        sounddevice.play(float2pcm(wav), samplerate=44100)
         if blocking:
             sounddevice.wait()
