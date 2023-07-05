@@ -4,7 +4,6 @@ Taken from ESPNet, modified by Florian Lux
 
 import os
 
-import librosa.display as lbd
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -88,77 +87,62 @@ def plot_progress_spec_toucantts(net,
                                                                             return_duration_pitch_energy=True,
                                                                             utterance_embedding=default_emb,
                                                                             lang_id=get_language_id(lang).to(device))
-    spec_before = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes_before))
-    spec = spec_before.to("cpu").transpose(0, 1).numpy()
-    duration_scaling_factor = len(spec) / sum(durations)
-    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy() * duration_scaling_factor.cpu().numpy())
-    os.makedirs(os.path.join(save_dir, "spec_before"), exist_ok=True)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
-    lbd.specshow(spec,
-                 ax=ax,
-                 sr=16000,
-                 cmap='GnBu',
-                 y_axis='mel',
-                 x_axis=None,
-                 hop_length=256)
-    ax.yaxis.set_visible(False)
-    ax.set_xticks(duration_splits, minor=True)
-    ax.xaxis.grid(True, which='minor')
-    ax.set_xticks(label_positions, minor=False)
-    phones = tf.get_phone_string(sentence, for_plot_labels=True)
-    ax.set_xticklabels(phones)
-    word_boundaries = list()
-    for label_index, word_boundary in enumerate(phones):
-        if word_boundary == "|":
-            word_boundaries.append(label_positions[label_index])
-    ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    pitch_array = pitch.cpu().numpy()
-    for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
-        if pitch_array[pitch_index] > 0.001:
-            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
-                      linestyles="solid",
-                      linewidth=1.0)
-    ax.set_title(sentence)
-    plt.savefig(os.path.join(os.path.join(save_dir, "spec_before"), f"{step}.png"))
-    plt.clf()
-    plt.close()
 
-    spec_after = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes_after))
-    spec = spec_after.to("cpu").transpose(0, 1).numpy()
-    os.makedirs(os.path.join(save_dir, "spec_after"), exist_ok=True)
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 6))
-    lbd.specshow(spec,
-                 ax=ax,
-                 sr=16000,
-                 cmap='GnBu',
-                 y_axis='mel',
-                 x_axis=None,
-                 hop_length=256)
-    ax.yaxis.set_visible(False)
-    ax.set_xticks(duration_splits, minor=True)
-    ax.xaxis.grid(True, which='minor')
-    ax.set_xticks(label_positions, minor=False)
+    plot_code_spec(pitch, sentence, ap, cap, durations, codes_before, os.path.join(save_dir, "spec_before"), tf, step)
+    plot_code_spec(pitch, sentence, ap, cap, durations, codes_after, os.path.join(save_dir, "spec_after"), tf, step)
+    return os.path.join(os.path.join(save_dir, "spec_before"), f"{step}.png"), os.path.join(os.path.join(save_dir, "spec_after"), f"{step}.png")
+
+
+def plot_code_spec(pitch, sentence, ap, cap, durations, codes, save_path, tf, step):
+    mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes))
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
+
+    spec_plot_axis = ax[0]
+    codec_plot_axis = ax[1]
+
+    codec_plot_axis.imshow(codes.transpose(0, 1).cpu().numpy(), origin="lower", cmap='GnBu')
+    spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
+    spec_plot_axis.xaxis.set_visible(False)
+    codec_plot_axis.yaxis.set_visible(False)
+    spec_plot_axis.yaxis.set_visible(False)
+    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+    codec_plot_axis.xaxis.grid(True, which='minor')
+    codec_plot_axis.set_xticks(label_positions, minor=False)
     phones = tf.get_phone_string(sentence, for_plot_labels=True)
-    ax.set_xticklabels(phones)
+    codec_plot_axis.set_xticklabels(phones)
     word_boundaries = list()
-    for label_index, word_boundary in enumerate(phones):
-        if word_boundary == "|":
+    for label_index, phone in enumerate(phones):
+        if phone == "|":
             word_boundaries.append(label_positions[label_index])
-    ax.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    ax.vlines(x=word_boundaries, colors="orange", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
-    pitch_array = pitch.cpu().numpy()
-    for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
-        if pitch_array[pitch_index] > 0.001:
-            ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
-                      linestyles="solid",
-                      linewidth=1.0)
-    ax.set_title(sentence)
-    plt.savefig(os.path.join(os.path.join(save_dir, "spec_after"), f"{step}.png"))
+    try:
+        prev_word_boundary = 0
+        word_label_positions = list()
+        for word_boundary in word_boundaries:
+            word_label_positions.append((word_boundary + prev_word_boundary) / 2)
+            prev_word_boundary = word_boundary
+        word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
+
+        secondary_ax = codec_plot_axis.secondary_xaxis('bottom')
+        secondary_ax.tick_params(axis="x", direction="out", pad=24)
+        secondary_ax.set_xticks(word_label_positions, minor=False)
+        secondary_ax.set_xticklabels(sentence.split())
+        secondary_ax.tick_params(axis='x', colors='orange')
+        secondary_ax.xaxis.label.set_color('orange')
+    except ValueError:
+        spec_plot_axis.set_title(sentence)
+    except IndexError:
+        spec_plot_axis.set_title(sentence)
+
+    codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=72, linewidth=1.0)
+    codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=72, linewidth=1.2)
+
+    spec_plot_axis.set_aspect("auto")
+    codec_plot_axis.set_aspect("auto")
+
+    plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=.9, wspace=0.0, hspace=0.0)
+    plt.savefig(os.path.join(save_path, f"{step}.png"))
     plt.clf()
     plt.close()
-    return os.path.join(os.path.join(save_dir, "spec_before"), f"{step}.png"), os.path.join(
-        os.path.join(save_dir, "spec_after"), f"{step}.png")
 
 
 def cumsum_durations(durations):

@@ -93,7 +93,9 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=192,
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=True):
+                 use_conditional_layernorm_embedding_integration=False,
+                 n_codebooks=9,
+                 codebook_dim=8):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -102,6 +104,7 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.codebook_dim = codebook_dim
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -177,7 +180,13 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
+        self.feat_outs = torch.nn.ModuleList()
+        for _ in range(n_codebooks):
+            self.feat_outs.append(torch.nn.Sequential(Linear(attention_dimension, attention_dimension),
+                                                      torch.nn.Tanh(),
+                                                      Linear(attention_dimension, attention_dimension),
+                                                      torch.nn.Tanh(),
+                                                      Linear(attention_dimension, codebook_dim)))
 
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
@@ -327,7 +336,10 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
-        decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
+        codebook_vectors = list()
+        for index, codebook_projector in enumerate(self.feat_outs):
+            codebook_vectors.append(codebook_projector(decoded_speech).view(decoded_speech.size(0), -1, self.codebook_dim))
+        decoded_spectrogram = torch.cat(codebook_vectors, dim=-1)
 
         # refine spectrogram further with a normalizing flow (requires warmup, so it's not always on)
         glow_loss = None

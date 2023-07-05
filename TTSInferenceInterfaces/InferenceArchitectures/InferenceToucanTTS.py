@@ -69,7 +69,10 @@ class ToucanTTS(torch.nn.Module):
                  detach_postflow=True,
                  lang_embs=8000,
                  weights=None,
-                 use_conditional_layernorm_embedding_integration=False):
+                 use_conditional_layernorm_embedding_integration=False,
+                 n_codebooks=9,
+                 codebook_dim=8
+                 ):
         super().__init__()
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -79,6 +82,7 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.codebook_dim = codebook_dim
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -159,7 +163,13 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
+        self.feat_outs = torch.nn.ModuleList()
+        for _ in range(n_codebooks):
+            self.feat_outs.append(torch.nn.Sequential(Linear(attention_dimension, attention_dimension),
+                                                      torch.nn.Tanh(),
+                                                      Linear(attention_dimension, attention_dimension),
+                                                      torch.nn.Tanh(),
+                                                      Linear(attention_dimension, codebook_dim)))
 
         self.post_flow = Glow(in_channels=output_spectrogram_channels,
                               hidden_channels=192,  # post_glow_hidden
@@ -235,7 +245,10 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
-        decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
+        codebook_vectors = list()
+        for index, codebook_projector in enumerate(self.feat_outs):
+            codebook_vectors.append(codebook_projector(decoded_speech).view(decoded_speech.size(0), -1, self.codebook_dim))
+        decoded_spectrogram = torch.cat(codebook_vectors, dim=-1)
 
         # refine spectrogram
         refined_spectrogram = self.post_flow(tgt_mels=None,
