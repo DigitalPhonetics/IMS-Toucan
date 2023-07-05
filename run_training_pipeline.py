@@ -93,7 +93,7 @@ if __name__ == '__main__':
     torch.random.manual_seed(9665)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
-    torch.multiprocessing.set_start_method('spawn')
+    torch.multiprocessing.set_start_method('fork')
 
     pipeline_dict[args.pipeline](gpu_id=args.gpu_id,
                                  resume_checkpoint=args.resume_checkpoint,
