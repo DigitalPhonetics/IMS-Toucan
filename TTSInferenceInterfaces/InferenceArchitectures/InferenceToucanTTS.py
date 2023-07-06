@@ -19,7 +19,7 @@ class ToucanTTS(torch.nn.Module):
                  input_feature_dimensions=62,
                  output_spectrogram_channels=72,
                  attention_dimension=192,
-                 attention_heads=6,
+                 attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  use_macaron_style_in_conformer=True,
@@ -164,27 +164,46 @@ class ToucanTTS(torch.nn.Module):
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.feat_outs = torch.nn.ModuleList()
+        self.codebook_decoders = torch.nn.ModuleList()
+        self.post_flows = torch.nn.ModuleList()
         for _ in range(n_codebooks):
-            self.feat_outs.append(torch.nn.Sequential(Linear(attention_dimension, attention_dimension),
-                                                      torch.nn.Tanh(),
-                                                      Linear(attention_dimension, attention_dimension),
-                                                      torch.nn.Tanh(),
-                                                      Linear(attention_dimension, codebook_dim)))
+            self.codebook_decoders.append(Conformer(conformer_type="decoder",
+                                                    attention_dim=attention_dimension,
+                                                    attention_heads=attention_heads,
+                                                    linear_units=768,
+                                                    num_blocks=decoder_layers,
+                                                    input_layer=None,
+                                                    dropout_rate=transformer_dec_dropout_rate,
+                                                    positional_dropout_rate=transformer_dec_positional_dropout_rate,
+                                                    attention_dropout_rate=transformer_dec_attn_dropout_rate,
+                                                    normalize_before=decoder_normalize_before,
+                                                    concat_after=decoder_concat_after,
+                                                    positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+                                                    macaron_style=use_macaron_style_in_conformer,
+                                                    use_cnn_module=use_cnn_in_conformer,
+                                                    cnn_module_kernel=7,
+                                                    use_output_norm=False,
+                                                    utt_embed=utt_embed_dim,
+                                                    use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration))
+            self.feat_outs.append(torch.nn.Sequential(
+                Linear(attention_dimension, attention_dimension),
+                torch.nn.Tanh(),
+                Linear(attention_dimension, codebook_dim)))
 
-        self.post_flow = Glow(in_channels=output_spectrogram_channels,
-                              hidden_channels=192,  # post_glow_hidden
-                              kernel_size=5,  # post_glow_kernel_size
-                              dilation_rate=1,
-                              n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-                              n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
-                              n_split=4,
-                              n_sqz=2,
-                              text_condition_channels=attention_dimension,
-                              share_cond_layers=False,  # post_share_cond_layers
-                              share_wn_layers=4,
-                              sigmoid_scale=False,
-                              condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
-                              )
+            self.post_flows.append(Glow(in_channels=self.codebook_dim,
+                                        hidden_channels=self.codebook_dim,  # post_glow_hidden
+                                        kernel_size=3,  # post_glow_kernel_size
+                                        dilation_rate=1,
+                                        n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
+                                        n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+                                        n_split=4,
+                                        n_sqz=2,
+                                        text_condition_channels=attention_dimension,
+                                        share_cond_layers=False,  # post_share_cond_layers
+                                        share_wn_layers=4,
+                                        sigmoid_scale=False,
+                                        condition_integration_projection=torch.nn.Conv1d(self.codebook_dim + utt_embed_dim, attention_dimension, 5, padding=2)
+                                        ))
 
         self.load_state_dict(weights)
         self.eval()
@@ -245,17 +264,20 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
-        codebook_vectors = list()
-        for index, codebook_projector in enumerate(self.feat_outs):
-            codebook_vectors.append(codebook_projector(decoded_speech).view(decoded_speech.size(0), -1, self.codebook_dim))
-        decoded_spectrogram = torch.cat(codebook_vectors, dim=-1)
 
-        # refine spectrogram
-        refined_spectrogram = self.post_flow(tgt_mels=None,
-                                             infer=True,
-                                             mel_out=decoded_spectrogram,
-                                             encoded_texts=upsampled_enriched_encoded_texts,
-                                             tgt_nonpadding=None).squeeze()
+        codebook_vectors = list()
+        postflowed_vectors = list()
+        for index, (codebook_decoder, codebook_projector, codebook_flow) in enumerate(zip(self.codebook_decoders, self.feat_outs, self.post_flows)):
+            decoded_codebook, _ = codebook_decoder(decoded_speech, None, utterance_embedding=utterance_embedding)
+            codebook_vectors.append(codebook_projector(decoded_codebook).view(decoded_codebook.size(0), -1, self.codebook_dim))
+            postflowed_vectors.append(codebook_flow(tgt_mels=None,
+                                                    infer=True,
+                                                    mel_out=codebook_vectors[-1],
+                                                    encoded_texts=upsampled_enriched_encoded_texts,
+                                                    tgt_nonpadding=None).squeeze())
+
+        decoded_spectrogram = torch.cat(codebook_vectors, dim=-1)
+        refined_spectrogram = torch.cat(postflowed_vectors, dim=-1)
 
         return decoded_spectrogram.squeeze(), refined_spectrogram.squeeze(), predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 

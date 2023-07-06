@@ -1,8 +1,6 @@
 import torch
 import torch.multiprocessing
 import wandb
-from torch.cuda.amp import GradScaler
-from torch.cuda.amp import autocast
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
@@ -81,7 +79,6 @@ def train_loop(net,
         train_iters.append(iter(train_loaders[-1]))
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
-    grad_scaler = GradScaler()
     steps_run_previously = 0
     l1_losses_total = list()
     duration_losses_total = list()
@@ -98,7 +95,6 @@ def train_loop(net,
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
             steps_run_previously = check_dict["step_counter"]
-            grad_scaler.load_state_dict(check_dict["scaler"])
         if steps_run_previously > steps:
             print("Desired steps already reached in loaded checkpoint.")
             return
@@ -132,40 +128,39 @@ def train_loop(net,
         lang_ids = batch[8].squeeze(1).to(device)
 
         train_loss = 0.0
-        with autocast():
-            # we sum the loss for each task, as we would do for the
-            # second order regular MAML, but we do it only over one
-            # step (i.e. iterations of inner loop = 1)
-            style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                       batch_of_spectrogram_lengths=batch[3].to(device))
-            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
-                text_tensors=text_tensors,
-                text_lengths=text_lengths,
-                gold_speech=gold_speech,
-                speech_lengths=speech_lengths,
-                gold_durations=gold_durations,
-                gold_pitch=gold_pitch,
-                gold_energy=gold_energy,
-                utterance_embedding=style_embedding,
-                lang_ids=lang_ids,
-                return_mels=False,
-                run_glow=step_counter > postnet_start_steps)
+        # we sum the loss for each task, as we would do for the
+        # second order regular MAML, but we do it only over one
+        # step (i.e. iterations of inner loop = 1)
+        style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                   batch_of_spectrogram_lengths=batch[3].to(device))
+        l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
+            text_tensors=text_tensors,
+            text_lengths=text_lengths,
+            gold_speech=gold_speech,
+            speech_lengths=speech_lengths,
+            gold_durations=gold_durations,
+            gold_pitch=gold_pitch,
+            gold_energy=gold_energy,
+            utterance_embedding=style_embedding,
+            lang_ids=lang_ids,
+            return_mels=False,
+            run_glow=step_counter > postnet_start_steps)
 
-            # then we directly update our meta-parameters without
-            # the need for any task specific parameters
+        # then we directly update our meta-parameters without
+        # the need for any task specific parameters
 
-            if not torch.isnan(l1_loss):
-                train_loss = train_loss + l1_loss
-            if not torch.isnan(duration_loss):
-                train_loss = train_loss + duration_loss
-            if not torch.isnan(pitch_loss):
-                train_loss = train_loss + pitch_loss
-            if not torch.isnan(energy_loss):
-                train_loss = train_loss + energy_loss
-            if glow_loss is not None:
-                if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                    train_loss = train_loss + glow_loss
-                    glow_losses_total.append(glow_loss.item())
+        if not torch.isnan(l1_loss):
+            train_loss = train_loss + l1_loss
+        if not torch.isnan(duration_loss):
+            train_loss = train_loss + duration_loss
+        if not torch.isnan(pitch_loss):
+            train_loss = train_loss + pitch_loss
+        if not torch.isnan(energy_loss):
+            train_loss = train_loss + energy_loss
+        if glow_loss is not None:
+            if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
+                train_loss = train_loss + glow_loss
+                glow_losses_total.append(glow_loss.item())
 
         l1_losses_total.append(l1_loss.item())
         duration_losses_total.append(duration_loss.item())
@@ -173,11 +168,9 @@ def train_loop(net,
         energy_losses_total.append(energy_loss.item())
 
         optimizer.zero_grad()
-        grad_scaler.scale(train_loss).backward()
-        grad_scaler.unscale_(optimizer)
+        train_loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
-        grad_scaler.step(optimizer)
-        grad_scaler.update()
+        optimizer.step()
         scheduler.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
@@ -194,7 +187,6 @@ def train_loop(net,
             torch.save({
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
-                "scaler"      : grad_scaler.state_dict(),
                 "scheduler"   : scheduler.state_dict(),
                 "step_counter": step_counter,
                 "default_emb" : default_embedding,
