@@ -62,7 +62,8 @@ class CodecAudioPreprocessor:
 if __name__ == '__main__':
     import soundfile
 
-    wav, sr = soundfile.read("../audios/ad00_0004.wav")
+    test_audio = "../audios/ad00_0004.wav"
+    wav, sr = soundfile.read(test_audio)
     ap = CodecAudioPreprocessor(input_sr=sr)
 
     codebook_indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
@@ -74,6 +75,6 @@ if __name__ == '__main__':
     plt.imshow(continuous_codes_from_indexes.cpu().numpy(), cmap='GnBu')
     plt.show()
 
-    reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes).cpu().numpy()
-
-    soundfile.write(file="../audios/ad00_0004_reconstructed.wav", data=reconstructed_audio, samplerate=44100)
+    for num_codebooks in range(1, 10):
+        reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes[:num_codebooks * 8]).cpu().numpy()
+        soundfile.write(file=f"{test_audio.rstrip('.wav')}_reconstructed_using_{num_codebooks}_codebooks.wav", data=reconstructed_audio, samplerate=44100)
