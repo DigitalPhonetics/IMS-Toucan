@@ -53,7 +53,7 @@ class CodecAudioPreprocessor:
     def codes_to_audio(self, continuous_codes):
         z_q = 0.0
         z_ps = torch.split(continuous_codes, self.model.codebook_dim, dim=0)
-        for i, z_p in zip(range(self.model.n_codebooks), z_ps):
+        for i, z_p in enumerate(z_ps):
             z_q_i = self.model.quantizer.quantizers[i].out_proj(z_p)
             z_q = z_q + z_q_i
         return self.model.decode(z_q.unsqueeze(0))["audio"].squeeze()

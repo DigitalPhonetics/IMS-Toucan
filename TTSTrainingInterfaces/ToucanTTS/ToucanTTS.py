@@ -181,27 +181,8 @@ class ToucanTTS(torch.nn.Module):
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.feat_outs = torch.nn.ModuleList()
-        self.codebook_decoders = torch.nn.ModuleList()
         self.post_flows = torch.nn.ModuleList()
         for _ in range(n_codebooks):
-            self.codebook_decoders.append(Conformer(conformer_type="decoder",
-                                                    attention_dim=attention_dimension,
-                                                    attention_heads=attention_heads,
-                                                    linear_units=768,
-                                                    num_blocks=decoder_layers,
-                                                    input_layer=None,
-                                                    dropout_rate=transformer_dec_dropout_rate,
-                                                    positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                                                    attention_dropout_rate=transformer_dec_attn_dropout_rate,
-                                                    normalize_before=decoder_normalize_before,
-                                                    concat_after=decoder_concat_after,
-                                                    positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                                    macaron_style=use_macaron_style_in_conformer,
-                                                    use_cnn_module=use_cnn_in_conformer,
-                                                    cnn_module_kernel=7,
-                                                    use_output_norm=False,
-                                                    utt_embed=utt_embed_dim,
-                                                    use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration))
             self.feat_outs.append(torch.nn.Sequential(
                 Linear(attention_dimension, attention_dimension),
                 torch.nn.Tanh(),
@@ -359,9 +340,9 @@ class ToucanTTS(torch.nn.Module):
         if not is_inference:
             speech_by_codebook = torch.split(gold_speech, self.codebook_dim, dim=-1)
         glow_loss = 0.0
-        for index, (codebook_decoder, codebook_projector, codebook_flow) in enumerate(zip(self.codebook_decoders, self.feat_outs, self.post_flows)):
-            decoded_codebook, _ = codebook_decoder(decoded_speech, decoder_masks, utterance_embedding=utterance_embedding)
-            codebook_vectors.append(codebook_projector(decoded_codebook).view(decoded_codebook.size(0), -1, self.codebook_dim))
+        for index, (codebook_projector, codebook_flow) in enumerate(zip(self.feat_outs, self.post_flows)):
+            codebook_projection = codebook_projector(decoded_speech).view(decoded_speech.size(0), -1, self.codebook_dim)
+            codebook_vectors.append(codebook_projection)
             if run_glow:
                 if is_inference:
                     postflowed_vectors.append(codebook_flow(tgt_mels=None,
