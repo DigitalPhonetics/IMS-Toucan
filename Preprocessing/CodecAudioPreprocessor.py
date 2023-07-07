@@ -50,6 +50,12 @@ class CodecAudioPreprocessor:
         return self.model.quantizer.from_codes(codebook_indexes)[1].squeeze()
 
     @torch.inference_mode()
+    def indexes_to_continuous_codec_frames(self, codebook_indexes):
+        if len(codebook_indexes.size()) == 2:
+            codebook_indexes = codebook_indexes.unsqueeze(0)
+        return self.model.quantizer.from_codes(codebook_indexes)[0].squeeze()
+
+    @torch.inference_mode()
     def codes_to_audio(self, continuous_codes):
         z_q = 0.0
         z_ps = torch.split(continuous_codes, self.model.codebook_dim, dim=0)
@@ -57,6 +63,10 @@ class CodecAudioPreprocessor:
             z_q_i = self.model.quantizer.quantizers[i].out_proj(z_p)
             z_q = z_q + z_q_i
         return self.model.decode(z_q.unsqueeze(0))["audio"].squeeze()
+
+    @torch.inference_mode()
+    def continuous_codes_to_audio(self, continuous_codes):
+        return self.model.decode(continuous_codes.unsqueeze(0))["audio"].squeeze()
 
 
 if __name__ == '__main__':
@@ -66,9 +76,9 @@ if __name__ == '__main__':
     wav, sr = soundfile.read(test_audio)
     ap = CodecAudioPreprocessor(input_sr=sr)
 
-    codebook_indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+    indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
 
-    continuous_codes_from_indexes = ap.indexes_to_codec_frames(codebook_indexes)
+    continuous_codes_from_indexes = ap.indexes_to_codec_frames(indexes)
 
     import matplotlib.pyplot as plt
 
