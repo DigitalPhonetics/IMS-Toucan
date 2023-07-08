@@ -1,3 +1,5 @@
+import torch
+
 from TTSTrainingInterfaces.ToucanTTS.toucantts_meta_train_loop import train_loop as multi_language_loop
 from TTSTrainingInterfaces.ToucanTTS.toucantts_train_loop import train_loop as mono_language_loop
 
@@ -26,6 +28,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                use_discriminator=False,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
                train_embed=False  # whether to train the embedding function. Only relevant for single-language case
                ):
+    torch.multiprocessing.set_start_method('fork', force=True)
     if type(datasets) != list:
         datasets = [datasets]
     if len(datasets) > 1:

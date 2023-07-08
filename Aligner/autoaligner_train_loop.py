@@ -46,7 +46,7 @@ def train_loop(train_dataset,
     """
     os.makedirs(save_directory, exist_ok=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
-    torch.multiprocessing.set_start_method('spawn', force=True)
+    torch.multiprocessing.set_start_method('fork', force=True)
 
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,

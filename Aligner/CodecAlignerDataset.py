@@ -31,6 +31,7 @@ class CodecAlignerDataset(Dataset):
                  allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
+            torch.multiprocessing.set_start_method('spawn', force=True)
             if type(path_to_transcript_dict) != dict:
                 path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
             resource_manager = Manager()
@@ -144,7 +145,7 @@ class CodecAlignerDataset(Dataset):
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             try:
-                norm_wave = resample(torch.tensor(wave).to(device))
+                norm_wave = resample(torch.Tensor(wave, device=device, dtype=torch.float))
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
