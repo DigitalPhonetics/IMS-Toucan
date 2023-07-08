@@ -66,7 +66,7 @@ class CodecAudioPreprocessor:
 
     @torch.inference_mode()
     def continuous_codes_to_audio(self, continuous_codes):
-        return self.model.decode(continuous_codes.unsqueeze(0))["audio"].squeeze()
+        return self.model.decode(continuous_codes.transpose(0, 1).unsqueeze(0))["audio"].squeeze()
 
 
 if __name__ == '__main__':

@@ -181,7 +181,7 @@ class TTSDataset(Dataset):
             self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
-               self.ap.indexes_to_continuous_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
+               self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
                self.datapoints[index][3], \
                self.datapoints[index][4], \
                self.datapoints[index][5], \

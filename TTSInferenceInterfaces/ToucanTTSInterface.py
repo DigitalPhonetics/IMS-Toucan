@@ -156,7 +156,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                                       energy_variance_scale=energy_variance_scale,
                                                                       pause_duration_scaling_factor=pause_duration_scaling_factor)
             codec_frames = codec_frames.transpose(0, 1)
-            wave = self.codec_wrapper.continuous_codes_to_audio(codec_frames).cpu().numpy()
+            wave = self.codec_wrapper.codes_to_audio(codec_frames).cpu().numpy()
 
         try:
             loudness = self.meter.integrated_loudness(wave)
