@@ -6,7 +6,6 @@ from torch.nn import Tanh
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.PostUNet import PostUNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.Glow import Glow
@@ -246,8 +245,6 @@ class ToucanTTS(torch.nn.Module):
                                             torch.nn.Tanh(),
                                             Linear(attention_dimension, output_spectrogram_channels))
 
-        self.unet = PostUNet()
-
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=attention_dimension,  # post_glow_hidden
@@ -395,8 +392,6 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
-
-        decoded_spectrogram = self.unet(decoded_spectrogram.transpose(1, 2).unsqueeze(1)).transpose(1, 2)
 
         # refine spectrogram further with a normalizing flow (requires warmup, so it's not always on)
         glow_loss = None
