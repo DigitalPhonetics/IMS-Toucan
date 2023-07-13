@@ -94,7 +94,7 @@ def plot_progress_spec_toucantts(net,
 
 
 def plot_code_spec(pitch, sentence, ap, cap, durations, codes, save_path, tf, step):
-    mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes.squeeze()))
+    mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes.squeeze().transpose(0, 1)))
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
 
     spec_plot_axis = ax[0]

@@ -355,7 +355,7 @@ class Glow(nn.Module):
             try:
                 postflow_loss = -prior_dist.log_prob(z_postflow).mean() - ldj.mean()
             except ValueError:
-                print("log probability of plostflow could not be calculated for this step")
+                print("log probability of postflow could not be calculated for this step")
                 postflow_loss = None
             return postflow_loss
         else:

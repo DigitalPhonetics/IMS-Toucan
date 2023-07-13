@@ -6,6 +6,7 @@ from torch.nn import Tanh
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
+from Layers.PostUNet import PostUNet
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.Glow import Glow
@@ -62,14 +63,25 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.2,
 
                  # decoder
-                 decoder_layers=6,
+                 decoder_layers=8,
                  decoder_units=1536,
                  decoder_concat_after=False,
-                 conformer_decoder_kernel_size=31,
+                 conformer_decoder_kernel_size=3,  # 31 for spectrograms
                  decoder_normalize_before=True,
                  transformer_dec_dropout_rate=0.2,
                  transformer_dec_positional_dropout_rate=0.2,
                  transformer_dec_attn_dropout_rate=0.2,
+
+                 # glow
+                 glow_kernel_size=3,
+                 glow_dilation_rate=1,
+                 glow_n_blocks=12,  # (original 12 in paper)
+                 glow_n_layers=3,  # (original 3 in paper)
+                 glow_n_split=4,
+                 glow_n_sqz=2,
+                 glow_share_cond_layers=False,  # post_share_cond_layers
+                 glow_share_wn_layers=4,
+                 glow_sigmoid_scale=False,
 
                  # duration predictor
                  duration_predictor_layers=5,
@@ -95,6 +107,59 @@ class ToucanTTS(torch.nn.Module):
                  lang_embs=8000,
                  use_conditional_layernorm_embedding_integration=False):
         super().__init__()
+
+        self.config = {
+            "input_feature_dimensions"                       : input_feature_dimensions,
+            "output_spectrogram_channels"                    : output_spectrogram_channels,
+            "attention_dimension"                            : attention_dimension,
+            "attention_heads"                                : attention_heads,
+            "positionwise_conv_kernel_size"                  : positionwise_conv_kernel_size,
+            "use_scaled_positional_encoding"                 : use_scaled_positional_encoding,
+            "init_type"                                      : init_type,
+            "use_macaron_style_in_conformer"                 : use_macaron_style_in_conformer,
+            "use_cnn_in_conformer"                           : use_cnn_in_conformer,
+            "encoder_layers"                                 : encoder_layers,
+            "encoder_units"                                  : encoder_units,
+            "encoder_normalize_before"                       : encoder_normalize_before,
+            "encoder_concat_after"                           : encoder_concat_after,
+            "conformer_encoder_kernel_size"                  : conformer_encoder_kernel_size,
+            "transformer_enc_dropout_rate"                   : transformer_enc_dropout_rate,
+            "transformer_enc_positional_dropout_rate"        : transformer_enc_positional_dropout_rate,
+            "transformer_enc_attn_dropout_rate"              : transformer_enc_attn_dropout_rate,
+            "decoder_layers"                                 : decoder_layers,
+            "decoder_units"                                  : decoder_units,
+            "decoder_concat_after"                           : decoder_concat_after,
+            "conformer_decoder_kernel_size"                  : conformer_decoder_kernel_size,
+            "decoder_normalize_before"                       : decoder_normalize_before,
+            "transformer_dec_dropout_rate"                   : transformer_dec_dropout_rate,
+            "transformer_dec_positional_dropout_rate"        : transformer_dec_positional_dropout_rate,
+            "transformer_dec_attn_dropout_rate"              : transformer_dec_attn_dropout_rate,
+            "glow_kernel_size"                               : glow_kernel_size,
+            "glow_dilation_rate"                             : glow_dilation_rate,
+            "glow_n_blocks"                                  : glow_n_blocks,
+            "glow_n_layers"                                  : glow_n_layers,
+            "glow_n_split"                                   : glow_n_split,
+            "glow_n_sqz"                                     : glow_n_sqz,
+            "glow_share_cond_layers"                         : glow_share_cond_layers,
+            "glow_share_wn_layers"                           : glow_share_wn_layers,
+            "glow_sigmoid_scale"                             : glow_sigmoid_scale,
+            "duration_predictor_layers"                      : duration_predictor_layers,
+            "duration_predictor_kernel_size"                 : duration_predictor_kernel_size,
+            "duration_predictor_dropout_rate"                : duration_predictor_dropout_rate,
+            "pitch_predictor_layers"                         : pitch_predictor_layers,
+            "pitch_predictor_kernel_size"                    : pitch_predictor_kernel_size,
+            "pitch_predictor_dropout"                        : pitch_predictor_dropout,
+            "pitch_embed_kernel_size"                        : pitch_embed_kernel_size,
+            "pitch_embed_dropout"                            : pitch_embed_dropout,
+            "energy_predictor_layers"                        : energy_predictor_layers,
+            "energy_predictor_kernel_size"                   : energy_predictor_kernel_size,
+            "energy_predictor_dropout"                       : energy_predictor_dropout,
+            "energy_embed_kernel_size"                       : energy_embed_kernel_size,
+            "energy_embed_dropout"                           : energy_embed_dropout,
+            "utt_embed_dim"                                  : utt_embed_dim,
+            "lang_embs"                                      : lang_embs,
+            "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration
+        }
 
         self.input_feature_dimensions = input_feature_dimensions
         self.output_spectrogram_channels = output_spectrogram_channels
@@ -177,21 +242,25 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
+        self.feat_out = torch.nn.Sequential(Linear(attention_dimension, attention_dimension),
+                                            torch.nn.Tanh(),
+                                            Linear(attention_dimension, output_spectrogram_channels))
+
+        self.unet = PostUNet()
 
         self.post_flow = Glow(
             in_channels=output_spectrogram_channels,
             hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=3,  # post_glow_kernel_size
-            dilation_rate=1,
-            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
-            n_split=4,
-            n_sqz=2,
+            kernel_size=glow_kernel_size,  # post_glow_kernel_size
+            dilation_rate=glow_dilation_rate,
+            n_blocks=glow_n_blocks,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=glow_n_layers,  # post_glow_n_block_layers (original 3 in paper)
+            n_split=glow_n_split,
+            n_sqz=glow_n_sqz,
             text_condition_channels=attention_dimension,
-            share_cond_layers=False,  # post_share_cond_layers
-            share_wn_layers=4,
-            sigmoid_scale=False,
+            share_cond_layers=glow_share_cond_layers,  # post_share_cond_layers
+            share_wn_layers=glow_share_wn_layers,
+            sigmoid_scale=glow_sigmoid_scale,
             condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
         )
 
@@ -247,9 +316,7 @@ class ToucanTTS(torch.nn.Module):
                                   run_glow=run_glow)
 
         # calculate loss
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(after_outs=None,
-                                                                         # if a regular PostNet is used, the post-PostNet outs have to go here. The flow has its own loss though, so we hard-code this to None
-                                                                         before_outs=before_outs,
+        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(before_outs=before_outs,
                                                                          gold_spectrograms=gold_speech,
                                                                          spectrogram_lengths=speech_lengths,
                                                                          text_lengths=text_lengths,
@@ -314,7 +381,7 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            pitch_predictions = self.pitch_predictor(encoded_texts.detach(), padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
+            pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             energy_predictions = self.energy_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             predicted_durations = self.duration_predictor(encoded_texts, padding_mask=padding_masks, utt_embed=utterance_embedding)
 
@@ -329,6 +396,8 @@ class ToucanTTS(torch.nn.Module):
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
         decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
+        decoded_spectrogram = self.unet(decoded_spectrogram.transpose(1, 2).unsqueeze(1)).transpose(1, 2)
+
         # refine spectrogram further with a normalizing flow (requires warmup, so it's not always on)
         glow_loss = None
         if run_glow:
@@ -341,8 +410,8 @@ class ToucanTTS(torch.nn.Module):
             else:
                 glow_loss = self.post_flow(tgt_mels=gold_speech,
                                            infer=is_inference,
-                                           mel_out=decoded_spectrogram.detach().clone(),
-                                           encoded_texts=upsampled_enriched_encoded_texts.detach().clone(),
+                                           mel_out=decoded_spectrogram,
+                                           encoded_texts=upsampled_enriched_encoded_texts,
                                            tgt_nonpadding=decoder_masks)
         if is_inference:
             return decoded_spectrogram.squeeze(), \

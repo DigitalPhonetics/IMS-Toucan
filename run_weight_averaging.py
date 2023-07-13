@@ -6,35 +6,13 @@ import os
 
 import torch
 
-from TTSTrainingInterfaces.StochasticToucanTTS.StochasticToucanTTS import StochasticToucanTTS
-from TTSTrainingInterfaces.ToucanTTS.ToucanTTS import ToucanTTS
+from TTSInferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
 from Utility.storage_config import MODELS_DIR
 
 
 def load_net_toucan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    try:
-        try:
-            net = ToucanTTS()
-            net.load_state_dict(check_dict["model"])
-        except RuntimeError:
-            try:
-                net = ToucanTTS(lang_embs=None)
-                net.load_state_dict(check_dict["model"])
-            except RuntimeError:
-                net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
-                net.load_state_dict(check_dict["model"])
-    except RuntimeError:
-        try:
-            net = StochasticToucanTTS()
-            net.load_state_dict(check_dict["model"])
-        except RuntimeError:
-            try:
-                net = StochasticToucanTTS(lang_embs=None)
-                net.load_state_dict(check_dict["model"])
-            except RuntimeError:
-                net = StochasticToucanTTS(lang_embs=None, utt_embed_dim=None)
-                net.load_state_dict(check_dict["model"])
+    net = ToucanTTS(config=check_dict["config"], weights=check_dict["model"])
     return net, check_dict["default_emb"]
 
 
@@ -91,7 +69,7 @@ def average_checkpoints(list_of_checkpoint_paths, load_func):
 
 def save_model_for_use(model, name="", default_embed=None, dict_name="model"):
     print("saving model...")
-    torch.save({dict_name: model.state_dict(), "default_emb": default_embed}, name)
+    torch.save({dict_name: model.state_dict(), "default_emb": default_embed, "config": model.config}, name)
     print("...done!")
 
 

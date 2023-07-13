@@ -46,14 +46,7 @@ class ToucanTTSInterface(torch.nn.Module):
         #   load phone to mel model    #
         ################################
         self.use_lang_id = True
-        try:
-            self.phone2codec = ToucanTTS(weights=checkpoint["model"])  # multi speaker multi language
-        except RuntimeError:
-            try:
-                self.use_lang_id = False
-                self.phone2codec = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
-            except RuntimeError:
-                self.phone2codec = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+        self.phone2codec = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
         with torch.no_grad():
             self.phone2codec.store_inverse_all()  # this also removes weight norm
         self.phone2codec = self.phone2codec.to(torch.device(device))

@@ -190,6 +190,7 @@ def train_loop(net,
                 "scheduler"   : scheduler.state_dict(),
                 "step_counter": step_counter,
                 "default_emb" : default_embedding,
+                "config": net.config
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)

@@ -181,6 +181,7 @@ def train_loop(net,
             "step_counter": step_counter,
             "scheduler"   : scheduler.state_dict(),
             "default_emb" : default_embedding,
+            "config": net.config
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         if path_to_embed_model is None or train_embed:
             torch.save({

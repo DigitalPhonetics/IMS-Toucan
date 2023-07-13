@@ -1,3 +1,4 @@
+import dotwiz
 import torch
 from torch.nn import Linear
 from torch.nn import Sequential
@@ -15,67 +16,65 @@ from Utility.utils import make_non_pad_mask
 class ToucanTTS(torch.nn.Module):
 
     def __init__(self,
-                 # network structure related
-                 input_feature_dimensions=62,
-                 output_spectrogram_channels=72,
-                 attention_dimension=128,
-                 attention_heads=4,
-                 positionwise_conv_kernel_size=1,
-                 use_scaled_positional_encoding=True,
-                 use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
-
-                 # encoder
-                 encoder_layers=6,
-                 encoder_units=1536,
-                 encoder_normalize_before=True,
-                 encoder_concat_after=False,
-                 conformer_encoder_kernel_size=7,
-                 transformer_enc_dropout_rate=0.2,
-                 transformer_enc_positional_dropout_rate=0.2,
-                 transformer_enc_attn_dropout_rate=0.2,
-
-                 # decoder
-                 decoder_layers=6,
-                 decoder_units=1536,
-                 decoder_concat_after=False,
-                 conformer_decoder_kernel_size=31,
-                 decoder_normalize_before=True,
-                 transformer_dec_dropout_rate=0.2,
-                 transformer_dec_positional_dropout_rate=0.2,
-                 transformer_dec_attn_dropout_rate=0.2,
-
-                 # duration predictor
-                 duration_predictor_layers=5,
-                 duration_predictor_kernel_size=7,
-                 duration_predictor_dropout_rate=0.2,
-
-                 # pitch predictor
-                 pitch_predictor_layers=7,
-                 pitch_predictor_kernel_size=7,
-                 pitch_predictor_dropout=0.5,
-                 pitch_embed_kernel_size=1,
-                 pitch_embed_dropout=0.0,
-
-                 # energy predictor
-                 energy_predictor_layers=2,
-                 energy_predictor_kernel_size=3,
-                 energy_predictor_dropout=0.5,
-                 energy_embed_kernel_size=1,
-                 energy_embed_dropout=0.0,
-
-                 # additional features
-                 utt_embed_dim=192,
-                 detach_postflow=True,
-                 lang_embs=8000,
-                 weights=None,
-                 use_conditional_layernorm_embedding_integration=False):
+                 weights,
+                 config):
         super().__init__()
+
+        config = dotwiz.DotWiz(config)
+
+        input_feature_dimensions = config.input_feature_dimensions
+        output_spectrogram_channels = config.output_spectrogram_channels
+        attention_dimension = config.attention_dimension
+        attention_heads = config.attention_heads
+        positionwise_conv_kernel_size = config.positionwise_conv_kernel_size
+        use_scaled_positional_encoding = config.use_scaled_positional_encoding
+        use_macaron_style_in_conformer = config.use_macaron_style_in_conformer
+        use_cnn_in_conformer = config.use_cnn_in_conformer
+        encoder_layers = config.encoder_layers
+        encoder_units = config.encoder_units
+        encoder_normalize_before = config.encoder_normalize_before
+        encoder_concat_after = config.encoder_concat_after
+        conformer_encoder_kernel_size = config.conformer_encoder_kernel_size
+        transformer_enc_dropout_rate = config.transformer_enc_dropout_rate
+        transformer_enc_positional_dropout_rate = config.transformer_enc_positional_dropout_rate
+        transformer_enc_attn_dropout_rate = config.transformer_enc_attn_dropout_rate
+        decoder_layers = config.decoder_layers
+        decoder_units = config.decoder_units
+        decoder_concat_after = config.decoder_concat_after
+        conformer_decoder_kernel_size = config.conformer_decoder_kernel_size
+        decoder_normalize_before = config.decoder_normalize_before
+        transformer_dec_dropout_rate = config.transformer_dec_dropout_rate
+        transformer_dec_positional_dropout_rate = config.transformer_dec_positional_dropout_rate
+        transformer_dec_attn_dropout_rate = config.transformer_dec_attn_dropout_rate
+        glow_kernel_size = config.glow_kernel_size
+        glow_dilation_rate = config.glow_dilation_rate
+        glow_n_blocks = config.glow_n_blocks
+        glow_n_layers = config.glow_n_layers
+        glow_n_split = config.glow_n_split
+        glow_n_sqz = config.glow_n_sqz
+        glow_share_cond_layers = config.glow_share_cond_layers
+        glow_share_wn_layers = config.glow_share_wn_layers
+        glow_sigmoid_scale = config.glow_sigmoid_scale
+        duration_predictor_layers = config.duration_predictor_layers
+        duration_predictor_kernel_size = config.duration_predictor_kernel_size
+        duration_predictor_dropout_rate = config.duration_predictor_dropout_rate
+        pitch_predictor_layers = config.pitch_predictor_layers
+        pitch_predictor_kernel_size = config.pitch_predictor_kernel_size
+        pitch_predictor_dropout = config.pitch_predictor_dropout
+        pitch_embed_kernel_size = config.pitch_embed_kernel_size
+        pitch_embed_dropout = config.pitch_embed_dropout
+        energy_predictor_layers = config.energy_predictor_layers
+        energy_predictor_kernel_size = config.energy_predictor_kernel_size
+        energy_predictor_dropout = config.energy_predictor_dropout
+        energy_embed_kernel_size = config.energy_embed_kernel_size
+        energy_embed_dropout = config.energy_embed_dropout
+        utt_embed_dim = config.utt_embed_dim
+        lang_embs = config.lang_embs
+        use_conditional_layernorm_embedding_integration = config.use_conditional_layernorm_embedding_integration
 
         self.input_feature_dimensions = input_feature_dimensions
         self.output_spectrogram_channels = output_spectrogram_channels
         self.attention_dimension = attention_dimension
-        self.detach_postflow = detach_postflow
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
@@ -161,20 +160,21 @@ class ToucanTTS(torch.nn.Module):
 
         self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
 
-        self.post_flow = Glow(in_channels=output_spectrogram_channels,
-                              hidden_channels=attention_dimension,  # post_glow_hidden
-                              kernel_size=3,  # post_glow_kernel_size
-                              dilation_rate=1,
-                              n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
-                              n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
-                              n_split=4,
-                              n_sqz=2,
-                              text_condition_channels=attention_dimension,
-                              share_cond_layers=False,  # post_share_cond_layers
-                              share_wn_layers=4,
-                              sigmoid_scale=False,
-                              condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
-                              )
+        self.post_flow = Glow(
+            in_channels=output_spectrogram_channels,
+            hidden_channels=attention_dimension,  # post_glow_hidden
+            kernel_size=glow_kernel_size,  # post_glow_kernel_size
+            dilation_rate=glow_dilation_rate,
+            n_blocks=glow_n_blocks,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=glow_n_layers,  # post_glow_n_block_layers (original 3 in paper)
+            n_split=glow_n_split,
+            n_sqz=glow_n_sqz,
+            text_condition_channels=attention_dimension,
+            share_cond_layers=glow_share_cond_layers,  # post_share_cond_layers
+            share_wn_layers=glow_share_wn_layers,
+            sigmoid_scale=glow_sigmoid_scale,
+            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
+        )
 
         self.load_state_dict(weights)
         self.eval()
