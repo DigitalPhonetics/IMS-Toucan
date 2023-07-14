@@ -7,7 +7,7 @@ from Preprocessing.TextFrontend import get_feature_to_index_lookup
 from Utility.path_to_transcript_dicts import *
 
 
-def make_sielce_cleaned_versions(train_sets):
+def make_silence_cleaned_versions(train_sets):
     torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
     # careful: assumes 16kHz or 8kHz audio
     silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',

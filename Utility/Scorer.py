@@ -1,6 +1,9 @@
 """
 This module is meant to find potentially problematic samples
-in the data you are using and help you remove them.
+in the data you are using. There are two types: The alignment
+scorer and the TTS scorer. The alignment scorer can help you
+find mispronunciations or errors in the labels. The TTS scorer
+can help you find outliers in the audio part of text-audio pairs.
 """
 
 import os
@@ -57,24 +60,25 @@ class TTSScorer:
         self.nan_indexes = list()
         self.path_to_score = dict()
         self.path_to_id = dict()
-
+        _ = dataset[0]
         for index in tqdm(range(len(dataset.datapoints))):
-            datapoint = torch.load(dataset.datapoint_feature_dump_list[index], map_location='cpu')
-            text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = datapoint
+            text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
+            spec = dataset.ap.indexes_to_codec_frames(spec.int().transpose(0, 1)).transpose(0, 1).detach()
+
             style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
                                                             batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
             try:
-                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = self.tts(text_tensors=text.unsqueeze(0).to(self.device),
-                                                                                      text_lengths=text_len.to(self.device),
-                                                                                      gold_speech=spec.unsqueeze(0).to(self.device),
-                                                                                      speech_lengths=spec_len.to(self.device),
-                                                                                      gold_durations=duration.unsqueeze(0).to(self.device),
-                                                                                      gold_pitch=pitch.unsqueeze(0).to(self.device),
-                                                                                      gold_energy=energy.unsqueeze(0).to(self.device),
-                                                                                      utterance_embedding=style_embedding.to(self.device),
-                                                                                      lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
-                                                                                      return_mels=False,
-                                                                                      run_glow=False)
+                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = sum(self.tts(text_tensors=text.unsqueeze(0).to(self.device),
+                                                                                          text_lengths=text_len.to(self.device),
+                                                                                          gold_speech=spec.unsqueeze(0).to(self.device),
+                                                                                          speech_lengths=spec_len.to(self.device),
+                                                                                          gold_durations=duration.unsqueeze(0).to(self.device),
+                                                                                          gold_pitch=pitch.unsqueeze(0).to(self.device),
+                                                                                          gold_energy=energy.unsqueeze(0).to(self.device),
+                                                                                          utterance_embedding=style_embedding.to(self.device),
+                                                                                          lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
+                                                                                          return_mels=False,
+                                                                                          run_glow=False))
                 loss = l1_loss + duration_loss + pitch_loss + energy_loss  # we omit the glow loss
             except TypeError:
                 loss = torch.tensor(torch.nan)

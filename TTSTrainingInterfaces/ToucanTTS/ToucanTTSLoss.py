@@ -13,7 +13,7 @@ class ToucanTTSLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.l1_criterion = torch.nn.L1Loss(reduction="none")
+        self.l1_criterion = torch.nn.CrossEntropyLoss(reduction="none")
         self.l2_criterion = torch.nn.MSELoss(reduction="none")
         self.duration_criterion = DurationPredictorLoss(reduction="none")
 
@@ -37,9 +37,11 @@ class ToucanTTSLoss(torch.nn.Module):
         """
 
         # calculate loss
-        l1_loss = self.l1_criterion(before_outs, gold_spectrograms)
-        l2_loss = self.l2_criterion(before_outs, gold_spectrograms)
-        distance_loss = l1_loss + l2_loss
+        ce = list()
+        for one_hot_pred, one_hot_target in zip(before_outs, gold_spectrograms):
+            ce.append(self.l1_criterion(one_hot_pred, one_hot_target))
+        distance_loss = sum(ce)
+
         duration_loss = self.duration_criterion(predicted_durations, gold_durations)
         pitch_loss = self.l2_criterion(predicted_pitch, gold_pitch)
         energy_loss = self.l2_criterion(predicted_energy, gold_energy)

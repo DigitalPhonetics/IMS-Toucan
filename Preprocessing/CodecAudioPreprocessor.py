@@ -44,6 +44,18 @@ class CodecAudioPreprocessor:
         return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze()
 
     @torch.inference_mode()
+    def audio_to_one_hot_indexes(self, audio, current_sampling_rate):
+        if current_sampling_rate != self.output_sr:
+            audio = self.resample_audio(audio, current_sampling_rate)
+        elif type(audio) != torch.tensor:
+            audio = torch.Tensor(audio)
+        return self.indexes_to_one_hot(self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze())
+
+    @torch.inference_mode()
+    def indexes_to_one_hot(self, indexes):
+        return torch.nn.functional.one_hot(indexes.squeeze(), num_classes=self.model.quantizer.codebook_size)
+
+    @torch.inference_mode()
     def indexes_to_codec_frames(self, codebook_indexes):
         if len(codebook_indexes.size()) == 2:
             codebook_indexes = codebook_indexes.unsqueeze(0)
@@ -76,15 +88,15 @@ if __name__ == '__main__':
     wav, sr = soundfile.read(test_audio)
     ap = CodecAudioPreprocessor(input_sr=sr)
 
-    indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
-
-    continuous_codes_from_indexes = ap.indexes_to_codec_frames(indexes)
+    one_hot_indexes = ap.audio_to_one_hot_indexes(wav, current_sampling_rate=sr)
 
     import matplotlib.pyplot as plt
 
-    plt.imshow(continuous_codes_from_indexes.cpu().numpy(), cmap='GnBu')
-    plt.show()
-
-    for num_codebooks in range(1, 10):
-        reconstructed_audio = ap.codes_to_audio(continuous_codes_from_indexes[:num_codebooks * 8]).cpu().numpy()
-        soundfile.write(file=f"{test_audio.rstrip('.wav')}_reconstructed_using_{num_codebooks}_codebooks.wav", data=reconstructed_audio, samplerate=44100)
+    for codebook_index, codebook in enumerate(one_hot_indexes):
+        fix, ax = plt.subplots(1, 1)
+        ax.imshow(codebook.cpu().transpose(0, 1).numpy(), cmap='binary')
+        ax.set_aspect("auto")
+        ax.yaxis.set_visible(False)
+        ax.xaxis.set_visible(False)
+        plt.subplots_adjust(left=0., bottom=0., right=1., top=1., wspace=0.0, hspace=0.0)
+        plt.show()

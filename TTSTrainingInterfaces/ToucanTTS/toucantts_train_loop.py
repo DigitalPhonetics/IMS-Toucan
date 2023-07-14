@@ -24,14 +24,29 @@ from run_weight_averaging import save_model_for_use
 
 def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    # Assuming you have a list of tensors with shape [9, l, 1024]
+    tensor_list = [datapoint[2] for datapoint in batch]
+
+    max_length = max([tensor.size(1) for tensor in tensor_list])
+
+    # Pad tensors in the list
+    padded_tensors = []
+    for tensor in tensor_list:
+        padding = torch.zeros(tensor.size(0), max_length - tensor.size(1), tensor.size(2))
+        padded_tensor = torch.cat([tensor, padding], dim=1)
+        padded_tensors.append(padded_tensor)
+
+    # Convert the list of padded tensors to a single tensor
+    padded_tensor = torch.stack(padded_tensors)
+
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+            padded_tensor,
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
-            None,
+            pad_sequence([datapoint[7] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[8] for datapoint in batch]))
 
 
@@ -113,7 +128,7 @@ def train_loop(net,
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
-            style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+            style_embedding = style_embedding_function(batch_of_spectrograms=batch[7].to(device),
                                                        batch_of_spectrogram_lengths=batch[3].to(device))
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
@@ -173,7 +188,7 @@ def train_loop(net,
         net.eval()
         style_embedding_function.eval()
         default_embedding = style_embedding_function(
-            batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+            batch_of_spectrograms=train_dataset[0][7].unsqueeze(0).to(device),
             batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
             "model"       : net.state_dict(),
@@ -207,8 +222,7 @@ def train_loop(net,
                     "generator_loss": round(sum(generator_losses_total) / len(generator_losses_total), 5),
                 }, step=step_counter)
 
-        try:
-            path_to_most_recent_plot_before, \
+        path_to_most_recent_plot_before, \
             path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
                                                                           device,
                                                                           save_dir=save_directory,
@@ -216,18 +230,16 @@ def train_loop(net,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
-            if use_wandb:
+        if use_wandb:
+            wandb.log({
+                "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
+            }, step=step_counter)
+            if step_counter > postnet_start_steps or fine_tune:
                 wandb.log({
-                    "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
+                    "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
                 }, step=step_counter)
-                if step_counter > postnet_start_steps or fine_tune:
-                    wandb.log({
-                        "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
-                    }, step=step_counter)
-        except IndexError:
-            print("generating progress plots failed.")
 
-        if step_counter > 3 * postnet_start_steps:
+        if step_counter > 3000000 * postnet_start_steps:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
             averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)

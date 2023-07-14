@@ -9,7 +9,7 @@ import torch
 from Utility.Scorer import TTSScorer
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
-from Utility.silence_removal import make_sielce_cleaned_versions
+from Utility.silence_removal import make_silence_cleaned_versions
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
@@ -24,4 +24,4 @@ train_sets = list()
 train_sets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "IntegrationTest"),
                                      lang="en"))
-make_sielce_cleaned_versions(train_sets=train_sets)
+make_silence_cleaned_versions(train_sets=train_sets)

@@ -94,13 +94,14 @@ def plot_progress_spec_toucantts(net,
 
 
 def plot_code_spec(pitch, sentence, ap, cap, durations, codes, save_path, tf, step):
-    mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes.squeeze().transpose(0, 1)))
+    codes_from_indexes = cap.indexes_to_codec_frames(codes.squeeze())
+    mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes_from_indexes))
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
 
     spec_plot_axis = ax[0]
     codec_plot_axis = ax[1]
 
-    codec_plot_axis.imshow(codes.transpose(0, 1).cpu().numpy(), origin="lower", cmap='GnBu')
+    codec_plot_axis.imshow(codes_from_indexes.cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.xaxis.set_visible(False)
     codec_plot_axis.yaxis.set_visible(False)
