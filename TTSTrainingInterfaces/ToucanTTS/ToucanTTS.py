@@ -6,9 +6,9 @@ from torch.nn import Tanh
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
+from Layers.VampNetLayers import WNConv1d
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TTSTrainingInterfaces.ToucanTTS.Glow import Glow
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
@@ -44,32 +44,32 @@ class ToucanTTS(torch.nn.Module):
                  input_feature_dimensions=62,
                  output_spectrogram_channels=72,
                  attention_dimension=128,
-                 attention_heads=16,
+                 attention_heads=8,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
+                 use_cnn_in_conformer=False,
 
                  # encoder
                  encoder_layers=6,
-                 encoder_units=1536,
+                 encoder_units=1280,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
                  conformer_encoder_kernel_size=7,
-                 transformer_enc_dropout_rate=0.2,
-                 transformer_enc_positional_dropout_rate=0.2,
-                 transformer_enc_attn_dropout_rate=0.2,
+                 transformer_enc_dropout_rate=0.1,
+                 transformer_enc_positional_dropout_rate=0.1,
+                 transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=8,
+                 decoder_layers=6,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=1,  # 31 for spectrograms
                  decoder_normalize_before=True,
-                 transformer_dec_dropout_rate=0.2,
-                 transformer_dec_positional_dropout_rate=0.2,
-                 transformer_dec_attn_dropout_rate=0.2,
+                 transformer_dec_dropout_rate=0.1,
+                 transformer_dec_positional_dropout_rate=0.1,
+                 transformer_dec_attn_dropout_rate=0.1,
 
                  # glow
                  glow_kernel_size=3,
@@ -84,12 +84,12 @@ class ToucanTTS(torch.nn.Module):
 
                  # duration predictor
                  duration_predictor_layers=5,
-                 duration_predictor_kernel_size=7,
+                 duration_predictor_kernel_size=5,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
-                 pitch_predictor_layers=7,
-                 pitch_predictor_kernel_size=7,
+                 pitch_predictor_layers=5,
+                 pitch_predictor_kernel_size=5,
                  pitch_predictor_dropout=0.5,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
@@ -247,25 +247,16 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.feat_outs = torch.nn.ModuleList()
-        for codebook_index in range(self.num_codebooks):
-            self.feat_outs.append(Linear(attention_dimension, self.codebook_size))
-
-        self.post_flow = Glow(
-            in_channels=output_spectrogram_channels,
-            hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=glow_kernel_size,  # post_glow_kernel_size
-            dilation_rate=glow_dilation_rate,
-            n_blocks=glow_n_blocks,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=glow_n_layers,  # post_glow_n_block_layers (original 3 in paper)
-            n_split=glow_n_split,
-            n_sqz=glow_n_sqz,
-            text_condition_channels=attention_dimension,
-            share_cond_layers=glow_share_cond_layers,  # post_share_cond_layers
-            share_wn_layers=glow_share_wn_layers,
-            sigmoid_scale=glow_sigmoid_scale,
-            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
+        self.classifier = WNConv1d(
+            attention_dimension,
+            self.codebook_size * self.num_codebooks,
+            kernel_size=1,
+            padding="same",
         )
+
+        # self.feat_outs = torch.nn.ModuleList()
+        # for codebook_index in range(self.num_codebooks):
+        #    self.feat_outs.append(Linear(attention_dimension, self.codebook_size))
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
@@ -302,21 +293,21 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         before_outs, \
-        after_outs, \
-        predicted_durations, \
-        predicted_pitch, \
-        predicted_energy, \
-        glow_loss = self._forward(text_tensors=text_tensors,
-                                  text_lengths=text_lengths,
-                                  gold_speech=gold_speech,
-                                  speech_lengths=speech_lengths,
-                                  gold_durations=gold_durations,
-                                  gold_pitch=gold_pitch,
-                                  gold_energy=gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+            after_outs, \
+            predicted_durations, \
+            predicted_pitch, \
+            predicted_energy, \
+            glow_loss = self._forward(text_tensors=text_tensors,
+                                      text_lengths=text_lengths,
+                                      gold_speech=gold_speech,
+                                      speech_lengths=speech_lengths,
+                                      gold_durations=gold_durations,
+                                      gold_pitch=gold_pitch,
+                                      gold_energy=gold_energy,
+                                      utterance_embedding=utterance_embedding,
+                                      is_inference=False,
+                                      lang_ids=lang_ids,
+                                      run_glow=run_glow)
 
         # calculate loss
         l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(before_outs=before_outs,
@@ -398,10 +389,12 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        indexes = list()
-        for projection in self.feat_outs:
-            indexes.append(projection(decoded_speech))
-        indexes = torch.stack(indexes).transpose(0, 1)
+        indexes = self.classifier(decoded_speech.transpose(1, 2)).view(self.num_codebooks, decoded_speech.size(0), decoded_speech.size(1), self.codebook_size)
+
+        # indexes = list()
+        # for projection in self.feat_outs:
+        #    indexes.append(projection(decoded_speech))
+        # indexes = torch.stack(indexes).transpose(0, 1)
 
         if is_inference:
             return indexes, \
@@ -447,7 +440,7 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         before_outs, \
-        after_outs, \
+            after_outs, \
             duration_predictions, \
             pitch_predictions, \
             energy_predictions = self._forward(xs,

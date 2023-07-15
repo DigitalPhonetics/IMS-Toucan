@@ -1,1 +1,2 @@
-This directory contains a collection of layers that are used both during training time and during inference time. Large portions of these layers are either directly taken from ESPnet or adaptations of such.
+This directory contains a collection of layers that are used both during training time and during inference time. Large
+portions of these layers are either directly taken from ESPnet or adaptations of such.
