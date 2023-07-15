@@ -2,11 +2,11 @@ import torch
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
+from torch.nn.utils import weight_norm
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
-from Layers.VampNetLayers import WNConv1d
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
@@ -247,12 +247,12 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.classifier = WNConv1d(
+        self.classifier = weight_norm(torch.nn.Conv1d(
             attention_dimension,
             self.codebook_size * self.num_codebooks,
             kernel_size=1,
             padding="same",
-        )
+        ))
 
         # self.feat_outs = torch.nn.ModuleList()
         # for codebook_index in range(self.num_codebooks):
