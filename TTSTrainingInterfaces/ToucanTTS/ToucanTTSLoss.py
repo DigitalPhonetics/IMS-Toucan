@@ -13,7 +13,7 @@ class ToucanTTSLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.l1_criterion = torch.nn.CrossEntropyLoss(reduction="none")
+        self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none")
         self.l2_criterion = torch.nn.MSELoss(reduction="none")
         self.duration_criterion = DurationPredictorLoss(reduction="none")
 
@@ -38,8 +38,9 @@ class ToucanTTSLoss(torch.nn.Module):
 
         # calculate loss
         ce = list()
-        for one_hot_pred, one_hot_target in zip(before_outs, gold_spectrograms):
-            ce.append(self.l1_criterion(one_hot_pred, one_hot_target))
+        for one_hot_pred, one_hot_target in zip(before_outs.transpose(2, 3), gold_spectrograms.transpose(0, 1).transpose(2, 3)):
+            # we iterate over codebooks
+            ce.append(self.classification_loss(one_hot_pred, one_hot_target))
         distance_loss = sum(ce)
 
         duration_loss = self.duration_criterion(predicted_durations, gold_durations)
@@ -48,9 +49,9 @@ class ToucanTTSLoss(torch.nn.Module):
 
         # make weighted mask and apply it
         out_masks = make_non_pad_mask(spectrogram_lengths).unsqueeze(-1).to(gold_spectrograms.device)
-        out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_spectrograms.size(1) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
+        out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_spectrograms.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
         out_weights = out_masks.float() / out_masks.sum(dim=1, keepdim=True).float()
-        out_weights /= gold_spectrograms.size(0) * gold_spectrograms.size(2)
+        out_weights /= gold_spectrograms.size(0) * gold_spectrograms.size(-1)
         duration_masks = make_non_pad_mask(text_lengths).to(gold_spectrograms.device)
         duration_weights = (duration_masks.float() / duration_masks.sum(dim=1, keepdim=True).float())
         variance_masks = duration_masks.unsqueeze(-1)
@@ -59,7 +60,7 @@ class ToucanTTSLoss(torch.nn.Module):
         energy_loss = (energy_loss.mul(variance_weights).masked_select(variance_masks).sum())
 
         # apply weight
-        distance_loss = distance_loss.mul(out_weights).masked_select(out_masks).sum()
+        distance_loss = distance_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
         duration_loss = (duration_loss.mul(duration_weights).masked_select(duration_masks).sum())
         pitch_loss = pitch_loss.mul(variance_weights).masked_select(variance_masks).sum()
         energy_loss = (energy_loss.mul(variance_weights).masked_select(variance_masks).sum())
