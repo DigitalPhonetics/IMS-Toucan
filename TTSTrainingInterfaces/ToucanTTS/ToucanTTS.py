@@ -247,12 +247,17 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.classifier = weight_norm(torch.nn.Conv1d(
-            attention_dimension,
-            self.codebook_size * self.num_codebooks,
-            kernel_size=1,
-            padding="same",
-        ))
+        # self.classifier = weight_norm(
+        #    torch.nn.Conv1d(
+        #    attention_dimension,
+        #    self.codebook_size * self.num_codebooks,
+        #    kernel_size=1,
+        #    padding="same",
+        # ))
+
+        self.classifier = weight_norm(
+            torch.nn.Conv2d(attention_dimension, self.num_codebooks * self.codebook_size, kernel_size=1)
+        )
 
         # self.feat_outs = torch.nn.ModuleList()
         # for codebook_index in range(self.num_codebooks):
@@ -389,8 +394,9 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        indexes = self.classifier(decoded_speech.transpose(1, 2)).view(self.num_codebooks, decoded_speech.size(0), decoded_speech.size(1), self.codebook_size)
-
+        indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
+        indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
+        indexes = indexes.transpose(0, 1)
         # indexes = list()
         # for projection in self.feat_outs:
         #    indexes.append(projection(decoded_speech))
@@ -398,9 +404,9 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             return indexes, \
-                indexes, \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze(), \
+                   indexes, \
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze(), \
                 energy_predictions.squeeze()
         else:
             return indexes, \
@@ -443,17 +449,18 @@ class ToucanTTS(torch.nn.Module):
             after_outs, \
             duration_predictions, \
             pitch_predictions, \
-            energy_predictions = self._forward(xs,
-                                               ilens,
-                                               ys,
-                                               is_inference=True,
-                                               utterance_embedding=utterance_embeddings,
-                                               lang_ids=lang_id,
-                                               run_glow=run_postflow)  # (1, L, odim)
+        energy_predictions = self._forward(xs,
+                                           ilens,
+                                           ys,
+                                           is_inference=True,
+                                           utterance_embedding=utterance_embeddings,
+                                           lang_ids=lang_id,
+                                           run_glow=run_postflow)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in before_outs:
-            outs_indexed.append(torch.argmax(out.squeeze(), dim=-1))
+            outs_indexed.append(torch.argmax(out.squeeze(), dim=0))
+
         before_outs = torch.stack(outs_indexed)
         after_outs = before_outs
         if return_duration_pitch_energy:
@@ -475,7 +482,7 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
-    dummy_speech_batch = torch.randn([3, 9, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_batch = torch.randn([9, 3, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
     dummy_speech_lens = torch.LongTensor([10, 30, 20])
 
     dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])
@@ -504,7 +511,7 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
-    dummy_speech_batch = torch.randn([3, 9, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_batch = torch.randn([9, 3, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
     dummy_speech_lens = torch.LongTensor([10, 30, 20])
 
     dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])
@@ -541,7 +548,7 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[2, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3])
 
-    dummy_speech_batch = torch.randn([2, 9, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_batch = torch.randn([9, 2, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
     dummy_speech_lens = torch.LongTensor([10, 30])
 
     dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5]])
