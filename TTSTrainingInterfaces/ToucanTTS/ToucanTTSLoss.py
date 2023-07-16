@@ -41,7 +41,7 @@ class ToucanTTSLoss(torch.nn.Module):
         for one_hot_pred, one_hot_target in zip(before_outs.transpose(2, 3), gold_spectrograms.transpose(0, 1).transpose(2, 3)):
             # we iterate over codebooks
             ce.append(self.classification_loss(one_hot_pred, one_hot_target))
-        distance_loss = sum(ce)
+        distance_loss = torch.stack(ce).sum(0)
 
         duration_loss = self.duration_criterion(predicted_durations, gold_durations)
         pitch_loss = self.l2_criterion(predicted_pitch, gold_pitch)
