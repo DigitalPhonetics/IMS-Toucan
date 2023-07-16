@@ -3,13 +3,13 @@ import torch
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
+from torch.nn.utils import weight_norm
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TTSTrainingInterfaces.ToucanTTS.Glow import Glow
 from Utility.utils import make_non_pad_mask
 
 
@@ -23,7 +23,6 @@ class ToucanTTS(torch.nn.Module):
         config = dotwiz.DotWiz(config)
 
         input_feature_dimensions = config.input_feature_dimensions
-        output_spectrogram_channels = config.output_spectrogram_channels
         attention_dimension = config.attention_dimension
         attention_heads = config.attention_heads
         positionwise_conv_kernel_size = config.positionwise_conv_kernel_size
@@ -46,15 +45,6 @@ class ToucanTTS(torch.nn.Module):
         transformer_dec_dropout_rate = config.transformer_dec_dropout_rate
         transformer_dec_positional_dropout_rate = config.transformer_dec_positional_dropout_rate
         transformer_dec_attn_dropout_rate = config.transformer_dec_attn_dropout_rate
-        glow_kernel_size = config.glow_kernel_size
-        glow_dilation_rate = config.glow_dilation_rate
-        glow_n_blocks = config.glow_n_blocks
-        glow_n_layers = config.glow_n_layers
-        glow_n_split = config.glow_n_split
-        glow_n_sqz = config.glow_n_sqz
-        glow_share_cond_layers = config.glow_share_cond_layers
-        glow_share_wn_layers = config.glow_share_wn_layers
-        glow_sigmoid_scale = config.glow_sigmoid_scale
         duration_predictor_layers = config.duration_predictor_layers
         duration_predictor_kernel_size = config.duration_predictor_kernel_size
         duration_predictor_dropout_rate = config.duration_predictor_dropout_rate
@@ -71,9 +61,12 @@ class ToucanTTS(torch.nn.Module):
         utt_embed_dim = config.utt_embed_dim
         lang_embs = config.lang_embs
         use_conditional_layernorm_embedding_integration = config.use_conditional_layernorm_embedding_integration
+        num_codebooks = config.num_codebooks
+        codebook_size = config.codebook_size
 
+        self.num_codebooks = num_codebooks
+        self.codebook_size = codebook_size
         self.input_feature_dimensions = input_feature_dimensions
-        self.output_spectrogram_channels = output_spectrogram_channels
         self.attention_dimension = attention_dimension
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
@@ -158,22 +151,8 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.feat_out = Linear(attention_dimension, output_spectrogram_channels)
-
-        self.post_flow = Glow(
-            in_channels=output_spectrogram_channels,
-            hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=glow_kernel_size,  # post_glow_kernel_size
-            dilation_rate=glow_dilation_rate,
-            n_blocks=glow_n_blocks,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=glow_n_layers,  # post_glow_n_block_layers (original 3 in paper)
-            n_split=glow_n_split,
-            n_sqz=glow_n_sqz,
-            text_condition_channels=attention_dimension,
-            share_cond_layers=glow_share_cond_layers,  # post_share_cond_layers
-            share_wn_layers=glow_share_wn_layers,
-            sigmoid_scale=glow_sigmoid_scale,
-            condition_integration_projection=torch.nn.Conv1d(output_spectrogram_channels + attention_dimension, attention_dimension, 5, padding=2)
+        self.classifier = weight_norm(
+            torch.nn.Conv2d(attention_dimension, self.num_codebooks * self.codebook_size, kernel_size=1)
         )
 
         self.load_state_dict(weights)
@@ -235,16 +214,12 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
-        decoded_spectrogram = self.feat_out(decoded_speech).view(decoded_speech.size(0), -1, self.output_spectrogram_channels)
 
-        # refine spectrogram
-        refined_spectrogram = self.post_flow(tgt_mels=None,
-                                             infer=True,
-                                             mel_out=decoded_spectrogram,
-                                             encoded_texts=upsampled_enriched_encoded_texts,
-                                             tgt_nonpadding=None).squeeze()
+        indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
+        indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
+        indexes = indexes.transpose(0, 1)
 
-        return decoded_spectrogram.squeeze(), refined_spectrogram.squeeze(), predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
+        return indexes, indexes, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
     @torch.inference_mode()
     def forward(self,
@@ -311,6 +286,13 @@ class ToucanTTS(torch.nn.Module):
                                            pitch_variance_scale=pitch_variance_scale,
                                            energy_variance_scale=energy_variance_scale,
                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
+
+        outs_indexed = list()
+        for out in before_outs:
+            outs_indexed.append(torch.argmax(out.squeeze(), dim=0))
+
+        after_outs = torch.stack(outs_indexed)
+
         if return_duration_pitch_energy:
             return after_outs, predicted_durations, pitch_predictions, energy_predictions
         return after_outs
@@ -318,8 +300,6 @@ class ToucanTTS(torch.nn.Module):
     def store_inverse_all(self):
         def remove_weight_norm(m):
             try:
-                if hasattr(m, 'store_inverse'):
-                    m.store_inverse()
                 torch.nn.utils.remove_weight_norm(m)
             except ValueError:  # this module didn't have weight norm
                 return

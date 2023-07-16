@@ -137,18 +137,19 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
-            codec_frames, durations, pitch, energy = self.phone2codec(phones,
-                                                                      return_duration_pitch_energy=True,
-                                                                      utterance_embedding=self.default_utterance_embedding,
-                                                                      durations=durations,
-                                                                      pitch=pitch,
-                                                                      energy=energy,
-                                                                      lang_id=self.lang_id,
-                                                                      duration_scaling_factor=duration_scaling_factor,
-                                                                      pitch_variance_scale=pitch_variance_scale,
-                                                                      energy_variance_scale=energy_variance_scale,
-                                                                      pause_duration_scaling_factor=pause_duration_scaling_factor)
-            codec_frames = codec_frames.transpose(0, 1)
+            codec_indexes, durations, pitch, energy = self.phone2codec(phones,
+                                                                       return_duration_pitch_energy=True,
+                                                                       utterance_embedding=self.default_utterance_embedding,
+                                                                       durations=durations,
+                                                                       pitch=pitch,
+                                                                       energy=energy,
+                                                                       lang_id=self.lang_id,
+                                                                       duration_scaling_factor=duration_scaling_factor,
+                                                                       pitch_variance_scale=pitch_variance_scale,
+                                                                       energy_variance_scale=energy_variance_scale,
+                                                                       pause_duration_scaling_factor=pause_duration_scaling_factor)
+
+            codec_frames = self.codec_wrapper.indexes_to_codec_frames(codec_indexes)
             wave = self.codec_wrapper.codes_to_audio(codec_frames).cpu().numpy()
 
         try:

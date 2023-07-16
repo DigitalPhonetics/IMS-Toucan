@@ -62,6 +62,10 @@ class CodecAudioPreprocessor:
         return self.model.quantizer.from_codes(codebook_indexes)[1].squeeze()
 
     @torch.inference_mode()
+    def indexes_to_audio(self, codebook_indexes):
+        return self.codes_to_audio(self.indexes_to_codec_frames(codebook_indexes))
+
+    @torch.inference_mode()
     def indexes_to_continuous_codec_frames(self, codebook_indexes):
         if len(codebook_indexes.size()) == 2:
             codebook_indexes = codebook_indexes.unsqueeze(0)
