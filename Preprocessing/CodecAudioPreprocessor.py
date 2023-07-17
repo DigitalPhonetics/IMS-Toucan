@@ -32,7 +32,7 @@ class CodecAudioPreprocessor:
         if current_sampling_rate != self.output_sr:
             audio = self.resample_audio(audio, current_sampling_rate)
         elif type(audio) != torch.tensor:
-            audio = torch.Tensor(audio)
+            audio = torch.tensor(audio,device=self.device, dtype=torch.float32)
         return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["z"].squeeze()
 
     @torch.inference_mode()
@@ -40,7 +40,7 @@ class CodecAudioPreprocessor:
         if current_sampling_rate != self.output_sr:
             audio = self.resample_audio(audio, current_sampling_rate)
         elif type(audio) != torch.tensor:
-            audio = torch.Tensor(audio,device=self.device, dtype=torch.float32)
+            audio = torch.tensor(audio,device=self.device, dtype=torch.float32)
         return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze()
 
     @torch.inference_mode()
@@ -48,7 +48,7 @@ class CodecAudioPreprocessor:
         if current_sampling_rate != self.output_sr:
             audio = self.resample_audio(audio, current_sampling_rate)
         elif type(audio) != torch.tensor:
-            audio = torch.Tensor(audio,device=self.device, dtype=torch.float32)
+            audio = torch.tensor(audio,device=self.device, dtype=torch.float32)
         return self.indexes_to_one_hot(self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze())
 
     @torch.inference_mode()
