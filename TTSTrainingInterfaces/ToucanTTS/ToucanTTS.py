@@ -48,7 +48,7 @@ class ToucanTTS(torch.nn.Module):
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
+                 use_cnn_in_conformer=False,
 
                  # encoder
                  encoder_layers=6,

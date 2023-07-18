@@ -165,17 +165,11 @@ def train_loop(net,
                 train_loss = train_loss + pitch_loss
             if not torch.isnan(energy_loss):
                 train_loss = train_loss + energy_loss
-            if glow_loss is not None:
-                if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                    train_loss = train_loss + glow_loss
 
             l1_losses_total.append(l1_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
-            if step_counter > postnet_start_steps + 500 or fine_tune:
-                # start logging late so the magnitude difference is smaller
-                glow_losses_total.append(glow_loss.item())
 
             optimizer.zero_grad()
             train_loss.backward()
@@ -223,23 +217,19 @@ def train_loop(net,
                 }, step=step_counter)
 
         path_to_most_recent_plot_before, \
-            path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                          device,
-                                                                          save_dir=save_directory,
-                                                                          step=step_counter,
-                                                                          lang=lang,
-                                                                          default_emb=default_embedding,
-                                                                          run_postflow=step_counter - 5 > postnet_start_steps)
+        _ = plot_progress_spec_toucantts(net,
+                                         device,
+                                         save_dir=save_directory,
+                                         step=step_counter,
+                                         lang=lang,
+                                         default_emb=default_embedding,
+                                         run_postflow=step_counter - 5 > postnet_start_steps)
         if use_wandb:
             wandb.log({
-                "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
+                "progress_plot": wandb.Image(path_to_most_recent_plot_before)
             }, step=step_counter)
-            if step_counter > postnet_start_steps or fine_tune:
-                wandb.log({
-                    "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
-                }, step=step_counter)
 
-        if step_counter > 3000000 * postnet_start_steps:
+        if step_counter > steps * 4 / 5:
             # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
             averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)

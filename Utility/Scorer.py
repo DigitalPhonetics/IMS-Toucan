@@ -63,14 +63,14 @@ class TTSScorer:
         _ = dataset[0]
         for index in tqdm(range(len(dataset.datapoints))):
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
-            spec = dataset.ap.indexes_to_codec_frames(spec.int().transpose(0, 1)).transpose(0, 1).detach()
-
-            style_embedding = self.style_embedding_function(batch_of_spectrograms=spec.unsqueeze(0).to(self.device),
+            codec_spec = dataset.ap.indexes_to_one_hot(spec.long().transpose(0, 1)).detach()
+            embed_spec = dataset.ap.indexes_to_codec_frames(spec.int().transpose(0, 1)).transpose(0, 1).detach()
+            style_embedding = self.style_embedding_function(batch_of_spectrograms=embed_spec.unsqueeze(0).to(self.device),
                                                             batch_of_spectrogram_lengths=spec_len.unsqueeze(0).to(self.device))
             try:
                 l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = sum(self.tts(text_tensors=text.unsqueeze(0).to(self.device),
                                                                                           text_lengths=text_len.to(self.device),
-                                                                                          gold_speech=spec.unsqueeze(0).to(self.device),
+                                                                                          gold_speech=codec_spec.unsqueeze(0).float().to(self.device),
                                                                                           speech_lengths=spec_len.to(self.device),
                                                                                           gold_durations=duration.unsqueeze(0).to(self.device),
                                                                                           gold_pitch=pitch.unsqueeze(0).to(self.device),
