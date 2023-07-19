@@ -174,7 +174,7 @@ def train_loop(net,
             style_embedding_function.eval()
             default_embedding = style_embedding_function(
                 batch_of_feature_sequences=datasets[0][0][2].unsqueeze(0).to(device),
-                batch_of_feature_sequences_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+                batch_of_feature_sequence_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print("Reconstruction Loss:    {}".format(round(sum(classification_losses_total) / len(classification_losses_total), 3)))
             print("Steps:                  {}\n".format(step_counter))
             torch.save({

@@ -180,7 +180,7 @@ def train_loop(net,
         style_embedding_function.eval()
         default_embedding = style_embedding_function(
             batch_of_feature_sequences=train_dataset[0][7].unsqueeze(0).to(device),
-            batch_of_feature_sequences_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+            batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
