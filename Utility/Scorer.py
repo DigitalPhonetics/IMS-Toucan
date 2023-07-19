@@ -65,8 +65,8 @@ class TTSScorer:
             text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
             codec_spec = dataset.ap.indexes_to_one_hot(spec.long().transpose(0, 1)).detach()
             embed_spec = dataset.ap.indexes_to_codec_frames(spec.int().transpose(0, 1)).transpose(0, 1).detach()
-            style_embedding = self.style_embedding_function(batch_of_features=embed_spec.unsqueeze(0).to(self.device),
-                                                            batch_of_feature_lengths=spec_len.unsqueeze(0).to(self.device))
+            style_embedding = self.style_embedding_function(batch_of_feature_sequences=embed_spec.unsqueeze(0).to(self.device),
+                                                            batch_of_feature_sequence_lengths=spec_len.unsqueeze(0).to(self.device))
             try:
                 l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = sum(self.tts(text_tensors=text.unsqueeze(0).to(self.device),
                                                                                           text_lengths=text_len.to(self.device),

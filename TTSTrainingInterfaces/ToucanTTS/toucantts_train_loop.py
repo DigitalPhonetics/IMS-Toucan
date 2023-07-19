@@ -126,8 +126,8 @@ def train_loop(net,
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
-            style_embedding = style_embedding_function(batch_of_features=batch[7].to(device),
-                                                       batch_of_feature_lengths=batch[3].to(device))
+            style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
+                                                       batch_of_feature_sequence_lengths=batch[3].to(device))
             classification_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
@@ -179,8 +179,8 @@ def train_loop(net,
         net.eval()
         style_embedding_function.eval()
         default_embedding = style_embedding_function(
-            batch_of_features=train_dataset[0][7].unsqueeze(0).to(device),
-            batch_of_features_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+            batch_of_feature_sequences=train_dataset[0][7].unsqueeze(0).to(device),
+            batch_of_feature_sequences_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),

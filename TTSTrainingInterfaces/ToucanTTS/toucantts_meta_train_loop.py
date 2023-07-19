@@ -129,8 +129,8 @@ def train_loop(net,
         # we sum the loss for each task, as we would do for the
         # second order regular MAML, but we do it only over one
         # step (i.e. iterations of inner loop = 1)
-        style_embedding = style_embedding_function(batch_of_features=batch[2].to(device),
-                                                   batch_of_feature_lengths=batch[3].to(device))
+        style_embedding = style_embedding_function(batch_of_feature_sequences=batch[2].to(device),
+                                                   batch_of_feature_sequence_lengths=batch[3].to(device))
         classification_loss, duration_loss, pitch_loss, energy_loss = net(
             text_tensors=text_tensors,
             text_lengths=text_lengths,
@@ -173,8 +173,8 @@ def train_loop(net,
             net.eval()
             style_embedding_function.eval()
             default_embedding = style_embedding_function(
-                batch_of_features=datasets[0][0][2].unsqueeze(0).to(device),
-                batch_of_features_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+                batch_of_feature_sequences=datasets[0][0][2].unsqueeze(0).to(device),
+                batch_of_feature_sequences_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print("Reconstruction Loss:    {}".format(round(sum(classification_losses_total) / len(classification_losses_total), 3)))
             print("Steps:                  {}\n".format(step_counter))
             torch.save({
