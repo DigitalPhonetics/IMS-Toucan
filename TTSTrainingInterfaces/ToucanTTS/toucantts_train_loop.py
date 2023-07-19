@@ -138,7 +138,7 @@ def train_loop(net,
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
                 lang_ids=batch[8].to(device),
-                return_mels=True)
+                return_feats=True)
 
             if use_discriminator:
                 discriminator_loss, generator_loss = calc_gan_outputs(real_features=batch[2].to(device),

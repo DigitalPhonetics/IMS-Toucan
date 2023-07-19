@@ -198,13 +198,13 @@ class StochasticToucanTTS(torch.nn.Module):
                 gold_pitch,
                 gold_energy,
                 utterance_embedding,
-                return_mels=False,
+                return_feats=False,
                 lang_ids=None,
                 run_glow=True
                 ):
         """
         Args:
-            return_mels (Boolean): whether to return the predicted spectrogram
+            return_feats (Boolean): whether to return the predicted spectrogram
             text_tensors (LongTensor): Batch of padded text vectors (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input (B,).
             gold_speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -240,7 +240,7 @@ class StochasticToucanTTS(torch.nn.Module):
                                  spectrogram_lengths=speech_lengths,
                                  text_lengths=text_lengths)
 
-        if return_mels:
+        if return_feats:
             if after_outs is None:
                 after_outs = before_outs
             return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, after_outs
