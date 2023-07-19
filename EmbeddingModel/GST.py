@@ -13,7 +13,7 @@ class GSTStyleEncoder(torch.nn.Module):
     .. _`Style Tokens: Unsupervised Style Modeling, Control and Transfer in End-to-End
         Speech Synthesis`: https://arxiv.org/abs/1803.09017
     Args:
-        idim (int, optional): Dimension of the input mel-spectrogram.
+        idim (int, optional): Dimension of the input features.
         gst_tokens (int, optional): The number of GST embeddings.
         gst_token_dim (int, optional): Dimension of each GST embedding.
         gst_heads (int, optional): The number of heads in GST multihead attention.
@@ -86,7 +86,7 @@ class ReferenceEncoder(torch.nn.Module):
     .. _`Style Tokens: Unsupervised Style Modeling, Control and Transfer in End-to-End
         Speech Synthesis`: https://arxiv.org/abs/1803.09017
     Args:
-        idim (int, optional): Dimension of the input mel-spectrogram.
+        idim (int, optional): Dimension of the input features.
         conv_layers (int, optional): The number of conv layers in the reference encoder.
         conv_chans_list: (Sequence[int], optional):
             List of the number of channels of conv layers in the reference encoder.

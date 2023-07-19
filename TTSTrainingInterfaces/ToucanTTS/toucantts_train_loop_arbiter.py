@@ -20,11 +20,10 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
                warmup_steps=8000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,  # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
-               batch_size=24,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
+               batch_size=16,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=80000,  # how many updates to run until training is completed
-               postnet_start_steps=10,  # how many warmup steps before the postnet starts training
                use_discriminator=False,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
                train_embed=False  # whether to train the embedding function. Only relevant for single-language case
                ):
@@ -46,8 +45,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                             resume=resume,
                             fine_tune=fine_tune,
                             warmup_steps=warmup_steps,
-                            use_wandb=use_wandb,
-                            postnet_start_steps=postnet_start_steps)
+                            use_wandb=use_wandb)
     else:
         mono_language_loop(net=net,
                            train_dataset=datasets[0],
@@ -63,6 +61,5 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            resume=resume,
                            steps=steps,
                            use_wandb=use_wandb,
-                           postnet_start_steps=postnet_start_steps,
                            use_discriminator=use_discriminator,
                            train_embed=train_embed)

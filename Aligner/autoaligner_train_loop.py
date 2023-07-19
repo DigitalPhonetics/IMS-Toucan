@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
-from Aligner.CodecReconstructor import SpectrogramReconstructor
+from Aligner.CodecReconstructor import Reconstructor
 
 
 def collate_and_pad(batch):
@@ -42,7 +42,7 @@ def train_loop(train_dataset,
         save_directory: Where to save the checkpoints
         batch_size: How many elements should be loaded at once
         debug_img_path: where to put images of the training progress if desired
-        use_reconstruction: whether to use the auxiliary spectrogram reconstruction procedure/loss, which can make the alignment sharper
+        use_reconstruction: whether to use the auxiliary reconstruction procedure/loss, which can make the alignment sharper
     """
     os.makedirs(save_directory, exist_ok=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
@@ -61,7 +61,7 @@ def train_loop(train_dataset,
     asr_model = Aligner().to(device)
     optim_asr = RAdam(asr_model.parameters(), lr=0.0001)
 
-    tiny_tts = SpectrogramReconstructor().to(device)
+    tiny_tts = Reconstructor().to(device)
     optim_tts = RAdam(tiny_tts.parameters(), lr=0.0001)
 
     step_counter = 0

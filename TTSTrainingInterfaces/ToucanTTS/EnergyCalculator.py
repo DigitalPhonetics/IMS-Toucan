@@ -52,7 +52,7 @@ class EnergyCalculator(torch.nn.Module):
         # sum over frequency (B, N, F) -> (B, N)
         energy = torch.sqrt(torch.clamp(input_power.sum(dim=2), min=1.0e-10))
 
-        # (Optional): Adjust length to match with the mel-spectrogram
+        # (Optional): Adjust length to match with the features
         if feats_lengths is not None:
             energy = [self._adjust_num_frames(e[:el].view(-1), fl) for e, el, fl in zip(energy, energy_lengths, feats_lengths)]
             energy_lengths = feats_lengths

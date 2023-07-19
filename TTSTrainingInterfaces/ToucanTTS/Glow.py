@@ -219,7 +219,7 @@ class InvConv(nn.Module):
 class CouplingBlock(nn.Module):
 
     def __init__(self, in_channels, hidden_channels, kernel_size, dilation_rate, n_layers,
-                 gin_channels=0, p_dropout=0., sigmoid_scale=False, wn=None, use_weightnorm=False):
+                 gin_channels=0, p_dropout=0., sigmoid_scale=False, wn=None, use_weightnorm=True):
         super().__init__()
         self.in_channels = in_channels
         self.hidden_channels = hidden_channels

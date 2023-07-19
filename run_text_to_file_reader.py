@@ -5,8 +5,8 @@ import torch
 from TTSInferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
-def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None, faster_vocoder=False):
-    tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=faster_vocoder)
+def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None):
+    tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
@@ -16,7 +16,7 @@ def read_texts(model_id, sentence, filename, device="cpu", language="en", speake
     del tts
 
 
-def the_raven(version, model_id="Meta", exec_device="cpu", speed_over_quality=True, speaker_reference=None):
+def the_raven(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
@@ -37,8 +37,7 @@ def the_raven(version, model_id="Meta", exec_device="cpu", speed_over_quality=Tr
                filename=f"audios/the_raven_{version}.wav",
                device=exec_device,
                language="en",
-               speaker_reference=speaker_reference,
-               faster_vocoder=speed_over_quality)
+               speaker_reference=speaker_reference)
 
 
 if __name__ == '__main__':
@@ -47,5 +46,4 @@ if __name__ == '__main__':
 
     the_raven(version="MetaBaseline",
               model_id="Meta",
-              exec_device=exec_device,
-              speed_over_quality=exec_device != "cuda")
+              exec_device=exec_device)

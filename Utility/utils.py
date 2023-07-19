@@ -67,8 +67,7 @@ def plot_progress_spec_toucantts(net,
                                  save_dir,
                                  step,
                                  lang,
-                                 default_emb,
-                                 run_postflow=True):
+                                 default_emb):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # just used for inversion
     ap = AudioPreprocessor(input_sr=44100, output_sr=16000)
@@ -76,21 +75,13 @@ def plot_progress_spec_toucantts(net,
     if sentence is None:
         return None
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    if run_postflow:
-        codes_before, codes_after, durations, pitch, energy = net.inference(text=phoneme_vector,
-                                                                            return_duration_pitch_energy=True,
-                                                                            utterance_embedding=default_emb,
-                                                                            lang_id=get_language_id(lang).to(device),
-                                                                            run_postflow=run_postflow)
-    else:
-        codes_before, codes_after, durations, pitch, energy = net.inference(text=phoneme_vector,
-                                                                            return_duration_pitch_energy=True,
-                                                                            utterance_embedding=default_emb,
-                                                                            lang_id=get_language_id(lang).to(device))
+    codes, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                    return_duration_pitch_energy=True,
+                                                    utterance_embedding=default_emb,
+                                                    lang_id=get_language_id(lang).to(device))
 
-    plot_code_spec(pitch, sentence, ap, cap, durations, codes_before, os.path.join(save_dir, "spec_before"), tf, step)
-    plot_code_spec(pitch, sentence, ap, cap, durations, codes_after, os.path.join(save_dir, "spec_after"), tf, step)
-    return os.path.join(os.path.join(save_dir, "spec_before"), f"{step}.png"), os.path.join(os.path.join(save_dir, "spec_after"), f"{step}.png")
+    plot_code_spec(pitch, sentence, ap, cap, durations, codes, os.path.join(save_dir, "visualization"), tf, step)
+    return os.path.join(os.path.join(save_dir, "visualization"), f"{step}.png")
 
 
 def plot_code_spec(pitch, sentence, ap, cap, durations, codes, save_path, tf, step):

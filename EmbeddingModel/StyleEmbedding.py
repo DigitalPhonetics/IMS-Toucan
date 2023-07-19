@@ -24,14 +24,14 @@ class StyleEmbedding(torch.nn.Module):
             self.style_encoder = GSTStyleEncoder(gst_token_dim=embedding_dim)
 
     def forward(self,
-                batch_of_spectrograms,
-                batch_of_spectrogram_lengths):
+                batch_of_feature_sequences,
+                batch_of_feature_sequence_lengths):
         """
         Args:
-            batch_of_spectrograms: b is the batch axis, 128 features per timestep
+            batch_of_feature_sequences: b is the batch axis, 128 features per timestep
                                    and l time-steps, which may include padding
                                    for most elements in the batch (b, l, 128)
-            batch_of_spectrogram_lengths: indicate for every element in the batch,
+            batch_of_feature_sequence_lengths: indicate for every element in the batch,
                                           what the true length is, since they are
                                           all padded to the length of the longest
                                           element in the batch (b, 1)
@@ -41,8 +41,8 @@ class StyleEmbedding(torch.nn.Module):
 
         minimum_sequence_length = 512
         specs = list()
-        for index, spec_length in enumerate(batch_of_spectrogram_lengths):
-            spec = batch_of_spectrograms[index][:spec_length]
+        for index, spec_length in enumerate(batch_of_feature_sequence_lengths):
+            spec = batch_of_feature_sequences[index][:spec_length]
             # double the length at least once, then check
             spec = spec.repeat((2, 1))
             current_spec_length = len(spec)

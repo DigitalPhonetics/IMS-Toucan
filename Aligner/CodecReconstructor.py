@@ -6,10 +6,10 @@ from torch.nn.utils.rnn import pad_packed_sequence
 from Utility.utils import make_non_pad_mask
 
 
-class SpectrogramReconstructor(torch.nn.Module):
+class Reconstructor(torch.nn.Module):
 
     def __init__(self,
-                 n_mels=72,
+                 n_features=72,
                  num_symbols=145,
                  speaker_embedding_dim=192,
                  lstm_dim=512):
@@ -17,7 +17,7 @@ class SpectrogramReconstructor(torch.nn.Module):
         self.in_proj = torch.nn.Linear(num_symbols + speaker_embedding_dim, lstm_dim)
         self.rnn1 = torch.nn.LSTM(lstm_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.rnn2 = torch.nn.LSTM(2 * lstm_dim, lstm_dim, batch_first=True, bidirectional=True)
-        self.out_proj = torch.nn.Linear(2 * lstm_dim, n_mels)
+        self.out_proj = torch.nn.Linear(2 * lstm_dim, n_features)
         self.l1_criterion = torch.nn.L1Loss(reduction="none")
         self.l2_criterion = torch.nn.MSELoss(reduction="none")
 
@@ -37,4 +37,4 @@ class SpectrogramReconstructor(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    print(sum(p.numel() for p in SpectrogramReconstructor().parameters() if p.requires_grad))
+    print(sum(p.numel() for p in Reconstructor().parameters() if p.requires_grad))

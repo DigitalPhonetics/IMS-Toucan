@@ -64,7 +64,6 @@ def train_loop(net,
                resume,
                steps,
                use_wandb,
-               postnet_start_steps,
                use_discriminator,
                train_embed
                ):
@@ -95,9 +94,9 @@ def train_loop(net,
                               persistent_workers=True)
     step_counter = 0
     if use_discriminator:
-        optimizer = torch.optim.Adam(list(net.parameters()) + list(discriminator.parameters()), lr=lr)
+        optimizer = torch.optim.AdamW(list(net.parameters()) + list(discriminator.parameters()), lr=lr)
     else:
-        optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
     if path_to_embed_model is None or train_embed:
         embedding_regularization_loss = RedundancyReduction(vector_dimensions=style_embedding_function.embedding_dim).to(device)
         optimizer.add_param_group({"params": style_embedding_function.parameters()})
@@ -118,8 +117,7 @@ def train_loop(net,
     while True:
         net.train()
         epoch += 1
-        l1_losses_total = list()
-        glow_losses_total = list()
+        classification_losses_total = list()
         duration_losses_total = list()
         pitch_losses_total = list()
         energy_losses_total = list()
@@ -130,7 +128,7 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_spectrograms=batch[7].to(device),
                                                        batch_of_spectrogram_lengths=batch[3].to(device))
-            l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
+            classification_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
                 gold_speech=batch[2].to(device),
@@ -140,13 +138,12 @@ def train_loop(net,
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
                 lang_ids=batch[8].to(device),
-                return_mels=True,
-                run_glow=step_counter > postnet_start_steps or fine_tune)
+                return_mels=True)
 
             if use_discriminator:
-                discriminator_loss, generator_loss = calc_gan_outputs(real_spectrograms=batch[2].to(device),
-                                                                      fake_spectrograms=generated_spectrograms,
-                                                                      spectrogram_lengths=batch[3].to(device),
+                discriminator_loss, generator_loss = calc_gan_outputs(real_features=batch[2].to(device),
+                                                                      fake_features=generated_features,
+                                                                      feature_lengths=batch[3].to(device),
                                                                       discriminator=discriminator)
                 if not torch.isnan(discriminator_loss):
                     train_loss = train_loss + discriminator_loss
@@ -157,8 +154,8 @@ def train_loop(net,
 
             if path_to_embed_model is None or train_embed and step_counter < warmup_steps * 2:
                 train_loss = train_loss + embedding_regularization_loss(style_embedding, style_embedding)
-            if not torch.isnan(l1_loss):
-                train_loss = train_loss + l1_loss
+            if not torch.isnan(classification_loss):
+                train_loss = train_loss + classification_loss
             if not torch.isnan(duration_loss):
                 train_loss = train_loss + duration_loss
             if not torch.isnan(pitch_loss):
@@ -166,7 +163,7 @@ def train_loop(net,
             if not torch.isnan(energy_loss):
                 train_loss = train_loss + energy_loss
 
-            l1_losses_total.append(l1_loss.item())
+            classification_losses_total.append(classification_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
@@ -182,15 +179,15 @@ def train_loop(net,
         net.eval()
         style_embedding_function.eval()
         default_embedding = style_embedding_function(
-            batch_of_spectrograms=train_dataset[0][7].unsqueeze(0).to(device),
-            batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+            batch_of_features=train_dataset[0][7].unsqueeze(0).to(device),
+            batch_of_features_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
             "step_counter": step_counter,
             "scheduler"   : scheduler.state_dict(),
-            "default_emb" : default_embedding,
-            "config": net.config
+            "default_emb": default_embedding,
+            "config"     : net.config
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         if path_to_embed_model is None or train_embed:
             torch.save({
@@ -200,15 +197,14 @@ def train_loop(net,
 
         print("\nEpoch:                  {}".format(epoch))
         print("Time elapsed:           {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Reconstruction Loss:    {}".format(round(sum(l1_losses_total) / len(l1_losses_total), 3)))
+        print("Reconstruction Loss:    {}".format(round(sum(classification_losses_total) / len(classification_losses_total), 3)))
         print("Steps:                  {}\n".format(step_counter))
         if use_wandb:
             wandb.log({
-                "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
-                "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 5) if len(glow_losses_total) != 0 else None,
+                "classification_loss": round(sum(classification_losses_total) / len(classification_losses_total), 5),
+                "duration_loss"      : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                "pitch_loss"         : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                "energy_loss"        : round(sum(energy_losses_total) / len(energy_losses_total), 5),
             }, step=step_counter)
             if use_discriminator:
                 wandb.log({
@@ -216,17 +212,15 @@ def train_loop(net,
                     "generator_loss": round(sum(generator_losses_total) / len(generator_losses_total), 5),
                 }, step=step_counter)
 
-        path_to_most_recent_plot_before, \
-        _ = plot_progress_spec_toucantts(net,
-                                         device,
-                                         save_dir=save_directory,
-                                         step=step_counter,
-                                         lang=lang,
-                                         default_emb=default_embedding,
-                                         run_postflow=step_counter - 5 > postnet_start_steps)
+        path_to_most_recent_plot = plot_progress_spec_toucantts(net,
+                                                                device,
+                                                                save_dir=save_directory,
+                                                                step=step_counter,
+                                                                lang=lang,
+                                                                default_emb=default_embedding)
         if use_wandb:
             wandb.log({
-                "progress_plot": wandb.Image(path_to_most_recent_plot_before)
+                "progress_plot": wandb.Image(path_to_most_recent_plot)
             }, step=step_counter)
 
         if step_counter > steps * 4 / 5:
@@ -243,9 +237,9 @@ def train_loop(net,
         net.train()
 
 
-def calc_gan_outputs(real_spectrograms, fake_spectrograms, spectrogram_lengths, discriminator):
+def calc_gan_outputs(real_features, fake_features, feature_lengths, discriminator):
     # we have signals with lots of padding and different shapes, so we need to extract fixed size windows first.
-    fake_window, real_window = get_random_window(fake_spectrograms, real_spectrograms, spectrogram_lengths)
+    fake_window, real_window = get_random_window(fake_features, real_features, feature_lengths)
     # now we have windows that are [batch_size, 200, 80]
     critic_loss = discriminator.calc_discriminator_loss(fake_window.unsqueeze(1), real_window.unsqueeze(1))
     generator_loss = discriminator.calc_generator_feedback(fake_window.unsqueeze(1), real_window.unsqueeze(1))

@@ -80,8 +80,8 @@ class TTSDataset(Dataset):
                 norm_wave_length = torch.LongTensor([len(raw_wave)])
 
                 text = dataset[index][0]
-                melspec = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1).to(device)).transpose(0, 1).detach()
-                melspec_length = torch.LongTensor([len(dataset[index][1])])
+                features = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1).to(device)).transpose(0, 1).detach()
+                feature_lengths = torch.LongTensor([len(dataset[index][1])])
 
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
                 # We note the index of word boundaries and insert durations of 0 afterwards
@@ -94,7 +94,7 @@ class TTSDataset(Dataset):
                         indexes_of_word_boundaries.append(phoneme_index)
                 matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-                alignment_path, ctc_loss = acoustic_model.inference(mel=melspec.to(device),
+                alignment_path, ctc_loss = acoustic_model.inference(mel=features.to(device),
                                                                     tokens=matrix_without_word_boundaries.to(device),
                                                                     save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                     return_ctc=True)
@@ -123,14 +123,14 @@ class TTSDataset(Dataset):
 
                 cached_energy = energy_calc(input_waves=torch.tensor(raw_wave).unsqueeze(0),
                                             input_waves_lengths=norm_wave_length,
-                                            feats_lengths=melspec_length,
+                                            feats_lengths=feature_lengths,
                                             text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
                 cached_pitch = parsel(input_waves=torch.tensor(raw_wave).unsqueeze(0),
                                       input_waves_lengths=norm_wave_length,
-                                      feats_lengths=melspec_length,
+                                      feats_lengths=feature_lengths,
                                       text=text,
                                       durations=cached_duration.unsqueeze(0),
                                       durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()

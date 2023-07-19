@@ -10,6 +10,7 @@ from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
+from TTSTrainingInterfaces.ToucanTTS.wavenet import WN
 from Utility.utils import initialize
 from Utility.utils import make_non_pad_mask
 from Utility.utils import make_pad_mask
@@ -224,6 +225,16 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
+        self.wn = WN(hidden_size=attention_dimension,
+                     kernel_size=5,
+                     dilation_rate=2,
+                     n_layers=6,
+                     c_cond=attention_dimension,
+                     p_dropout=0.1,
+                     share_cond_layers=False,
+                     is_BTC=False,
+                     use_weightnorm=True)
+
         # self.classifier = weight_norm(
         #    torch.nn.Conv1d(
         #    attention_dimension,
@@ -256,13 +267,12 @@ class ToucanTTS(torch.nn.Module):
                 gold_pitch,
                 gold_energy,
                 utterance_embedding,
-                return_mels=False,
-                lang_ids=None,
-                run_glow=True
+                return_feats=False,
+                lang_ids=None
                 ):
         """
         Args:
-            return_mels (Boolean): whether to return the predicted spectrogram
+            return_feats (Boolean): whether to return the predicted spectrogram
             text_tensors (LongTensor): Batch of padded text vectors (B, Tmax).
             text_lengths (LongTensor): Batch of lengths of each input (B,).
             gold_speech (Tensor): Batch of padded target features (B, Lmax, odim).
@@ -270,44 +280,38 @@ class ToucanTTS(torch.nn.Module):
             gold_durations (LongTensor): Batch of padded durations (B, Tmax + 1).
             gold_pitch (Tensor): Batch of padded token-averaged pitch (B, Tmax + 1, 1).
             gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
-            run_glow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
-        before_outs, \
-        after_outs, \
+        outs, \
         predicted_durations, \
         predicted_pitch, \
-        predicted_energy, \
-        glow_loss = self._forward(text_tensors=text_tensors,
-                                  text_lengths=text_lengths,
-                                  gold_speech=gold_speech,
-                                  speech_lengths=speech_lengths,
-                                  gold_durations=gold_durations,
-                                  gold_pitch=gold_pitch,
-                                  gold_energy=gold_energy,
-                                  utterance_embedding=utterance_embedding,
-                                  is_inference=False,
-                                  lang_ids=lang_ids,
-                                  run_glow=run_glow)
+        predicted_energy = self._forward(text_tensors=text_tensors,
+                                         text_lengths=text_lengths,
+                                         gold_speech=gold_speech,
+                                         speech_lengths=speech_lengths,
+                                         gold_durations=gold_durations,
+                                         gold_pitch=gold_pitch,
+                                         gold_energy=gold_energy,
+                                         utterance_embedding=utterance_embedding,
+                                         is_inference=False,
+                                         lang_ids=lang_ids)
 
         # calculate loss
-        l1_loss, duration_loss, pitch_loss, energy_loss = self.criterion(before_outs=before_outs,
-                                                                         gold_spectrograms=gold_speech,
-                                                                         spectrogram_lengths=speech_lengths,
-                                                                         text_lengths=text_lengths,
-                                                                         gold_durations=gold_durations,
-                                                                         predicted_durations=predicted_durations,
-                                                                         predicted_pitch=predicted_pitch,
-                                                                         predicted_energy=predicted_energy,
-                                                                         gold_pitch=gold_pitch,
-                                                                         gold_energy=gold_energy)
+        classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
+                                                                                     gold_features=gold_speech,
+                                                                                     features_lengths=speech_lengths,
+                                                                                     text_lengths=text_lengths,
+                                                                                     gold_durations=gold_durations,
+                                                                                     predicted_durations=predicted_durations,
+                                                                                     predicted_pitch=predicted_pitch,
+                                                                                     predicted_energy=predicted_energy,
+                                                                                     gold_pitch=gold_pitch,
+                                                                                     gold_energy=gold_energy)
 
-        if return_mels:
-            if after_outs is None:
-                after_outs = before_outs
-            return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, after_outs
-        return l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss
+        if return_feats:
+            return classification_loss, duration_loss, pitch_loss, energy_loss, outs
+        return classification_loss, duration_loss, pitch_loss, energy_loss
 
     def _forward(self,
                  text_tensors,
@@ -319,8 +323,7 @@ class ToucanTTS(torch.nn.Module):
                  gold_energy=None,
                  is_inference=False,
                  utterance_embedding=None,
-                 lang_ids=None,
-                 run_glow=True):
+                 lang_ids=None):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -371,6 +374,8 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
+        decoded_speech = self.wn(x=decoded_speech.transpose(1, 2), nonpadding=decoder_masks, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
+
         indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
         indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
         indexes = indexes.transpose(0, 1)
@@ -381,17 +386,14 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             return indexes, \
-                   indexes, \
                    predicted_durations.squeeze(), \
                    pitch_predictions.squeeze(), \
                    energy_predictions.squeeze()
         else:
             return indexes, \
-                   None, \
                    predicted_durations, \
                    pitch_predictions, \
-                   energy_predictions, \
-                   None
+                   energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -399,50 +401,44 @@ class ToucanTTS(torch.nn.Module):
                   speech=None,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
-                  lang_id=None,
-                  run_postflow=True):
+                  lang_id=None):
         """
         Args:
             text (LongTensor): Input sequence of characters (T,).
             speech (Tensor, optional): Feature sequence to extract style (N, idim).
             return_duration_pitch_energy (Boolean): whether to return the list of predicted durations for nicer plotting
-            run_postflow (Boolean): Whether to run the PostNet. There should be a warmup phase in the beginning.
             lang_id (LongTensor): The language ID used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Embedding to condition the TTS on, if the model is multispeaker
         """
         self.eval()
-        x, y = text, speech
 
         # setup batch axis
-        ilens = torch.tensor([x.shape[0]], dtype=torch.long, device=x.device)
-        xs, ys = x.unsqueeze(0), None
-        if y is not None:
-            ys = y.unsqueeze(0)
+        ilens = torch.tensor([text.shape[0]], dtype=torch.long, device=text.device)
+        text_pseudobatched, speech_pseudobatched = text.unsqueeze(0), None
+        if speech is not None:
+            speech_pseudobatched = speech.unsqueeze(0)
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0)
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
-        before_outs, \
-        after_outs, \
+        outs, \
         duration_predictions, \
         pitch_predictions, \
-        energy_predictions = self._forward(xs,
+        energy_predictions = self._forward(text_pseudobatched,
                                            ilens,
-                                           ys,
+                                           speech_pseudobatched,
                                            is_inference=True,
                                            utterance_embedding=utterance_embeddings,
-                                           lang_ids=lang_id,
-                                           run_glow=run_postflow)  # (1, L, odim)
+                                           lang_ids=lang_id)  # (1, L, odim)
         self.train()
         outs_indexed = list()
-        for out in before_outs:
+        for out in outs:
             outs_indexed.append(torch.argmax(out.squeeze(), dim=0))
 
-        before_outs = torch.stack(outs_indexed)
-        after_outs = before_outs
+        outs = torch.stack(outs_indexed)
         if return_duration_pitch_energy:
-            return before_outs, after_outs, duration_predictions, pitch_predictions, energy_predictions
-        return before_outs
+            return outs, duration_predictions, pitch_predictions, energy_predictions
+        return outs
 
     def _reset_parameters(self, init_type):
         # initialize parameters
@@ -470,15 +466,15 @@ if __name__ == '__main__':
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     model = ToucanTTS()
-    l1, dl, pl, el, gl = model(dummy_text_batch,
-                               dummy_text_lens,
-                               dummy_speech_batch,
-                               dummy_speech_lens,
-                               dummy_durations,
-                               dummy_pitch,
-                               dummy_energy,
-                               utterance_embedding=dummy_utterance_embed,
-                               lang_ids=dummy_language_id)
+    l1, dl, pl, el = model(dummy_text_batch,
+                           dummy_text_lens,
+                           dummy_speech_batch,
+                           dummy_speech_lens,
+                           dummy_durations,
+                           dummy_pitch,
+                           dummy_energy,
+                           utterance_embedding=dummy_utterance_embed,
+                           lang_ids=dummy_language_id)
 
     loss = l1 + dl + pl + el
     print(loss)
@@ -499,15 +495,15 @@ if __name__ == '__main__':
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     model = ToucanTTS(use_conditional_layernorm_embedding_integration=True)
-    l1, dl, pl, el, gl = model(dummy_text_batch,
-                               dummy_text_lens,
-                               dummy_speech_batch,
-                               dummy_speech_lens,
-                               dummy_durations,
-                               dummy_pitch,
-                               dummy_energy,
-                               utterance_embedding=dummy_utterance_embed,
-                               lang_ids=dummy_language_id)
+    l1, dl, pl, el = model(dummy_text_batch,
+                           dummy_text_lens,
+                           dummy_speech_batch,
+                           dummy_speech_lens,
+                           dummy_durations,
+                           dummy_pitch,
+                           dummy_energy,
+                           utterance_embedding=dummy_utterance_embed,
+                           lang_ids=dummy_language_id)
 
     loss = l1 + dl + pl + el
     print(loss)
@@ -536,15 +532,15 @@ if __name__ == '__main__':
     dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
 
     model = ToucanTTS()
-    l1, dl, pl, el, gl = model(dummy_text_batch,
-                               dummy_text_lens,
-                               dummy_speech_batch,
-                               dummy_speech_lens,
-                               dummy_durations,
-                               dummy_pitch,
-                               dummy_energy,
-                               utterance_embedding=dummy_utterance_embed,
-                               lang_ids=dummy_language_id)
+    l1, dl, pl, el = model(dummy_text_batch,
+                           dummy_text_lens,
+                           dummy_speech_batch,
+                           dummy_speech_lens,
+                           dummy_durations,
+                           dummy_pitch,
+                           dummy_energy,
+                           utterance_embedding=dummy_utterance_embed,
+                           lang_ids=dummy_language_id)
 
     loss = l1 + dl + el + pl
     print(loss)

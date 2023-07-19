@@ -219,7 +219,7 @@ class ToucanTTS(torch.nn.Module):
         indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
         indexes = indexes.transpose(0, 1)
 
-        return indexes, indexes, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
+        return indexes, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
     @torch.inference_mode()
     def forward(self,
@@ -272,8 +272,7 @@ class ToucanTTS(torch.nn.Module):
         if lang_id is not None:
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
-        before_outs, \
-        after_outs, \
+        outs, \
         predicted_durations, \
         pitch_predictions, \
         energy_predictions = self._forward(text.unsqueeze(0),
@@ -288,14 +287,14 @@ class ToucanTTS(torch.nn.Module):
                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
 
         outs_indexed = list()
-        for out in before_outs:
+        for out in outs:
             outs_indexed.append(torch.argmax(out.squeeze(), dim=0))
 
-        after_outs = torch.stack(outs_indexed)
+        outs = torch.stack(outs_indexed)
 
         if return_duration_pitch_energy:
-            return after_outs, predicted_durations, pitch_predictions, energy_predictions
-        return after_outs
+            return outs, predicted_durations, pitch_predictions, energy_predictions
+        return outs
 
     def store_inverse_all(self):
         def remove_weight_norm(m):

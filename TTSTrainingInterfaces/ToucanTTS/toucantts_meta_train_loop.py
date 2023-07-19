@@ -45,7 +45,6 @@ def train_loop(net,
                fine_tune,
                warmup_steps,
                use_wandb,
-               postnet_start_steps
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -77,14 +76,13 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     steps_run_previously = 0
-    l1_losses_total = list()
+    classification_losses_total = list()
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
-    glow_losses_total = list()
 
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -131,9 +129,9 @@ def train_loop(net,
         # we sum the loss for each task, as we would do for the
         # second order regular MAML, but we do it only over one
         # step (i.e. iterations of inner loop = 1)
-        style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                   batch_of_spectrogram_lengths=batch[3].to(device))
-        l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = net(
+        style_embedding = style_embedding_function(batch_of_features=batch[2].to(device),
+                                                   batch_of_feature_lengths=batch[3].to(device))
+        classification_loss, duration_loss, pitch_loss, energy_loss = net(
             text_tensors=text_tensors,
             text_lengths=text_lengths,
             gold_speech=gold_speech,
@@ -143,26 +141,21 @@ def train_loop(net,
             gold_energy=gold_energy,
             utterance_embedding=style_embedding,
             lang_ids=lang_ids,
-            return_mels=False,
-            run_glow=step_counter > postnet_start_steps)
+            return_mels=False)
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
 
-        if not torch.isnan(l1_loss):
-            train_loss = train_loss + l1_loss
+        if not torch.isnan(classification_loss):
+            train_loss = train_loss + classification_loss
         if not torch.isnan(duration_loss):
             train_loss = train_loss + duration_loss
         if not torch.isnan(pitch_loss):
             train_loss = train_loss + pitch_loss
         if not torch.isnan(energy_loss):
             train_loss = train_loss + energy_loss
-        if glow_loss is not None:
-            if step_counter > postnet_start_steps and not torch.isnan(glow_loss):
-                train_loss = train_loss + glow_loss
-                glow_losses_total.append(glow_loss.item())
 
-        l1_losses_total.append(l1_loss.item())
+        classification_losses_total.append(classification_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
@@ -180,9 +173,9 @@ def train_loop(net,
             net.eval()
             style_embedding_function.eval()
             default_embedding = style_embedding_function(
-                batch_of_spectrograms=datasets[0][0][2].unsqueeze(0).to(device),
-                batch_of_spectrogram_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
-            print("Reconstruction Loss:    {}".format(round(sum(l1_losses_total) / len(l1_losses_total), 3)))
+                batch_of_features=datasets[0][0][2].unsqueeze(0).to(device),
+                batch_of_features_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+            print("Reconstruction Loss:    {}".format(round(sum(classification_losses_total) / len(classification_losses_total), 3)))
             print("Steps:                  {}\n".format(step_counter))
             torch.save({
                 "model"       : net.state_dict(),
@@ -190,47 +183,40 @@ def train_loop(net,
                 "scheduler"   : scheduler.state_dict(),
                 "step_counter": step_counter,
                 "default_emb" : default_embedding,
-                "config": net.config
+                "config"      : net.config
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
 
             if use_wandb:
                 wandb.log({
-                    "l1_loss"      : round(sum(l1_losses_total) / len(l1_losses_total), 5),
-                    "duration_loss": round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                    "pitch_loss"   : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                    "energy_loss"  : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                    "glow_loss"    : round(sum(glow_losses_total) / len(glow_losses_total), 3) if len(glow_losses_total) != 0 else None,
+                    "classification_loss": round(sum(classification_losses_total) / len(classification_losses_total), 5),
+                    "duration_loss"      : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                    "pitch_loss"         : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                    "energy_loss"        : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                 }, step=step_counter)
 
             try:
-                path_to_most_recent_plot_before, \
-                path_to_most_recent_plot_after = plot_progress_spec_toucantts(net,
-                                                                              device,
-                                                                              save_dir=save_directory,
-                                                                              step=step_counter,
-                                                                              lang=lang,
-                                                                              default_emb=default_embedding,
-                                                                              run_postflow=step_counter - 5 > postnet_start_steps)
+                path_to_most_recent_plot = plot_progress_spec_toucantts(net,
+                                                                        device,
+                                                                        save_dir=save_directory,
+                                                                        step=step_counter,
+                                                                        lang=lang,
+                                                                        default_emb=default_embedding)
                 if use_wandb:
                     wandb.log({
-                        "progress_plot_before": wandb.Image(path_to_most_recent_plot_before)
+                        "progress_plot": wandb.Image(path_to_most_recent_plot)
                     }, step=step_counter)
-                    if step_counter > postnet_start_steps:
-                        wandb.log({
-                            "progress_plot_after": wandb.Image(path_to_most_recent_plot_after)
-                        }, step=step_counter)
+
             except IndexError:
                 print("generating progress plots failed.")
 
-            l1_losses_total = list()
+            classification_losses_total = list()
             duration_losses_total = list()
             pitch_losses_total = list()
             energy_losses_total = list()
-            glow_losses_total = list()
 
-            if step_counter > 3 * postnet_start_steps:
+            if step_counter > steps * 4 / 5:
                 # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)

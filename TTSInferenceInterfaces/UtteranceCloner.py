@@ -71,8 +71,8 @@ class UtteranceCloner:
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
         text = self.tf.string_to_tensor(transcript, handle_missing=False).squeeze(0)
-        melspec = self.cap.audio_to_codec_tensor(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1)
-        melspec_length = torch.LongTensor([len(melspec)]).numpy()
+        features = self.cap.audio_to_codec_tensor(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1)
+        feature_length = torch.LongTensor([len(features)]).numpy()
 
         if on_line_fine_tune:
             # we fine-tune the aligner for a couple steps using SGD. This makes cloning pretty slow, but the results are greatly improved.
@@ -80,7 +80,7 @@ class UtteranceCloner:
             tokens = self.tf.text_vectors_to_id_sequence(text_vector=text)  # we need an ID sequence for training rather than a sequence of phonological features
             tokens = torch.LongTensor(tokens).squeeze().to(self.device)
             tokens_len = torch.LongTensor([len(tokens)]).to(self.device)
-            mel = melspec.unsqueeze(0).to(self.device)
+            mel = features.unsqueeze(0).to(self.device)
             mel.requires_grad = True
             mel_len = torch.LongTensor([len(mel[0])]).to(self.device)
             # actual fine-tuning starts here
@@ -106,7 +106,7 @@ class UtteranceCloner:
                 indexes_of_word_boundaries.append(phoneme_index)
         matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-        alignment_path = acoustic_model.inference(mel=melspec.to(self.device),
+        alignment_path = acoustic_model.inference(mel=features.to(self.device),
                                                   tokens=matrix_without_word_boundaries.to(self.device),
                                                   return_ctc=False)
 
@@ -134,13 +134,13 @@ class UtteranceCloner:
 
         energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                              input_waves_lengths=norm_wave_length,
-                             feats_lengths=melspec_length,
+                             feats_lengths=feature_length,
                              text=text,
                              durations=duration.unsqueeze(0),
                              durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
         pitch = parsel(input_waves=norm_wave.unsqueeze(0),
                        input_waves_lengths=norm_wave_length,
-                       feats_lengths=melspec_length,
+                       feats_lengths=feature_length,
                        text=text,
                        durations=duration.unsqueeze(0),
                        durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()

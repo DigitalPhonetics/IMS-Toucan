@@ -38,11 +38,7 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
 class WN(torch.nn.Module):
 
     def __init__(self, hidden_size, kernel_size, dilation_rate, n_layers, c_cond=0,
-                 p_dropout=0, share_cond_layers=False, is_BTC=False, use_weightnorm=False):
-        """
-        If weightnorm is set to false, we can deepcopy the module, which we need to be able to do to perform SWA.
-        Without weightnorm, the module will probably take a little longer to converge.
-        """
+                 p_dropout=0, share_cond_layers=False, is_BTC=False, use_weightnorm=True):
         super(WN, self).__init__()
         assert (kernel_size % 2 == 1)
         assert (hidden_size % 2 == 0)

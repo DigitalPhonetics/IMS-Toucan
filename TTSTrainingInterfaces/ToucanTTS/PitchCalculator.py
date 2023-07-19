@@ -48,7 +48,7 @@ class Parselmouth(torch.nn.Module):
         # F0 extraction
         pitch = self._calculate_f0(input_waves[0])
 
-        # Adjust length to match with the mel-spectrogram
+        # Adjust length to match with the feature sequences
         pitch = self._adjust_num_frames(pitch, feats_lengths[0]).view(-1)
 
         pitch = self._average_by_duration(pitch, durations[0], text).view(-1)
