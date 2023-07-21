@@ -189,8 +189,8 @@ class CodecAlignerDataset(Dataset):
         token_len = torch.LongTensor([len(tokens)])
         speech_indexes = self.datapoints[index][1]
         speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1))
-        speech = self.spec(speech)[:len(speech_indexes)]
-        speech_len = torch.LongTensor([speech.size(1)])
+        speech = self.spec(speech)[:len(speech_indexes)].transpose(0, 1)
+        speech_len = torch.LongTensor([speech.size(0)])
         return tokens, \
                token_len, \
                speech, \
