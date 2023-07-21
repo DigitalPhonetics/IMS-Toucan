@@ -61,8 +61,8 @@ class Aligner(torch.nn.Module):
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
-        self.cap = CodecAudioPreprocessor(input_sr=-1)  # todo consider lazy init
-        self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)  # todo consider lazy init
+        self.cap = None
+        self.spec = None
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -80,6 +80,10 @@ class Aligner(torch.nn.Module):
 
     @torch.inference_mode()
     def inference(self, indexes, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
+        if self.cap is None:
+            self.cap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
+            self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)
+
         if not train:
             tokens_indexed = self.tf.text_vectors_to_id_sequence(text_vector=tokens)  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             tokens = np.asarray(tokens_indexed)

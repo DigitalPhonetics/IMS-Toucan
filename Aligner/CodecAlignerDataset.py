@@ -107,8 +107,8 @@ class CodecAlignerDataset(Dataset):
             self.datapoints = self.datapoints[0]
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
-        self.ap = None
-        self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)
+        self.ap = None  # lazy init, because otherwise there are problems with multiprocessing
+        self.spec = None  # lazy init, because otherwise there are problems with multiprocessing
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -182,6 +182,7 @@ class CodecAlignerDataset(Dataset):
     def __getitem__(self, index):
         if self.ap is None:
             self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
+            self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
