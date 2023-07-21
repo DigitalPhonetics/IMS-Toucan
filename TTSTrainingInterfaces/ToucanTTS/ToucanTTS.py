@@ -226,9 +226,9 @@ class ToucanTTS(torch.nn.Module):
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         self.wn = WN(hidden_size=attention_dimension,
-                     kernel_size=5,
+                     kernel_size=2,
                      dilation_rate=2,
-                     n_layers=6,
+                     n_layers=8,
                      c_cond=attention_dimension,
                      p_dropout=0.1,
                      share_cond_layers=False,
