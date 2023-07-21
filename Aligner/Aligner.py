@@ -14,6 +14,7 @@ from torch.nn.utils.rnn import pad_packed_sequence
 from torchaudio.transforms import MelSpectrogram
 
 from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
 class BatchNormConv(nn.Module):
@@ -264,7 +265,6 @@ def to_adj_matrix(mat):
 
 
 if __name__ == '__main__':
-    from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
     tf = ArticulatoryCombinedTextFrontend(language="en")
     dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 100])
