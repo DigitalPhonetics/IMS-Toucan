@@ -15,7 +15,7 @@ class StyleEmbedding(torch.nn.Module):
     and a simple LSTM baseline. GST turned out to be the best.
     """
 
-    def __init__(self, embedding_dim=192, style_tts_encoder=True):
+    def __init__(self, embedding_dim=512, style_tts_encoder=True):
         super().__init__()
         self.embedding_dim = embedding_dim
         if style_tts_encoder:

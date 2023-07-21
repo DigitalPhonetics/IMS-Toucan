@@ -52,7 +52,6 @@ class TTSDataset(Dataset):
             filepaths = datapoints[3]
 
             print("... building dataset cache ...")
-            codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
             self.datapoints = list()
             self.ctc_losses = list()
 
@@ -80,7 +79,6 @@ class TTSDataset(Dataset):
                 norm_wave_length = torch.LongTensor([len(raw_wave)])
 
                 text = dataset[index][0]
-                features = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1).to(device)).transpose(0, 1).detach()
                 feature_lengths = torch.LongTensor([len(dataset[index][1])])
 
                 # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
@@ -94,7 +92,7 @@ class TTSDataset(Dataset):
                         indexes_of_word_boundaries.append(phoneme_index)
                 matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-                alignment_path, ctc_loss = acoustic_model.inference(mel=features.to(device),
+                alignment_path, ctc_loss = acoustic_model.inference(indexes=dataset[index][1].int().transpose(0, 1).to(device),
                                                                     tokens=matrix_without_word_boundaries.to(device),
                                                                     save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                     return_ctc=True)

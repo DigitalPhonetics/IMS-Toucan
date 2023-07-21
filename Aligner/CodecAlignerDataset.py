@@ -7,6 +7,7 @@ from speechbrain.pretrained import EncoderClassifier
 from torch.multiprocessing import Manager
 from torch.multiprocessing import Process
 from torch.utils.data import Dataset
+from torchaudio.transforms import MelSpectrogram
 from torchaudio.transforms import Resample
 from tqdm import tqdm
 
@@ -107,6 +108,7 @@ class CodecAlignerDataset(Dataset):
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         self.ap = None
+        self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
@@ -185,13 +187,15 @@ class CodecAlignerDataset(Dataset):
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
         speech_indexes = self.datapoints[index][1]
-        speech_len = torch.LongTensor([len(speech_indexes)])
-        speech = self.ap.indexes_to_codec_frames(speech_indexes.int().transpose(0, 1)).transpose(0, 1).detach()
+        speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1))
+        speech = self.spec(speech)[:len(speech_indexes)]  # todo check if it needs to be transposed
+        speech_len = torch.LongTensor([len(speech)])  # todo check if the first dimension is actually the time axis
+        print(f"speech len aligner dataset: {speech_len} --- {speech.shape}")
         return tokens, \
-            token_len, \
-            speech, \
-            speech_len, \
-            self.speaker_embeddings[index]
+               token_len, \
+               speech, \
+               speech_len, \
+               self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)

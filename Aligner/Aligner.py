@@ -11,8 +11,9 @@ from scipy.sparse.csgraph import dijkstra
 from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
+from torchaudio.transforms import MelSpectrogram
 
-from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 
 
 class BatchNormConv(nn.Module):
@@ -37,7 +38,7 @@ class BatchNormConv(nn.Module):
 class Aligner(torch.nn.Module):
 
     def __init__(self,
-                 n_features=72,
+                 n_features=80,
                  num_symbols=145,
                  lstm_dim=512,
                  conv_dim=512):
@@ -59,6 +60,8 @@ class Aligner(torch.nn.Module):
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
+        self.cap = CodecAudioPreprocessor(input_sr=-1)  # todo consider lazy init
+        self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)  # todo consider lazy init
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -75,21 +78,19 @@ class Aligner(torch.nn.Module):
         return x
 
     @torch.inference_mode()
-    def inference(self, mel, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
+    def inference(self, indexes, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
         if not train:
             tokens_indexed = self.tf.text_vectors_to_id_sequence(text_vector=tokens)  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             tokens = np.asarray(tokens_indexed)
         else:
             tokens = tokens.cpu().detach().numpy()
-
+        mel = self.spec(self.cap.indexes_to_audio(indexes)).transpose(0, 1)[:indexes.size(1)]
         pred = self(mel.unsqueeze(0))
         if return_ctc:
             ctc_loss = self.ctc_loss(pred.transpose(0, 1).log_softmax(2), torch.LongTensor(tokens), torch.LongTensor([len(pred[0])]),
                                      torch.LongTensor([len(tokens)])).item()
         pred = pred.squeeze().cpu().detach().numpy()
         pred_max = pred[:, tokens]
-        path_probs = 1. - pred_max
-        adj_matrix = to_adj_matrix(path_probs)
 
         if pathfinding == "MAS":
 
@@ -120,6 +121,8 @@ class Aligner(torch.nn.Module):
 
         elif pathfinding == "dijkstra":
 
+            path_probs = 1. - pred_max
+            adj_matrix = to_adj_matrix(path_probs)
             dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
                                                      directed=True,
                                                      indices=0,
@@ -258,3 +261,12 @@ def to_adj_matrix(mat):
 
     adj_mat = coo_matrix((data, (row_ind, col_ind)), shape=(rows * cols, rows * cols))
     return adj_mat.tocsr()
+
+
+if __name__ == '__main__':
+    from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
+
+    tf = ArticulatoryCombinedTextFrontend(language="en")
+    dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 100])
+    alignment = Aligner().inference(dummy_codebook_indexes, tokens=tf.string_to_tensor("Hello world"))
+    print(alignment.shape)

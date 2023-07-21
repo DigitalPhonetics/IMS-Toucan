@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
-from Aligner.CodecReconstructor import Reconstructor
+from Aligner.Reconstructor import Reconstructor
 
 
 def collate_and_pad(batch):
