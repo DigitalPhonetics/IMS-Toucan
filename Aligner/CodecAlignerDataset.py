@@ -107,6 +107,8 @@ class CodecAlignerDataset(Dataset):
             self.datapoints = self.datapoints[0]
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+        self.device = device
+        self.resample = None
         self.ap = None  # lazy init, because otherwise there are problems with multiprocessing
         self.spec = None  # lazy init, because otherwise there are problems with multiprocessing
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
@@ -181,15 +183,29 @@ class CodecAlignerDataset(Dataset):
 
     def __getitem__(self, index):
         if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
-            self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)
+            self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform indexes into continuous matrices
+            self.spec = MelSpectrogram(sample_rate=16000,
+                                       n_fft=1024,
+                                       win_length=1024,
+                                       hop_length=92,
+                                       f_min=40.0,
+                                       f_max=8000,
+                                       pad=0,
+                                       n_mels=80,
+                                       power=2.0,
+                                       normalized=False,
+                                       center=True,
+                                       pad_mode='reflect',
+                                       mel_scale='htk').to(self.device)
+            self.resample = Resample(orig_freq=44100, new_freq=16000).to(self.device)
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
         speech_indexes = self.datapoints[index][1]
-        speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1))
-        speech = self.spec(speech)[:len(speech_indexes)].transpose(0, 1)
+        speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1).to(self.device))
+        speech = self.resample(speech)
+        speech = self.spec(speech)[:len(speech_indexes)].transpose(0, 1).to("cpu")
         speech_len = torch.LongTensor([speech.size(0)])
         return tokens, \
                token_len, \

@@ -55,14 +55,13 @@ class TTSDataset(Dataset):
             self.datapoints = list()
             self.ctc_losses = list()
 
-            acoustic_model = Aligner()
-            acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"])
+            acoustic_model = Aligner(device=device)
+            acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"])
 
             # ==========================================
             # actual creation of datapoints starts here
             # ==========================================
 
-            acoustic_model = acoustic_model.to(device)
             _, _orig_sr = sf.read(filepaths[0])
             parsel = Parselmouth(reduction_factor=reduction_factor, fs=_orig_sr)
             energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=_orig_sr)
@@ -178,14 +177,14 @@ class TTSDataset(Dataset):
         if self.ap is None:
             self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            self.ap.indexes_to_one_hot(self.datapoints[index][2].long().transpose(0, 1)).detach(), \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
-            self.language_id
+               self.datapoints[index][1], \
+               self.ap.indexes_to_one_hot(self.datapoints[index][2].long().transpose(0, 1)).detach(), \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
+               self.language_id
 
     def __len__(self):
         return len(self.datapoints)

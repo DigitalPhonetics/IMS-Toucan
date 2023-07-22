@@ -6,12 +6,11 @@ import numpy as np
 import torch
 import torch.multiprocessing
 import torch.nn as nn
-from scipy.sparse import coo_matrix
-from scipy.sparse.csgraph import dijkstra
 from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 from torchaudio.transforms import MelSpectrogram
+from torchaudio.transforms import Resample
 
 from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
@@ -42,7 +41,8 @@ class Aligner(torch.nn.Module):
                  n_features=80,
                  num_symbols=145,
                  lstm_dim=512,
-                 conv_dim=512):
+                 conv_dim=512,
+                 device="cpu"):
         super().__init__()
         self.convs = nn.ModuleList([
             BatchNormConv(n_features, conv_dim, 3),
@@ -61,8 +61,22 @@ class Aligner(torch.nn.Module):
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
-        self.cap = None
-        self.spec = None
+        self.cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # only used to transform indexes into waves
+        self.spec = MelSpectrogram(sample_rate=16000,
+                                   n_fft=1024,
+                                   win_length=1024,
+                                   hop_length=92,
+                                   f_min=40.0,
+                                   f_max=8000,
+                                   pad=0,
+                                   n_mels=80,
+                                   power=2.0,
+                                   normalized=False,
+                                   center=True,
+                                   pad_mode='reflect',
+                                   mel_scale='htk').to(device)
+        self.resample = Resample(orig_freq=44100, new_freq=16000).to(device)
+        self.to(device)
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -79,112 +93,71 @@ class Aligner(torch.nn.Module):
         return x
 
     @torch.inference_mode()
-    def inference(self, indexes, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
-        if self.cap is None:
-            self.cap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
-            self.spec = MelSpectrogram(sample_rate=44100, n_fft=2048, hop_length=512, n_mels=80)
-
+    def inference(self, indexes, tokens, desired_length=None, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
         if not train:
             tokens_indexed = self.tf.text_vectors_to_id_sequence(text_vector=tokens)  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             tokens = np.asarray(tokens_indexed)
+            mel = self.spec(self.resample(self.cap.indexes_to_audio(indexes))).transpose(0, 1)  # [:indexes.size(1)]
         else:
             tokens = tokens.cpu().detach().numpy()
-        mel = self.spec(self.cap.indexes_to_audio(indexes)).transpose(0, 1)[:indexes.size(1)]
+            mel = indexes
+
+        if desired_length is None:
+            desired_length = indexes.size(1)
+
         pred = self(mel.unsqueeze(0))
         if return_ctc:
             ctc_loss = self.ctc_loss(pred.transpose(0, 1).log_softmax(2), torch.LongTensor(tokens), torch.LongTensor([len(pred[0])]),
                                      torch.LongTensor([len(tokens)])).item()
-        pred = pred.squeeze().cpu().detach().numpy()
-        pred_max = pred[:, tokens]
+        pred = pred.squeeze().detach().cpu().numpy()
 
-        if pathfinding == "MAS":
+        # now we need to reduce the time axis to the one of the codec.
+        if len(pred) != desired_length:
+            desired_length = desired_length.cpu()
+            # Step 1: Calculate the downsample factor
+            downsample_factor = pred.shape[0] / desired_length
 
-            alignment_matrix = binarize_alignment(pred_max)
+            # Step 2: Create the new reduced time-axis
+            reduced_time_axis = np.array([downsample_factor * i for i in range(desired_length)])
 
-            if save_img_for_debug is not None:
-                phones = list()
-                for index in tokens:
-                    for phone in self.tf.phone_to_id:
-                        if self.tf.phone_to_id[phone] == index:
-                            phones.append(phone)
-                fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 5))
+            # Step 3: Identify the contributing time-steps and their corresponding weights
+            start_indices = np.floor(reduced_time_axis).astype(int)
+            weights = reduced_time_axis - start_indices
 
-                ax.imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
-                ax.set_ylabel("Mel-Frames")
-                ax.set_xticks(range(len(pred_max[0])))
-                ax.set_xticklabels(labels=phones)
-                ax.set_title("MAS Path")
+            # Step 4: Perform downsampling by averaging
+            reduced_tensor = np.zeros((desired_length, pred.shape[1]))
+            for i in range(desired_length):
+                reduced_tensor[i] = pred[start_indices[i]] * (1 - weights[i]) + pred[start_indices[i] + 1] * weights[i]
+        else:
+            reduced_tensor = pred
 
-                plt.tight_layout()
-                fig.savefig(save_img_for_debug)
-                fig.clf()
-                plt.close()
+        pred_max = reduced_tensor[:, tokens]
 
-            if return_ctc:
-                return alignment_matrix, ctc_loss
-            return alignment_matrix
+        # now we apply monotonic alignment search over the posteriogram ordered by the phonemes
+        alignment_matrix = binarize_alignment(pred_max)
 
-        elif pathfinding == "dijkstra":
+        if save_img_for_debug is not None:
+            phones = list()
+            for index in tokens:
+                for phone in self.tf.phone_to_id:
+                    if self.tf.phone_to_id[phone] == index:
+                        phones.append(phone)
+            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 5))
 
-            path_probs = 1. - pred_max
-            adj_matrix = to_adj_matrix(path_probs)
-            dist_matrix, predecessors, *_ = dijkstra(csgraph=adj_matrix,
-                                                     directed=True,
-                                                     indices=0,
-                                                     return_predecessors=True)
-            path = []
-            pr_index = predecessors[-1]
-            while pr_index != 0:
-                path.append(pr_index)
-                pr_index = predecessors[pr_index]
-            path.reverse()
+            ax.imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
+            ax.set_ylabel("Mel-Frames")
+            ax.set_xticks(range(len(pred_max[0])))
+            ax.set_xticklabels(labels=phones)
+            ax.set_title("MAS Path")
 
-            # append first and last node
-            path = [0] + path + [dist_matrix.size - 1]
-            cols = path_probs.shape[1]
-            mel_text = {}
+            plt.tight_layout()
+            fig.savefig(save_img_for_debug)
+            fig.clf()
+            plt.close()
 
-            # collect indices (mel, text) along the path
-            for node_index in path:
-                i, j = from_node_index(node_index, cols)
-                mel_text[i] = j
-
-            path_plot = np.zeros_like(pred_max)
-            for i in mel_text:
-                path_plot[i][mel_text[i]] = 1.0
-
-            if save_img_for_debug is not None:
-
-                phones = list()
-                for index in tokens:
-                    for phone in self.tf.phone_to_id:
-                        if self.tf.phone_to_id[phone] == index:
-                            phones.append(phone)
-                fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(10, 9))
-
-                ax[0].imshow(pred_max, interpolation='nearest', aspect='auto', origin="lower")
-                ax[1].imshow(path_plot, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
-
-                ax[0].set_ylabel("Mel-Frames")
-                ax[1].set_ylabel("Mel-Frames")
-
-                ax[0].set_xticks(range(len(pred_max[0])))
-                ax[0].set_xticklabels(labels=phones)
-
-                ax[1].set_xticks(range(len(pred_max[0])))
-                ax[1].set_xticklabels(labels=phones)
-
-                ax[0].set_title("Path Probabilities")
-                ax[1].set_title("Dijkstra Path")
-
-                plt.tight_layout()
-                fig.savefig(save_img_for_debug)
-                fig.clf()
-                plt.close()
-
-            if return_ctc:
-                return path_plot, ctc_loss
-            return path_plot
+        if return_ctc:
+            return alignment_matrix, ctc_loss
+        return alignment_matrix
 
 
 def binarize_alignment(alignment_prob):
@@ -222,55 +195,10 @@ def binarize_alignment(alignment_prob):
     return opt
 
 
-def to_node_index(i, j, cols):
-    return cols * i + j
-
-
-def from_node_index(node_index, cols):
-    return node_index // cols, node_index % cols
-
-
-def to_adj_matrix(mat):
-    rows = mat.shape[0]
-    cols = mat.shape[1]
-
-    row_ind = []
-    col_ind = []
-    data = []
-
-    for i in range(rows):
-        for j in range(cols):
-
-            node = to_node_index(i, j, cols)
-
-            if j < cols - 1:
-                right_node = to_node_index(i, j + 1, cols)
-                weight_right = mat[i, j + 1]
-                row_ind.append(node)
-                col_ind.append(right_node)
-                data.append(weight_right)
-
-            if i < rows - 1 and j < cols:
-                bottom_node = to_node_index(i + 1, j, cols)
-                weight_bottom = mat[i + 1, j]
-                row_ind.append(node)
-                col_ind.append(bottom_node)
-                data.append(weight_bottom)
-
-            if i < rows - 1 and j < cols - 1:
-                bottom_right_node = to_node_index(i + 1, j + 1, cols)
-                weight_bottom_right = mat[i + 1, j + 1]
-                row_ind.append(node)
-                col_ind.append(bottom_right_node)
-                data.append(weight_bottom_right)
-
-    adj_mat = coo_matrix((data, (row_ind, col_ind)), shape=(rows * cols, rows * cols))
-    return adj_mat.tocsr()
-
-
 if __name__ == '__main__':
-
     tf = ArticulatoryCombinedTextFrontend(language="en")
-    dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 100])
+    dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 20])
     alignment = Aligner().inference(dummy_codebook_indexes, tokens=tf.string_to_tensor("Hello world"))
     print(alignment.shape)
+    plt.imshow(alignment, origin="lower", cmap="GnBu")
+    plt.show()
