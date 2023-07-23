@@ -10,6 +10,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from TTSTrainingInterfaces.ToucanTTS.wavenet import WN
 from Utility.utils import make_non_pad_mask
 
 
@@ -151,6 +152,16 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
+        self.wn = WN(hidden_size=attention_dimension,
+                     kernel_size=3,
+                     dilation_rate=2,
+                     n_layers=8,
+                     c_cond=attention_dimension,
+                     p_dropout=0.1,
+                     share_cond_layers=False,
+                     is_BTC=False,
+                     use_weightnorm=True)
+
         self.classifier = weight_norm(
             torch.nn.Conv2d(attention_dimension, self.num_codebooks * self.codebook_size, kernel_size=1)
         )
@@ -214,6 +225,8 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
+
+        decoded_speech = self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
         indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
