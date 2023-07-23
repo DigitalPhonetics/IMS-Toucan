@@ -23,7 +23,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                batch_size=16,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
-               steps=80000,  # how many updates to run until training is completed
+               steps=500000,  # how many updates to run until training is completed
                use_discriminator=False,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
                train_embed=False  # whether to train the embedding function. Only relevant for single-language case
                ):
