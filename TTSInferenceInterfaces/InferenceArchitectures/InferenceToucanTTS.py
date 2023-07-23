@@ -258,7 +258,7 @@ class ToucanTTS(torch.nn.Module):
                                    scales the durations of pauses on top of the regular duration scaling
 
         Returns:
-            mel spectrogram
+            features spectrogram
 
         """
         # setup batch axis

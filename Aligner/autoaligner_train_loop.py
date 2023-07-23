@@ -46,12 +46,12 @@ def train_loop(train_dataset,
     """
     os.makedirs(save_directory, exist_ok=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
-    torch.multiprocessing.set_start_method('spawn', force=True)
+    torch.multiprocessing.set_start_method('fork', force=True)
 
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=4,
+                              num_workers=16,
                               pin_memory=False,
                               shuffle=True,
                               prefetch_factor=4,
@@ -142,8 +142,7 @@ def train_loop(train_dataset,
         print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
         print("Steps:        {}".format(step_counter))
         if debug_img_path is not None:
-            asr_model.inference(indexes=mel[0][:mel_len[0]],
-                                desired_length=mel_len[0] // 2,  # heuristic downsampling, because we don't know the codec frames at this point, but there's roughly half as many.
+            asr_model.inference(features=mel[0][:mel_len[0]],
                                 tokens=tokens[0][:tokens_len[0]],
                                 save_img_for_debug=debug_img_path + f"/{step_counter}.png",
                                 train=True)  # for testing

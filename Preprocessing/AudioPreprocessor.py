@@ -139,7 +139,7 @@ if __name__ == '__main__':
                  ax=ax,
                  sr=16000,
                  cmap='GnBu',
-                 y_axis='mel',
+                 y_axis='features',
                  x_axis=None,
                  hop_length=256)
     plt.show()

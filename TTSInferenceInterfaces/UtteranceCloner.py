@@ -106,7 +106,7 @@ class UtteranceCloner:
                 indexes_of_word_boundaries.append(phoneme_index)
         matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-        alignment_path = acoustic_model.inference(mel=features.to(self.device),
+        alignment_path = acoustic_model.inference(features=features.to(self.device),
                                                   tokens=matrix_without_word_boundaries.to(self.device),
                                                   return_ctc=False)
 

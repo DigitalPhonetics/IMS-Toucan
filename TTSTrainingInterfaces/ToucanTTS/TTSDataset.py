@@ -52,11 +52,12 @@ class TTSDataset(Dataset):
             filepaths = datapoints[3]
 
             print("... building dataset cache ...")
+            codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
             self.datapoints = list()
             self.ctc_losses = list()
 
-            acoustic_model = Aligner(device=device)
-            acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"])
+            acoustic_model = Aligner()
+            acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location="cpu")["asr_model"])
 
             # ==========================================
             # actual creation of datapoints starts here
@@ -91,7 +92,8 @@ class TTSDataset(Dataset):
                         indexes_of_word_boundaries.append(phoneme_index)
                 matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-                alignment_path, ctc_loss = acoustic_model.inference(indexes=dataset[index][1].int().transpose(0, 1).to(device),
+                features = codec_wrapper.indexes_to_codec_frames(dataset[index][1].int().transpose(0, 1).to(device)).transpose(0, 1).detach()
+                alignment_path, ctc_loss = acoustic_model.inference(features=features,
                                                                     tokens=matrix_without_word_boundaries.to(device),
                                                                     save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                     return_ctc=True)
@@ -175,7 +177,7 @@ class TTSDataset(Dataset):
 
     def __getitem__(self, index):
         if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform indexes into continuous matrices
+            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
                self.ap.indexes_to_one_hot(self.datapoints[index][2].long().transpose(0, 1)).detach(), \

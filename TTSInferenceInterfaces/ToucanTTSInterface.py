@@ -43,7 +43,7 @@ class ToucanTTSInterface(torch.nn.Module):
         checkpoint = torch.load(tts_model_path, map_location='cpu')
 
         ################################
-        #   load phone to mel model    #
+        #   load phone to features model    #
         ################################
         self.use_lang_id = True
         self.phone2codec = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
@@ -52,7 +52,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.phone2codec = self.phone2codec.to(torch.device(device))
 
         #################################
-        #  load mel to style models     #
+        #  load features to style models     #
         #################################
         self.style_embedding_function = StyleEmbedding()
         if embedding_model_path is None:

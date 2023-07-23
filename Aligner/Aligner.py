@@ -9,10 +9,7 @@ import torch.nn as nn
 from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
-from torchaudio.transforms import MelSpectrogram
-from torchaudio.transforms import Resample
 
-from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 
 
@@ -38,11 +35,10 @@ class BatchNormConv(nn.Module):
 class Aligner(torch.nn.Module):
 
     def __init__(self,
-                 n_features=80,
+                 n_features=72,
                  num_symbols=145,
                  lstm_dim=512,
-                 conv_dim=512,
-                 device="cpu"):
+                 conv_dim=512):
         super().__init__()
         self.convs = nn.ModuleList([
             BatchNormConv(n_features, conv_dim, 3),
@@ -61,22 +57,6 @@ class Aligner(torch.nn.Module):
         self.tf = ArticulatoryCombinedTextFrontend(language="en")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
-        self.cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # only used to transform indexes into waves
-        self.spec = MelSpectrogram(sample_rate=16000,
-                                   n_fft=1024,
-                                   win_length=1024,
-                                   hop_length=92,
-                                   f_min=40.0,
-                                   f_max=8000,
-                                   pad=0,
-                                   n_mels=80,
-                                   power=2.0,
-                                   normalized=False,
-                                   center=True,
-                                   pad_mode='reflect',
-                                   mel_scale='htk').to(device)
-        self.resample = Resample(orig_freq=44100, new_freq=16000).to(device)
-        self.to(device)
 
     def forward(self, x, lens=None):
         for conv in self.convs:
@@ -93,48 +73,22 @@ class Aligner(torch.nn.Module):
         return x
 
     @torch.inference_mode()
-    def inference(self, indexes, tokens, desired_length=None, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
+    def inference(self, features, tokens, save_img_for_debug=None, train=False, pathfinding="MAS", return_ctc=False):
         if not train:
             tokens_indexed = self.tf.text_vectors_to_id_sequence(text_vector=tokens)  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             tokens = np.asarray(tokens_indexed)
-            mel = self.spec(self.resample(self.cap.indexes_to_audio(indexes))).transpose(0, 1)
         else:
             tokens = tokens.cpu().detach().numpy()
-            mel = indexes
-            if desired_length is not None:
-                desired_length = desired_length.cpu()
 
-        if desired_length is None:
-            desired_length = indexes.size(1)
-
-        pred = self(mel.unsqueeze(0))
+        pred = self(features.unsqueeze(0))
         if return_ctc:
             ctc_loss = self.ctc_loss(pred.transpose(0, 1).log_softmax(2), torch.LongTensor(tokens), torch.LongTensor([len(pred[0])]),
                                      torch.LongTensor([len(tokens)])).item()
-        pred = pred.squeeze().detach().cpu().numpy()
+        pred = pred.squeeze().cpu().detach().numpy()
+        pred_max = pred[:, tokens]
 
-        # now we need to reduce the time axis to the one of the codec.
-        if len(pred) != desired_length:
-            # Step 1: Calculate the downsample factor
-            downsample_factor = pred.shape[0] / desired_length
+        # run monotonic alignment search
 
-            # Step 2: Create the new reduced time-axis
-            reduced_time_axis = np.array([downsample_factor * i for i in range(desired_length)])
-
-            # Step 3: Identify the contributing time-steps and their corresponding weights
-            start_indices = np.floor(reduced_time_axis).astype(int)
-            weights = reduced_time_axis - start_indices
-
-            # Step 4: Perform downsampling by averaging
-            reduced_tensor = np.zeros((desired_length, pred.shape[1]))
-            for i in range(desired_length):
-                reduced_tensor[i] = pred[start_indices[i]] * (1 - weights[i]) + pred[start_indices[i] + 1] * weights[i]
-        else:
-            reduced_tensor = pred
-
-        pred_max = reduced_tensor[:, tokens]
-
-        # now we apply monotonic alignment search over the posteriogram ordered by the phonemes
         alignment_matrix = binarize_alignment(pred_max)
 
         if save_img_for_debug is not None:
@@ -161,6 +115,7 @@ class Aligner(torch.nn.Module):
         return alignment_matrix
 
 
+
 def binarize_alignment(alignment_prob):
     """
     # Implementation by:
@@ -169,7 +124,7 @@ def binarize_alignment(alignment_prob):
 
     Binarizes alignment with MAS.
     """
-    # assumes mel x text
+    # assumes features x text
     opt = np.zeros_like(alignment_prob)
     alignment_prob = alignment_prob + (np.abs(alignment_prob).max() + 1.0)  # make all numbers positive and add an offset to avoid log of 0 later
     alignment_prob * alignment_prob * (1.0 / alignment_prob.max())  # normalize to (0,  1]
@@ -198,8 +153,12 @@ def binarize_alignment(alignment_prob):
 
 if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="en")
+    from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+
+    cap = CodecAudioPreprocessor(input_sr=-1)
     dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 20])
-    alignment = Aligner().inference(dummy_codebook_indexes, tokens=tf.string_to_tensor("Hello world"))
+    codebook_frames = cap.indexes_to_codec_frames(dummy_codebook_indexes)
+    alignment = Aligner().inference(codebook_frames.transpose(0, 1), tokens=tf.string_to_tensor("Hello world"))
     print(alignment.shape)
     plt.imshow(alignment, origin="lower", cmap="GnBu")
     plt.show()

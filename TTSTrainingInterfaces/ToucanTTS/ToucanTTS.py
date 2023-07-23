@@ -379,10 +379,10 @@ class ToucanTTS(torch.nn.Module):
         indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
         indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
         indexes = indexes.transpose(0, 1)
-        # indexes = list()
+        # features = list()
         # for projection in self.feat_outs:
-        #    indexes.append(projection(decoded_speech))
-        # indexes = torch.stack(indexes).transpose(0, 1)
+        #    features.append(projection(decoded_speech))
+        # features = torch.stack(features).transpose(0, 1)
 
         if is_inference:
             return indexes, \
