@@ -97,10 +97,12 @@ class Aligner(torch.nn.Module):
         if not train:
             tokens_indexed = self.tf.text_vectors_to_id_sequence(text_vector=tokens)  # first we need to convert the articulatory vectors to IDs, so we can apply dijkstra or viterbi
             tokens = np.asarray(tokens_indexed)
-            mel = self.spec(self.resample(self.cap.indexes_to_audio(indexes))).transpose(0, 1)  # [:indexes.size(1)]
+            mel = self.spec(self.resample(self.cap.indexes_to_audio(indexes))).transpose(0, 1)
         else:
             tokens = tokens.cpu().detach().numpy()
             mel = indexes
+            if desired_length is not None:
+                desired_length = desired_length.cpu()
 
         if desired_length is None:
             desired_length = indexes.size(1)
@@ -113,7 +115,6 @@ class Aligner(torch.nn.Module):
 
         # now we need to reduce the time axis to the one of the codec.
         if len(pred) != desired_length:
-            desired_length = desired_length.cpu()
             # Step 1: Calculate the downsample factor
             downsample_factor = pred.shape[0] / desired_length
 
