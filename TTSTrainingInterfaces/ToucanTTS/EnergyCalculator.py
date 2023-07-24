@@ -65,10 +65,11 @@ class EnergyCalculator(torch.nn.Module):
         if isinstance(energy, list):
             energy = pad_list(energy, 0.0)
 
-        # Return with the shape (B, T, 1)
         if norm_by_average:
             average = energy[0][energy[0] != 0.0].mean()
             energy = energy / average
+
+        # Return with the shape (B, T, 1)
         return energy.unsqueeze(-1), energy_lengths
 
     def _average_by_duration(self, x, d, text=None):

@@ -1,7 +1,6 @@
 import os
 import statistics
 
-import soundfile as sf
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -58,25 +57,22 @@ class TTSDataset(Dataset):
 
             acoustic_model = Aligner()
             acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location="cpu")["asr_model"])
+            acoustic_model = acoustic_model.to(device)
 
             # ==========================================
             # actual creation of datapoints starts here
             # ==========================================
 
-            _, _orig_sr = sf.read(filepaths[0])
-            parsel = Parselmouth(reduction_factor=reduction_factor, fs=_orig_sr)
-            energy_calc = EnergyCalculator(reduction_factor=reduction_factor, fs=_orig_sr)
-            dc = DurationCalculator(reduction_factor=reduction_factor)
+            parsel = Parselmouth(fs=44100, hop_length=512)
+            energy_calc = EnergyCalculator(fs=44100, n_fft=2048, hop_length=512)
+            dc = DurationCalculator()
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
 
             for index in tqdm(range(len(dataset))):
-                filepath = filepaths[index]
-                raw_wave, sr = sf.read(filepath)
-                if _orig_sr != sr:
-                    print(f"Not all files have the same sampling rate! Please fix and re-run.  -- triggered by {filepath}")
+                decoded_wave = codec_wrapper.indexes_to_audio(dataset[index][1].int().transpose(0, 1).to(device)).detach().cpu()
 
-                norm_wave_length = torch.LongTensor([len(raw_wave)])
+                decoded_wave_length = torch.LongTensor([len(decoded_wave)])
 
                 text = dataset[index][0]
                 feature_lengths = torch.LongTensor([len(dataset[index][1])])
@@ -120,15 +116,15 @@ class TTSDataset(Dataset):
                             cached_duration[phoneme_index] = new_dur_2
                     last_vec = vec
 
-                cached_energy = energy_calc(input_waves=torch.tensor(raw_wave).unsqueeze(0),
-                                            input_waves_lengths=norm_wave_length,
+                cached_energy = energy_calc(input_waves=torch.tensor(decoded_wave).unsqueeze(0),
+                                            input_waves_lengths=decoded_wave_length,
                                             feats_lengths=feature_lengths,
                                             text=text,
                                             durations=cached_duration.unsqueeze(0),
                                             durations_lengths=torch.LongTensor([len(cached_duration)]))[0].squeeze(0).cpu()
 
-                cached_pitch = parsel(input_waves=torch.tensor(raw_wave).unsqueeze(0),
-                                      input_waves_lengths=norm_wave_length,
+                cached_pitch = parsel(input_waves=torch.tensor(decoded_wave).unsqueeze(0),
+                                      input_waves_lengths=decoded_wave_length,
                                       feats_lengths=feature_lengths,
                                       text=text,
                                       durations=cached_duration.unsqueeze(0),

@@ -9,8 +9,7 @@ import torch
 
 class DurationCalculator(torch.nn.Module):
 
-    def __init__(self, reduction_factor):
-        self.reduction_factor = reduction_factor
+    def __init__(self, reduction_factor=1.0):
         super().__init__()
 
     @torch.no_grad()
@@ -28,4 +27,4 @@ class DurationCalculator(torch.nn.Module):
             plt.close()
         # calculate duration from 2d alignment matrix
         durations = torch.stack([att_ws.argmax(-1).eq(i).sum() for i in range(att_ws.shape[1])])
-        return durations.view(-1) * self.reduction_factor
+        return durations.view(-1)
