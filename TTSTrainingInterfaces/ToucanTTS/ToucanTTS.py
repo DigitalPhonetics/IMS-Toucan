@@ -2,7 +2,6 @@ import torch
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
-from torch.nn.utils import weight_norm
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
@@ -238,21 +237,7 @@ class ToucanTTS(torch.nn.Module):
                          is_BTC=False,
                          use_weightnorm=True)
 
-        # self.classifier = weight_norm(
-        #    torch.nn.Conv1d(
-        #    attention_dimension,
-        #    self.codebook_size * self.num_codebooks,
-        #    kernel_size=1,
-        #    padding="same",
-        # ))
-
-        self.classifier = weight_norm(
-            torch.nn.Conv2d(attention_dimension, self.num_codebooks * self.codebook_size, kernel_size=1)
-        )
-
-        # self.feat_outs = torch.nn.ModuleList()
-        # for codebook_index in range(self.num_codebooks):
-        #    self.feat_outs.append(Linear(attention_dimension, self.codebook_size))
+        self.classifier = torch.nn.Linear(attention_dimension, self.num_codebooks * self.codebook_size)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
@@ -287,18 +272,18 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         outs, \
-            predicted_durations, \
-            predicted_pitch, \
-            predicted_energy = self._forward(text_tensors=text_tensors,
-                                             text_lengths=text_lengths,
-                                             gold_speech=gold_speech,
-                                             speech_lengths=speech_lengths,
-                                             gold_durations=gold_durations,
-                                             gold_pitch=gold_pitch,
-                                             gold_energy=gold_energy,
-                                             utterance_embedding=utterance_embedding,
-                                             is_inference=False,
-                                             lang_ids=lang_ids)
+        predicted_durations, \
+        predicted_pitch, \
+        predicted_energy = self._forward(text_tensors=text_tensors,
+                                         text_lengths=text_lengths,
+                                         gold_speech=gold_speech,
+                                         speech_lengths=speech_lengths,
+                                         gold_durations=gold_durations,
+                                         gold_pitch=gold_pitch,
+                                         gold_energy=gold_energy,
+                                         utterance_embedding=utterance_embedding,
+                                         is_inference=False,
+                                         lang_ids=lang_ids)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -378,24 +363,27 @@ class ToucanTTS(torch.nn.Module):
         if self.use_wavenet_postnet:
             decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=decoder_masks, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
-        indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
-        indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
+        indexes = self.classifier(decoded_speech)
+        # [Batch, Sequence, Hidden]
+        indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
+        # [Batch, Sequence, Codebook, Classes]
+        indexes = indexes.transpose(1, 2)
+        # [Batch, Codebook, Sequence, Classes]
+        indexes = indexes.transpose(2, 3)
+        # [Batch, Codebook, Classes, Sequence]
         indexes = indexes.transpose(0, 1)
-        # features = list()
-        # for projection in self.feat_outs:
-        #    features.append(projection(decoded_speech))
-        # features = torch.stack(features).transpose(0, 1)
+        # [Codebook, Batch, Classes, Sequence]
 
         if is_inference:
             return indexes, \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze(), \
-                energy_predictions.squeeze()
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze(), \
+                   energy_predictions.squeeze()
         else:
             return indexes, \
-                predicted_durations, \
-                pitch_predictions, \
-                energy_predictions
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -424,14 +412,14 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
-            duration_predictions, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text_pseudobatched,
-                                               ilens,
-                                               speech_pseudobatched,
-                                               is_inference=True,
-                                               utterance_embedding=utterance_embeddings,
-                                               lang_ids=lang_id)  # (1, L, odim)
+        duration_predictions, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text_pseudobatched,
+                                           ilens,
+                                           speech_pseudobatched,
+                                           is_inference=True,
+                                           utterance_embedding=utterance_embeddings,
+                                           lang_ids=lang_id)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in outs:

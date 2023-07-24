@@ -80,22 +80,25 @@ def plot_progress_spec_toucantts(net,
                                                     utterance_embedding=default_emb,
                                                     lang_id=get_language_id(lang).to(device))
 
-    plot_code_spec(pitch, sentence, ap, cap, durations, codes, os.path.join(save_dir, "visualization"), tf, step)
+    plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, os.path.join(save_dir, "visualization"), tf, step)
     return os.path.join(os.path.join(save_dir, "visualization"), f"{step}.png")
 
 
-def plot_code_spec(pitch, sentence, ap, cap, durations, codes, save_path, tf, step):
+def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path, tf, step):
     codes_from_indexes = cap.indexes_to_codec_frames(codes.squeeze())
     mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes_from_indexes))
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
+    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(12, 6))
 
     spec_plot_axis = ax[0]
     codec_plot_axis = ax[1]
+    pitch_and_energy_axis = ax[2]
 
     codec_plot_axis.imshow(codes_from_indexes.cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.xaxis.set_visible(False)
     codec_plot_axis.yaxis.set_visible(False)
+    pitch_and_energy_axis.yaxis.set_visible(False)
+    pitch_and_energy_axis.xaxis.set_visible(False)
     spec_plot_axis.yaxis.set_visible(False)
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
     codec_plot_axis.xaxis.grid(True, which='minor')
@@ -128,8 +131,12 @@ def plot_code_spec(pitch, sentence, ap, cap, durations, codes, save_path, tf, st
     codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=72, linewidth=1.0)
     codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=72, linewidth=1.2)
 
+    pitch_and_energy_axis.plot(pitch.cpu().squeeze().numpy(), color="blue")
+    pitch_and_energy_axis.plot(energy.cpu().squeeze().numpy(), color="green")
+
     spec_plot_axis.set_aspect("auto")
     codec_plot_axis.set_aspect("auto")
+    pitch_and_energy_axis.set_aspect("auto")
 
     plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=.9, wspace=0.0, hspace=0.0)
     os.makedirs(save_path, exist_ok=True)
