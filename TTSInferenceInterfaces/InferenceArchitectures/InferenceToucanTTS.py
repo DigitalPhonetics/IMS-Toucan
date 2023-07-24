@@ -64,6 +64,7 @@ class ToucanTTS(torch.nn.Module):
         use_conditional_layernorm_embedding_integration = config.use_conditional_layernorm_embedding_integration
         num_codebooks = config.num_codebooks
         codebook_size = config.codebook_size
+        use_wavenet_postnet = config.use_wavenet_postnet
 
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
@@ -72,6 +73,7 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.use_wavenet_postnet = use_wavenet_postnet
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -151,16 +153,16 @@ class ToucanTTS(torch.nn.Module):
                                  use_output_norm=False,
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
-
-        self.wn = WN(hidden_size=attention_dimension,
-                     kernel_size=3,
-                     dilation_rate=2,
-                     n_layers=8,
-                     c_cond=attention_dimension,
-                     p_dropout=0.1,
-                     share_cond_layers=False,
-                     is_BTC=False,
-                     use_weightnorm=True)
+        if self.use_wavenet_postnet:
+            self.wn = WN(hidden_size=attention_dimension,
+                         kernel_size=3,
+                         dilation_rate=2,
+                         n_layers=8,
+                         c_cond=attention_dimension,
+                         p_dropout=0.1,
+                         share_cond_layers=False,
+                         is_BTC=False,
+                         use_weightnorm=True)
 
         self.classifier = weight_norm(
             torch.nn.Conv2d(attention_dimension, self.num_codebooks * self.codebook_size, kernel_size=1)
@@ -199,12 +201,8 @@ class ToucanTTS(torch.nn.Module):
         energy_predictions = self.energy_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding) if gold_energy is None else gold_energy
         predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None, utt_embed=utterance_embedding) if gold_durations is None else gold_durations
 
-        # modifying the predictions with linguistic knowledge and control parameters
+        # modifying the predictions with control parameters
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
-            if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                pitch_predictions[0][phoneme_index] = 0.0
-            if phoneme_vector[get_feature_to_index_lookup()["phoneme"]] == 0:
-                energy_predictions[0][phoneme_index] = 0.0
             if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                 predicted_durations[0][phoneme_index] = 0
             if phoneme_vector[get_feature_to_index_lookup()["silence"]] == 1 and pause_duration_scaling_factor != 1.0:
@@ -226,7 +224,8 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
 
-        decoded_speech = self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
+        if self.use_wavenet_postnet:
+            decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
         indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))

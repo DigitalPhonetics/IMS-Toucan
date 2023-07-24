@@ -43,7 +43,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=128,  # todo try 512
+                 attention_dimension=256,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -62,11 +62,11 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=6,
+                 decoder_layers=8,
                  decoder_units=1280,
                  decoder_concat_after=False,
-                 conformer_decoder_kernel_size=31,  # 31 for spectrograms
-                 decoder_normalize_before=True,
+                 conformer_decoder_kernel_size=1,  # 31 for spectrograms
+                 decoder_normalize_before=False,  # used to be True
                  transformer_dec_dropout_rate=0.1,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
@@ -79,7 +79,7 @@ class ToucanTTS(torch.nn.Module):
                  # pitch predictor
                  pitch_predictor_layers=5,
                  pitch_predictor_kernel_size=5,
-                 pitch_predictor_dropout=0.5,
+                 pitch_predictor_dropout=0.3,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
 
@@ -95,7 +95,8 @@ class ToucanTTS(torch.nn.Module):
                  lang_embs=8000,
                  use_conditional_layernorm_embedding_integration=False,
                  num_codebooks=9,
-                 codebook_size=1024):
+                 codebook_size=1024,
+                 use_wavenet_postnet=False):
         super().__init__()
 
         self.config = {
@@ -140,7 +141,8 @@ class ToucanTTS(torch.nn.Module):
             "lang_embs"                                      : lang_embs,
             "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration,
             "num_codebooks"                                  : num_codebooks,
-            "codebook_size"                                  : codebook_size
+            "codebook_size"                                  : codebook_size,
+            "use_wavenet_postnet"                            : use_wavenet_postnet
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -150,6 +152,7 @@ class ToucanTTS(torch.nn.Module):
         self.multispeaker_model = utt_embed_dim is not None
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
+        self.use_wavenet_postnet = use_wavenet_postnet
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -224,16 +227,16 @@ class ToucanTTS(torch.nn.Module):
                                  use_output_norm=False,
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
-
-        self.wn = WN(hidden_size=attention_dimension,
-                     kernel_size=3,
-                     dilation_rate=2,
-                     n_layers=8,
-                     c_cond=attention_dimension,
-                     p_dropout=0.1,
-                     share_cond_layers=False,
-                     is_BTC=False,
-                     use_weightnorm=True)
+        if self.use_wavenet_postnet:
+            self.wn = WN(hidden_size=attention_dimension,
+                         kernel_size=3,
+                         dilation_rate=2,
+                         n_layers=8,
+                         c_cond=attention_dimension,
+                         p_dropout=0.1,
+                         share_cond_layers=False,
+                         is_BTC=False,
+                         use_weightnorm=True)
 
         # self.classifier = weight_norm(
         #    torch.nn.Conv1d(
@@ -284,18 +287,18 @@ class ToucanTTS(torch.nn.Module):
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
         """
         outs, \
-        predicted_durations, \
-        predicted_pitch, \
-        predicted_energy = self._forward(text_tensors=text_tensors,
-                                         text_lengths=text_lengths,
-                                         gold_speech=gold_speech,
-                                         speech_lengths=speech_lengths,
-                                         gold_durations=gold_durations,
-                                         gold_pitch=gold_pitch,
-                                         gold_energy=gold_energy,
-                                         utterance_embedding=utterance_embedding,
-                                         is_inference=False,
-                                         lang_ids=lang_ids)
+            predicted_durations, \
+            predicted_pitch, \
+            predicted_energy = self._forward(text_tensors=text_tensors,
+                                             text_lengths=text_lengths,
+                                             gold_speech=gold_speech,
+                                             speech_lengths=speech_lengths,
+                                             gold_durations=gold_durations,
+                                             gold_pitch=gold_pitch,
+                                             gold_energy=gold_energy,
+                                             utterance_embedding=utterance_embedding,
+                                             is_inference=False,
+                                             lang_ids=lang_ids)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -344,10 +347,8 @@ class ToucanTTS(torch.nn.Module):
             energy_predictions = self.energy_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
             predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
 
-            # modifying the predictions with linguistic knowledge
+            # modifying the predictions
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
-                if phoneme_vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    pitch_predictions[0][phoneme_index] = 0.0
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     predicted_durations[0][phoneme_index] = 0
             # enriching the text with pitch and energy info
@@ -374,7 +375,8 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        decoded_speech = self.wn(x=decoded_speech.transpose(1, 2), nonpadding=decoder_masks, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
+        if self.use_wavenet_postnet:
+            decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=decoder_masks, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
         indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
@@ -386,14 +388,14 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             return indexes, \
-                   predicted_durations.squeeze(), \
-                   pitch_predictions.squeeze(), \
-                   energy_predictions.squeeze()
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze(), \
+                energy_predictions.squeeze()
         else:
             return indexes, \
-                   predicted_durations, \
-                   pitch_predictions, \
-                   energy_predictions
+                predicted_durations, \
+                pitch_predictions, \
+                energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -422,14 +424,14 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
-        duration_predictions, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text_pseudobatched,
-                                           ilens,
-                                           speech_pseudobatched,
-                                           is_inference=True,
-                                           utterance_embedding=utterance_embeddings,
-                                           lang_ids=lang_id)  # (1, L, odim)
+            duration_predictions, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text_pseudobatched,
+                                               ilens,
+                                               speech_pseudobatched,
+                                               is_inference=True,
+                                               utterance_embedding=utterance_embeddings,
+                                               lang_ids=lang_id)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in outs:

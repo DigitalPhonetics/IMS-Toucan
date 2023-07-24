@@ -6,7 +6,6 @@ import torch
 import torch.nn.functional as F
 
 from Layers.STFT import STFT
-from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import pad_list
 
 
@@ -77,10 +76,11 @@ class EnergyCalculator(torch.nn.Module):
         x_avg = [x[start:end].mean() if len(x[start:end]) != 0 else x.new_tensor(0.0) for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
         # find tokens that are not phoneme and set energy to 0
-        if text is not None:
-            for i, vector in enumerate(text):
-                if vector[get_feature_to_index_lookup()["phoneme"]] == 0:
-                    x_avg[i] = torch.tensor(0.0, device=x.device)
+        # while this makes sense, it make sit harder to model, so we leave this out
+        # if text is not None:
+        #    for i, vector in enumerate(text):
+        #        if vector[get_feature_to_index_lookup()["phoneme"]] == 0:
+        #            x_avg[i] = torch.tensor(0.0, device=x.device)
 
         return torch.stack(x_avg)
 

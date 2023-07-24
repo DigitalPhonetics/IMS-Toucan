@@ -10,8 +10,6 @@ import torch
 import torch.nn.functional as F
 from scipy.interpolate import interp1d
 
-from Preprocessing.articulatory_features import get_feature_to_index_lookup
-
 
 class Parselmouth(torch.nn.Module):
     """
@@ -19,7 +17,7 @@ class Parselmouth(torch.nn.Module):
     """
 
     def __init__(self, fs=16000, n_fft=1024, hop_length=256, f0min=40, f0max=600, use_token_averaged_f0=True,
-                 use_continuous_f0=False, use_log_f0=False, reduction_factor=1):
+                 use_continuous_f0=True, use_log_f0=False, reduction_factor=1):
         super().__init__()
         self.fs = fs
         self.n_fft = n_fft
@@ -110,9 +108,10 @@ class Parselmouth(torch.nn.Module):
             for start, end in zip(d_cumsum[:-1], d_cumsum[1:])]
 
         # find tokens that are not voiced and set pitch to 0
-        if text is not None:
-            for i, vector in enumerate(text):
-                if vector[get_feature_to_index_lookup()["voiced"]] == 0:
-                    x_avg[i] = torch.tensor(0.0, device=x.device)
+        # while this makes sense, it makes it harder for the model to learn, so we leave this out now.
+        # if text is not None:
+        #    for i, vector in enumerate(text):
+        #        if vector[get_feature_to_index_lookup()["voiced"]] == 0:
+        #            x_avg[i] = torch.tensor(0.0, device=x.device)
 
         return torch.stack(x_avg)
