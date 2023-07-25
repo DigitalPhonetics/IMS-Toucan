@@ -3,7 +3,6 @@ import torch
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
-from torch.nn.utils import weight_norm
 
 from Layers.Conformer import Conformer
 from Layers.DurationPredictor import DurationPredictor
@@ -164,9 +163,9 @@ class ToucanTTS(torch.nn.Module):
                          is_BTC=False,
                          use_weightnorm=True)
 
-        self.classifier = weight_norm(
-            torch.nn.Conv2d(attention_dimension, self.num_codebooks * self.codebook_size, kernel_size=1)
-        )
+        self.hierarchical_classifier = torch.nn.ModuleList()
+        for head in range(self.num_codebooks):
+            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
 
         self.load_state_dict(weights)
         self.eval()
@@ -227,9 +226,25 @@ class ToucanTTS(torch.nn.Module):
         if self.use_wavenet_postnet:
             decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
-        indexes = self.classifier(decoded_speech.transpose(1, 2).unsqueeze(2))
-        indexes = indexes.view(decoded_speech.size(0), self.num_codebooks, self.codebook_size, decoded_speech.size(1))
-        indexes = indexes.transpose(0, 1)
+            # The codebooks are hierarchical: The first influences the second, but the second not the first.
+            # This is because they are residual vector quantized, which makes them extremely space efficient
+            # with just a few discrete tokens, but terribly difficult to predict.
+            decodings = list()
+            decodings.append(decoded_speech)
+            for classifier_head in self.hierarchical_classifier:
+                # each codebook considers all previous codebooks.
+                decodings.append(classifier_head(torch.cat(decodings, dim=2)))
+
+            indexes = torch.cat(decodings[1:], dim=2)
+            # [Batch, Sequence, Hidden]
+            indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
+            # [Batch, Sequence, Codebook, Classes]
+            indexes = indexes.transpose(1, 2)
+            # [Batch, Codebook, Sequence, Classes]
+            indexes = indexes.transpose(2, 3)
+            # [Batch, Codebook, Classes, Sequence]
+            indexes = indexes.transpose(0, 1)
+            # [Codebook, Batch, Classes, Sequence]
 
         return indexes, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 

@@ -238,7 +238,6 @@ class ToucanTTS(torch.nn.Module):
                          use_weightnorm=True)
 
         self.hierarchical_classifier = torch.nn.ModuleList()
-        self.refiners = torch.nn.ModuleList()
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
 
