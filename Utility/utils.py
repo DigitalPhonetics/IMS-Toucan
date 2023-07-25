@@ -90,8 +90,8 @@ def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path
     fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(9, 9))
 
     spec_plot_axis = ax[0]
-    codec_plot_axis = ax[1]
-    pitch_and_energy_axis = ax[2]
+    codec_plot_axis = ax[2]
+    pitch_and_energy_axis = ax[1]
 
     codec_plot_axis.imshow(codes_from_indexes.cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')

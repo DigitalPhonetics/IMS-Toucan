@@ -237,7 +237,10 @@ class ToucanTTS(torch.nn.Module):
                          is_BTC=False,
                          use_weightnorm=True)
 
-        self.classifier = torch.nn.Linear(attention_dimension, self.num_codebooks * self.codebook_size)
+        self.hierarchical_classifier = torch.nn.ModuleList()
+        self.refiners = torch.nn.ModuleList()
+        for head in range(self.num_codebooks):
+            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
@@ -363,7 +366,16 @@ class ToucanTTS(torch.nn.Module):
         if self.use_wavenet_postnet:
             decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=decoder_masks, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
-        indexes = self.classifier(decoded_speech)
+        # The codebooks are hierarchical: The first influences the second, but the second not the first.
+        # This is because they are residual vector quantized, which makes them extremely space efficient
+        # with just a few discrete tokens, but terribly difficult to predict.
+        decodings = list()
+        decodings.append(decoded_speech)
+        for classifier_head in self.hierarchical_classifier:
+            # each codebook considers all previous codebooks.
+            decodings.append(classifier_head(torch.cat(decodings, dim=2)))
+
+        indexes = torch.cat(decodings[1:], dim=2)
         # [Batch, Sequence, Hidden]
         indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
         # [Batch, Sequence, Codebook, Classes]
