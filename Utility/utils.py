@@ -87,7 +87,7 @@ def plot_progress_spec_toucantts(net,
 def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path, tf, step):
     codes_from_indexes = cap.indexes_to_codec_frames(codes.squeeze())
     mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes_from_indexes))
-    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(9, 9))
+    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(9, 11))
 
     spec_plot_axis = ax[0]
     codec_plot_axis = ax[2]
@@ -138,7 +138,7 @@ def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path
     codec_plot_axis.set_aspect("auto")
     pitch_and_energy_axis.set_aspect("auto")
 
-    plt.subplots_adjust(left=0.05, bottom=0.15, right=0.95, top=.95, wspace=0.0, hspace=0.0)
+    plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95, wspace=0.0, hspace=0.0)
     os.makedirs(save_path, exist_ok=True)
     plt.savefig(os.path.join(save_path, f"{step}.png"), dpi=300)
     plt.clf()

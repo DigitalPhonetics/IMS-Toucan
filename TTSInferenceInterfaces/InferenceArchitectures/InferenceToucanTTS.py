@@ -226,25 +226,26 @@ class ToucanTTS(torch.nn.Module):
         if self.use_wavenet_postnet:
             decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
-            # The codebooks are hierarchical: The first influences the second, but the second not the first.
-            # This is because they are residual vector quantized, which makes them extremely space efficient
-            # with just a few discrete tokens, but terribly difficult to predict.
-            decodings = list()
-            decodings.append(decoded_speech)
-            for classifier_head in self.hierarchical_classifier:
-                # each codebook considers all previous codebooks.
-                decodings.append(classifier_head(torch.cat(decodings, dim=2)))
+        # The codebooks are hierarchical: The first influences the second, but the second not the first.
+        # This is because they are residual vector quantized, which makes them extremely space efficient
+        # with just a few discrete tokens, but terribly difficult to predict.
+        predicted_indexes = list()
+        predicted_indexes.append(decoded_speech)
+        for classifier_head in self.hierarchical_classifier:
+            # each codebook considers all previous codebooks.
+            prediction_for_current_codebook = classifier_head(torch.cat(predicted_indexes, dim=2))
+            predicted_indexes.append(torch.nn.functional.softmax(prediction_for_current_codebook, dim=2))
 
-            indexes = torch.cat(decodings[1:], dim=2)
-            # [Batch, Sequence, Hidden]
-            indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
-            # [Batch, Sequence, Codebook, Classes]
-            indexes = indexes.transpose(1, 2)
-            # [Batch, Codebook, Sequence, Classes]
-            indexes = indexes.transpose(2, 3)
-            # [Batch, Codebook, Classes, Sequence]
-            indexes = indexes.transpose(0, 1)
-            # [Codebook, Batch, Classes, Sequence]
+        indexes = torch.cat(predicted_indexes[1:], dim=2)
+        # [Batch, Sequence, Hidden]
+        indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
+        # [Batch, Sequence, Codebook, Classes]
+        indexes = indexes.transpose(1, 2)
+        # [Batch, Codebook, Sequence, Classes]
+        indexes = indexes.transpose(2, 3)
+        # [Batch, Codebook, Classes, Sequence]
+        indexes = indexes.transpose(0, 1)
+        # [Codebook, Batch, Classes, Sequence]
 
         return indexes, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 

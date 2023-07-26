@@ -241,9 +241,6 @@ class ToucanTTS(torch.nn.Module):
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
 
-        # TODO try out the continuous frames for 8 dim instead of 1024 dim per layer.
-        # TODO Teacher force the continuous frames during training, use the predicted ones during inference
-
         # initialize parameters
         self._reset_parameters(init_type=init_type)
         if lang_embs is not None:
