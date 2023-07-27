@@ -128,8 +128,8 @@ def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path
     except IndexError:
         spec_plot_axis.set_title(sentence)
 
-    codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=72, linewidth=1.0)
-    codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=72, linewidth=1.2)
+    codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=8, linewidth=1.0)
+    codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=8, linewidth=1.2)
 
     pitch_and_energy_axis.plot(pitch.cpu().squeeze().numpy(), color="blue")
     pitch_and_energy_axis.plot(energy.cpu().squeeze().numpy(), color="green")
