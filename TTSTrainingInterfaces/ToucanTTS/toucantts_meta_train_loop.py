@@ -141,7 +141,9 @@ def train_loop(net,
             gold_energy=gold_energy,
             utterance_embedding=style_embedding,
             lang_ids=lang_ids,
-            return_feats=False)
+            return_feats=False,
+            codebook_curriculum=step_counter // (warmup_steps // 2)
+        )
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters

@@ -138,7 +138,9 @@ def train_loop(net,
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
                 lang_ids=batch[8].to(device),
-                return_feats=True)
+                return_feats=True,
+                codebook_curriculum=step_counter // (warmup_steps // 2)
+            )
 
             if use_discriminator:
                 discriminator_loss, generator_loss = calc_gan_outputs(real_features=batch[2].to(device),
@@ -186,8 +188,8 @@ def train_loop(net,
             "optimizer"   : optimizer.state_dict(),
             "step_counter": step_counter,
             "scheduler"   : scheduler.state_dict(),
-            "default_emb": default_embedding,
-            "config"     : net.config
+            "default_emb" : default_embedding,
+            "config"      : net.config
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         if path_to_embed_model is None or train_embed:
             torch.save({

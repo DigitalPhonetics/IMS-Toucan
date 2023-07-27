@@ -93,7 +93,7 @@ class ToucanTTS(torch.nn.Module):
                  utt_embed_dim=512,
                  lang_embs=8000,
                  use_conditional_layernorm_embedding_integration=False,
-                 num_codebooks=2,  # between 1 and 9 when using the descript audio codec
+                 num_codebooks=4,  # between 1 and 9 when using the descript audio codec
                  codebook_size=1024,
                  use_wavenet_postnet=False):
         super().__init__()
@@ -258,7 +258,8 @@ class ToucanTTS(torch.nn.Module):
                 gold_energy,
                 utterance_embedding,
                 return_feats=False,
-                lang_ids=None
+                lang_ids=None,
+                codebook_curriculum=None
                 ):
         """
         Args:
@@ -272,6 +273,7 @@ class ToucanTTS(torch.nn.Module):
             gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
+            codebook_curriculum (Tensor): How many codebooks to use
         """
         outs, \
             predicted_durations, \
@@ -285,7 +287,8 @@ class ToucanTTS(torch.nn.Module):
                                              gold_energy=gold_energy,
                                              utterance_embedding=utterance_embedding,
                                              is_inference=False,
-                                             lang_ids=lang_ids)
+                                             lang_ids=lang_ids,
+                                             codebook_curriculum=codebook_curriculum)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -313,7 +316,8 @@ class ToucanTTS(torch.nn.Module):
                  gold_energy=None,
                  is_inference=False,
                  utterance_embedding=None,
-                 lang_ids=None):
+                 lang_ids=None,
+                 codebook_curriculum=None):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -374,7 +378,9 @@ class ToucanTTS(torch.nn.Module):
             gold_indexes.append(decoded_speech)
         predicted_indexes = list()
         predicted_indexes.append(decoded_speech)
-        for head_index, classifier_head in enumerate(self.hierarchical_classifier):
+        if codebook_curriculum is None:
+            codebook_curriculum = self.num_codebooks
+        for head_index, classifier_head in enumerate(self.hierarchical_classifier[:codebook_curriculum]):
             # each codebook considers all previous codebooks.
             if not is_inference:
                 predicted_indexes.append(classifier_head(torch.cat(gold_indexes, dim=2)))
@@ -456,7 +462,7 @@ class ToucanTTS(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    num_codebooks = 4
+    num_codebooks = 3
 
     print(sum(p.numel() for p in ToucanTTS(num_codebooks=num_codebooks).parameters() if p.requires_grad))
 
