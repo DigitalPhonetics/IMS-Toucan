@@ -390,7 +390,7 @@ class ToucanTTS(torch.nn.Module):
 
         indexes = torch.cat(predicted_indexes[1:], dim=2)
         # [Batch, Sequence, Hidden]
-        indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
+        indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), codebook_curriculum, self.codebook_size)
         # [Batch, Sequence, Codebook, Classes]
         indexes = indexes.transpose(1, 2)
         # [Batch, Codebook, Sequence, Classes]
