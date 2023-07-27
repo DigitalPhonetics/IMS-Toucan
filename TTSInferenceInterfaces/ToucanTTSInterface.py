@@ -203,8 +203,8 @@ class ToucanTTSInterface(torch.nn.Module):
             except IndexError:
                 spec_plot_axis.set_title(text)
 
-            codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="dotted", ymin=0.0, ymax=72, linewidth=1.0)
-            codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0.0, ymax=72, linewidth=1.2)
+            codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=4, linewidth=2.0)
+            codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=4, linewidth=3.0)
 
             spec_plot_axis.set_aspect("auto")
             codec_plot_axis.set_aspect("auto")

@@ -48,7 +48,7 @@ class ToucanTTS(torch.nn.Module):
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=False,
+                 use_cnn_in_conformer=True,
 
                  # encoder
                  encoder_layers=6,
@@ -64,8 +64,8 @@ class ToucanTTS(torch.nn.Module):
                  decoder_layers=8,
                  decoder_units=1280,
                  decoder_concat_after=False,
-                 conformer_decoder_kernel_size=1,  # 31 for spectrograms
-                 decoder_normalize_before=False,  # used to be True
+                 conformer_decoder_kernel_size=31,  # 31 for spectrograms
+                 decoder_normalize_before=True,
                  transformer_dec_dropout_rate=0.1,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
@@ -241,6 +241,8 @@ class ToucanTTS(torch.nn.Module):
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
 
+        self.curriculum_state = 1
+
         # initialize parameters
         self._reset_parameters(init_type=init_type)
         if lang_embs is not None:
@@ -378,8 +380,10 @@ class ToucanTTS(torch.nn.Module):
             gold_indexes.append(decoded_speech)
         predicted_indexes = list()
         predicted_indexes.append(decoded_speech)
-        if codebook_curriculum is None:
+        if codebook_curriculum is None or codebook_curriculum > self.num_codebooks:
             codebook_curriculum = self.num_codebooks
+        if codebook_curriculum > self.curriculum_state:
+            self.curriculum_state = codebook_curriculum
         for head_index, classifier_head in enumerate(self.hierarchical_classifier[:codebook_curriculum]):
             # each codebook considers all previous codebooks.
             if not is_inference:
@@ -444,7 +448,8 @@ class ToucanTTS(torch.nn.Module):
                                                speech_pseudobatched,
                                                is_inference=True,
                                                utterance_embedding=utterance_embeddings,
-                                               lang_ids=lang_id)  # (1, L, odim)
+                                               lang_ids=lang_id,
+                                               codebook_curriculum=self.curriculum_state)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in outs:
