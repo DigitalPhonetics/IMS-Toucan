@@ -139,7 +139,7 @@ def train_loop(net,
                 utterance_embedding=style_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                codebook_curriculum=step_counter // (warmup_steps // 2)
+                codebook_curriculum=(step_counter + (warmup_steps // 2)) // (warmup_steps // 2)  # TODO this requires tuning
             )
 
             if use_discriminator:
@@ -197,10 +197,12 @@ def train_loop(net,
             }, os.path.join(save_directory, "embedding_function.pt"))
         delete_old_checkpoints(save_directory, keep=5)
 
-        print("\nEpoch:                  {}".format(epoch))
-        print("Time elapsed:           {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Reconstruction Loss:    {}".format(round(sum(classification_losses_total) / len(classification_losses_total), 3)))
-        print("Steps:                  {}\n".format(step_counter))
+        print(f"\nEpoch:                  {epoch}")
+        print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
+        print(f"Reconstruction Loss:    {round(sum(classification_losses_total) / len(classification_losses_total), 4)}")
+        print(f"Steps:                  {step_counter}\n")
+        print(f"Currently training {(step_counter + (warmup_steps // 2)) // (warmup_steps // 2)} codebooks.")
+
         if use_wandb:
             wandb.log({
                 "classification_loss": round(sum(classification_losses_total) / len(classification_losses_total), 5),

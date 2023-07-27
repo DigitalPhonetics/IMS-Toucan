@@ -142,7 +142,7 @@ def train_loop(net,
             utterance_embedding=style_embedding,
             lang_ids=lang_ids,
             return_feats=False,
-            codebook_curriculum=step_counter // (warmup_steps // 2)
+            codebook_curriculum=(step_counter + (warmup_steps // 2)) // (warmup_steps // 2)  # TODO this requires tuning
         )
 
         # then we directly update our meta-parameters without
@@ -179,6 +179,7 @@ def train_loop(net,
                 batch_of_feature_sequence_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
             print("Reconstruction Loss:    {}".format(round(sum(classification_losses_total) / len(classification_losses_total), 3)))
             print("Steps:                  {}\n".format(step_counter))
+            print(f"Currently training {(step_counter + (warmup_steps // 2)) // (warmup_steps // 2)} codebooks.")
             torch.save({
                 "model"       : net.state_dict(),
                 "optimizer"   : optimizer.state_dict(),
