@@ -61,7 +61,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=8,
+                 decoder_layers=6,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 for spectrograms
@@ -238,8 +238,12 @@ class ToucanTTS(torch.nn.Module):
                          use_weightnorm=True)
 
         self.hierarchical_classifier = torch.nn.ModuleList()
+        self.backtranslation_heads = torch.nn.ModuleList()
+        backtranslation_dim = 6
+        self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
-            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
+            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * backtranslation_dim, self.codebook_size))
+            self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
         self.curriculum_state = 1
 
@@ -379,7 +383,8 @@ class ToucanTTS(torch.nn.Module):
             gold_indexes = list()
             gold_indexes.append(decoded_speech)
         predicted_indexes = list()
-        predicted_indexes.append(decoded_speech)
+        backtranslated_indexes = list()
+        backtranslated_indexes.append(decoded_speech)
         if codebook_curriculum is None or codebook_curriculum > self.num_codebooks:
             codebook_curriculum = self.num_codebooks
         if codebook_curriculum > self.curriculum_state:
@@ -388,11 +393,20 @@ class ToucanTTS(torch.nn.Module):
             # each codebook considers all previous codebooks.
             if not is_inference:
                 predicted_indexes.append(classifier_head(torch.cat(gold_indexes, dim=2)))
-                gold_indexes.append(gold_speech.transpose(0, 1)[head_index])
-            else:
-                predicted_indexes.append(classifier_head(torch.cat(predicted_indexes, dim=2)))
 
-        indexes = torch.cat(predicted_indexes[1:], dim=2)
+                gold_lookup_index = torch.argmax(gold_speech.transpose(0, 1)[head_index], dim=-1)
+                gold_lookup_index = gold_lookup_index.masked_fill(mask=~decoder_masks.squeeze(1), value=self.padding_id)
+                backtranslation = self.backtranslation_heads[head_index](gold_lookup_index)
+                gold_indexes.append(backtranslation)
+            else:
+                predicted_indexes.append(classifier_head(torch.cat(backtranslated_indexes, dim=2)))
+                predicted_lookup_index = torch.argmax(predicted_indexes[-1], dim=-1)
+                backtranslation = self.backtranslation_heads[head_index](predicted_lookup_index)
+                if len(backtranslation.size()) == 1:
+                    backtranslation = backtranslation.unsqueeze(0)
+                backtranslated_indexes.append(backtranslation)
+
+        indexes = torch.cat(predicted_indexes, dim=2)
         # [Batch, Sequence, Hidden]
         indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), codebook_curriculum, self.codebook_size)
         # [Batch, Sequence, Codebook, Classes]
@@ -467,7 +481,7 @@ class ToucanTTS(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    num_codebooks = 3
+    num_codebooks = 5
 
     print(sum(p.numel() for p in ToucanTTS(num_codebooks=num_codebooks).parameters() if p.requires_grad))
 
