@@ -42,13 +42,13 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=128,
+                 attention_dimension=512,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
+                 use_cnn_in_conformer=False,  # for now, we try using just a regular transformer
 
                  # encoder
                  encoder_layers=6,
@@ -66,7 +66,7 @@ class ToucanTTS(torch.nn.Module):
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 for spectrograms
                  decoder_normalize_before=True,
-                 transformer_dec_dropout_rate=0.1,
+                 transformer_dec_dropout_rate=0.2,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
 
@@ -246,6 +246,7 @@ class ToucanTTS(torch.nn.Module):
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Sequential(torch.nn.Linear(attention_dimension + head * backtranslation_dim, attention_dimension),
                                                                     torch.nn.Tanh(),
+                                                                    torch.nn.Dropout(.4),
                                                                     torch.nn.Linear(attention_dimension, self.codebook_size)))
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
@@ -385,10 +386,8 @@ class ToucanTTS(torch.nn.Module):
         if not is_inference:
             # during training, we use teacher forcing to make it easier to predict the hierarchy of features.
             gold_indexes = list()
-            gold_indexes.append(decoded_speech)
         predicted_indexes = list()
         backtranslated_indexes = list()
-        backtranslated_indexes.append(decoded_speech)
         if codebook_curriculum is None or codebook_curriculum > self.num_codebooks:
             codebook_curriculum = self.num_codebooks
         if codebook_curriculum > self.curriculum_state:
@@ -396,14 +395,16 @@ class ToucanTTS(torch.nn.Module):
         for head_index, classifier_head in enumerate(self.hierarchical_classifier[:codebook_curriculum]):
             # each codebook considers all previous codebooks.
             if not is_inference:
-                predicted_indexes.append(classifier_head(torch.cat(gold_indexes, dim=2)))
+                if len(gold_indexes) != 0:
+                    decoded_speech = decoded_speech.detach()  # it is considered frozen for all heads except the first.
+                predicted_indexes.append(classifier_head(torch.cat([decoded_speech] + gold_indexes, dim=2)))
 
                 gold_lookup_index = torch.argmax(gold_speech.transpose(0, 1)[head_index], dim=-1)
                 gold_lookup_index = gold_lookup_index.masked_fill(mask=~decoder_masks.squeeze(1), value=self.padding_id)
                 backtranslation = self.backtranslation_heads[head_index](gold_lookup_index)
                 gold_indexes.append(backtranslation)
             else:
-                predicted_indexes.append(classifier_head(torch.cat(backtranslated_indexes, dim=2)))
+                predicted_indexes.append(classifier_head(torch.cat([decoded_speech] + backtranslated_indexes, dim=2)))
                 predicted_lookup_index = torch.argmax(predicted_indexes[-1], dim=-1)
                 backtranslation = self.backtranslation_heads[head_index](predicted_lookup_index)
                 if len(backtranslation.size()) == 1:

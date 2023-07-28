@@ -142,7 +142,7 @@ def train_loop(net,
             utterance_embedding=style_embedding,
             lang_ids=lang_ids,
             return_feats=False,
-            codebook_curriculum=(step_counter + (warmup_steps // 2)) // (warmup_steps // 2)  # TODO this requires tuning
+            codebook_curriculum=(step_counter + warmup_steps) // warmup_steps  # TODO this requires tuning
         )
 
         # then we directly update our meta-parameters without

@@ -88,19 +88,16 @@ class CodecAudioPreprocessor:
 if __name__ == '__main__':
     import soundfile
 
-    test_audio = "../audios/ad00_0004.wav"
-    wav, sr = soundfile.read(test_audio)
-    ap = CodecAudioPreprocessor(input_sr=sr)
+    with torch.inference_mode():
+        test_audio = "../audios/ad00_0004.wav"
+        wav, sr = soundfile.read(test_audio)
+        ap = CodecAudioPreprocessor(input_sr=sr)
 
-    one_hot_indexes = ap.audio_to_one_hot_indexes(wav, current_sampling_rate=sr)
+        codes = ap.indexes_to_codec_frames(ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr))
 
-    import matplotlib.pyplot as plt
+        z_ps = torch.split(codes, ap.model.codebook_dim, dim=0)
 
-    for codebook_index, codebook in enumerate(one_hot_indexes):
-        fix, ax = plt.subplots(1, 1)
-        ax.imshow(codebook.cpu().transpose(0, 1).numpy(), cmap='binary')
-        ax.set_aspect("auto")
-        ax.yaxis.set_visible(False)
-        ax.xaxis.set_visible(False)
-        plt.subplots_adjust(left=0., bottom=0., right=1., top=1., wspace=0.0, hspace=0.0)
-        plt.show()
+        for i, z_p in enumerate(z_ps):
+            z_q_i = ap.model.quantizer.quantizers[i].out_proj(z_p)
+            audio = ap.model.decode(z_q_i.unsqueeze(0))["audio"].squeeze()
+            soundfile.write(file=f"../audios/only_codebook_{i}.wav", data=audio, samplerate=44100)
