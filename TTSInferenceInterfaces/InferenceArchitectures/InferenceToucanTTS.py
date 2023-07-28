@@ -64,6 +64,7 @@ class ToucanTTS(torch.nn.Module):
         num_codebooks = config.num_codebooks
         codebook_size = config.codebook_size
         use_wavenet_postnet = config.use_wavenet_postnet
+        backtranslation_dim = config.backtranslation_dim
 
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
@@ -165,7 +166,6 @@ class ToucanTTS(torch.nn.Module):
 
         self.hierarchical_classifier = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
-        backtranslation_dim = 6
         self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * backtranslation_dim, self.codebook_size))

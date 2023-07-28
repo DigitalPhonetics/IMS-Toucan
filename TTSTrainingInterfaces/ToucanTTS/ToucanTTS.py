@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=256,
+                 attention_dimension=128,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -95,6 +95,7 @@ class ToucanTTS(torch.nn.Module):
                  use_conditional_layernorm_embedding_integration=False,
                  num_codebooks=4,  # between 1 and 9 when using the descript audio codec
                  codebook_size=1024,
+                 backtranslation_dim=8,
                  use_wavenet_postnet=False):
         super().__init__()
 
@@ -141,7 +142,8 @@ class ToucanTTS(torch.nn.Module):
             "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration,
             "num_codebooks"                                  : num_codebooks,
             "codebook_size"                                  : codebook_size,
-            "use_wavenet_postnet"                            : use_wavenet_postnet
+            "use_wavenet_postnet"                            : use_wavenet_postnet,
+            "backtranslation_dim"                            : backtranslation_dim
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -239,10 +241,12 @@ class ToucanTTS(torch.nn.Module):
 
         self.hierarchical_classifier = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
-        backtranslation_dim = 6
+        backtranslation_dim = backtranslation_dim
         self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
-            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * backtranslation_dim, self.codebook_size))
+            self.hierarchical_classifier.append(torch.nn.Sequential(torch.nn.Linear(attention_dimension + head * backtranslation_dim, attention_dimension),
+                                                                    torch.nn.Tanh(),
+                                                                    torch.nn.Linear(attention_dimension, self.codebook_size)))
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
         self.curriculum_state = 1
@@ -282,19 +286,19 @@ class ToucanTTS(torch.nn.Module):
             codebook_curriculum (Tensor): How many codebooks to use
         """
         outs, \
-            predicted_durations, \
-            predicted_pitch, \
-            predicted_energy = self._forward(text_tensors=text_tensors,
-                                             text_lengths=text_lengths,
-                                             gold_speech=gold_speech,
-                                             speech_lengths=speech_lengths,
-                                             gold_durations=gold_durations,
-                                             gold_pitch=gold_pitch,
-                                             gold_energy=gold_energy,
-                                             utterance_embedding=utterance_embedding,
-                                             is_inference=False,
-                                             lang_ids=lang_ids,
-                                             codebook_curriculum=codebook_curriculum)
+        predicted_durations, \
+        predicted_pitch, \
+        predicted_energy = self._forward(text_tensors=text_tensors,
+                                         text_lengths=text_lengths,
+                                         gold_speech=gold_speech,
+                                         speech_lengths=speech_lengths,
+                                         gold_durations=gold_durations,
+                                         gold_pitch=gold_pitch,
+                                         gold_energy=gold_energy,
+                                         utterance_embedding=utterance_embedding,
+                                         is_inference=False,
+                                         lang_ids=lang_ids,
+                                         codebook_curriculum=codebook_curriculum)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -419,14 +423,14 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             return indexes, \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze(), \
-                energy_predictions.squeeze()
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze(), \
+                   energy_predictions.squeeze()
         else:
             return indexes, \
-                predicted_durations, \
-                pitch_predictions, \
-                energy_predictions
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -455,15 +459,15 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
-            duration_predictions, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text_pseudobatched,
-                                               ilens,
-                                               speech_pseudobatched,
-                                               is_inference=True,
-                                               utterance_embedding=utterance_embeddings,
-                                               lang_ids=lang_id,
-                                               codebook_curriculum=self.curriculum_state)  # (1, L, odim)
+        duration_predictions, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text_pseudobatched,
+                                           ilens,
+                                           speech_pseudobatched,
+                                           is_inference=True,
+                                           utterance_embedding=utterance_embeddings,
+                                           lang_ids=lang_id,
+                                           codebook_curriculum=self.curriculum_state)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in outs:
