@@ -164,8 +164,12 @@ class ToucanTTS(torch.nn.Module):
                          use_weightnorm=True)
 
         self.hierarchical_classifier = torch.nn.ModuleList()
+        self.backtranslation_heads = torch.nn.ModuleList()
+        backtranslation_dim = 6
+        self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
-            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * self.codebook_size, self.codebook_size))
+            self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * backtranslation_dim, self.codebook_size))
+            self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
         self.load_state_dict(weights)
         self.eval()
@@ -230,13 +234,18 @@ class ToucanTTS(torch.nn.Module):
         # This is because they are residual vector quantized, which makes them extremely space efficient
         # with just a few discrete tokens, but terribly difficult to predict.
         predicted_indexes = list()
-        predicted_indexes.append(decoded_speech)
-        for classifier_head in self.hierarchical_classifier:
+        backtranslated_indexes = list()
+        backtranslated_indexes.append(decoded_speech)
+        for head_index, classifier_head in enumerate(self.hierarchical_classifier):
             # each codebook considers all previous codebooks.
-            prediction_for_current_codebook = classifier_head(torch.cat(predicted_indexes, dim=2))
-            predicted_indexes.append(torch.nn.functional.softmax(prediction_for_current_codebook, dim=2))
+            predicted_indexes.append(classifier_head(torch.cat(backtranslated_indexes, dim=2)))
+            predicted_lookup_index = torch.argmax(predicted_indexes[-1], dim=-1)
+            backtranslation = self.backtranslation_heads[head_index](predicted_lookup_index)
+            if len(backtranslation.size()) == 1:
+                backtranslation = backtranslation.unsqueeze(0)
+            backtranslated_indexes.append(backtranslation)
 
-        indexes = torch.cat(predicted_indexes[1:], dim=2)
+        indexes = torch.cat(predicted_indexes, dim=2)
         # [Batch, Sequence, Hidden]
         indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
         # [Batch, Sequence, Codebook, Classes]
