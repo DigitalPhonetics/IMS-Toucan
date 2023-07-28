@@ -85,7 +85,7 @@ def plot_progress_spec_toucantts(net,
 
 
 def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path, tf, step):
-    codes_from_indexes = cap.indexes_to_codec_frames(codes.squeeze())
+    codes_from_indexes = cap.indexes_to_codec_frames(codes)
     mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes_from_indexes))
     fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(9, 11))
 

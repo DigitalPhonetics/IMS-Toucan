@@ -471,7 +471,7 @@ class ToucanTTS(torch.nn.Module):
         self.train()
         outs_indexed = list()
         for out in outs:
-            outs_indexed.append(torch.argmax(out.squeeze(), dim=0))
+            outs_indexed.append(torch.argmax(out.squeeze(0), dim=0))
 
         outs = torch.stack(outs_indexed)
         if return_duration_pitch_energy:
