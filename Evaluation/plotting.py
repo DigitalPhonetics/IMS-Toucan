@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import numpy as np
 
 EMOTIONS = ["anger", "joy", "neutral", "sadness", "surprise"]
@@ -30,9 +31,10 @@ def pie_chart_counts(d: dict, v, save_dir):
 
     colors = plt.cm.Set3(range(len(labels)))
 
-    plt.figure(figsize=(6, 6))
-    plt.pie(percentages, labels=labels, autopct=lambda p: '{:.1f}%'.format(p) if p >= 2 else '', colors=colors, startangle=90)
+    plt.figure(figsize=(8, 8))
+    plt.pie(percentages, labels=labels, autopct=lambda p: '{:.1f}%'.format(p) if p >= 2 else '', colors=colors, startangle=90, textprops={'fontsize': 16})
     plt.axis('equal')
+    plt.rcParams['font.size'] = 12
     plt.savefig(save_dir)
     plt.close()
 
@@ -141,7 +143,7 @@ def barplot_pref2(d, save_dir):
 
 def barplot_pref3(d, save_dir):
     # Define the emotions and their corresponding colors
-    emotions = list(d.keys())  # Extract emotions from the input dictionary
+    emotions = EMOTIONS
     colors = ['black', 'gray', 'lightgray']  # Colors for Original, Baseline, and Proposed bars
     emotion_colors = COLORS
 
@@ -149,7 +151,7 @@ def barplot_pref3(d, save_dir):
     x_ticks = emotions
 
     # Initialize the plot
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8,6))
 
     # Set the x-axis tick locations and labels
     ax.set_xticks(np.arange(len(x_ticks)))
@@ -174,11 +176,18 @@ def barplot_pref3(d, save_dir):
     ax.legend()
 
     # Set the plot title and axis labels
-    ax.set_ylabel('Percentage (%)')
+    ax.set_ylabel('Percentage (%)', fontsize=16)
 
     # Adjust the x-axis limits and labels
     ax.set_xlim(-bar_width * 2, len(x_ticks) - 1 + bar_width * 2)
     ax.set_xticks(np.arange(len(x_ticks)))
+    ax.set_ylim(0, 100)
+
+    ax.tick_params(axis='x', labelsize=16)
+    ax.tick_params(axis='y', labelsize=16)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     # Save the plot
     plt.savefig(save_dir)
@@ -212,14 +221,21 @@ def barplot_pref_total(d, save_dir):
         percentages = [count / total_counts * 100 for count in counts]
         positions = i
         ax.bar(positions, percentages, width=bar_width, color=colors[i], align='center')
+        plt.text(i, round(percentages[0], 2), str(round(percentages[0], 2)), ha='center', va='bottom', fontsize=14)
 
     # Set the plot title and axis labels
-    ax.set_ylabel('Percentage (%)')
+    ax.set_ylabel('Percentage (%)', fontsize=16)
 
     # Adjust the x-axis limits and labels
     #ax.set_xlim(-2 * bar_width - bar_width, len(x_ticks) - 1 + 2 * bar_width + bar_width)
     ax.set_xticks(np.arange(len(x_ticks)))
     ax.set_ylim(0, 60)
+
+    ax.tick_params(axis='x', labelsize=16)
+    ax.tick_params(axis='y', labelsize=16)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
 
     # Save the plot
     plt.savefig(save_dir)
@@ -227,15 +243,15 @@ def barplot_pref_total(d, save_dir):
 
 def barplot_sim(data, save_dir):
     emotions = EMOTIONS
-    ratings = list(data.values())
+    ratings = [data[emotion] for emotion in emotions]
     colors = COLORS
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8,6))
 
     x_ticks = emotions
 
     ax.set_xticks(np.arange(len(x_ticks)))
-    labels = ax.set_xticklabels(x_ticks)
+    labels = ax.set_xticklabels(x_ticks, fontsize=16)
     for label, color in zip(labels, colors):
         label.set_color(color)
 
@@ -243,9 +259,16 @@ def barplot_sim(data, save_dir):
 
     positions = np.arange(len(ratings))
 
-    ax.bar(positions, ratings, width=bar_width, color=colors)
+    bars = ax.bar(positions, ratings, width=bar_width, color=colors)
 
-    ax.set_ylabel('Mean Similatrity Score')
+    for bar, rating in zip(bars, ratings):
+        ax.annotate(f'{rating:.2f}',  # Format the rating to one decimal place
+                    xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                    xytext=(0, 3),  # 3 points vertical offset from the bar
+                    textcoords='offset points',
+                    ha='center', va='bottom', fontsize=14)
+
+    ax.set_ylabel('Mean Similatrity Score', fontsize=16)
 
     ax.set_yticks(np.arange(6))
 
@@ -264,15 +287,22 @@ def barplot_sim_total(data, save_dir):
     x_ticks = speakers
 
     ax.set_xticks(np.arange(len(x_ticks)))
-    ax.set_xticklabels(x_ticks)
+    ax.set_xticklabels(x_ticks, fontsize=16)
 
     bar_width = 0.5
 
     positions = np.arange(len(ratings))
 
-    ax.bar(positions, ratings, width=bar_width)
+    bars = ax.bar(positions, ratings, width=bar_width, color='gray')
 
-    ax.set_ylabel('Mean Similatrity Score')
+    for bar, rating in zip(bars, ratings):
+        ax.annotate(f'{rating:.2f}',  # Format the rating to one decimal place
+                    xy=(bar.get_x() + bar.get_width() / 2, bar.get_height()),
+                    xytext=(0, 3),  # 3 points vertical offset from the bar
+                    textcoords='offset points',
+                    ha='center', va='bottom', fontsize=14)
+
+    ax.set_ylabel('Mean Similatrity Score', fontsize=16)
 
     ax.set_yticks(np.arange(6))
 
@@ -283,37 +313,43 @@ def barplot_sim_total(data, save_dir):
     plt.close()
 
 def boxplot_rating(data, save_dir):
-    emotions = data.keys()
-    ratings = {emotion: list(rating for rating, count in ratings_counts.items() for _ in range(count)) for emotion, ratings_counts in data.items()}
+    emotions = EMOTIONS
+    ratings = {emotion: list(rating for rating, count in data[emotion].items() for _ in range(count)) for emotion in emotions}
+    colors = COLORS
 
     plt.figure(figsize=(10, 6))
-    box_plot = plt.boxplot(ratings.values(), patch_artist=True)
-    colors = COLORS
+    box_plot = plt.boxplot(ratings.values(), patch_artist=True, widths=0.7)
     for patch, color in zip(box_plot['boxes'], colors):
         patch.set_facecolor(color)
     for median in box_plot['medians']:
         median.set(color='black', linestyle='-', linewidth=3)
-    xtick_positions = range(1, len(emotions) + 1)
-    for pos, emotion in zip(xtick_positions, emotions):
-        plt.text(pos, 0.5, emotion, color=colors[pos-1], ha='center', va='center')
-    plt.xticks([], [])
+    plt.xticks(range(1, len(emotions) + 1), emotions, fontsize=16)
     ax = plt.gca()
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    ax.set_ylim(0.9, 5.1)
+    ax.tick_params(axis='y', labelsize=16)
+    ax.yaxis.set_major_locator(MultipleLocator(base=1))
+    for i, t in enumerate(ax.xaxis.get_ticklabels()):
+        t.set_color(colors[i])
     plt.savefig(save_dir)
     plt.close()
 
 def barplot_mos(l: list, save_dir):
     values = l
-    labels = ["Original", "Baseline", "Proposed"]
+    labels = ["Ground Truth", "Baseline", "Proposed"]
 
-    plt.bar(range(len(values)), values, align='center')
-    plt.xticks(range(len(values)), labels)
-    plt.ylabel('MOS')
+    plt.bar(range(len(values)), values, align='center', color="gray")
+    plt.xticks(range(len(values)), labels, fontsize=16)
+    plt.ylabel('MOS', fontsize=16)
     ax = plt.gca()
     ax.set_yticks(np.arange(6))
+    ax.set_ylim(0.9, 5.1)
+    ax.tick_params(axis='y', labelsize=16)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+    for i, v in enumerate(values):
+        plt.text(i, round(v, 2), str(round(v, 2)), ha='center', va='bottom', fontsize=14)
     plt.savefig(save_dir)
     plt.close()
 
@@ -356,48 +392,41 @@ def barplot_emotion(d: dict, save_dir):
     plt.savefig(save_dir)
     plt.close()
 
-def heatmap_emotion(d: dict, save_dir, speaker):
-    colors = 'coolwarm'
+def heatmap_emotion(d: dict, save_dir):
+    emotions = EMOTIONS
 
-    plt.clf()
-    fig, ax = plt.subplots()
+    # Create a numpy array to store the counts
+    counts = np.array([[d[emotion][label] for emotion in emotions] for label in d[emotions[0]]])
+    # normalize counts for each emotion category
+    normalized_counts = np.around(counts / counts.sum(axis=0, keepdims=True), decimals=2)
 
-    subdicts = d.items()
-    num_subdicts = 5
-    num_labels = 5  # Assuming all sub-dicts have the same labels
+    # Set up the figure and heatmap
+    fig, ax = plt.subplots(figsize=(10, 8))
+    im = ax.imshow(normalized_counts, cmap='viridis', vmin=0, vmax=1)
 
-    data = np.zeros((num_labels, num_subdicts))
-    xticklabels = []
+    # Show counts as text in each cell
+    for i in range(len(emotions)):
+        for j in range(len(d[emotions[0]])):
+            text = ax.text(i, j, normalized_counts[j, i], ha='center', va='center', color='black', fontsize=16)
 
-    i = 0
-    for v, subdict in subdicts:
-        if v.split("emotion_")[1] in emo_sent_speaker(speaker):
-            xticklabels.append(v.split("_")[1])
-            values = [subdict[label] for label in subdict]
-            data[:, i] = values
-            i += 1
+    # Set the axis labels and title
+    ax.set_xticks(np.arange(len(emotions)))
+    ax.set_yticks(np.arange(len(d[emotions[0]])))
+    ax.set_xticklabels(emotions, fontsize=16)
+    ax.set_yticklabels(d[emotions[0]].keys(), fontsize=16)
 
-    im = ax.imshow(data, cmap=colors)
+    # Rotate the tick labels for better readability (optional)
+    plt.xticks(rotation=45, ha='right', fontsize=16)
 
-    ax.set_xticks(np.arange(num_subdicts))
-    ax.set_yticks(np.arange(num_labels))
-    ax.set_xticklabels(xticklabels)
-    ax.set_yticklabels(list(list(subdicts)[0][1].keys()))
+    # Create a colorbar
+    cbar = ax.figure.colorbar(im, ax=ax)
+    cbar.set_label('Relative Frequency', fontsize=16)
 
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
-
-    for i in range(num_labels):
-        for j in range(num_subdicts):
-            text = ax.text(j, i, int(data[i, j]), ha="center", va="center", color="w")
-
-    ax.set_xlabel('Variables')
-    ax.set_ylabel('Labels')
-    ax.set_title('Heatmap Counts')
-
+    # Save the heatmap
     plt.savefig(save_dir)
     plt.close()
 
-def scatterplot_va(d: dict, save_dir: str):
+def scatterplot_va(v: dict, a: dict, save_dir: str):
     # Initialize a color map for differentiating emotions
     colors = COLORS
 
@@ -407,8 +436,8 @@ def scatterplot_va(d: dict, save_dir: str):
     # Iterate over emotions and variations
     color_id = 0
     for emo in EMOTIONS:
-        valence = d["valence"][emo]
-        arousal = d["arousal"][emo]
+        valence = v[emo]
+        arousal = a[emo]
 
         # Plot a single point with a unique color
         ax.scatter(valence, arousal, color=colors[color_id], label=emo)
@@ -419,8 +448,8 @@ def scatterplot_va(d: dict, save_dir: str):
     #ax.set_ylabel("Arousal")
 
     # Set axis limits and center the plot at (3, 3)
-    ax.set_xlim(1, 5)
-    ax.set_ylim(1, 5)
+    ax.set_xlim(0.9, 5.1)
+    ax.set_ylim(0.9, 5.1)
     ax.set_xticks([1, 5])
     ax.set_yticks([1, 5])
     ax.set_xticklabels(['negative', 'positive'])

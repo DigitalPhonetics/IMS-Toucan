@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import scipy.stats as stats
 
 EMOTIONS = ["anger", "joy", "neutral", "sadness", "surprise"]
 
@@ -91,29 +92,32 @@ def emotion(data, version):
             variable_count += 1
     return d
 
-def valence_arousal(data, version):
-    d = {"valence": {}, "arousal": {}}
-    d["valence"]["anger_0"] = data[f"V{version}01_01"].mean()
-    d["valence"]["anger_1"] = data[f"V{version}02_01"].mean()
-    d["valence"]["joy_0"] = data[f"V{version}03_01"].mean()
-    d["valence"]["joy_1"] = data[f"V{version}04_01"].mean()
-    d["valence"]["neutral_0"] = data[f"V{version}05_01"].mean()
-    d["valence"]["neutral_1"] = data[f"V{version}06_01"].mean()
-    d["valence"]["sadness_0"] = data[f"V{version}07_01"].mean()
-    d["valence"]["sadness_1"] = data[f"V{version}08_01"].mean()
-    d["valence"]["surprise_0"] = data[f"V{version}09_01"].mean()
-    d["valence"]["surprise_1"] = data[f"V{version}10_01"].mean()
+def valence(data, version):
+    d = {}
+    d["anger_0"] = dict(data[f"V{version}01_01"].value_counts().sort_index())
+    d["anger_1"] = dict(data[f"V{version}02_01"].value_counts().sort_index())
+    d["joy_0"] = dict(data[f"V{version}03_01"].value_counts().sort_index())
+    d["joy_1"] = dict(data[f"V{version}04_01"].value_counts().sort_index())
+    d["neutral_0"] = dict(data[f"V{version}05_01"].value_counts().sort_index())
+    d["neutral_1"] = dict(data[f"V{version}06_01"].value_counts().sort_index())
+    d["sadness_0"] = dict(data[f"V{version}07_01"].value_counts().sort_index())
+    d["sadness_1"] = dict(data[f"V{version}08_01"].value_counts().sort_index())
+    d["surprise_0"] = dict(data[f"V{version}09_01"].value_counts().sort_index())
+    d["surprise_1"] = dict(data[f"V{version}10_01"].value_counts().sort_index())
+    return d
 
-    d["arousal"]["anger_0"] = data[f"V{version}01_02"].mean()
-    d["arousal"]["anger_1"] = data[f"V{version}02_02"].mean()
-    d["arousal"]["joy_0"] = data[f"V{version}03_02"].mean()
-    d["arousal"]["joy_1"] = data[f"V{version}04_02"].mean()
-    d["arousal"]["neutral_0"] = data[f"V{version}05_02"].mean()
-    d["arousal"]["neutral_1"] = data[f"V{version}06_02"].mean()
-    d["arousal"]["sadness_0"] = data[f"V{version}07_02"].mean()
-    d["arousal"]["sadness_1"] = data[f"V{version}08_02"].mean()
-    d["arousal"]["surprise_0"] = data[f"V{version}09_02"].mean()
-    d["arousal"]["surprise_1"] = data[f"V{version}10_02"].mean()
+def arousal(data, version):
+    d = {}
+    d["anger_0"] = dict(data[f"V{version}01_02"].value_counts().sort_index())
+    d["anger_1"] = dict(data[f"V{version}02_02"].value_counts().sort_index())
+    d["joy_0"] = dict(data[f"V{version}03_02"].value_counts().sort_index())
+    d["joy_1"] = dict(data[f"V{version}04_02"].value_counts().sort_index())
+    d["neutral_0"] = dict(data[f"V{version}05_02"].value_counts().sort_index())
+    d["neutral_1"] = dict(data[f"V{version}06_02"].value_counts().sort_index())
+    d["sadness_0"] = dict(data[f"V{version}07_02"].value_counts().sort_index())
+    d["sadness_1"] = dict(data[f"V{version}08_02"].value_counts().sort_index())
+    d["surprise_0"] = dict(data[f"V{version}09_02"].value_counts().sort_index())
+    d["surprise_1"] = dict(data[f"V{version}10_02"].value_counts().sort_index())
     return d
 
 def get_mean_rating_nested(d: dict):
@@ -209,3 +213,51 @@ def collapse_subdicts(d):
                 collapsed_dict[scenario] = 0
             collapsed_dict[scenario] += count
     return collapsed_dict
+
+def independent_samples_t_test(data11, data12, data21, data22):
+    # remove outliers and unfold data
+    data11 = remove_outliers(data11)
+    data12 = remove_outliers(data12)
+    data21 = remove_outliers(data21)
+    data22 = remove_outliers(data22)
+    ratings11 = []
+    for emotion, ratings in data11.items():
+        for rating, count in ratings.items():
+            ratings11.extend([rating] * count)
+    ratings12 = []
+    for emotion, ratings in data12.items():
+        for rating, count in ratings.items():
+            ratings12.extend([rating] * count)
+    ratings21 = []
+    for emotion, ratings in data21.items():
+        for rating, count in ratings.items():
+            ratings21.extend([rating] * count)
+    ratings22 = []
+    for emotion, ratings in data22.items():
+        for rating, count in ratings.items():
+            ratings22.extend([rating] * count)
+    ratings11.extend(ratings12)
+    ratings21.extend(ratings22)
+    # Perform independent samples t-test
+    # ratings are assumed to be independent because every participant only sees a selection of samples
+    # i.e. there isn't a rating for each sample by each participant
+    t_statistic, p_value = stats.ttest_ind(ratings11, ratings21)
+    return t_statistic, p_value
+
+def cramers_v(data):
+    # Convert the data dictionary into a 2D array
+    counts = np.array([[data[emotion][label] for emotion in data] for label in data[list(data.keys())[0]]])
+
+    # Compute the chi-squared statistic and p-value
+    chi2, p, _, _ = stats.chi2_contingency(counts)
+
+    # Number of observations (total counts)
+    n = np.sum(counts)
+
+    # Number of rows and columns in the contingency table
+    num_rows = len(data[list(data.keys())[0]])
+    num_cols = len(data)
+
+    # Compute Cramér's V
+    cramer_v = np.sqrt(chi2 / (n * (min(num_rows, num_cols) - 1)))
+    return p, cramer_v

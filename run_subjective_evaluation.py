@@ -12,7 +12,7 @@ if __name__ == '__main__':
     save_dir = os.path.join(PREPROCESSING_DIR, "Evaluation", "plots")
 
     # load data
-    data = read_data(os.path.join(PREPROCESSING_DIR, "Evaluation", "data_listeningtestmaster_2023-07-03_13-06.csv"))
+    data = read_data(os.path.join(PREPROCESSING_DIR, "Evaluation", "data_listeningtestmaster_2023-07-30_16-07.csv"))
 
     sd = sociodemographics(data)
 
@@ -30,10 +30,15 @@ if __name__ == '__main__':
     emotion_proposed = emotion(data, "S")
     emotion_prompt = emotion(data, "P")
 
-    va_original = valence_arousal(data, "O")
-    va_baseline = valence_arousal(data, "B")
-    va_proposed = valence_arousal(data, "S")
-    va_prompt = valence_arousal(data, "P")
+    valence_original = valence(data, "O")
+    valence_baseline = valence(data, "B")
+    valence_proposed = valence(data, "S")
+    valence_prompt = valence(data, "P")
+
+    arousal_original = arousal(data, "O")
+    arousal_baseline = arousal(data, "B")
+    arousal_proposed = arousal(data, "S")
+    arousal_prompt = arousal(data, "P")
 
     # transform data
     #################
@@ -83,6 +88,11 @@ if __name__ == '__main__':
     omos_male = [mean(list(omos_original_male.values())), mean(list(omos_baseline_male.values())), mean(list(omos_proposed_male.values()))]
     omos_all = [mean([m1, m2]) for m1, m2 in zip(omos_female, omos_male)]
 
+    print(omos_female)
+
+    _, p_value_mos = independent_samples_t_test(mos_proposed_female, mos_proposed_male, mos_baseline_female, mos_baseline_male)
+    print(f'p value MOS proposed-baseline: {p_value_mos}')
+
     # emotion
     ###########
     emotion_original_female, emotion_original_male = split_female_male(emotion_original)
@@ -92,28 +102,47 @@ if __name__ == '__main__':
     emotion_prompt_female = make_emotion_prompts(emotion_prompt_female, "f")
     emotion_prompt_male = make_emotion_prompts(emotion_prompt_male, "m")
 
+    print(cramers_v(emotion_original_female))
+    print(cramers_v(emotion_baseline_female))
+    print(cramers_v(emotion_proposed_female))
+    print(cramers_v(emotion_prompt_female))
+    print(cramers_v(emotion_original_male))
+    print(cramers_v(emotion_baseline_male))
+    print(cramers_v(emotion_proposed_male))
+    print(cramers_v(emotion_prompt_male))
+
     # valence/arousal
     ###################
-    va_original_female = {}
-    va_original_male = {}
-    va_original_female["valence"], va_original_male["valence"] = split_female_male(va_original["valence"])
-    va_original_female["arousal"], va_original_male["arousal"] = split_female_male(va_original["arousal"])
-    va_baseline_female = {}
-    va_baseline_male = {}
-    va_baseline_female["valence"], va_baseline_male["valence"] = split_female_male(va_baseline["valence"])
-    va_baseline_female["arousal"], va_baseline_male["arousal"] = split_female_male(va_baseline["arousal"])
-    va_proposed_female = {}
-    va_proposed_male = {}
-    va_proposed_female["valence"], va_proposed_male["valence"] = split_female_male(va_proposed["valence"])
-    va_proposed_female["arousal"], va_proposed_male["arousal"] = split_female_male(va_proposed["arousal"])
-    va_prompt_female = {}
-    va_prompt_male = {}
-    va_prompt_female["valence"], va_prompt_male["valence"] = split_female_male(va_prompt["valence"])
-    va_prompt_female["arousal"], va_prompt_male["arousal"] = split_female_male(va_prompt["arousal"])
-    va_prompt_female["valence"] = make_emotion_prompts(va_prompt_female["valence"], "f")
-    va_prompt_female["arousal"] = make_emotion_prompts(va_prompt_female["arousal"], "f")
-    va_prompt_male["valence"] = make_emotion_prompts(va_prompt_male["valence"], "m")
-    va_prompt_male["arousal"] = make_emotion_prompts(va_prompt_male["arousal"], "m")
+    valence_original_female, valence_original_male = split_female_male(valence_original)
+    arousal_original_female, arousal_original_male = split_female_male(arousal_original)
+    valence_baseline_female, valence_baseline_male = split_female_male(valence_baseline)
+    arousal_baseline_female, arousal_baseline_male = split_female_male(arousal_baseline)
+    valence_proposed_female, valence_proposed_male = split_female_male(valence_proposed)
+    arousal_proposed_female, arousal_proposed_male = split_female_male(arousal_proposed)
+    valence_prompt_female, valence_prompt_male = split_female_male(valence_prompt)
+    arousal_prompt_female, arousal_prompt_male = split_female_male(arousal_prompt)
+    valence_prompt_female = make_emotion_prompts(valence_prompt_female, "f")
+    valence_prompt_male = make_emotion_prompts(valence_prompt_male, "m")
+    arousal_prompt_female = make_emotion_prompts(arousal_prompt_female, "f")
+    arousal_prompt_male = make_emotion_prompts(arousal_prompt_male, "m")
+
+    mvalence_original_female = get_mean_rating_nested(remove_outliers(valence_original_female))
+    mvalence_original_male = get_mean_rating_nested(remove_outliers(valence_original_male))
+    mvalence_baseline_female = get_mean_rating_nested(remove_outliers(valence_baseline_female))
+    mvalence_baseline_male = get_mean_rating_nested(remove_outliers(valence_baseline_male))
+    mvalence_proposed_female = get_mean_rating_nested(remove_outliers(valence_proposed_female))
+    mvalence_proposed_male = get_mean_rating_nested(remove_outliers(valence_proposed_male))
+    mvalence_prompt_female = get_mean_rating_nested(remove_outliers(valence_prompt_female))
+    mvalence_prompt_male = get_mean_rating_nested(remove_outliers(valence_prompt_male))
+
+    marousal_original_female = get_mean_rating_nested(remove_outliers(arousal_original_female))
+    marousal_original_male = get_mean_rating_nested(remove_outliers(arousal_original_male))
+    marousal_baseline_female = get_mean_rating_nested(remove_outliers(arousal_baseline_female))
+    marousal_baseline_male = get_mean_rating_nested(remove_outliers(arousal_baseline_male))
+    marousal_proposed_female = get_mean_rating_nested(remove_outliers(arousal_proposed_female))
+    marousal_proposed_male = get_mean_rating_nested(remove_outliers(arousal_proposed_male))
+    marousal_prompt_female = get_mean_rating_nested(remove_outliers(arousal_prompt_female))
+    marousal_prompt_male = get_mean_rating_nested(remove_outliers(arousal_prompt_male))
 
 
     # make plots
@@ -145,20 +174,38 @@ if __name__ == '__main__':
     barplot_mos(omos_male, os.path.join(save_dir, f"mos_male.png"))
     barplot_mos(omos_all, os.path.join(save_dir, f"mos.png"))
 
-    barplot_emotion(emotion_original_female, os.path.join(save_dir, f"emotion_original_female.png"))
-    barplot_emotion(emotion_original_male, os.path.join(save_dir, f"emotion_original_male.png"))
-    barplot_emotion(emotion_baseline_female, os.path.join(save_dir, f"emotion_baseline_female.png"))
-    barplot_emotion(emotion_baseline_male, os.path.join(save_dir, f"emotion_baseline_male.png"))
-    barplot_emotion(emotion_proposed_female, os.path.join(save_dir, f"emotion_proposed_female.png"))
-    barplot_emotion(emotion_proposed_male, os.path.join(save_dir, f"emotion_proposed_male.png"))
-    barplot_emotion(emotion_prompt_female, os.path.join(save_dir, f"emotion_prompt_female.png"))
-    barplot_emotion(emotion_prompt_male, os.path.join(save_dir, f"emotion_prompt_male.png"))
+    heatmap_emotion(emotion_original_female, os.path.join(save_dir, f"emotion_original_female.png"))
+    heatmap_emotion(emotion_original_male, os.path.join(save_dir, f"emotion_original_male.png"))
+    heatmap_emotion(emotion_baseline_female, os.path.join(save_dir, f"emotion_baseline_female.png"))
+    heatmap_emotion(emotion_baseline_male, os.path.join(save_dir, f"emotion_baseline_male.png"))
+    heatmap_emotion(emotion_proposed_female, os.path.join(save_dir, f"emotion_proposed_female.png"))
+    heatmap_emotion(emotion_proposed_male, os.path.join(save_dir, f"emotion_proposed_male.png"))
+    heatmap_emotion(emotion_prompt_female, os.path.join(save_dir, f"emotion_prompt_female.png"))
+    heatmap_emotion(emotion_prompt_male, os.path.join(save_dir, f"emotion_prompt_male.png"))
 
-    scatterplot_va(va_original_female, os.path.join(save_dir, f"va_original_female.png"))
-    scatterplot_va(va_original_male, os.path.join(save_dir, f"va_original_male.png"))
-    scatterplot_va(va_baseline_female, os.path.join(save_dir, f"va_baseline_female.png"))
-    scatterplot_va(va_baseline_male, os.path.join(save_dir, f"va_baseline_male.png"))
-    scatterplot_va(va_proposed_female, os.path.join(save_dir, f"va_proposed_female.png"))
-    scatterplot_va(va_proposed_male, os.path.join(save_dir, f"va_proposed_male.png"))
-    scatterplot_va(va_prompt_female, os.path.join(save_dir, f"va_prompt_female.png"))
-    scatterplot_va(va_prompt_male, os.path.join(save_dir, f"va_prompt_male.png"))
+    boxplot_rating(valence_original_female, os.path.join(save_dir, f"box_v_original_female.png"))
+    boxplot_rating(valence_original_male, os.path.join(save_dir, f"box_v_original_male.png"))
+    boxplot_rating(valence_baseline_female, os.path.join(save_dir, f"box_v_baseline_female.png"))
+    boxplot_rating(valence_baseline_male, os.path.join(save_dir, f"box_v_baseline_male.png"))
+    boxplot_rating(valence_proposed_female, os.path.join(save_dir, f"box_v_proposed_female.png"))
+    boxplot_rating(valence_proposed_male, os.path.join(save_dir, f"box_v_proposed_male.png"))
+    boxplot_rating(valence_prompt_female, os.path.join(save_dir, f"box_v_prompt_female.png"))
+    boxplot_rating(valence_prompt_male, os.path.join(save_dir, f"box_v_prompt_male.png"))
+
+    boxplot_rating(arousal_original_female, os.path.join(save_dir, f"box_a_original_female.png"))
+    boxplot_rating(arousal_original_male, os.path.join(save_dir, f"box_a_original_male.png"))
+    boxplot_rating(arousal_baseline_female, os.path.join(save_dir, f"box_a_baseline_female.png"))
+    boxplot_rating(arousal_baseline_male, os.path.join(save_dir, f"box_a_baseline_male.png"))
+    boxplot_rating(arousal_proposed_female, os.path.join(save_dir, f"box_a_proposed_female.png"))
+    boxplot_rating(arousal_proposed_male, os.path.join(save_dir, f"box_a_proposed_male.png"))
+    boxplot_rating(arousal_prompt_female, os.path.join(save_dir, f"box_a_prompt_female.png"))
+    boxplot_rating(arousal_prompt_male, os.path.join(save_dir, f"box_a_prompt_male.png"))
+
+    scatterplot_va(mvalence_original_female, marousal_original_female, os.path.join(save_dir, f"va_original_female.png"))
+    scatterplot_va(mvalence_original_male, marousal_original_male, os.path.join(save_dir, f"va_original_male.png"))
+    scatterplot_va(mvalence_baseline_female, marousal_baseline_female, os.path.join(save_dir, f"va_baseline_female.png"))
+    scatterplot_va(mvalence_baseline_male, marousal_baseline_male, os.path.join(save_dir, f"va_baseline_male.png"))
+    scatterplot_va(mvalence_proposed_female, marousal_proposed_female, os.path.join(save_dir, f"va_proposed_female.png"))
+    scatterplot_va(mvalence_proposed_male, marousal_proposed_male, os.path.join(save_dir, f"va_proposed_male.png"))
+    scatterplot_va(mvalence_prompt_female, marousal_prompt_female, os.path.join(save_dir, f"va_prompt_female.png"))
+    scatterplot_va(mvalence_prompt_male, marousal_prompt_male, os.path.join(save_dir, f"va_prompt_male.png"))
