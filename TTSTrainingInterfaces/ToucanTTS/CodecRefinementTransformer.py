@@ -1,15 +1,29 @@
 import torch
 
+from Layers.Conformer import Conformer
+
 
 class CodecRefinementTransformer(torch.nn.Module):
 
     def __init__(self,
-                 attention_dimension=512,
-                 utt_embed_dim=512,
-                 use_conditional_layernorm_embedding_integration=False,
+                 attention_dimension=128,
                  num_codebooks=4,
                  codebook_size=1024,
-                 backtranslation_dim=8
+                 backtranslation_dim=8,
+                 attention_heads=4,
+                 positionwise_conv_kernel_size=1,
+                 use_macaron_style_in_conformer=True,
+                 use_cnn_in_conformer=False,  # for now, we try using just a regular transformer
+                 decoder_layers=6,
+                 decoder_units=1280,
+                 decoder_concat_after=False,
+                 conformer_decoder_kernel_size=31,
+                 decoder_normalize_before=True,
+                 transformer_dec_dropout_rate=0.2,
+                 transformer_dec_positional_dropout_rate=0.1,
+                 transformer_dec_attn_dropout_rate=0.1,
+                 utt_embed_dim=512,
+                 use_conditional_layernorm_embedding_integration=False,
                  ):
         super().__init__()
 
@@ -17,6 +31,27 @@ class CodecRefinementTransformer(torch.nn.Module):
         self.multispeaker_model = utt_embed_dim is not None
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
+
+        self.reconstruction_transformer = Conformer(
+            conformer_type="decoder",
+            attention_dim=attention_dimension,
+            attention_heads=attention_heads,
+            linear_units=decoder_units,
+            num_blocks=decoder_layers,
+            input_layer=None,
+            dropout_rate=transformer_dec_dropout_rate,
+            positional_dropout_rate=transformer_dec_positional_dropout_rate,
+            attention_dropout_rate=transformer_dec_attn_dropout_rate,
+            normalize_before=decoder_normalize_before,
+            concat_after=decoder_concat_after,
+            positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+            macaron_style=use_macaron_style_in_conformer,
+            use_cnn_module=use_cnn_in_conformer,
+            cnn_module_kernel=conformer_decoder_kernel_size,
+            use_output_norm=False,
+            utt_embed=utt_embed_dim,
+            use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration
+        )
 
         self.input_embeddings = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
@@ -51,12 +86,7 @@ class CodecRefinementTransformer(torch.nn.Module):
         sequence_of_continuous_tokens = self.indexes_per_codebook_to_stacked_embedding_vector(index_sequence_padding_accounted)  # return [batch, time_steps, num_codebooks x backtranslation_dim]
 
         masked_sequence = self.randomly_mask_sequence(sequence_of_continuous_tokens)
-        reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence)
-
-        # TODO 1. Teile von sequence_of_continuous_tokens maskieren
-        #      2. Durch einen Transformer durch passen
-
-        # TODO inspiration for the transformer can probably be found in https://github.com/suno-ai/bark/blob/main/bark/model_fine.py
+        reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence, speaker_embedding, ~padding_mask)
 
         predicted_indexes_one_hot = list()
         backtranslated_indexes = list()
@@ -84,15 +114,15 @@ class CodecRefinementTransformer(torch.nn.Module):
         if is_inference:
             return refined_index_sequence_one_hot_encoded
         else:
-            return self.criterion(predicted_features=refined_index_sequence_one_hot_encoded, gold_features=gold_index_sequence, non_pad_mask=~padding_mask)
+            return self.criterion(predicted_one_hot=refined_index_sequence_one_hot_encoded, gold_one_hot=gold_index_sequence, gold_features=sequence_of_continuous_tokens.detach(), reconstructed_features=reconstructed_sequence, non_pad_mask=~padding_mask)
 
     def randomly_mask_sequence(self):
         # TODO
         return None
 
-    def reconstruct_masked_sequence(self):
-        # TODO
-        return None
+    def reconstruct_masked_sequence(self, masked_sequence, utterance_embedding, non_padding_mask):
+        decoded_speech, _ = self.self.reconstruction_transformer(masked_sequence, non_padding_mask, utterance_embedding=utterance_embedding)
+        return decoded_speech
 
     def indexes_per_codebook_to_stacked_embedding_vector(self, index_sequence):
         index_sequence = index_sequence.transpose(0, 1)
@@ -108,22 +138,25 @@ class MaskedRefinementObjective(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none")
+        self.l1_loss = torch.nn.L1Loss(reduction="none")
 
-    def forward(self, predicted_features, gold_features, non_pad_mask):
+    def forward(self, predicted_one_hot, gold_one_hot, gold_features, reconstructed_features, non_pad_mask):
         ce = list()
-        for one_hot_pred, one_hot_target in zip(predicted_features, gold_features.transpose(0, 1).transpose(2, 3)):
+        for one_hot_pred, one_hot_target in zip(predicted_one_hot, gold_one_hot.transpose(0, 1).transpose(2, 3)):
             # we iterate over codebooks
             ce.append(self.classification_loss(one_hot_pred, one_hot_target))
-        distance_loss = torch.stack(ce).sum(0)
+        classification_loss = torch.stack(ce).sum(0)
+        regression_loss = self.l1_loss(reconstructed_features, gold_features)
         # make weighted mask and apply it
-        out_masks = non_pad_mask.unsqueeze(-1).to(gold_features.device)
-        out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_features.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
+        out_masks = non_pad_mask.unsqueeze(-1).to(gold_one_hot.device)
+        out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_one_hot.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
         out_weights = out_masks.float() / out_masks.sum(dim=1, keepdim=True).float()
-        out_weights /= gold_features.size(0) * gold_features.size(-1)
+        out_weights /= gold_one_hot.size(0) * gold_one_hot.size(-1)
         # apply weight
-        distance_loss = distance_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
+        classification_loss = classification_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
+        regression_loss = regression_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
 
-        return distance_loss
+        return classification_loss, regression_loss
 
 
 def one_hot_sequence_to_token_sequence(batch_of_indexes_one_hot_per_codebook):
