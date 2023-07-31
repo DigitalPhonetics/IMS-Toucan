@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=128,
+                 attention_dimension=512,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -491,11 +491,11 @@ class ToucanTTS(torch.nn.Module):
 if __name__ == '__main__':
     num_codebooks = 5
 
-    print(sum(p.numel() for p in ToucanTTS(num_codebooks=num_codebooks).parameters() if p.requires_grad))
+    model = ToucanTTS(num_codebooks=num_codebooks)
+    print(sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     print(" TESTING TRAINING ")
 
-    print(" batchsize 3 ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
@@ -509,7 +509,6 @@ if __name__ == '__main__':
     dummy_utterance_embed = torch.randn([3, 512])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
-    model = ToucanTTS(num_codebooks=num_codebooks)
     l1, dl, pl, el = model(dummy_text_batch,
                            dummy_text_lens,
                            dummy_speech_batch,
@@ -518,75 +517,10 @@ if __name__ == '__main__':
                            dummy_pitch,
                            dummy_energy,
                            utterance_embedding=dummy_utterance_embed,
-                           lang_ids=dummy_language_id)
+                           lang_ids=dummy_language_id,
+                           codebook_curriculum=num_codebooks)
 
     loss = l1 + dl + pl + el
-    print(loss)
-    loss.backward()
-
-    print(" batchsize 3 with embeds ")
-    dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
-    dummy_text_lens = torch.LongTensor([2, 3, 3])
-
-    dummy_speech_batch = torch.randn([3, num_codebooks, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
-    dummy_speech_lens = torch.LongTensor([10, 30, 20])
-
-    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])
-    dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
-    dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
-
-    dummy_utterance_embed = torch.randn([3, 512])  # [Batch, Dimensions of Speaker Embedding]
-    dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
-
-    model = ToucanTTS(num_codebooks=num_codebooks, use_conditional_layernorm_embedding_integration=True)
-    l1, dl, pl, el = model(dummy_text_batch,
-                           dummy_text_lens,
-                           dummy_speech_batch,
-                           dummy_speech_lens,
-                           dummy_durations,
-                           dummy_pitch,
-                           dummy_energy,
-                           utterance_embedding=dummy_utterance_embed,
-                           lang_ids=dummy_language_id)
-
-    loss = l1 + dl + pl + el
-    print(loss)
-    loss.backward()
-
-    # from Utility.utils import plot_grad_flow
-
-    # plot_grad_flow(model.encoder.named_parameters())
-    # plot_grad_flow(model.decoder.named_parameters())
-    # plot_grad_flow(model.pitch_predictor.named_parameters())
-    # plot_grad_flow(model.duration_predictor.named_parameters())
-    # plot_grad_flow(model.post_flow.named_parameters())
-
-    print(" batchsize 2 ")
-    dummy_text_batch = torch.randint(low=0, high=2, size=[2, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
-    dummy_text_lens = torch.LongTensor([2, 3])
-
-    dummy_speech_batch = torch.randn([2, num_codebooks, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
-    dummy_speech_lens = torch.LongTensor([10, 30])
-
-    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5]])
-    dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]]])
-    dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]]])
-
-    dummy_utterance_embed = torch.randn([2, 512])  # [Batch, Dimensions of Speaker Embedding]
-    dummy_language_id = torch.LongTensor([5, 3]).unsqueeze(1)
-
-    model = ToucanTTS(num_codebooks=num_codebooks)
-    l1, dl, pl, el = model(dummy_text_batch,
-                           dummy_text_lens,
-                           dummy_speech_batch,
-                           dummy_speech_lens,
-                           dummy_durations,
-                           dummy_pitch,
-                           dummy_energy,
-                           utterance_embedding=dummy_utterance_embed,
-                           lang_ids=dummy_language_id)
-
-    loss = l1 + dl + el + pl
     print(loss)
     loss.backward()
 
@@ -594,6 +528,6 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
     dummy_utterance_embed = torch.randn([512])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
-    print(ToucanTTS(num_codebooks=num_codebooks).inference(dummy_text_batch,
-                                                           utterance_embedding=dummy_utterance_embed,
-                                                           lang_id=dummy_language_id).shape)
+    print(model.inference(dummy_text_batch,
+                          utterance_embedding=dummy_utterance_embed,
+                          lang_id=dummy_language_id).shape)
