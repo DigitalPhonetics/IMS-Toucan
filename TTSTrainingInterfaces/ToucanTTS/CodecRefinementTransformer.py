@@ -18,16 +18,20 @@ class CodecRefinementTransformer(torch.nn.Module):
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
 
+        self.input_embeddings = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
         self.hierarchical_classifier = torch.nn.ModuleList()
         self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
+            self.input_embeddings.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
             self.hierarchical_classifier.append(torch.nn.Linear(num_codebooks * backtranslation_dim + head * backtranslation_dim, self.codebook_size))
 
-        self.criterion = MaskedLanguageModellingObjective()
+        self.criterion = MaskedRefinementObjective()
         for backtranslation_head in self.backtranslation_heads:
             torch.nn.init.normal_(backtranslation_head.weight, mean=0, std=attention_dimension ** -0.5)
+        for input_embedding in self.input_embeddings:
+            torch.nn.init.normal_(input_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
     def forward(self, index_sequence, is_inference, speaker_embedding, padding_mask=None, gold_index_sequence=None):
         """
@@ -46,15 +50,49 @@ class CodecRefinementTransformer(torch.nn.Module):
 
         sequence_of_continuous_tokens = self.indexes_per_codebook_to_stacked_embedding_vector(index_sequence_padding_accounted)  # return [batch, time_steps, num_codebooks x backtranslation_dim]
 
-        # TODO do some iterative language modeling on the tokens using the hierarchical classifier from toucan to map to one-hot-encoded indexes again
-        # TODO inspiration can probably be found in https://github.com/suno-ai/bark/blob/main/bark/model_fine.py
+        masked_sequence = self.randomly_mask_sequence(sequence_of_continuous_tokens)
+        reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence)
 
-        refined_index_sequence_one_hot_encoded = None
+        # TODO 1. Teile von sequence_of_continuous_tokens maskieren
+        #      2. Durch einen Transformer durch passen
+
+        # TODO inspiration for the transformer can probably be found in https://github.com/suno-ai/bark/blob/main/bark/model_fine.py
+
+        predicted_indexes_one_hot = list()
+        backtranslated_indexes = list()
+        for head_index, classifier_head in enumerate(self.hierarchical_classifier):
+            # each codebook considers all previous codebooks.
+            predicted_indexes_one_hot.append(classifier_head(torch.cat([reconstructed_sequence] + backtranslated_indexes, dim=2)))
+            predicted_lookup_index = torch.argmax(predicted_indexes_one_hot[-1], dim=-1)
+            backtranslation = self.backtranslation_heads[head_index](predicted_lookup_index)
+            if len(backtranslation.size()) == 1:
+                backtranslation = backtranslation.unsqueeze(0)
+            backtranslated_indexes.append(backtranslation)
+        indexes = torch.cat(predicted_indexes_one_hot, dim=2)
+        # [Batch, Sequence, Hidden]
+        indexes = indexes.view(reconstructed_sequence.size(0), reconstructed_sequence.size(1), self.num_codebooks, self.codebook_size)
+        # [Batch, Sequence, Codebook, Classes]
+        indexes = indexes.transpose(1, 2)
+        # [Batch, Codebook, Sequence, Classes]
+        indexes = indexes.transpose(2, 3)
+        # [Batch, Codebook, Classes, Sequence]
+        indexes = indexes.transpose(0, 1)
+        # [Codebook, Batch, Classes, Sequence]
+
+        refined_index_sequence_one_hot_encoded = indexes
 
         if is_inference:
             return refined_index_sequence_one_hot_encoded
         else:
-            return self.criterion(refined_index_sequence_one_hot_encoded, gold_index_sequence)
+            return self.criterion(predicted_features=refined_index_sequence_one_hot_encoded, gold_features=gold_index_sequence, non_pad_mask=~padding_mask)
+
+    def randomly_mask_sequence(self):
+        # TODO
+        return None
+
+    def reconstruct_masked_sequence(self):
+        # TODO
+        return None
 
     def indexes_per_codebook_to_stacked_embedding_vector(self, index_sequence):
         index_sequence = index_sequence.transpose(0, 1)
@@ -65,14 +103,31 @@ class CodecRefinementTransformer(torch.nn.Module):
         return stacked_embedding_vector
 
 
-class MaskedLanguageModellingObjective(torch.nn.Module):
+class MaskedRefinementObjective(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        pass
+        self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none")
 
-    def forward(self, index_sequence, gold_index_sequence):
-        pass
+    def forward(self, predicted_features, gold_features, non_pad_mask):
+        ce = list()
+        for one_hot_pred, one_hot_target in zip(predicted_features, gold_features.transpose(0, 1).transpose(2, 3)):
+            # we iterate over codebooks
+            ce.append(self.classification_loss(one_hot_pred, one_hot_target))
+        distance_loss = torch.stack(ce).sum(0)
+        # make weighted mask and apply it
+        out_masks = non_pad_mask.unsqueeze(-1).to(gold_features.device)
+        out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_features.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
+        out_weights = out_masks.float() / out_masks.sum(dim=1, keepdim=True).float()
+        out_weights /= gold_features.size(0) * gold_features.size(-1)
+        # apply weight
+        distance_loss = distance_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
+
+        return distance_loss
+
+
+def one_hot_sequence_to_token_sequence(batch_of_indexes_one_hot_per_codebook):
+    return torch.argmax(batch_of_indexes_one_hot_per_codebook, dim=-2).transpose(0, 1)
 
 
 if __name__ == '__main__':
@@ -103,13 +158,22 @@ if __name__ == '__main__':
                                                                                                      lang_ids=dummy_language_id)
 
     # reformat outputs to be a token sequence
-    batch_of_indexes_per_codebook = list()
-    for predicted_indexes_one_hot in batch_of_indexes_one_hot_per_codebook:
-        predicted_lookup_index = torch.argmax(predicted_indexes_one_hot, dim=-2)
-        batch_of_indexes_per_codebook.append(predicted_lookup_index)
-    batch_of_indexes = torch.stack(batch_of_indexes_per_codebook, dim=-1).transpose(1, 2)
+    batch_of_indexes = one_hot_sequence_to_token_sequence(batch_of_indexes_one_hot_per_codebook)
 
     # refine the output of the TTS with the Language Model
     refiner = CodecRefinementTransformer()
+
     loss = refiner(index_sequence=batch_of_indexes, padding_mask=make_pad_mask(dummy_speech_lens), is_inference=False, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    print(loss)
+
     refined_indexes = refiner(index_sequence=batch_of_indexes[1].unsqueeze(0), is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    print(refined_indexes.shape)
+    refined_indexes = one_hot_sequence_to_token_sequence(refined_indexes)
+    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    print(refined_indexes.shape)
+    refined_indexes = one_hot_sequence_to_token_sequence(refined_indexes)
+    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    print(refined_indexes.shape)
+    refined_indexes = one_hot_sequence_to_token_sequence(refined_indexes)
+    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    print(refined_indexes.shape)
