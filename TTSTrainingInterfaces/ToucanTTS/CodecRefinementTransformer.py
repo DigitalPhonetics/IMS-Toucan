@@ -81,7 +81,6 @@ class CodecRefinementTransformer(torch.nn.Module):
             index_sequence_padding_accounted = index_sequence  # in the case of inference, there is no padding
 
         sequence_of_continuous_tokens = self.indexes_per_codebook_to_stacked_embedding_vector(index_sequence_padding_accounted)  # return [batch, time_steps, num_codebooks x backtranslation_dim]
-
         masked_sequence = self.randomly_mask_sequence(unmasked_sequence=sequence_of_continuous_tokens)
         reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence, speaker_embedding, non_padding_mask=~padding_mask if padding_mask is not None else None)
 
@@ -106,12 +105,10 @@ class CodecRefinementTransformer(torch.nn.Module):
         indexes = indexes.transpose(0, 1)
         # [Codebook, Batch, Classes, Sequence]
 
-        refined_index_sequence_one_hot_encoded = indexes
-
         if is_inference:
-            return refined_index_sequence_one_hot_encoded
+            return indexes
         else:
-            return self.criterion(predicted_one_hot=refined_index_sequence_one_hot_encoded, gold_one_hot=gold_index_sequence, gold_features=sequence_of_continuous_tokens.detach(), reconstructed_features=reconstructed_sequence, non_pad_mask=~padding_mask)
+            return self.criterion(predicted_one_hot=indexes, gold_one_hot=gold_index_sequence, gold_features=sequence_of_continuous_tokens.detach(), reconstructed_features=reconstructed_sequence, non_pad_mask=~padding_mask)
 
     def randomly_mask_sequence(self, unmasked_sequence):
         mask_prob = 0.2
@@ -124,10 +121,9 @@ class CodecRefinementTransformer(torch.nn.Module):
         decoded_speech, _ = self.reconstruction_transformer(masked_sequence, non_padding_mask.unsqueeze(2) if non_padding_mask is not None else None, utterance_embedding=utterance_embedding)
         return decoded_speech
 
-    def indexes_per_codebook_to_stacked_embedding_vector(self, index_sequence):
-        index_sequence = index_sequence.transpose(0, 1)
+    def indexes_per_codebook_to_stacked_embedding_vector(self, index_sequence_per_codebook):
         continuous_frame_sequences = list()
-        for codebook_id, codebook_sequence in enumerate(index_sequence):
+        for codebook_id, codebook_sequence in enumerate(index_sequence_per_codebook.transpose(0, 1)):
             continuous_frame_sequences.append(self.backtranslation_heads[codebook_id](codebook_sequence))
         stacked_embedding_vector = torch.cat(continuous_frame_sequences, dim=-1)
         return stacked_embedding_vector
@@ -180,15 +176,15 @@ if __name__ == '__main__':
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     # run TTS on pseudo inputs
-    batch_of_indexes_one_hot_per_codebook, _, _, _ = ToucanTTS(num_codebooks=num_codebooks)._forward(dummy_text_batch,
-                                                                                                     dummy_text_lens,
-                                                                                                     gold_speech_batch,
-                                                                                                     gold_speech_lens,
-                                                                                                     gold_durations,
-                                                                                                     gold_pitch,
-                                                                                                     gold_energy,
-                                                                                                     utterance_embedding=dummy_utterance_embed,
-                                                                                                     lang_ids=dummy_language_id)
+    batch_of_indexes_one_hot_per_codebook, _, _, _, _, _ = ToucanTTS(num_codebooks=num_codebooks, use_language_model=False)._forward(dummy_text_batch,
+                                                                                                                                     dummy_text_lens,
+                                                                                                                                     gold_speech_batch,
+                                                                                                                                     gold_speech_lens,
+                                                                                                                                     gold_durations,
+                                                                                                                                     gold_pitch,
+                                                                                                                                     gold_energy,
+                                                                                                                                     utterance_embedding=dummy_utterance_embed,
+                                                                                                                                     lang_ids=dummy_language_id)
 
     # reformat outputs to be a token sequence
     batch_of_indexes = one_hot_sequence_to_token_sequence(batch_of_indexes_one_hot_per_codebook)

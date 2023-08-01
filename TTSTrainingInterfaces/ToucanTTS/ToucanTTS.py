@@ -9,6 +9,7 @@ from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.CodecRefinementTransformer import CodecRefinementTransformer
+from TTSTrainingInterfaces.ToucanTTS.CodecRefinementTransformer import one_hot_sequence_to_token_sequence
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from TTSTrainingInterfaces.ToucanTTS.wavenet import WN
 from Utility.utils import initialize
@@ -318,17 +319,19 @@ class ToucanTTS(torch.nn.Module):
         outs, \
             predicted_durations, \
             predicted_pitch, \
-            predicted_energy = self._forward(text_tensors=text_tensors,
-                                             text_lengths=text_lengths,
-                                             gold_speech=gold_speech,
-                                             speech_lengths=speech_lengths,
-                                             gold_durations=gold_durations,
-                                             gold_pitch=gold_pitch,
-                                             gold_energy=gold_energy,
-                                             utterance_embedding=utterance_embedding,
-                                             is_inference=False,
-                                             lang_ids=lang_ids,
-                                             codebook_curriculum=codebook_curriculum)
+            predicted_energy, \
+            refiner_classification_loss, \
+            mlm_loss = self._forward(text_tensors=text_tensors,
+                                     text_lengths=text_lengths,
+                                     gold_speech=gold_speech,
+                                     speech_lengths=speech_lengths,
+                                     gold_durations=gold_durations,
+                                     gold_pitch=gold_pitch,
+                                     gold_energy=gold_energy,
+                                     utterance_embedding=utterance_embedding,
+                                     is_inference=False,
+                                     lang_ids=lang_ids,
+                                     codebook_curriculum=codebook_curriculum)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -343,8 +346,8 @@ class ToucanTTS(torch.nn.Module):
                                                                                      gold_energy=gold_energy)
 
         if return_feats:
-            return classification_loss, duration_loss, pitch_loss, energy_loss, outs
-        return classification_loss, duration_loss, pitch_loss, energy_loss
+            return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss, outs
+        return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss
 
     def _forward(self,
                  text_tensors,
@@ -451,6 +454,13 @@ class ToucanTTS(torch.nn.Module):
         indexes = indexes.transpose(0, 1)
         # [Codebook, Batch, Classes, Sequence]
 
+        classification_loss, mlm_loss = None, None
+        if self.use_language_model:
+            if is_inference:
+                indexes = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(indexes), padding_mask=None, is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=None)
+            else:
+                classification_loss, mlm_loss = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(gold_speech.transpose(3, 2)).transpose(0, 1), padding_mask=~decoder_masks.squeeze(1), is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=gold_speech)
+
         if is_inference:
             return indexes, \
                 predicted_durations.squeeze(), \
@@ -460,7 +470,9 @@ class ToucanTTS(torch.nn.Module):
             return indexes, \
                 predicted_durations, \
                 pitch_predictions, \
-                energy_predictions
+                energy_predictions, \
+                classification_loss, \
+                mlm_loss
 
     @torch.inference_mode()
     def inference(self,
@@ -515,7 +527,7 @@ class ToucanTTS(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    num_codebooks = 5
+    num_codebooks = 4
 
     model = ToucanTTS(num_codebooks=num_codebooks)
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
@@ -535,18 +547,18 @@ if __name__ == '__main__':
     dummy_utterance_embed = torch.randn([3, 512])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
-    l1, dl, pl, el = model(dummy_text_batch,
-                           dummy_text_lens,
-                           dummy_speech_batch,
-                           dummy_speech_lens,
-                           dummy_durations,
-                           dummy_pitch,
-                           dummy_energy,
-                           utterance_embedding=dummy_utterance_embed,
-                           lang_ids=dummy_language_id,
-                           codebook_curriculum=num_codebooks)
+    ce, rl, mlm, dl, pl, el = model(dummy_text_batch,
+                                    dummy_text_lens,
+                                    dummy_speech_batch,
+                                    dummy_speech_lens,
+                                    dummy_durations,
+                                    dummy_pitch,
+                                    dummy_energy,
+                                    utterance_embedding=dummy_utterance_embed,
+                                    lang_ids=dummy_language_id,
+                                    codebook_curriculum=num_codebooks)
 
-    loss = l1 + dl + pl + el
+    loss = ce + rl + mlm + dl + pl + el
     print(loss)
     loss.backward()
 
