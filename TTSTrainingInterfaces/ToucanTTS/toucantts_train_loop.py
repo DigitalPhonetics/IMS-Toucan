@@ -118,6 +118,8 @@ def train_loop(net,
         net.train()
         epoch += 1
         classification_losses_total = list()
+        refinement_classification_losses_total = list()
+        refinement_mlm_losses_total = list()
         duration_losses_total = list()
         pitch_losses_total = list()
         energy_losses_total = list()
@@ -128,7 +130,7 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
                                                        batch_of_feature_sequence_lengths=batch[3].to(device))
-            classification_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
+            classification_loss, refinemnt_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
                 gold_speech=batch[2].to(device),
@@ -158,6 +160,10 @@ def train_loop(net,
                 train_loss = train_loss + embedding_regularization_loss(style_embedding, style_embedding)
             if not torch.isnan(classification_loss):
                 train_loss = train_loss + classification_loss
+            if mlm_loss is not None:
+                train_loss = train_loss + mlm_loss
+            if refinemnt_classification_loss is not None:
+                train_loss = train_loss + refinemnt_classification_loss
             if not torch.isnan(duration_loss):
                 train_loss = train_loss + duration_loss
             if not torch.isnan(pitch_loss):
@@ -166,6 +172,9 @@ def train_loop(net,
                 train_loss = train_loss + energy_loss
 
             classification_losses_total.append(classification_loss.item())
+            if mlm_loss is not None:
+                refinement_mlm_losses_total.append(mlm_loss.item())
+                refinement_classification_losses_total.append(refinemnt_classification_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
@@ -214,6 +223,11 @@ def train_loop(net,
                 wandb.log({
                     "critic_loss"   : round(sum(discriminator_losses_total) / len(discriminator_losses_total), 5),
                     "generator_loss": round(sum(generator_losses_total) / len(generator_losses_total), 5),
+                }, step=step_counter)
+            if len(refinement_classification_losses_total) != 0:
+                wandb.log({
+                    "refinement_classification_loss": round(sum(refinement_classification_losses_total) / len(refinement_classification_losses_total), 5),
+                    "language_modelling_loss"       : round(sum(refinement_mlm_losses_total) / len(refinement_mlm_losses_total), 5),
                 }, step=step_counter)
 
         path_to_most_recent_plot = plot_progress_spec_toucantts(net,
