@@ -457,7 +457,11 @@ class ToucanTTS(torch.nn.Module):
         classification_loss, mlm_loss = None, None
         if self.use_language_model:
             if is_inference:
-                indexes = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(indexes), padding_mask=None, is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=None)
+                if self.num_codebooks == codebook_curriculum:
+                    for _ in range(5):
+                        indexes = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(indexes), padding_mask=None, is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=None)
+                else:
+                    print("Skipping the language model, since the curriculum does not yet include all codebooks.")
             else:
                 classification_loss, mlm_loss = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(gold_speech.transpose(3, 2)).transpose(0, 1), padding_mask=~decoder_masks.squeeze(1), is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=gold_speech)
 
@@ -537,7 +541,7 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
-    dummy_speech_batch = torch.randn([3, num_codebooks, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_batch = torch.randn([3, 9, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
     dummy_speech_lens = torch.LongTensor([10, 30, 20])
 
     dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])

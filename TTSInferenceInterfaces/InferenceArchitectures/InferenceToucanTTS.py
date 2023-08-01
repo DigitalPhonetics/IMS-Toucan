@@ -170,7 +170,7 @@ class ToucanTTS(torch.nn.Module):
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Sequential(torch.nn.Linear(attention_dimension + head * backtranslation_dim, attention_dimension),
                                                                     torch.nn.Tanh(),
-                                                                    torch.nn.Dropout(0.0),
+                                                                    # torch.nn.Dropout(0.0),
                                                                     torch.nn.Linear(attention_dimension, self.codebook_size)))
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
