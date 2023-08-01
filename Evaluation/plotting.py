@@ -396,7 +396,7 @@ def heatmap_emotion(d: dict, save_dir):
     emotions = EMOTIONS
 
     # Create a numpy array to store the counts
-    counts = np.array([[d[emotion][label] for emotion in emotions] for label in d[emotions[0]]])
+    counts = np.array([[d[emotion].get(label, 0) for emotion in emotions] for label in emotions])
     # normalize counts for each emotion category
     normalized_counts = np.around(counts / counts.sum(axis=0, keepdims=True), decimals=2)
 
@@ -406,14 +406,14 @@ def heatmap_emotion(d: dict, save_dir):
 
     # Show counts as text in each cell
     for i in range(len(emotions)):
-        for j in range(len(d[emotions[0]])):
+        for j in range(len(emotions)):
             text = ax.text(i, j, normalized_counts[j, i], ha='center', va='center', color='black', fontsize=16)
 
     # Set the axis labels and title
     ax.set_xticks(np.arange(len(emotions)))
-    ax.set_yticks(np.arange(len(d[emotions[0]])))
+    ax.set_yticks(np.arange(len(emotions)))
     ax.set_xticklabels(emotions, fontsize=16)
-    ax.set_yticklabels(d[emotions[0]].keys(), fontsize=16)
+    ax.set_yticklabels(emotions, fontsize=16)
 
     # Rotate the tick labels for better readability (optional)
     plt.xticks(rotation=45, ha='right', fontsize=16)
@@ -470,6 +470,113 @@ def scatterplot_va(v: dict, a: dict, save_dir: str):
 
     # Save the figure
     plt.savefig(save_dir, bbox_inches='tight')
+    plt.close()
+
+def boxplot_objective(data, save_dir):
+    data = dict(sorted(data.items()))
+    speakers = list(data.keys())
+    ratings = list(data.values())
+
+    plt.figure(figsize=(10, 6))
+    box_plot = plt.boxplot(ratings, patch_artist=True, widths=0.7)
+    for patch in box_plot['boxes']:
+        patch.set_facecolor('white')
+    for median in box_plot['medians']:
+        median.set(color='black', linestyle='-', linewidth=3)
+    plt.xticks(range(1, len(speakers) + 1), speakers, fontsize=16)
+    plt.xlabel('Speaker', fontsize=16)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.tick_params(axis='y', labelsize=16)
+    ax.yaxis.set_major_locator(MultipleLocator(base=0.01))
+    plt.savefig(save_dir)
+    plt.close()
+
+def boxplot_objective2(data, save_dir):
+    data = dict(sorted(data.items()))
+    speakers = list(data.keys())
+    ratings = list(data.values())
+
+    plt.figure(figsize=(10, 6))
+    box_plot = plt.boxplot(ratings, patch_artist=True, widths=0.7)
+    for patch in box_plot['boxes']:
+        patch.set_facecolor('white')
+    for median in box_plot['medians']:
+        median.set(color='black', linestyle='-', linewidth=3)
+    plt.xticks(range(1, len(speakers) + 1), speakers, fontsize=16)
+    plt.xlabel('Speaker', fontsize=16)
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.tick_params(axis='y', labelsize=16)
+    ax.yaxis.set_major_locator(MultipleLocator(base=0.1))
+    plt.savefig(save_dir)
+    plt.close()
+
+def barplot_speaker_similarity(data, save_dir):
+    labels = ['Baseline', 'Proposed']
+
+    plt.bar(range(len(data)), data, align='center', color="gray")
+    plt.xticks(range(len(data)), labels, fontsize=16)
+    plt.ylabel('Cosine Similarity', fontsize=16)
+    ax = plt.gca()
+    ax.tick_params(axis='y', labelsize=16)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    for i, v in enumerate(data):
+        plt.text(i, round(v, 4), str(round(v, 4)), ha='center', va='bottom', fontsize=14)
+    plt.savefig(save_dir)
+    plt.close()
+
+def barplot_wer(data, save_dir):
+    labels = ['Original', 'Baseline', 'Proposed']
+
+    plt.bar(range(len(data)), data, align='center', color="gray")
+    plt.xticks(range(len(data)), labels, fontsize=16)
+    plt.ylabel('Word Error Rate', fontsize=16)
+    ax = plt.gca()
+    ax.tick_params(axis='y', labelsize=16)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    for i, v in enumerate(data):
+        plt.text(i, round(v, 3), str(round(v, 3)), ha='center', va='bottom', fontsize=14)
+    plt.subplots_adjust(left=0.15)
+    plt.savefig(save_dir)
+    plt.close()
+
+def barplot_emotion_recognition(data, save_dir):
+    labels = ['Original', 'Baseline', 'Proposed Same', 'Proposed Other']
+
+    # Set up the figure with a larger width to accommodate tick labels
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Use a horizontal bar plot with reversed data
+    bars = ax.barh(range(len(data)), data[::-1], color="gray")  # Reversed data
+
+    # Set the tick positions and labels
+    ax.set_yticks(range(len(data)))
+    ax.set_yticklabels(labels[::-1], fontsize=16)  # Reversed labels
+
+    # Set the x-axis label
+    ax.set_xlabel('Accuracy', fontsize=16)
+
+    # Set the font size for y-axis tick labels
+    ax.tick_params(axis='y', labelsize=16)
+
+    # Remove the right and top spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Add accuracy values as text beside each bar
+    for i, v in enumerate(data[::-1]):  # Reversed data
+        ax.text(v, i, str(round(v, 2)), ha='left', va='center', fontsize=14)  # Reversed data
+
+    # Adjust the plot layout to prevent the labels from being cut off
+    plt.subplots_adjust(left=0.2, right=0.95)
+
+    # Save the bar plot
+    plt.savefig(save_dir)
     plt.close()
 
 def get_variable_labels(v):

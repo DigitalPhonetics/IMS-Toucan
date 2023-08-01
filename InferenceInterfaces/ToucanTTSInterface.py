@@ -193,9 +193,10 @@ class ToucanTTSInterface(torch.nn.Module):
             self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
                                                                             spec_len.unsqueeze(0).to(self.device)).squeeze()
         
-    def set_sentence_embedding(self, prompt:str):
+    def set_sentence_embedding(self, prompt:str, silent=True):
         if self.use_sent_emb:
-            print(f"Using sentence embedding of given prompt: {prompt}")
+            if not silent:
+                print(f"Using sentence embedding of given prompt: {prompt}")
             prompt_embedding = self.sentence_embedding_extractor.encode([prompt]).squeeze().to(self.device)
             self.sentence_embedding = prompt_embedding
         else:
