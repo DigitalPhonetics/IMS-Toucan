@@ -399,8 +399,8 @@ class ToucanTTS(torch.nn.Module):
         for head_index, classifier_head in enumerate(self.hierarchical_classifier[:codebook_curriculum]):
             # each codebook considers all previous codebooks.
             if not is_inference:
-                if len(gold_indexes) != 0:
-                    decoded_speech = decoded_speech.detach()  # it is considered frozen for all heads except the first.
+                # if len(gold_indexes) != 0:
+                #    decoded_speech = decoded_speech.detach()  # it is considered frozen for all heads except the first.
                 predicted_indexes_one_hot.append(classifier_head(torch.cat([decoded_speech] + gold_indexes, dim=2)))
                 gold_lookup_index = torch.argmax(gold_speech.transpose(0, 1)[head_index], dim=-1)
                 gold_lookup_index = gold_lookup_index.masked_fill(mask=~decoder_masks.squeeze(1), value=self.padding_id)

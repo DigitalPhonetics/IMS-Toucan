@@ -114,9 +114,11 @@ class CodecRefinementTransformer(torch.nn.Module):
             return self.criterion(predicted_one_hot=refined_index_sequence_one_hot_encoded, gold_one_hot=gold_index_sequence, gold_features=sequence_of_continuous_tokens.detach(), reconstructed_features=reconstructed_sequence, non_pad_mask=~padding_mask)
 
     def randomly_mask_sequence(self, unmasked_sequence):
-        # todo random mask with the same shape as the padding mask
-        #  masked select and overwrite wth 0
-        return unmasked_sequence
+        mask_prob = 0.2
+        mask = torch.rand_like(unmasked_sequence[:, :, 0]) > mask_prob
+        mask = mask.unsqueeze(-1).expand_as(unmasked_sequence)
+        masked_sequence = unmasked_sequence * mask.float()
+        return masked_sequence
 
     def reconstruct_masked_sequence(self, masked_sequence, utterance_embedding, non_padding_mask):
         decoded_speech, _ = self.reconstruction_transformer(masked_sequence, non_padding_mask.unsqueeze(2) if non_padding_mask is not None else None, utterance_embedding=utterance_embedding)
