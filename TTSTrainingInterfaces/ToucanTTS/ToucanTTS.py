@@ -8,6 +8,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from TTSTrainingInterfaces.ToucanTTS.CodecRefinementTransformer import CodecRefinementTransformer
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from TTSTrainingInterfaces.ToucanTTS.wavenet import WN
 from Utility.utils import initialize
@@ -96,7 +97,8 @@ class ToucanTTS(torch.nn.Module):
                  num_codebooks=4,  # between 1 and 9 when using the descript audio codec
                  codebook_size=1024,
                  backtranslation_dim=8,
-                 use_wavenet_postnet=False):
+                 use_wavenet_postnet=False,
+                 use_language_model=True):
         super().__init__()
 
         self.config = {
@@ -143,7 +145,8 @@ class ToucanTTS(torch.nn.Module):
             "num_codebooks"                                  : num_codebooks,
             "codebook_size"                                  : codebook_size,
             "use_wavenet_postnet"                            : use_wavenet_postnet,
-            "backtranslation_dim"                            : backtranslation_dim
+            "backtranslation_dim"                            : backtranslation_dim,
+            "use_language_model"                             : use_language_model,
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -154,6 +157,7 @@ class ToucanTTS(torch.nn.Module):
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
         self.use_wavenet_postnet = use_wavenet_postnet
+        self.use_language_model = use_language_model
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -252,6 +256,28 @@ class ToucanTTS(torch.nn.Module):
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
         self.curriculum_state = 1
+
+        if use_language_model:
+            self.language_model = CodecRefinementTransformer(
+                num_codebooks=num_codebooks,
+                attention_dimension=attention_dimension,
+                codebook_size=codebook_size,
+                backtranslation_dim=backtranslation_dim,
+                attention_heads=attention_heads,
+                positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+                use_macaron_style_in_conformer=use_macaron_style_in_conformer,
+                use_cnn_in_conformer=use_cnn_in_conformer,
+                decoder_layers=decoder_layers,
+                decoder_units=decoder_units,
+                decoder_concat_after=decoder_concat_after,
+                conformer_decoder_kernel_size=conformer_decoder_kernel_size,
+                decoder_normalize_before=decoder_normalize_before,
+                transformer_dec_dropout_rate=transformer_dec_dropout_rate,
+                transformer_dec_positional_dropout_rate=transformer_dec_positional_dropout_rate,
+                transformer_dec_attn_dropout_rate=transformer_dec_attn_dropout_rate,
+                utt_embed_dim=utt_embed_dim,
+                use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration
+            )
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
