@@ -1,6 +1,7 @@
 import os
 from statistics import median, mean
 import numpy as np
+import scipy.stats as stats
 
 import torch
 
@@ -9,6 +10,8 @@ from Evaluation.objective_evaluation import *
 from Evaluation.plotting import *
 
 import sys
+
+EMOTIONS = ["anger", "joy", "neutral", "sadness", "surprise"]
 
 def get_ratings_per_speaker(data):
     ratings = {}
@@ -107,6 +110,24 @@ def total_accuracy(data):
                 count_correct += freq
             count_total += freq
     return count_correct / count_total
+
+def cramers_v(data):
+    # Convert the data dictionary into a 2D array
+    counts = np.array([[data[emotion].get(label, 0) for emotion in EMOTIONS] for label in EMOTIONS])
+
+    # Compute the chi-squared statistic and p-value
+    chi2, p, _, _ = stats.chi2_contingency(counts)
+
+    # Number of observations (total counts)
+    n = np.sum(counts)
+
+    # Number of rows and columns in the contingency table
+    num_rows = len(EMOTIONS)
+    num_cols = len(EMOTIONS)
+
+    # Compute Cramér's V
+    cramer_v = np.sqrt(chi2 / (n * (min(num_rows, num_cols) - 1)))
+    return p, cramer_v
 
 if __name__ == '__main__':
     # load results
@@ -259,6 +280,12 @@ if __name__ == '__main__':
                                  accuracy_sent,
                                  accuracy_prompt],
                                  os.path.join(save_dir, f"emotion_accuracy.png"))
+    
+    print("Cramers V")
+    print(cramers_v(freqs_original_emotion))
+    print(cramers_v(freqs_baseline_emotion))
+    print(cramers_v(freqs_sent_emotion))
+    print(cramers_v(freqs_prompt_emotion))
 
     sys.exit()
     accuracies_emotion_original = {} # per speaker per emotion
