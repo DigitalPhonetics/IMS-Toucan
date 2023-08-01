@@ -48,7 +48,7 @@ class ToucanTTS(torch.nn.Module):
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=False,  # for now, we try using just a regular transformer
+                 use_cnn_in_conformer=True,
 
                  # encoder
                  encoder_layers=6,
@@ -66,7 +66,7 @@ class ToucanTTS(torch.nn.Module):
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 for spectrograms
                  decoder_normalize_before=True,
-                 transformer_dec_dropout_rate=0.2,
+                 transformer_dec_dropout_rate=0.1,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
 

@@ -27,14 +27,9 @@ class CodecRefinementTransformer(torch.nn.Module):
                  ):
         super().__init__()
 
-        self.attention_dimension = attention_dimension
-        self.multispeaker_model = utt_embed_dim is not None
-        self.num_codebooks = num_codebooks
-        self.codebook_size = codebook_size
-
         self.reconstruction_transformer = Conformer(
             conformer_type="decoder",
-            attention_dim=attention_dimension,
+            attention_dim=num_codebooks * backtranslation_dim,
             attention_heads=attention_heads,
             linear_units=decoder_units,
             num_blocks=decoder_layers,
@@ -53,14 +48,16 @@ class CodecRefinementTransformer(torch.nn.Module):
             use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration
         )
 
+        self.num_codebooks = num_codebooks
+        self.codebook_size = codebook_size
         self.input_embeddings = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
         self.hierarchical_classifier = torch.nn.ModuleList()
-        self.padding_id = self.codebook_size + 5
-        for head in range(self.num_codebooks):
+        self.padding_id = codebook_size + 5
+        for head in range(num_codebooks):
             self.input_embeddings.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
-            self.hierarchical_classifier.append(torch.nn.Linear(num_codebooks * backtranslation_dim + head * backtranslation_dim, self.codebook_size))
+            self.hierarchical_classifier.append(torch.nn.Linear(num_codebooks * backtranslation_dim + head * backtranslation_dim, codebook_size))
 
         self.criterion = MaskedRefinementObjective()
         for backtranslation_head in self.backtranslation_heads:
@@ -85,8 +82,8 @@ class CodecRefinementTransformer(torch.nn.Module):
 
         sequence_of_continuous_tokens = self.indexes_per_codebook_to_stacked_embedding_vector(index_sequence_padding_accounted)  # return [batch, time_steps, num_codebooks x backtranslation_dim]
 
-        masked_sequence = self.randomly_mask_sequence(sequence_of_continuous_tokens)
-        reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence, speaker_embedding, ~padding_mask)
+        masked_sequence = self.randomly_mask_sequence(unmasked_sequence=sequence_of_continuous_tokens)
+        reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence, speaker_embedding, non_padding_mask=~padding_mask if padding_mask is not None else None)
 
         predicted_indexes_one_hot = list()
         backtranslated_indexes = list()
@@ -116,12 +113,13 @@ class CodecRefinementTransformer(torch.nn.Module):
         else:
             return self.criterion(predicted_one_hot=refined_index_sequence_one_hot_encoded, gold_one_hot=gold_index_sequence, gold_features=sequence_of_continuous_tokens.detach(), reconstructed_features=reconstructed_sequence, non_pad_mask=~padding_mask)
 
-    def randomly_mask_sequence(self):
-        # TODO
-        return None
+    def randomly_mask_sequence(self, unmasked_sequence):
+        # todo random mask with the same shape as the padding mask
+        #  masked select and overwrite wth 0
+        return unmasked_sequence
 
     def reconstruct_masked_sequence(self, masked_sequence, utterance_embedding, non_padding_mask):
-        decoded_speech, _ = self.self.reconstruction_transformer(masked_sequence, non_padding_mask, utterance_embedding=utterance_embedding)
+        decoded_speech, _ = self.reconstruction_transformer(masked_sequence, non_padding_mask.unsqueeze(2) if non_padding_mask is not None else None, utterance_embedding=utterance_embedding)
         return decoded_speech
 
     def indexes_per_codebook_to_stacked_embedding_vector(self, index_sequence):
@@ -146,7 +144,7 @@ class MaskedRefinementObjective(torch.nn.Module):
             # we iterate over codebooks
             ce.append(self.classification_loss(one_hot_pred, one_hot_target))
         classification_loss = torch.stack(ce).sum(0)
-        regression_loss = self.l1_loss(reconstructed_features, gold_features)
+        regression_loss = self.l1_loss(reconstructed_features, gold_features).mean(-1)
         # make weighted mask and apply it
         out_masks = non_pad_mask.unsqueeze(-1).to(gold_one_hot.device)
         out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_one_hot.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
@@ -171,22 +169,22 @@ if __name__ == '__main__':
     num_codebooks = 4
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
-    dummy_speech_batch = torch.randn([3, num_codebooks, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
-    dummy_speech_lens = torch.LongTensor([10, 30, 20])
-    dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])
-    dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
-    dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
+    gold_speech_batch = torch.randn([3, num_codebooks, 30, 1024])  # [Batch, Sequence Length, Spectrogram Buckets]
+    gold_speech_lens = torch.LongTensor([10, 30, 20])
+    gold_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])
+    gold_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
+    gold_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
     dummy_utterance_embed = torch.randn([3, 512])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     # run TTS on pseudo inputs
     batch_of_indexes_one_hot_per_codebook, _, _, _ = ToucanTTS(num_codebooks=num_codebooks)._forward(dummy_text_batch,
                                                                                                      dummy_text_lens,
-                                                                                                     dummy_speech_batch,
-                                                                                                     dummy_speech_lens,
-                                                                                                     dummy_durations,
-                                                                                                     dummy_pitch,
-                                                                                                     dummy_energy,
+                                                                                                     gold_speech_batch,
+                                                                                                     gold_speech_lens,
+                                                                                                     gold_durations,
+                                                                                                     gold_pitch,
+                                                                                                     gold_energy,
                                                                                                      utterance_embedding=dummy_utterance_embed,
                                                                                                      lang_ids=dummy_language_id)
 
@@ -196,17 +194,17 @@ if __name__ == '__main__':
     # refine the output of the TTS with the Language Model
     refiner = CodecRefinementTransformer()
 
-    loss = refiner(index_sequence=batch_of_indexes, padding_mask=make_pad_mask(dummy_speech_lens), is_inference=False, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    loss = refiner(index_sequence=one_hot_sequence_to_token_sequence(gold_speech_batch.transpose(3, 2)).transpose(0, 1), padding_mask=make_pad_mask(gold_speech_lens), is_inference=False, speaker_embedding=dummy_utterance_embed, gold_index_sequence=gold_speech_batch)
     print(loss)
 
-    refined_indexes = refiner(index_sequence=batch_of_indexes[1].unsqueeze(0), is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    refined_indexes = refiner(index_sequence=batch_of_indexes[1].unsqueeze(0), is_inference=True, speaker_embedding=dummy_utterance_embed[0].unsqueeze(0), gold_index_sequence=None)
     print(refined_indexes.shape)
     refined_indexes = one_hot_sequence_to_token_sequence(refined_indexes)
-    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed[0].unsqueeze(0), gold_index_sequence=None)
     print(refined_indexes.shape)
     refined_indexes = one_hot_sequence_to_token_sequence(refined_indexes)
-    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed[0].unsqueeze(0), gold_index_sequence=None)
     print(refined_indexes.shape)
     refined_indexes = one_hot_sequence_to_token_sequence(refined_indexes)
-    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed, gold_index_sequence=None)
+    refined_indexes = refiner(index_sequence=refined_indexes, is_inference=True, speaker_embedding=dummy_utterance_embed[0].unsqueeze(0), gold_index_sequence=None)
     print(refined_indexes.shape)
