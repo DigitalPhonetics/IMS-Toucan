@@ -123,8 +123,9 @@ class CodecRefinementTransformer(torch.nn.Module):
 
     def indexes_per_codebook_to_stacked_embedding_vector(self, index_sequence_per_codebook):
         continuous_frame_sequences = list()
-        for codebook_id, codebook_sequence in enumerate(index_sequence_per_codebook.transpose(0, 1)):
-            continuous_frame_sequences.append(self.backtranslation_heads[codebook_id](codebook_sequence))
+
+        for codebook_id, backtranslation_head in enumerate(self.backtranslation_heads):
+            continuous_frame_sequences.append(backtranslation_head(index_sequence_per_codebook.transpose(0, 1)[codebook_id]))
         stacked_embedding_vector = torch.cat(continuous_frame_sequences, dim=-1)
         return stacked_embedding_vector
 
