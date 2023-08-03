@@ -346,8 +346,8 @@ class ToucanTTS(torch.nn.Module):
                                                                                      gold_energy=gold_energy)
 
         if return_feats:
-            return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss, outs
-        return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss
+            return classification_loss, refiner_classification_loss, mlm_loss * 1000, duration_loss, pitch_loss, energy_loss, outs
+        return classification_loss, refiner_classification_loss, mlm_loss * 1000, duration_loss, pitch_loss, energy_loss
 
     def _forward(self,
                  text_tensors,
