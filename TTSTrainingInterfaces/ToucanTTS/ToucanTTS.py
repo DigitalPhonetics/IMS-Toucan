@@ -246,7 +246,6 @@ class ToucanTTS(torch.nn.Module):
 
         self.hierarchical_classifier = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
-        backtranslation_dim = backtranslation_dim
         self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
             self.hierarchical_classifier.append(torch.nn.Sequential(torch.nn.Dropout(.2),
@@ -345,9 +344,12 @@ class ToucanTTS(torch.nn.Module):
                                                                                      gold_pitch=gold_pitch,
                                                                                      gold_energy=gold_energy)
 
+        if mlm_loss is not None:
+            mlm_loss = mlm_loss * 100000
+            
         if return_feats:
-            return classification_loss, refiner_classification_loss, mlm_loss * 100000, duration_loss, pitch_loss, energy_loss, outs
-        return classification_loss, refiner_classification_loss, mlm_loss * 100000, duration_loss, pitch_loss, energy_loss
+            return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss, outs
+        return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss
 
     def _forward(self,
                  text_tensors,
