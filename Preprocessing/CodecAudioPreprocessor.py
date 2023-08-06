@@ -6,7 +6,6 @@ from torchaudio.transforms import Resample
 class CodecAudioPreprocessor:
 
     def __init__(self, input_sr, output_sr=44100, device="cpu"):
-        import dac  # have to do the imports down here, since it otherwise globally reserves GPU 0 instead of the correct one
         from dac.model import DAC
         from dac.utils import load_model
         self.device = device
@@ -14,7 +13,7 @@ class CodecAudioPreprocessor:
         self.output_sr = output_sr
         self.resample = Resample(orig_freq=input_sr, new_freq=output_sr).to(self.device)
         self.model = DAC()
-        self.model = load_model(dac.__model_version__)
+        self.model = load_model(model_type="44kHz", tag="0.0.1")
         self.model.eval()
         self.model.to(device)
 
@@ -89,15 +88,16 @@ if __name__ == '__main__':
     import soundfile
 
     with torch.inference_mode():
-        test_audio = "../audios/ad00_0004.wav"
+        test_audio = "../audios/ad01_0003.wav"
         wav, sr = soundfile.read(test_audio)
         ap = CodecAudioPreprocessor(input_sr=sr)
 
         codes = ap.indexes_to_codec_frames(ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr))
 
         z_ps = torch.split(codes, ap.model.codebook_dim, dim=0)
-
+        combined = 0.0
         for i, z_p in enumerate(z_ps):
             z_q_i = ap.model.quantizer.quantizers[i].out_proj(z_p)
-            audio = ap.model.decode(z_q_i.unsqueeze(0))["audio"].squeeze()
-            soundfile.write(file=f"../audios/only_codebook_{i}.wav", data=audio, samplerate=44100)
+            combined = combined + z_q_i
+            audio = ap.model.decode(combined.unsqueeze(0))["audio"].squeeze()
+            soundfile.write(file=f"../audios/44_female_voice_{i + 1}_codebooks.wav", data=audio, samplerate=44100)
