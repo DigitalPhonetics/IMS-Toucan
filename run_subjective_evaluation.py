@@ -144,6 +144,18 @@ if __name__ == '__main__':
     marousal_prompt_female = get_mean_rating_nested(remove_outliers(arousal_prompt_female))
     marousal_prompt_male = get_mean_rating_nested(remove_outliers(arousal_prompt_male))
 
+    print(marousal_original_female)
+    print(marousal_original_male)
+    
+    print(marousal_baseline_female)
+    print(marousal_baseline_male)
+
+    print(marousal_proposed_female)
+    print(marousal_proposed_male)
+
+    print(marousal_prompt_female)
+    print(marousal_prompt_male)
+
 
     # make plots
     #################

@@ -111,6 +111,16 @@ def total_accuracy(data):
             count_total += freq
     return count_correct / count_total
 
+def combine_sent_prompt(dict1, dict2):
+    combined_dict = {}
+    for key in dict1.keys() | dict2.keys():
+        combined_dict[key] = dict1[key] + dict2[key]
+    return combined_dict
+
+def get_dict_with_rounded_values(dict, decimal_points=3):
+    rounded_dict = {key: round(value, decimal_points) for key, value in dict.items()}
+    return rounded_dict
+
 def cramers_v(data):
     # Convert the data dictionary into a 2D array
     counts = np.array([[data[emotion].get(label, 0) for emotion in EMOTIONS] for label in EMOTIONS])
@@ -160,25 +170,27 @@ if __name__ == '__main__':
     speaker_similarities_baseline_speaker = get_ratings_per_speaker(speaker_similarities_baseline)
     speaker_similarities_sent_speaker = get_ratings_per_speaker(speaker_similarities_sent)
     speaker_similarities_prompt_speaker = get_ratings_per_speaker(speaker_similarities_prompt)
+    speaker_similarities_proposed_speaker = combine_sent_prompt(speaker_similarities_sent_speaker, speaker_similarities_prompt_speaker)
 
     speaker_similarities_baseline_speaker_cleaned = remove_outliers_per_speaker(speaker_similarities_baseline_speaker)
-    speaker_similarities_sent_speaker_cleaned = remove_outliers_per_speaker(speaker_similarities_sent_speaker)
-    speaker_similarities_prompt_speaker_cleaned = remove_outliers_per_speaker(speaker_similarities_prompt_speaker)
+    speaker_similarities_proposed_speaker_cleaned = remove_outliers_per_speaker(speaker_similarities_proposed_speaker)
 
     #mean
     speaker_similarity_baseline_speaker = get_single_rating_per_speaker(speaker_similarities_baseline_speaker_cleaned)
-    speaker_similarity_sent_speaker = get_single_rating_per_speaker(speaker_similarities_sent_speaker_cleaned)
-    speaker_similarity_prompt_speaker = get_single_rating_per_speaker(speaker_similarities_prompt_speaker_cleaned)
+    speaker_similarity_proposed_speaker = get_single_rating_per_speaker(speaker_similarities_proposed_speaker_cleaned)
+
+    print(dict(sorted(get_dict_with_rounded_values(speaker_similarity_baseline_speaker).items())))
+    print()
+    print(dict(sorted(get_dict_with_rounded_values(speaker_similarity_proposed_speaker).items())))
+    print()
 
     # total
     speaker_similarity_baseline_total = mean(list(speaker_similarity_baseline_speaker.values()))
-    speaker_similarity_sent_total = mean(list(speaker_similarity_sent_speaker.values()))
-    speaker_similarity_prompt_total = mean(list(speaker_similarity_prompt_speaker.values()))
+    speaker_similarity_proposed_total = mean(list(speaker_similarity_proposed_speaker.values()))
 
     print("Speaker Similarity")
     print(speaker_similarity_baseline_total)
-    print(speaker_similarity_sent_total)
-    print(speaker_similarity_prompt_total)
+    print(speaker_similarity_proposed_total)
 
     # word error rate
 
@@ -187,28 +199,33 @@ if __name__ == '__main__':
     wers_baseline_speaker = get_ratings_per_speaker(wers_baseline)
     wers_sent_speaker = get_ratings_per_speaker(wers_sent)
     wers_prompt_speaker = get_ratings_per_speaker(wers_prompt)
+    wers_proposed_speaker = combine_sent_prompt(wers_sent_speaker, wers_prompt_speaker)
 
     wers_original_speaker_cleaned = remove_outliers_per_speaker(wers_original_speaker)
     wers_baseline_speaker_cleaned = remove_outliers_per_speaker(wers_baseline_speaker)
-    wers_sent_speaker_cleaned = remove_outliers_per_speaker(wers_sent_speaker)
-    wers_prompt_speaker_cleaned = remove_outliers_per_speaker(wers_prompt_speaker)
+    wers_proposed_speaker_cleaned = remove_outliers_per_speaker(wers_proposed_speaker)
 
+    # mean
     wer_original_speaker = get_single_rating_per_speaker(wers_original_speaker_cleaned)
     wer_baseline_speaker = get_single_rating_per_speaker(wers_baseline_speaker_cleaned)
-    wer_sent_speaker = get_single_rating_per_speaker(wers_sent_speaker_cleaned)
-    wer_prompt_speaker = get_single_rating_per_speaker(wers_prompt_speaker_cleaned)
+    wer_proposed_speaker = get_single_rating_per_speaker(wers_proposed_speaker_cleaned)
+
+    print(dict(sorted(get_dict_with_rounded_values(wer_original_speaker).items())))
+    print()
+    print(dict(sorted(get_dict_with_rounded_values(wer_baseline_speaker).items())))
+    print()
+    print(dict(sorted(get_dict_with_rounded_values(wer_proposed_speaker).items())))
+    print()
 
     # total
     wer_original_total = mean(list(wer_original_speaker.values()))
     wer_baseline_total = mean(list(wer_baseline_speaker.values()))
-    wer_sent_total = mean(list(wer_sent_speaker.values()))
-    wer_prompt_total = mean(list(wer_prompt_speaker.values()))
+    wer_proposed_total = mean(list(wer_proposed_speaker.values()))
 
     print("Word Error Rate")
     print(wer_original_total)
     print(wer_baseline_total)
-    print(wer_sent_total)
-    print(wer_prompt_total)
+    print(wer_proposed_total)
 
     # emotion recognition
 
@@ -242,22 +259,20 @@ if __name__ == '__main__':
     save_dir = os.path.join(PREPROCESSING_DIR, "Evaluation", "plots")
 
     boxplot_objective(speaker_similarities_baseline_speaker,  os.path.join(save_dir, f"box_speaker_similarities_baseline.png"))
-    boxplot_objective(speaker_similarities_sent_speaker,  os.path.join(save_dir, f"box_speaker_similarities_sent.png"))
-    boxplot_objective(speaker_similarities_prompt_speaker,  os.path.join(save_dir, f"box_speaker_similarities_prompt.png"))
+    boxplot_objective(speaker_similarities_proposed_speaker,  os.path.join(save_dir, f"box_speaker_similarities_proposed.png"))
 
     barplot_speaker_similarity([speaker_similarity_baseline_total,
-                                mean([speaker_similarity_sent_total, speaker_similarity_prompt_total])
+                                speaker_similarity_proposed_total
                                 ],
                                 os.path.join(save_dir, f"speaker_similarity_total.png"))
     
     boxplot_objective2(wers_original_speaker, os.path.join(save_dir, f"box_wers_original_speaker.png"))
     boxplot_objective2(wers_baseline_speaker, os.path.join(save_dir, f"box_wers_baseline_speaker.png"))
-    boxplot_objective2(wers_sent_speaker, os.path.join(save_dir, f"box_wers_sent_speaker.png"))
-    boxplot_objective2(wers_prompt_speaker, os.path.join(save_dir, f"box_wers_prompt_speaker.png"))
+    boxplot_objective2(wers_proposed_speaker, os.path.join(save_dir, f"box_wers_proposed_speaker.png"))
 
     barplot_wer([wer_original_total,
                  wer_baseline_total,
-                 mean([wer_sent_total, wer_prompt_total])
+                 wer_proposed_total
                  ],
                  os.path.join(save_dir, f"wer_total.png"))
 

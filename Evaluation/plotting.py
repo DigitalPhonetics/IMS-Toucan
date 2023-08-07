@@ -530,7 +530,7 @@ def barplot_speaker_similarity(data, save_dir):
     plt.close()
 
 def barplot_wer(data, save_dir):
-    labels = ['Original', 'Baseline', 'Proposed']
+    labels = ['Ground Thruth', 'Baseline', 'Proposed']
 
     plt.bar(range(len(data)), data, align='center', color="gray")
     plt.xticks(range(len(data)), labels, fontsize=16)
@@ -546,7 +546,7 @@ def barplot_wer(data, save_dir):
     plt.close()
 
 def barplot_emotion_recognition(data, save_dir):
-    labels = ['Original', 'Baseline', 'Proposed Same', 'Proposed Other']
+    labels = ['Ground Truth', 'Baseline', 'Proposed Same', 'Proposed Other']
 
     # Set up the figure with a larger width to accommodate tick labels
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -563,6 +563,7 @@ def barplot_emotion_recognition(data, save_dir):
 
     # Set the font size for y-axis tick labels
     ax.tick_params(axis='y', labelsize=16)
+    ax.tick_params(axis='x', labelsize=16)
 
     # Remove the right and top spines
     ax.spines['top'].set_visible(False)
