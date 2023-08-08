@@ -81,14 +81,13 @@ class CodecRefinementTransformer(torch.nn.Module):
             index_sequence_padding_accounted = index_sequence  # in the case of inference, there is no padding
 
         sequence_of_continuous_tokens = self.indexes_per_codebook_to_stacked_embedding_vector(index_sequence_padding_accounted)  # return [batch, time_steps, num_codebooks x backtranslation_dim]
-        masked_sequence = self.randomly_mask_sequence(unmasked_sequence=sequence_of_continuous_tokens)
-        reconstructed_sequence = self.reconstruct_masked_sequence(masked_sequence, speaker_embedding, non_padding_mask=~padding_mask if padding_mask is not None else None)
+        contextualized_sequence = self.contextualize_sequence(sequence_of_continuous_tokens, speaker_embedding, non_padding_mask=~padding_mask if padding_mask is not None else None)
 
         predicted_indexes_one_hot = list()
         backtranslated_indexes = list()
         for head_index, classifier_head in enumerate(self.hierarchical_classifier):
             # each codebook considers all previous codebooks.
-            predicted_indexes_one_hot.append(classifier_head(torch.cat([reconstructed_sequence] + backtranslated_indexes, dim=2)))
+            predicted_indexes_one_hot.append(classifier_head(torch.cat([contextualized_sequence] + backtranslated_indexes, dim=2)))
             predicted_lookup_index = torch.argmax(predicted_indexes_one_hot[-1], dim=-1)
             backtranslation = self.backtranslation_heads[head_index](predicted_lookup_index)
             if len(backtranslation.size()) == 1:
@@ -96,7 +95,7 @@ class CodecRefinementTransformer(torch.nn.Module):
             backtranslated_indexes.append(backtranslation)
         indexes = torch.cat(predicted_indexes_one_hot, dim=2)
         # [Batch, Sequence, Hidden]
-        indexes = indexes.view(reconstructed_sequence.size(0), reconstructed_sequence.size(1), self.num_codebooks, self.codebook_size)
+        indexes = indexes.view(contextualized_sequence.size(0), contextualized_sequence.size(1), self.num_codebooks, self.codebook_size)
         # [Batch, Sequence, Codebook, Classes]
         indexes = indexes.transpose(1, 2)
         # [Batch, Codebook, Sequence, Classes]
@@ -108,16 +107,9 @@ class CodecRefinementTransformer(torch.nn.Module):
         if is_inference:
             return indexes
         else:
-            return self.criterion(predicted_one_hot=indexes, gold_one_hot=gold_index_sequence, gold_features=sequence_of_continuous_tokens.detach(), reconstructed_features=reconstructed_sequence, non_pad_mask=~padding_mask)
+            return self.criterion(predicted_one_hot=indexes, gold_one_hot=gold_index_sequence, non_pad_mask=~padding_mask)
 
-    def randomly_mask_sequence(self, unmasked_sequence):
-        mask_prob = 0.2
-        mask = torch.rand_like(unmasked_sequence[:, :, 0]) > mask_prob
-        mask = mask.unsqueeze(-1).expand_as(unmasked_sequence)
-        masked_sequence = unmasked_sequence * mask.float()
-        return masked_sequence
-
-    def reconstruct_masked_sequence(self, masked_sequence, utterance_embedding, non_padding_mask):
+    def contextualize_sequence(self, masked_sequence, utterance_embedding, non_padding_mask):
         decoded_speech, _ = self.reconstruction_transformer(masked_sequence, non_padding_mask.unsqueeze(2) if non_padding_mask is not None else None, utterance_embedding=utterance_embedding)
         return decoded_speech
 
@@ -137,13 +129,12 @@ class MaskedRefinementObjective(torch.nn.Module):
         self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none")
         self.l1_loss = torch.nn.L1Loss(reduction="none")
 
-    def forward(self, predicted_one_hot, gold_one_hot, gold_features, reconstructed_features, non_pad_mask):
+    def forward(self, predicted_one_hot, gold_one_hot, non_pad_mask):
         ce = list()
         for one_hot_pred, one_hot_target in zip(predicted_one_hot, gold_one_hot.transpose(0, 1).transpose(2, 3)):
             # we iterate over codebooks
             ce.append(self.classification_loss(one_hot_pred, one_hot_target))
         classification_loss = torch.stack(ce).sum(0)
-        regression_loss = self.l1_loss(reconstructed_features, gold_features).mean(-1)
         # make weighted mask and apply it
         out_masks = non_pad_mask.unsqueeze(-1).to(gold_one_hot.device)
         out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_one_hot.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
@@ -151,9 +142,8 @@ class MaskedRefinementObjective(torch.nn.Module):
         out_weights /= gold_one_hot.size(0) * gold_one_hot.size(-1)
         # apply weight
         classification_loss = classification_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
-        regression_loss = regression_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
 
-        return classification_loss, regression_loss
+        return classification_loss, classification_loss
 
 
 def one_hot_sequence_to_token_sequence(batch_of_indexes_one_hot_per_codebook):
