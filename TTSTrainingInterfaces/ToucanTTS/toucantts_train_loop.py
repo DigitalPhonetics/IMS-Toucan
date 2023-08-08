@@ -141,7 +141,7 @@ def train_loop(net,
                 utterance_embedding=style_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                codebook_curriculum=(step_counter + warmup_steps * 3) // warmup_steps * 3  # TODO this requires tuning
+                codebook_curriculum=(step_counter + warmup_steps * 3) // (warmup_steps * 3)  # TODO this requires tuning
             )
 
             if use_discriminator:
