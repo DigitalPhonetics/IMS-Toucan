@@ -88,9 +88,9 @@ class ToucanTTSInterface(torch.nn.Module):
             return
         assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
-        if sr != self.audio_preprocessor.input_sr:
+        if sr != self.codec_wrapper.input_sr:
             self.codec_wrapper = CodecAudioPreprocessor(input_sr=sr, device=self.device)
-        spec = self.codec_wrapper.audio_to_codec_tensor(wave).transpose(0, 1)
+        spec = self.codec_wrapper.audio_to_codec_tensor(wave, current_sampling_rate=sr).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
                                                                          spec_len.unsqueeze(0).to(self.device)).squeeze()

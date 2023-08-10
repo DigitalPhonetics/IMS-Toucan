@@ -11,7 +11,7 @@ if __name__ == '__main__':
     warnings.filterwarnings("ignore", category=UserWarning)
 
     PATH_TO_TTS_MODEL = os.path.join(MODELS_DIR, "ToucanTTS_Nancy", "best.pt")
-    PATH_TO_REFERENCE_SPEAKER = ""  # audios/speaker_references_for_testing/female_high_voice.wav
+    PATH_TO_REFERENCE_SPEAKER = ""  # audios/speaker_references_for_testing/female_high_voice.wav  audios/speaker_references_for_testing/male_low_voice.wav
     LANGUAGE = "en"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
