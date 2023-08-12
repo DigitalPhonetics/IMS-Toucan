@@ -13,6 +13,11 @@ singing/
 toucan_conda_venv/
 venv/
 vis/
+wandb/
+Preprocessing/sentence_embeddings/laserembeddings
+Preprocessing/word_embeddings/
+wav2vec2_checkpoints/
+testing*
 
 
 *_graph
