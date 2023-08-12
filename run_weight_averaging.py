@@ -24,8 +24,23 @@ def load_net_toucan(path):
                 net = ToucanTTS(lang_embs=None)
                 net.load_state_dict(check_dict["model"])
             except RuntimeError:
-                net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
-                net.load_state_dict(check_dict["model"])
+                try:
+                    net = ToucanTTS(lang_embs=None, utt_embed_dim=None)
+                    net.load_state_dict(check_dict["model"])
+                except RuntimeError:
+                    try:
+                        print("Loading baseline architecture")
+                        net = ToucanTTS(lang_embs=None, 
+                                        utt_embed_dim=512, 
+                                        static_speaker_embed=True)
+                        net.load_state_dict(check_dict["model"])
+                    except RuntimeError:
+                        print("Loading sent emb architecture")
+                        net = ToucanTTS(lang_embs=None, 
+                                        utt_embed_dim=512,
+                                        sent_embed_dim=768,
+                                        static_speaker_embed=True)
+                        net.load_state_dict(check_dict["model"])
     except RuntimeError:
         try:
             net = StochasticToucanTTS()
@@ -132,7 +147,7 @@ def make_best_in_all():
                     continue
                 averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
                 save_model_for_use(model=averaged_model, name=os.path.join(MODELS_DIR, model_dir, "best.pt"), dict_name="generator")
-            elif "ToucanTTS" in model_dir:
+            elif "ToucanTTS_Sent" in model_dir:
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=os.path.join(MODELS_DIR, model_dir), n=3)
                 if checkpoint_paths is None:
                     continue

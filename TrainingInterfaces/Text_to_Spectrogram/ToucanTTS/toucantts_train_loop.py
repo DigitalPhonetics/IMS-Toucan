@@ -10,6 +10,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from TrainingInterfaces.Spectrogram_to_Embedding.StyleEmbedding import StyleEmbedding
+from TrainingInterfaces.Text_to_Embedding.SentenceEmbeddingAdaptor import SentenceEmbeddingAdaptor
 from TrainingInterfaces.Text_to_Spectrogram.ToucanTTS.SpectrogramDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
@@ -19,10 +20,11 @@ from run_weight_averaging import average_checkpoints
 from run_weight_averaging import get_n_recent_checkpoints_paths
 from run_weight_averaging import load_net_toucan
 from run_weight_averaging import save_model_for_use
+from Utility.utils import get_emotion_from_path, get_speakerid_from_path_all, get_speakerid_from_path, get_speakerid_from_path_all2
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, sentence string, filepath
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
@@ -31,7 +33,9 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             None,
-            torch.stack([datapoint[8] for datapoint in batch]))
+            torch.stack([datapoint[8] for datapoint in batch]),
+            [datapoint[9] for datapoint in batch],
+            [datapoint[10] for datapoint in batch])
 
 
 def train_loop(net,
@@ -49,7 +53,12 @@ def train_loop(net,
                steps,
                use_wandb,
                postnet_start_steps,
-               use_discriminator
+               use_discriminator,
+               sent_embs=None,
+               emotion_sent_embs=None,
+               word_embedding_extractor=None,
+               path_to_xvect=None,
+               static_speaker_embed=False
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -58,11 +67,18 @@ def train_loop(net,
     if use_discriminator:
         discriminator = SpectrogramDiscriminator().to(device)
 
-    style_embedding_function = StyleEmbedding().to(device)
-    check_dict = torch.load(path_to_embed_model, map_location=device)
-    style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.eval()
-    style_embedding_function.requires_grad_(False)
+    if path_to_embed_model is not None:
+        style_embedding_function = StyleEmbedding().to(device)
+        check_dict = torch.load(path_to_embed_model, map_location=device)
+        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        style_embedding_function.eval()
+        style_embedding_function.requires_grad_(False)
+    else:
+        style_embedding_function = None
+
+    if static_speaker_embed:
+        with open("/mount/arbeitsdaten/synthesis/bottts/IMS-Toucan/Corpora/librittsr/libri_speakers.txt") as f:
+            libri_speakers = sorted([int(line.rstrip()) for line in f])
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
@@ -104,8 +120,45 @@ def train_loop(net,
 
         for batch in tqdm(train_loader):
             train_loss = 0.0
-            style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
-                                                       batch_of_spectrogram_lengths=batch[3].to(device))
+
+            if path_to_xvect is not None:
+                filepaths = batch[10]
+                embeddings = []
+                for path in filepaths:
+                    embeddings.append(path_to_xvect[path])
+                style_embedding = torch.stack(embeddings).to(device)
+            elif style_embedding_function is not None:
+                style_embedding = style_embedding_function(batch_of_spectrograms=batch[2].to(device),
+                                                        batch_of_spectrogram_lengths=batch[3].to(device))
+            else:
+                style_embedding = None
+
+            if sent_embs is not None or emotion_sent_embs is not None:
+                filepaths = batch[10]
+                sentences = batch[9]
+                sentence_embeddings = []
+                for path, sentence in zip(filepaths, sentences):
+                    if "LJSpeech" in path or "LibriTTS_R" in path:
+                        sentence_embeddings.append(sent_embs[sentence])
+                    else:
+                        emotion = get_emotion_from_path(path)
+                        sentence_embeddings.append(random.choice(emotion_sent_embs[emotion]))
+                sentence_embedding = torch.stack(sentence_embeddings).to(device)
+            else:
+                sentence_embedding = None
+            
+            if static_speaker_embed:
+                filepaths = batch[10]
+                speaker_ids = torch.LongTensor([get_speakerid_from_path_all2(path, libri_speakers) for path in filepaths]).to(device)
+            else:
+                speaker_ids = None
+            
+            if word_embedding_extractor is not None:
+                word_embedding, sentence_lens = word_embedding_extractor.encode(sentences=batch[9])
+                word_embedding = word_embedding.to(device)
+            else:
+                word_embedding = None
+                sentence_lens = None
 
             l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss, generated_spectrograms = net(
                 text_tensors=batch[0].to(device),
@@ -116,6 +169,9 @@ def train_loop(net,
                 gold_pitch=batch[6].to(device),  # mind the switched order
                 gold_energy=batch[5].to(device),  # mind the switched order
                 utterance_embedding=style_embedding,
+                speaker_id=speaker_ids,
+                sentence_embedding=sentence_embedding,
+                word_embedding=word_embedding,
                 lang_ids=batch[8].to(device),
                 return_mels=True,
                 run_glow=step_counter > postnet_start_steps or fine_tune)
@@ -161,10 +217,17 @@ def train_loop(net,
 
         # EPOCH IS OVER
         net.eval()
-        style_embedding_function.eval()
-        default_embedding = style_embedding_function(
-            batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
-            batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+
+        if style_embedding_function is not None:
+            style_embedding_function.eval()
+        if path_to_xvect is not None:
+            default_embedding = path_to_xvect[train_dataset[0][10]]
+        elif style_embedding_function is not None:
+            default_embedding = style_embedding_function(batch_of_spectrograms=train_dataset[0][2].unsqueeze(0).to(device),
+                                                         batch_of_spectrogram_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+        else: 
+            default_embedding = None
+
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
@@ -200,6 +263,9 @@ def train_loop(net,
                                                                           step=step_counter,
                                                                           lang=lang,
                                                                           default_emb=default_embedding,
+                                                                          static_speaker_embed=static_speaker_embed,
+                                                                          sent_embs=sent_embs if sent_embs is not None else emotion_sent_embs,
+                                                                          word_embedding_extractor=word_embedding_extractor,
                                                                           run_postflow=step_counter - 5 > postnet_start_steps)
             if use_wandb:
                 wandb.log({

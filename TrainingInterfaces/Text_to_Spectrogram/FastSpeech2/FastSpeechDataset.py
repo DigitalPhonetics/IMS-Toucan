@@ -31,6 +31,7 @@ class FastSpeechDataset(Dataset):
                  ctc_selection=True,
                  save_imgs=False):
         self.cache_dir = cache_dir
+        self.path_to_transcript_dict = path_to_transcript_dict
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "fast_train_cache.pt")) or rebuild_cache:
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -176,14 +177,16 @@ class FastSpeechDataset(Dataset):
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            self.datapoints[index][2], \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            self.datapoints[index][7], \
-            self.language_id
+               self.datapoints[index][1], \
+               self.datapoints[index][2], \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               self.datapoints[index][7], \
+               self.language_id, \
+               self.path_to_transcript_dict[self.datapoints[index][8]], \
+               self.datapoints[index][8]
 
     def __len__(self):
         return len(self.datapoints)

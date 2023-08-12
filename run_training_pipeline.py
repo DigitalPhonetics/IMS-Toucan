@@ -13,6 +13,21 @@ from TrainingInterfaces.TrainingPipelines.StochasticToucanTTS_Nancy import run a
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingInterfaces.TrainingPipelines.ToucanTTS_Nancy import run as nancy
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess import run as ravdess
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Ravdess_sent_emb import run as ravdess_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS import run as esds
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_ESDS_sent_emb import run as esds_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_TESS import run as tess
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS import run as libri
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTS_sent_emb import run as libri_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTSR import run as librir
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LibriTTSR_sent_emb import run as librir_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech import run as lj
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_LJSpeech_sent_emb import run as lj_sent
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Pretraining import run as sent_pre
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Baseline_Pretraining import run as base_pre
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Sent_Finetuning import run as sent_fine
+from TrainingInterfaces.TrainingPipelines.ToucanTTS_Baseline_Finetuning import run as base_fine
 from TrainingInterfaces.TrainingPipelines.finetuning_example import run as fine_tuning_example
 from TrainingInterfaces.TrainingPipelines.pretrain_aligner import run as aligner
 
@@ -23,9 +38,22 @@ pipeline_dict = {
     "fs_it"         : fs_integration_test,
     "tt_it"         : tt_integration_test,
     # regular ToucanTTS pipelines
-    "nancy"         : nancy,
-    "nancystoch"    : nancystoch,
-    "meta"          : meta,
+    "nancy"     : nancy,
+    "nancystoch": nancystoch,
+    "meta"      : meta,
+    "libri"         : libri,
+    "librir"         : librir,
+    "libri_sent"    : libri_sent,
+    "librir_sent"    : librir_sent,
+    "ravdess"       : ravdess,
+    "ravdess_sent"  : ravdess_sent,
+    "esds"          : esds,
+    "esds_sent"     : esds_sent,
+    "tess"          : tess,
+    "sent_pre"      : sent_pre,
+    "base_pre"      : base_pre,
+    "sent_fine"     : sent_fine,
+    "base_fine"     : base_fine,
     # training vocoders (not recommended, best to use provided checkpoint)
     "avocodo"       : hifi_codo,
     "bigvgan"       : bigvgan,

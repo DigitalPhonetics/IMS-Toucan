@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sounddevice
 import soundfile
 import torch
+import torchaudio
 
 from InferenceInterfaces.InferenceArchitectures.InferenceAvocodo import HiFiGANGenerator
 from InferenceInterfaces.InferenceArchitectures.InferenceBigVGAN import BigVGAN
@@ -27,6 +28,9 @@ class ToucanTTSInterface(torch.nn.Module):
                  vocoder_model_path=None,  # path to the hifigan/avocodo/bigvgan checkpoint
                  faster_vocoder=True,  # whether to use the quicker HiFiGAN or the better BigVGAN
                  language="en",  # initial language of the model, can be changed later with the setter methods
+                 sent_emb_extractor=None,
+                 word_emb_extractor=None,
+                 xvect_model=None
                  ):
         super().__init__()
         self.device = device
@@ -53,14 +57,49 @@ class ToucanTTSInterface(torch.nn.Module):
         #   load phone to mel model    #
         ################################
         self.use_lang_id = True
+        self.use_sent_emb = False
+        self.static_speaker_embed=False
+        self.use_word_emb = False
         try:
+            if "sent_emb" in tts_model_path:
+                raise RuntimeError
             self.phone2mel = ToucanTTS(weights=checkpoint["model"])  # multi speaker multi language
         except RuntimeError:
             try:
+                if "sent_emb" in tts_model_path:
+                    raise RuntimeError
                 self.use_lang_id = False
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None)  # multi speaker single language
+                self.phone2mel = ToucanTTS(weights=checkpoint["model"], 
+                                           lang_embs=None)  # multi speaker single language
             except RuntimeError:
-                self.phone2mel = ToucanTTS(weights=checkpoint["model"], lang_embs=None, utt_embed_dim=None)  # single speaker
+                try:
+                    if "sent_emb" in tts_model_path:
+                        raise RuntimeError
+                    self.use_lang_id = False
+                    self.phone2mel = ToucanTTS(weights=checkpoint["model"], 
+                                               lang_embs=None, 
+                                               utt_embed_dim=None)  # single speaker, single language
+                except RuntimeError:
+                    try:
+                        if "sent_emb" in tts_model_path:
+                            raise RuntimeError
+                        print("Loading baseline architecture")
+                        self.use_lang_id = False
+                        self.static_speaker_embed = True
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"], 
+                                                   lang_embs=None, 
+                                                   utt_embed_dim=512,
+                                                   static_speaker_embed=self.static_speaker_embed)
+                    except RuntimeError:
+                        print("Loading sent emb architecture")
+                        self.use_lang_id = False
+                        self.use_sent_emb = True
+                        self.static_speaker_embed = True
+                        self.phone2mel = ToucanTTS(weights=checkpoint["model"],
+                                                    lang_embs=None, 
+                                                    utt_embed_dim=512,
+                                                    sent_embed_dim=768,
+                                                    static_speaker_embed=self.static_speaker_embed)
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -68,13 +107,35 @@ class ToucanTTSInterface(torch.nn.Module):
         #################################
         #  load mel to style models     #
         #################################
-        self.style_embedding_function = StyleEmbedding()
-        if embedding_model_path is None:
-            check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
-        else:
+        if embedding_model_path is not None:
+            self.style_embedding_function = StyleEmbedding()
             check_dict = torch.load(embedding_model_path, map_location="cpu")
-        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        self.style_embedding_function.to(self.device)
+            self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+            self.style_embedding_function.to(self.device)
+        else:
+            self.style_embedding_function = None
+        
+        self.xvect_model = xvect_model if xvect_model is not None else None
+
+        #################################
+        #  load sent emb extractor     #
+        #################################
+        self.sentence_embedding_extractor = None
+        if self.use_sent_emb:
+            if sent_emb_extractor is not None:
+                self.sentence_embedding_extractor = sent_emb_extractor
+            else:
+                raise KeyError("Please specify a sentence embedding extractor.")
+            
+        #################################
+        #  load word emb extractor     #
+        #################################
+        self.word_embedding_extractor = None
+        if self.use_word_emb:
+            if word_emb_extractor is not None:
+                self.word_embedding_extractor = word_emb_extractor
+            else:
+                raise KeyError("Please specify a word embedding extractor.")
 
         ################################
         #  load mel to wave model      #
@@ -88,11 +149,20 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #  set defaults                #
         ################################
-        self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        try:
+            self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        except KeyError:
+            self.default_utterance_embedding = None
+        if self.static_speaker_embed:
+            self.default_speaker_id = torch.LongTensor([0]).to(self.device)
+        else:
+            self.default_speaker_id = None
+        self.sentence_embedding = None
         self.audio_preprocessor = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=True, device=self.device)
         self.phone2mel.eval()
         self.mel2wav.eval()
-        self.style_embedding_function.eval()
+        if self.style_embedding_function is not None:
+            self.style_embedding_function.eval()
         if self.use_lang_id:
             self.lang_id = get_language_id(language)
         else:
@@ -105,13 +175,35 @@ class ToucanTTSInterface(torch.nn.Module):
             self.default_utterance_embedding = embedding.squeeze().to(self.device)
             return
         assert os.path.exists(path_to_reference_audio)
-        wave, sr = soundfile.read(path_to_reference_audio)
-        if sr != self.audio_preprocessor.sr:
-            self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
-        spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
-        spec_len = torch.LongTensor([len(spec)])
-        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
+        if self.xvect_model is not None:
+            print("Extracting xvect from reference audio.")
+            wave, sr = torchaudio.load(path_to_reference_audio)
+            # mono
+            wave = torch.mean(wave, dim=0, keepdim=True)
+            # resampling
+            wave = torchaudio.functional.resample(wave, orig_freq=sr, new_freq=16000)
+            wave = wave.squeeze(0)
+            self.default_utterance_embedding = self.xvect_model.encode_batch(wave).squeeze(0).squeeze(0)
+        else:
+            wave, sr = soundfile.read(path_to_reference_audio)
+            if sr != self.audio_preprocessor.sr:
+                self.audio_preprocessor = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=True, device=self.device)
+            spec = self.audio_preprocessor.audio_to_mel_spec_tensor(wave).transpose(0, 1)
+            spec_len = torch.LongTensor([len(spec)])
+            self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
+                                                                            spec_len.unsqueeze(0).to(self.device)).squeeze()
+        
+    def set_sentence_embedding(self, prompt:str, silent=True):
+        if self.use_sent_emb:
+            if not silent:
+                print(f"Using sentence embedding of given prompt: {prompt}")
+            prompt_embedding = self.sentence_embedding_extractor.encode([prompt]).squeeze().to(self.device)
+            self.sentence_embedding = prompt_embedding
+        else:
+            print("Skipping setting sentence embedding.")
+    
+    def set_speaker_id(self, id:int):
+        self.default_speaker_id = torch.LongTensor([id]).to(self.device)
 
     def set_language(self, lang_id):
         """
@@ -132,6 +224,7 @@ class ToucanTTSInterface(torch.nn.Module):
     def forward(self,
                 text,
                 view=False,
+                view_contours=False,
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
@@ -140,7 +233,9 @@ class ToucanTTSInterface(torch.nn.Module):
                 pitch=None,
                 energy=None,
                 input_is_phones=False,
-                return_plot_as_filepath=False):
+                return_plot_as_filepath=False,
+                plot_name="tmp",
+                silent=False):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -154,9 +249,25 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
+            if self.use_sent_emb and self.sentence_embedding is None:
+                if not silent:
+                    print("Using sentence embedding of input text.")
+                sentence_embedding = self.sentence_embedding_extractor.encode([text]).squeeze().to(self.device)
+            else:
+                sentence_embedding = self.sentence_embedding
+            if self.use_word_emb:
+                if not silent:
+                    print("Extracting word embeddings.")
+                word_embeddings, _ = self.word_embedding_extractor.encode([text])
+                word_embeddings = word_embeddings.squeeze().to(self.device)
+            else:
+                word_embeddings = None
             mel, durations, pitch, energy = self.phone2mel(phones,
                                                            return_duration_pitch_energy=True,
                                                            utterance_embedding=self.default_utterance_embedding,
+                                                           speaker_id=self.default_speaker_id,
+                                                           sentence_embedding=sentence_embedding,
+                                                           word_embedding=word_embeddings,
                                                            durations=durations,
                                                            pitch=pitch,
                                                            energy=energy,
@@ -218,14 +329,73 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_array = pitch.cpu().numpy()
             for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
                 if pitch_array[pitch_index] != 0:
-                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
+                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red",
                                  linestyles="solid", linewidth=1.)
             plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             if not return_plot_as_filepath:
                 plt.show()
             else:
-                plt.savefig("tmp.png")
-                return wave, "tmp.png"
+                plt.savefig(f"{plot_name}.png")
+                return wave
+        if view_contours:
+            from Utility.utils import cumsum_durations
+            fig, ax = plt.subplots(figsize=(9,6))
+            lbd.specshow(mel.cpu().numpy(),
+                         ax=ax,
+                         sr=16000,
+                         cmap='GnBu',
+                         y_axis='mel',
+                         x_axis=None,
+                         hop_length=256)
+            ax.yaxis.set_visible(False)
+            #ax.set_ylim(200, 4000)
+            duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+            ax.xaxis.grid(True, which='minor')
+            ax.set_xticks(label_positions, minor=False)
+            if input_is_phones:
+                phones = text.replace(" ", "|")
+            else:
+                phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
+            ax.set_xticklabels(phones)
+            word_boundaries = list()
+            for label_index, phone in enumerate(phones):
+                if phone == "|":
+                    word_boundaries.append(label_positions[label_index])
+
+            try:
+                prev_word_boundary = 0
+                word_label_positions = list()
+                for word_boundary in word_boundaries:
+                    word_label_positions.append((word_boundary + prev_word_boundary) / 2)
+                    prev_word_boundary = word_boundary
+                word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
+
+                secondary_ax = ax.secondary_xaxis('bottom')
+                secondary_ax.tick_params(axis="x", direction="out", pad=24)
+                secondary_ax.set_xticks(word_label_positions, minor=False)
+                secondary_ax.set_xticklabels(text.split())
+                secondary_ax.tick_params(axis='x', colors='black', labelsize=16)
+                secondary_ax.xaxis.label.set_color('black')
+            except ValueError:
+                ax.set_title(text)
+            except IndexError:
+                ax.set_title(text)
+
+            #ax.vlines(x=duration_splits, colors="black", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+            ax.vlines(x=word_boundaries, colors="black", linestyles="solid", ymin=0.0, ymax=8000, linewidth=1.2)
+            pitch_array = pitch.cpu().numpy()
+            for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+                if pitch_array[pitch_index] != 0:
+                    ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red",
+                                 linestyles="solid", linewidth=2.5)
+            #energy_array = energy.cpu().numpy()
+            #for energy_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+             #   if energy_array[energy_index] != 0:
+              #      ax.hlines(energy_array[energy_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="orange",
+               #                  linestyles="solid", linewidth=2.5)
+            plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
+            plt.savefig(f"{plot_name}.png")
+            plt.close()
         return wave
 
     def read_to_file(self,
@@ -238,7 +408,10 @@ class ToucanTTSInterface(torch.nn.Module):
                      dur_list=None,
                      pitch_list=None,
                      energy_list=None,
-                     increased_compatibility_mode=False):
+                     increased_compatibility_mode=False,
+                     view=False,
+                     view_contours=False,
+                     plot_name="tmp"):
         """
         Args:
             increased_compatibility_mode: Whether to export audio as 16bit integer 48kHz audio for maximum compatibility across systems and devices
@@ -276,7 +449,11 @@ class ToucanTTSInterface(torch.nn.Module):
                                        energy=energy.to(self.device) if energy is not None else None,
                                        duration_scaling_factor=duration_scaling_factor,
                                        pitch_variance_scale=pitch_variance_scale,
-                                       energy_variance_scale=energy_variance_scale).cpu()
+                                       energy_variance_scale=energy_variance_scale,
+                                       silent=silent,
+                                       view=view,
+                                       view_contours=view_contours,
+                                       plot_name=plot_name).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         if increased_compatibility_mode:
             wav = [val for val in wav.numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
