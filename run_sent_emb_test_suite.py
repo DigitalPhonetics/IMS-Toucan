@@ -33,8 +33,19 @@ def test_sentence(version,
     if prompt is not None:
         tts.set_sentence_embedding(prompt)
 
-    sentence = "The football teams give a tea party."
-    tts.read_to_file(text_list=[sentence], file_location=f"audios/{version}/test_sentence_male.flac", increased_compatibility_mode=True)
+    #sentence = "The football teams give a tea party."
+    sentence1 = "You can write an email."
+    sentence2 = "They will arrive tomorrow."
+    tts.read_to_file(text_list=[sentence1], 
+                     file_location=f"audios/{version}/case_study_fear_1.flac", 
+                     increased_compatibility_mode=True, 
+                     view_contours=True,
+                     plot_name="fear1")
+    tts.read_to_file(text_list=[sentence2], 
+                     file_location=f"audios/{version}/case_study_fear_2.flac", 
+                     increased_compatibility_mode=True, 
+                     view_contours=True,
+                     plot_name="fear2")
 
 def test_tales_emotion(version, model_id="Meta", 
                       exec_device="cpu", 
@@ -509,20 +520,20 @@ def test_study2_female_prompt(version, model_id="Meta",
 
 if __name__ == '__main__':
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = f"8"
+    os.environ["CUDA_VISIBLE_DEVICES"] = f"0"
     exec_device = "cuda:0" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
     use_speaker_reference = False
     use_sent_emb = True
     use_word_emb = False
-    use_prompt = False
+    use_prompt = True
     use_xvect = False
     use_ecapa = False
     use_speaker_id = True
 
     if use_speaker_id:
-        speaker_id = 3 + 1 + 24
+        speaker_id = 4 + 1 + 24
     else:
         speaker_id = None
 
@@ -549,8 +560,11 @@ if __name__ == '__main__':
         #prompt = "Ew, this is disgusting."
         #prompt = "What a surprise!"
         #prompt = "This is very sad."
-        #prompt = "I am so scared, I fear that."
-        prompt = "I am so heartbroken and can't stop crying."
+        prompt = "I am so scared."
+        #prompt = "I am so angry!"
+        #prompt = "I love that."
+        #prompt = "He was furious."
+        #prompt = "She didn't expect that."
     else:
         prompt = None
 

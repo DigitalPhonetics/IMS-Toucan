@@ -224,6 +224,7 @@ class ToucanTTSInterface(torch.nn.Module):
     def forward(self,
                 text,
                 view=False,
+                view_contours=False,
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
@@ -233,6 +234,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 energy=None,
                 input_is_phones=False,
                 return_plot_as_filepath=False,
+                plot_name="tmp",
                 silent=False):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
@@ -327,14 +329,73 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_array = pitch.cpu().numpy()
             for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
                 if pitch_array[pitch_index] != 0:
-                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="magenta",
+                    ax[1].hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red",
                                  linestyles="solid", linewidth=1.)
             plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
             if not return_plot_as_filepath:
                 plt.show()
             else:
-                plt.savefig("tmp.png")
-                return wave, "tmp.png"
+                plt.savefig(f"{plot_name}.png")
+                return wave
+        if view_contours:
+            from Utility.utils import cumsum_durations
+            fig, ax = plt.subplots(figsize=(9,6))
+            lbd.specshow(mel.cpu().numpy(),
+                         ax=ax,
+                         sr=16000,
+                         cmap='GnBu',
+                         y_axis='mel',
+                         x_axis=None,
+                         hop_length=256)
+            ax.yaxis.set_visible(False)
+            #ax.set_ylim(200, 4000)
+            duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
+            ax.xaxis.grid(True, which='minor')
+            ax.set_xticks(label_positions, minor=False)
+            if input_is_phones:
+                phones = text.replace(" ", "|")
+            else:
+                phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
+            ax.set_xticklabels(phones)
+            word_boundaries = list()
+            for label_index, phone in enumerate(phones):
+                if phone == "|":
+                    word_boundaries.append(label_positions[label_index])
+
+            try:
+                prev_word_boundary = 0
+                word_label_positions = list()
+                for word_boundary in word_boundaries:
+                    word_label_positions.append((word_boundary + prev_word_boundary) / 2)
+                    prev_word_boundary = word_boundary
+                word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
+
+                secondary_ax = ax.secondary_xaxis('bottom')
+                secondary_ax.tick_params(axis="x", direction="out", pad=24)
+                secondary_ax.set_xticks(word_label_positions, minor=False)
+                secondary_ax.set_xticklabels(text.split())
+                secondary_ax.tick_params(axis='x', colors='black', labelsize=16)
+                secondary_ax.xaxis.label.set_color('black')
+            except ValueError:
+                ax.set_title(text)
+            except IndexError:
+                ax.set_title(text)
+
+            #ax.vlines(x=duration_splits, colors="black", linestyles="dotted", ymin=0.0, ymax=8000, linewidth=1.0)
+            ax.vlines(x=word_boundaries, colors="black", linestyles="solid", ymin=0.0, ymax=8000, linewidth=1.2)
+            pitch_array = pitch.cpu().numpy()
+            for pitch_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+                if pitch_array[pitch_index] != 0:
+                    ax.hlines(pitch_array[pitch_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="red",
+                                 linestyles="solid", linewidth=2.5)
+            #energy_array = energy.cpu().numpy()
+            #for energy_index, xrange in enumerate(zip(duration_splits[:-1], duration_splits[1:])):
+             #   if energy_array[energy_index] != 0:
+              #      ax.hlines(energy_array[energy_index] * 1000, xmin=xrange[0], xmax=xrange[1], color="orange",
+               #                  linestyles="solid", linewidth=2.5)
+            plt.subplots_adjust(left=0.05, bottom=0.12, right=0.95, top=.9, wspace=0.0, hspace=0.0)
+            plt.savefig(f"{plot_name}.png")
+            plt.close()
         return wave
 
     def read_to_file(self,
@@ -347,7 +408,10 @@ class ToucanTTSInterface(torch.nn.Module):
                      dur_list=None,
                      pitch_list=None,
                      energy_list=None,
-                     increased_compatibility_mode=False):
+                     increased_compatibility_mode=False,
+                     view=False,
+                     view_contours=False,
+                     plot_name="tmp"):
         """
         Args:
             increased_compatibility_mode: Whether to export audio as 16bit integer 48kHz audio for maximum compatibility across systems and devices
@@ -386,7 +450,10 @@ class ToucanTTSInterface(torch.nn.Module):
                                        duration_scaling_factor=duration_scaling_factor,
                                        pitch_variance_scale=pitch_variance_scale,
                                        energy_variance_scale=energy_variance_scale,
-                                       silent=silent).cpu()
+                                       silent=silent,
+                                       view=view,
+                                       view_contours=view_contours,
+                                       plot_name=plot_name).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         if increased_compatibility_mode:
             wav = [val for val in wav.numpy() for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
