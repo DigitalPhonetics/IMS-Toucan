@@ -336,7 +336,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 plt.show()
             else:
                 plt.savefig(f"{plot_name}.png")
-                return wave
+                return wave, f"{plot_name}.png"
         if view_contours:
             from Utility.utils import cumsum_durations
             fig, ax = plt.subplots(figsize=(9,6))
