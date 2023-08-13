@@ -30,11 +30,11 @@ class TTSWebUI:
                                 'Female 3': 31,
                                 'Female 4': 32,
                                 'Male 1': 25,
-                                'Male 1': 26,
-                                'Male 1': 27,
-                                'Male 1': 28,
-                                'Male 1': 33,
-                                'Male 1': 34}
+                                'Male 2': 26,
+                                'Male 3': 27,
+                                'Male 4': 28,
+                                'Male 5': 33,
+                                'Male 6': 34}
         self.tts_interface = ToucanTTSInterface(device=gpu_id,
                                                 tts_model_path='Proposed',
                                                 faster_vocoder=True,
