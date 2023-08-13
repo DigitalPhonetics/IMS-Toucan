@@ -24,7 +24,7 @@ def float2pcm(sig, dtype='int16'):
 class TTSWebUI:
 
     def __init__(self, gpu_id="cpu", title="Prompting ToucanTTS", article=""):
-        sent_emb_extractor = SentenceEmbeddingExtractor(pooling="cls")
+        sent_emb_extractor = SentenceEmbeddingExtractor(pooling="cls", device=gpu_id)
         self.speaker_to_id = {'Female 1': 29,
                                 'Female 2': 30,
                                 'Female 3': 31,
