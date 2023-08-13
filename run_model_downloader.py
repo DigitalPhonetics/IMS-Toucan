@@ -62,6 +62,22 @@ def download_models():
         url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.5/embedding_gan.pt",
         filename=os.path.abspath(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt")),
         reporthook=report)
+    
+    #############
+    print("Downloading Baseline Model (Prompting)")
+    os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_Baseline"), exist_ok=True)
+    filename, headers = urllib.request.urlretrieve(
+        url="https://github.com/Thommy96/IMS-Toucan/releases/download/v1.0/baseline.pt",
+        filename=os.path.abspath(os.path.join(MODELS_DIR, "ToucanTTS_Baseline", "best.pt")),
+        reporthook=report)
+    
+    #############
+    print("Downloading Proposed Model (Prompting)")
+    os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_Proposed"), exist_ok=True)
+    filename, headers = urllib.request.urlretrieve(
+        url="https://github.com/Thommy96/IMS-Toucan/releases/download/v1.0/proposed.pt",
+        filename=os.path.abspath(os.path.join(MODELS_DIR, "ToucanTTS_Proposed", "best.pt")),
+        reporthook=report)
 
 
 if __name__ == '__main__':
