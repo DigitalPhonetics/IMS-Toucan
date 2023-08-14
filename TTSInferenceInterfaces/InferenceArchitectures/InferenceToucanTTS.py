@@ -20,6 +20,7 @@ class ToucanTTS(torch.nn.Module):
                  config):
         super().__init__()
 
+        self.config = config
         config = dotwiz.DotWiz(config)
 
         input_feature_dimensions = config.input_feature_dimensions

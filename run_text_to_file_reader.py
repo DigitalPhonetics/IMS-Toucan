@@ -44,6 +44,6 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    the_raven(version="MetaBaseline",
-              model_id="Meta",
+    the_raven(version="CodecNancy_v1",
+              model_id="Nancy",
               exec_device=exec_device)

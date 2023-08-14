@@ -12,7 +12,7 @@ from Utility.storage_config import MODELS_DIR
 
 def load_net_toucan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = ToucanTTS(config=check_dict["config"], weights=check_dict["model"])
+    net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"])
     return net, check_dict["default_emb"]
 
 

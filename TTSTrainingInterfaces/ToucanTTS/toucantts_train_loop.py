@@ -242,7 +242,7 @@ def train_loop(net,
             }, step=step_counter)
 
         if step_counter > steps * 4 / 5:
-            # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
+            # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm)
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
             averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
             save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
