@@ -13,7 +13,7 @@ class ToucanTTSLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none")
+        self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none", label_smoothing=0.1)
         self.l2_criterion = torch.nn.MSELoss(reduction="none")
         self.duration_criterion = DurationPredictorLoss(reduction="none")
 
