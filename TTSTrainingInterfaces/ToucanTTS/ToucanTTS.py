@@ -46,7 +46,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=512,
+                 attention_dimension=768,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -99,7 +99,7 @@ class ToucanTTS(torch.nn.Module):
                  use_conditional_layernorm_embedding_integration=True,
                  num_codebooks=5,  # between 1 and 9 when using the descript audio codec
                  codebook_size=1024,
-                 backtranslation_dim=8,
+                 backtranslation_dim=16,
                  use_wavenet_postnet=False,
                  use_language_model=False):
         super().__init__()

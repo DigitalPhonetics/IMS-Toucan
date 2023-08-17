@@ -637,7 +637,7 @@ def build_path_to_transcript_dict_aishell3():
     root = "/mount/resources/speech/corpora/aishell3/train"
     path_to_transcript_dict = dict()
     with open(root + "/label_train-set.txt", mode="r", encoding="utf8") as f:
-        transcripts = f.read().replace("$", "").replace("%", ",").split("\n")
+        transcripts = f.read().replace("$", "").split("\n")
     for transcript in transcripts:
         if transcript.strip() != "" and not transcript.startswith("#"):
             parsed_line = transcript.split("|")
