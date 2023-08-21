@@ -140,7 +140,7 @@ def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path
 
     plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95, wspace=0.0, hspace=0.0)
     os.makedirs(save_path, exist_ok=True)
-    plt.savefig(os.path.join(save_path, f"{step}.png"), dpi=300)
+    plt.savefig(os.path.join(save_path, f"{step}.png"), dpi=100)
     plt.clf()
     plt.close()
 
