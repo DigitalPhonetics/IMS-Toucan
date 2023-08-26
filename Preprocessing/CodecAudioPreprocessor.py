@@ -65,12 +65,6 @@ class CodecAudioPreprocessor:
         return self.codes_to_audio(self.indexes_to_codec_frames(codebook_indexes))
 
     @torch.inference_mode()
-    def indexes_to_continuous_codec_frames(self, codebook_indexes):
-        if len(codebook_indexes.size()) == 2:
-            codebook_indexes = codebook_indexes.unsqueeze(0)
-        return self.model.quantizer.from_codes(codebook_indexes)[0].squeeze()
-
-    @torch.inference_mode()
     def codes_to_audio(self, continuous_codes):
         z_q = 0.0
         z_ps = torch.split(continuous_codes, self.model.codebook_dim, dim=0)
@@ -78,10 +72,6 @@ class CodecAudioPreprocessor:
             z_q_i = self.model.quantizer.quantizers[i].out_proj(z_p)
             z_q = z_q + z_q_i
         return self.model.decode(z_q.unsqueeze(0))["audio"].squeeze()
-
-    @torch.inference_mode()
-    def continuous_codes_to_audio(self, continuous_codes):
-        return self.model.decode(continuous_codes.transpose(0, 1).unsqueeze(0))["audio"].squeeze()
 
 
 if __name__ == '__main__':
@@ -91,13 +81,14 @@ if __name__ == '__main__':
         test_audio = "../audios/ad01_0003.wav"
         wav, sr = soundfile.read(test_audio)
         ap = CodecAudioPreprocessor(input_sr=sr)
-
+        indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+        print(indexes.shape)
         codes = ap.indexes_to_codec_frames(ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr))
-
-        z_ps = torch.split(codes, ap.model.codebook_dim, dim=0)
-        combined = 0.0
-        for i, z_p in enumerate(z_ps):
-            z_q_i = ap.model.quantizer.quantizers[i].out_proj(z_p)
-            combined = combined + z_q_i
-            audio = ap.model.decode(combined.unsqueeze(0))["audio"].squeeze()
-            soundfile.write(file=f"../audios/44_female_voice_{i + 1}_codebooks.wav", data=audio, samplerate=44100)
+        print(codes.shape)
+        # z_ps = torch.split(codes, ap.model.codebook_dim, dim=0)
+        # combined = 0.0
+        # for i, z_p in enumerate(z_ps):
+        #    z_q_i = ap.model.quantizer.quantizers[i].out_proj(z_p)
+        #    combined = combined + z_q_i
+        #    audio = ap.model.decode(combined.unsqueeze(0))["audio"].squeeze()
+        #    soundfile.write(file=f"../audios/44_female_voice_{i + 1}_codebooks.wav", data=audio, samplerate=44100)

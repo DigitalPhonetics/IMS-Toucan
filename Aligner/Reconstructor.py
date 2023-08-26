@@ -9,7 +9,7 @@ from Utility.utils import make_non_pad_mask
 class Reconstructor(torch.nn.Module):
 
     def __init__(self,
-                 n_features=72,
+                 n_features=512,
                  num_symbols=145,
                  speaker_embedding_dim=192,
                  lstm_dim=512):
