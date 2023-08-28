@@ -12,7 +12,6 @@ from tqdm import tqdm
 from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from TTSTrainingInterfaces.ToucanTTS.CodecDiscriminator import SpectrogramDiscriminator
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
-from Utility.diverse_losses import RedundancyReduction
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec_toucantts
@@ -97,10 +96,6 @@ def train_loop(net,
         optimizer = torch.optim.AdamW(list(net.parameters()) + list(discriminator.parameters()), lr=lr)
     else:
         optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
-    if path_to_embed_model is None or train_embed:
-        embedding_regularization_loss = RedundancyReduction(vector_dimensions=style_embedding_function.embedding_dim).to(device)
-        optimizer.add_param_group({"params": style_embedding_function.parameters()})
-        optimizer.add_param_group({"params": embedding_regularization_loss.parameters()})
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     epoch = 0
