@@ -251,6 +251,7 @@ def train_loop(net,
             return  # DONE
 
         net.train()
+        style_embedding_function.train()
 
 
 def calc_gan_outputs(real_features, fake_features, feature_lengths, discriminator):
