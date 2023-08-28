@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSInferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface

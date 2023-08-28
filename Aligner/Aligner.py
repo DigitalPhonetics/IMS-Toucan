@@ -153,7 +153,7 @@ def binarize_alignment(alignment_prob):
 
 if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="en")
-    from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+    from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 
     cap = CodecAudioPreprocessor(input_sr=-1)
     dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 20])

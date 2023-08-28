@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from torchaudio.transforms import Resample
 from tqdm import tqdm
 
-from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.storage_config import MODELS_DIR
 

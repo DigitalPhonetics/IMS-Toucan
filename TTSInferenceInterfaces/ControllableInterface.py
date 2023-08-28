@@ -121,4 +121,4 @@ class ControllableInterface:
                               return_plot_as_filepath=True)
         wav = wav.cpu().numpy()
         wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-        return 44100, wav, fig
+        return 24000, wav, fig

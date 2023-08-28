@@ -12,7 +12,7 @@ from matplotlib.lines import Line2D
 
 import Layers.ConditionalLayerNorm
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
@@ -70,7 +70,7 @@ def plot_progress_spec_toucantts(net,
                                  default_emb):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # just used for inversion
-    ap = AudioPreprocessor(input_sr=44100, output_sr=16000)
+    ap = AudioPreprocessor(input_sr=24000, output_sr=16000)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
         return None

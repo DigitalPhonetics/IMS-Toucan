@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
 from Aligner.CodecAlignerDataset import CodecAlignerDataset
-from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from TTSTrainingInterfaces.ToucanTTS.DurationCalculator import DurationCalculator
@@ -63,8 +63,8 @@ class TTSDataset(Dataset):
             # actual creation of datapoints starts here
             # ==========================================
 
-            parsel = Parselmouth(fs=44100, hop_length=512)
-            energy_calc = EnergyCalculator(fs=44100, n_fft=2048, hop_length=512)
+            parsel = Parselmouth(fs=24000, hop_length=314)
+            energy_calc = EnergyCalculator(fs=24000, n_fft=1024, hop_length=320)
             dc = DurationCalculator()
             vis_dir = os.path.join(cache_dir, "duration_vis")
             os.makedirs(vis_dir, exist_ok=True)
@@ -192,3 +192,23 @@ class TTSDataset(Dataset):
             self.datapoints.pop(remove_id)
         torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
         print("Dataset updated!")
+
+
+if __name__ == '__main__':
+    parsel = Parselmouth(fs=24000, hop_length=314)
+    energy_calc = EnergyCalculator(fs=24000, n_fft=1024, hop_length=320)
+    codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device="cpu", path_to_config="../../Codec/config_24k_320d.json", path_to_model="../../Codec/HiFi-Codec-24k-320d.pt")
+    import soundfile
+
+    test_audio = "../../audios/ad01_0003.wav"
+    wav, sr = soundfile.read(test_audio)
+
+    pseudo_wave = torch.cat([torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav)]).unsqueeze(0)
+
+    pitch = parsel(pseudo_wave)
+    energy = energy_calc(pseudo_wave)
+    indexes = codec_wrapper.audio_to_codebook_indexes(pseudo_wave.squeeze(0), current_sampling_rate=24000)
+
+    print(pitch[0].shape)
+    print(energy[0].shape)
+    print(indexes.shape)

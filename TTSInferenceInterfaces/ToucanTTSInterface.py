@@ -9,7 +9,7 @@ import torch
 
 from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.CodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TTSInferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
@@ -65,9 +65,9 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #  load code to wave model     #
         ################################
-        self.codec_wrapper = CodecAudioPreprocessor(input_sr=44100, device=device)
-        self.spectrogram_wrapper = AudioPreprocessor(input_sr=44100, output_sr=16000)
-        self.meter = pyloudnorm.Meter(44100)
+        self.codec_wrapper = CodecAudioPreprocessor(input_sr=24000, device=device)
+        self.spectrogram_wrapper = AudioPreprocessor(input_sr=24000, output_sr=16000)
+        self.meter = pyloudnorm.Meter(24000)
 
         ################################
         #  set defaults                #
@@ -265,7 +265,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                     pitch_variance_scale=pitch_variance_scale,
                                                     energy_variance_scale=energy_variance_scale)).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
-        soundfile.write(file=file_location, data=float2pcm(wav), samplerate=44100, subtype="PCM_16")
+        soundfile.write(file=file_location, data=float2pcm(wav), samplerate=24000, subtype="PCM_16")
 
     def read_aloud(self,
                    text,
@@ -282,6 +282,6 @@ class ToucanTTSInterface(torch.nn.Module):
                                 pitch_variance_scale=pitch_variance_scale,
                                 energy_variance_scale=energy_variance_scale))
         wav = torch.cat((torch.zeros([20000]), wav, torch.zeros([20000])), 0).numpy()
-        sounddevice.play(float2pcm(wav), samplerate=44100)
+        sounddevice.play(float2pcm(wav), samplerate=24000)
         if blocking:
             sounddevice.wait()

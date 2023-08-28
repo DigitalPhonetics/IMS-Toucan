@@ -57,9 +57,9 @@ class EnergyCalculator(torch.nn.Module):
             energy_lengths = feats_lengths
 
         # (Optional): Average by duration to calculate token-wise energy
-        if self.use_token_averaged_energy:
-            energy = [self._average_by_duration(e[:el].view(-1), d, text) for e, el, d in zip(energy, energy_lengths, durations)]
-            energy_lengths = durations_lengths
+        #        if self.use_token_averaged_energy:
+        #            energy = [self._average_by_duration(e[:el].view(-1), d, text) for e, el, d in zip(energy, energy_lengths, durations)]
+        #            energy_lengths = durations_lengths
 
         # Padding
         if isinstance(energy, list):
