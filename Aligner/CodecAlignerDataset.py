@@ -145,7 +145,7 @@ class CodecAlignerDataset(Dataset):
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
             try:
-                norm_wave = resample(torch.Tensor(wave, device=device, dtype=torch.float))
+                norm_wave = resample(torch.Tensor(wave, device=device))
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
