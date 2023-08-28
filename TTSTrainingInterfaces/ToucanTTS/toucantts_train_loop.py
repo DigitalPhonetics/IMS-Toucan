@@ -154,7 +154,7 @@ def train_loop(net,
             if step_counter % (warmup_steps / 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
                 # the computationally very expensive style token regularization loss to spread out the vectors
                 print("calculating the style token regularization loss. This will take a while.")
-                emb_reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
+                emb_reg_loss = style_embedding_function.style_encoder.calculate_ada4_regularization_loss()
                 train_loss = train_loss + emb_reg_loss
             if not torch.isnan(classification_loss):
                 train_loss = train_loss + classification_loss
