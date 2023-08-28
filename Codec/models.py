@@ -457,7 +457,7 @@ class Quantizer(torch.nn.Module):
         self.h = h
         self.codebook_loss_lambda = self.h.codebook_loss_lambda  # e.g., 1
         self.commitment_loss_lambda = self.h.commitment_loss_lambda  # e.g., 0.25
-        self.residul_layer = 2
+        self.residual_layer = 2
         self.n_code_groups = h.n_code_groups
 
     def for_one_step(self, xin, idx):
@@ -497,7 +497,7 @@ class Quantizer(torch.nn.Module):
         residual = xin
         all_losses = []
         all_indices = []
-        for i in range(self.residul_layer):
+        for i in range(self.residual_layer):
             quantized, loss, indices = self.for_one_step(residual, i)  # 
             residual = residual - quantized
             quantized_out = quantized_out + quantized
@@ -513,7 +513,8 @@ class Quantizer(torch.nn.Module):
         quantized_out = torch.tensor(0.0, device=x.device)
         x = torch.split(x, 1, 2)  # split, 将最后一个维度分开, 每个属于一个index group
         # print('x.shape ', len(x),x[0].shape)
-        for i in range(self.residul_layer):
+
+        for i in range(self.residual_layer):
             ret = []
             if i == 0:
                 for j in range(self.n_code_groups):

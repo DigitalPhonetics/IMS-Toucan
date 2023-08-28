@@ -96,8 +96,8 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=512,
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=True,
-                 num_codebooks=4,  # between 1 and 4 when using the HiFi audio codec
+                 use_conditional_layernorm_embedding_integration=False,
+                 num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
                  backtranslation_dim=16,
                  use_wavenet_postnet=False,
@@ -520,7 +520,7 @@ class ToucanTTS(torch.nn.Module):
                                            is_inference=True,
                                            utterance_embedding=utterance_embeddings,
                                            lang_ids=lang_id,
-                                           codebook_curriculum=self.curriculum_state)  # (1, L, odim)
+                                           codebook_curriculum=self.num_codebooks)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in outs:
@@ -569,7 +569,7 @@ if __name__ == '__main__':
                                     lang_ids=dummy_language_id,
                                     codebook_curriculum=num_codebooks)
 
-    loss = ce + rl + mlm + dl + pl + el
+    loss = ce + dl + pl + el
     print(loss)
     loss.backward()
 

@@ -71,13 +71,13 @@ if __name__ == '__main__':
         wav, sr = soundfile.read(test_audio)
         ap = CodecAudioPreprocessor(input_sr=sr, path_to_model="../Codec/HiFi-Codec-24k-320d.pt", path_to_config="../Codec/config_24k_320d.json")
 
-        codes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+        indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+        print(indexes.shape)
+
+        codes = ap.indexes_to_codec_frames(indexes)
         print(codes.shape)
 
-        codes = ap.indexes_to_codec_frames(codes)
-        print(codes.shape)
+        audio = ap.codes_to_audio(codes)
+        print(audio.shape)
 
-        codes = ap.codes_to_audio(codes)
-        print(codes.shape)
-
-        soundfile.write(file=f"../audios/24_female_voice.wav", data=codes, samplerate=24000)
+        soundfile.write(file=f"../audios/24_female_voice.wav", data=audio, samplerate=24000)
