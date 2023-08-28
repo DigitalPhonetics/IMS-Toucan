@@ -15,9 +15,10 @@ class StyleEmbedding(torch.nn.Module):
     and a simple LSTM baseline. GST turned out to be the best.
     """
 
-    def __init__(self, embedding_dim=512, style_tts_encoder=True):
+    def __init__(self, embedding_dim=512, style_tts_encoder=False):
         super().__init__()
         self.embedding_dim = embedding_dim
+        self.use_gst = not style_tts_encoder
         if style_tts_encoder:
             self.style_encoder = StyleTTSEncoder(style_dim=embedding_dim)
         else:
@@ -61,12 +62,12 @@ if __name__ == '__main__':
     print(f"GST parameter count: {sum(p.numel() for p in style_emb.style_encoder.parameters() if p.requires_grad)}")
 
     seq_length = 398
-    print(style_emb(torch.randn(5, seq_length, 72),
+    print(style_emb(torch.randn(5, seq_length, 512),
                     torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)
 
     style_emb = StyleEmbedding(style_tts_encoder=True)
     print(f"StyleTTS encoder parameter count: {sum(p.numel() for p in style_emb.style_encoder.parameters() if p.requires_grad)}")
 
     seq_length = 398
-    print(style_emb(torch.randn(5, seq_length, 72),
+    print(style_emb(torch.randn(5, seq_length, 512),
                     torch.tensor([seq_length, seq_length, seq_length, seq_length, seq_length])).shape)

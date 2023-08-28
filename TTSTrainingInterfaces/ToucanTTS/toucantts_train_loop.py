@@ -156,8 +156,11 @@ def train_loop(net,
                 discriminator_losses_total.append(discriminator_loss.item())
                 generator_losses_total.append(generator_loss.item())
 
-            if path_to_embed_model is None or train_embed and step_counter < warmup_steps * 2:
-                train_loss = train_loss + embedding_regularization_loss(style_embedding, style_embedding)
+            if step_counter % (warmup_steps / 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
+                # the computationally very expensive style token regularization loss to spread out the vectors
+                print("calculating the style token regularization loss. This will take a while.")
+                emb_reg_loss = style_embedding_function.gst.calculate_ada4_regularization_loss()
+                train_loss = train_loss + emb_reg_loss
             if not torch.isnan(classification_loss):
                 train_loss = train_loss + classification_loss
             if mlm_loss is not None:
