@@ -30,7 +30,7 @@ class GSTStyleEncoder(torch.nn.Module):
 
     def __init__(
         self,
-        idim: int = 72,
+        idim: int = 512,
         gst_tokens: int = 2000,
         gst_token_dim: int = 64,
         gst_heads: int = 8,
