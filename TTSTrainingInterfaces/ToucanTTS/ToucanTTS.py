@@ -10,8 +10,6 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TTSTrainingInterfaces.ToucanTTS.CodecRefinementTransformer import CodecRefinementTransformer
-from TTSTrainingInterfaces.ToucanTTS.CodecRefinementTransformer import one_hot_sequence_to_token_sequence
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTSLoss import ToucanTTSLoss
 from TTSTrainingInterfaces.ToucanTTS.wavenet import WN
 from Utility.utils import initialize
@@ -65,7 +63,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=6,
+                 decoder_layers=8,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 for spectrograms
@@ -75,19 +73,19 @@ class ToucanTTS(torch.nn.Module):
                  transformer_dec_attn_dropout_rate=0.1,
 
                  # duration predictor
-                 duration_predictor_layers=5,
+                 duration_predictor_layers=8,
                  duration_predictor_kernel_size=5,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
-                 pitch_predictor_layers=5,
+                 pitch_predictor_layers=8,
                  pitch_predictor_kernel_size=5,
                  pitch_predictor_dropout=0.3,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
 
                  # energy predictor
-                 energy_predictor_layers=2,
+                 energy_predictor_layers=5,
                  energy_predictor_kernel_size=3,
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
@@ -99,9 +97,8 @@ class ToucanTTS(torch.nn.Module):
                  use_conditional_layernorm_embedding_integration=False,
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
-                 backtranslation_dim=16,
-                 use_wavenet_postnet=False,
-                 use_language_model=False):
+                 backtranslation_dim=8,
+                 use_wavenet_postnet=False):
         super().__init__()
 
         self.config = {
@@ -149,7 +146,6 @@ class ToucanTTS(torch.nn.Module):
             "codebook_size"                                  : codebook_size,
             "use_wavenet_postnet"                            : use_wavenet_postnet,
             "backtranslation_dim"                            : backtranslation_dim,
-            "use_language_model"                             : use_language_model,
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -160,7 +156,6 @@ class ToucanTTS(torch.nn.Module):
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
         self.use_wavenet_postnet = use_wavenet_postnet
-        self.use_language_model = use_language_model
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -259,28 +254,6 @@ class ToucanTTS(torch.nn.Module):
 
         self.curriculum_state = 1
 
-        if use_language_model:
-            self.language_model = CodecRefinementTransformer(
-                num_codebooks=num_codebooks,
-                attention_dimension=attention_dimension,
-                codebook_size=codebook_size,
-                backtranslation_dim=backtranslation_dim,
-                attention_heads=attention_heads,
-                positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                use_macaron_style_in_conformer=use_macaron_style_in_conformer,
-                use_cnn_in_conformer=use_cnn_in_conformer,
-                decoder_layers=decoder_layers,
-                decoder_units=decoder_units,
-                decoder_concat_after=decoder_concat_after,
-                conformer_decoder_kernel_size=conformer_decoder_kernel_size,
-                decoder_normalize_before=decoder_normalize_before,
-                transformer_dec_dropout_rate=transformer_dec_dropout_rate,
-                transformer_dec_positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                transformer_dec_attn_dropout_rate=transformer_dec_attn_dropout_rate,
-                utt_embed_dim=utt_embed_dim,
-                use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration
-            )
-
         # initialize parameters
         self._reset_parameters(init_type=init_type)
         if lang_embs is not None:
@@ -318,21 +291,19 @@ class ToucanTTS(torch.nn.Module):
             codebook_curriculum (Tensor): How many codebooks to use
         """
         outs, \
-        predicted_durations, \
-        predicted_pitch, \
-        predicted_energy, \
-        refiner_classification_loss, \
-        mlm_loss = self._forward(text_tensors=text_tensors,
-                                 text_lengths=text_lengths,
-                                 gold_speech=gold_speech,
-                                 speech_lengths=speech_lengths,
-                                 gold_durations=gold_durations,
-                                 gold_pitch=gold_pitch,
-                                 gold_energy=gold_energy,
-                                 utterance_embedding=utterance_embedding,
-                                 is_inference=False,
-                                 lang_ids=lang_ids,
-                                 codebook_curriculum=codebook_curriculum)
+            predicted_durations, \
+            predicted_pitch, \
+            predicted_energy = self._forward(text_tensors=text_tensors,
+                                             text_lengths=text_lengths,
+                                             gold_speech=gold_speech,
+                                             speech_lengths=speech_lengths,
+                                             gold_durations=gold_durations,
+                                             gold_pitch=gold_pitch,
+                                             gold_energy=gold_energy,
+                                             utterance_embedding=utterance_embedding,
+                                             is_inference=False,
+                                             lang_ids=lang_ids,
+                                             codebook_curriculum=codebook_curriculum)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -347,8 +318,8 @@ class ToucanTTS(torch.nn.Module):
                                                                                      gold_energy=gold_energy)
 
         if return_feats:
-            return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss, outs
-        return classification_loss, refiner_classification_loss, mlm_loss, duration_loss, pitch_loss, energy_loss
+            return classification_loss, duration_loss, pitch_loss, energy_loss, outs
+        return classification_loss, duration_loss, pitch_loss, energy_loss
 
     def _forward(self,
                  text_tensors,
@@ -462,16 +433,6 @@ class ToucanTTS(torch.nn.Module):
         indexes = indexes.transpose(0, 1)
         # [Codebook, Batch, Classes, Sequence]
 
-        classification_loss, mlm_loss = None, None
-        if self.use_language_model:
-            if is_inference:
-                if self.num_codebooks == codebook_curriculum:
-                    indexes = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(indexes), padding_mask=None, is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=None)
-                else:
-                    print("Skipping the language model, since the curriculum does not yet include all codebooks.")
-            else:
-                classification_loss, mlm_loss = self.language_model(index_sequence=one_hot_sequence_to_token_sequence(indexes), padding_mask=~decoder_masks.squeeze(1), is_inference=is_inference, speaker_embedding=utterance_embedding, gold_index_sequence=gold_speech)
-
         if is_inference:
             return indexes, \
                    predicted_durations.squeeze(), \
@@ -481,9 +442,7 @@ class ToucanTTS(torch.nn.Module):
             return indexes, \
                    predicted_durations, \
                    pitch_predictions, \
-                   energy_predictions, \
-                   classification_loss, \
-                   mlm_loss
+                energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -558,16 +517,16 @@ if __name__ == '__main__':
     dummy_utterance_embed = torch.randn([3, 512])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
-    ce, rl, mlm, dl, pl, el = model(dummy_text_batch,
-                                    dummy_text_lens,
-                                    dummy_speech_batch,
-                                    dummy_speech_lens,
-                                    dummy_durations,
-                                    dummy_pitch,
-                                    dummy_energy,
-                                    utterance_embedding=dummy_utterance_embed,
-                                    lang_ids=dummy_language_id,
-                                    codebook_curriculum=num_codebooks)
+    ce, dl, pl, el = model(dummy_text_batch,
+                           dummy_text_lens,
+                           dummy_speech_batch,
+                           dummy_speech_lens,
+                           dummy_durations,
+                           dummy_pitch,
+                           dummy_energy,
+                           utterance_embedding=dummy_utterance_embed,
+                           lang_ids=dummy_language_id,
+                           codebook_curriculum=num_codebooks)
 
     loss = ce + dl + pl + el
     print(loss)

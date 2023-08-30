@@ -90,7 +90,7 @@ class ToucanTTS(torch.nn.Module):
                                  concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer,
+                                 use_cnn_module=False,
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,

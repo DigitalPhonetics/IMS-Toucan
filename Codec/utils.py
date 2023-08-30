@@ -1,21 +1,18 @@
 import glob
 import json
 import os
+import pathlib
 import random
+import re
 import sys
 import time
 
-import matplotlib
+import matplotlib.pylab as plt
 import numpy as np
 import torch
 import yaml
 from torch import distributed as dist
 from torch.nn.utils import weight_norm
-
-matplotlib.use("Agg")
-import matplotlib.pylab as plt
-import re
-import pathlib
 
 
 def seed_everything(seed, cudnn_deterministic=False):

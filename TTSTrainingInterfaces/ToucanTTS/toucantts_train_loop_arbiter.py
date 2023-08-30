@@ -24,7 +24,6 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=800000,  # how many updates to run until training is completed
-               use_discriminator=False,  # whether to use a discriminator as additional feedback signal for the TTS in the  mono-lingual train loop
                train_embed=False  # whether to train the embedding function. Only relevant for single-language case
                ):
     torch.multiprocessing.set_start_method('fork', force=True)
@@ -61,5 +60,4 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            resume=resume,
                            steps=steps,
                            use_wandb=use_wandb,
-                           use_discriminator=use_discriminator,
                            train_embed=train_embed)
