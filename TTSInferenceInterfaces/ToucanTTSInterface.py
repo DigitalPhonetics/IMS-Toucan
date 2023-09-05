@@ -148,10 +148,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                                        pitch_variance_scale=pitch_variance_scale,
                                                                        energy_variance_scale=energy_variance_scale,
                                                                        pause_duration_scaling_factor=pause_duration_scaling_factor)
-
             codec_frames = self.codec_wrapper.indexes_to_codec_frames(codec_indexes)
             wave = self.codec_wrapper.codes_to_audio(codec_frames).cpu().numpy()
-
         try:
             loudness = self.meter.integrated_loudness(wave)
             wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
@@ -161,7 +159,6 @@ class ToucanTTSInterface(torch.nn.Module):
 
         if view or return_plot_as_filepath:
             fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
-
             spec_plot_axis = ax[0]
             codec_plot_axis = ax[1]
 
@@ -281,7 +278,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                 duration_scaling_factor=duration_scaling_factor,
                                 pitch_variance_scale=pitch_variance_scale,
                                 energy_variance_scale=energy_variance_scale))
-        wav = torch.cat((torch.zeros([20000]), wav, torch.zeros([20000])), 0).numpy()
+        wav = torch.cat((torch.zeros([10000]), wav, torch.zeros([10000])), 0).numpy()
         sounddevice.play(float2pcm(wav), samplerate=24000)
         if blocking:
             sounddevice.wait()

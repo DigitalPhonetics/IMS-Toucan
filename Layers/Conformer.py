@@ -131,10 +131,10 @@ class Conformer(torch.nn.Module):
             if self.utt_embed:
                 if isinstance(xs, tuple):
                     x, pos_emb = xs[0], xs[1]
-                    x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
+                    x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding.detach(), projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
                     xs = (x, pos_emb)
                 else:
-                    xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
+                    xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding.detach(), projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
             xs, masks = encoder(xs, masks)
 
         if isinstance(xs, tuple):
@@ -144,6 +144,7 @@ class Conformer(torch.nn.Module):
             xs = self.output_norm(xs)
 
         if self.utt_embed and self.conformer_type == "encoder":
-            xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.encoder_embedding_projection, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding,  # for stability, this should be the only place where the embedding is NOT detached.
+                                          projection=self.encoder_embedding_projection, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         return xs, masks

@@ -124,7 +124,7 @@ def train_loop(net,
                 utterance_embedding=style_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                codebook_curriculum=(step_counter + warmup_steps * 3) // (warmup_steps * 3)  # TODO this requires tuning
+                codebook_curriculum=(step_counter + warmup_steps / 3) // (warmup_steps / 3)  # TODO this requires tuning
             )
 
             if step_counter % (warmup_steps / 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
