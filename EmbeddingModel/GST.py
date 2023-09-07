@@ -31,7 +31,7 @@ class GSTStyleEncoder(torch.nn.Module):
     def __init__(
         self,
         idim: int = 512,
-        gst_tokens: int = 1000,  # adaspeech suggests to use many more "basis vectors", but I believe that this is already sufficient
+        gst_tokens: int = 512,  # adaspeech suggests to use many more "basis vectors", but I believe that this is already sufficient
         gst_token_dim: int = 64,
         gst_heads: int = 8,
         conv_layers: int = 8,

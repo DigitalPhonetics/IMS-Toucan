@@ -44,13 +44,13 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=256,
+                 attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=True,
+                 use_cnn_in_conformer=False,
 
                  # encoder
                  encoder_layers=6,
@@ -63,36 +63,36 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=8,
+                 decoder_layers=6,
                  decoder_units=1280,
                  decoder_concat_after=False,
-                 conformer_decoder_kernel_size=31,  # 31 for spectrograms
+                 conformer_decoder_kernel_size=31,  # 31 works for spectrograms
                  decoder_normalize_before=True,
                  transformer_dec_dropout_rate=0.1,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
 
                  # duration predictor
-                 duration_predictor_layers=8,
+                 duration_predictor_layers=5,
                  duration_predictor_kernel_size=5,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
-                 pitch_predictor_layers=8,
+                 pitch_predictor_layers=5,
                  pitch_predictor_kernel_size=5,
                  pitch_predictor_dropout=0.3,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
 
                  # energy predictor
-                 energy_predictor_layers=5,
+                 energy_predictor_layers=3,
                  energy_predictor_kernel_size=3,
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
                  energy_embed_dropout=0.0,
 
                  # additional features
-                 utt_embed_dim=512,
+                 utt_embed_dim=256,  # 192 dim speaker embedding + 64 dim prosody embedding
                  lang_embs=8000,
                  use_conditional_layernorm_embedding_integration=False,
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
@@ -291,19 +291,19 @@ class ToucanTTS(torch.nn.Module):
             codebook_curriculum (Tensor): How many codebooks to use
         """
         outs, \
-            predicted_durations, \
-            predicted_pitch, \
-            predicted_energy = self._forward(text_tensors=text_tensors,
-                                             text_lengths=text_lengths,
-                                             gold_speech=gold_speech,
-                                             speech_lengths=speech_lengths,
-                                             gold_durations=gold_durations,
-                                             gold_pitch=gold_pitch,
-                                             gold_energy=gold_energy,
-                                             utterance_embedding=utterance_embedding,
-                                             is_inference=False,
-                                             lang_ids=lang_ids,
-                                             codebook_curriculum=codebook_curriculum)
+        predicted_durations, \
+        predicted_pitch, \
+        predicted_energy = self._forward(text_tensors=text_tensors,
+                                         text_lengths=text_lengths,
+                                         gold_speech=gold_speech,
+                                         speech_lengths=speech_lengths,
+                                         gold_durations=gold_durations,
+                                         gold_pitch=gold_pitch,
+                                         gold_energy=gold_energy,
+                                         utterance_embedding=utterance_embedding,
+                                         is_inference=False,
+                                         lang_ids=lang_ids,
+                                         codebook_curriculum=codebook_curriculum)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -442,7 +442,7 @@ class ToucanTTS(torch.nn.Module):
             return indexes, \
                    predicted_durations, \
                    pitch_predictions, \
-                energy_predictions
+                   energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -514,7 +514,7 @@ if __name__ == '__main__':
     dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([3, 512])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([3, 256])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
 
     ce, dl, pl, el = model(dummy_text_batch,
@@ -534,7 +534,7 @@ if __name__ == '__main__':
 
     print(" TESTING INFERENCE ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
-    dummy_utterance_embed = torch.randn([512])  # [Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([256])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
     print(model.inference(dummy_text_batch,
                           utterance_embedding=dummy_utterance_embed,

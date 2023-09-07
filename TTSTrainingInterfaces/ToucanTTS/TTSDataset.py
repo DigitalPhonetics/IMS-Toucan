@@ -45,10 +45,7 @@ class TTSDataset(Dataset):
                                     device=device)
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for tts.
-            dataset = datapoints[0]
-            # index 1 is deprecated
-            # index 2 are the speaker embeddings used for the reconstruction loss of the Aligner, we don't need them anymore
-            filepaths = datapoints[3]
+            dataset, _, speaker_embeddings, filepaths = datapoints
 
             print("... building dataset cache ...")
             codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
@@ -137,7 +134,7 @@ class TTSDataset(Dataset):
                                         cached_duration.cpu(),  # duration
                                         cached_energy.float(),  # energy
                                         cached_pitch.float(),  # pitch
-                                        None,  # deprecated,
+                                        speaker_embeddings[index],  # speaker embedding,
                                         filepaths[index]  # path to the associated original raw audio file
                                         ])
                 self.ctc_losses.append(ctc_loss)
@@ -182,7 +179,8 @@ class TTSDataset(Dataset):
                self.datapoints[index][5], \
                self.datapoints[index][6], \
                self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach(), \
-               self.language_id
+               self.language_id, \
+               self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)

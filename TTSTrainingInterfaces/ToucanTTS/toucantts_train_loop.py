@@ -20,7 +20,7 @@ from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
+    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
     # Assuming you have a list of tensors with shape [9, l, 1024]
     tensor_list = [datapoint[2] for datapoint in batch]
 
@@ -44,7 +44,8 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[7] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[8] for datapoint in batch]))
+            torch.stack([datapoint[8] for datapoint in batch]),
+            torch.stack([datapoint[9] for datapoint in batch]))
 
 
 def train_loop(net,
@@ -113,6 +114,7 @@ def train_loop(net,
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
                                                        batch_of_feature_sequence_lengths=batch[3].to(device))
+            utterance_embedding = torch.cat([style_embedding, batch[9].to(device)], dim=-1)
             classification_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
@@ -121,7 +123,7 @@ def train_loop(net,
                 gold_durations=batch[4].to(device),
                 gold_pitch=batch[6].to(device),  # mind the switched order
                 gold_energy=batch[5].to(device),  # mind the switched order
-                utterance_embedding=style_embedding,
+                utterance_embedding=utterance_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
                 codebook_curriculum=(step_counter + (warmup_steps // 3)) // (warmup_steps // 3)  # TODO this requires tuning
@@ -156,9 +158,10 @@ def train_loop(net,
         # EPOCH IS OVER
         net.eval()
         style_embedding_function.eval()
-        default_embedding = style_embedding_function(
+        default_embedding = torch.cat([style_embedding_function(
             batch_of_feature_sequences=train_dataset[0][7].unsqueeze(0).to(device),
-            batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze()
+            batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze(),
+                                       train_dataset[0][9].to(device)], dim=-1)
         torch.save({
             "model"       : net.state_dict(),
             "optimizer"   : optimizer.state_dict(),
