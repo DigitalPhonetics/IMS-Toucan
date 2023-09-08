@@ -6,6 +6,8 @@ import pyloudnorm
 import sounddevice
 import soundfile
 import torch
+from speechbrain.pretrained import EncoderClassifier
+from torchaudio.transforms import Resample
 
 from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -42,18 +44,18 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         checkpoint = torch.load(tts_model_path, map_location='cpu')
 
-        ################################
+        #####################################
         #   load phone to features model    #
-        ################################
+        #####################################
         self.use_lang_id = True
         self.phone2codec = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
         with torch.no_grad():
             self.phone2codec.store_inverse_all()  # this also removes weight norm
         self.phone2codec = self.phone2codec.to(torch.device(device))
 
-        #################################
+        ######################################
         #  load features to style models     #
-        #################################
+        ######################################
         self.style_embedding_function = StyleEmbedding()
         if embedding_model_path is None:
             check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
@@ -61,6 +63,9 @@ class ToucanTTSInterface(torch.nn.Module):
             check_dict = torch.load(embedding_model_path, map_location="cpu")
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
         self.style_embedding_function.to(self.device)
+        self.speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                           run_opts={"device": str(device)},
+                                                                           savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
 
         ################################
         #  load code to wave model     #
@@ -92,8 +97,10 @@ class ToucanTTSInterface(torch.nn.Module):
             self.codec_wrapper = CodecAudioPreprocessor(input_sr=sr, device=self.device)
         spec = self.codec_wrapper.audio_to_codec_tensor(wave, current_sampling_rate=sr).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
-        self.default_utterance_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device),
-                                                                         spec_len.unsqueeze(0).to(self.device)).squeeze()
+        style_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
+        wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
+        speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
+        self.default_utterance_embedding = torch.cat([style_embedding, speaker_embedding], dim=-1)
 
     def set_language(self, lang_id):
         """

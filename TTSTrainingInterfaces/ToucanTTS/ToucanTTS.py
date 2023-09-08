@@ -50,7 +50,7 @@ class ToucanTTS(torch.nn.Module):
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
                  use_macaron_style_in_conformer=True,
-                 use_cnn_in_conformer=False,
+                 use_cnn_in_conformer=True,
 
                  # encoder
                  encoder_layers=6,
@@ -63,7 +63,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=6,
+                 decoder_layers=10,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
@@ -94,11 +94,11 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=256,  # 192 dim speaker embedding + 64 dim prosody embedding
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=False,
+                 use_conditional_layernorm_embedding_integration=True,
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
-                 backtranslation_dim=8,
-                 use_wavenet_postnet=False):
+                 backtranslation_dim=16,
+                 use_wavenet_postnet=True):
         super().__init__()
 
         self.config = {
