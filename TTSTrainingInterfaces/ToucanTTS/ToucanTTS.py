@@ -231,15 +231,8 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
         if self.use_wavenet_postnet:
-            self.wn = WN(hidden_size=attention_dimension,
-                         kernel_size=3,
-                         dilation_rate=2,
-                         n_layers=8,
-                         c_cond=attention_dimension,
-                         p_dropout=0.1,
-                         share_cond_layers=False,
-                         is_BTC=False,
-                         use_weightnorm=True)
+            self.wn = WN(out_channels=attention_dimension,
+                         in_channels=attention_dimension)
 
         self.hierarchical_classifier = torch.nn.ModuleList()
         self.backtranslation_heads = torch.nn.ModuleList()
@@ -382,7 +375,11 @@ class ToucanTTS(torch.nn.Module):
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
         if self.use_wavenet_postnet:
-            decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=decoder_masks, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
+            if not is_inference:
+                if codebook_curriculum > self.num_codebooks or random.random() < 0.1:
+                    decoded_speech = self.wn(x=decoded_speech.transpose(1, 2)).transpose(1, 2)
+            else:
+                decoded_speech = self.wn(x=decoded_speech.transpose(1, 2)).transpose(1, 2)
 
         # The codebooks are hierarchical: The first influences the second, but the second not the first.
         # This is because they are residual vector quantized, which makes them extremely space efficient
