@@ -98,7 +98,8 @@ class ToucanTTS(torch.nn.Module):
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
                  backtranslation_dim=16,
-                 use_wavenet_postnet=True):
+                 autoregressive_context=5,
+                 use_wavenet_postnet=False):
         super().__init__()
 
         self.config = {
@@ -146,6 +147,7 @@ class ToucanTTS(torch.nn.Module):
             "codebook_size"                                  : codebook_size,
             "use_wavenet_postnet"                            : use_wavenet_postnet,
             "backtranslation_dim"                            : backtranslation_dim,
+            "autoregressive_context"                         : autoregressive_context
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -155,6 +157,8 @@ class ToucanTTS(torch.nn.Module):
         self.multispeaker_model = utt_embed_dim is not None
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
+        self.autoregressive_context = autoregressive_context
+        self.backtranslation_dim = backtranslation_dim
         self.use_wavenet_postnet = use_wavenet_postnet
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
@@ -238,11 +242,11 @@ class ToucanTTS(torch.nn.Module):
         self.backtranslation_heads = torch.nn.ModuleList()
         self.padding_id = self.codebook_size + 5
         for head in range(self.num_codebooks):
-            self.hierarchical_classifier.append(torch.nn.Sequential(torch.nn.Dropout(.1),
-                                                                    torch.nn.Linear(attention_dimension + head * backtranslation_dim, attention_dimension),
-                                                                    torch.nn.Tanh(),
-                                                                    torch.nn.Dropout(.1),
-                                                                    torch.nn.Linear(attention_dimension, self.codebook_size)))
+            if head == 0:
+                # the first head bases its decision on the hidden state and the five previous initial codebooks
+                self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + autoregressive_context * backtranslation_dim, self.codebook_size))
+            else:
+                self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * backtranslation_dim, self.codebook_size))
             self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
 
         self.curriculum_state = 1
@@ -284,19 +288,19 @@ class ToucanTTS(torch.nn.Module):
             codebook_curriculum (Tensor): How many codebooks to use
         """
         outs, \
-        predicted_durations, \
-        predicted_pitch, \
-        predicted_energy = self._forward(text_tensors=text_tensors,
-                                         text_lengths=text_lengths,
-                                         gold_speech=gold_speech,
-                                         speech_lengths=speech_lengths,
-                                         gold_durations=gold_durations,
-                                         gold_pitch=gold_pitch,
-                                         gold_energy=gold_energy,
-                                         utterance_embedding=utterance_embedding,
-                                         is_inference=False,
-                                         lang_ids=lang_ids,
-                                         codebook_curriculum=codebook_curriculum)
+            predicted_durations, \
+            predicted_pitch, \
+            predicted_energy = self._forward(text_tensors=text_tensors,
+                                             text_lengths=text_lengths,
+                                             gold_speech=gold_speech,
+                                             speech_lengths=speech_lengths,
+                                             gold_durations=gold_durations,
+                                             gold_pitch=gold_pitch,
+                                             gold_energy=gold_energy,
+                                             utterance_embedding=utterance_embedding,
+                                             is_inference=False,
+                                             lang_ids=lang_ids,
+                                             codebook_curriculum=codebook_curriculum)
 
         # calculate loss
         classification_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -374,13 +378,6 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        if self.use_wavenet_postnet:
-            if not is_inference:
-                if codebook_curriculum > self.num_codebooks or random.random() < 0.1:
-                    decoded_speech = self.wn(x=decoded_speech.transpose(1, 2)).transpose(1, 2)
-            else:
-                decoded_speech = self.wn(x=decoded_speech.transpose(1, 2)).transpose(1, 2)
-
         # The codebooks are hierarchical: The first influences the second, but the second not the first.
         # This is because they are residual vector quantized, which makes them extremely space efficient
         # with just a few discrete tokens, but terribly difficult to predict.
@@ -400,8 +397,25 @@ class ToucanTTS(torch.nn.Module):
             use_teacher_forcing = True
 
         for head_index, classifier_head in enumerate(self.hierarchical_classifier[:codebook_curriculum]):
-            # each codebook considers all previous codebooks.
-            predicted_indexes_one_hot.append(classifier_head(torch.cat([decoded_speech] + previous_indexes, dim=2)))
+            # each codebook considers all previous codebooks,
+            if head_index == 0:
+                # except for the first one, which instead considers the self.autoregressive_context previous first codebooks on the time axis
+                first_head_autoregressive_predictions = list()
+                first_head_autoregressive_predictions_backtranslated = list()
+                for t in range(decoded_speech.size(1)):
+                    autoregressive_context_tokens = list()
+                    if t < self.autoregressive_context:
+                        for _ in range(self.autoregressive_context - t):
+                            autoregressive_context_tokens.append(torch.zeros([decoded_speech.size(0), self.backtranslation_dim]))
+                    autoregressive_context_tokens = autoregressive_context_tokens + first_head_autoregressive_predictions_backtranslated[-min(t, self.autoregressive_context):]
+                    first_head_autoregressive_predictions.append(classifier_head(torch.cat(autoregressive_context_tokens + [decoded_speech[:, t, :]], dim=1)))
+                    predicted_lookup_index = torch.argmax(first_head_autoregressive_predictions[-1], dim=-1)
+                    first_head_autoregressive_predictions_backtranslated.append(self.backtranslation_heads[head_index](predicted_lookup_index))
+                predicted_indexes_one_hot.append(torch.stack(first_head_autoregressive_predictions, dim=1))
+
+            else:
+                # this is the case for all the codebooks after the first one
+                predicted_indexes_one_hot.append(classifier_head(torch.cat([decoded_speech] + previous_indexes, dim=2)))
 
             if not is_inference:
                 if use_teacher_forcing:
@@ -432,14 +446,14 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             return indexes, \
-                   predicted_durations.squeeze(), \
-                   pitch_predictions.squeeze(), \
-                   energy_predictions.squeeze()
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze(), \
+                energy_predictions.squeeze()
         else:
             return indexes, \
-                   predicted_durations, \
-                   pitch_predictions, \
-                   energy_predictions
+                predicted_durations, \
+                pitch_predictions, \
+                energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -468,15 +482,15 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
-        duration_predictions, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text_pseudobatched,
-                                           ilens,
-                                           speech_pseudobatched,
-                                           is_inference=True,
-                                           utterance_embedding=utterance_embeddings,
-                                           lang_ids=lang_id,
-                                           codebook_curriculum=self.num_codebooks)  # (1, L, odim)
+            duration_predictions, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text_pseudobatched,
+                                               ilens,
+                                               speech_pseudobatched,
+                                               is_inference=True,
+                                               utterance_embedding=utterance_embeddings,
+                                               lang_ids=lang_id,
+                                               codebook_curriculum=self.num_codebooks)  # (1, L, odim)
         self.train()
         outs_indexed = list()
         for out in outs:

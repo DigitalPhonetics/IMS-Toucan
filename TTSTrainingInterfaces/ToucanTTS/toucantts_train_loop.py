@@ -126,7 +126,7 @@ def train_loop(net,
                 utterance_embedding=utterance_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                codebook_curriculum=(step_counter + (warmup_steps // 3)) // (warmup_steps // 3)  # TODO this requires tuning
+                codebook_curriculum=(step_counter + (warmup_steps // 4)) // (warmup_steps // 4)  # TODO this requires tuning
             )
 
             if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
@@ -180,7 +180,7 @@ def train_loop(net,
         print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
         print(f"Reconstruction Loss:    {round(sum(classification_losses_total) / len(classification_losses_total), 4)}")
         print(f"Steps:                  {step_counter}\n")
-        print(f"Currently training {min((step_counter + (warmup_steps // 3)) // (warmup_steps // 3), net.num_codebooks)} codebooks.")
+        print(f"Currently training {min((step_counter + (warmup_steps // 4)) // (warmup_steps // 4), net.num_codebooks)} codebooks.")
 
         if use_wandb:
             wandb.log({

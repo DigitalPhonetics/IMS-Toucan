@@ -18,7 +18,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                lr=0.0005,  # learning rate of the model.
                path_to_embed_model="Models/Embedding/embedding_function.pt",  # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
-               warmup_steps=20000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
+               warmup_steps=10000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,  # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
                batch_size=16,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
