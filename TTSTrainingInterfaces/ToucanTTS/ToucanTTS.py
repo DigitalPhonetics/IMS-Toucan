@@ -98,7 +98,7 @@ class ToucanTTS(torch.nn.Module):
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
                  backtranslation_dim=16,
-                 autoregressive_context=5,
+                 autoregressive_context=15,
                  use_wavenet_postnet=False):
         super().__init__()
 

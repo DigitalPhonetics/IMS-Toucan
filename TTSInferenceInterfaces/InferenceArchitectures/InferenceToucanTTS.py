@@ -77,6 +77,7 @@ class ToucanTTS(torch.nn.Module):
         self.multispeaker_model = utt_embed_dim is not None
         self.use_wavenet_postnet = use_wavenet_postnet
         self.autoregressive_context = autoregressive_context
+        self.backtranslation_dim = backtranslation_dim
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
