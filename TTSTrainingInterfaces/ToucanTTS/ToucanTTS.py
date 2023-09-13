@@ -406,7 +406,7 @@ class ToucanTTS(torch.nn.Module):
                     autoregressive_context_tokens = list()
                     if t < self.autoregressive_context:
                         for _ in range(self.autoregressive_context - t):
-                            autoregressive_context_tokens.append(torch.zeros([decoded_speech.size(0), self.backtranslation_dim]))
+                            autoregressive_context_tokens.append(torch.zeros([decoded_speech.size(0), self.backtranslation_dim], device=decoded_speech.device))
                     autoregressive_context_tokens = autoregressive_context_tokens + first_head_autoregressive_predictions_backtranslated[-min(t, self.autoregressive_context):]
                     first_head_autoregressive_predictions.append(classifier_head(torch.cat(autoregressive_context_tokens + [decoded_speech[:, t, :]], dim=1)))
                     predicted_lookup_index = torch.argmax(first_head_autoregressive_predictions[-1], dim=-1)
