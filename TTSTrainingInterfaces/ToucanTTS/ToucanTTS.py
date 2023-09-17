@@ -92,14 +92,15 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # additional features
-                 utt_embed_dim=256,  # 192 dim speaker embedding + 64 dim prosody embedding
+                 utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding # TODO change prosody embedding
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=True,
+                 use_conditional_layernorm_embedding_integration=False,  # TODO check if the cond layernorm is not overwritten by a regular layernorm afterwards in some places.
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
-                 backtranslation_dim=16,
-                 autoregressive_context=15,
-                 use_wavenet_postnet=False):
+                 backtranslation_dim=16,  # TODO maybe this should be taken directly from the codec's codebook instead of learning something new through backprob alone
+                 autoregressive_context=15,  # TODO maybe try retention context or different context patterns
+                 use_wavenet_postnet=False  # TODO remove this option
+                 ):
         super().__init__()
 
         self.config = {
