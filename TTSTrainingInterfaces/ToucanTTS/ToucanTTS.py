@@ -61,7 +61,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=10,
+                 decoder_layers=8,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
@@ -235,8 +235,8 @@ class ToucanTTS(torch.nn.Module):
             hidden_channels=attention_dimension,  # post_glow_hidden
             kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -422,8 +422,8 @@ class ToucanTTS(torch.nn.Module):
         self.train()
 
         if return_duration_pitch_energy:
-            return outs.squeeze(), duration_predictions, pitch_predictions, energy_predictions
-        return outs.squeeze()
+            return outs.squeeze().transpose(0, 1), duration_predictions, pitch_predictions, energy_predictions
+        return outs.squeeze().transpose(0, 1)
 
     def _reset_parameters(self, init_type):
         # initialize parameters

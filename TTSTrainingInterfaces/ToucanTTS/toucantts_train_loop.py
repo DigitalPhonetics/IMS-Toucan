@@ -169,7 +169,6 @@ def train_loop(net,
         print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
         print(f"Reconstruction Loss:    {round(sum(regression_losses_total) / len(regression_losses_total), 4)}")
         print(f"Steps:                  {step_counter}\n")
-        print(f"Currently training {min((step_counter + (warmup_steps // 4)) // (warmup_steps // 4), net.num_codebooks)} codebooks.")
 
         if use_wandb:
             wandb.log({

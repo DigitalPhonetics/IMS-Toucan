@@ -302,8 +302,8 @@ class ToucanTTS(torch.nn.Module):
                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
 
         if return_duration_pitch_energy:
-            return outs.squeeze(), predicted_durations, pitch_predictions, energy_predictions
-        return outs.squeeze()
+            return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions
+        return outs.squeeze().transpose(0, 1)
 
     def store_inverse_all(self):
         def remove_weight_norm(m):
