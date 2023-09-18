@@ -144,18 +144,17 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
-            codec_indexes, durations, pitch, energy = self.phone2codec(phones,
-                                                                       return_duration_pitch_energy=True,
-                                                                       utterance_embedding=self.default_utterance_embedding,
-                                                                       durations=durations,
-                                                                       pitch=pitch,
-                                                                       energy=energy,
-                                                                       lang_id=self.lang_id,
-                                                                       duration_scaling_factor=duration_scaling_factor,
-                                                                       pitch_variance_scale=pitch_variance_scale,
-                                                                       energy_variance_scale=energy_variance_scale,
-                                                                       pause_duration_scaling_factor=pause_duration_scaling_factor)
-            codec_frames = self.codec_wrapper.indexes_to_codec_frames(codec_indexes)
+            codec_frames, durations, pitch, energy = self.phone2codec(phones,
+                                                                      return_duration_pitch_energy=True,
+                                                                      utterance_embedding=self.default_utterance_embedding,
+                                                                      durations=durations,
+                                                                      pitch=pitch,
+                                                                      energy=energy,
+                                                                      lang_id=self.lang_id,
+                                                                      duration_scaling_factor=duration_scaling_factor,
+                                                                      pitch_variance_scale=pitch_variance_scale,
+                                                                      energy_variance_scale=energy_variance_scale,
+                                                                      pause_duration_scaling_factor=pause_duration_scaling_factor)
             wave = self.codec_wrapper.codes_to_audio(codec_frames).cpu().numpy()
         try:
             loudness = self.meter.integrated_loudness(wave)
@@ -255,7 +254,7 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         if not energy_list:
             energy_list = []
-        silence = torch.zeros([28600])
+        silence = torch.zeros([14300])
         wav = silence.clone()
         for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":

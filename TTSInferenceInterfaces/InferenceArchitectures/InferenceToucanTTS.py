@@ -9,7 +9,7 @@ from Layers.DurationPredictor import DurationPredictor
 from Layers.LengthRegulator import LengthRegulator
 from Layers.VariancePredictor import VariancePredictor
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from TTSTrainingInterfaces.ToucanTTS.wavenet import WN
+from TTSTrainingInterfaces.ToucanTTS.Glow import Glow
 from Utility.utils import make_non_pad_mask
 
 
@@ -64,9 +64,7 @@ class ToucanTTS(torch.nn.Module):
         use_conditional_layernorm_embedding_integration = config.use_conditional_layernorm_embedding_integration
         num_codebooks = config.num_codebooks
         codebook_size = config.codebook_size
-        use_wavenet_postnet = config.use_wavenet_postnet
-        backtranslation_dim = config.backtranslation_dim
-        autoregressive_context = config.autoregressive_context
+        codebook_dim = config.codebook_dim
 
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
@@ -75,9 +73,7 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
-        self.use_wavenet_postnet = use_wavenet_postnet
-        self.autoregressive_context = autoregressive_context
-        self.backtranslation_dim = backtranslation_dim
+        self.codebook_dim = codebook_dim
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -157,20 +153,24 @@ class ToucanTTS(torch.nn.Module):
                                  use_output_norm=False,
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
-        if self.use_wavenet_postnet:
-            self.wn = WN(out_channels=attention_dimension,
-                         in_channels=attention_dimension)
 
-        self.hierarchical_classifier = torch.nn.ModuleList()
-        self.backtranslation_heads = torch.nn.ModuleList()
-        self.padding_id = self.codebook_size + 5
-        for head in range(self.num_codebooks):
-            if head == 0:
-                # the first head bases its decision on the hidden state and the five previous initial codebooks
-                self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + autoregressive_context * backtranslation_dim, self.codebook_size))
-            else:
-                self.hierarchical_classifier.append(torch.nn.Linear(attention_dimension + head * backtranslation_dim, self.codebook_size))
-            self.backtranslation_heads.append(torch.nn.Embedding(num_embeddings=self.padding_id + 1, embedding_dim=backtranslation_dim, padding_idx=self.padding_id))
+        self.output_projection = torch.nn.utils.weight_norm(torch.nn.Linear(attention_dimension, self.codebook_dim))
+
+        self.post_flow = Glow(
+            in_channels=self.codebook_dim,
+            hidden_channels=attention_dimension,  # post_glow_hidden
+            kernel_size=5,  # post_glow_kernel_size
+            dilation_rate=1,
+            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_split=4,
+            n_sqz=2,
+            text_condition_channels=attention_dimension,
+            share_cond_layers=False,  # post_share_cond_layers
+            share_wn_layers=4,
+            sigmoid_scale=False,
+            condition_integration_projection=torch.nn.Conv1d(codebook_dim + attention_dimension, attention_dimension, 5, padding=2)
+        )
 
         self.load_state_dict(weights)
         self.eval()
@@ -231,48 +231,10 @@ class ToucanTTS(torch.nn.Module):
         if self.use_wavenet_postnet:
             decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
-        # The codebooks are hierarchical: The first influences the second, but the second not the first.
-        # This is because they are residual vector quantized, which makes them extremely space efficient
-        # with just a few discrete tokens, but terribly difficult to predict.
-        predicted_indexes = list()
-        backtranslated_indexes = list()
-        backtranslated_indexes.append(decoded_speech)
-        for head_index, classifier_head in enumerate(self.hierarchical_classifier):
-            # each codebook considers all previous codebooks
-            if head_index == 0:
-                # except for the first one, which instead considers the self.autoregressive_context previous first codebooks on the time axis
-                first_head_autoregressive_predictions = list()
-                first_head_autoregressive_predictions_backtranslated = list()
-                for t in range(decoded_speech.size(1)):
-                    autoregressive_context_tokens = list()
-                    if t < self.autoregressive_context:
-                        for _ in range(self.autoregressive_context - t):
-                            autoregressive_context_tokens.append(torch.zeros([decoded_speech.size(0), self.backtranslation_dim], device=decoded_speech.device))
-                    autoregressive_context_tokens = autoregressive_context_tokens + first_head_autoregressive_predictions_backtranslated[-min(t, self.autoregressive_context):]
-                    first_head_autoregressive_predictions.append(classifier_head(torch.cat(autoregressive_context_tokens + [decoded_speech[:, t, :]], dim=1)))
-                    predicted_lookup_index = torch.argmax(first_head_autoregressive_predictions[-1], dim=-1)
-                    first_head_autoregressive_predictions_backtranslated.append(self.backtranslation_heads[head_index](predicted_lookup_index))
-                predicted_indexes.append(torch.stack(first_head_autoregressive_predictions, dim=1))
-            else:
-                predicted_indexes.append(classifier_head(torch.cat(backtranslated_indexes, dim=2)))
-            predicted_lookup_index = torch.argmax(predicted_indexes[-1], dim=-1)
-            backtranslation = self.backtranslation_heads[head_index](predicted_lookup_index)
-            if len(backtranslation.size()) == 1:
-                backtranslation = backtranslation.unsqueeze(0)
-            backtranslated_indexes.append(backtranslation)
+        frames = self.output_projection(decoded_speech)
+        refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
 
-        indexes = torch.cat(predicted_indexes, dim=2)
-        # [Batch, Sequence, Hidden]
-        indexes = indexes.view(decoded_speech.size(0), decoded_speech.size(1), self.num_codebooks, self.codebook_size)
-        # [Batch, Sequence, Codebook, Classes]
-        indexes = indexes.transpose(1, 2)
-        # [Batch, Codebook, Sequence, Classes]
-        indexes = indexes.transpose(2, 3)
-        # [Batch, Codebook, Classes, Sequence]
-        indexes = indexes.transpose(0, 1)
-        # [Codebook, Batch, Classes, Sequence]
-
-        return indexes, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
+        return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
     @torch.inference_mode()
     def forward(self,
@@ -326,28 +288,22 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         outs, \
-            predicted_durations, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text.unsqueeze(0),
-                                               text_length,
-                                               gold_durations=durations,
-                                               gold_pitch=pitch,
-                                               gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale,
-                                               pause_duration_scaling_factor=pause_duration_scaling_factor)
-
-        outs_indexed = list()
-        for out in outs:
-            outs_indexed.append(torch.argmax(out.squeeze(), dim=0))
-
-        outs = torch.stack(outs_indexed)
+        predicted_durations, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           text_length,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
 
         if return_duration_pitch_energy:
-            return outs, predicted_durations, pitch_predictions, energy_predictions
-        return outs
+            return outs.squeeze(), predicted_durations, pitch_predictions, energy_predictions
+        return outs.squeeze()
 
     def store_inverse_all(self):
         def remove_weight_norm(m):

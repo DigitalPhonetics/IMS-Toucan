@@ -13,7 +13,7 @@ class ToucanTTSLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.classification_loss = torch.nn.CrossEntropyLoss(reduction="none", label_smoothing=0.1)
+        self.l1_criterion = torch.nn.L1Loss(reduction="none")
         self.l2_criterion = torch.nn.MSELoss(reduction="none")
         self.duration_criterion = DurationPredictorLoss(reduction="none")
 
@@ -37,11 +37,7 @@ class ToucanTTSLoss(torch.nn.Module):
         """
 
         # calculate loss
-        ce = list()
-        for one_hot_pred, one_hot_target in zip(predicted_features, gold_features.transpose(0, 1).transpose(2, 3)):
-            # we iterate over codebooks
-            ce.append(self.classification_loss(one_hot_pred, one_hot_target))
-        distance_loss = torch.stack(ce).sum(0)
+        distance_loss = self.l1_criterion(predicted_features, gold_features)
 
         duration_loss = self.duration_criterion(predicted_durations, gold_durations)
         pitch_loss = self.l2_criterion(predicted_pitch, gold_pitch)
@@ -49,9 +45,8 @@ class ToucanTTSLoss(torch.nn.Module):
 
         # make weighted mask and apply it
         out_masks = make_non_pad_mask(features_lengths).unsqueeze(-1).to(gold_features.device)
-        out_masks = torch.nn.functional.pad(out_masks.transpose(1, 2), [0, gold_features.size(2) - out_masks.size(1), 0, 0, 0, 0], value=False).transpose(1, 2)
         out_weights = out_masks.float() / out_masks.sum(dim=1, keepdim=True).float()
-        out_weights /= gold_features.size(0) * gold_features.size(-1)
+        out_weights /= gold_features.size(0) * gold_features.size(-1)  # make sure that long samples and short samples are all equally important
         duration_masks = make_non_pad_mask(text_lengths).to(gold_features.device)
         duration_weights = (duration_masks.float() / duration_masks.sum(dim=1, keepdim=True).float())
         variance_masks = duration_masks.unsqueeze(-1)
@@ -60,7 +55,7 @@ class ToucanTTSLoss(torch.nn.Module):
         energy_loss = (energy_loss.mul(variance_weights).masked_select(variance_masks).sum())
 
         # apply weight
-        distance_loss = distance_loss.mul(out_weights.squeeze()).masked_select(out_masks.squeeze()).sum()
+        distance_loss = distance_loss.mul(out_weights).masked_select(out_masks).sum()
         duration_loss = (duration_loss.mul(duration_weights).masked_select(duration_masks).sum())
         pitch_loss = pitch_loss.mul(variance_weights).masked_select(variance_masks).sum()
         energy_loss = (energy_loss.mul(variance_weights).masked_select(variance_masks).sum())

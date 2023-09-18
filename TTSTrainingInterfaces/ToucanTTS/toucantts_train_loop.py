@@ -22,23 +22,9 @@ from run_weight_averaging import save_model_for_use
 def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
     # Assuming you have a list of tensors with shape [9, l, 1024]
-    tensor_list = [datapoint[2] for datapoint in batch]
-
-    max_length = max([tensor.size(1) for tensor in tensor_list])
-
-    # Pad tensors in the list
-    padded_tensors = []
-    for tensor in tensor_list:
-        padding = torch.zeros(tensor.size(0), max_length - tensor.size(1), tensor.size(2))
-        padded_tensor = torch.cat([tensor, padding], dim=1)
-        padded_tensors.append(padded_tensor)
-
-    # Convert the list of padded tensors to a single tensor
-    padded_tensor = torch.stack(padded_tensors)
-
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            padded_tensor,
+            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
@@ -81,7 +67,7 @@ def train_loop(net,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=12 if os.cpu_count() > 12 else max(os.cpu_count() - 2, 1),
+                              num_workers=4 if os.cpu_count() > 4 else max(os.cpu_count() - 2, 1),
                               pin_memory=True,
                               shuffle=True,
                               prefetch_factor=2,
@@ -105,7 +91,8 @@ def train_loop(net,
     while True:
         net.train()
         epoch += 1
-        classification_losses_total = list()
+        regression_losses_total = list()
+        glow_losses_total = list()
         duration_losses_total = list()
         pitch_losses_total = list()
         energy_losses_total = list()
@@ -115,7 +102,7 @@ def train_loop(net,
             style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
                                                        batch_of_feature_sequence_lengths=batch[3].to(device))
             utterance_embedding = torch.cat([style_embedding, batch[9].to(device)], dim=-1)
-            classification_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
+            regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
                 text_tensors=batch[0].to(device),
                 text_lengths=batch[1].to(device),
                 gold_speech=batch[2].to(device),
@@ -126,7 +113,6 @@ def train_loop(net,
                 utterance_embedding=utterance_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                codebook_curriculum=(step_counter + (warmup_steps // 4)) // (warmup_steps // 4)  # TODO this requires tuning
             )
 
             if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
@@ -134,8 +120,10 @@ def train_loop(net,
                 print("calculating the style token regularization loss. This will take a while.")
                 emb_reg_loss = style_embedding_function.style_encoder.calculate_ada4_regularization_loss()
                 train_loss = train_loss + emb_reg_loss
-            if not torch.isnan(classification_loss):
-                train_loss = train_loss + classification_loss
+            if not torch.isnan(regression_loss):
+                train_loss = train_loss + regression_loss
+            if not torch.isnan(glow_loss):
+                train_loss = train_loss + glow_loss
             if not torch.isnan(duration_loss):
                 train_loss = train_loss + duration_loss
             if not torch.isnan(pitch_loss):
@@ -143,7 +131,8 @@ def train_loop(net,
             if not torch.isnan(energy_loss):
                 train_loss = train_loss + energy_loss
 
-            classification_losses_total.append(classification_loss.item())
+            regression_losses_total.append(regression_loss.item())
+            glow_losses_total.append(glow_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
@@ -178,16 +167,17 @@ def train_loop(net,
 
         print(f"\nEpoch:                  {epoch}")
         print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
-        print(f"Reconstruction Loss:    {round(sum(classification_losses_total) / len(classification_losses_total), 4)}")
+        print(f"Reconstruction Loss:    {round(sum(regression_losses_total) / len(regression_losses_total), 4)}")
         print(f"Steps:                  {step_counter}\n")
         print(f"Currently training {min((step_counter + (warmup_steps // 4)) // (warmup_steps // 4), net.num_codebooks)} codebooks.")
 
         if use_wandb:
             wandb.log({
-                "classification_loss": round(sum(classification_losses_total) / len(classification_losses_total), 5),
-                "duration_loss"      : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                "pitch_loss"         : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                "energy_loss"        : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
+                "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
             }, step=step_counter)
 
         path_to_most_recent_plot = plot_progress_spec_toucantts(net,
