@@ -12,7 +12,7 @@ class Reconstructor(torch.nn.Module):
                  n_features=512,
                  num_symbols=145,
                  speaker_embedding_dim=192,
-                 lstm_dim=512):
+                 lstm_dim=256):
         super().__init__()
         self.in_proj = torch.nn.Linear(num_symbols + speaker_embedding_dim, lstm_dim)
         self.rnn1 = torch.nn.LSTM(lstm_dim, lstm_dim, batch_first=True, bidirectional=True)

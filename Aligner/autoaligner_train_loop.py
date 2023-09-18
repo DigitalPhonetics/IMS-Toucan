@@ -65,6 +65,9 @@ def train_loop(train_dataset,
     optim_tts = RAdam(tiny_tts.parameters(), lr=0.0001)
 
     step_counter = 0
+    loss_this_epoch = 0.0
+    loss_sum = list()
+
     if resume:
         previous_checkpoint = os.path.join(save_directory, "aligner.pt")
         path_to_checkpoint = previous_checkpoint
@@ -84,8 +87,6 @@ def train_loop(train_dataset,
     start_time = time.time()
 
     while True:
-        loss_sum = list()
-
         asr_model.train()
         tiny_tts.train()
         for batch in tqdm(train_loader):
@@ -127,9 +128,12 @@ def train_loop(train_dataset,
             step_counter += 1
 
             loss_sum.append(loss.item())
+            if len(loss_sum) > 1000:
+                loss_this_epoch = sum(loss_sum) / len(loss_sum)
+                print(loss_this_epoch)
+                loss_sum = list()
 
         asr_model.eval()
-        loss_this_epoch = sum(loss_sum) / len(loss_sum)
         torch.save({
             "asr_model"    : asr_model.state_dict(),
             "optimizer"    : optim_asr.state_dict(),
