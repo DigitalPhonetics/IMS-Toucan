@@ -145,7 +145,7 @@ def train_loop(net,
             utterance_embedding=utterance_embedding,
             lang_ids=lang_ids,
             return_feats=False,
-            detach_flow=step_counter < warmup_steps
+            detach_flow=step_counter < warmup_steps * 4
         )
 
         # then we directly update our meta-parameters without

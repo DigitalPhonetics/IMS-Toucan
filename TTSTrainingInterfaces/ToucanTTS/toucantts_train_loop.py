@@ -113,7 +113,7 @@ def train_loop(net,
                 utterance_embedding=utterance_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                detach_flow=step_counter < warmup_steps
+                detach_flow=step_counter < warmup_steps * 4
             )
 
             if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
