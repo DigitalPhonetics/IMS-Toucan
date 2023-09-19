@@ -161,8 +161,8 @@ class ToucanTTS(torch.nn.Module):
             hidden_channels=attention_dimension,  # post_glow_hidden
             kernel_size=5,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=16,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -227,9 +227,6 @@ class ToucanTTS(torch.nn.Module):
 
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
-
-        if self.use_wavenet_postnet:
-            decoded_speech = decoded_speech + self.wn(x=decoded_speech.transpose(1, 2), nonpadding=None, cond=upsampled_enriched_encoded_texts.transpose(1, 2)).transpose(1, 2)
 
         frames = self.output_projection(decoded_speech)
         refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
