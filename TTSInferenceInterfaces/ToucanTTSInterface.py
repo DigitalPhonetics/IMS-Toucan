@@ -71,6 +71,7 @@ class ToucanTTSInterface(torch.nn.Module):
         #  load code to wave model     #
         ################################
         self.codec_wrapper = CodecAudioPreprocessor(input_sr=24000, device=device)
+        self.codec_wrapper.model.generator.remove_weight_norm()
         self.spectrogram_wrapper = AudioPreprocessor(input_sr=24000, output_sr=16000)
         self.meter = pyloudnorm.Meter(24000)
 
@@ -95,6 +96,7 @@ class ToucanTTSInterface(torch.nn.Module):
         wave, sr = soundfile.read(path_to_reference_audio)
         if sr != self.codec_wrapper.input_sr:
             self.codec_wrapper = CodecAudioPreprocessor(input_sr=sr, device=self.device)
+        self.codec_wrapper.model.generator.remove_weight_norm()
         spec = self.codec_wrapper.audio_to_codec_tensor(wave, current_sampling_rate=sr).transpose(0, 1)
         spec_len = torch.LongTensor([len(spec)])
         style_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
@@ -155,6 +157,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                                                       pitch_variance_scale=pitch_variance_scale,
                                                                       energy_variance_scale=energy_variance_scale,
                                                                       pause_duration_scaling_factor=pause_duration_scaling_factor)
+            # codec_frames=self.codec_wrapper.model.quantizer(codec_frames.unsqueeze(0))[0].squeeze()  # re-quantization
             wave = self.codec_wrapper.codes_to_audio(codec_frames).cpu().numpy()
         try:
             loudness = self.meter.integrated_loudness(wave)

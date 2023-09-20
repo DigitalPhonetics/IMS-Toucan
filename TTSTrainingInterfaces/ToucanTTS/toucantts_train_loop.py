@@ -123,7 +123,7 @@ def train_loop(net,
                 train_loss = train_loss + emb_reg_loss
             if not torch.isnan(regression_loss):
                 train_loss = train_loss + regression_loss
-            if not torch.isnan(glow_loss):
+            if not torch.isnan(glow_loss) and step_counter > warmup_steps / 2:
                 train_loss = train_loss + glow_loss
             if not torch.isnan(duration_loss):
                 train_loss = train_loss + duration_loss
