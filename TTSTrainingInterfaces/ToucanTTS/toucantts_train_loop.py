@@ -75,6 +75,7 @@ def train_loop(net,
                               persistent_workers=True)
     step_counter = 0
     optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
+    # todo add second optimizer to stabilize flow
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     epoch = 0
@@ -113,7 +114,7 @@ def train_loop(net,
                 utterance_embedding=utterance_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                detach_flow=step_counter < warmup_steps * 4
+                run_glow=step_counter > warmup_steps * 3 or fine_tune
             )
 
             if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
@@ -123,8 +124,12 @@ def train_loop(net,
                 train_loss = train_loss + emb_reg_loss
             if not torch.isnan(regression_loss):
                 train_loss = train_loss + regression_loss
-            if not torch.isnan(glow_loss) and step_counter > warmup_steps * 3:
-                train_loss = train_loss + glow_loss
+            if glow_loss is not None:
+                glow_losses_total.append(glow_loss.item())
+                if not torch.isnan(glow_loss):
+                    train_loss = train_loss + glow_loss
+            else:
+                glow_losses_total.append(0)
             if not torch.isnan(duration_loss):
                 train_loss = train_loss + duration_loss
             if not torch.isnan(pitch_loss):
@@ -133,7 +138,6 @@ def train_loop(net,
                 train_loss = train_loss + energy_loss
 
             regression_losses_total.append(regression_loss.item())
-            glow_losses_total.append(glow_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
@@ -185,17 +189,18 @@ def train_loop(net,
                                                                 save_dir=save_directory,
                                                                 step=step_counter,
                                                                 lang=lang,
-                                                                default_emb=default_embedding)
+                                                                default_emb=default_embedding,
+                                                                run_glow=step_counter > warmup_steps * 3)
         if use_wandb:
             wandb.log({
                 "progress_plot": wandb.Image(path_to_most_recent_plot)
             }, step=step_counter)
 
+        checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
+        averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+        save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
         if step_counter > steps * 4 / 5:
-            # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm)
-            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=1)
-            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-            save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
+            # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
             check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
             net.load_state_dict(check_dict["model"])
 

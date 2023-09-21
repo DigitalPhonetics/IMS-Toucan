@@ -67,7 +67,8 @@ def plot_progress_spec_toucantts(net,
                                  save_dir,
                                  step,
                                  lang,
-                                 default_emb):
+                                 default_emb,
+                                 run_glow):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
     cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # just used for inversion
     ap = AudioPreprocessor(input_sr=24000, output_sr=16000)
@@ -78,7 +79,8 @@ def plot_progress_spec_toucantts(net,
     codes, durations, pitch, energy = net.inference(text=phoneme_vector,
                                                     return_duration_pitch_energy=True,
                                                     utterance_embedding=default_emb,
-                                                    lang_id=get_language_id(lang).to(device))
+                                                    lang_id=get_language_id(lang).to(device),
+                                                    run_glow=run_glow)
 
     plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, os.path.join(save_dir, "visualization"), tf, step)
     return os.path.join(os.path.join(save_dir, "visualization"), f"{step}.png")

@@ -141,8 +141,8 @@ class ToucanTTS(torch.nn.Module):
             "lang_embs"                                      : lang_embs,
             "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration,
             "num_codebooks"                                  : num_codebooks,
-            "codebook_size": codebook_size,
-            "codebook_dim" : codebook_dim
+            "codebook_size"                                  : codebook_size,
+            "codebook_dim"                                   : codebook_dim
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -264,7 +264,7 @@ class ToucanTTS(torch.nn.Module):
                 utterance_embedding,
                 return_feats=False,
                 lang_ids=None,
-                detach_flow=True
+                run_glow=True
                 ):
         """
         Args:
@@ -278,7 +278,7 @@ class ToucanTTS(torch.nn.Module):
             gold_energy (Tensor): Batch of padded token-averaged energy (B, Tmax + 1, 1).
             lang_ids (LongTensor): The language IDs used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Batch of embeddings to condition the TTS on, if the model is multispeaker
-            detach_flow (Bool): Whether to detach the inputs to the normalizing flow for stability.
+            run_glow (Bool): Whether to detach the inputs to the normalizing flow for stability.
         """
         outs, \
         glow_loss, \
@@ -294,7 +294,7 @@ class ToucanTTS(torch.nn.Module):
                                          utterance_embedding=utterance_embedding,
                                          is_inference=False,
                                          lang_ids=lang_ids,
-                                         detach_flow=detach_flow)
+                                         run_glow=run_glow)
 
         # calculate loss
         regression_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -323,7 +323,7 @@ class ToucanTTS(torch.nn.Module):
                  is_inference=False,
                  utterance_embedding=None,
                  lang_ids=None,
-                 detach_flow=False):
+                 run_glow=False):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -375,13 +375,19 @@ class ToucanTTS(torch.nn.Module):
         codec_latents = self.output_projection(decoded_speech)
 
         if is_inference:
-            refined_codec_frames = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents.detach() if detach_flow else codec_latents, encoded_texts=upsampled_enriched_encoded_texts.detach() if detach_flow else upsampled_enriched_encoded_texts, tgt_nonpadding=None)
+            if run_glow:
+                refined_codec_frames = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
+            else:
+                refined_codec_frames = codec_latents
             return refined_codec_frames, \
                    predicted_durations.squeeze(), \
                    pitch_predictions.squeeze(), \
                    energy_predictions.squeeze()
         else:
-            glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=decoder_masks)
+            if run_glow:
+                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=decoder_masks)
+            else:
+                glow_loss = None
             return codec_latents, \
                    glow_loss, \
                    predicted_durations, \
@@ -394,7 +400,8 @@ class ToucanTTS(torch.nn.Module):
                   speech=None,
                   utterance_embedding=None,
                   return_duration_pitch_energy=False,
-                  lang_id=None):
+                  lang_id=None,
+                  run_glow=True):
         """
         Args:
             text (LongTensor): Input sequence of characters (T,).
@@ -402,6 +409,7 @@ class ToucanTTS(torch.nn.Module):
             return_duration_pitch_energy (Boolean): whether to return the list of predicted durations for nicer plotting
             lang_id (LongTensor): The language ID used to access the language embedding table, if the model is multilingual
             utterance_embedding (Tensor): Embedding to condition the TTS on, if the model is multispeaker
+            run_glow (bool): whether to use the output of the glow or of the out_projection to generate codec frames
         """
         self.eval()
 
@@ -422,7 +430,8 @@ class ToucanTTS(torch.nn.Module):
                                            speech_pseudobatched,
                                            is_inference=True,
                                            utterance_embedding=utterance_embeddings,
-                                           lang_ids=lang_id)  # (1, L, odim)
+                                           lang_ids=lang_id,
+                                           run_glow=run_glow)  # (1, L, odim)
         self.train()
 
         if return_duration_pitch_energy:
