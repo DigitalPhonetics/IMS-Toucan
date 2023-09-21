@@ -74,10 +74,13 @@ def train_loop(net,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0
-    optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
-    # todo add second optimizer to stabilize flow
+
+    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr)
+    flow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=warmup_steps // 4, max_steps=steps)
+
     epoch = 0
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -87,6 +90,8 @@ def train_loop(net,
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
+            flow_optimizer.load_state_dict(check_dict["flow_optimizer"])
+            flow_scheduler.load_state_dict(check_dict["flow_scheduler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
     while True:
@@ -99,6 +104,7 @@ def train_loop(net,
         energy_losses_total = list()
 
         for batch in tqdm(train_loader):
+            run_glow = step_counter > warmup_steps * 3 or fine_tune
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
                                                        batch_of_feature_sequence_lengths=batch[3].to(device))
@@ -114,7 +120,7 @@ def train_loop(net,
                 utterance_embedding=utterance_embedding,
                 lang_ids=batch[8].to(device),
                 return_feats=True,
-                run_glow=step_counter > warmup_steps * 3 or fine_tune
+                run_glow=run_glow
             )
 
             if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
@@ -143,10 +149,14 @@ def train_loop(net,
             energy_losses_total.append(energy_loss.item())
 
             optimizer.zero_grad()
+            flow_optimizer.zero_grad()
             train_loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
+            if run_glow:
+                flow_optimizer.step()
+                flow_scheduler.step()
             step_counter += 1
 
         # EPOCH IS OVER
@@ -157,12 +167,14 @@ def train_loop(net,
             batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze(),
                                        train_dataset[0][9].to(device)], dim=-1)
         torch.save({
-            "model"       : net.state_dict(),
-            "optimizer"   : optimizer.state_dict(),
-            "step_counter": step_counter,
-            "scheduler"   : scheduler.state_dict(),
-            "default_emb" : default_embedding,
-            "config"      : net.config
+            "model"         : net.state_dict(),
+            "optimizer"     : optimizer.state_dict(),
+            "step_counter"  : step_counter,
+            "scheduler"     : scheduler.state_dict(),
+            "flow_optimizer": flow_optimizer.state_dict(),
+            "flow_scheduler": flow_scheduler.state_dict(),
+            "default_emb"   : default_embedding,
+            "config"        : net.config
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         if path_to_embed_model is None or train_embed:
             torch.save({
@@ -190,7 +202,7 @@ def train_loop(net,
                                                                 step=step_counter,
                                                                 lang=lang,
                                                                 default_emb=default_embedding,
-                                                                run_glow=step_counter > warmup_steps * 3)
+                                                                run_glow=run_glow)
         if use_wandb:
             wandb.log({
                 "progress_plot": wandb.Image(path_to_most_recent_plot)

@@ -77,8 +77,13 @@ def train_loop(net,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
-    optimizer = torch.optim.AdamW(net.parameters(), lr=lr)
+
+    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr)
+    flow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr)
+
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=warmup_steps // 4, max_steps=steps)
+
     steps_run_previously = 0
     regression_losses_total = list()
     glow_losses_total = list()
@@ -94,6 +99,8 @@ def train_loop(net,
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
+            flow_optimizer.load_state_dict(check_dict["flow_optimizer"])
+            flow_scheduler.load_state_dict(check_dict["flow_scheduler"])
             steps_run_previously = check_dict["step_counter"]
         if steps_run_previously > steps:
             print("Desired steps already reached in loaded checkpoint.")
@@ -104,6 +111,7 @@ def train_loop(net,
     # Actual train loop starts here
     # =============================
     for step_counter in tqdm(range(steps_run_previously, steps)):
+        run_glow = step_counter > warmup_steps * 3 or fine_tune
         batches = []
         while len(batches) < batch_size:
             for index in random.sample(list(range(len(datasets))), len(datasets)):
@@ -145,7 +153,7 @@ def train_loop(net,
             utterance_embedding=utterance_embedding,
             lang_ids=lang_ids,
             return_feats=False,
-            run_glow=step_counter > warmup_steps * 3 or fine_tune
+            run_glow=run_glow
         )
 
         # then we directly update our meta-parameters without
@@ -172,10 +180,14 @@ def train_loop(net,
         energy_losses_total.append(energy_loss.item())
 
         optimizer.zero_grad()
+        flow_optimizer.zero_grad()
         train_loss.backward()
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
         optimizer.step()
         scheduler.step()
+        if run_glow:
+            flow_optimizer.step()
+            flow_scheduler.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
@@ -189,12 +201,14 @@ def train_loop(net,
             print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
             print("Steps:                  {}\n".format(step_counter))
             torch.save({
-                "model"       : net.state_dict(),
-                "optimizer"   : optimizer.state_dict(),
-                "scheduler"   : scheduler.state_dict(),
-                "step_counter": step_counter,
-                "default_emb" : default_embedding,
-                "config"      : net.config
+                "model"         : net.state_dict(),
+                "optimizer"     : optimizer.state_dict(),
+                "scheduler"     : scheduler.state_dict(),
+                "flow_optimizer": flow_optimizer.state_dict(),
+                "flow_scheduler": flow_scheduler.state_dict(),
+                "step_counter"  : step_counter,
+                "default_emb"   : default_embedding,
+                "config"        : net.config
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
@@ -215,7 +229,7 @@ def train_loop(net,
                                                                         step=step_counter,
                                                                         lang=lang,
                                                                         default_emb=default_embedding,
-                                                                        run_glow=step_counter > warmup_steps * 3)
+                                                                        run_glow=run_glow)
                 if use_wandb:
                     wandb.log({
                         "progress_plot": wandb.Image(path_to_most_recent_plot)
