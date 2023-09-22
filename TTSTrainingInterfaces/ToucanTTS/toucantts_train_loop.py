@@ -82,6 +82,7 @@ def train_loop(net,
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=warmup_steps // 4, max_steps=steps)
 
     epoch = 0
+    first_time_glow = True
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
@@ -105,6 +106,18 @@ def train_loop(net,
 
         for batch in tqdm(train_loader):
             run_glow = step_counter > warmup_steps * 3 or fine_tune
+            if run_glow:
+                if first_time_glow and not fine_tune:
+                    # We freeze the model and the embedding function for the first 500 steps of the flow, because at this point bad spikes can happen, that take a while to recover from. So we protect our nice weights at this point.
+                    net.requires_grad_(False)
+                    style_embedding_function.requires_grad_(False)
+                    net.post_flow.requires_grad_(False)
+                    if step_counter > (warmup_steps * 3) + 500:
+                        first_time_glow = False
+                        net.requires_grad_(True)
+                        if path_to_embed_model is not None and not train_embed:
+                            style_embedding_function.requires_grad_(True)
+
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
                                                        batch_of_feature_sequence_lengths=batch[3].to(device))

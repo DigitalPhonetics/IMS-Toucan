@@ -58,6 +58,7 @@ def train_loop(net,
         steps = steps + ((steps_per_checkpoint + 1) - (steps % steps_per_checkpoint))  # making sure to stop at the closest point that makes sense to the specified stopping point
 
     style_embedding_function = StyleEmbedding().to(device)
+    first_time_glow = True
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
@@ -112,6 +113,14 @@ def train_loop(net,
     # =============================
     for step_counter in tqdm(range(steps_run_previously, steps)):
         run_glow = step_counter > warmup_steps * 3 or fine_tune
+        if run_glow:
+            if first_time_glow and not fine_tune:
+                # We freeze the model and the embedding function for the first 500 steps of the flow, because at this point bad spikes can happen, that take a while to recover from. So we protect our nice weights at this point.
+                net.requires_grad_(False)
+                net.post_flow.requires_grad_(False)
+                if step_counter > (warmup_steps * 3) + 500:
+                    first_time_glow = False
+                    net.requires_grad_(True)
         batches = []
         while len(batches) < batch_size:
             for index in random.sample(list(range(len(datasets))), len(datasets)):
