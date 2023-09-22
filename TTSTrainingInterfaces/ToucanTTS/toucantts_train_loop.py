@@ -108,10 +108,12 @@ def train_loop(net,
             run_glow = step_counter > warmup_steps * 3 or fine_tune
             if run_glow:
                 if first_time_glow and not fine_tune:
-                    # We freeze the model and the embedding function for the first 500 steps of the flow, because at this point bad spikes can happen, that take a while to recover from. So we protect our nice weights at this point.
+                    # We freeze the model and the embedding function for the first few steps of the flow,
+                    # because at this point bad spikes can happen, that take a while to recover from.
+                    # So we protect our nice weights at this point.
                     net.requires_grad_(False)
                     style_embedding_function.requires_grad_(False)
-                    net.post_flow.requires_grad_(False)
+                    net.post_flow.requires_grad_(True)
                     if step_counter > (warmup_steps * 3) + warmup_steps // 20:
                         first_time_glow = False
                         net.requires_grad_(True)
