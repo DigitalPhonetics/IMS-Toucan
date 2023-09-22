@@ -118,7 +118,7 @@ def train_loop(net,
                 # We freeze the model and the embedding function for the first 500 steps of the flow, because at this point bad spikes can happen, that take a while to recover from. So we protect our nice weights at this point.
                 net.requires_grad_(False)
                 net.post_flow.requires_grad_(False)
-                if step_counter > (warmup_steps * 3) + 500:
+                if step_counter > (warmup_steps * 3) + warmup_steps // 20:
                     first_time_glow = False
                     net.requires_grad_(True)
         batches = []
@@ -168,19 +168,22 @@ def train_loop(net,
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
 
-        if not torch.isnan(regression_loss):
+        if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
             train_loss = train_loss + regression_loss
         if glow_loss is not None:
-            glow_losses_total.append(glow_loss.item())
+            if not first_time_glow:
+                glow_losses_total.append(glow_loss.item())
+            else:
+                glow_losses_total.append(0)
             if not torch.isnan(glow_loss):
                 train_loss = train_loss + glow_loss
         else:
             glow_losses_total.append(0)
-        if not torch.isnan(duration_loss):
+        if not torch.isnan(duration_loss) and (not run_glow or not first_time_glow):
             train_loss = train_loss + duration_loss
-        if not torch.isnan(pitch_loss):
+        if not torch.isnan(pitch_loss) and (not run_glow or not first_time_glow):
             train_loss = train_loss + pitch_loss
-        if not torch.isnan(energy_loss):
+        if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
             train_loss = train_loss + energy_loss
 
         regression_losses_total.append(regression_loss.item())

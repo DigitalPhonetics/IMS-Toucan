@@ -112,7 +112,7 @@ def train_loop(net,
                     net.requires_grad_(False)
                     style_embedding_function.requires_grad_(False)
                     net.post_flow.requires_grad_(False)
-                    if step_counter > (warmup_steps * 3) + 500:
+                    if step_counter > (warmup_steps * 3) + warmup_steps // 20:
                         first_time_glow = False
                         net.requires_grad_(True)
                         if path_to_embed_model is not None and not train_embed:
@@ -141,19 +141,22 @@ def train_loop(net,
                 print("calculating the style token regularization loss. This will take a while.")
                 emb_reg_loss = style_embedding_function.style_encoder.calculate_ada4_regularization_loss()
                 train_loss = train_loss + emb_reg_loss
-            if not torch.isnan(regression_loss):
+            if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
                 train_loss = train_loss + regression_loss
             if glow_loss is not None:
-                glow_losses_total.append(glow_loss.item())
+                if not first_time_glow:
+                    glow_losses_total.append(glow_loss.item())
+                else:
+                    glow_losses_total.append(0)
                 if not torch.isnan(glow_loss):
                     train_loss = train_loss + glow_loss
             else:
                 glow_losses_total.append(0)
-            if not torch.isnan(duration_loss):
+            if not torch.isnan(duration_loss) and (not run_glow or not first_time_glow):
                 train_loss = train_loss + duration_loss
-            if not torch.isnan(pitch_loss):
+            if not torch.isnan(pitch_loss) and (not run_glow or not first_time_glow):
                 train_loss = train_loss + pitch_loss
-            if not torch.isnan(energy_loss):
+            if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
                 train_loss = train_loss + energy_loss
 
             regression_losses_total.append(regression_loss.item())
