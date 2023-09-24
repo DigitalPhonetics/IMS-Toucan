@@ -107,14 +107,16 @@ def train_loop(net,
         for batch in tqdm(train_loader):
             run_glow = step_counter > warmup_steps * 3 or fine_tune
             if run_glow:
-                if first_time_glow and not fine_tune:
+                if first_time_glow is not False and not fine_tune:
                     # We freeze the model and the embedding function for the first few steps of the flow,
                     # because at this point bad spikes can happen, that take a while to recover from.
                     # So we protect our nice weights at this point.
-                    net.requires_grad_(False)
-                    style_embedding_function.requires_grad_(False)
-                    net.post_flow.requires_grad_(True)
-                    if step_counter > (warmup_steps * 3) + warmup_steps // 20:
+                    if first_time_glow != 2:
+                        net.requires_grad_(False)
+                        style_embedding_function.requires_grad_(False)
+                        net.post_flow.requires_grad_(True)
+                        first_time_glow = 2
+                    if step_counter > (warmup_steps * 3) + warmup_steps:
                         first_time_glow = False
                         net.requires_grad_(True)
                         if path_to_embed_model is not None and not train_embed:

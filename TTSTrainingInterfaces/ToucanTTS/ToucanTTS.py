@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=192,
+                 attention_dimension=256,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -53,7 +53,7 @@ class ToucanTTS(torch.nn.Module):
                  # encoder
                  encoder_layers=6,
                  encoder_units=1280,
-                 encoder_normalize_before=True,
+                 encoder_normalize_before=False,  # when we're using conditional layernorm, we should not destroy this information with regular layernorm directly after
                  encoder_concat_after=False,
                  conformer_encoder_kernel_size=7,
                  transformer_enc_dropout_rate=0.1,
@@ -61,11 +61,11 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=8,
+                 decoder_layers=10,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
-                 decoder_normalize_before=True,
+                 decoder_normalize_before=False,  # when we're using conditional layernorm, we should not destroy this information with regular layernorm directly after
                  transformer_dec_dropout_rate=0.1,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
@@ -90,9 +90,9 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # additional features
-                 utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding # TODO change prosody embedding
+                 utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=False,  # TODO check if the cond layernorm is not overwritten by a regular layernorm afterwards in some places.
+                 use_conditional_layernorm_embedding_integration=True,
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
                  codebook_dim=512
@@ -230,13 +230,13 @@ class ToucanTTS(torch.nn.Module):
 
         self.output_projection = torch.nn.utils.weight_norm(torch.nn.Linear(attention_dimension, self.codebook_dim))
 
-        self.post_flow = Glow(
+        self.post_flow = Glow(  # TODO make this parametric and add it to the config
             in_channels=self.codebook_dim,
             hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=5,  # post_glow_kernel_size
+            kernel_size=7,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -385,7 +385,7 @@ class ToucanTTS(torch.nn.Module):
                    energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=decoder_masks)
+                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
             return codec_latents, \
