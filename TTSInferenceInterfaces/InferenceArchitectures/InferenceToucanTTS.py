@@ -65,6 +65,9 @@ class ToucanTTS(torch.nn.Module):
         num_codebooks = config.num_codebooks
         codebook_size = config.codebook_size
         codebook_dim = config.codebook_dim
+        glow_kernel_size = config.glow_kernel_size
+        glow_blocks = config.glow_blocks
+        glow_layers = config.glow_layers
 
         self.num_codebooks = num_codebooks
         self.codebook_size = codebook_size
@@ -159,10 +162,10 @@ class ToucanTTS(torch.nn.Module):
         self.post_flow = Glow(
             in_channels=self.codebook_dim,
             hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=5,  # post_glow_kernel_size
+            kernel_size=glow_kernel_size,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=12,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=3,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=glow_blocks,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=glow_layers,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -285,18 +288,18 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         outs, \
-        predicted_durations, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text.unsqueeze(0),
-                                           text_length,
-                                           gold_durations=durations,
-                                           gold_pitch=pitch,
-                                           gold_energy=energy,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                           duration_scaling_factor=duration_scaling_factor,
-                                           pitch_variance_scale=pitch_variance_scale,
-                                           energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
+            predicted_durations, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text.unsqueeze(0),
+                                               text_length,
+                                               gold_durations=durations,
+                                               gold_pitch=pitch,
+                                               gold_energy=energy,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                               duration_scaling_factor=duration_scaling_factor,
+                                               pitch_variance_scale=pitch_variance_scale,
+                                               energy_variance_scale=energy_variance_scale,
+                                               pause_duration_scaling_factor=pause_duration_scaling_factor)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions

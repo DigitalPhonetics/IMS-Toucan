@@ -89,6 +89,11 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_kernel_size=1,
                  energy_embed_dropout=0.0,
 
+                 # post glow
+                 glow_kernel_size=7,
+                 glow_blocks=18,
+                 glow_layers=4,
+
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
                  lang_embs=8000,
@@ -142,7 +147,10 @@ class ToucanTTS(torch.nn.Module):
             "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration,
             "num_codebooks"                                  : num_codebooks,
             "codebook_size"                                  : codebook_size,
-            "codebook_dim"                                   : codebook_dim
+            "codebook_dim"                                   : codebook_dim,
+            "glow_kernel_size"                               : glow_kernel_size,
+            "glow_blocks"                                    : glow_blocks,
+            "glow_layers"                                    : glow_layers
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -230,13 +238,13 @@ class ToucanTTS(torch.nn.Module):
 
         self.output_projection = torch.nn.utils.weight_norm(torch.nn.Linear(attention_dimension, self.codebook_dim))
 
-        self.post_flow = Glow(  # TODO make this parametric and add it to the config
+        self.post_flow = Glow(
             in_channels=self.codebook_dim,
             hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=7,  # post_glow_kernel_size
+            kernel_size=glow_kernel_size,  # post_glow_kernel_size
             dilation_rate=1,
-            n_blocks=18,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=4,  # post_glow_n_block_layers (original 3 in paper)
+            n_blocks=glow_blocks,  # post_glow_n_blocks (original 12 in paper)
+            n_layers=glow_layers,  # post_glow_n_block_layers (original 3 in paper)
             n_split=4,
             n_sqz=2,
             text_condition_channels=attention_dimension,
@@ -281,20 +289,20 @@ class ToucanTTS(torch.nn.Module):
             run_glow (Bool): Whether to detach the inputs to the normalizing flow for stability.
         """
         outs, \
-        glow_loss, \
-        predicted_durations, \
-        predicted_pitch, \
-        predicted_energy = self._forward(text_tensors=text_tensors,
-                                         text_lengths=text_lengths,
-                                         gold_speech=gold_speech,
-                                         speech_lengths=speech_lengths,
-                                         gold_durations=gold_durations,
-                                         gold_pitch=gold_pitch,
-                                         gold_energy=gold_energy,
-                                         utterance_embedding=utterance_embedding,
-                                         is_inference=False,
-                                         lang_ids=lang_ids,
-                                         run_glow=run_glow)
+            glow_loss, \
+            predicted_durations, \
+            predicted_pitch, \
+            predicted_energy = self._forward(text_tensors=text_tensors,
+                                             text_lengths=text_lengths,
+                                             gold_speech=gold_speech,
+                                             speech_lengths=speech_lengths,
+                                             gold_durations=gold_durations,
+                                             gold_pitch=gold_pitch,
+                                             gold_energy=gold_energy,
+                                             utterance_embedding=utterance_embedding,
+                                             is_inference=False,
+                                             lang_ids=lang_ids,
+                                             run_glow=run_glow)
 
         # calculate loss
         regression_loss, duration_loss, pitch_loss, energy_loss = self.criterion(predicted_features=outs,
@@ -380,19 +388,19 @@ class ToucanTTS(torch.nn.Module):
             else:
                 refined_codec_frames = codec_latents
             return refined_codec_frames, \
-                   predicted_durations.squeeze(), \
-                   pitch_predictions.squeeze(), \
-                   energy_predictions.squeeze()
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze(), \
+                energy_predictions.squeeze()
         else:
             if run_glow:
                 glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
             return codec_latents, \
-                   glow_loss, \
-                   predicted_durations, \
-                   pitch_predictions, \
-                   energy_predictions
+                glow_loss, \
+                predicted_durations, \
+                pitch_predictions, \
+                energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -423,15 +431,15 @@ class ToucanTTS(torch.nn.Module):
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
-        duration_predictions, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text_pseudobatched,
-                                           ilens,
-                                           speech_pseudobatched,
-                                           is_inference=True,
-                                           utterance_embedding=utterance_embeddings,
-                                           lang_ids=lang_id,
-                                           run_glow=run_glow)  # (1, L, odim)
+            duration_predictions, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text_pseudobatched,
+                                               ilens,
+                                               speech_pseudobatched,
+                                               is_inference=True,
+                                               utterance_embedding=utterance_embeddings,
+                                               lang_ids=lang_id,
+                                               run_glow=run_glow)  # (1, L, odim)
         self.train()
 
         if return_duration_pitch_energy:
