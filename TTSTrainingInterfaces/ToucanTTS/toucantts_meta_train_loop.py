@@ -198,10 +198,11 @@ def train_loop(net,
         optimizer.zero_grad()
         flow_optimizer.zero_grad()
         train_loss.backward()
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0, error_if_nonfinite=False)
+        torch.nn.utils.clip_grad_norm_([p for name, p in net.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
         optimizer.step()
         scheduler.step()
         if run_glow:
+            torch.nn.utils.clip_grad_norm_(net.post_flow.parameters(), 1.0, error_if_nonfinite=False)
             flow_optimizer.step()
             flow_scheduler.step()
 

@@ -36,25 +36,22 @@ class ToucanTTSLoss(torch.nn.Module):
             Tensor: Duration loss value
         """
 
-        # calculate loss
+        # calculate losses
         distance_loss = self.l1_criterion(predicted_features, gold_features)
-
         duration_loss = self.duration_criterion(predicted_durations, gold_durations)
         pitch_loss = self.l2_criterion(predicted_pitch, gold_pitch)
         energy_loss = self.l2_criterion(predicted_energy, gold_energy)
 
-        # make weighted mask and apply it
+        # make weighted masks to ensure that long samples and short samples are all equally important
         out_masks = make_non_pad_mask(features_lengths).unsqueeze(-1).to(gold_features.device)
         out_weights = out_masks.float() / out_masks.sum(dim=1, keepdim=True).float()
-        out_weights /= gold_features.size(0) * gold_features.size(-1)  # make sure that long samples and short samples are all equally important
+        out_weights /= gold_features.size(0) * gold_features.size(-1)
         duration_masks = make_non_pad_mask(text_lengths).to(gold_features.device)
         duration_weights = (duration_masks.float() / duration_masks.sum(dim=1, keepdim=True).float())
         variance_masks = duration_masks.unsqueeze(-1)
         variance_weights = duration_weights.unsqueeze(-1)
-        pitch_loss = pitch_loss.mul(variance_weights).masked_select(variance_masks).sum()
-        energy_loss = (energy_loss.mul(variance_weights).masked_select(variance_masks).sum())
 
-        # apply weight
+        # apply weighted masks
         distance_loss = distance_loss.mul(out_weights).masked_select(out_masks).sum()
         duration_loss = (duration_loss.mul(duration_weights).masked_select(duration_masks).sum())
         pitch_loss = pitch_loss.mul(variance_weights).masked_select(variance_masks).sum()

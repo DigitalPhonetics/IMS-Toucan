@@ -61,7 +61,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=10,
+                 decoder_layers=8,
                  decoder_units=1280,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
@@ -90,9 +90,9 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=7,
-                 glow_blocks=18,
-                 glow_layers=4,
+                 glow_kernel_size=5,
+                 glow_blocks=12,
+                 glow_layers=3,
 
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
@@ -393,7 +393,7 @@ class ToucanTTS(torch.nn.Module):
                 energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
+                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents.detach(), encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
             return codec_latents, \
