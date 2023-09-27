@@ -378,6 +378,17 @@ def curve_smoother(curve):
     return new_curve
 
 
+def remove_elements(tensor, indexes):
+    # Create a boolean mask where True represents the elements to keep
+    mask = torch.ones_like(tensor, dtype=torch.bool)
+    mask[indexes] = False
+
+    # Use the mask to select the elements to keep
+    result = tensor[mask]
+
+    return result
+
+
 if __name__ == '__main__':
     data = np.random.randn(50)
     plt.plot(data, color="b")

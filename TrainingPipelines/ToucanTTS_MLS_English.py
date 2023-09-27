@@ -23,34 +23,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_Embedding")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_MLS_English")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
 
-    datasets.append(prepare_tts_corpus(transcript_dict={},
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict={},
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict={},
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "crema_d"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
-                                       lang="en"))
+    chunk_count = 50
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
+    for index in range(chunk_count):
+        datasets.append(prepare_tts_corpus(transcript_dict=chunks[index],
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
+                                           lang="en"))
 
     train_set = ConcatDataset(datasets)
 
@@ -70,7 +53,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                    path_to_checkpoint=resume_checkpoint,
                    path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
                    fine_tune=finetune,
-                   steps=50000,
+                   steps=800000,
                    resume=resume,
                    use_wandb=use_wandb,
                    train_embed=True)  # we want to train the embedding function

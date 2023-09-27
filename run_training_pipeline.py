@@ -9,6 +9,7 @@ from TrainingPipelines.AlignerPipeline import run as aligner
 from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingPipelines.ToucanTTS_Embedding import run as embedding
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
+from TrainingPipelines.ToucanTTS_MLS_English import run as mls
 from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingPipelines.finetuning_example import run as fine_tuning_example
@@ -20,6 +21,7 @@ pipeline_dict = {
     "tt_it"             : tt_integration_test,
     # regular ToucanTTS pipelines
     "nancy"             : nancy,
+    "mls"               : mls,
     "nancystoch"        : nancystoch,
     "meta"              : meta,
     # training one of the embedding models, GST or StyleTTS (not recommended, best to use provided checkpoint)
