@@ -109,7 +109,7 @@ class TTSDataset(Dataset):
                         legal_silences.append([cumsum, cumsum + cached_duration[phoneme_index]])
                         phoneme_indexes_of_silences.append(phoneme_index)
                     cumsum = cumsum + cached_duration[phoneme_index]
-                resampled_wave = librosa.resample(decoded_wave, orig_sr=24000, target_sr=16000)
+                resampled_wave = librosa.resample(decoded_wave.cpu().numpy(), orig_sr=24000, target_sr=16000)
                 with torch.inference_mode():
                     speech_timestamps = get_speech_timestamps(torch.Tensor(resampled_wave).to(device), silero_model, sampling_rate=16000)
                 silences = list()
