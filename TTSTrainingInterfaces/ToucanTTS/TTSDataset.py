@@ -50,7 +50,7 @@ class TTSDataset(Dataset):
             self.device = device
 
             print("... building dataset cache ...")
-            codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
+            self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
             self.datapoints = list()
             self.ctc_losses = list()
 
@@ -77,7 +77,7 @@ class TTSDataset(Dataset):
             os.makedirs(vis_dir, exist_ok=True)
 
             for index in tqdm(range(len(self.dataset))):
-                decoded_wave = codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device)).detach().cpu()
+                decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device)).detach().cpu()
 
                 decoded_wave_length = torch.LongTensor([len(decoded_wave)])
 
@@ -247,7 +247,7 @@ class TTSDataset(Dataset):
                 indexes_of_word_boundaries.append(phoneme_index)
         matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-        features = codec_wrapper.indexes_to_codec_frames(self.dataset[index][1].int().transpose(0, 1).to(self.device)).transpose(0, 1).detach()
+        features = self.codec_wrapper.indexes_to_codec_frames(self.dataset[index][1].int().transpose(0, 1).to(self.device)).transpose(0, 1).detach()
         alignment_path, ctc_loss = self.acoustic_model.inference(features=features,
                                                                  tokens=matrix_without_word_boundaries.to(self.device),
                                                                  save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
@@ -265,7 +265,7 @@ class TTSDataset(Dataset):
 if __name__ == '__main__':
     parsel = Parselmouth(fs=24000, hop_length=314)
     energy_calc = EnergyCalculator(fs=24000, n_fft=1024, hop_length=320)
-    codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device="cpu", path_to_config="../../Codec/config_24k_320d.json", path_to_model="../../Codec/HiFi-Codec-24k-320d.pt")
+    _codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device="cpu", path_to_config="../../Codec/config_24k_320d.json", path_to_model="../../Codec/HiFi-Codec-24k-320d.pt")
     import soundfile
 
     test_audio = "../../audios/ad01_0003.wav"
@@ -275,7 +275,7 @@ if __name__ == '__main__':
 
     pitch = parsel(pseudo_wave)
     energy = energy_calc(pseudo_wave)
-    indexes = codec_wrapper.audio_to_codebook_indexes(pseudo_wave.squeeze(0), current_sampling_rate=24000)
+    indexes = _codec_wrapper.audio_to_codebook_indexes(pseudo_wave.squeeze(0), current_sampling_rate=24000)
 
     print(pitch[0].shape)
     print(energy[0].shape)
