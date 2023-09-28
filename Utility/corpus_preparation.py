@@ -44,7 +44,7 @@ def prepare_tts_corpus(transcript_dict,
                     train_aligner(train_dataset=aligner_datapoints,
                                   device=torch.device("cuda"),
                                   save_directory=aligner_dir,
-                                  steps=len(aligner_datapoints) // 2,  # relatively good finetuning heuristic
+                                  steps=min(len(aligner_datapoints) // 2, 10000),  # relatively good finetuning heuristic
                                   batch_size=32 if len(aligner_datapoints) > 32 else len(aligner_datapoints) // 2,
                                   path_to_checkpoint=os.path.join(MODELS_DIR, "Aligner", "aligner.pt"),
                                   fine_tune=True,
