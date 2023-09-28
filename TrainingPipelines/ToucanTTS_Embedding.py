@@ -28,28 +28,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    datasets.append(prepare_tts_corpus(transcript_dict={},
+    datasets.append(prepare_tts_corpus(transcript_dict={},  # use here the largest and most diverse single speaker dataset available
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict={},
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict={},
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "esds"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_vctk(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "vctk"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_CREMA_D(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "crema_d"),
-                                       lang="en"))
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_EmoV_DB(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "emovdb"),
                                        lang="en"))
 
     train_set = ConcatDataset(datasets)
@@ -61,18 +41,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
-    for _ in range(5):
-        train_loop(net=model,
-                   datasets=[train_set],
-                   device=device,
-                   save_directory=save_dir,
-                   eval_lang="en",
-                   path_to_checkpoint=resume_checkpoint,
-                   path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
-                   fine_tune=finetune,
-                   steps=50000,
-                   resume=resume,
-                   use_wandb=use_wandb,
-                   train_embed=True)  # we want to train the embedding function
+    train_loop(net=model,
+               datasets=[train_set],
+               device=device,
+               save_directory=save_dir,
+               eval_lang="en",
+               path_to_checkpoint=resume_checkpoint,
+               path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
+               fine_tune=finetune,
+               steps=50000,
+               resume=resume,
+               use_wandb=use_wandb,
+               train_embed=True)  # we want to train the embedding function
     if use_wandb:
         wandb.finish()

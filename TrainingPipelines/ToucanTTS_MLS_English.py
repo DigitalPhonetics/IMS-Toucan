@@ -44,18 +44,17 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
     print("Training model")
-    for _ in range(5):
-        train_loop(net=model,
-                   datasets=[train_set],
-                   device=device,
-                   save_directory=save_dir,
-                   eval_lang="en",
-                   path_to_checkpoint=resume_checkpoint,
-                   path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
-                   fine_tune=finetune,
-                   steps=800000,
-                   resume=resume,
-                   use_wandb=use_wandb,
-                   train_embed=True)  # we want to train the embedding function
+    train_loop(net=model,
+               datasets=[train_set],
+               device=device,
+               save_directory=save_dir,
+               eval_lang="en",
+               path_to_checkpoint=resume_checkpoint,
+               path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
+               fine_tune=finetune,
+               steps=800000,
+               resume=resume,
+               use_wandb=use_wandb,
+               train_embed=True)  # we want to train the embedding function
     if use_wandb:
         wandb.finish()
