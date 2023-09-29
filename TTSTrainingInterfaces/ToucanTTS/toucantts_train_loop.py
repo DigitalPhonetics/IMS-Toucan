@@ -215,6 +215,7 @@ def train_loop(net,
                 "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
                 "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
                 "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                "learning_rate": optimizer.param_groups[0]['lr']
             }, step=step_counter)
 
         path_to_most_recent_plot = plot_progress_spec_toucantts(net,

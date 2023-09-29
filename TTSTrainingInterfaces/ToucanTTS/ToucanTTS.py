@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=256,
+                 attention_dimension=512,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -457,6 +457,7 @@ if __name__ == '__main__':
 
     model = ToucanTTS(num_codebooks=num_codebooks)
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
+    print(sum(p.numel() for p in model.post_flow.parameters() if p.requires_grad))
 
     print(" TESTING TRAINING ")
 
