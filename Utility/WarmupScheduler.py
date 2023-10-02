@@ -9,10 +9,12 @@ class ToucanWarmupScheduler(_LRScheduler):
     A warmup scheduler that should be called after every batch.
     """
 
-    def __init__(self, optimizer, peak_lr=0.001, warmup_steps=8000, max_steps=1000000, last_epoch=-1):
+    def __init__(self, optimizer, peak_lr=0.0005, warmup_steps=30000, max_steps=800000, last_epoch=-1):
         self.warmup_steps = warmup_steps
         self.peak_lr = peak_lr
         self.max_steps = max_steps
+        self.plateau = self.warmup_steps * 5
+        self.last_lr = 0.0
         # __init__() must be invoked before setting field
         # because step() is also invoked in __init__()
         super().__init__(optimizer, last_epoch)
@@ -24,12 +26,15 @@ class ToucanWarmupScheduler(_LRScheduler):
         step_num = self.last_epoch + 1
         if step_num <= self.warmup_steps:
             lr = self.peak_lr * min(step_num / self.warmup_steps, 1.0)
+            self.last_lr = lr
             return [lr for _ in self.base_lrs]
-        elif step_num < self.warmup_steps + self.warmup_steps // 2:
+        elif step_num < self.warmup_steps + self.plateau:
+            self.last_lr = self.peak_lr
             return [self.peak_lr for _ in self.base_lrs]
         else:
-            scale = 1 - (((step_num - (self.warmup_steps + self.warmup_steps // 2)) / self.max_steps) / (self.max_steps / 10))
-            return [max(lr * scale, 1e-7) for lr in self.base_lrs]
+            scale = 1 - (((step_num - (self.warmup_steps + self.plateau)) / self.max_steps) / (self.max_steps / 10))
+            self.last_lr = max(self.last_lr * scale, 1e-7)
+            return [self.last_lr for _ in self.base_lrs]
 
 
 class WarmupScheduler(_LRScheduler):
@@ -60,3 +65,24 @@ class WarmupScheduler(_LRScheduler):
         step_num = self.last_epoch + 1
         return [lr * self.warmup_steps ** 0.5 * min(step_num ** -0.5, step_num * self.warmup_steps ** -1.5) for lr in
                 self.base_lrs]
+
+
+if __name__ == '__main__':
+    lrs = list()
+    warmup_steps = 30000
+    peak_lr = 0.0005
+    max_steps = 800000
+    plateau_size = warmup_steps * 5
+    for step_num in range(max_steps):
+        if step_num <= warmup_steps:
+            lr = peak_lr * min(step_num / warmup_steps, 1.0)
+            lrs.append(lr)
+        elif step_num < warmup_steps + plateau_size:
+            lrs.append(peak_lr)
+        else:
+            scale = 1 - (((step_num - (warmup_steps + plateau_size)) / max_steps) / (max_steps / 10))
+            lrs.append(max(lrs[-1] * scale, 1e-7))
+    import matplotlib.pyplot as plt
+
+    plt.plot(lrs)
+    plt.show()

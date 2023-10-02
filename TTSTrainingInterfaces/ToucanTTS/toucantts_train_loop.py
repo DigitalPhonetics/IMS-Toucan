@@ -75,11 +75,11 @@ def train_loop(net,
                               persistent_workers=True)
     step_counter = 0
 
-    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr)
-    flow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr)
+    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
+    flow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=warmup_steps // 4, max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=warmup_steps // 4, max_steps=steps)
 
     epoch = 0
     first_time_glow = True
