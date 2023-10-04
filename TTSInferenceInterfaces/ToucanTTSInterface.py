@@ -216,9 +216,7 @@ class ToucanTTSInterface(torch.nn.Module):
             codec_plot_axis.set_aspect("auto")
 
             plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=.9, wspace=0.0, hspace=0.0)
-            if not return_plot_as_filepath:
-                plt.show()
-            else:
+            if return_plot_as_filepath:
                 plt.savefig("tmp.png")
                 return wave, "tmp.png"
         return wave
@@ -289,5 +287,7 @@ class ToucanTTSInterface(torch.nn.Module):
                                 energy_variance_scale=energy_variance_scale))
         wav = torch.cat((torch.zeros([10000]), wav, torch.zeros([10000])), 0).numpy()
         sounddevice.play(float2pcm(wav), samplerate=24000)
+        if view:
+            plt.show()
         if blocking:
             sounddevice.wait()

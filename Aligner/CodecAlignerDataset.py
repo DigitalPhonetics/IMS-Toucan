@@ -136,8 +136,10 @@ class CodecAlignerDataset(Dataset):
                 continue
 
             if sr != assumed_sr:
-                print(f"{path} has a different sampling rate --> skipping")
-                continue
+                assumed_sr = sr
+                ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
+                resample = Resample(orig_freq=assumed_sr, new_freq=16000).to(device)
+                print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             dur_in_seconds = len(wave) / sr
             if not (min_len <= dur_in_seconds <= max_len):
@@ -169,6 +171,10 @@ class CodecAlignerDataset(Dataset):
             except KeyError:
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
+
+            silence = torch.zeros([sr // 2], device=device)
+            silence_padded_wave = torch.tensor(wave, device=device)
+            wave = torch.cat((silence, silence_padded_wave, silence), 0)
 
             cached_speech = ap.audio_to_codebook_indexes(audio=wave, current_sampling_rate=sr).transpose(0, 1).cpu().numpy()
             process_internal_dataset_chunk.append([cached_text,

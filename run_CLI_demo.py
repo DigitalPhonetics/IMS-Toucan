@@ -21,16 +21,16 @@ if __name__ == '__main__':
         if os.path.exists(PATH_TO_REFERENCE_SPEAKER):
             tts.set_utterance_embedding(PATH_TO_REFERENCE_SPEAKER)
         else:
-            print(f"File {PATH_TO_REFERENCE_SPEAKER} could not be found, please check for typos and re-run. Using default for now.")
+            print(f"\n\nFile {PATH_TO_REFERENCE_SPEAKER} could not be found, please check for typos and re-run. Using default for now.\n\n")
 
     print("Loading the following configuration:")
-    print(f"\tTTS Model: {PATH_TO_TTS_MODEL}")
-    print(f"\tReference Audio: {PATH_TO_REFERENCE_SPEAKER}")
-    print(f"\tLanguage Used: {LANGUAGE}")
-    print(f"\tDevice Used: {device}")
+    print(f"\tTTS Model:          {PATH_TO_TTS_MODEL}")
+    print(f"\tReference Audio:    {PATH_TO_REFERENCE_SPEAKER}")
+    print(f"\tLanguage Used:      {LANGUAGE}")
+    print(f"\tDevice Used:        {device}")
 
     while True:
-        text = input("\nWhat should I say? (or 'exit')\n")
+        text = input("\n\nWhat should I say? (or 'exit')\n")
         if text == "exit":
             sys.exit()
         tts.read_aloud(text,

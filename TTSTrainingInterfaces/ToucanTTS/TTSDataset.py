@@ -140,20 +140,6 @@ class TTSDataset(Dataset):
                 cached_duration, ctc_loss = self.calculate_durations(text, index, vis_dir, save_imgs)
 
                 # silence is cleaned, yay
-                last_vec = None
-                for phoneme_index, vec in enumerate(text):
-                    if last_vec is not None:
-                        if last_vec.numpy().tolist() == vec.numpy().tolist():
-                            # we found a case of repeating phonemes!
-                            # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                            dur_1 = cached_duration[phoneme_index - 1]
-                            dur_2 = cached_duration[phoneme_index]
-                            total_dur = dur_1 + dur_2
-                            new_dur_1 = int((total_dur / 5) * 3)
-                            new_dur_2 = total_dur - new_dur_1
-                            cached_duration[phoneme_index - 1] = new_dur_1
-                            cached_duration[phoneme_index] = new_dur_2
-                    last_vec = vec
 
                 cached_energy = energy_calc(input_waves=torch.tensor(decoded_wave).unsqueeze(0),
                                             input_waves_lengths=decoded_wave_length,
