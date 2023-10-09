@@ -46,6 +46,7 @@ def train_loop(net,
                fine_tune,
                warmup_steps,
                use_wandb,
+               train_samplers
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -67,13 +68,13 @@ def train_loop(net,
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loaders = list()
     train_iters = list()
-    for dataset in datasets:
+    for dataset, sampler in zip(datasets, train_samplers):
         train_loaders.append(DataLoader(batch_size=1,
                                         dataset=dataset,
+                                        batch_sampler=sampler,
                                         drop_last=True,
                                         num_workers=2,
                                         pin_memory=True,
-                                        shuffle=True,
                                         prefetch_factor=4,
                                         collate_fn=collate_and_pad,
                                         persistent_workers=True))

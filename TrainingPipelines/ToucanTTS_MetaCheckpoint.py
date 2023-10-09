@@ -13,7 +13,7 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, distributed):
     # It is not recommended training this yourself or to finetune this, but you can.
     # The recommended use is to download the pretrained model from the GitHub release
     # page and finetune to your desired data
@@ -200,6 +200,27 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     datasets.append(ConcatDataset(vietnamese_datasets))
 
     model = ToucanTTS()
+
+    train_samplers = list()
+    if distributed:
+        local_rank = int(os.environ["LOCAL_RANK"])
+        torch.cuda.set_device(local_rank)
+        torch.distributed.init_process_group(backend="nccl")
+        for train_set in datasets:
+            train_samplers.append(torch.utils.data.DistributedSampler(train_set, shuffle=True))
+        model.to(local_rank)
+        model = torch.utils.data.DistributedDataParallel(
+            model,
+            device_ids=[local_rank],
+            output_device=local_rank,
+            find_unused_parameters=True,
+        )
+        torch.distributed.barrier()
+        # torch.cuda.synchronize()
+    else:
+        for train_set in datasets:
+            train_samplers.append(torch.utils.data.RandomSampler(train_set))
+
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -214,6 +235,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                fine_tune=finetune,
                steps=160000,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               train_samplers=train_samplers)
     if use_wandb:
         wandb.finish()

@@ -7,7 +7,6 @@ import torch
 
 from TrainingPipelines.AlignerPipeline import run as aligner
 from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
-from TrainingPipelines.ToucanTTS_Embedding import run as embedding
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingPipelines.ToucanTTS_MLS_English import run as mls
 from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
@@ -24,8 +23,6 @@ pipeline_dict = {
     "mls"               : mls,
     "nancystoch"        : nancystoch,
     "meta"              : meta,
-    # training one of the embedding models, GST or StyleTTS (not recommended, best to use provided checkpoint)
-    "embedding"         : embedding,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"           : aligner,
 }
@@ -40,7 +37,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--gpu_id',
                         type=str,
-                        help="Which GPU to run on. If not specified runs on CPU, but other than for integration tests that doesn't make much sense.",
+                        help="Which GPU(s) to run on. If not specified runs on CPU, but other than for integration tests that doesn't make much sense.",
                         default="cpu")
 
     parser.add_argument('--resume_checkpoint',
@@ -73,6 +70,11 @@ if __name__ == '__main__':
                         help="ID of a stopped wandb run to continue tracking",
                         default=None)
 
+    parser.add_argument('--distributed',
+                        action="store_true",
+                        help="Whether to use distributed training.",
+                        default=False)
+
     args = parser.parse_args()
 
     if args.finetune and args.resume_checkpoint is None and not args.resume:
@@ -90,6 +92,10 @@ if __name__ == '__main__':
         device = torch.device("cuda")
         print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device.")
 
+    if args.distributed:
+        print("Running this job across all specified GPUs. Make sure to start this run with torchrun to get the benefits of torch elastic! It might not work otherwise.")
+        # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py --distributed --gpu_id 1,2,3
+
     torch.manual_seed(9665)
     random.seed(9665)
     torch.random.manual_seed(9665)
@@ -102,4 +108,5 @@ if __name__ == '__main__':
                                  finetune=args.finetune,
                                  model_dir=args.model_save_dir,
                                  use_wandb=args.wandb,
-                                 wandb_resume_id=args.wandb_resume_id)
+                                 wandb_resume_id=args.wandb_resume_id,
+                                 distributed=args.distributed)

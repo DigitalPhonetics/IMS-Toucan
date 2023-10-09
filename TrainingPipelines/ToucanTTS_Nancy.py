@@ -11,7 +11,7 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, distributed):
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
@@ -31,6 +31,24 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                    save_imgs=False)
 
     model = ToucanTTS()
+
+    if distributed:
+        local_rank = int(os.environ["LOCAL_RANK"])
+        torch.cuda.set_device(local_rank)
+        torch.distributed.init_process_group(backend="nccl")
+        train_sampler = torch.utils.data.DistributedSampler(train_set, shuffle=True)
+        model.to(local_rank)
+        model = torch.utils.data.DistributedDataParallel(
+            model,
+            device_ids=[local_rank],
+            output_device=local_rank,
+            find_unused_parameters=True,
+        )
+        torch.distributed.barrier()
+        # torch.cuda.synchronize()
+    else:
+        train_sampler = torch.utils.data.RandomSampler(train_set)
+
     if use_wandb:
         wandb.init(
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
@@ -46,6 +64,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,
                resume=resume,
-               use_wandb=use_wandb)
+               use_wandb=use_wandb,
+               train_samplers=[train_sampler])
     if use_wandb:
         wandb.finish()

@@ -48,7 +48,8 @@ def train_loop(net,
                resume,
                steps,
                use_wandb,
-               train_embed
+               train_embed,
+               train_sampler
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -66,10 +67,10 @@ def train_loop(net,
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
+                              batch_sampler=train_sampler,
                               drop_last=True,
                               num_workers=4 if os.cpu_count() > 4 else max(os.cpu_count() - 2, 1),
                               pin_memory=True,
-                              shuffle=True,
                               prefetch_factor=2,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
