@@ -75,8 +75,12 @@ def train_loop(net,
                               persistent_workers=True)
     step_counter = 0
 
-    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
-    flow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
+    if isinstance(net, torch.nn.parallel.DistributedDataParallel):
+        model = net.module
+    else:
+        model = net
+    optimizer = torch.optim.AdamW([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
+    flow_optimizer = torch.optim.AdamW(model.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=warmup_steps // 4, max_steps=steps)
@@ -112,13 +116,13 @@ def train_loop(net,
                     # because at this point bad spikes can happen, that take a while to recover from.
                     # So we protect our nice weights at this point.
                     if first_time_glow != 2:
-                        net.requires_grad_(False)
+                        model.requires_grad_(False)
                         style_embedding_function.requires_grad_(False)
-                        net.post_flow.requires_grad_(True)
+                        model.post_flow.requires_grad_(True)
                         first_time_glow = 2
                     if step_counter > (warmup_steps * 3) + warmup_steps:
                         first_time_glow = False
-                        net.requires_grad_(True)
+                        model.requires_grad_(True)
                         if path_to_embed_model is not None and not train_embed:
                             style_embedding_function.requires_grad_(True)
 
@@ -171,11 +175,11 @@ def train_loop(net,
             optimizer.zero_grad()
             flow_optimizer.zero_grad()
             train_loss.backward()
-            torch.nn.utils.clip_grad_norm_([p for name, p in net.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
             if run_glow:
-                torch.nn.utils.clip_grad_norm_(net.post_flow.parameters(), 1.0, error_if_nonfinite=False)
+                torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
                 flow_optimizer.step()
                 flow_scheduler.step()
             step_counter += 1
@@ -195,7 +199,7 @@ def train_loop(net,
             "flow_optimizer": flow_optimizer.state_dict(),
             "flow_scheduler": flow_scheduler.state_dict(),
             "default_emb"   : default_embedding,
-            "config"        : net.config
+            "config": model.config
         }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
         if path_to_embed_model is None or train_embed:
             torch.save({
@@ -218,7 +222,7 @@ def train_loop(net,
                 "learning_rate": optimizer.param_groups[0]['lr']
             }, step=step_counter)
 
-        path_to_most_recent_plot = plot_progress_spec_toucantts(net,
+        path_to_most_recent_plot = plot_progress_spec_toucantts(model,
                                                                 device,
                                                                 save_dir=save_directory,
                                                                 step=step_counter,

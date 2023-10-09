@@ -65,6 +65,11 @@ def train_loop(net,
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
 
+    if isinstance(net, torch.nn.parallel.DistributedDataParallel):
+        model = net.module
+    else:
+        model = net
+
     torch.multiprocessing.set_sharing_strategy('file_system')
     train_loaders = list()
     train_iters = list()
@@ -79,8 +84,8 @@ def train_loop(net,
                                         persistent_workers=True))
         train_iters.append(iter(train_loaders[-1]))
 
-    optimizer = torch.optim.AdamW([p for name, p in net.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
-    flow_optimizer = torch.optim.AdamW(net.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
+    optimizer = torch.optim.AdamW([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
+    flow_optimizer = torch.optim.AdamW(model.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=warmup_steps // 4, max_steps=steps)
@@ -119,12 +124,12 @@ def train_loop(net,
                 # because at this point bad spikes can happen, that take a while to recover from.
                 # So we protect our nice weights at this point.
                 if first_time_glow != 2:
-                    net.requires_grad_(False)
-                    net.post_flow.requires_grad_(True)
+                    model.requires_grad_(False)
+                    model.post_flow.requires_grad_(True)
                     first_time_glow = 2
                 if step_counter > (warmup_steps * 3) + warmup_steps:
                     first_time_glow = False
-                    net.requires_grad_(True)
+                    model.requires_grad_(True)
         batches = []
         while len(batches) < batch_size:
             for index in random.sample(list(range(len(datasets))), len(datasets)):
@@ -225,7 +230,7 @@ def train_loop(net,
                 "flow_scheduler": flow_scheduler.state_dict(),
                 "step_counter"  : step_counter,
                 "default_emb"   : default_embedding,
-                "config"        : net.config
+                "config": model.config
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
@@ -241,7 +246,7 @@ def train_loop(net,
                 }, step=step_counter)
 
             try:
-                path_to_most_recent_plot = plot_progress_spec_toucantts(net,
+                path_to_most_recent_plot = plot_progress_spec_toucantts(model,
                                                                         device,
                                                                         save_dir=save_directory,
                                                                         step=step_counter,
