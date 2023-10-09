@@ -268,14 +268,14 @@ def train_loop(net,
                 except IndexError:
                     print("generating progress plots failed.")
 
-                regression_losses_total = list()
-                glow_losses_total = list()
-                duration_losses_total = list()
-                pitch_losses_total = list()
-                energy_losses_total = list()
-
                 checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
                 averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
                 save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
 
                 net.train()
+
+            regression_losses_total = list()
+            glow_losses_total = list()
+            duration_losses_total = list()
+            pitch_losses_total = list()
+            energy_losses_total = list()
