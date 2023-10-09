@@ -74,7 +74,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         for train_set in all_train_sets:
             train_samplers.append(torch.utils.data.DistributedSampler(train_set, shuffle=True))
         model.to(local_rank)
-        model = torch.utils.data.DistributedDataParallel(
+        model = torch.nn.parallel.DistributedDataParallel(
             model,
             device_ids=[local_rank],
             output_device=local_rank,
