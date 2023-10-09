@@ -223,14 +223,14 @@ def train_loop(net,
             print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
             print("Steps:                  {}\n".format(step_counter))
             torch.save({
-                "model"         : net.state_dict(),
+                "model"         : model.state_dict(),
                 "optimizer"     : optimizer.state_dict(),
                 "scheduler"     : scheduler.state_dict(),
                 "flow_optimizer": flow_optimizer.state_dict(),
                 "flow_scheduler": flow_scheduler.state_dict(),
                 "step_counter"  : step_counter,
                 "default_emb"   : default_embedding,
-                "config": model.config
+                "config"        : model.config
             },
                 os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
             delete_old_checkpoints(save_directory, keep=5)
@@ -273,6 +273,6 @@ def train_loop(net,
             if step_counter > steps * 4 / 5:
                 # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
                 check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
-                net.load_state_dict(check_dict["model"])
+                model.load_state_dict(check_dict["model"])
 
             net.train()
