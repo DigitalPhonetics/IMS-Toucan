@@ -87,9 +87,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             train_samplers.append(torch.utils.data.RandomSampler(train_set))
 
     if use_wandb:
-        wandb.init(
-            name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
-            id=wandb_resume_id, resume="must" if wandb_resume_id is not None else None)
+        if distributed:
+            rank = int(os.environ["LOCAL_RANK"])
+        else:
+            rank = 0
+        if rank == 0:
+            wandb.init(
+                name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
+                id=wandb_resume_id,  # this is None if not specified in the command line arguments.
+                resume="must" if wandb_resume_id is not None else None)
+
     print("Training model")
     train_loop(net=model,
                datasets=all_train_sets,

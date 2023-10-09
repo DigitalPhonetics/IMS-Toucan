@@ -90,9 +90,11 @@ if __name__ == '__main__':
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
         device = torch.device("cuda")
-        print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device.")
+        print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device(s).")
+        gpu_count = len(args.gpu_id.replace(",", " ").split())
 
     if args.distributed:
+        assert args.gpu_id != "cpu"
         print("Running this job across all specified GPUs. Make sure to start this run with torchrun to get the benefits of torch elastic! It might not work otherwise.")
         # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --distributed --gpu_id "1,2,3"
 
@@ -109,4 +111,4 @@ if __name__ == '__main__':
                                  model_dir=args.model_save_dir,
                                  use_wandb=args.wandb,
                                  wandb_resume_id=args.wandb_resume_id,
-                                 distributed=args.distributed)
+                                 distributed=gpu_count if args.distributed else False)

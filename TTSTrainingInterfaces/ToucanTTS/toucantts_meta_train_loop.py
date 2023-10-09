@@ -46,7 +46,8 @@ def train_loop(net,
                fine_tune,
                warmup_steps,
                use_wandb,
-               train_samplers
+               train_samplers,
+               gpu_count
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -116,7 +117,7 @@ def train_loop(net,
     # =============================
     # Actual train loop starts here
     # =============================
-    for step_counter in tqdm(range(steps_run_previously, steps)):
+    for step_counter in tqdm(range(steps_run_previously, steps, gpu_count)):
         run_glow = step_counter > warmup_steps * 3 or fine_tune
         if run_glow:
             if first_time_glow is not False and not fine_tune:
@@ -215,64 +216,65 @@ def train_loop(net,
             # ==============================
             # Enough steps for some insights
             # ==============================
-            net.eval()
-            style_embedding_function.eval()
-            default_embedding = style_embedding_function(
-                batch_of_feature_sequences=datasets[0][0][2].unsqueeze(0).to(device),
-                batch_of_feature_sequence_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
-            print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
-            print("Steps:                  {}\n".format(step_counter))
-            torch.save({
-                "model"         : model.state_dict(),
-                "optimizer"     : optimizer.state_dict(),
-                "scheduler"     : scheduler.state_dict(),
-                "flow_optimizer": flow_optimizer.state_dict(),
-                "flow_scheduler": flow_scheduler.state_dict(),
-                "step_counter"  : step_counter,
-                "default_emb"   : default_embedding,
-                "config"        : model.config
-            },
-                os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-            delete_old_checkpoints(save_directory, keep=5)
+            if gpu_count > 1:
+                rank = int(os.environ["LOCAL_RANK"])
+            else:
+                rank = 0
+            if rank == 0:
+                net.eval()
+                style_embedding_function.eval()
+                default_embedding = style_embedding_function(
+                    batch_of_feature_sequences=datasets[0][0][2].unsqueeze(0).to(device),
+                    batch_of_feature_sequence_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze()
+                print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
+                print("Steps:                  {}\n".format(step_counter))
+                torch.save({
+                    "model"         : model.state_dict(),
+                    "optimizer"     : optimizer.state_dict(),
+                    "scheduler"     : scheduler.state_dict(),
+                    "flow_optimizer": flow_optimizer.state_dict(),
+                    "flow_scheduler": flow_scheduler.state_dict(),
+                    "step_counter"  : step_counter,
+                    "default_emb"   : default_embedding,
+                    "config"        : model.config
+                },
+                    os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                delete_old_checkpoints(save_directory, keep=5)
 
-            if use_wandb:
-                wandb.log({
-                    "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
-                    "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
-                    "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                    "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                    "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                    "learning_rate": optimizer.param_groups[0]['lr']
-                }, step=step_counter)
-
-            try:
-                path_to_most_recent_plot = plot_progress_spec_toucantts(model,
-                                                                        device,
-                                                                        save_dir=save_directory,
-                                                                        step=step_counter,
-                                                                        lang=lang,
-                                                                        default_emb=default_embedding,
-                                                                        run_glow=run_glow)
                 if use_wandb:
                     wandb.log({
-                        "progress_plot": wandb.Image(path_to_most_recent_plot)
+                        "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                        "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
+                        "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                        "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                        "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                        "learning_rate"  : optimizer.param_groups[0]['lr']
                     }, step=step_counter)
 
-            except IndexError:
-                print("generating progress plots failed.")
+                try:
+                    path_to_most_recent_plot = plot_progress_spec_toucantts(model,
+                                                                            device,
+                                                                            save_dir=save_directory,
+                                                                            step=step_counter,
+                                                                            lang=lang,
+                                                                            default_emb=default_embedding,
+                                                                            run_glow=run_glow)
+                    if use_wandb:
+                        wandb.log({
+                            "progress_plot": wandb.Image(path_to_most_recent_plot)
+                        }, step=step_counter)
 
-            regression_losses_total = list()
-            glow_losses_total = list()
-            duration_losses_total = list()
-            pitch_losses_total = list()
-            energy_losses_total = list()
+                except IndexError:
+                    print("generating progress plots failed.")
 
-            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
-            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-            save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
-            if step_counter > steps * 4 / 5:
-                # Run manual SWA (torch builtin doesn't work unfortunately due to the use of weight norm in the postflow)
-                check_dict = torch.load(os.path.join(save_directory, "best.pt"), map_location=device)
-                model.load_state_dict(check_dict["model"])
+                regression_losses_total = list()
+                glow_losses_total = list()
+                duration_losses_total = list()
+                pitch_losses_total = list()
+                energy_losses_total = list()
 
-            net.train()
+                checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
+                averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+                save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
+
+                net.train()

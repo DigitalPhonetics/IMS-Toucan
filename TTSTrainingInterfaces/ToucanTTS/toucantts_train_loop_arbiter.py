@@ -11,6 +11,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                # with only one dataset in it. This will trigger the arbiter to call the train loop for simple one language training runs rather than the complex
                # LAML based one.
                train_samplers,  # the sampler(s) for the dataloader(s) (distributed or single GPU use different ones)
+               gpu_count,  # amount of GPUs to use
                device,  # the device where this training should run on.
                save_directory,  # directory where the models and visualizations should be saved.
                steps_per_checkpoint=1000,  # how many steps should be trained before a checkpoint is created. This is only relevant for the multilingual case,
@@ -46,7 +47,8 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                             resume=resume,
                             fine_tune=fine_tune,
                             warmup_steps=warmup_steps,
-                            use_wandb=use_wandb)
+                            use_wandb=use_wandb,
+                            gpu_count=gpu_count)
     else:
         mono_language_loop(net=net,
                            train_dataset=datasets[0],
@@ -63,4 +65,5 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            resume=resume,
                            steps=steps,
                            use_wandb=use_wandb,
-                           train_embed=train_embed)
+                           train_embed=train_embed,
+                           gpu_count=gpu_count)
