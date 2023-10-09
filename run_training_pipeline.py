@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     if args.distributed:
         print("Running this job across all specified GPUs. Make sure to start this run with torchrun to get the benefits of torch elastic! It might not work otherwise.")
-        # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py --distributed --gpu_id 1,2,3
+        # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --distributed --gpu_id "1,2,3"
 
     torch.manual_seed(9665)
     random.seed(9665)
