@@ -69,10 +69,9 @@ def train_loop(net,
     train_loaders = list()
     train_iters = list()
     for dataset, sampler in zip(datasets, train_samplers):
-        train_loaders.append(DataLoader(batch_size=1,
-                                        dataset=dataset,
-                                        batch_sampler=sampler,
-                                        drop_last=True,
+        batch_sampler_train = torch.utils.data.BatchSampler(sampler, 1, drop_last=True)
+        train_loaders.append(DataLoader(dataset=dataset,
+                                        batch_sampler=batch_sampler_train,
                                         num_workers=2,
                                         pin_memory=True,
                                         prefetch_factor=4,

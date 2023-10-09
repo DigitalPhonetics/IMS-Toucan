@@ -65,10 +65,9 @@ def train_loop(net,
             style_embedding_function.requires_grad_(False)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
-    train_loader = DataLoader(batch_size=batch_size,
-                              dataset=train_dataset,
-                              batch_sampler=train_sampler,
-                              drop_last=True,
+    batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
+    train_loader = DataLoader(dataset=train_dataset,
+                              batch_sampler=batch_sampler_train,
                               num_workers=4 if os.cpu_count() > 4 else max(os.cpu_count() - 2, 1),
                               pin_memory=True,
                               prefetch_factor=2,
