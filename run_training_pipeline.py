@@ -95,7 +95,11 @@ if __name__ == '__main__':
 
     if args.distributed:
         assert args.gpu_id != "cpu"
-        print("Running this job across all specified GPUs. Make sure to start this run with torchrun to get the benefits of torch elastic! It might not work otherwise.")
+        assert not args.resume  # NOT SUPPORTED
+        assert not args.finetune  # NOT SUPPORTED
+        assert args.resume_checkpoint is None  # NOT SUPPORTED
+        assert "aligner" not in args.pipeline.lower()  # NOT SUPPORTED
+        # example call:
         # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --distributed --gpu_id "1,2,3"
 
     torch.manual_seed(9665)
