@@ -83,8 +83,8 @@ def train_loop(net,
     optimizer = torch.optim.AdamW([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
     flow_optimizer = torch.optim.AdamW(model.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
 
-    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps // gpu_count, max_steps=steps // gpu_count)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=(warmup_steps // 4) // gpu_count, max_steps=steps // gpu_count)
+    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     epoch = 0
     first_time_glow = True
@@ -110,7 +110,7 @@ def train_loop(net,
         energy_losses_total = list()
 
         for batch in tqdm(train_loader):
-            run_glow = step_counter > (warmup_steps * 3) // gpu_count or fine_tune
+            run_glow = step_counter > (warmup_steps * 3) or fine_tune
             if run_glow:
                 if first_time_glow is not False and not fine_tune:
                     # We freeze the model and the embedding function for the first few steps of the flow,
@@ -121,7 +121,7 @@ def train_loop(net,
                         style_embedding_function.requires_grad_(False)
                         model.post_flow.requires_grad_(True)
                         first_time_glow = 2
-                    if step_counter > ((warmup_steps * 3) + warmup_steps) // gpu_count:
+                    if step_counter > ((warmup_steps * 3) + warmup_steps):
                         first_time_glow = False
                         model.requires_grad_(True)
                         if path_to_embed_model is not None and not train_embed:
@@ -145,7 +145,7 @@ def train_loop(net,
                 run_glow=run_glow
             )
 
-            if step_counter % ((warmup_steps // 4) // gpu_count) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
+            if step_counter % (warmup_steps // 4) == 0 and (path_to_embed_model is None or train_embed) and step_counter < warmup_steps * 2 and style_embedding_function.use_gst:
                 # the computationally very expensive style token regularization loss to spread out the vectors
                 print("calculating the style token regularization loss. This will take a while.")
                 emb_reg_loss = style_embedding_function.style_encoder.calculate_ada4_regularization_loss()
@@ -183,7 +183,7 @@ def train_loop(net,
                 torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
                 flow_optimizer.step()
                 flow_scheduler.step()
-            step_counter += gpu_count
+            step_counter += 1
 
         # EPOCH IS OVER
         if gpu_count > 1:

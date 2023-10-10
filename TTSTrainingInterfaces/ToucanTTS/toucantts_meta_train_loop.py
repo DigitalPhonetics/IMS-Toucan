@@ -53,8 +53,6 @@ def train_loop(net,
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
-    while steps_per_checkpoint % gpu_count != 0:
-        steps_per_checkpoint += 1
     if steps % steps_per_checkpoint == 0:
         steps = steps + 1
     else:
@@ -89,8 +87,8 @@ def train_loop(net,
     optimizer = torch.optim.AdamW([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
     flow_optimizer = torch.optim.AdamW(model.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
 
-    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps // gpu_count, max_steps=steps // gpu_count)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=(warmup_steps // 4) // gpu_count, max_steps=steps // gpu_count)
+    scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     steps_run_previously = 0
     regression_losses_total = list()
@@ -118,8 +116,8 @@ def train_loop(net,
     # =============================
     # Actual train loop starts here
     # =============================
-    for step_counter in tqdm(range(steps_run_previously, steps, gpu_count)):
-        run_glow = step_counter > (warmup_steps * 3) // gpu_count or fine_tune
+    for step_counter in tqdm(range(steps_run_previously, steps)):
+        run_glow = step_counter > (warmup_steps * 3) or fine_tune
         if run_glow:
             if first_time_glow is not False and not fine_tune:
                 # We freeze the model and the embedding function for the first few steps of the flow,
@@ -129,7 +127,7 @@ def train_loop(net,
                     model.requires_grad_(False)
                     model.post_flow.requires_grad_(True)
                     first_time_glow = 2
-                if step_counter > ((warmup_steps * 3) + warmup_steps) // gpu_count:
+                if step_counter > ((warmup_steps * 3) + warmup_steps):
                     first_time_glow = False
                     model.requires_grad_(True)
         batches = []
