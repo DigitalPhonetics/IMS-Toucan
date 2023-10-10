@@ -364,9 +364,24 @@ def build_path_to_transcript_dict_hui_others():
     return pttd
 
 
-def build_path_to_transcript_dict_thorsten():
+def build_path_to_transcript_dict_thorsten_neutral():
     path_to_transcript = dict()
-    root = "/mount/resources/speech/corpora/Thorsten_DE/V2"
+    root = "/mount/resources/speech/corpora/ThorstenDatasets/thorsten-de_v03"
+    with open(root + "/metadata_train.csv", encoding="utf8") as f:
+        transcriptions = f.read()
+    with open(root + "/metadata_val.csv", encoding="utf8") as f:
+        transcriptions += "\n" + f.read()
+    trans_lines = transcriptions.split("\n")
+    for line in trans_lines:
+        if line.strip() != "":
+            path_to_transcript[root + "/wavs/" + line.split("|")[0] + ".wav"] = \
+                line.split("|")[1]
+    return path_to_transcript
+
+
+def build_path_to_transcript_dict_thorsten_2022_10():
+    path_to_transcript = dict()
+    root = "/mount/resources/speech/corpora/ThorstenDatasets/ThorstenVoice-Dataset_2022.10"
     with open(root + "/metadata_train.csv", encoding="utf8") as f:
         transcriptions = f.read()
     with open(root + "/metadata_dev.csv", encoding="utf8") as f:
@@ -381,15 +396,20 @@ def build_path_to_transcript_dict_thorsten():
     return path_to_transcript
 
 
-def build_path_to_transcript_dict_thorsten_2020():
+def build_path_to_transcript_dict_thorsten_emotional():
     path_to_transcript = dict()
-    with open("/mount/resources/speech/corpora/Thorsten_DE/metadata_shuf.csv", encoding="utf8") as f:
+    root = "/mount/resources/speech/corpora/ThorstenDatasets/thorsten-emotional_v02"
+    with open(root + "/thorsten-emotional-metadata.csv", encoding="utf8") as f:
         transcriptions = f.read()
     trans_lines = transcriptions.split("\n")
     for line in trans_lines:
         if line.strip() != "":
-            path_to_transcript["/mount/resources/speech/corpora/Thorsten_DE/wavs/" + line.split("|")[0] + ".wav"] = \
-                line.split("|")[1]
+            path_to_transcript[root + "/amused/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            path_to_transcript[root + "/angry/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            path_to_transcript[root + "/disgusted/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            path_to_transcript[root + "/neutral/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            path_to_transcript[root + "/sleepy/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
+            path_to_transcript[root + "/surprised/" + line.split("|")[0] + ".wav"] = line.split("|")[1]
     return path_to_transcript
 
 
