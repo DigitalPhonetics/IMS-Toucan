@@ -121,10 +121,10 @@ def train_loop(net,
                         style_embedding_function.requires_grad_(False)
                         model.post_flow.requires_grad_(True)
                         first_time_glow = 2
-                    if step_counter > ((warmup_steps * 3) + warmup_steps):
+                    if step_counter > ((warmup_steps * 3) + (warmup_steps // 4)):
                         first_time_glow = False
                         model.requires_grad_(True)
-                        if path_to_embed_model is not None and not train_embed:
+                        if path_to_embed_model is None or train_embed:
                             style_embedding_function.requires_grad_(True)
 
             train_loss = 0.0

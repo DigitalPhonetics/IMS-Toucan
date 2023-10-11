@@ -127,7 +127,7 @@ def train_loop(net,
                     model.requires_grad_(False)
                     model.post_flow.requires_grad_(True)
                     first_time_glow = 2
-                if step_counter > ((warmup_steps * 3) + warmup_steps):
+                if step_counter > ((warmup_steps * 3) + (warmup_steps // 4)):
                     first_time_glow = False
                     model.requires_grad_(True)
         batches = []
