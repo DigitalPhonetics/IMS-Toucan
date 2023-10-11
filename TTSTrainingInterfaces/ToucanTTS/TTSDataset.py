@@ -30,11 +30,17 @@ class TTSDataset(Dataset):
                  device=torch.device("cpu"),
                  rebuild_cache=False,
                  ctc_selection=True,
-                 save_imgs=False):
+                 save_imgs=False,
+                 gpu_count=1,
+                 rank=0):
         self.ap = None
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
+            if gpu_count != 1:
+                import sys
+                print("Please run the feature extraction using only a single GPU. Multi-GPU is only supported for training.")
+                sys.exit()
             if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
                 CodecAlignerDataset(path_to_transcript_dict=path_to_transcript_dict,
                                     cache_dir=cache_dir,
@@ -192,6 +198,12 @@ class TTSDataset(Dataset):
         else:
             # just load the datapoints from cache
             self.datapoints = torch.load(os.path.join(cache_dir, "tts_train_cache.pt"), map_location='cpu')
+            if gpu_count > 1:
+                # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
+                while len(self.datapoints) % gpu_count != 0:
+                    self.datapoints.pop(-1)  # a bit unfortunate, but if you're using multiple GPUs, you probably have a ton of datapoints anyway.
+                chunksize = int(len(self.datapoints) / gpu_count)
+                self.datapoints = self.datapoints[chunksize * rank:chunksize * (rank + 1)]
 
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)

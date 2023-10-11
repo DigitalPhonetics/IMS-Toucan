@@ -24,7 +24,9 @@ def prepare_tts_corpus(transcript_dict,
                        fine_tune_aligner=True,
                        use_reconstruction=True,
                        phone_input=False,
-                       save_imgs=False):
+                       save_imgs=False,
+                       gpu_count=1,
+                       rank=0):
     """
     create an aligner dataset,
     fine-tune an aligner,
@@ -71,4 +73,6 @@ def prepare_tts_corpus(transcript_dict,
                       cache_dir=corpus_dir,
                       device=torch.device("cuda"),
                       lang=lang,
-                      save_imgs=save_imgs)
+                      save_imgs=save_imgs,
+                      gpu_count=gpu_count,
+                      rank=rank)

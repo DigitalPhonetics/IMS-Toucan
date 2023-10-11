@@ -1,7 +1,6 @@
 import time
 
 import torch
-import torch.multiprocessing as mp
 import wandb
 
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTS import ToucanTTS
@@ -28,32 +27,21 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     if gpu_count > 1:
         rank = int(os.environ["LOCAL_RANK"])
-        queue = mp.SimpleQueue()
         torch.cuda.set_device(rank)
         torch.distributed.init_process_group(backend="nccl")
     else:
         rank = 0
-    if rank == 0:
-        train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                       lang="en",
-                                       save_imgs=False)
-        if gpu_count > 1:
-            print("Putting the dataset in shared memory")
-            queue.put(train_set)
 
-    if gpu_count > 1:
-        torch.distributed.barrier()
-        if rank > 0:
-            # if this process is not the first process, we don't load the data, instead we wait until the first process is done loading it and then get it from the queue, so that everything is shared and not duplicated.
-            print("retrieving the dataset from shared memory")
-            train_set = queue.get()
+    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
+                                   lang="en",
+                                   save_imgs=False,
+                                   gpu_count=gpu_count,
+                                   rank=rank)
 
     model = ToucanTTS()
 
     if gpu_count > 1:
-
-        train_sampler = torch.utils.data.DistributedSampler(train_set, shuffle=True)
         model.to(rank)
         model = torch.nn.parallel.DistributedDataParallel(
             model,
@@ -62,15 +50,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
-        # torch.cuda.synchronize()
-    else:
         train_sampler = torch.utils.data.RandomSampler(train_set)
 
     if use_wandb:
-        if gpu_count > 1:
-            rank = int(os.environ["LOCAL_RANK"])
-        else:
-            rank = 0
         if rank == 0:
             wandb.init(
                 name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
