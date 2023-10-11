@@ -29,6 +29,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if gpu_count > 1:
         rank = int(os.environ["LOCAL_RANK"])
         queue = mp.SimpleQueue()
+        torch.cuda.set_device(rank)
+        torch.distributed.init_process_group(backend="nccl")
     else:
         rank = 0
     if rank == 0:
@@ -50,15 +52,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     model = ToucanTTS()
 
     if gpu_count > 1:
-        local_rank = int(os.environ["LOCAL_RANK"])
-        torch.cuda.set_device(local_rank)
-        torch.distributed.init_process_group(backend="nccl")
+
         train_sampler = torch.utils.data.DistributedSampler(train_set, shuffle=True)
-        model.to(local_rank)
+        model.to(rank)
         model = torch.nn.parallel.DistributedDataParallel(
             model,
-            device_ids=[local_rank],
-            output_device=local_rank,
+            device_ids=[rank],
+            output_device=rank,
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
