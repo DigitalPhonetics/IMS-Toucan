@@ -70,11 +70,6 @@ if __name__ == '__main__':
                         help="ID of a stopped wandb run to continue tracking",
                         default=None)
 
-    parser.add_argument('--distributed',
-                        action="store_true",
-                        help="Whether to use distributed training.",
-                        default=False)
-
     args = parser.parse_args()
 
     if args.finetune and args.resume_checkpoint is None and not args.resume:
@@ -85,22 +80,15 @@ if __name__ == '__main__':
         os.environ["CUDA_VISIBLE_DEVICES"] = ""
         device = torch.device("cpu")
         print(f"No GPU specified, using CPU. Training will likely not work without GPU.")
-
+        gpu_count = 1  # for technical reasons this is set to one, indicating it's not gpu_count training, even though there is no GPU in this case
     else:
         os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
         os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
         device = torch.device("cuda")
         print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device(s).")
         gpu_count = len(args.gpu_id.replace(",", " ").split())
-
-    if args.distributed:
-        assert args.gpu_id != "cpu"
-        assert not args.resume  # NOT SUPPORTED
-        assert not args.finetune  # NOT SUPPORTED
-        assert args.resume_checkpoint is None  # NOT SUPPORTED
-        assert "aligner" not in args.pipeline.lower()  # NOT SUPPORTED
-        # example call:
-        # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --distributed --gpu_id "1,2,3"
+        # example call for gpu_count training:
+        # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --gpu_id "1,2,3"
 
     torch.manual_seed(9665)
     random.seed(9665)
@@ -115,4 +103,4 @@ if __name__ == '__main__':
                                  model_dir=args.model_save_dir,
                                  use_wandb=args.wandb,
                                  wandb_resume_id=args.wandb_resume_id,
-                                 distributed=gpu_count if args.distributed else False)
+                                 gpu_count=gpu_count)

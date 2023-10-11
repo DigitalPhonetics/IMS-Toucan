@@ -10,7 +10,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                # in that language. So every list entry here should be a (combined) dataset for each language. For the case of a monolingual model, pass a list
                # with only one dataset in it. This will trigger the arbiter to call the train loop for simple one language training runs rather than the complex
                # LAML based one.
-               train_samplers,  # the sampler(s) for the dataloader(s) (distributed or single GPU use different ones)
+               train_samplers,  # the sampler(s) for the dataloader(s) (gpu_count or single GPU use different ones)
                gpu_count,  # amount of GPUs to use
                device,  # the device where this training should run on.
                save_directory,  # directory where the models and visualizations should be saved.

@@ -18,11 +18,12 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, distributed):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
         device = torch.device("cuda")
+    assert gpu_count == 1  # gpu_count finetuning is not supported
 
     # IF YOU'RE ADDING A NEW LANGUAGE, YOU MIGHT NEED TO ADD HANDLING FOR IT IN Preprocessing/TextFrontend.py
 
@@ -67,35 +68,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     model = ToucanTTS()
 
-    if distributed:
-        local_rank = int(os.environ["LOCAL_RANK"])
-        torch.cuda.set_device(local_rank)
-        torch.distributed.init_process_group(backend="nccl")
-        for train_set in all_train_sets:
-            train_samplers.append(torch.utils.data.DistributedSampler(train_set, shuffle=True))
-        model.to(local_rank)
-        model = torch.nn.parallel.DistributedDataParallel(
-            model,
-            device_ids=[local_rank],
-            output_device=local_rank,
-            find_unused_parameters=True,
-        )
-        torch.distributed.barrier()
-        # torch.cuda.synchronize()
-    else:
-        for train_set in all_train_sets:
-            train_samplers.append(torch.utils.data.RandomSampler(train_set))
+    for train_set in all_train_sets:
+        train_samplers.append(torch.utils.data.RandomSampler(train_set))
 
     if use_wandb:
-        if distributed:
-            rank = int(os.environ["LOCAL_RANK"])
-        else:
-            rank = 0
-        if rank == 0:
-            wandb.init(
-                name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
-                id=wandb_resume_id,  # this is None if not specified in the command line arguments.
-                resume="must" if wandb_resume_id is not None else None)
+        wandb.init(
+            name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
+            id=wandb_resume_id,  # this is None if not specified in the command line arguments.
+            resume="must" if wandb_resume_id is not None else None)
 
     print("Training model")
     train_loop(net=model,
@@ -113,6 +93,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                steps=5000,
                use_wandb=use_wandb,
-               train_samplers=train_samplers)
+               train_samplers=train_samplers,
+               gpu_count=1)
     if use_wandb:
         wandb.finish()

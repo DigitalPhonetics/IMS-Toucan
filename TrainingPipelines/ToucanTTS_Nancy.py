@@ -1,6 +1,7 @@
 import time
 
 import torch
+import torch.multiprocessing as mp
 import wandb
 
 from TTSTrainingInterfaces.ToucanTTS.ToucanTTS import ToucanTTS
@@ -11,7 +12,7 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, distributed):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
@@ -25,14 +26,30 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         save_dir = os.path.join(MODELS_DIR, "ToucanTTS_Nancy")
     os.makedirs(save_dir, exist_ok=True)
 
-    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
-                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                   lang="en",
-                                   save_imgs=False)
+    if gpu_count > 1:
+        rank = int(os.environ["LOCAL_RANK"])
+        queue = mp.SimpleQueue()
+    else:
+        rank = 0
+    if rank == 0:
+        train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
+                                       lang="en",
+                                       save_imgs=False)
+        if gpu_count > 1:
+            print("Putting the dataset in shared memory")
+            queue.put(train_set)
+
+    if gpu_count > 1:
+        torch.distributed.barrier()
+        if rank > 0:
+            # if this process is not the first process, we don't load the data, instead we wait until the first process is done loading it and then get it from the queue, so that everything is shared and not duplicated.
+            print("retrieving the dataset from shared memory")
+            train_set = queue.get()
 
     model = ToucanTTS()
 
-    if distributed:
+    if gpu_count > 1:
         local_rank = int(os.environ["LOCAL_RANK"])
         torch.cuda.set_device(local_rank)
         torch.distributed.init_process_group(backend="nccl")
@@ -50,7 +67,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         train_sampler = torch.utils.data.RandomSampler(train_set)
 
     if use_wandb:
-        if distributed:
+        if gpu_count > 1:
             rank = int(os.environ["LOCAL_RANK"])
         else:
             rank = 0
@@ -71,6 +88,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                use_wandb=use_wandb,
                train_samplers=[train_sampler],
-               gpu_count=distributed if distributed else 1)
+               gpu_count=gpu_count)
     if use_wandb:
         wandb.finish()
