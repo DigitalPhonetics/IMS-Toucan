@@ -53,6 +53,8 @@ def train_loop(net,
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
+    if steps_per_checkpoint is None:
+        steps_per_checkpoint = 1000
     if steps % steps_per_checkpoint == 0:
         steps = steps + 1
     else:

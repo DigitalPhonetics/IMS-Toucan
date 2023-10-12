@@ -50,12 +50,15 @@ def train_loop(net,
                use_wandb,
                train_embed,
                train_sampler,
-               gpu_count
+               gpu_count,
+               steps_per_checkpoint
                ):
     """
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
+    if steps_per_checkpoint is None:
+        steps_per_checkpoint = len(train_dataset) // batch_size
 
     style_embedding_function = StyleEmbedding().to(device)
     if path_to_embed_model is not None:
@@ -100,15 +103,14 @@ def train_loop(net,
             flow_scheduler.load_state_dict(check_dict["flow_scheduler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
+    regression_losses_total = list()
+    glow_losses_total = list()
+    duration_losses_total = list()
+    pitch_losses_total = list()
+    energy_losses_total = list()
     while True:
         net.train()
         epoch += 1
-        regression_losses_total = list()
-        glow_losses_total = list()
-        duration_losses_total = list()
-        pitch_losses_total = list()
-        energy_losses_total = list()
-
         for batch in tqdm(train_loader):
             run_glow = step_counter > (warmup_steps * 3) or fine_tune
             if run_glow:
@@ -184,68 +186,76 @@ def train_loop(net,
                 flow_optimizer.step()
                 flow_scheduler.step()
             step_counter += 1
+            if step_counter % steps_per_checkpoint == 0:
+                # evaluation interval is happening
+                if gpu_count > 1:
+                    rank = int(os.environ["LOCAL_RANK"])
+                else:
+                    rank = 0
+                if rank == 0:
+                    net.eval()
+                    style_embedding_function.eval()
+                    default_embedding = torch.cat([style_embedding_function(
+                        batch_of_feature_sequences=train_dataset[0][7].unsqueeze(0).to(device),
+                        batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze(),
+                                                   train_dataset[0][9].to(device)], dim=-1)
+                    torch.save({
+                        "model"         : model.state_dict(),
+                        "optimizer"     : optimizer.state_dict(),
+                        "step_counter"  : step_counter,
+                        "scheduler"     : scheduler.state_dict(),
+                        "flow_optimizer": flow_optimizer.state_dict(),
+                        "flow_scheduler": flow_scheduler.state_dict(),
+                        "default_emb"   : default_embedding,
+                        "config"        : model.config
+                    }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
+                    if path_to_embed_model is None or train_embed:
+                        torch.save({
+                            "style_emb_func": style_embedding_function.state_dict()
+                        }, os.path.join(save_directory, "embedding_function.pt"))
+                    delete_old_checkpoints(save_directory, keep=5)
 
-        # EPOCH IS OVER
-        if gpu_count > 1:
-            rank = int(os.environ["LOCAL_RANK"])
-        else:
-            rank = 0
-        if rank == 0:
-            net.eval()
-            style_embedding_function.eval()
-            default_embedding = torch.cat([style_embedding_function(
-                batch_of_feature_sequences=train_dataset[0][7].unsqueeze(0).to(device),
-                batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze(),
-                                           train_dataset[0][9].to(device)], dim=-1)
-            torch.save({
-                "model"         : model.state_dict(),
-                "optimizer"     : optimizer.state_dict(),
-                "step_counter"  : step_counter,
-                "scheduler"     : scheduler.state_dict(),
-                "flow_optimizer": flow_optimizer.state_dict(),
-                "flow_scheduler": flow_scheduler.state_dict(),
-                "default_emb"   : default_embedding,
-                "config"        : model.config
-            }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
-            if path_to_embed_model is None or train_embed:
-                torch.save({
-                    "style_emb_func": style_embedding_function.state_dict()
-                }, os.path.join(save_directory, "embedding_function.pt"))
-            delete_old_checkpoints(save_directory, keep=5)
+                    print(f"\nEpoch:                  {epoch}")
+                    print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
+                    print(f"Reconstruction Loss:    {round(sum(regression_losses_total) / len(regression_losses_total), 4)}")
+                    print(f"Steps:                  {step_counter}\n")
 
-            print(f"\nEpoch:                  {epoch}")
-            print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
-            print(f"Reconstruction Loss:    {round(sum(regression_losses_total) / len(regression_losses_total), 4)}")
-            print(f"Steps:                  {step_counter}\n")
+                    if use_wandb:
+                        wandb.log({
+                            "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                            "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
+                            "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                            "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                            "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                            "learning_rate"  : optimizer.param_groups[0]['lr']
+                        }, step=step_counter)
+                    regression_losses_total = list()
+                    glow_losses_total = list()
+                    duration_losses_total = list()
+                    pitch_losses_total = list()
+                    energy_losses_total = list()
 
-            if use_wandb:
-                wandb.log({
-                    "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
-                    "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
-                    "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                    "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                    "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                    "learning_rate"  : optimizer.param_groups[0]['lr']
-                }, step=step_counter)
+                    path_to_most_recent_plot = plot_progress_spec_toucantts(model,
+                                                                            device,
+                                                                            save_dir=save_directory,
+                                                                            step=step_counter,
+                                                                            lang=lang,
+                                                                            default_emb=default_embedding,
+                                                                            run_glow=run_glow)
+                    if use_wandb:
+                        wandb.log({
+                            "progress_plot": wandb.Image(path_to_most_recent_plot)
+                        }, step=step_counter)
 
-            path_to_most_recent_plot = plot_progress_spec_toucantts(model,
-                                                                    device,
-                                                                    save_dir=save_directory,
-                                                                    step=step_counter,
-                                                                    lang=lang,
-                                                                    default_emb=default_embedding,
-                                                                    run_glow=run_glow)
-            if use_wandb:
-                wandb.log({
-                    "progress_plot": wandb.Image(path_to_most_recent_plot)
-                }, step=step_counter)
+                    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
+                    averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
+                    save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
 
-            checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
-            averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-            save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
+                    if step_counter > steps:
+                        return  # DONE
 
-            if step_counter > steps:
-                return  # DONE
+                    net.train()
+                    if train_embed or path_to_embed_model is None:
+                        style_embedding_function.train()
 
-            net.train()
-            style_embedding_function.train()
+        print("\n\n\nEPOCH COMPLETE\n\n\n")

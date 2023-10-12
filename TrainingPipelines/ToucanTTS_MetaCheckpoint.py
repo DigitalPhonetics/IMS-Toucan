@@ -300,8 +300,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
-        for train_set in datasets:
-            train_samplers.append(torch.utils.data.RandomSampler(train_set))
+    for train_set in datasets:
+        train_samplers.append(torch.utils.data.RandomSampler(train_set))
 
     if use_wandb:
         if rank == 0:

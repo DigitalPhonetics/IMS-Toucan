@@ -50,7 +50,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
-        train_sampler = torch.utils.data.RandomSampler(train_set)
+    train_sampler = torch.utils.data.RandomSampler(train_set)
 
     if use_wandb:
         if rank == 0:

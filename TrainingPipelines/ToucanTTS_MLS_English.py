@@ -57,7 +57,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
-        train_sampler = torch.utils.data.RandomSampler(train_set)
+    train_sampler = torch.utils.data.RandomSampler(train_set)
 
     if use_wandb:
         if rank == 0:
@@ -74,11 +74,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
                fine_tune=finetune,
-               steps=800000,
+               steps=2000000,
                resume=resume,
                use_wandb=use_wandb,
                train_embed=True,
                gpu_count=gpu_count,
-               train_samplers=[train_sampler])  # we want to train the embedding function
+               train_samplers=[train_sampler],
+               steps_per_checkpoint=2000)  # we want to train the embedding function
     if use_wandb:
         wandb.finish()
