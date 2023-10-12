@@ -57,10 +57,23 @@ def train_loop(net,
     see train loop arbiter for explanations of the arguments
     """
     net = net.to(device)
+    if gpu_count > 1:
+        rank = int(os.environ["LOCAL_RANK"])
+    else:
+        rank = 0
     if steps_per_checkpoint is None:
         steps_per_checkpoint = len(train_dataset) // batch_size
 
     style_embedding_function = StyleEmbedding().to(device)
+    if gpu_count > 1:
+        style_embedding_function.to(rank)
+        style_embedding_function = torch.nn.parallel.DistributedDataParallel(
+            style_embedding_function,
+            device_ids=[rank],
+            output_device=rank,
+            find_unused_parameters=True,
+        )
+        torch.distributed.barrier()
     if path_to_embed_model is not None:
         check_dict = torch.load(path_to_embed_model, map_location=device)
         style_embedding_function.load_state_dict(check_dict["style_emb_func"])
@@ -81,6 +94,7 @@ def train_loop(net,
 
     if isinstance(net, torch.nn.parallel.DistributedDataParallel):
         model = net.module
+        style_embedding_function = style_embedding_function.module
     else:
         model = net
     optimizer = torch.optim.AdamW([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
@@ -188,10 +202,6 @@ def train_loop(net,
             step_counter += 1
             if step_counter % steps_per_checkpoint == 0:
                 # evaluation interval is happening
-                if gpu_count > 1:
-                    rank = int(os.environ["LOCAL_RANK"])
-                else:
-                    rank = 0
                 if rank == 0:
                     net.eval()
                     style_embedding_function.eval()
