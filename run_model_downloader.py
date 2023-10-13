@@ -32,22 +32,6 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Fast Vocoder Model")
-    os.makedirs(os.path.join(MODELS_DIR, "Avocodo"), exist_ok=True)
-    filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.5/Avocodo.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "Avocodo", "best.pt")),
-        reporthook=report)
-
-    #############
-    print("Downloading Highest Quality Vocoder Model")
-    os.makedirs(os.path.join(MODELS_DIR, "BigVGAN"), exist_ok=True)
-    filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.5/BigVGAN.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "BigVGAN", "best.pt")),
-        reporthook=report)
-
-    #############
     print("Downloading Embedding Model")
     os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
@@ -56,11 +40,11 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Embedding GAN")
-    os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
+    print("Downloading Codec Model")
+    os.makedirs(os.path.join(MODELS_DIR, "Codec"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.5/embedding_gan.pt",
-        filename=os.path.abspath(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt")),
+        url="https://huggingface.co/Dongchao/AcademiCodec/resolve/main/HiFi-Codec-24k-320d",
+        filename=os.path.abspath(os.path.join("Codec", "HiFi-Codec-24k-320d.pt")),
         reporthook=report)
 
 
