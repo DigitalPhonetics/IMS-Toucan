@@ -15,6 +15,7 @@ from TTSTrainingInterfaces.ToucanTTS.DurationCalculator import DurationCalculato
 from TTSTrainingInterfaces.ToucanTTS.EnergyCalculator import EnergyCalculator
 from TTSTrainingInterfaces.ToucanTTS.PitchCalculator import Parselmouth
 from Utility.storage_config import MODELS_DIR
+from Utility.utils import float2pcm
 
 
 class UtteranceCloner:
@@ -24,12 +25,10 @@ class UtteranceCloner:
     Useful for Privacy Applications
     """
 
-    def __init__(self, model_id, device, language="en", speed_over_quality=False):
-        if (device == torch.device("cpu") or device == "cpu") and not speed_over_quality:
-            print("Warning: You are running BigVGAN on CPU. Consider either switching to GPU or setting the speed_over_quality option to True.")
-        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id, faster_vocoder=speed_over_quality)
+    def __init__(self, model_id, device, language="en"):
+        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=False)
-        self.cap = CodecAudioPreprocessor(input_sr=16000, device=device)
+        self.cap = CodecAudioPreprocessor(input_sr=100, device=device)
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
@@ -117,21 +116,6 @@ class UtteranceCloner:
                                   torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
                                   duration[index_of_word_boundary:]])
 
-        last_vec = None
-        for phoneme_index, vec in enumerate(text):
-            if last_vec is not None:
-                if last_vec.numpy().tolist() == vec.numpy().tolist():
-                    # we found a case of repeating phonemes!
-                    # now we must repair their durations by giving the first one 3/5 of their sum and the second one 2/5 (i.e. the rest)
-                    dur_1 = duration[phoneme_index - 1]
-                    dur_2 = duration[phoneme_index]
-                    total_dur = dur_1 + dur_2
-                    new_dur_1 = int((total_dur / 5) * 3)
-                    new_dur_2 = total_dur - new_dur_1
-                    duration[phoneme_index - 1] = new_dur_1
-                    duration[phoneme_index] = new_dur_2
-            last_vec = vec
-
         energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
                              input_waves_lengths=norm_wave_length,
                              feats_lengths=feature_length,
@@ -160,37 +144,11 @@ class UtteranceCloner:
                                                                                                  path_to_reference_audio_for_intonation,
                                                                                                  lang=lang)
         self.tts.set_language(lang)
-        start_sil = torch.zeros([int(silence_frames_start * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
-        end_sil = torch.zeros([int(silence_frames_end * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
+        start_sil = torch.zeros([int(silence_frames_start * 1.5)]).to(self.device)  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
+        end_sil = torch.zeros([int(silence_frames_end * 1.5)]).to(self.device)  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
         cloned_speech = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
         cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt, samplerate=44100)
-        return cloned_utt
+            sf.write(file=filename_of_result, data=float2pcm(cloned_utt), samplerate=24000, subtype="PCM_16")
 
-    def biblical_accurate_angel_mode(self,
-                                     path_to_reference_audio_for_intonation,
-                                     transcription_of_intonation_reference,
-                                     list_of_speaker_references_for_ensemble,
-                                     filename_of_result=None,
-                                     lang="de"):
-        """
-        Have multiple voices speak with the exact same intonation simultaneously
-        """
-        prev_embedding = self.tts.default_utterance_embedding.clone().detach()
-        duration, pitch, energy, silence_frames_start, silence_frames_end = self.extract_prosody(transcription_of_intonation_reference,
-                                                                                                 path_to_reference_audio_for_intonation,
-                                                                                                 lang=lang)
-        self.tts.set_language(lang)
-        start_sil = torch.zeros([int(silence_frames_start * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
-        end_sil = torch.zeros([int(silence_frames_end * 2.75625)]).to(self.device)  # timestamps are from 16kHz, but now we're using 44100Hz, so upsampling required
-        list_of_cloned_speeches = list()
-        for path in list_of_speaker_references_for_ensemble:
-            self.tts.set_utterance_embedding(path_to_reference_audio=path)
-            list_of_cloned_speeches.append(self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy))
-        cloned_speech = torch.stack(list_of_cloned_speeches).mean(dim=0)
-        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
-        if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=cloned_utt, samplerate=44100)
-        self.tts.default_utterance_embedding = prev_embedding.to(self.device)  # return to normal
         return cloned_utt
