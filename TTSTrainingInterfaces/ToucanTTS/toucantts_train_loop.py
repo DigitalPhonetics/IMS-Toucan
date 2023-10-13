@@ -85,9 +85,9 @@ def train_loop(net,
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
                               batch_sampler=batch_sampler_train,
-                              num_workers=4 if os.cpu_count() > 4 else max(os.cpu_count() - 2, 1),
+                              num_workers=1,
                               pin_memory=True,
-                              prefetch_factor=2,
+                              prefetch_factor=4,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
     step_counter = 0

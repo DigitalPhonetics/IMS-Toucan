@@ -79,7 +79,7 @@ def train_loop(net,
         batch_sampler_train = torch.utils.data.BatchSampler(sampler, 1, drop_last=True)
         train_loaders.append(DataLoader(dataset=dataset,
                                         batch_sampler=batch_sampler_train,
-                                        num_workers=2,
+                                        num_workers=1,
                                         pin_memory=True,
                                         prefetch_factor=4,
                                         collate_fn=collate_and_pad,
