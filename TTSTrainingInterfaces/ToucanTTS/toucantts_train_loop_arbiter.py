@@ -20,13 +20,13 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                lr=0.0005,  # learning rate of the model.
                path_to_embed_model="Models/Embedding/embedding_function.pt",  # path to the utterance embedding function that is to be used.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
-               warmup_steps=20000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
+               warmup_steps=12000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,  # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
-               batch_size=14,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
+               batch_size=20,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM. 42 is tested on a 48GB GPU
                eval_lang="en",  # in which language the evaluation sentence is to be plotted.
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=800000,  # how many updates to run until training is completed
-               train_embed=False  # whether to train the embedding function. Only relevant for single-language case
+               train_embed=False,  # whether to train the embedding function. Only relevant for single-language case
                ):
     torch.multiprocessing.set_start_method('fork', force=True)
     if type(datasets) != list:

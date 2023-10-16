@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=512,
+                 attention_dimension=256,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -53,7 +53,7 @@ class ToucanTTS(torch.nn.Module):
                  # encoder
                  encoder_layers=6,
                  encoder_units=1280,
-                 encoder_normalize_before=False,  # when we're using conditional layernorm, we should not destroy this information with regular layernorm directly after
+                 encoder_normalize_before=True,  # when we're using conditional layernorm, we should not destroy this information with regular layernorm directly after
                  encoder_concat_after=False,
                  conformer_encoder_kernel_size=7,
                  transformer_enc_dropout_rate=0.1,
@@ -90,8 +90,8 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=7,
-                 glow_blocks=18,
+                 glow_kernel_size=5,
+                 glow_blocks=12,
                  glow_layers=3,
 
                  # additional features
@@ -393,7 +393,7 @@ class ToucanTTS(torch.nn.Module):
                 energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents.detach(), encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
+                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
             return codec_latents, \

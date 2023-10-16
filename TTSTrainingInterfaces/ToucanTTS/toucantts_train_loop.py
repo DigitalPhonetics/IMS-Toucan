@@ -97,11 +97,14 @@ def train_loop(net,
         style_embedding_function = style_embedding_function.module
     else:
         model = net
-    optimizer = torch.optim.AdamW([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr, weight_decay=1.0e-7)
-    flow_optimizer = torch.optim.AdamW(model.post_flow.parameters(), lr=lr * 2, weight_decay=1.0e-7)
+    if train_embed or path_to_embed_model is None:
+        optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name] + list(style_embedding_function.parameters()), lr=lr)
+    else:
+        optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr)
+    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr * 8)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 2, warmup_steps=(warmup_steps // 4), max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 8, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     epoch = 0
     first_time_glow = True
@@ -126,7 +129,7 @@ def train_loop(net,
         net.train()
         epoch += 1
         for batch in tqdm(train_loader):
-            run_glow = step_counter > (warmup_steps * 3) or fine_tune
+            run_glow = step_counter > (warmup_steps * 2) or fine_tune
             if run_glow:
                 if first_time_glow is not False and not fine_tune:
                     # We freeze the model and the embedding function for the first few steps of the flow,
@@ -137,7 +140,7 @@ def train_loop(net,
                         style_embedding_function.requires_grad_(False)
                         model.post_flow.requires_grad_(True)
                         first_time_glow = 2
-                    if step_counter > ((warmup_steps * 3) + (warmup_steps // 4)):
+                    if step_counter > ((warmup_steps * 2) + (warmup_steps // 4)):
                         first_time_glow = False
                         model.requires_grad_(True)
                         if path_to_embed_model is None or train_embed:
@@ -257,7 +260,7 @@ def train_loop(net,
                             "progress_plot": wandb.Image(path_to_most_recent_plot)
                         }, step=step_counter)
 
-                    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=2)
+                    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=1)
                     averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
                     save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
 
