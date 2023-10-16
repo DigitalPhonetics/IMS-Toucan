@@ -75,6 +75,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
                fine_tune=finetune,
                steps=2000000,
+               lr=0.0001,
                resume=resume,
                use_wandb=use_wandb,
                train_embed=True,
