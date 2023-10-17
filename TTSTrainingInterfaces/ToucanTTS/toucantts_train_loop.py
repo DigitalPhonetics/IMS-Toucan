@@ -195,7 +195,10 @@ def train_loop(net,
             optimizer.zero_grad()
             flow_optimizer.zero_grad()
             train_loss.backward()
-            torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name] + list(style_embedding_function.parameters()), 1.0, error_if_nonfinite=False)
+            if train_embed or path_to_embed_model is None:
+                torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name] + list(style_embedding_function.parameters()), 1.0, error_if_nonfinite=False)
+            else:
+                torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
             if run_glow:
