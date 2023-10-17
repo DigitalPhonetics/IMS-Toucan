@@ -238,22 +238,21 @@ Here are a few points that were brought up by users:
 
 ## New Features 🐣
 
-### 2023
+### 2021
 
-- We now use the same PostFlow
-  as [PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) for
-  increased quality at basically no expense.
-- We also reduce the sampling-rate of the vocoder from 48kHz to 24kHz. While the theoretical upper bound for quality is
-  reduced, in practice, the vocoder produces much fewer artifacts.
-- Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
-  ever! Just follow the `finetuning_example.py` pipeline.
-- We now have the option of choosing between Avocodo and [BigVGAN](https://arxiv.org/abs/2206.04658), which has an improved  
-  generator over HiFiGAN.
-- We compile a bunch of quality enhancements from all our previous works so far into one very stable and nice sounding
-  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge 2023,
-  you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
-- We switch from using spectrograms to using neural audio codecs as intermediate representations. That makes the vocoder obsolete, so we remove it. The compression also allows us to use orders of magnitudes more data.
-- We added multi-GPU training in order to train on massive amounts of data
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 24kHz waveforms.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
+  multilingual data to benefit less resource-rich languages.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
+  with very little data in almost any language. The last two contributions are described in
+  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
+- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
+  objective, inspired by
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
 
 ### 2022
 
@@ -278,21 +277,23 @@ Here are a few points that were brought up by users:
   exist. We also found a way to make the sampling process very controllable using intuitive sliders. Check out our
   newest demo on Huggingface to try it yourself!
 
-### 2021
+### 2023
 
-- We officially introduced IMS Toucan in
-  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
-- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
-  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 24kHz waveforms.
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
-  multilingual data to benefit less resource-rich languages.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
-  with very little data in almost any language. The last two contributions are described in
-  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
-- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
-  objective, inspired by
-  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
+- We now use the same PostFlow
+  as [PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) for
+  increased quality at basically no expense.
+- We also reduce the sampling-rate of the vocoder from 48kHz to 24kHz. While the theoretical upper bound for quality is
+  reduced, in practice, the vocoder produces much fewer artifacts.
+- Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
+  ever! Just follow the `finetuning_example.py` pipeline.
+- We now have the option of choosing between Avocodo and [BigVGAN](https://arxiv.org/abs/2206.04658), which has an improved  
+  generator over HiFiGAN.
+- We compile a bunch of quality enhancements from all our previous works so far into one very stable and nice sounding
+  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge 2023,
+  you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
+- We switch from using spectrograms to using neural audio codecs as intermediate representations. That makes the vocoder obsolete, so we remove it. The compression also allows us to use orders of magnitudes more data.
+- We added multi-GPU training in order to train on massive amounts of data.
+
 
 ---
 
