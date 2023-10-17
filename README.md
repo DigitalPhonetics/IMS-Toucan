@@ -10,11 +10,11 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ### Pre-Generated Audios
 
-[Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
+[Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/)
 
 [Cloning prosody across speakers](https://toucanprosodycloningdemo.github.io)
 
-[Human-in-the-loop edited poetry for German literary studies](https://poetictts.github.io/)
+[Multi-lingual and multi-speaker audios](https://multilingualtoucan.github.io/)
 
 ### Interactive Demos
 
@@ -29,69 +29,11 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 ### Pretrained models are available!
 
 You can just try it yourself! Pretrained checkpoints for our massively multi-lingual model, the self-contained aligner,
-the embedding function, the vocoder and the embedding GAN are available in the
+the embedding function, and the embedding GAN are available in the
 [release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). Run the `run_model_downloader.py` script
 to automatically download them from the release page and put them into their appropriate locations with appropriate
 names.
 
----
-
-## New Features 🐣
-
-### 2023
-
-- We now use the same PostFlow
-  as [PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) for
-  increased quality at basically no expense.
-- We also reduce the sampling-rate of the vocoder from 48kHz to 24kHz. While the theoretical upper bound for quality is
-  reduced, in practice, the vocoder produces much fewer artifacts.
-- Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
-  ever! Just follow the `finetuning_example.py` pipeline.
-- We now have the option of choosing between Avocodo and [BigVGAN](https://arxiv.org/abs/2206.04658), which has an improved  
-  generator over HiFiGAN. It is significantly slower on CPU, but the quality is the best I have heard at the time of writing
-  this. The speed on GPU is fine, just for CPU inference you might want to stick with Avocodo.
-- We compile a bunch of quality enhancements from all our previous works so far into one very stable and nice sounding
-  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge 2023,
-  you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
-
-### 2022
-
-- We reworked our input representation to now include tone, lengthening and primary stress. All phonemes in the IPA
-  standard are now supported, so you can train on **any** language, as long as you have a way to convert text to IPA. We
-  also include word-boundary pseudo-tokens which are only visible to the text encoder.
-- By conditioning the TTS on speaker and language embeddings in a specific way, multi-lingual and multi-speaker models
-  are possible. You can use any speaker in any language, regardless of the language that the speakers themselves are
-  speaking. We presented [a paper on this at AACL 2022](https://arxiv.org/abs/2210.12223)!
-- Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with everything
-  else! So any utterance in any language spoken by any speaker can be replicated and controlled. We
-  presented [a paper on this at SLT 2022](https://arxiv.org/abs/2206.12229).
-- We apply this to literary studies on poetry and presented
-  [a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
-- We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
-- We added a scorer utility to inspect your data and find potentially problematic samples.
-- You can now use [weights & biases](https://wandb.ai/site) to keep track of your training runs, if you want.
-- We upgraded our vocoder from HiFiGAN to the recently published [Avocodo](https://arxiv.org/abs/2206.13404).
-- We now use a self-supervised embedding function based on GST, but with a special training procedure to allow for very
-  rich speaker conditioning.
-- We trained a GAN to sample from this new embeddingspace. This allows us to speak in voices of speakers that do not
-  exist. We also found a way to make the sampling process very controllable using intuitive sliders. Check out our
-  newest demo on Huggingface to try it yourself!
-
-### 2021
-
-- We officially introduced IMS Toucan in
-  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
-- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
-  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
-  spectrograms as input, but produces 24kHz waveforms.
-- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
-  multilingual data to benefit less resource-rich languages.
-- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
-  with very little data in almost any language. The last two contributions are described in
-  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
-- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
-  objective, inspired by
-  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
 
 ---
 
@@ -107,7 +49,7 @@ To install this toolkit, clone it onto the machine you want to use it on
 (should have at least one GPU if you intend to train models on that machine. For inference, you don't need a GPU).
 Navigate to the directory you have cloned. We recommend creating and activating a
 [virtual environment](https://docs.python.org/3/library/venv.html)
-to install the basic requirements into. The commands below summarize everything you need to do.
+to install the basic requirements into. The commands below summarize everything you need to do under Linux. If you are running Windows, the second line needs to be changed, please have a look at the [venv documentation](https://docs.python.org/3/library/venv.html).
 
 ```
 python -m venv <path_to_where_you_want_your_env_to_be>
@@ -153,29 +95,7 @@ appropriate names.
 
 ---
 
-## Creating a new Pipeline 🦆
-
-### Build an Avocodo/BigVGAN Pipeline
-
-This should not be necessary, because we provide a pretrained model and one of the key benefits of vocoders in general
-is how incredibly speaker independent they are. But in case you want to train your own anyway, here are the
-instructions: You will need a function to return the list of all the absolute paths to each of
-the audio files in your dataset as strings. If you already have a *path_to_transcript_dict* of your data for ToucanTTS training,
-you can simply take the keys of the dict and transform them into a list.
-
-Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Avocodo or BigVGAN in its name. We
-will use this as reference and only make the necessary changes to use the new dataset. Look out for a variable called
-*model_save_dir*. This is the default directory that checkpoints will be saved into, unless you specify another one when
-calling the training script. Change it to whatever you like. Then pass the list of paths to the instanciation of the
-Dataset.
-
-Now you need to add your newly created pipeline to the pipeline dictionary in the file
-*run_training_pipeline.py* in the top level of the toolkit. In this file, import the
-*run* function from the pipeline you just created and give it a meaningful name. Now in the
-*pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
-
-### Build a ToucanTTS Pipeline
+## Creating a new Training Pipeline 🦆
 
 What we call ToucanTTS is actually mostly FastSpeech 2, but with a couple of changes, such as the normalizing flow
 based PostNet that was introduced in PortaSpeech. We found the VAE used in PortaSpeech too unstable for low-resource
@@ -189,13 +109,9 @@ absolute paths to each of the audio files in your dataset as strings as the keys
 corresponding audios as the values.
 
 Then go to the directory
-*TrainingInterfaces/TrainingPipelines*. In there, make a copy of the `finetuning_example.py` file. We will use this copy
-as reference and only make the necessary changes to use the new dataset. Import the function
-you have just written as
-*build_path_to_transcript_dict*. Since the data will be processed a considerable amount, a cache will be built and saved
-as file for quick and easy restarts. So find the variable
-*cache_dir* and adapt it to your needs. The same goes for the variable
-*save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
+*TrainingInterfaces/TrainingPipelines*. In there, make a copy of the `finetuning_example_simple.py` file if you just want to finetune on a single dataset or `finetuning_example_multilingual.py` if you want to finetune on multiple datasets, potentially even multiple languages. We will use this copy
+as reference and only make the necessary changes to use the new dataset. Find the call(s) to the *prepare_tts_corpus* function. Replace the path_to_transcript_dict used there with the one(s) you just created. Then change the name of the corresponding cache directory to something that makes sense for the dataset.
+Also look out for the variable *save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
 the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
 different directory.
 
@@ -206,11 +122,11 @@ analogous to what is there already. Now back in the pipeline, change the
 *lang* argument in the creation of the dataset and in the call to the train loop function to the language ID that
 matches your data.
 
-The arguments that are given to the train loop are meant for the case of finetuning from a pretrained model. If you want
+The arguments that are given to the train loop in the finetuning examples are meant for the case of finetuning from a pretrained model. If you want
 to train from scratch, have a look at a different pipeline that has ToucanTTS in its name and look at the arguments
 used there.
 
-Once this is done, we are almost done, now we just need to make it available to the
+Once this is complete, we are almost done, now we just need to make it available to the
 *run_training_pipeline.py* file in the top level. In said file, import the
 *run* function from the pipeline you just created and give it a meaningful name. Now in the
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
@@ -229,7 +145,7 @@ You can supply any of the following arguments, but don't have to (although for t
 least a GPU ID).
 
 ```
---gpu_id <ID of the GPU you wish to use, as displayed with nvidia-smi, default is cpu> 
+--gpu_id <ID of the GPU you wish to use, as displayed with nvidia-smi, default is cpu. If multiple GPUs are provided (comma separated), then distributed training will be used, but the script has to be started with torchrun.> 
 
 --resume_checkpoint <path to a checkpoint to load>
 
@@ -244,7 +160,13 @@ least a GPU ID).
 --wandb_resume_id <the id of the run you want to resume, if you are using weights&biases (you can find the id in the URL of the run)>
 ```
 
-After every epoch, some logs will be written to the console. If you get cuda out of memory errors, you need to decrease
+For multi-GPU training, you have to supply multiple GPU ids (comma separated) and start the script with torchrun. You also have to specify the number of GPUs. This has to match the number of IDs that you supply. Careful: torchrun is incompatible with nohup! Use tmux instead to keep the script running after you log out of the shell.
+
+```
+torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py <shorthand of the pipeline> --gpu_id "0,1,2,3"
+```
+
+After every epoch (or alternatively after certain step counts), some logs will be written to the console. If you get cuda out of memory errors, you need to decrease
 the batchsize in the arguments of the call to the training_loop in the pipeline you are running. Try decreasing the
 batchsize in small steps until you get no more out of cuda memory errors.
 
@@ -260,13 +182,7 @@ manually.
 fuser -v /dev/nvidia*
 ```
 
-After training is complete, it is recommended to run
-*run_weight_averaging.py*. If you made no changes to the architectures and stuck to the default directory layout, it
-will automatically load any models you produced with one pipeline, average their parameters to get a slightly more
-robust model and save the result as
-*best.pt* in the same directory where all the corresponding checkpoints lie. This also compresses the file size
-significantly, so you should do this and then use the
-*best.pt* model for inference.
+Whenever a checkpoint is saved, a compressed version that can be used for inference is also created, which is named _best.py_
 
 ---
 
@@ -320,6 +236,66 @@ Here are a few points that were brought up by users:
 
 ---
 
+## New Features 🐣
+
+### 2023
+
+- We now use the same PostFlow
+  as [PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) for
+  increased quality at basically no expense.
+- We also reduce the sampling-rate of the vocoder from 48kHz to 24kHz. While the theoretical upper bound for quality is
+  reduced, in practice, the vocoder produces much fewer artifacts.
+- Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
+  ever! Just follow the `finetuning_example.py` pipeline.
+- We now have the option of choosing between Avocodo and [BigVGAN](https://arxiv.org/abs/2206.04658), which has an improved  
+  generator over HiFiGAN.
+- We compile a bunch of quality enhancements from all our previous works so far into one very stable and nice sounding
+  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge 2023,
+  you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
+- We switch from using spectrograms to using neural audio codecs as intermediate representations. That makes the vocoder obsolete, so we remove it. The compression also allows us to use orders of magnitudes more data.
+- We added multi-GPU training in order to train on massive amounts of data
+
+### 2022
+
+- We reworked our input representation to now include tone, lengthening and primary stress. All phonemes in the IPA
+  standard are now supported, so you can train on **any** language, as long as you have a way to convert text to IPA. We
+  also include word-boundary pseudo-tokens which are only visible to the text encoder.
+- By conditioning the TTS on speaker and language embeddings in a specific way, multi-lingual and multi-speaker models
+  are possible. You can use any speaker in any language, regardless of the language that the speakers themselves are
+  speaking. We presented [a paper on this at AACL 2022](https://arxiv.org/abs/2210.12223)!
+- Exactly cloning the prosody of a reference utterance is now also possible, and it works in conjunction with everything
+  else! So any utterance in any language spoken by any speaker can be replicated and controlled. We
+  presented [a paper on this at SLT 2022](https://arxiv.org/abs/2206.12229).
+- We apply this to literary studies on poetry and presented
+  [a paper on this at Interspeech 2022!](https://www.isca-speech.org/archive/interspeech_2022/koch22_interspeech.html)
+- We added simple and intuitive parameters to scale the variance of pitch and energy in synthesized speech.
+- We added a scorer utility to inspect your data and find potentially problematic samples.
+- You can now use [weights & biases](https://wandb.ai/site) to keep track of your training runs, if you want.
+- We upgraded our vocoder from HiFiGAN to the recently published [Avocodo](https://arxiv.org/abs/2206.13404).
+- We now use a self-supervised embedding function based on GST, but with a special training procedure to allow for very
+  rich speaker conditioning.
+- We trained a GAN to sample from this new embeddingspace. This allows us to speak in voices of speakers that do not
+  exist. We also found a way to make the sampling process very controllable using intuitive sliders. Check out our
+  newest demo on Huggingface to try it yourself!
+
+### 2021
+
+- We officially introduced IMS Toucan in
+  [our contribution to the Blizzard Challenge 2021](http://festvox.org/blizzard/bc2021/BC21_IMS.pdf).
+- [As shown in this paper](http://festvox.org/blizzard/bc2021/BC21_DelightfulTTS.pdf) vocoders can be used to perform
+  super-resolution and spectrogram inversion simultaneously. We added this to our HiFi-GAN vocoder. It now takes 16kHz
+  spectrograms as input, but produces 24kHz waveforms.
+- We now use articulatory representations of phonemes as the input for all models. This allows us to easily use
+  multilingual data to benefit less resource-rich languages.
+- We provide a checkpoint trained with a variant of model agnostic meta learning from which you can fine-tune a model
+  with very little data in almost any language. The last two contributions are described in
+  [our paper that we presented at the ACL 2022](https://aclanthology.org/2022.acl-long.472/)!
+- We now use a small self-contained Aligner that is trained with CTC and an auxiliary spectrogram reconstruction
+  objective, inspired by
+  [this implementation](https://github.com/as-ideas/DeepForcedAligner) for a variety of applications.
+
+---
+
 The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
 [ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of
 [HiFiGAN](https://arxiv.org/abs/2010.05646) are taken from
@@ -344,7 +320,6 @@ branches. They are separated to keep the code clean, simple and minimal as the d
   author       = {Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
   booktitle    = {{Proc. Blizzard Challenge Workshop}},
   publisher    = {Speech Synthesis SIG},
-  volume       = 2021
 }
 ```
 
@@ -379,5 +354,28 @@ branches. They are separated to keep the code clean, simple and minimal as the d
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Julia Koch and Ngoc Thang Vu},
   booktitle    = {{Proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics}},
+}
+```
+
+### Adding Controllable Speaker Embedding Generation [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.3)
+
+```
+@inproceedings{lux2023controllable,
+  year         = 2023,
+  title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
+  author       = {Florian Lux and Pascal Tilli and Sarina Meyer and Ngoc Thang Vu},
+  booktitle    = {{Interspeech}},
+}
+```
+
+### Our Contribution to the Blizzard Challenge 2023 [[associated code and models]](https://github.com/DigitalPhonetics/IMS-Toucan/releases/tag/v2.b)
+
+```
+@inproceedings{lux2023controllable,
+  year         = 2023,
+  title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
+  author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},
+  booktitle    = {{Proc. Blizzard Challenge Workshop}},
+  publisher    = {Speech Synthesis SIG},
 }
 ```

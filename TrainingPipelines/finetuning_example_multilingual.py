@@ -23,7 +23,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         device = torch.device("cpu")
     else:
         device = torch.device("cuda")
-    assert gpu_count == 1  # gpu_count finetuning is not supported
+    assert gpu_count == 1  # distributed finetuning is not supported
 
     # IF YOU'RE ADDING A NEW LANGUAGE, YOU MIGHT NEED TO ADD HANDLING FOR IT IN Preprocessing/TextFrontend.py
 

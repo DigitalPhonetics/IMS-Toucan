@@ -11,20 +11,22 @@ from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_te
 from TrainingPipelines.ToucanTTS_MLS_English import run as mls
 from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingPipelines.ToucanTTS_Nancy import run as nancy
-from TrainingPipelines.finetuning_example import run as fine_tuning_example
+from TrainingPipelines.finetuning_example_multilingual import run as fine_tuning_example_multilingual
+from TrainingPipelines.finetuning_example_simple import run as fine_tuning_example_simple
 
 pipeline_dict = {
     # the finetuning example
-    "finetuning_example": fine_tuning_example,
+    "finetuning_example_simple"      : fine_tuning_example_simple,
+    "finetuning_example_multilingual": fine_tuning_example_multilingual,
     # integration tests
-    "tt_it"             : tt_integration_test,
+    "tt_it"                          : tt_integration_test,
     # regular ToucanTTS pipelines
-    "nancy"             : nancy,
-    "mls"               : mls,
-    "nancystoch"        : nancystoch,
-    "meta"              : meta,
+    "nancy"                          : nancy,
+    "mls"                            : mls,
+    "nancystoch"                     : nancystoch,
+    "meta"                           : meta,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
-    "aligner"           : aligner,
+    "aligner"                        : aligner,
 }
 
 if __name__ == '__main__':
