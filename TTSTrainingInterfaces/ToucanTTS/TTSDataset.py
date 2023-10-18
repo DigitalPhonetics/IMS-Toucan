@@ -262,27 +262,39 @@ class TTSDataset(Dataset):
         return cached_duration, ctc_loss
 
 
-def smooth_away_zero_values(sequence):
-    new_sequence = list()
-    previous_nonzero = 0
-    for index_of_element, element in enumerate(sequence):
-        if element < 0.2:
-            # this is a zero frame where there is no pitch or energy. We will replace it with the average of the previous nonzero element and the following nonzero element.
-            next_nonzero = 0
-            future_index = 0
-            while next_nonzero == 0:
-                if len(sequence) < index_of_element + future_index:
-                    if sequence[index_of_element + future_index] > 0.2:
-                        next_nonzero = index_of_element + future_index
-                    future_index += 1
-                else:
-                    # we didn't find a next index.
-                    next_nonzero = previous_nonzero
-            new_sequence.append((sequence[previous_nonzero] + sequence[next_nonzero]) / 2)
-        else:
-            new_sequence.append(element)
-        previous_nonzero = index_of_element
-    return torch.tensor(new_sequence)
+def smooth_away_zero_values(lst):
+    for i in range(len(lst)):
+        if lst[i] < 0.2:
+            # Find the previous value larger than 0.2
+            j = i - 1
+            while j >= 0 and lst[j] < 0.2:
+                j -= 1
+
+            # If the first element is smaller than 0.2, take the next value larger than 0.2
+            if j == -1:
+                j = i + 1
+                while j < len(lst) and lst[j] < 0.2:
+                    j += 1
+
+            # Find the next value larger than 0.2
+            k = i + 1
+            while k < len(lst) and lst[k] < 0.2:
+                k += 1
+
+            # If the last element is smaller than 0.2, take the previous value larger than 0.2
+            if k == len(lst):
+                k = i - 1
+                while k >= 0 and lst[k] < 0.2:
+                    k -= 1
+
+            # Replace the current element with the average of the previous and next values
+            try:
+                lst[i] = (lst[j] + lst[k]) / 2
+            except IndexError:
+                # no element in the list is larger than 0.2, so we assign a default value
+                lst[i] = 1.0
+
+    return torch.tensor(lst)
 
 
 if __name__ == '__main__':
