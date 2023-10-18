@@ -236,7 +236,9 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.output_projection = torch.nn.utils.weight_norm(torch.nn.Linear(attention_dimension, self.codebook_dim))
+        # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
+        self.output_projection_part_1 = torch.nn.Linear(attention_dimension, self.codebook_dim // 2)
+        self.output_projection_part_2 = torch.nn.Linear(attention_dimension + self.codebook_dim // 2, self.codebook_dim // 2)
 
         self.post_flow = Glow(
             in_channels=self.codebook_dim,
@@ -380,7 +382,9 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        codec_latents = self.output_projection(decoded_speech)
+        codec_latents_first_codebook = self.output_projection_part_1(decoded_speech)
+        codec_latents_second_codebook = self.output_projection_part_2(torch.cat([decoded_speech, codec_latents_first_codebook], dim=-1))
+        codec_latents = torch.cat([codec_latents_first_codebook, codec_latents_second_codebook], dim=-1)
 
         if is_inference:
             if run_glow:

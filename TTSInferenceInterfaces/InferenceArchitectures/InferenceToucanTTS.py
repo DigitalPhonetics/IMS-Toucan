@@ -157,7 +157,8 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
-        self.output_projection = torch.nn.utils.weight_norm(torch.nn.Linear(attention_dimension, self.codebook_dim))
+        self.output_projection_part_1 = torch.nn.Linear(attention_dimension, self.codebook_dim // 2)
+        self.output_projection_part_2 = torch.nn.Linear(attention_dimension + self.codebook_dim // 2, self.codebook_dim // 2)
 
         self.post_flow = Glow(
             in_channels=self.codebook_dim,
@@ -217,6 +218,8 @@ class ToucanTTS(torch.nn.Module):
         if duration_scaling_factor != 1.0:
             assert duration_scaling_factor > 0
             predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
+        # pitch_predictions = smooth_time_series(pitch_predictions.squeeze(0), 2).unsqueeze(0)
+        # energy_predictions = smooth_time_series(energy_predictions.squeeze(0), 2).unsqueeze(0)
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
@@ -231,8 +234,12 @@ class ToucanTTS(torch.nn.Module):
         # decoding spectrogram
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
 
-        frames = self.output_projection(decoded_speech)
+        codec_latents_first_codebook = self.output_projection_part_1(decoded_speech)
+        codec_latents_second_codebook = self.output_projection_part_2(torch.cat([decoded_speech, codec_latents_first_codebook], dim=-1))
+        frames = torch.cat([codec_latents_first_codebook, codec_latents_second_codebook], dim=-1)
+
         refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
+
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
     @torch.inference_mode()

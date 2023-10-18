@@ -213,16 +213,18 @@ class TTSDataset(Dataset):
         if self.ap is None:
             self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
         codec_frames = self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach()
+        pitch = smooth_away_zero_values(self.datapoints[index][6])  # this is a bandaid to a previous bug. It should be fixed in the future, but low priority, because this works for now.
+        energy = smooth_away_zero_values(self.datapoints[index][5])
         return self.datapoints[index][0], \
-               self.datapoints[index][1], \
-               codec_frames, \
-               self.datapoints[index][3], \
-               self.datapoints[index][4], \
-               self.datapoints[index][5], \
-               self.datapoints[index][6], \
-               codec_frames, \
-               self.language_id, \
-               self.datapoints[index][7]
+            self.datapoints[index][1], \
+            codec_frames, \
+            self.datapoints[index][3], \
+            self.datapoints[index][4], \
+            energy, \
+            pitch, \
+            codec_frames, \
+            self.language_id, \
+            self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)
@@ -258,6 +260,29 @@ class TTSDataset(Dataset):
                                          torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
                                          cached_duration[index_of_word_boundary:]])
         return cached_duration, ctc_loss
+
+
+def smooth_away_zero_values(sequence):
+    new_sequence = list()
+    previous_nonzero = 0
+    for index_of_element, element in enumerate(sequence):
+        if element < 0.2:
+            # this is a zero frame where there is no pitch or energy. We will replace it with the average of the previous nonzero element and the following nonzero element.
+            next_nonzero = 0
+            future_index = 0
+            while next_nonzero == 0:
+                if len(sequence) < index_of_element + future_index:
+                    if sequence[index_of_element + future_index] > 0.2:
+                        next_nonzero = index_of_element + future_index
+                    future_index += 1
+                else:
+                    # we didn't find a next index.
+                    next_nonzero = previous_nonzero
+            new_sequence.append((sequence[previous_nonzero] + sequence[next_nonzero]) / 2)
+        else:
+            new_sequence.append(element)
+        previous_nonzero = index_of_element
+    return torch.tensor(new_sequence)
 
 
 if __name__ == '__main__':
