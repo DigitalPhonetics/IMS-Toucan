@@ -35,6 +35,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
+    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean,
+                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
+                                       lang="en",
+                                       gpu_count=gpu_count,
+                                       rank=rank))
+
     chunk_count = 50
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
     for index in range(chunk_count):
@@ -46,7 +52,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = ConcatDataset(datasets)
 
-    model = ToucanTTS(use_conditional_layernorm_embedding_integration=True)  # if we set this to true, a different embedding integration method will be used to give us a better embedding function
+    model = ToucanTTS()
 
     if gpu_count > 1:
         model.to(rank)
@@ -72,15 +78,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                save_directory=save_dir,
                eval_lang="en",
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=None,  # if we set this to None, we train the embedding function jointly from scratch
+               path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,
-               steps=2000000,
                lr=0.0001,
                resume=resume,
                use_wandb=use_wandb,
-               train_embed=True,
+               train_embed=False,
                gpu_count=gpu_count,
                train_samplers=[train_sampler],
-               steps_per_checkpoint=2000)  # we want to train the embedding function
+               steps_per_checkpoint=2000)
     if use_wandb:
         wandb.finish()

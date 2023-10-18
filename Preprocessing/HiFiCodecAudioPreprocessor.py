@@ -67,7 +67,7 @@ if __name__ == '__main__':
     import soundfile
 
     with torch.inference_mode():
-        test_audio = "../audios/ad01_0003.wav"
+        test_audio = "../audios/speaker_references_for_testing/male_low_voice.wav"
         wav, sr = soundfile.read(test_audio)
         ap = CodecAudioPreprocessor(input_sr=sr, path_to_model="../Codec/HiFi-Codec-24k-320d.pt", path_to_config="../Codec/config_24k_320d.json")
 
@@ -80,4 +80,4 @@ if __name__ == '__main__':
         audio = ap.codes_to_audio(codes)
         print(audio.shape)
 
-        soundfile.write(file=f"../audios/24_female_voice.wav", data=audio, samplerate=24000)
+        soundfile.write(file=f"../audios/male_low_voice_reconstructed.wav", data=audio, samplerate=24000)

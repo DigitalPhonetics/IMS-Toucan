@@ -92,7 +92,7 @@ class ToucanTTS(torch.nn.Module):
                                  concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=False,
+                                 use_cnn_module=True,
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
@@ -153,7 +153,7 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=False,
+                                 use_output_norm=not use_conditional_layernorm_embedding_integration,
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
@@ -233,7 +233,6 @@ class ToucanTTS(torch.nn.Module):
 
         frames = self.output_projection(decoded_speech)
         refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
-
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
     @torch.inference_mode()
@@ -326,3 +325,23 @@ def _scale_variance(sequence, scale):
         if sequence[0][sequence_index] < 0.0:
             sequence[0][sequence_index] = 0.0
     return sequence
+
+
+def smooth_time_series(matrix, n_neighbors):
+    """
+    Smooth a 2D matrix along the time axis using a moving average.
+
+    Parameters:
+    - matrix (torch.Tensor): Input matrix (2D tensor) representing the time series.
+    - n_neighbors (int): Number of neighboring rows to include in the moving average.
+
+    Returns:
+    - torch.Tensor: Smoothed matrix.
+    """
+    smoothed_matrix = torch.zeros_like(matrix)
+    for i in range(matrix.size(0)):
+        lower = max(0, i - n_neighbors)
+        upper = min(matrix.size(0), i + n_neighbors + 1)
+        smoothed_matrix[i] = torch.mean(matrix[lower:upper], dim=0)
+
+    return smoothed_matrix

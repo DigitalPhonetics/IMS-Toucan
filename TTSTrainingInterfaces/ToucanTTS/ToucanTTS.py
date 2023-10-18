@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=256,
+                 attention_dimension=384,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -90,14 +90,14 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=5,
+                 glow_kernel_size=9,
                  glow_blocks=12,
-                 glow_layers=3,
+                 glow_layers=5,
 
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=True,
+                 use_conditional_layernorm_embedding_integration=False,
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
                  codebook_dim=512
@@ -176,7 +176,7 @@ class ToucanTTS(torch.nn.Module):
                                  concat_after=encoder_concat_after,
                                  positionwise_conv_kernel_size=positionwise_conv_kernel_size,
                                  macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=False,  # from ASR we see that text should not use convolutions, but audio should.
+                                 use_cnn_module=True,
                                  cnn_module_kernel=conformer_encoder_kernel_size,
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
@@ -232,7 +232,7 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=False,
+                                 use_output_norm=not use_conditional_layernorm_embedding_integration,
                                  utt_embed=utt_embed_dim,
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
