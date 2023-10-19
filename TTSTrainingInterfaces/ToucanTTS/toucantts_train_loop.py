@@ -65,7 +65,15 @@ def train_loop(net,
         steps_per_checkpoint = len(train_dataset) // batch_size
 
     style_embedding_function = StyleEmbedding().to(device)
-    if gpu_count > 1:
+
+    if path_to_embed_model is not None:
+        check_dict = torch.load(path_to_embed_model, map_location=device)
+        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
+        if not train_embed:
+            style_embedding_function.eval()
+            style_embedding_function.requires_grad_(False)
+
+    if gpu_count > 1 and (train_embed or path_to_embed_model is None):
         style_embedding_function.to(rank)
         style_embedding_function = torch.nn.parallel.DistributedDataParallel(
             style_embedding_function,
@@ -74,12 +82,6 @@ def train_loop(net,
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
-    if path_to_embed_model is not None:
-        check_dict = torch.load(path_to_embed_model, map_location=device)
-        style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        if not train_embed:
-            style_embedding_function.eval()
-            style_embedding_function.requires_grad_(False)
 
     torch.multiprocessing.set_sharing_strategy('file_system')
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
@@ -94,7 +96,8 @@ def train_loop(net,
 
     if isinstance(net, torch.nn.parallel.DistributedDataParallel):
         model = net.module
-        style_embedding_function = style_embedding_function.module
+        if train_embed or path_to_embed_model is None:
+            style_embedding_function = style_embedding_function.module
     else:
         model = net
     if train_embed or path_to_embed_model is None:
