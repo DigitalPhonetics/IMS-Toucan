@@ -42,8 +42,8 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=384,
-                 attention_heads=4,
+                 attention_dimension=192,
+                 attention_heads=6,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
@@ -53,7 +53,7 @@ class ToucanTTS(torch.nn.Module):
                  # encoder
                  encoder_layers=6,
                  encoder_units=1280,
-                 encoder_normalize_before=True,  # when we're using conditional layernorm, we should not destroy this information with regular layernorm directly after
+                 encoder_normalize_before=True,
                  encoder_concat_after=False,
                  conformer_encoder_kernel_size=7,
                  transformer_enc_dropout_rate=0.1,
@@ -90,14 +90,14 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=9,
-                 glow_blocks=12,
-                 glow_layers=5,
+                 glow_kernel_size=5,
+                 glow_blocks=18,
+                 glow_layers=3,
 
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=False,
+                 use_conditional_layernorm_embedding_integration=True,
                  num_codebooks=4,  # has to be  4 when using the HiFi audio codec
                  codebook_size=1024,
                  codebook_dim=512

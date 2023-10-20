@@ -218,8 +218,8 @@ class ToucanTTS(torch.nn.Module):
         if duration_scaling_factor != 1.0:
             assert duration_scaling_factor > 0
             predicted_durations = torch.round(predicted_durations.float() * duration_scaling_factor).long()
-        # pitch_predictions = smooth_time_series(pitch_predictions.squeeze(0), 2).unsqueeze(0)
-        # energy_predictions = smooth_time_series(energy_predictions.squeeze(0), 2).unsqueeze(0)
+        pitch_predictions = make_near_zero_to_zero(pitch_predictions.squeeze(0)).unsqueeze(0)
+        energy_predictions = make_near_zero_to_zero(energy_predictions.squeeze(0)).unsqueeze(0)
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
 
@@ -294,18 +294,18 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.unsqueeze(0).to(text.device)
 
         outs, \
-            predicted_durations, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text.unsqueeze(0),
-                                               text_length,
-                                               gold_durations=durations,
-                                               gold_pitch=pitch,
-                                               gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale,
-                                               pause_duration_scaling_factor=pause_duration_scaling_factor)
+        predicted_durations, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           text_length,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions
@@ -352,3 +352,10 @@ def smooth_time_series(matrix, n_neighbors):
         smoothed_matrix[i] = torch.mean(matrix[lower:upper], dim=0)
 
     return smoothed_matrix
+
+
+def make_near_zero_to_zero(sequence):
+    for index in range(len(sequence)):
+        if sequence[index] < 0.2:
+            sequence[index] = 0.0
+    return sequence

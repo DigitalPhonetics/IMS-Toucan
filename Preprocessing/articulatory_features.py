@@ -938,6 +938,9 @@ def generate_feature_table():
             for feat in ipa_to_phonemefeats[ipa]:
                 if ipa_to_phonemefeats[ipa][feat] in value_to_index:
                     phone_to_vector[ipa][value_to_index[ipa_to_phonemefeats[ipa][feat]]] = 1
+            if phone_to_vector[ipa][value_to_index["phoneme"]] != 1:
+                # it's not a phoneme, so we give it the silence marker, regardless of what it is.
+                phone_to_vector[ipa][value_to_index["silence"]] = 1
 
     for feat in feat_to_val_set:
         for value in feat_to_val_set[feat]:

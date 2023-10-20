@@ -213,18 +213,16 @@ class TTSDataset(Dataset):
         if self.ap is None:
             self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
         codec_frames = self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach()
-        pitch = smooth_away_zero_values(self.datapoints[index][6])  # this is a bandaid to a previous bug. It should be fixed in the future, but low priority, because this works for now.
-        energy = smooth_away_zero_values(self.datapoints[index][5])
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            codec_frames, \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            energy, \
-            pitch, \
-            codec_frames, \
-            self.language_id, \
-            self.datapoints[index][7]
+               self.datapoints[index][1], \
+               codec_frames, \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               codec_frames, \
+               self.language_id, \
+               self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)
