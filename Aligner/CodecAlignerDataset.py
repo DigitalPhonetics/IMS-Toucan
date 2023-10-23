@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 from torchaudio.transforms import Resample
 from tqdm import tqdm
 
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.storage_config import MODELS_DIR
@@ -30,6 +31,7 @@ class CodecAlignerDataset(Dataset):
                  phone_input=False,
                  allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
+        self.spectrogram_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device=device)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             torch.multiprocessing.set_start_method('spawn', force=True)
             if type(path_to_transcript_dict) != dict:
@@ -191,11 +193,13 @@ class CodecAlignerDataset(Dataset):
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
         speech_indexes = self.datapoints[index][1]
-        speech_len = torch.LongTensor([len(speech_indexes)])
-        speech = self.ap.indexes_to_codec_frames(speech_indexes.int().transpose(0, 1)).transpose(0, 1).detach()
+        speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1)).detach()
+        mel = self.spectrogram_extractor.audio_to_mel_spec_tensor(speech, explicit_sampling_rate=24000)
+        speech_len = torch.LongTensor([len(mel)])
+
         return tokens, \
                token_len, \
-               speech, \
+               mel, \
                speech_len, \
                self.speaker_embeddings[index]
 

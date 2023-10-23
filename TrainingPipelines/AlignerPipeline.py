@@ -8,11 +8,16 @@ from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
 
-def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id):
+def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
     if gpu_id == "cpu":
         device = torch.device("cpu")
     else:
         device = torch.device("cuda")
+
+    if gpu_count > 1:
+        print("Multi GPU training not supported for Aligner!")
+        import sys
+        sys.exit()
 
     print("Preparing")
 
@@ -133,8 +138,18 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang="de",
                                            device=device))
 
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_thorsten,
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "Thorsten"),
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_emotional(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_emotional"),
+                                           lang="de",
+                                           device=device))
+
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_neutral(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_neutral"),
+                                           lang="de",
+                                           device=device))
+
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_thorsten_2022_10(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "thorsten_2022"),
                                            lang="de",
                                            device=device))
 

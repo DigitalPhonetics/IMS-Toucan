@@ -88,7 +88,7 @@ class AudioPreprocessor:
             audio = self.cut_leading_and_trailing_silence(audio)
         return audio
 
-    def audio_to_mel_spec_tensor(self, audio, normalize=True, explicit_sampling_rate=None):
+    def audio_to_mel_spec_tensor(self, audio, normalize=False, explicit_sampling_rate=None):
         """
         explicit_sampling_rate is for when
         normalization has already been applied
@@ -97,11 +97,14 @@ class AudioPreprocessor:
         audio
         """
         if explicit_sampling_rate is None or explicit_sampling_rate == self.output_sr:
-            if normalize:
-                audio = self.normalize_audio(audio)
             return self.wave_to_spectrogram(audio)
-        print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
-        return LogMelSpec(sr=explicit_sampling_rate).to(self.device)(audio)
+        else:
+            if explicit_sampling_rate != self.input_sr:
+                print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
+                self.resample = Resample(orig_freq=explicit_sampling_rate, new_freq=self.output_sr).to(self.device)
+                self.input_sr = explicit_sampling_rate
+            audio = self.resample(audio)
+            return self.wave_to_spectrogram(audio)
 
 
 class LogMelSpec(torch.nn.Module):

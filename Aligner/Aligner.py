@@ -35,7 +35,7 @@ class BatchNormConv(nn.Module):
 class Aligner(torch.nn.Module):
 
     def __init__(self,
-                 n_features=512,
+                 n_features=128,
                  num_symbols=145,
                  lstm_dim=512,
                  conv_dim=512):

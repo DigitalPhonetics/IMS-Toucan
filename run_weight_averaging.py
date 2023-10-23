@@ -7,6 +7,7 @@ import os
 import torch
 
 from TTSInferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
+from TTSTrainingInterfaces.BigVGAN.BigVGAN import BigVGAN
 from Utility.storage_config import MODELS_DIR
 
 
@@ -14,6 +15,12 @@ def load_net_toucan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
     net = ToucanTTS(weights=check_dict["model"], config=check_dict["config"])
     return net, check_dict["default_emb"]
+
+
+def load_net_bigvgan(path):
+    check_dict = torch.load(path, map_location=torch.device("cpu"))
+    net = BigVGAN(weights=check_dict["generator"])
+    return net, None
 
 
 def get_n_recent_checkpoints_paths(checkpoint_dir, n=5):
