@@ -96,6 +96,8 @@ class AudioPreprocessor:
         to detect the current input_sr of the incoming
         audio
         """
+        if type(audio) != torch.tensor and type(audio) != torch.Tensor:
+            audio = torch.tensor(audio, device=self.device)
         if explicit_sampling_rate is None or explicit_sampling_rate == self.output_sr:
             return self.wave_to_spectrogram(audio)
         else:
