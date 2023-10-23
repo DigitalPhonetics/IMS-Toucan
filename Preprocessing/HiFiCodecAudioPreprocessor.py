@@ -22,17 +22,18 @@ class CodecAudioPreprocessor:
             print("warning, change in sampling rate detected. If this happens too often, consider re-ordering the audios so that the sampling rate stays constant for multiple samples")
             self.resample = Resample(orig_freq=current_sampling_rate, new_freq=self.output_sr).to(self.device)
             self.input_sr = current_sampling_rate
-        audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        audio = self.resample(audio)
+        if type(audio) != torch.tensor and type(audio) != torch.Tensor:
+            audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
+        audio = self.resample(audio.to(self.device))
         return audio
 
     @torch.inference_mode()
     def audio_to_codebook_indexes(self, audio, current_sampling_rate):
         if current_sampling_rate != self.output_sr:
             audio = self.resample_audio(audio, current_sampling_rate)
-        elif type(audio) != torch.tensor:
+        elif type(audio) != torch.tensor and type(audio) != torch.Tensor:
             audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        return self.model.encode(audio.unsqueeze(0)).squeeze().transpose(0, 1)
+        return self.model.encode(audio.unsqueeze(0).to(self.device)).squeeze().transpose(0, 1)
 
     @torch.inference_mode()
     def indexes_to_one_hot(self, indexes):
