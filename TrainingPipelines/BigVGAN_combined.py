@@ -70,11 +70,11 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
 
-    train_set = BigVGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 200000)  # adjust the sample size until it fits into RAM
+    train_set = BigVGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 300000)  # adjust the sample size until it fits into RAM
                                )
 
     generator = BigVGAN()
-    jit_compiled_generator = torch.jit.trace(generator, torch.rand([18, 128, 32]))
+    jit_compiled_generator = torch.jit.trace(generator, torch.rand([24, 128, 32]))
     discriminator = AvocodoHiFiGANJointDiscriminator()
 
     print("Training model")
@@ -83,7 +83,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=18,
+    train_loop(batch_size=24,
                epochs=80000,
                generator=jit_compiled_generator,
                discriminator=discriminator,
