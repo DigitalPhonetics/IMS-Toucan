@@ -11,8 +11,6 @@ import torch.multiprocessing
 from matplotlib.lines import Line2D
 
 import Layers.ConditionalLayerNorm
-from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 
@@ -70,42 +68,35 @@ def plot_progress_spec_toucantts(net,
                                  default_emb,
                                  run_glow):
     tf = ArticulatoryCombinedTextFrontend(language=lang)
-    cap = CodecAudioPreprocessor(input_sr=-1, device=device)  # just used for inversion
-    ap = AudioPreprocessor(input_sr=24000, output_sr=16000)
     sentence = tf.get_example_sentence(lang=lang)
     if sentence is None:
         return None
     phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    codes, durations, pitch, energy = net.inference(text=phoneme_vector,
-                                                    return_duration_pitch_energy=True,
-                                                    utterance_embedding=default_emb,
-                                                    lang_id=get_language_id(lang).to(device),
-                                                    run_glow=run_glow)
+    mel, durations, pitch, energy = net.inference(text=phoneme_vector,
+                                                  return_duration_pitch_energy=True,
+                                                  utterance_embedding=default_emb,
+                                                  lang_id=get_language_id(lang).to(device),
+                                                  run_glow=run_glow)
 
-    plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, os.path.join(save_dir, "visualization"), tf, step)
+    plot_code_spec(pitch, energy, sentence, durations, mel, os.path.join(save_dir, "visualization"), tf, step)
     return os.path.join(os.path.join(save_dir, "visualization"), f"{step}.png")
 
 
-def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path, tf, step):
-    mel = ap.audio_to_mel_spec_tensor(cap.codes_to_audio(codes))
-    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(9, 11))
+def plot_code_spec(pitch, energy, sentence, durations, mel, save_path, tf, step):
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 8))
 
-    spec_plot_axis = ax[0]
-    codec_plot_axis = ax[2]
-    pitch_and_energy_axis = ax[1]
+    spec_plot_axis = ax[1]
+    pitch_and_energy_axis = ax[0]
 
-    codec_plot_axis.imshow(codes.cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
-    spec_plot_axis.xaxis.set_visible(False)
-    codec_plot_axis.yaxis.set_visible(False)
     pitch_and_energy_axis.yaxis.set_visible(False)
     pitch_and_energy_axis.xaxis.set_visible(False)
     spec_plot_axis.yaxis.set_visible(False)
     duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-    codec_plot_axis.xaxis.grid(True, which='minor')
-    codec_plot_axis.set_xticks(label_positions, minor=False)
+    spec_plot_axis.xaxis.grid(True, which='minor')
+    spec_plot_axis.set_xticks(label_positions, minor=False)
     phones = tf.get_phone_string(sentence, for_plot_labels=True)
-    codec_plot_axis.set_xticklabels(phones)
+    spec_plot_axis.set_xticklabels(phones)
     word_boundaries = list()
     for label_index, phone in enumerate(phones):
         if phone == "|":
@@ -118,7 +109,7 @@ def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path
             prev_word_boundary = word_boundary
         word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
 
-        secondary_ax = codec_plot_axis.secondary_xaxis('bottom')
+        secondary_ax = spec_plot_axis.secondary_xaxis('bottom')
         secondary_ax.tick_params(axis="x", direction="out", pad=24)
         secondary_ax.set_xticks(word_label_positions, minor=False)
         secondary_ax.set_xticklabels(sentence.split())
@@ -129,14 +120,13 @@ def plot_code_spec(pitch, energy, sentence, ap, cap, durations, codes, save_path
     except IndexError:
         spec_plot_axis.set_title(sentence)
 
-    codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=4, linewidth=2.0)
-    codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=4, linewidth=3.0)
+    spec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=15, linewidth=1.0)
+    spec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=15, linewidth=2.0)
 
     pitch_and_energy_axis.plot(pitch.cpu().squeeze().numpy(), color="blue")
     pitch_and_energy_axis.plot(energy.cpu().squeeze().numpy(), color="green")
 
     spec_plot_axis.set_aspect("auto")
-    codec_plot_axis.set_aspect("auto")
     pitch_and_energy_axis.set_aspect("auto")
 
     plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95, wspace=0.0, hspace=0.0)

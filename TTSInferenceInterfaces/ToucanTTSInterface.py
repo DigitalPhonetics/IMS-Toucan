@@ -11,10 +11,10 @@ from torchaudio.transforms import Resample
 
 from EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
 from TTSInferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
+from TTSTrainingInterfaces.BigVGAN.BigVGAN import BigVGAN
 from Utility.storage_config import MODELS_DIR
 from Utility.utils import cumsum_durations
 from Utility.utils import float2pcm
@@ -25,6 +25,7 @@ class ToucanTTSInterface(torch.nn.Module):
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=os.path.join(MODELS_DIR, f"BigVGAN", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  embedding_model_path=None,
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  ):
@@ -39,14 +40,10 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
 
-        ################################
-        #   load weights               #
-        ################################
-        checkpoint = torch.load(tts_model_path, map_location='cpu')
-
         #####################################
         #   load phone to features model    #
         #####################################
+        checkpoint = torch.load(tts_model_path, map_location='cpu')
         self.use_lang_id = True
         self.phone2codec = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
         with torch.no_grad():
@@ -68,17 +65,18 @@ class ToucanTTSInterface(torch.nn.Module):
                                                                            savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
 
         ################################
-        #  load code to wave model     #
+        #  load mel to wave model      #
         ################################
-        self.codec_wrapper = CodecAudioPreprocessor(input_sr=24000, device=device)
-        self.codec_wrapper.model.generator.remove_weight_norm()
-        self.spectrogram_wrapper = AudioPreprocessor(input_sr=24000, output_sr=16000)
+        check_dict = torch.load(vocoder_model_path, map_location="cpu")
+        self.vocoder = BigVGAN(weights=check_dict).to(device).eval()
+        self.vocoder.remove_weight_norm()
         self.meter = pyloudnorm.Meter(24000)
 
         ################################
         #  set defaults                #
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
+        self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, device=device)
         self.phone2codec.eval()
         self.style_embedding_function.eval()
         if self.use_lang_id:
@@ -94,13 +92,10 @@ class ToucanTTSInterface(torch.nn.Module):
             return
         assert os.path.exists(path_to_reference_audio)
         wave, sr = soundfile.read(path_to_reference_audio)
-        if sr != self.codec_wrapper.input_sr:
-            self.codec_wrapper = CodecAudioPreprocessor(input_sr=sr, device=self.device)
-        self.codec_wrapper.model.generator.remove_weight_norm()
-        spec = self.codec_wrapper.audio_to_codec_tensor(wave, current_sampling_rate=sr).transpose(0, 1)
+        wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
+        spec = self.ap.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000)
         spec_len = torch.LongTensor([len(spec)])
         style_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
-        wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
         speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
         self.default_utterance_embedding = torch.cat([style_embedding, speaker_embedding], dim=-1)
 
@@ -146,19 +141,19 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
-            codec_frames, durations, pitch, energy = self.phone2codec(phones,
-                                                                      return_duration_pitch_energy=True,
-                                                                      utterance_embedding=self.default_utterance_embedding,
-                                                                      durations=durations,
-                                                                      pitch=pitch,
-                                                                      energy=energy,
-                                                                      lang_id=self.lang_id,
-                                                                      duration_scaling_factor=duration_scaling_factor,
-                                                                      pitch_variance_scale=pitch_variance_scale,
-                                                                      energy_variance_scale=energy_variance_scale,
-                                                                      pause_duration_scaling_factor=pause_duration_scaling_factor)
+            mel, durations, pitch, energy = self.phone2codec(phones,
+                                                             return_duration_pitch_energy=True,
+                                                             utterance_embedding=self.default_utterance_embedding,
+                                                             durations=durations,
+                                                             pitch=pitch,
+                                                             energy=energy,
+                                                             lang_id=self.lang_id,
+                                                             duration_scaling_factor=duration_scaling_factor,
+                                                             pitch_variance_scale=pitch_variance_scale,
+                                                             energy_variance_scale=energy_variance_scale,
+                                                             pause_duration_scaling_factor=pause_duration_scaling_factor)
             # codec_frames=self.codec_wrapper.model.quantizer(codec_frames.unsqueeze(0))[0].squeeze()  # re-quantization
-            wave = self.codec_wrapper.codes_to_audio(codec_frames).cpu().numpy()
+            wave = self.vocoder(mel).cpu().numpy()
         try:
             loudness = self.meter.integrated_loudness(wave)
             wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
@@ -167,24 +162,19 @@ class ToucanTTSInterface(torch.nn.Module):
             pass
 
         if view or return_plot_as_filepath:
-            fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 6))
+            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
             spec_plot_axis = ax[0]
-            codec_plot_axis = ax[1]
 
-            mel = self.spectrogram_wrapper.audio_to_mel_spec_tensor(wave)
-            codec_plot_axis.imshow(codec_frames.cpu().numpy(), origin="lower", cmap='GnBu')
             spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
-            spec_plot_axis.xaxis.set_visible(False)
-            codec_plot_axis.yaxis.set_visible(False)
             spec_plot_axis.yaxis.set_visible(False)
             duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-            codec_plot_axis.xaxis.grid(True, which='minor')
-            codec_plot_axis.set_xticks(label_positions, minor=False)
+            spec_plot_axis.xaxis.grid(True, which='minor')
+            spec_plot_axis.set_xticks(label_positions, minor=False)
             if input_is_phones:
                 phones = text.replace(" ", "|")
             else:
                 phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
-            codec_plot_axis.set_xticklabels(phones)
+            spec_plot_axis.set_xticklabels(phones)
             word_boundaries = list()
             for label_index, phone in enumerate(phones):
                 if phone == "|":
@@ -198,7 +188,7 @@ class ToucanTTSInterface(torch.nn.Module):
                     prev_word_boundary = word_boundary
                 word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
 
-                secondary_ax = codec_plot_axis.secondary_xaxis('bottom')
+                secondary_ax = spec_plot_axis.secondary_xaxis('bottom')
                 secondary_ax.tick_params(axis="x", direction="out", pad=24)
                 secondary_ax.set_xticks(word_label_positions, minor=False)
                 secondary_ax.set_xticklabels(text.split())
@@ -209,11 +199,8 @@ class ToucanTTSInterface(torch.nn.Module):
             except IndexError:
                 spec_plot_axis.set_title(text)
 
-            codec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=4, linewidth=2.0)
-            codec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=4, linewidth=3.0)
-
-            spec_plot_axis.set_aspect("auto")
-            codec_plot_axis.set_aspect("auto")
+            spec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=4, linewidth=2.0)
+            spec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=4, linewidth=3.0)
 
             plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=.9, wspace=0.0, hspace=0.0)
             if return_plot_as_filepath:

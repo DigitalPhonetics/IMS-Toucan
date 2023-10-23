@@ -91,16 +91,13 @@ class ToucanTTS(torch.nn.Module):
 
                  # post glow
                  glow_kernel_size=5,
-                 glow_blocks=18,
-                 glow_layers=3,
+                 glow_blocks=14,
+                 glow_layers=5,
 
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
                  lang_embs=8000,
                  use_conditional_layernorm_embedding_integration=True,
-                 num_codebooks=4,  # has to be  4 when using the HiFi audio codec
-                 codebook_size=1024,
-                 codebook_dim=512
                  ):
         super().__init__()
 
@@ -145,9 +142,6 @@ class ToucanTTS(torch.nn.Module):
             "utt_embed_dim"                                  : utt_embed_dim,
             "lang_embs"                                      : lang_embs,
             "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration,
-            "num_codebooks"                                  : num_codebooks,
-            "codebook_size"                                  : codebook_size,
-            "codebook_dim"                                   : codebook_dim,
             "glow_kernel_size"                               : glow_kernel_size,
             "glow_blocks"                                    : glow_blocks,
             "glow_layers"                                    : glow_layers
@@ -159,8 +153,6 @@ class ToucanTTS(torch.nn.Module):
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
         self.num_codebooks = num_codebooks
-        self.codebook_size = codebook_size
-        self.codebook_dim = codebook_dim
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -237,11 +229,10 @@ class ToucanTTS(torch.nn.Module):
                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
 
         # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
-        self.output_projection_part_1 = torch.nn.Linear(attention_dimension, self.codebook_dim // 2)
-        self.output_projection_part_2 = torch.nn.Linear(attention_dimension + self.codebook_dim // 2, self.codebook_dim // 2)
+        self.output_projection = torch.nn.Linear(attention_dimension, 128)
 
         self.post_flow = Glow(
-            in_channels=self.codebook_dim,
+            in_channels=128,
             hidden_channels=attention_dimension,  # post_glow_hidden
             kernel_size=glow_kernel_size,  # post_glow_kernel_size
             dilation_rate=1,
@@ -253,7 +244,7 @@ class ToucanTTS(torch.nn.Module):
             share_cond_layers=False,  # post_share_cond_layers
             share_wn_layers=4,
             sigmoid_scale=False,
-            condition_integration_projection=torch.nn.Conv1d(codebook_dim + attention_dimension, attention_dimension, 5, padding=2)
+            condition_integration_projection=torch.nn.Conv1d(128 + attention_dimension, attention_dimension, 5, padding=2)
         )
 
         # initialize parameters
@@ -382,29 +373,27 @@ class ToucanTTS(torch.nn.Module):
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
         decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        codec_latents_first_codebook = self.output_projection_part_1(decoded_speech)
-        codec_latents_second_codebook = self.output_projection_part_2(torch.cat([decoded_speech, codec_latents_first_codebook], dim=-1))
-        codec_latents = torch.cat([codec_latents_first_codebook, codec_latents_second_codebook], dim=-1)
+        preliminary_spectrogram = self.output_projection(decoded_speech)
 
         if is_inference:
             if run_glow:
-                refined_codec_frames = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
+                refined_codec_frames = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=preliminary_spectrogram, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
             else:
-                refined_codec_frames = codec_latents
+                refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
-                predicted_durations.squeeze(), \
-                pitch_predictions.squeeze(), \
-                energy_predictions.squeeze()
+                   predicted_durations.squeeze(), \
+                   pitch_predictions.squeeze(), \
+                   energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=codec_latents, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
+                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=preliminary_spectrogram, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
-            return codec_latents, \
-                glow_loss, \
-                predicted_durations, \
-                pitch_predictions, \
-                energy_predictions
+            return preliminary_spectrogram, \
+                   glow_loss, \
+                   predicted_durations, \
+                   pitch_predictions, \
+                   energy_predictions
 
     @torch.inference_mode()
     def inference(self,
@@ -459,7 +448,7 @@ class ToucanTTS(torch.nn.Module):
 if __name__ == '__main__':
     num_codebooks = 4
 
-    model = ToucanTTS(num_codebooks=num_codebooks)
+    model = ToucanTTS()
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     print(sum(p.numel() for p in model.post_flow.parameters() if p.requires_grad))
 
@@ -468,7 +457,7 @@ if __name__ == '__main__':
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
-    dummy_speech_batch = torch.randn([3, 30, 512])  # [Batch, Sequence Length, Spectrogram Buckets]
+    dummy_speech_batch = torch.randn([3, 30, 128])  # [Batch, Sequence Length, Spectrogram Buckets]
     dummy_speech_lens = torch.LongTensor([10, 30, 20])
 
     dummy_durations = torch.LongTensor([[10, 0, 0], [10, 15, 5], [5, 5, 10]])

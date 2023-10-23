@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
 from Aligner.CodecAlignerDataset import CodecAlignerDataset
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -34,6 +35,7 @@ class TTSDataset(Dataset):
                  gpu_count=1,
                  rank=0):
         self.ap = None
+        self.spec_extractor = None
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
@@ -57,6 +59,7 @@ class TTSDataset(Dataset):
 
             print("... building dataset cache ...")
             self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
+            self.spec_extractor_for_features = AudioPreprocessor(input_sr=24000, output_sr=16000, device=device)
             self.datapoints = list()
             self.ctc_losses = list()
 
@@ -76,16 +79,19 @@ class TTSDataset(Dataset):
             # actual creation of datapoints starts here
             # ==========================================
 
-            parsel = Parselmouth(fs=24000, hop_length=314)
-            energy_calc = EnergyCalculator(fs=24000, n_fft=1024, hop_length=320)
+            parsel = Parselmouth(fs=16000)
+            energy_calc = EnergyCalculator(fs=16000)
             self.dc = DurationCalculator()
             vis_dir = os.path.join(cache_dir, "duration_vis")
-            os.makedirs(vis_dir, exist_ok=True)
+            if save_imgs:
+                os.makedirs(vis_dir, exist_ok=True)
 
             for index in tqdm(range(len(self.dataset))):
                 decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device)).detach().cpu()
-
+                decoded_wave = librosa.resample(decoded_wave.cpu().numpy(), orig_sr=24000, target_sr=16000)
                 decoded_wave_length = torch.LongTensor([len(decoded_wave)])
+                features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(decoded_wave, explicit_sampling_rate=16000)
+                feature_lengths = torch.LongTensor([len(features)])
 
                 text = self.dataset[index][0]
 
@@ -103,9 +109,7 @@ class TTSDataset(Dataset):
                         text_with_pauses.append(vector.numpy().tolist())
                 text = torch.Tensor(text_with_pauses)
 
-                feature_lengths = torch.LongTensor([len(self.dataset[index][1])])
-
-                cached_duration, _ = self.calculate_durations(text, index, vis_dir, save_imgs)
+                cached_duration, _ = self.calculate_durations(text, index, vis_dir, features, save_imgs)
 
                 cumsum = 0
                 legal_silences = list()
@@ -115,9 +119,8 @@ class TTSDataset(Dataset):
                         legal_silences.append([cumsum, cumsum + cached_duration[phoneme_index]])
                         phoneme_indexes_of_silences.append(phoneme_index)
                     cumsum = cumsum + cached_duration[phoneme_index]
-                resampled_wave = librosa.resample(decoded_wave.cpu().numpy(), orig_sr=24000, target_sr=16000)
                 with torch.inference_mode():
-                    speech_timestamps = get_speech_timestamps(torch.Tensor(resampled_wave).to(device), silero_model, sampling_rate=16000)
+                    speech_timestamps = get_speech_timestamps(torch.Tensor(decoded_wave).to(device), silero_model, sampling_rate=16000)
                 silences = list()
                 prev_end = 0
                 for speech_segment in speech_timestamps:
@@ -130,8 +133,8 @@ class TTSDataset(Dataset):
                 illegal_silences = list()
                 for silence_index, silence in enumerate(silences):
                     illegal = True
-                    start = silence[0] / len(resampled_wave)
-                    end = silence[1] / len(resampled_wave)
+                    start = silence[0] / len(decoded_wave)
+                    end = silence[1] / len(decoded_wave)
                     for legal_silence in legal_silences:
                         legal_start = legal_silence[0] / decoded_wave_length
                         legal_end = legal_silence[1] / decoded_wave_length
@@ -143,7 +146,7 @@ class TTSDataset(Dataset):
                         illegal_silences.append(phoneme_indexes_of_silences[silence_index])
 
                 text = remove_elements(text, illegal_silences)  # now we have all the silences where there should be silences and none where there shouldn't be any. We have to run the aligner again with this new information.
-                cached_duration, ctc_loss = self.calculate_durations(text, index, vis_dir, save_imgs)
+                cached_duration, ctc_loss = self.calculate_durations(text, index, vis_dir, features, save_imgs)
 
                 # silence is cleaned, yay
 
@@ -164,7 +167,7 @@ class TTSDataset(Dataset):
                 self.datapoints.append([text,  # text tensor
                                         torch.LongTensor([len(text)]),  # length of text tensor
                                         self.dataset[index][1],  # codec tensor (in index form)
-                                        torch.LongTensor([len(self.dataset[index][1])]),  # length of codec tensor
+                                        feature_lengths,  # length of codec tensor DEPRECATED
                                         cached_duration.cpu(),  # duration
                                         cached_energy.float(),  # energy
                                         cached_pitch.float(),  # pitch
@@ -209,31 +212,7 @@ class TTSDataset(Dataset):
         self.language_id = get_language_id(lang)
         print(f"Prepared a TTS dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
-    def __getitem__(self, index):
-        if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
-        codec_frames = self.ap.indexes_to_codec_frames(self.datapoints[index][2].int().transpose(0, 1)).transpose(0, 1).detach()
-        return self.datapoints[index][0], \
-               self.datapoints[index][1], \
-               codec_frames, \
-               self.datapoints[index][3], \
-               self.datapoints[index][4], \
-               self.datapoints[index][5], \
-               self.datapoints[index][6], \
-               codec_frames, \
-               self.language_id, \
-               self.datapoints[index][7]
-
-    def __len__(self):
-        return len(self.datapoints)
-
-    def remove_samples(self, list_of_samples_to_remove):
-        for remove_id in sorted(list_of_samples_to_remove, reverse=True):
-            self.datapoints.pop(remove_id)
-        torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
-        print("Dataset updated!")
-
-    def calculate_durations(self, text, index, vis_dir, save_imgs):
+    def calculate_durations(self, text, index, vis_dir, features, save_imgs):
         # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
         # We note the index of word boundaries and insert durations of 0 afterwards
         text_without_word_boundaries = list()
@@ -245,7 +224,6 @@ class TTSDataset(Dataset):
                 indexes_of_word_boundaries.append(phoneme_index)
         matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-        features = self.codec_wrapper.indexes_to_codec_frames(self.dataset[index][1].int().transpose(0, 1).to(self.device)).transpose(0, 1).detach()
         alignment_path, ctc_loss = self.acoustic_model.inference(features=features,
                                                                  tokens=matrix_without_word_boundaries.to(self.device),
                                                                  save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
@@ -259,57 +237,28 @@ class TTSDataset(Dataset):
                                          cached_duration[index_of_word_boundary:]])
         return cached_duration, ctc_loss
 
+    def __getitem__(self, index):
+        if self.ap is None:
+            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
+            self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000)
+        wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
+        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000)
+        return self.datapoints[index][0], \
+               self.datapoints[index][1], \
+               mel, \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               mel, \
+               self.language_id, \
+               self.datapoints[index][7]
 
-def smooth_away_zero_values(lst):
-    for i in range(len(lst)):
-        if lst[i] < 0.2:
-            # Find the previous value larger than 0.2
-            j = i - 1
-            while j >= 0 and lst[j] < 0.2:
-                j -= 1
+    def __len__(self):
+        return len(self.datapoints)
 
-            # If the first element is smaller than 0.2, take the next value larger than 0.2
-            if j == -1:
-                j = i + 1
-                while j < len(lst) and lst[j] < 0.2:
-                    j += 1
-
-            # Find the next value larger than 0.2
-            k = i + 1
-            while k < len(lst) and lst[k] < 0.2:
-                k += 1
-
-            # If the last element is smaller than 0.2, take the previous value larger than 0.2
-            if k == len(lst):
-                k = i - 1
-                while k >= 0 and lst[k] < 0.2:
-                    k -= 1
-
-            # Replace the current element with the average of the previous and next values
-            try:
-                lst[i] = (lst[j] + lst[k]) / 2
-            except IndexError:
-                # no element in the list is larger than 0.2, so we assign a default value
-                lst[i] = 1.0
-
-    return torch.tensor(lst)
-
-
-if __name__ == '__main__':
-    parsel = Parselmouth(fs=24000, hop_length=314)
-    energy_calc = EnergyCalculator(fs=24000, n_fft=1024, hop_length=320)
-    _codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device="cpu", path_to_config="../../Codec/config_24k_320d.json", path_to_model="../../Codec/HiFi-Codec-24k-320d.pt")
-    import soundfile
-
-    test_audio = "../../audios/ad01_0003.wav"
-    wav, sr = soundfile.read(test_audio)
-
-    pseudo_wave = torch.cat([torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav), torch.tensor(wav)]).unsqueeze(0)
-
-    pitch = parsel(pseudo_wave)
-    energy = energy_calc(pseudo_wave)
-    indexes = _codec_wrapper.audio_to_codebook_indexes(pseudo_wave.squeeze(0), current_sampling_rate=24000)
-
-    print(pitch[0].shape)
-    print(energy[0].shape)
-    print(indexes.shape)
+    def remove_samples(self, list_of_samples_to_remove):
+        for remove_id in sorted(list_of_samples_to_remove, reverse=True):
+            self.datapoints.pop(remove_id)
+        torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
+        print("Dataset updated!")

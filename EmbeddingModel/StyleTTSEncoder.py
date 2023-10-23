@@ -15,7 +15,7 @@ from torch.nn.utils import spectral_norm
 
 
 class StyleEncoder(nn.Module):
-    def __init__(self, dim_in=512, style_dim=64, max_conv_dim=384):
+    def __init__(self, dim_in=128, style_dim=64, max_conv_dim=384):
         super().__init__()
         blocks = []
         blocks += [spectral_norm(nn.Conv2d(1, dim_in, 3, 1, 1))]
