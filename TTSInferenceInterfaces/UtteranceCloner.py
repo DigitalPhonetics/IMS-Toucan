@@ -1,9 +1,8 @@
 import os
 
+import numpy
 import soundfile as sf
 import torch
-from torch.optim import SGD
-from tqdm import tqdm
 
 from Aligner.Aligner import Aligner
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -75,19 +74,19 @@ class UtteranceCloner:
 
         if on_line_fine_tune:
             # we fine-tune the aligner for a couple steps using SGD. This makes cloning pretty slow, but the results are greatly improved.
-            steps = 5
+            steps = 10
             tokens = self.tf.text_vectors_to_id_sequence(text_vector=text)  # we need an ID sequence for training rather than a sequence of phonological features
             tokens = torch.LongTensor(tokens).squeeze().to(self.device)
             tokens_len = torch.LongTensor([len(tokens)]).to(self.device)
             mel = features.unsqueeze(0).to(self.device)
-            mel.requires_grad = True
             mel_len = torch.LongTensor([len(mel[0])]).to(self.device)
             # actual fine-tuning starts here
-            optim_asr = SGD(acoustic_model.parameters(), lr=0.1)
+            optim_asr = torch.optim.Adam(acoustic_model.parameters(), lr=0.00001)
             acoustic_model.train()
-            for _ in tqdm(list(range(steps))):
-                pred = acoustic_model(mel)
+            for _ in range(steps):
+                pred = acoustic_model(mel.clone())
                 loss = acoustic_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
+                print(loss.item())
                 optim_asr.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(acoustic_model.parameters(), 1.0)
@@ -144,10 +143,10 @@ class UtteranceCloner:
                                                                                                  path_to_reference_audio_for_intonation,
                                                                                                  lang=lang)
         self.tts.set_language(lang)
-        start_sil = torch.zeros([int(silence_frames_start * 1.5)]).to(self.device)  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
-        end_sil = torch.zeros([int(silence_frames_end * 1.5)]).to(self.device)  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
+        start_sil = numpy.zeros([int(silence_frames_start * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
+        end_sil = numpy.zeros([int(silence_frames_end * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
         cloned_speech = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
-        cloned_utt = torch.cat((start_sil, cloned_speech, end_sil), dim=0).cpu().numpy()
+        cloned_utt = numpy.concatenate([start_sil, cloned_speech, end_sil], axis=0)
         if filename_of_result is not None:
             sf.write(file=filename_of_result, data=float2pcm(cloned_utt), samplerate=24000, subtype="PCM_16")
 
