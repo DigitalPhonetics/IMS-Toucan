@@ -242,7 +242,7 @@ class TTSDataset(Dataset):
             self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
             self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000)
         wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
-        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000)
+        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1)
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
                mel, \
