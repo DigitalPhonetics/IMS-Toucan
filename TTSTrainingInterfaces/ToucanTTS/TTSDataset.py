@@ -224,7 +224,7 @@ class TTSDataset(Dataset):
                 indexes_of_word_boundaries.append(phoneme_index)
         matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-        alignment_path, ctc_loss = self.acoustic_model.inference(features=features,
+        alignment_path, ctc_loss = self.acoustic_model.inference(features=features.transpose(0, 1),
                                                                  tokens=matrix_without_word_boundaries.to(self.device),
                                                                  save_img_for_debug=os.path.join(vis_dir, f"{index}.png") if save_imgs else None,
                                                                  return_ctc=True)
