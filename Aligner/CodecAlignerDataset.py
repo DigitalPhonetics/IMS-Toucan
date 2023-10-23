@@ -31,8 +31,7 @@ class CodecAlignerDataset(Dataset):
                  phone_input=False,
                  allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
-        self.spectrogram_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device=device)
-        self.device = device
+        self.spectrogram_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             torch.multiprocessing.set_start_method('spawn', force=True)
             if type(path_to_transcript_dict) != dict:
@@ -188,7 +187,7 @@ class CodecAlignerDataset(Dataset):
 
     def __getitem__(self, index):
         if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
+            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
