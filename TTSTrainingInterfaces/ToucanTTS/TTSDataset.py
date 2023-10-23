@@ -90,7 +90,7 @@ class TTSDataset(Dataset):
                 decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device)).detach().cpu()
                 decoded_wave = librosa.resample(decoded_wave.cpu().numpy(), orig_sr=24000, target_sr=16000)
                 decoded_wave_length = torch.LongTensor([len(decoded_wave)])
-                features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(decoded_wave, explicit_sampling_rate=16000)
+                features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(torch.tensor(decoded_wave, device=device), explicit_sampling_rate=16000)
                 feature_lengths = torch.LongTensor([len(features)])
 
                 text = self.dataset[index][0]
