@@ -152,7 +152,6 @@ class ToucanTTS(torch.nn.Module):
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
-        self.num_codebooks = num_codebooks
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -446,8 +445,6 @@ class ToucanTTS(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    num_codebooks = 4
-
     model = ToucanTTS()
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     print(sum(p.numel() for p in model.post_flow.parameters() if p.requires_grad))
