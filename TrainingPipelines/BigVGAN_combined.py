@@ -70,8 +70,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
 
-    train_set = BigVGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 300000)  # adjust the sample size until it fits into RAM
-                               )
+    train_set = BigVGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 250000))  # adjust the sample size until it fits into RAM
 
     generator = BigVGAN()
     jit_compiled_generator = torch.jit.trace(generator, torch.rand([24, 128, 32]))

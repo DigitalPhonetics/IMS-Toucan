@@ -67,8 +67,10 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        check_dict = torch.load(vocoder_model_path, map_location="cpu")
-        self.vocoder = BigVGAN(weights=check_dict).to(device).eval()
+        vocoder_checkpoint = torch.load(vocoder_model_path, map_location="cpu")
+        self.vocoder = BigVGAN()
+        self.vocoder.load_state_dict(vocoder_checkpoint)
+        self.vocoder = self.vocoder.to(device).eval()
         self.vocoder.remove_weight_norm()
         self.meter = pyloudnorm.Meter(24000)
 
@@ -78,6 +80,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, device=device)
         self.phone2codec.eval()
+        self.vocoder.eval()
         self.style_embedding_function.eval()
         if self.use_lang_id:
             self.lang_id = get_language_id(language)
@@ -153,7 +156,9 @@ class ToucanTTSInterface(torch.nn.Module):
                                                              energy_variance_scale=energy_variance_scale,
                                                              pause_duration_scaling_factor=pause_duration_scaling_factor)
             # codec_frames=self.codec_wrapper.model.quantizer(codec_frames.unsqueeze(0))[0].squeeze()  # re-quantization
-            wave = self.vocoder(mel).cpu().numpy()
+
+            wave, _, _ = self.vocoder(mel.unsqueeze(0))
+            wave = wave.squeeze().cpu().numpy()
         try:
             loudness = self.meter.integrated_loudness(wave)
             wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
@@ -162,19 +167,18 @@ class ToucanTTSInterface(torch.nn.Module):
             pass
 
         if view or return_plot_as_filepath:
-            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
-            spec_plot_axis = ax[0]
+            fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
 
-            spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
-            spec_plot_axis.yaxis.set_visible(False)
+            ax.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
+            ax.yaxis.set_visible(False)
             duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-            spec_plot_axis.xaxis.grid(True, which='minor')
-            spec_plot_axis.set_xticks(label_positions, minor=False)
+            ax.xaxis.grid(True, which='minor')
+            ax.set_xticks(label_positions, minor=False)
             if input_is_phones:
                 phones = text.replace(" ", "|")
             else:
                 phones = self.text2phone.get_phone_string(text, for_plot_labels=True)
-            spec_plot_axis.set_xticklabels(phones)
+            ax.set_xticklabels(phones)
             word_boundaries = list()
             for label_index, phone in enumerate(phones):
                 if phone == "|":
@@ -188,21 +192,22 @@ class ToucanTTSInterface(torch.nn.Module):
                     prev_word_boundary = word_boundary
                 word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
 
-                secondary_ax = spec_plot_axis.secondary_xaxis('bottom')
+                secondary_ax = ax.secondary_xaxis('bottom')
                 secondary_ax.tick_params(axis="x", direction="out", pad=24)
                 secondary_ax.set_xticks(word_label_positions, minor=False)
                 secondary_ax.set_xticklabels(text.split())
                 secondary_ax.tick_params(axis='x', colors='orange')
                 secondary_ax.xaxis.label.set_color('orange')
             except ValueError:
-                spec_plot_axis.set_title(text)
+                ax.set_title(text)
             except IndexError:
-                spec_plot_axis.set_title(text)
+                ax.set_title(text)
 
-            spec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=4, linewidth=2.0)
-            spec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=4, linewidth=3.0)
+            ax.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=120, linewidth=0.5)
+            ax.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=120, linewidth=1.0)
+            plt.subplots_adjust(left=0.02, bottom=0.2, right=0.98, top=.9, wspace=0.0, hspace=0.0)
+            ax.set_aspect("auto")
 
-            plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=.9, wspace=0.0, hspace=0.0)
             if return_plot_as_filepath:
                 plt.savefig("tmp.png")
                 return wave, "tmp.png"

@@ -167,7 +167,7 @@ class TTSDataset(Dataset):
                 self.datapoints.append([text,  # text tensor
                                         torch.LongTensor([len(text)]),  # length of text tensor
                                         self.dataset[index][1],  # codec tensor (in index form)
-                                        feature_lengths,  # length of codec tensor DEPRECATED
+                                        feature_lengths,  # length of spectrogram
                                         cached_duration.cpu(),  # duration
                                         cached_energy.float(),  # energy
                                         cached_pitch.float(),  # pitch
@@ -262,3 +262,56 @@ class TTSDataset(Dataset):
             self.datapoints.pop(remove_id)
         torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
         print("Dataset updated!")
+
+    def update_durations_to_new_scale(self):
+        # changing back from codec frames to spectrograms also means extracting all the datasets anew. This is an attempt to save some for early experiments before doing it the proper way.
+        new_datapoints = list()
+        ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
+        spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device=self.device)
+        for datapoint in tqdm(self.datapoints):
+            wave = ap.indexes_to_audio(datapoint[2].int().transpose(0, 1).to(self.device)).detach()
+            mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1).cpu()
+            feature_lengths = torch.LongTensor([len(mel)])
+            adjusted_durations = torch.LongTensor(scale_list_to_sum(datapoint[4], feature_lengths))
+
+            new_datapoints.append([datapoint[0],  # text
+                                   datapoint[1],  # text len
+                                   datapoint[2],  # codebook indexes
+                                   feature_lengths,  # spectrogram len
+                                   adjusted_durations,  # durations
+                                   datapoint[5],  # energy
+                                   datapoint[6],  # pitch
+                                   datapoint[7],  # embedding
+                                   datapoint[8]])  # filepath
+        torch.save(new_datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
+        self.datapoints = new_datapoints
+
+
+def scale_list_to_sum(numbers, new_sum):
+    """
+    Thanks to ChatGPT for this quick solution for this dirty hack until I have the time to run feature extraction again properly.
+    """
+    # Calculate the current sum of the list
+    current_sum = sum(numbers)
+
+    # If the current sum is zero, return the original list as is
+    if current_sum == 0:
+        return numbers
+
+    # Calculate the scaling factor
+    scaling_factor = new_sum / current_sum
+
+    # Scale each number in the list while ensuring they remain integers
+    scaled_numbers = [int(number * scaling_factor) for number in numbers]
+
+    # Calculate the adjustment needed to match the new sum exactly
+    adjustment = new_sum - sum(scaled_numbers)
+
+    # Distribute the adjustment by adding 1 to the numbers with the largest remainder
+    fractions = [(number * scaling_factor) % 1 for number in numbers]
+    for i in range(adjustment):
+        max_fraction_index = fractions.index(max(fractions))
+        scaled_numbers[max_fraction_index] += 1
+        fractions[max_fraction_index] = 0  # Set the fraction to 0 for the updated number
+
+    return scaled_numbers

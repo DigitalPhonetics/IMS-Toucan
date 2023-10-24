@@ -92,7 +92,6 @@ def train_loop(generator,
         optimizer_g.zero_grad()
         optimizer_d.zero_grad()
         for datapoint in tqdm(train_loader):
-            step_counter += 1
 
             ############################
             #         Generator        #
@@ -101,6 +100,9 @@ def train_loop(generator,
             gold_wave = datapoint[0].to(device).unsqueeze(1)
             melspec = datapoint[1].to(device)
             pred_wave, intermediate_wave_upsampled_twice, intermediate_wave_upsampled_once = g(melspec)
+            if torch.any(torch.isnan(pred_wave)):
+                print("A NaN in the wave! Skipping...")
+                continue
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
             generator_total_loss = mel_loss * 45.0  # according to the Avocodo Paper
@@ -119,7 +121,11 @@ def train_loop(generator,
                 generator_total_loss = generator_total_loss + feature_matching_loss * 2  # according to Avocodo Paper
 
             if torch.isnan(generator_total_loss):
-                print("Loss turned to NaN, aborting so the progress is not overwritten. The GAN possibly collapsed.")
+                print("Loss turned to NaN, skipping. The GAN possibly collapsed.")
+                continue
+
+            step_counter += 1
+
             optimizer_g.zero_grad()
             generator_total_loss.backward()
             generator_losses.append(generator_total_loss.item())
@@ -168,7 +174,7 @@ def train_loop(generator,
 
             checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=model_save_dir, n=2)
             averaged_model, _ = average_checkpoints(checkpoint_paths, load_func=load_net_bigvgan)
-            torch.save(averaged_model, os.path.join(model_save_dir, "best.pt"))
+            torch.save(averaged_model.state_dict(), os.path.join(model_save_dir, "best.pt"))
 
         # LOGGING
         log_dict = dict()

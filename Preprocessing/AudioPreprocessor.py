@@ -127,7 +127,11 @@ class LogMelSpec(torch.nn.Module):
                                    mel_scale='htk')
 
     def forward(self, audio):
-        return torch.log10(self.spec(audio))
+        melspec = self.spec(audio)
+        zero_mask = melspec == 0
+        melspec[zero_mask] = 1e-8
+        logmelspec = torch.log10(melspec)
+        return logmelspec
 
 
 if __name__ == '__main__':

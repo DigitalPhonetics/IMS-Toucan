@@ -56,6 +56,7 @@ class BigVGANDataset(Dataset):
                 wave, sr = sf.read(path)
                 if sr != self.desired_samplingrate:
                     wave = librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate)
+
                 self.waves.append(wave)
             except RuntimeError:
                 print(f"Problem with the following path: {path}")
