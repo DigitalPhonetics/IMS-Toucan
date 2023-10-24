@@ -37,6 +37,7 @@ class TTSDataset(Dataset):
         self.ap = None
         self.spec_extractor = None
         self.cache_dir = cache_dir
+        self.device = device
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
             if gpu_count != 1:
@@ -55,7 +56,6 @@ class TTSDataset(Dataset):
             datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
             # we use the aligner dataset as basis and augment it to contain the additional information we need for tts.
             self.dataset, _, speaker_embeddings, filepaths = datapoints
-            self.device = device
 
             print("... building dataset cache ...")
             self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
@@ -91,7 +91,7 @@ class TTSDataset(Dataset):
                 decoded_wave = librosa.resample(decoded_wave.cpu().numpy(), orig_sr=24000, target_sr=16000)
                 decoded_wave_length = torch.LongTensor([len(decoded_wave)])
                 features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(torch.tensor(decoded_wave, device=device), explicit_sampling_rate=16000)
-                feature_lengths = torch.LongTensor([len(features)])
+                feature_lengths = torch.LongTensor([len(features[0])])
 
                 text = self.dataset[index][0]
 
@@ -239,20 +239,20 @@ class TTSDataset(Dataset):
 
     def __getitem__(self, index):
         if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
-            self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000)
-        wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
-        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1)
+            self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
+            self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device=self.device)
+        wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1).to(self.device)).detach()
+        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1).cpu()
         return self.datapoints[index][0], \
-               self.datapoints[index][1], \
-               mel, \
-               self.datapoints[index][3], \
-               self.datapoints[index][4], \
-               self.datapoints[index][5], \
-               self.datapoints[index][6], \
-               mel, \
-               self.language_id, \
-               self.datapoints[index][7]
+            self.datapoints[index][1], \
+            mel, \
+            self.datapoints[index][3], \
+            self.datapoints[index][4], \
+            self.datapoints[index][5], \
+            self.datapoints[index][6], \
+            mel, \
+            self.language_id, \
+            self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)

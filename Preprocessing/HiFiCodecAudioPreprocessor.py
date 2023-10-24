@@ -24,7 +24,7 @@ class CodecAudioPreprocessor:
             self.input_sr = current_sampling_rate
         if type(audio) != torch.tensor and type(audio) != torch.Tensor:
             audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        audio = self.resample(audio.to(self.device))
+        audio = self.resample(audio.float().to(self.device))
         return audio
 
     @torch.inference_mode()
