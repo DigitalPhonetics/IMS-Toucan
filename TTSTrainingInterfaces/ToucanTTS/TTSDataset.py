@@ -210,6 +210,8 @@ class TTSDataset(Dataset):
 
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
+        self.ap = CodecAudioPreprocessor(input_sr=-1, device="cpu")  # it would be so nice if we could use cuda here, but cuda cannot be initialized in a forked subprocess. However we need to use fork to avoid mmap issues. Big oof.
+        self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device="cpu")
         print(f"Prepared a TTS dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def calculate_durations(self, text, index, vis_dir, features, save_imgs):
@@ -238,11 +240,8 @@ class TTSDataset(Dataset):
         return cached_duration, ctc_loss
 
     def __getitem__(self, index):
-        if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
-            self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device=self.device)
-        wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1).to(self.device)).detach()
-        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1).cpu()
+        wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
+        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1)
         return self.datapoints[index][0], \
             self.datapoints[index][1], \
             mel, \

@@ -28,7 +28,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                steps=800000,  # how many updates to run until training is completed
                train_embed=False,  # whether to train the embedding function. Only relevant for single-language case
                ):
-    torch.multiprocessing.set_start_method('spawn', force=True)
+    torch.multiprocessing.set_start_method('fork', force=True)
     if type(datasets) != list:
         datasets = [datasets]
     if len(datasets) > 1:
