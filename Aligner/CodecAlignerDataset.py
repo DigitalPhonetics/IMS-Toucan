@@ -31,7 +31,6 @@ class CodecAlignerDataset(Dataset):
                  phone_input=False,
                  allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
-        self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             torch.multiprocessing.set_start_method('spawn', force=True)
             if type(path_to_transcript_dict) != dict:
@@ -109,6 +108,8 @@ class CodecAlignerDataset(Dataset):
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         self.ap = None
+        self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000)
+
         print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def cache_builder_process(self,
