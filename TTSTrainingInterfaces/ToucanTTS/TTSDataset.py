@@ -1,7 +1,6 @@
 import os
 import statistics
 
-import librosa
 import torch
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -59,7 +58,7 @@ class TTSDataset(Dataset):
 
             print("... building dataset cache ...")
             self.codec_wrapper = CodecAudioPreprocessor(input_sr=-1, device=device)
-            self.spec_extractor_for_features = AudioPreprocessor(input_sr=24000, output_sr=16000, device=device)
+            self.spec_extractor_for_features = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
             self.datapoints = list()
             self.ctc_losses = list()
 
@@ -87,10 +86,9 @@ class TTSDataset(Dataset):
                 os.makedirs(vis_dir, exist_ok=True)
 
             for index in tqdm(range(len(self.dataset))):
-                decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device)).detach().cpu()
-                decoded_wave = librosa.resample(decoded_wave.cpu().numpy(), orig_sr=24000, target_sr=16000)
+                decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device))
                 decoded_wave_length = torch.LongTensor([len(decoded_wave)])
-                features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(torch.tensor(decoded_wave, device=device), explicit_sampling_rate=16000)
+                features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(decoded_wave, explicit_sampling_rate=16000)
                 feature_lengths = torch.LongTensor([len(features[0])])
 
                 text = self.dataset[index][0]
@@ -211,7 +209,7 @@ class TTSDataset(Dataset):
         self.cache_dir = cache_dir
         self.language_id = get_language_id(lang)
         self.ap = CodecAudioPreprocessor(input_sr=-1, device="cpu")  # it would be so nice if we could use cuda here, but cuda cannot be initialized in a forked subprocess. However we need to use fork to avoid mmap issues. Big oof.
-        self.spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device="cpu")
+        self.spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device="cpu")
         print(f"Prepared a TTS dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
 
     def calculate_durations(self, text, index, vis_dir, features, save_imgs):
@@ -240,18 +238,19 @@ class TTSDataset(Dataset):
         return cached_duration, ctc_loss
 
     def __getitem__(self, index):
-        wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
-        mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1)
+        with torch.no_grad():
+            wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
+            mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1)
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            mel, \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            mel, \
-            self.language_id, \
-            self.datapoints[index][7]
+               self.datapoints[index][1], \
+               mel, \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               mel, \
+               self.language_id, \
+               self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)
@@ -261,56 +260,3 @@ class TTSDataset(Dataset):
             self.datapoints.pop(remove_id)
         torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
         print("Dataset updated!")
-
-    def update_durations_to_new_scale(self):
-        # changing back from codec frames to spectrograms also means extracting all the datasets anew. This is an attempt to save some for early experiments before doing it the proper way.
-        new_datapoints = list()
-        ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
-        spec_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000, device=self.device)
-        for datapoint in tqdm(self.datapoints):
-            wave = ap.indexes_to_audio(datapoint[2].int().transpose(0, 1).to(self.device)).detach()
-            mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=24000).transpose(0, 1).cpu()
-            feature_lengths = torch.LongTensor([len(mel)])
-            adjusted_durations = torch.LongTensor(scale_list_to_sum(datapoint[4], feature_lengths))
-
-            new_datapoints.append([datapoint[0],  # text
-                                   datapoint[1],  # text len
-                                   datapoint[2],  # codebook indexes
-                                   feature_lengths,  # spectrogram len
-                                   adjusted_durations,  # durations
-                                   datapoint[5],  # energy
-                                   datapoint[6],  # pitch
-                                   datapoint[7],  # embedding
-                                   datapoint[8]])  # filepath
-        torch.save(new_datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))
-        self.datapoints = new_datapoints
-
-
-def scale_list_to_sum(numbers, new_sum):
-    """
-    Thanks to ChatGPT for this quick solution for this dirty hack until I have the time to run feature extraction again properly.
-    """
-    # Calculate the current sum of the list
-    current_sum = sum(numbers)
-
-    # If the current sum is zero, return the original list as is
-    if current_sum == 0:
-        return numbers
-
-    # Calculate the scaling factor
-    scaling_factor = new_sum / current_sum
-
-    # Scale each number in the list while ensuring they remain integers
-    scaled_numbers = [int(number * scaling_factor) for number in numbers]
-
-    # Calculate the adjustment needed to match the new sum exactly
-    adjustment = new_sum - sum(scaled_numbers)
-
-    # Distribute the adjustment by adding 1 to the numbers with the largest remainder
-    fractions = [(number * scaling_factor) % 1 for number in numbers]
-    for i in range(adjustment):
-        max_fraction_index = fractions.index(max(fractions))
-        scaled_numbers[max_fraction_index] += 1
-        fractions[max_fraction_index] = 0  # Set the fraction to 0 for the updated number
-
-    return scaled_numbers

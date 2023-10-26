@@ -31,7 +31,7 @@ class CodecAlignerDataset(Dataset):
                  phone_input=False,
                  allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
-        self.spectrogram_extractor = AudioPreprocessor(input_sr=24000, output_sr=16000)
+        self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000)
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             torch.multiprocessing.set_start_method('spawn', force=True)
             if type(path_to_transcript_dict) != dict:
@@ -193,8 +193,9 @@ class CodecAlignerDataset(Dataset):
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
         speech_indexes = self.datapoints[index][1]
-        speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1)).detach()
-        mel = self.spectrogram_extractor.audio_to_mel_spec_tensor(speech, explicit_sampling_rate=24000).transpose(0, 1)
+        with torch.no_grad():
+            speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1)).detach()
+            mel = self.spectrogram_extractor.audio_to_mel_spec_tensor(speech, explicit_sampling_rate=16000).transpose(0, 1)
         speech_len = torch.LongTensor([len(mel)])
 
         return tokens, \

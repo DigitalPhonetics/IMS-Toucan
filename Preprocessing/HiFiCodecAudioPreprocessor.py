@@ -6,7 +6,7 @@ from Codec.vqvae import VQVAE
 
 class CodecAudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=24000, device="cpu", path_to_model="Codec/HiFi-Codec-24k-320d.pt", path_to_config="Codec/config_24k_320d.json"):
+    def __init__(self, input_sr, output_sr=16000, device="cpu", path_to_model="Codec/HiFi-Codec-16k-320d.pt", path_to_config="Codec/config_16k_320d.json"):
         self.device = device
         self.input_sr = input_sr
         self.output_sr = output_sr
@@ -14,6 +14,7 @@ class CodecAudioPreprocessor:
         self.model = VQVAE(path_to_config,
                            path_to_model,
                            with_encoder=True)
+        self.model.generator.remove_weight_norm()
         self.model.eval()
         self.model.to(device)
 
@@ -67,10 +68,14 @@ class CodecAudioPreprocessor:
 if __name__ == '__main__':
     import soundfile
 
+    import time
+
+    t0 = time.time()
+
     with torch.inference_mode():
-        test_audio = "../audios/speaker_references_for_testing/male_low_voice.wav"
+        test_audio = "../audios/ry.wav"
         wav, sr = soundfile.read(test_audio)
-        ap = CodecAudioPreprocessor(input_sr=sr, path_to_model="../Codec/HiFi-Codec-24k-320d.pt", path_to_config="../Codec/config_24k_320d.json")
+        ap = CodecAudioPreprocessor(input_sr=sr, path_to_model="../Codec/HiFi-Codec-16k-320d.pt", path_to_config="../Codec/config_24k_320d.json")
 
         indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
         print(indexes.shape)
@@ -81,4 +86,7 @@ if __name__ == '__main__':
         audio = ap.codes_to_audio(codes)
         print(audio.shape)
 
-        soundfile.write(file=f"../audios/male_low_voice_reconstructed.wav", data=audio, samplerate=24000)
+        t1 = time.time()
+
+        print(t1 - t0)
+        soundfile.write(file=f"../audios/ry_reconstructed_in_{t1 - t0}.wav", data=audio, samplerate=16000)

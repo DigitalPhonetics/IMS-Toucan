@@ -14,7 +14,6 @@ class ProsodicConditionExtractor:
 
     def __init__(self, device=torch.device("cpu"), path_to_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt")):
         self.ap = CodecAudioPreprocessor(input_sr=100, output_sr=2)
-        self.ap.model.generator.remove_weight_norm()
         self.embed = StyleEmbedding()
         check_dict = torch.load(path_to_model, map_location="cpu")
         self.embed.load_state_dict(check_dict["style_emb_func"])

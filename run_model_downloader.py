@@ -43,8 +43,8 @@ def download_models():
     print("Downloading Codec Model")
     os.makedirs(os.path.join(MODELS_DIR, "Codec"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
-        url="https://huggingface.co/Dongchao/AcademiCodec/resolve/main/HiFi-Codec-24k-320d",
-        filename=os.path.abspath(os.path.join("Codec", "HiFi-Codec-24k-320d.pt")),
+        url="https://huggingface.co/Dongchao/AcademiCodec/resolve/main/HiFi-Codec-16k-320d",
+        filename=os.path.abspath(os.path.join("Codec", "HiFi-Codec-16k-320d.pt")),
         reporthook=report)
 
 
