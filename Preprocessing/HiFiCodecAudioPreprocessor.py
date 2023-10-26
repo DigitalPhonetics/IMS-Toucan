@@ -34,7 +34,7 @@ class CodecAudioPreprocessor:
             audio = self.resample_audio(audio, current_sampling_rate)
         elif type(audio) != torch.tensor and type(audio) != torch.Tensor:
             audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        return self.model.encode(audio.unsqueeze(0).to(self.device)).squeeze().transpose(0, 1)
+        return self.model.encode(audio.float().unsqueeze(0).to(self.device)).squeeze().transpose(0, 1)
 
     @torch.inference_mode()
     def indexes_to_one_hot(self, indexes):
