@@ -40,6 +40,9 @@ def prepare_tts_corpus(transcript_dict,
             aligner_dir = os.path.join(corpus_dir, "Aligner")
             aligner_loc = os.path.join(corpus_dir, "Aligner", "aligner.pt")
 
+            if not os.path.exists(os.path.join(corpus_dir, "aligner_train_cache.pt")):
+                prepare_aligner_corpus(transcript_dict, corpus_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
+
             if not os.path.exists(os.path.join(aligner_dir, "aligner.pt")):
                 aligner_datapoints = prepare_aligner_corpus(transcript_dict, corpus_dir=corpus_dir, lang=lang, phone_input=phone_input, device=torch.device("cuda"))
                 if os.path.exists(os.path.join(MODELS_DIR, "Aligner", "aligner.pt")):

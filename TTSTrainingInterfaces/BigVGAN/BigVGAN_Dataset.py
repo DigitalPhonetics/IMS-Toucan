@@ -47,7 +47,6 @@ class BigVGANDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-        self.waves = list(self.waves)
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):

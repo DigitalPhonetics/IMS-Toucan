@@ -126,12 +126,9 @@ def train_loop(train_dataset,
                 optim_tts.step()
 
             step_counter += 1
-
             loss_sum.append(loss.item())
-            if len(loss_sum) > 1000:
-                loss_this_epoch = sum(loss_sum) / len(loss_sum)
-                print(loss_this_epoch)
-                loss_sum = list()
+        loss_this_epoch = sum(loss_sum) / len(loss_sum)
+        loss_sum = list()
 
         asr_model.eval()
         torch.save({
