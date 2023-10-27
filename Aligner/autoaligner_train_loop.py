@@ -46,12 +46,12 @@ def train_loop(train_dataset,
     """
     os.makedirs(save_directory, exist_ok=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
-    torch.multiprocessing.set_start_method('fork', force=True)
+    torch.multiprocessing.set_start_method('spawn', force=True)
 
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=16,
+                              num_workers=1,
                               pin_memory=False,
                               shuffle=True,
                               prefetch_factor=4,
@@ -65,7 +65,6 @@ def train_loop(train_dataset,
     optim_tts = RAdam(tiny_tts.parameters(), lr=0.0001)
 
     step_counter = 0
-    loss_this_epoch = 0.0
     loss_sum = list()
 
     if resume:

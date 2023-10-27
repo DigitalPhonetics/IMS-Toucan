@@ -37,6 +37,7 @@ class TTSDataset(Dataset):
         self.spec_extractor = None
         self.cache_dir = cache_dir
         self.device = device
+        self.pttd = path_to_transcript_dict
         os.makedirs(cache_dir, exist_ok=True)
         if not os.path.exists(os.path.join(cache_dir, "tts_train_cache.pt")) or rebuild_cache:
             if gpu_count != 1:
@@ -198,19 +199,28 @@ class TTSDataset(Dataset):
             del self.dataset
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "tts_train_cache.pt"), map_location='cpu')
-            if gpu_count > 1:
-                # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
-                while len(self.datapoints) % gpu_count != 0:
-                    self.datapoints.pop(-1)  # a bit unfortunate, but if you're using multiple GPUs, you probably have a ton of datapoints anyway.
-                chunksize = int(len(self.datapoints) / gpu_count)
-                self.datapoints = self.datapoints[chunksize * rank:chunksize * (rank + 1)]
+            self.datapoints = None
 
         self.cache_dir = cache_dir
+        self.gpu_count = gpu_count
+        self.rank = rank
         self.language_id = get_language_id(lang)
-        self.ap = CodecAudioPreprocessor(input_sr=-1, device="cpu")  # it would be so nice if we could use cuda here, but cuda cannot be initialized in a forked subprocess. However we need to use fork to avoid mmap issues. Big oof.
-        self.spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device="cpu")
-        print(f"Prepared a TTS dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
+        self.loading_status = "lazy"
+        self.ap = None
+        self.spec_extractor = None
+        print(f"Lazily loaded a TTS dataset in {cache_dir}.")
+
+    def actually_load_everything(self):
+        self.loading_status = "complete"
+        self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # it would be so nice if we could use cuda here, but cuda cannot be initialized in a forked subprocess. However we need to use fork to avoid mmap issues. Big oof.
+        self.spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)
+        self.datapoints = torch.load(os.path.join(self.cache_dir, "tts_train_cache.pt"), map_location='cpu')
+        if self.gpu_count > 1:
+            # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
+            while len(self.datapoints) % self.gpu_count != 0:
+                self.datapoints.pop(-1)  # a bit unfortunate, but if you're using multiple GPUs, you probably have a ton of datapoints anyway.
+            chunksize = int(len(self.datapoints) / self.gpu_count)
+            self.datapoints = self.datapoints[chunksize * self.rank:chunksize * (self.rank + 1)]
 
     def calculate_durations(self, text, index, vis_dir, features, save_imgs):
         # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
@@ -238,6 +248,8 @@ class TTSDataset(Dataset):
         return cached_duration, ctc_loss
 
     def __getitem__(self, index):
+        if self.loading_status == "lazy":
+            self.actually_load_everything()
         with torch.no_grad():
             wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
             mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1)
@@ -253,9 +265,14 @@ class TTSDataset(Dataset):
                self.datapoints[index][7]
 
     def __len__(self):
-        return len(self.datapoints)
+        if self.datapoints is not None:
+            return len(self.datapoints)
+        else:
+            return len(self.pttd.keys())
 
     def remove_samples(self, list_of_samples_to_remove):
+        if self.loading_status == "lazy":
+            self.actually_load_everything()
         for remove_id in sorted(list_of_samples_to_remove, reverse=True):
             self.datapoints.pop(remove_id)
         torch.save(self.datapoints, os.path.join(self.cache_dir, "tts_train_cache.pt"))

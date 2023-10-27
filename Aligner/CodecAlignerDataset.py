@@ -31,10 +31,11 @@ class CodecAlignerDataset(Dataset):
                  phone_input=False,
                  allow_unknown_symbols=False):
         os.makedirs(cache_dir, exist_ok=True)
+        if type(path_to_transcript_dict) != dict:
+            path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
+        self.pttd = path_to_transcript_dict
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             torch.multiprocessing.set_start_method('spawn', force=True)
-            if type(path_to_transcript_dict) != dict:
-                path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
             resource_manager = Manager()
             self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
             key_list = list(self.path_to_transcript_dict.keys())
@@ -102,15 +103,24 @@ class CodecAlignerDataset(Dataset):
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
         else:
             # just load the datapoints from cache
-            self.datapoints = torch.load(os.path.join(cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-            self.speaker_embeddings = self.datapoints[2]
-            self.datapoints = self.datapoints[0]
+            self.datapoints = None
+            self.speaker_embeddings = None
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         self.ap = None
-        self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000)
+        self.spectrogram_extractor = None
+        self.device = device
+        self.cache_dir = cache_dir
+        self.loading_status = "lazy"
+        print(f"Lazily loaded an Aligner dataset in {cache_dir}.")
 
-        print(f"Prepared an Aligner dataset with {len(self.datapoints)} datapoints in {cache_dir}.")
+    def actually_load_everything(self):
+        self.loading_status = "complete"
+        self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
+        self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)
+        self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+        self.speaker_embeddings = self.datapoints[2]
+        self.datapoints = self.datapoints[0]
 
     def cache_builder_process(self,
                               path_list,
@@ -187,8 +197,8 @@ class CodecAlignerDataset(Dataset):
         self.result_pool.append(process_internal_dataset_chunk)
 
     def __getitem__(self, index):
-        if self.ap is None:
-            self.ap = CodecAudioPreprocessor(input_sr=-1)  # only used to transform features into continuous matrices
+        if self.loading_status == "lazy":
+            self.actually_load_everything()
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
@@ -206,7 +216,10 @@ class CodecAlignerDataset(Dataset):
                self.speaker_embeddings[index]
 
     def __len__(self):
-        return len(self.datapoints)
+        if self.datapoints is not None:
+            return len(self.datapoints)
+        else:
+            return len(self.pttd.keys())
 
 
 def fisher_yates_shuffle(lst):
