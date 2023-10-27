@@ -211,6 +211,7 @@ class TTSDataset(Dataset):
         print(f"Lazily loaded a TTS dataset in {cache_dir}.")
 
     def actually_load_everything(self):
+        print(f"actually loading {self.cache_dir}")
         self.loading_status = "complete"
         self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # it would be so nice if we could use cuda here, but cuda cannot be initialized in a forked subprocess. However we need to use fork to avoid mmap issues. Big oof.
         self.spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)

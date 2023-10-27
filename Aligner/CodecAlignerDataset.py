@@ -115,6 +115,7 @@ class CodecAlignerDataset(Dataset):
         print(f"Lazily loaded an Aligner dataset in {cache_dir}.")
 
     def actually_load_everything(self):
+        print(f"actually loading {self.cache_dir}")
         self.loading_status = "complete"
         self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
         self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)
