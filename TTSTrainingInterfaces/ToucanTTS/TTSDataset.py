@@ -252,7 +252,7 @@ class TTSDataset(Dataset):
         if self.loading_status == "lazy":
             self.actually_load_everything()
         with torch.no_grad():
-            wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1)).detach()
+            wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1).to(self.device)).detach()
             mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1)
         return self.datapoints[index][0], \
                self.datapoints[index][1], \
