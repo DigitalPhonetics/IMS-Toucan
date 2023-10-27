@@ -167,7 +167,7 @@ Then go to the directory
 *TrainingInterfaces/TrainingPipelines*. In there, make a copy of any existing pipeline that has Avocodo or BigVGAN in its name. We
 will use this as reference and only make the necessary changes to use the new dataset. Look out for a variable called
 *model_save_dir*. This is the default directory that checkpoints will be saved into, unless you specify another one when
-calling the training script. Change it to whatever you like. Then pass the list of paths to the instanciation of the
+calling the training script. Change it to whatever you like. Then pass the list of paths to the instantiation of the
 Dataset.
 
 Now you need to add your newly created pipeline to the pipeline dictionary in the file
