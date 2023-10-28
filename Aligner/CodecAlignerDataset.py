@@ -101,10 +101,6 @@ class CodecAlignerDataset(Dataset):
                 raise RuntimeError  # something went wrong and there are no datapoints
             torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
-        else:
-            # just load the datapoints from cache
-            self.datapoints = None
-            self.speaker_embeddings = None
 
         self.tf = ArticulatoryCombinedTextFrontend(language=lang)
         self.ap = None
@@ -112,6 +108,8 @@ class CodecAlignerDataset(Dataset):
         self.device = device
         self.cache_dir = cache_dir
         self.loading_status = "lazy"
+        self.datapoints = None
+        self.speaker_embeddings = None
         print(f"Lazily loaded an Aligner dataset in {cache_dir}.")
 
     def actually_load_everything(self):
@@ -211,16 +209,19 @@ class CodecAlignerDataset(Dataset):
         speech_len = torch.LongTensor([len(mel)])
 
         return tokens, \
-               token_len, \
-               mel, \
-               speech_len, \
-               self.speaker_embeddings[index]
+            token_len, \
+            mel, \
+            speech_len, \
+            self.speaker_embeddings[index]
 
     def __len__(self):
         if self.datapoints is not None:
             return len(self.datapoints)
         else:
-            return len(self.pttd.keys())
+            self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')[0]
+            length = len(self.datapoints)
+            self.datapoints = None
+            return length
 
 
 def fisher_yates_shuffle(lst):

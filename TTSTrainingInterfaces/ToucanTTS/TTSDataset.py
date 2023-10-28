@@ -197,9 +197,6 @@ class TTSDataset(Dataset):
                 print("No datapoints were prepared! Exiting...")
                 sys.exit()
             del self.dataset
-        else:
-            # just load the datapoints from cache
-            self.datapoints = None
 
         self.cache_dir = cache_dir
         self.gpu_count = gpu_count
@@ -208,6 +205,7 @@ class TTSDataset(Dataset):
         self.loading_status = "lazy"
         self.ap = None
         self.spec_extractor = None
+        self.datapoints = None
         print(f"Lazily loaded a TTS dataset in {cache_dir}.")
 
     def actually_load_everything(self):
@@ -255,21 +253,30 @@ class TTSDataset(Dataset):
             wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1).to(self.device)).detach()
             mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
         return self.datapoints[index][0], \
-               self.datapoints[index][1], \
-               mel, \
-               self.datapoints[index][3], \
-               self.datapoints[index][4], \
-               self.datapoints[index][5], \
-               self.datapoints[index][6], \
-               mel, \
-               self.language_id, \
-               self.datapoints[index][7]
+            self.datapoints[index][1], \
+            mel, \
+            self.datapoints[index][3], \
+            self.datapoints[index][4], \
+            self.datapoints[index][5], \
+            self.datapoints[index][6], \
+            mel, \
+            self.language_id, \
+            self.datapoints[index][7]
 
     def __len__(self):
         if self.datapoints is not None:
             return len(self.datapoints)
         else:
-            return len(self.pttd.keys())
+            self.datapoints = torch.load(os.path.join(self.cache_dir, "tts_train_cache.pt"), map_location='cpu')
+        if self.gpu_count > 1:
+            # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
+            while len(self.datapoints) % self.gpu_count != 0:
+                self.datapoints.pop(-1)  # a bit unfortunate, but if you're using multiple GPUs, you probably have a ton of datapoints anyway.
+            chunksize = int(len(self.datapoints) / self.gpu_count)
+            self.datapoints = self.datapoints[chunksize * self.rank:chunksize * (self.rank + 1)]
+        length = len(self.datapoints)
+        self.datapoints = None
+        return length
 
     def remove_samples(self, list_of_samples_to_remove):
         if self.loading_status == "lazy":
