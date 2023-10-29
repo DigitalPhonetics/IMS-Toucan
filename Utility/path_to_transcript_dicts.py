@@ -899,13 +899,5 @@ def build_file_list_singing_voice_audio_database(re_cache=False):
         torch.save(file_list, cache_path)
     return torch.load(cache_path)
 
-
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device):
-    if type(transcript_dict) != dict:
-        transcript_dict = transcript_dict()
-    print(corpus_dir)
-    return transcript_dict
-
-
 if __name__ == '__main__':
     pass
