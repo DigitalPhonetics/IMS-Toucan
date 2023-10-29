@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import ConcatDataset
 
-from Aligner.autoaligner_train_loop import train_loop as train_aligner
+from Architectures.Aligner.autoaligner_train_loop import train_loop as train_aligner
 from Utility.corpus_preparation import prepare_aligner_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR

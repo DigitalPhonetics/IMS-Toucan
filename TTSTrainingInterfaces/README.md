@@ -1,2 +1,0 @@
-This directory contains all the code needed to build a cache of extracted features and train the TTS on it. There are some things that only make sense for training, so we separate the training from the inference code, even though in the architecture there is a very large redundancy. In a perfect world, we would build a solution that
-makes clever use of inheritance, but this toolkit is meant to be very approachable, also for people without a strong computer science background, so we decided to go with the less clean, but simpler solution.

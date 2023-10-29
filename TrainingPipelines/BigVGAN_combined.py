@@ -3,10 +3,10 @@ import time
 import torch
 import wandb
 
-from TTSTrainingInterfaces.BigVGAN.BigVGAN import BigVGAN
-from TTSTrainingInterfaces.BigVGAN.BigVGAN_Dataset import BigVGANDataset
-from TTSTrainingInterfaces.BigVGAN.BigVGAN_train_loop import train_loop
-from TTSTrainingInterfaces.BigVGAN.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
+from Architectures.BigVGAN.BigVGAN import BigVGAN
+from Architectures.BigVGAN.BigVGAN_Dataset import BigVGANDataset
+from Architectures.BigVGAN.BigVGAN_train_loop import train_loop
+from Architectures.BigVGAN.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 

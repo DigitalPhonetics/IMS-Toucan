@@ -1,9 +1,9 @@
 import torch
 import torch.multiprocessing
 
-from Aligner.CodecAlignerDataset import CodecAlignerDataset
-from Aligner.autoaligner_train_loop import train_loop as train_aligner
-from TTSTrainingInterfaces.ToucanTTS.TTSDataset import TTSDataset
+from Architectures.Aligner.CodecAlignerDataset import CodecAlignerDataset
+from Architectures.Aligner.autoaligner_train_loop import train_loop as train_aligner
+from Architectures.ToucanTTS.TTSDataset import TTSDataset
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 

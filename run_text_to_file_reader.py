@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from TTSInferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
 def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None):

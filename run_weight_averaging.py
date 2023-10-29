@@ -6,8 +6,8 @@ import os
 
 import torch
 
-from TTSInferenceInterfaces.InferenceArchitectures.InferenceToucanTTS import ToucanTTS
-from TTSTrainingInterfaces.BigVGAN.BigVGAN import BigVGAN
+from Architectures.BigVGAN.BigVGAN import BigVGAN
+from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Utility.storage_config import MODELS_DIR
 
 

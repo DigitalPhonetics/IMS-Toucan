@@ -11,9 +11,9 @@ import os
 import torch
 from tqdm import tqdm
 
-from EmbeddingModel.StyleEmbedding import StyleEmbedding
+from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
+from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
 from Preprocessing.TextFrontend import get_language_id
-from TTSTrainingInterfaces.ToucanTTS.ToucanTTS import ToucanTTS
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.storage_config import MODELS_DIR
 

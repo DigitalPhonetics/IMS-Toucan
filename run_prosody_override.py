@@ -1,6 +1,6 @@
 import torch
 
-from TTSInferenceInterfaces.UtteranceCloner import UtteranceCloner
+from InferenceInterfaces.UtteranceCloner import UtteranceCloner
 
 if __name__ == '__main__':
     uc = UtteranceCloner(model_id="Nancy", device="cuda" if torch.cuda.is_available() else "cpu")

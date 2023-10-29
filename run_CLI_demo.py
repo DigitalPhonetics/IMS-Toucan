@@ -4,7 +4,7 @@ import warnings
 
 import torch
 
-from TTSInferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Utility.storage_config import MODELS_DIR
 
 if __name__ == '__main__':

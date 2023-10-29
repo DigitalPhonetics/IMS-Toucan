@@ -1,12 +1,12 @@
 import torch
 from torchaudio.transforms import Resample
 
-from Codec.vqvae import VQVAE
+from Preprocessing.Codec.vqvae import VQVAE
 
 
 class CodecAudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=16000, device="cpu", path_to_model="Codec/HiFi-Codec-16k-320d.pt", path_to_config="Codec/config_16k_320d.json"):
+    def __init__(self, input_sr, output_sr=16000, device="cpu", path_to_model="Preprocessing/Codec/HiFi-Codec-16k-320d.pt", path_to_config="Preprocessing/Codec/config_16k_320d.json"):
         self.device = device
         self.input_sr = input_sr
         self.output_sr = output_sr
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     with torch.inference_mode():
         test_audio = "../audios/ry.wav"
         wav, sr = soundfile.read(test_audio)
-        ap = CodecAudioPreprocessor(input_sr=sr, path_to_model="../Codec/HiFi-Codec-16k-320d.pt", path_to_config="../Codec/config_24k_320d.json")
+        ap = CodecAudioPreprocessor(input_sr=sr, path_to_model="Codec/HiFi-Codec-16k-320d.pt", path_to_config="Codec/config_24k_320d.json")
 
         indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
         print(indexes.shape)
