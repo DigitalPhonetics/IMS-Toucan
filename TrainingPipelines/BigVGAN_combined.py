@@ -69,8 +69,14 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_RAVDESS().keys())
     file_lists_for_this_run_combined += list(build_path_to_transcript_dict_ESDS().keys())
     file_lists_for_this_run_combined += list(build_file_list_singing_voice_audio_database())
+    print("filepaths collected")
 
-    train_set = BigVGANDataset(list_of_paths=random.sample(file_lists_for_this_run_combined, 200000))  # adjust the sample size until it fits into RAM
+    fisher_yates_shuffle(file_lists_for_this_run_combined)
+    fisher_yates_shuffle(file_lists_for_this_run_combined)
+    fisher_yates_shuffle(file_lists_for_this_run_combined)
+    print("filepaths randomized")
+
+    train_set = BigVGANDataset(list_of_paths=file_lists_for_this_run_combined[:300000])  # adjust the sample size until it fits into RAM
 
     generator = BigVGAN()
     jit_compiled_generator = torch.jit.trace(generator, torch.rand([24, 128, 32]))
@@ -82,7 +88,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=24,
+    train_loop(batch_size=18,
                epochs=80000,
                generator=jit_compiled_generator,
                discriminator=discriminator,
@@ -96,3 +102,9 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
                finetune=finetune)
     if use_wandb:
         wandb.finish()
+
+
+def fisher_yates_shuffle(lst):
+    for i in range(len(lst) - 1, 0, -1):
+        j = random.randint(0, i)
+        lst[i], lst[j] = lst[j], lst[i]
