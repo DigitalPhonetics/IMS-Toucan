@@ -53,6 +53,8 @@ class BigVGANDataset(Dataset):
         for path in tqdm(path_split):
             try:
                 wave, sr = sf.read(path)
+                if len(wave.shape) == 2:
+                    wave = librosa.to_mono(numpy.transpose(wave))
                 if sr != self.desired_samplingrate:
                     wave = librosa.resample(y=wave, orig_sr=sr, target_sr=self.desired_samplingrate)
 
@@ -68,37 +70,41 @@ class BigVGANDataset(Dataset):
 
         return a pair of high-res audio and corresponding low-res spectrogram as if it was predicted by the TTS
         """
-        wave = self.waves[index]
-        while len(wave) < self.samples_per_segment + 50:  # + 50 is just to be extra sure
-            # catch files that are too short to apply meaningful signal processing and make them longer
-            wave = numpy.concatenate([wave, numpy.zeros(shape=1000), wave])
-            # add some true silence in the mix, so the vocoder is exposed to that as well during training
-        wave = torch.Tensor(wave)
-
-        max_audio_start = len(wave) - self.samples_per_segment
-        audio_start = random.randint(0, max_audio_start)
-        segment = wave[audio_start: audio_start + self.samples_per_segment]
-
-        if random.random() < 0.1 and self.use_random_corruption:
-            # apply distortion to random samples with a 10% chance
-            noise = torch.rand(size=(segment.shape[0],)) - 0.5  # get 0 centered noise
-            speech_power = segment.norm(p=2)
-            noise_power = noise.norm(p=2)
-            scale = math.sqrt(math.e) * noise_power / speech_power  # signal to noise ratio of 5db
-            noisy_segment = (scale * segment + noise) / 2
-            resampled_segment = self.melspec_ap.resample(noisy_segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
-        else:
-            resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
         try:
-            melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
-                                                               explicit_sampling_rate=16000,
-                                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
-        except librosa.util.exceptions.ParameterError:
-            # seems like sometimes adding noise and then resampling can introduce overflows which cause errors.
-            melspec = self.melspec_ap.audio_to_mel_spec_tensor(self.melspec_ap.resample(segment).float(),
-                                                               explicit_sampling_rate=16000,
-                                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
-        return segment, melspec
+            wave = self.waves[index]
+            while len(wave) < self.samples_per_segment + 50:  # + 50 is just to be extra sure
+                # catch files that are too short to apply meaningful signal processing and make them longer
+                wave = numpy.concatenate([wave, numpy.zeros(shape=1000), wave])
+                # add some true silence in the mix, so the vocoder is exposed to that as well during training
+            wave = torch.Tensor(wave)
+
+            max_audio_start = len(wave) - self.samples_per_segment
+            audio_start = random.randint(0, max_audio_start)
+            segment = wave[audio_start: audio_start + self.samples_per_segment]
+
+            if random.random() < 0.1 and self.use_random_corruption:
+                # apply distortion to random samples with a 10% chance
+                noise = torch.rand(size=(segment.shape[0],)) - 0.5  # get 0 centered noise
+                speech_power = segment.norm(p=2)
+                noise_power = noise.norm(p=2)
+                scale = math.sqrt(math.e) * noise_power / speech_power  # signal to noise ratio of 5db
+                noisy_segment = (scale * segment + noise) / 2
+                resampled_segment = self.melspec_ap.resample(noisy_segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
+            else:
+                resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
+            try:
+                melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
+                                                                   explicit_sampling_rate=16000,
+                                                                   normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+            except librosa.util.exceptions.ParameterError:
+                # seems like sometimes adding noise and then resampling can introduce overflows which cause errors.
+                melspec = self.melspec_ap.audio_to_mel_spec_tensor(self.melspec_ap.resample(segment).float(),
+                                                                   explicit_sampling_rate=16000,
+                                                                   normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+            return segment, melspec
+        except RuntimeError:
+            print("encountered a runtime error, using fallback strategy")
+            return self.__getitem__(index - 1)
 
     def __len__(self):
         return len(self.waves)
