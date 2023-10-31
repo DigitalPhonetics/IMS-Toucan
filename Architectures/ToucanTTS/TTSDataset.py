@@ -253,15 +253,15 @@ class TTSDataset(Dataset):
             wave = self.ap.indexes_to_audio(self.datapoints[index][2].int().transpose(0, 1).to(self.device)).detach()
             mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            mel, \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            mel, \
-            self.language_id, \
-            self.datapoints[index][7]
+               self.datapoints[index][1], \
+               mel, \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               mel, \
+               self.language_id, \
+               self.datapoints[index][7]
 
     def __len__(self):
         if self.datapoints is not None:

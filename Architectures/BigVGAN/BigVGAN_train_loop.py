@@ -34,8 +34,6 @@ def train_loop(generator,
                use_wandb=False,
                finetune=False
                ):
-    torch.backends.cudnn.benchmark = True
-    # we have fixed input sizes, so we can enable benchmark mode
 
     step_counter = 0
     epoch = 0
