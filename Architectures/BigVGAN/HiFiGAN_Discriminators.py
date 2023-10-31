@@ -11,6 +11,8 @@ import torch.nn.functional as F
 
 from Architectures.BigVGAN.Avocodo_Discriminators import MultiCoMBDiscriminator
 from Architectures.BigVGAN.Avocodo_Discriminators import MultiSubBandDiscriminator
+from Architectures.BigVGAN.SAN_modules import SANConv1d
+from Architectures.BigVGAN.SAN_modules import SANConv2d
 
 
 class HiFiGANPeriodDiscriminator(torch.nn.Module):
@@ -19,9 +21,9 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
                  in_channels=1,
                  out_channels=1,
                  period=3,
-                 kernel_sizes=[5, 3],
+                 kernel_sizes=(5, 3),
                  channels=32,
-                 downsample_scales=[3, 3, 3, 3, 1],
+                 downsample_scales=(3, 3, 3, 3, 1),
                  max_downsample_channels=1024,
                  bias=True,
                  nonlinear_activation="LeakyReLU",
@@ -66,11 +68,7 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
             in_chs = out_chs
             # NOTE(kan-bayashi): Use downsample_scale + 1?
             out_chs = min(out_chs * 4, max_downsample_channels)
-        self.output_conv = torch.nn.Conv2d(out_chs,
-                                           out_channels,
-                                           (kernel_sizes[1] - 1, 1),
-                                           1,
-                                           padding=((kernel_sizes[1] - 1) // 2, 0), )
+        self.output_conv = SANConv2d(out_chs, out_channels, (kernel_sizes[1] - 1, 1), 1, padding=((kernel_sizes[1] - 1) // 2, 0))
 
         if use_weight_norm and use_spectral_norm:
             raise ValueError("Either use use_weight_norm or use_spectral_norm.")
@@ -138,20 +136,18 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
 class HiFiGANMultiPeriodDiscriminator(torch.nn.Module):
 
     def __init__(self,
-                 periods=[2, 3, 5, 7, 11],
-                 discriminator_params={
-                     "in_channels"                : 1,
-                     "out_channels"               : 1,
-                     "kernel_sizes"               : [5, 3],
-                     "channels"                   : 32,
-                     "downsample_scales"          : [3, 3, 3, 3, 1],
-                     "max_downsample_channels"    : 1024,
-                     "bias"                       : True,
-                     "nonlinear_activation"       : "LeakyReLU",
-                     "nonlinear_activation_params": {"negative_slope": 0.1},
-                     "use_weight_norm"            : True,
-                     "use_spectral_norm"          : False,
-                 }, ):
+                 periods=(2, 3, 5, 7, 11),
+                 discriminator_params={"in_channels"                : 1,
+                                       "out_channels"               : 1,
+                                       "kernel_sizes"               : [5, 3],
+                                       "channels"                   : 32,
+                                       "downsample_scales"          : [3, 3, 3, 3, 1],
+                                       "max_downsample_channels"    : 1024,
+                                       "bias"                       : True,
+                                       "nonlinear_activation"       : "LeakyReLU",
+                                       "nonlinear_activation_params": {"negative_slope": 0.1},
+                                       "use_weight_norm"            : True,
+                                       "use_spectral_norm"          : False, }, ):
         """
         Initialize HiFiGANMultiPeriodDiscriminator module.
 
@@ -186,12 +182,12 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
     def __init__(self,
                  in_channels=1,
                  out_channels=1,
-                 kernel_sizes=[15, 41, 5, 3],
+                 kernel_sizes=(15, 41, 5, 3),
                  channels=128,
                  max_downsample_channels=1024,
                  max_groups=16,
                  bias=True,
-                 downsample_scales=[2, 2, 4, 4, 1],
+                 downsample_scales=(2, 2, 4, 4, 1),
                  nonlinear_activation="LeakyReLU",
                  nonlinear_activation_params={"negative_slope": 0.1},
                  use_weight_norm=True,
@@ -261,12 +257,7 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
                                                             padding=(kernel_sizes[2] - 1) // 2,
                                                             bias=bias, ),
                                             getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params), )]
-        self.layers += [torch.nn.Conv1d(out_chs,
-                                        out_channels,
-                                        kernel_size=kernel_sizes[3],
-                                        stride=1,
-                                        padding=(kernel_sizes[3] - 1) // 2,
-                                        bias=bias, ), ]
+        self.layers += [SANConv1d(out_chs, out_channels, kernel_sizes[3], padding=(kernel_sizes[3] - 1) // 2), ]
 
         if use_weight_norm and use_spectral_norm:
             raise ValueError("Either use use_weight_norm or use_spectral_norm.")
@@ -325,23 +316,19 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
                  scales=3,
                  downsample_pooling="AvgPool1d",
                  # follow the official implementation setting
-                 downsample_pooling_params={
-                     "kernel_size": 4,
-                     "stride"     : 2,
-                     "padding"    : 2,
-                 },
-                 discriminator_params={
-                     "in_channels"                : 1,
-                     "out_channels"               : 1,
-                     "kernel_sizes"               : [15, 41, 5, 3],
-                     "channels"                   : 128,
-                     "max_downsample_channels"    : 1024,
-                     "max_groups"                 : 16,
-                     "bias"                       : True,
-                     "downsample_scales"          : [2, 2, 4, 4, 1],
-                     "nonlinear_activation"       : "LeakyReLU",
-                     "nonlinear_activation_params": {"negative_slope": 0.1},
-                 },
+                 downsample_pooling_params={"kernel_size": 4,
+                                            "stride"     : 2,
+                                            "padding"    : 2, },
+                 discriminator_params={"in_channels"                : 1,
+                                       "out_channels"               : 1,
+                                       "kernel_sizes"               : [15, 41, 5, 3],
+                                       "channels"                   : 128,
+                                       "max_downsample_channels"    : 1024,
+                                       "max_groups"                 : 16,
+                                       "bias"                       : True,
+                                       "downsample_scales"          : [2, 2, 4, 4, 1],
+                                       "nonlinear_activation"       : "LeakyReLU",
+                                       "nonlinear_activation_params": {"negative_slope": 0.1}, },
                  follow_official_norm=False, ):
         """
         Initialize HiFiGAN multi-scale discriminator module.
@@ -395,39 +382,33 @@ class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
                  # Multi-scale discriminator related
                  scales=3,
                  scale_downsample_pooling="AvgPool1d",
-                 scale_downsample_pooling_params={
-                     "kernel_size": 4,
-                     "stride"     : 2,
-                     "padding"    : 2,
-                 },
-                 scale_discriminator_params={
-                     "in_channels"                : 1,
-                     "out_channels"               : 1,
-                     "kernel_sizes"               : [15, 41, 5, 3],
-                     "channels"                   : 128,
-                     "max_downsample_channels"    : 1024,
-                     "max_groups"                 : 16,
-                     "bias"                       : True,
-                     "downsample_scales"          : [4, 4, 4, 4, 1],
-                     "nonlinear_activation"       : "LeakyReLU",
-                     "nonlinear_activation_params": {"negative_slope": 0.1},
-                 },
+                 scale_downsample_pooling_params={"kernel_size": 4,
+                                                  "stride"     : 2,
+                                                  "padding"    : 2, },
+                 scale_discriminator_params={"in_channels"                : 1,
+                                             "out_channels"               : 1,
+                                             "kernel_sizes"               : [15, 41, 5, 3],
+                                             "channels"                   : 128,
+                                             "max_downsample_channels"    : 1024,
+                                             "max_groups"                 : 16,
+                                             "bias"                       : True,
+                                             "downsample_scales"          : [4, 4, 4, 4, 1],
+                                             "nonlinear_activation"       : "LeakyReLU",
+                                             "nonlinear_activation_params": {"negative_slope": 0.1}, },
                  follow_official_norm=True,
                  # Multi-period discriminator related
                  periods=[2, 3, 5, 7, 11],
-                 period_discriminator_params={
-                     "in_channels"                : 1,
-                     "out_channels"               : 1,
-                     "kernel_sizes"               : [5, 3],
-                     "channels"                   : 32,
-                     "downsample_scales"          : [3, 3, 3, 3, 1],
-                     "max_downsample_channels"    : 1024,
-                     "bias"                       : True,
-                     "nonlinear_activation"       : "LeakyReLU",
-                     "nonlinear_activation_params": {"negative_slope": 0.1},
-                     "use_weight_norm"            : True,
-                     "use_spectral_norm"          : False,
-                 }, ):
+                 period_discriminator_params={"in_channels"                : 1,
+                                              "out_channels"               : 1,
+                                              "kernel_sizes"               : [5, 3],
+                                              "channels"                   : 32,
+                                              "downsample_scales"          : [3, 3, 3, 3, 1],
+                                              "max_downsample_channels"    : 1024,
+                                              "bias"                       : True,
+                                              "nonlinear_activation"       : "LeakyReLU",
+                                              "nonlinear_activation_params": {"negative_slope": 0.1},
+                                              "use_weight_norm"            : True,
+                                              "use_spectral_norm"          : False, }, ):
         """
         Initialize HiFiGAN multi-scale + multi-period discriminator module.
 
@@ -475,64 +456,58 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                  # Multi-scale discriminator related
                  scales=3,
                  scale_downsample_pooling="AvgPool1d",
-                 scale_downsample_pooling_params={
-                     "kernel_size": 4,
-                     "stride"     : 2,
-                     "padding"    : 2,
-                 },
-                 scale_discriminator_params={
-                     "in_channels"                : 1,
-                     "out_channels"               : 1,
-                     "kernel_sizes"               : [15, 41, 5, 3],
-                     "channels"                   : 128,
-                     "max_downsample_channels"    : 1024,
-                     "max_groups"                 : 16,
-                     "bias"                       : True,
-                     "downsample_scales"          : [4, 4, 4, 4, 1],
-                     "nonlinear_activation"       : "LeakyReLU",
-                     "nonlinear_activation_params": {"negative_slope": 0.1},
-                 },
+                 scale_downsample_pooling_params={"kernel_size": 4,
+                                                  "stride"     : 2,
+                                                  "padding"    : 2, },
+                 scale_discriminator_params={"in_channels"                : 1,
+                                             "out_channels"               : 1,
+                                             "kernel_sizes"               : [15, 41, 5, 3],
+                                             "channels"                   : 128,
+                                             "max_downsample_channels"    : 1024,
+                                             "max_groups"                 : 16,
+                                             "bias"                       : True,
+                                             "downsample_scales"          : [4, 4, 4, 4, 1],
+                                             "nonlinear_activation"       : "LeakyReLU",
+                                             "nonlinear_activation_params": {"negative_slope": 0.1}, },
                  follow_official_norm=True,
                  # Multi-period discriminator related
-                 periods=[2, 3, 5, 7, 11],
-                 period_discriminator_params={
-                     "in_channels"                : 1,
-                     "out_channels"               : 1,
-                     "kernel_sizes"               : [5, 3],
-                     "channels"                   : 32,
-                     "downsample_scales"          : [3, 3, 3, 3, 1],
-                     "max_downsample_channels"    : 1024,
-                     "bias"                       : True,
-                     "nonlinear_activation"       : "LeakyReLU",
-                     "nonlinear_activation_params": {"negative_slope": 0.1},
-                     "use_weight_norm"            : True,
-                     "use_spectral_norm"          : False,
-                 },
+                 periods=(2, 3, 5, 7, 11),
+                 period_discriminator_params={"in_channels"                : 1,
+                                              "out_channels"               : 1,
+                                              "kernel_sizes"               : [5, 3],
+                                              "channels"                   : 32,
+                                              "downsample_scales"          : [3, 3, 3, 3, 1],
+                                              "max_downsample_channels"    : 1024,
+                                              "bias"                       : True,
+                                              "nonlinear_activation"       : "LeakyReLU",
+                                              "nonlinear_activation_params": {"negative_slope": 0.1},
+                                              "use_weight_norm"            : True,
+                                              "use_spectral_norm"          : False, },
                  # CoMB discriminator related
-                 kernels=[[7, 11, 11, 11, 11, 5],
-                          [11, 21, 21, 21, 21, 5],
-                          [15, 41, 41, 41, 41, 5]],
-                 channels=[16, 64, 256, 1024, 1024, 1024],
-                 groups=[1, 4, 16, 64, 256, 1],
-                 strides=[1, 1, 4, 4, 4, 1],
+                 kernels=((7, 11, 11, 11, 11, 5),
+                          (11, 21, 21, 21, 21, 5),
+                          (15, 41, 41, 41, 41, 5)),
+                 channels=(16, 64, 256, 1024, 1024, 1024),
+                 groups=(1, 4, 16, 64, 256, 1),
+                 strides=(1, 1, 4, 4, 4, 1),
                  # Sub-Band discriminator related
-                 tkernels=[7, 5, 3],
+                 tkernels=(7, 5, 3),
                  fkernel=5,
-                 tchannels=[64, 128, 256, 256, 256],
-                 fchannels=[32, 64, 128, 128, 128],
-                 tstrides=[[1, 1, 3, 3, 1],
-                           [1, 1, 3, 3, 1],
-                           [1, 1, 3, 3, 1]],
-                 fstride=[1, 1, 3, 3, 1],
-                 tdilations=[[[5, 7, 11], [5, 7, 11], [5, 7, 11], [5, 7, 11], [5, 7, 11], [5, 7, 11]],
-                             [[3, 5, 7], [3, 5, 7], [3, 5, 7], [3, 5, 7], [3, 5, 7]],
-                             [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]]],
-                 fdilations=[[1, 2, 3],
-                             [1, 2, 3],
-                             [1, 2, 3],
-                             [2, 3, 5],
-                             [2, 3, 5]],
-                 tsubband=[6, 11, 16],
+                 tchannels=(64, 128, 256, 256, 256),
+                 fchannels=(32, 64, 128, 128, 128),
+                 tstrides=((1, 1, 3, 3, 1),
+                           (1, 1, 3, 3, 1),
+                           (1, 1, 3, 3, 1)),
+                 fstride=(1, 1, 3, 3, 1),
+                 tdilations=(((5, 7, 11), (5, 7, 11), (5, 7, 11), (5, 7, 11), (5, 7, 11), (5, 7, 11)),
+                             ((3, 5, 7), (3, 5, 7), (3, 5, 7), (3, 5, 7), (3, 5, 7)),
+                             ((1, 2, 3), (1, 2, 3), (1, 2, 3), (1, 2, 3), (1, 2, 3))),
+                 fdilations=((1, 2, 3),
+                             (1, 2, 3),
+                             (1, 2, 3),
+                             (2, 3, 5),
+                             (2, 3, 5)),
+                 tsubband=(6, 11, 16),
                  n=16,
                  m=64,
                  freq_init_ch=192):

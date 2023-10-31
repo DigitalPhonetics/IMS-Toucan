@@ -14,6 +14,8 @@ from torch.nn import Conv1d
 from torch.nn.utils import spectral_norm
 from torch.nn.utils import weight_norm
 
+from Architectures.BigVGAN.SAN_modules import SANConv1d
+
 
 def get_padding(kernel_size, dilation=1):
     return int((kernel_size * dilation - dilation) / 2)
@@ -152,7 +154,7 @@ class CoMBD(torch.nn.Module):
         for i, (f, k, g, s) in enumerate(zip(filters, kernels, groups, strides)):
             self.convs.append(norm_f(Conv1d(init_channel, f, k, s, padding=get_padding(k, 1), groups=g)))
             init_channel = f
-        self.conv_post = norm_f(Conv1d(filters[-1], 1, 3, 1, padding=get_padding(3, 1)))
+        self.conv_post = norm_f(SANConv1d(filters[-1], 1, 3, 1, padding=get_padding(3, 1)))
 
     def forward(self, x):
         fmap = []
@@ -177,7 +179,7 @@ class MDC(torch.nn.Module):
             self.convs.append(norm_f(Conv1d(in_channel, channel, kernel, stride=1, padding=get_padding(kernel, d),
                                             dilation=d)))
 
-        self.conv_out = norm_f(Conv1d(channel, channel, 3, stride=stride, padding=get_padding(3, 1)))
+        self.conv_out = norm_f(SANConv1d(channel, channel, 3, stride=stride, padding=get_padding(3, 1)))
 
     def forward(self, x):
         xs = None
@@ -205,7 +207,7 @@ class SubBandDiscriminator(torch.nn.Module):
         for channel, stride, dilation in zip(channels, strides, dilations):
             self.mdcs.append(MDC(init_channel, channel, kernel, stride, dilation))
             init_channel = channel  # output channel of this layer becomes input channel of next layer
-        self.conv_post = norm_f(Conv1d(init_channel, 1, 3, padding=get_padding(3, 1)))
+        self.conv_post = norm_f(SANConv1d(init_channel, 1, 3, padding=get_padding(3, 1)))
 
     def forward(self, x):
         fmap = []
