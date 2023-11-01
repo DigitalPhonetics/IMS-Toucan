@@ -105,7 +105,6 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
             x = layer(x)
             outs = outs + [x]
         x = self.output_conv(x, discriminator_train_flag)
-        x = torch.flatten(x, 1, -1)
         return x, outs
 
     def apply_weight_norm(self):
@@ -548,4 +547,4 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                                              intermediate_wave_upsampled_once=intermediate_wave_upsampled_once,
                                              discriminator_train_flag=discriminator_train_flag)
         msbd_outs, msbd_feats = self.msbd(wave, discriminator_train_flag)
-        return [msbd_outs, mpd_outs, mcmbd_outs, msbd_feats], + mpd_feats + mcmbd_feats + msbd_feats
+        return [msd_outs, mpd_outs, mcmbd_outs, msbd_outs], msd_feats + mpd_feats + mcmbd_feats + msbd_feats

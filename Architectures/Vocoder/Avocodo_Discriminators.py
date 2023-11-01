@@ -164,7 +164,6 @@ class CoMBD(torch.nn.Module):
             fmap.append(x)
         x = self.conv_post(x, discriminator_train_flag)
         # fmap.append(x)
-        x = torch.flatten(x, 1, -1)
         return x, fmap
 
 
@@ -217,7 +216,6 @@ class SubBandDiscriminator(torch.nn.Module):
             fmap.append(x)
         x = self.conv_post(x, discriminator_train_flag)
         # fmap.append(x)
-        x = torch.flatten(x, 1, -1)
 
         return x, fmap
 
