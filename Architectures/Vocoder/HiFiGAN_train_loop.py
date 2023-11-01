@@ -8,10 +8,10 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Architectures.BigVGAN.AdversarialLoss import DiscriminatorAdversarialLoss
-from Architectures.BigVGAN.AdversarialLoss import GeneratorAdversarialLoss
-from Architectures.BigVGAN.FeatureMatchingLoss import FeatureMatchLoss
-from Architectures.BigVGAN.MelSpecLoss import MelSpectrogramLoss
+from Architectures.Vocoder.AdversarialLoss import discriminator_adv_loss
+from Architectures.Vocoder.AdversarialLoss import generator_adv_loss
+from Architectures.Vocoder.FeatureMatchingLoss import feature_loss
+from Architectures.Vocoder.MelSpecLoss import MelSpectrogramLoss
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from run_weight_averaging import average_checkpoints
@@ -34,14 +34,10 @@ def train_loop(generator,
                use_wandb=False,
                finetune=False
                ):
-
     step_counter = 0
     epoch = 0
 
     mel_l1 = MelSpectrogramLoss().to(device)
-    feat_match_criterion = FeatureMatchLoss().to(device)
-    discriminator_adv_criterion = DiscriminatorAdversarialLoss().to(device)
-    generator_adv_criterion = GeneratorAdversarialLoss(average_by_discriminators=False).to(device)
 
     g = generator.to(device)
     d = discriminator.to(device)
@@ -106,15 +102,15 @@ def train_loop(generator,
             generator_total_loss = mel_loss * 45.0  # according to the Avocodo Paper
 
             if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
-                d_outs = d(wave=pred_wave,
-                           intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
-                           intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
-                adversarial_loss = generator_adv_criterion(d_outs)
+                d_outs, d_fmaps = d(wave=pred_wave,
+                                    intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
+                                    intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
+                adversarial_loss = generator_adv_loss(d_outs)
                 adversarial_losses.append(adversarial_loss.item())
                 generator_total_loss = generator_total_loss + adversarial_loss * 2  # based on own experience
 
-                d_gold_outs = d(gold_wave)
-                feature_matching_loss = feat_match_criterion(d_outs, d_gold_outs)
+                d_gold_outs, d_gold_fmaps = d(gold_wave)
+                feature_matching_loss = feature_loss(d_gold_fmaps, d_fmaps)
                 feat_match_losses.append(feature_matching_loss.item())
                 generator_total_loss = generator_total_loss + feature_matching_loss * 2  # according to Avocodo Paper
 
@@ -139,11 +135,12 @@ def train_loop(generator,
             ############################
 
             if step_counter > generator_warmup and step_counter % generator_steps_per_discriminator_step == 0:
-                d_outs = d(wave=pred_wave.detach(),
-                           intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice.detach(),
-                           intermediate_wave_upsampled_once=intermediate_wave_upsampled_once.detach())
-                d_gold_outs = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
-                discriminator_loss = discriminator_adv_criterion(d_outs, d_gold_outs)
+                d_outs, d_fmaps = d(wave=pred_wave.detach(),
+                                    intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice.detach(),
+                                    intermediate_wave_upsampled_once=intermediate_wave_upsampled_once.detach(),
+                                    discriminator_train_flag=True)
+                d_gold_outs, d_gold_fmaps = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
+                discriminator_loss = discriminator_adv_loss(d_gold_outs, d_outs)[0]
                 optimizer_d.zero_grad()
                 discriminator_loss.backward()
                 discriminator_losses.append(discriminator_loss.item())

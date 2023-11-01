@@ -9,9 +9,9 @@ import torch
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
-from Architectures.BigVGAN.BigVGAN import BigVGAN
 from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.TextFrontend import get_language_id
@@ -25,7 +25,7 @@ class ToucanTTSInterface(torch.nn.Module):
     def __init__(self,
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
-                 vocoder_model_path=os.path.join(MODELS_DIR, f"BigVGAN", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
+                 vocoder_model_path=os.path.join(MODELS_DIR, f"HiFiGAN", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  embedding_model_path=None,
                  language="en",  # initial language of the model, can be changed later with the setter methods
                  ):
@@ -68,7 +68,7 @@ class ToucanTTSInterface(torch.nn.Module):
         #  load mel to wave model      #
         ################################
         vocoder_checkpoint = torch.load(vocoder_model_path, map_location="cpu")
-        self.vocoder = BigVGAN()
+        self.vocoder = HiFiGAN()
         self.vocoder.load_state_dict(vocoder_checkpoint)
         self.vocoder = self.vocoder.to(device).eval()
         self.vocoder.remove_weight_norm()

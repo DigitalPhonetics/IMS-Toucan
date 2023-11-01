@@ -39,6 +39,7 @@ class SANConv1d(nn.Conv1d):
             self.bias = nn.parameter.Parameter(torch.zeros(in_channels, device=device, dtype=dtype))
         else:
             self.register_parameter('bias', None)
+        self.normalize_weight()
 
     def forward(self, input, flg_train=False):
         if self.bias is not None:
@@ -89,6 +90,7 @@ class SANConv2d(nn.Conv2d):
             self.bias = nn.parameter.Parameter(torch.zeros(in_channels, device=device, dtype=dtype))
         else:
             self.register_parameter('bias', None)
+        self.normalize_weight()
 
     def forward(self, input, flg_train=False):
         if self.bias is not None:

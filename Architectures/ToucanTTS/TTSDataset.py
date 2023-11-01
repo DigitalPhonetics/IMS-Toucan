@@ -210,7 +210,6 @@ class TTSDataset(Dataset):
 
     def actually_load_everything(self):
         print(f"actually loading {self.cache_dir}")
-        self.loading_status = "complete"
         self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # it would be so nice if we could use cuda here, but cuda cannot be initialized in a forked subprocess. However we need to use fork to avoid mmap issues. Big oof.
         self.spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)
         self.datapoints = torch.load(os.path.join(self.cache_dir, "tts_train_cache.pt"), map_location='cpu')
@@ -220,6 +219,7 @@ class TTSDataset(Dataset):
                 self.datapoints.pop(-1)  # a bit unfortunate, but if you're using multiple GPUs, you probably have a ton of datapoints anyway.
             chunksize = int(len(self.datapoints) / self.gpu_count)
             self.datapoints = self.datapoints[chunksize * self.rank:chunksize * (self.rank + 1)]
+        self.loading_status = "complete"
 
     def calculate_durations(self, text, index, vis_dir, features, save_imgs):
         # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.

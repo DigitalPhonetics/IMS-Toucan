@@ -7,6 +7,14 @@ import torch
 import torch.nn.functional as F
 
 
+def feature_loss(fmap_r, fmap_g):
+    loss = 0
+    for dr, dg in zip(fmap_r, fmap_g):
+        loss += torch.mean(torch.abs(dr - dg))
+
+    return loss
+
+
 class FeatureMatchLoss(torch.nn.Module):
 
     def __init__(self,

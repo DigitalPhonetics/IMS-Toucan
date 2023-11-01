@@ -9,10 +9,10 @@ import copy
 import torch
 import torch.nn.functional as F
 
-from Architectures.BigVGAN.Avocodo_Discriminators import MultiCoMBDiscriminator
-from Architectures.BigVGAN.Avocodo_Discriminators import MultiSubBandDiscriminator
-from Architectures.BigVGAN.SAN_modules import SANConv1d
-from Architectures.BigVGAN.SAN_modules import SANConv2d
+from Architectures.Vocoder.Avocodo_Discriminators import MultiCoMBDiscriminator
+from Architectures.Vocoder.Avocodo_Discriminators import MultiSubBandDiscriminator
+from Architectures.Vocoder.SAN_modules import SANConv1d
+from Architectures.Vocoder.SAN_modules import SANConv2d
 
 
 class HiFiGANPeriodDiscriminator(torch.nn.Module):
@@ -81,7 +81,7 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
         if use_spectral_norm:
             self.apply_spectral_norm()
 
-    def forward(self, x):
+    def forward(self, x, discriminator_train_flag):
         """
         Calculate forward propagation.
 
@@ -104,11 +104,9 @@ class HiFiGANPeriodDiscriminator(torch.nn.Module):
         for layer in self.convs:
             x = layer(x)
             outs = outs + [x]
-        x = self.output_conv(x)
+        x = self.output_conv(x, discriminator_train_flag)
         x = torch.flatten(x, 1, -1)
-        outs = outs + [x]
-
-        return outs
+        return x, outs
 
     def apply_weight_norm(self):
         """
@@ -163,7 +161,7 @@ class HiFiGANMultiPeriodDiscriminator(torch.nn.Module):
             params["period"] = period
             self.discriminators += [HiFiGANPeriodDiscriminator(**params)]
 
-    def forward(self, x):
+    def forward(self, x, discriminator_train_flag):
         """Calculate forward propagation.
         Args:
             x (Tensor): Input noise signal (B, 1, T).
@@ -171,10 +169,13 @@ class HiFiGANMultiPeriodDiscriminator(torch.nn.Module):
             List: List of list of each discriminator outputs, which consists of each layer output tensors.
         """
         outs = []
+        feats = []
         for f in self.discriminators:
-            outs = outs + [f(x)]
+            d_out, d_feats = f(x, discriminator_train_flag)
+            outs = outs + [d_out]
+            feats = feats + d_feats
 
-        return outs
+        return outs, feats
 
 
 class HiFiGANScaleDiscriminator(torch.nn.Module):
@@ -257,7 +258,7 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
                                                             padding=(kernel_sizes[2] - 1) // 2,
                                                             bias=bias, ),
                                             getattr(torch.nn, nonlinear_activation)(**nonlinear_activation_params), )]
-        self.layers += [SANConv1d(out_chs, out_channels, kernel_sizes[3], padding=(kernel_sizes[3] - 1) // 2), ]
+        self.post_conv = SANConv1d(out_chs, out_channels, kernel_sizes[3], padding=(kernel_sizes[3] - 1) // 2)
 
         if use_weight_norm and use_spectral_norm:
             raise ValueError("Either use use_weight_norm or use_spectral_norm.")
@@ -270,7 +271,7 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
         if use_spectral_norm:
             self.apply_spectral_norm()
 
-    def forward(self, x):
+    def forward(self, x, discriminator_train_flag):
         """
         Calculate forward propagation.
 
@@ -285,7 +286,9 @@ class HiFiGANScaleDiscriminator(torch.nn.Module):
             x = f(x)
             outs = outs + [x]
 
-        return outs
+        x = self.post_conv(x, discriminator_train_flag)
+
+        return x, outs
 
     def apply_weight_norm(self):
         """
@@ -358,7 +361,7 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
             self.discriminators += [HiFiGANScaleDiscriminator(**params)]
         self.pooling = getattr(torch.nn, downsample_pooling)(**downsample_pooling_params)
 
-    def forward(self, x):
+    def forward(self, x, discriminator_train_flag):
         """
         Calculate forward propagation.
 
@@ -369,11 +372,14 @@ class HiFiGANMultiScaleDiscriminator(torch.nn.Module):
             List: List of list of each discriminator outputs, which consists of each layer output tensors.
         """
         outs = []
+        feats = []
         for f in self.discriminators:
-            outs = outs + [f(x)]
+            out, d_feats = f(x, discriminator_train_flag)
+            feats = feats + d_feats
+            outs = outs + [out]
             x = self.pooling(x)
 
-        return outs
+        return outs, feats
 
 
 class HiFiGANMultiScaleMultiPeriodDiscriminator(torch.nn.Module):
@@ -522,7 +528,7 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
         self.mcmbd = MultiCoMBDiscriminator(kernels, channels, groups, strides)
         self.msbd = MultiSubBandDiscriminator(tkernels, fkernel, tchannels, fchannels, tstrides, fstride, tdilations, fdilations, tsubband, n, m, freq_init_ch)
 
-    def forward(self, wave, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
+    def forward(self, wave, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None, discriminator_train_flag=False):
         """
         Calculate forward propagation.
 
@@ -535,10 +541,11 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
             List: List of lists of each discriminator outputs,
                 which consists of each layer's output tensors.
         """
-        msd_outs = self.msd(wave)
-        mpd_outs = self.mpd(wave)
-        mcmbd_outs = self.mcmbd(wave_final=wave,
-                                intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
-                                intermediate_wave_upsampled_once=intermediate_wave_upsampled_once)
-        msbd_outs = self.msbd(wave)
-        return msd_outs + mpd_outs + mcmbd_outs + msbd_outs
+        msd_outs, msd_feats = self.msd(wave, discriminator_train_flag)
+        mpd_outs, mpd_feats = self.mpd(wave, discriminator_train_flag)
+        mcmbd_outs, mcmbd_feats = self.mcmbd(wave_final=wave,
+                                             intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice,
+                                             intermediate_wave_upsampled_once=intermediate_wave_upsampled_once,
+                                             discriminator_train_flag=discriminator_train_flag)
+        msbd_outs, msbd_feats = self.msbd(wave, discriminator_train_flag)
+        return [msbd_outs, mpd_outs, mcmbd_outs, msbd_feats], + mpd_feats + mcmbd_feats + msbd_feats

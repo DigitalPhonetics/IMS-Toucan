@@ -14,7 +14,7 @@ from torch.nn import Conv1d
 from torch.nn.utils import spectral_norm
 from torch.nn.utils import weight_norm
 
-from Architectures.BigVGAN.SAN_modules import SANConv1d
+from Architectures.Vocoder.SAN_modules import SANConv1d
 
 
 def get_padding(kernel_size, dilation=1):
@@ -32,55 +32,55 @@ class MultiCoMBDiscriminator(torch.nn.Module):
         self.pqmf_2 = PQMF(N=2, taps=256, cutoff=0.25, beta=10.0)
         self.pqmf_4 = PQMF(N=8, taps=192, cutoff=0.13, beta=10.0)
 
-    def forward(self, wave_final, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None):
+    def forward(self, wave_final, intermediate_wave_upsampled_twice=None, intermediate_wave_upsampled_once=None, discriminator_train_flag=False):
 
         if intermediate_wave_upsampled_twice is not None and intermediate_wave_upsampled_once is not None:
             # get features of generated wave
             features_of_predicted = []
 
-            _, p3_fmap_hat = self.combd_3(wave_final)
+            out3, p3_fmap_hat = self.combd_3(wave_final, discriminator_train_flag)
             features_of_predicted.append(p3_fmap_hat)
 
             x2_hat_ = self.pqmf_2(wave_final)[:, :1, :]
             x1_hat_ = self.pqmf_4(wave_final)[:, :1, :]
 
-            _, p2_fmap_hat_ = self.combd_2(intermediate_wave_upsampled_twice)
+            out2, p2_fmap_hat_ = self.combd_2(intermediate_wave_upsampled_twice, discriminator_train_flag)
             features_of_predicted.append(p2_fmap_hat_)
 
-            _, p1_fmap_hat_ = self.combd_1(intermediate_wave_upsampled_once)
+            out1, p1_fmap_hat_ = self.combd_1(intermediate_wave_upsampled_once, discriminator_train_flag)
             features_of_predicted.append(p1_fmap_hat_)
 
-            _, p2_fmap_hat = self.combd_2(x2_hat_)
+            out22, p2_fmap_hat = self.combd_2(x2_hat_, discriminator_train_flag)
             features_of_predicted.append(p2_fmap_hat)
 
-            _, p1_fmap_hat = self.combd_1(x1_hat_)
+            out12, p1_fmap_hat = self.combd_1(x1_hat_, discriminator_train_flag)
             features_of_predicted.append(p1_fmap_hat)
 
-            return features_of_predicted
+            return [out1, out12, out2, out22, out3], features_of_predicted
 
         else:
             # get features of gold wave
             features_of_gold = []
 
-            _, p3_fmap = self.combd_3(wave_final)
+            out3, p3_fmap = self.combd_3(wave_final, discriminator_train_flag)
             features_of_gold.append(p3_fmap)
 
             x2_ = self.pqmf_2(wave_final)[:, :1, :]  # Select first band
             x1_ = self.pqmf_4(wave_final)[:, :1, :]  # Select first band
 
-            _, p2_fmap_ = self.combd_2(x2_)
+            out2, p2_fmap_ = self.combd_2(x2_, discriminator_train_flag)
             features_of_gold.append(p2_fmap_)
 
-            _, p1_fmap_ = self.combd_1(x1_)
+            out1, p1_fmap_ = self.combd_1(x1_, discriminator_train_flag)
             features_of_gold.append(p1_fmap_)
 
-            _, p2_fmap = self.combd_2(x2_)
+            out22, p2_fmap = self.combd_2(x2_, discriminator_train_flag)
             features_of_gold.append(p2_fmap)
 
-            _, p1_fmap = self.combd_1(x1_)
+            out12, p1_fmap = self.combd_1(x1_, discriminator_train_flag)
             features_of_gold.append(p1_fmap)
 
-            return features_of_gold
+            return [out1, out12, out2, out22, out3], features_of_gold
 
 
 class MultiSubBandDiscriminator(torch.nn.Module):
@@ -118,19 +118,19 @@ class MultiSubBandDiscriminator(torch.nn.Module):
         self.pqmf_n = PQMF(N=n, taps=256, cutoff=0.03, beta=10.0)
         self.pqmf_m = PQMF(N=m, taps=256, cutoff=0.1, beta=9.0)
 
-    def forward(self, wave):
+    def forward(self, wave, discriminator_train_flag):
         fmap_hat = []
 
         # Time analysis
         xn_hat = self.pqmf_n(wave)
 
-        q3_hat, feat_q3_hat = self.tsbd3(xn_hat[:, :self.tsubband3, :])
+        q3_hat, feat_q3_hat = self.tsbd3(xn_hat[:, :self.tsubband3, :], discriminator_train_flag)
         fmap_hat.append(feat_q3_hat)
 
-        q2_hat, feat_q2_hat = self.tsbd2(xn_hat[:, :self.tsubband2, :])
+        q2_hat, feat_q2_hat = self.tsbd2(xn_hat[:, :self.tsubband2, :], discriminator_train_flag)
         fmap_hat.append(feat_q2_hat)
 
-        q1_hat, feat_q1_hat = self.tsbd1(xn_hat[:, :self.tsubband1, :])
+        q1_hat, feat_q1_hat = self.tsbd1(xn_hat[:, :self.tsubband1, :], discriminator_train_flag)
         fmap_hat.append(feat_q1_hat)
 
         # Frequency analysis
@@ -138,10 +138,10 @@ class MultiSubBandDiscriminator(torch.nn.Module):
 
         xm_hat = xm_hat.transpose(-2, -1)
 
-        q4_hat, feat_q4_hat = self.fsbd(xm_hat)
+        q4_hat, feat_q4_hat = self.fsbd(xm_hat, discriminator_train_flag)
         fmap_hat.append(feat_q4_hat)
 
-        return fmap_hat
+        return [q1_hat, q2_hat, q3_hat, q4_hat], fmap_hat
 
 
 class CoMBD(torch.nn.Module):
@@ -156,13 +156,13 @@ class CoMBD(torch.nn.Module):
             init_channel = f
         self.conv_post = norm_f(SANConv1d(filters[-1], 1, 3, 1, padding=get_padding(3, 1)))
 
-    def forward(self, x):
+    def forward(self, x, discriminator_train_flag):
         fmap = []
         for l in self.convs:
             x = l(x)
             x = F.leaky_relu(x, 0.1)
             fmap.append(x)
-        x = self.conv_post(x)
+        x = self.conv_post(x, discriminator_train_flag)
         # fmap.append(x)
         x = torch.flatten(x, 1, -1)
         return x, fmap
@@ -209,13 +209,13 @@ class SubBandDiscriminator(torch.nn.Module):
             init_channel = channel  # output channel of this layer becomes input channel of next layer
         self.conv_post = norm_f(SANConv1d(init_channel, 1, 3, padding=get_padding(3, 1)))
 
-    def forward(self, x):
+    def forward(self, x, discriminator_train_flag):
         fmap = []
 
         for l in self.mdcs:
             x = l(x)
             fmap.append(x)
-        x = self.conv_post(x)
+        x = self.conv_post(x, discriminator_train_flag)
         # fmap.append(x)
         x = torch.flatten(x, 1, -1)
 

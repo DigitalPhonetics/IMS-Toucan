@@ -8,6 +8,31 @@ import torch
 import torch.nn.functional as F
 
 
+def discriminator_adv_loss(disc_real_outputs, disc_generated_outputs):
+    loss = 0
+    for dr, dg in zip(disc_real_outputs, disc_generated_outputs):
+        dr_fun, dr_dir = dr
+        dg_fun, dg_dir = dg
+        r_loss_fun = torch.mean(F.softplus(1 - dr_fun) ** 2)
+        g_loss_fun = torch.mean(F.softplus(dg_fun) ** 2)
+        r_loss_dir = torch.mean(F.softplus(1 - dr_dir) ** 2)
+        g_loss_dir = torch.mean(-F.softplus(1 - dg_dir) ** 2)
+        r_loss = r_loss_fun + r_loss_dir
+        g_loss = g_loss_fun + g_loss_dir
+        loss += (r_loss + g_loss)
+
+    return loss
+
+
+def generator_adv_loss(disc_outputs):
+    loss = 0
+    for dg in disc_outputs:
+        l = torch.mean(F.softplus(1 - dg) ** 2)
+        loss += l
+
+    return loss
+
+
 class GeneratorAdversarialLoss(torch.nn.Module):
 
     def __init__(self,

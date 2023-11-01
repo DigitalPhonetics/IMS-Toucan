@@ -27,6 +27,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=800000,  # how many updates to run until training is completed
                train_embed=False,  # whether to train the embedding function. Only relevant for single-language case
+               dataloader_workers=5  # the amount of workers that decode audios and extract spectrograms on the fly. For very large runs, this has to be decreased to 1 to preserve memory
                ):
     torch.multiprocessing.set_start_method('spawn', force=True)
     if type(datasets) != list:
@@ -48,7 +49,8 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                             fine_tune=fine_tune,
                             warmup_steps=warmup_steps,
                             use_wandb=use_wandb,
-                            gpu_count=gpu_count)
+                            gpu_count=gpu_count,
+                            dataloader_workers=dataloader_workers)
     else:
         mono_language_loop(net=net,
                            train_dataset=datasets[0],
@@ -61,10 +63,11 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                            warmup_steps=warmup_steps,
                            path_to_checkpoint=path_to_checkpoint,
                            path_to_embed_model=path_to_embed_model,
-                           steps_per_checkpoint=steps_per_checkpoint,
                            fine_tune=fine_tune,
                            resume=resume,
                            steps=steps,
                            use_wandb=use_wandb,
                            train_embed=train_embed,
-                           gpu_count=gpu_count)
+                           gpu_count=gpu_count,
+                           steps_per_checkpoint=steps_per_checkpoint,
+                           dataloader_workers=dataloader_workers)

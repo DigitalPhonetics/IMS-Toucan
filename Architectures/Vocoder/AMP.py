@@ -11,7 +11,7 @@ from torch.nn import Conv1d
 from torch.nn.utils import remove_weight_norm
 from torch.nn.utils import weight_norm
 
-from Architectures.BigVGAN.Snake import SnakeBeta
+from Architectures.Vocoder.Snake import SnakeBeta
 
 LRELU_SLOPE = 0.1
 

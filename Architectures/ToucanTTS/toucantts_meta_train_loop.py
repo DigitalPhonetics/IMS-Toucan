@@ -1,4 +1,3 @@
-import torch
 import torch.multiprocessing
 import wandb
 from torch.nn.utils.rnn import pad_sequence
@@ -47,7 +46,8 @@ def train_loop(net,
                warmup_steps,
                use_wandb,
                train_samplers,
-               gpu_count
+               gpu_count,
+               dataloader_workers
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -79,7 +79,7 @@ def train_loop(net,
         batch_sampler_train = torch.utils.data.BatchSampler(sampler, 1, drop_last=True)
         train_loaders.append(DataLoader(dataset=dataset,
                                         batch_sampler=batch_sampler_train,
-                                        num_workers=1,
+                                        num_workers=dataloader_workers,
                                         pin_memory=True,
                                         prefetch_factor=4,
                                         collate_fn=collate_and_pad,

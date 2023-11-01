@@ -6,8 +6,8 @@ import os
 
 import torch
 
-from Architectures.BigVGAN.BigVGAN import BigVGAN
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Utility.storage_config import MODELS_DIR
 
 
@@ -19,7 +19,7 @@ def load_net_toucan(path):
 
 def load_net_bigvgan(path):
     check_dict = torch.load(path, map_location=torch.device("cpu"))
-    net = BigVGAN(weights=check_dict["generator"])
+    net = HiFiGAN(weights=check_dict["generator"])
     return net, None
 
 

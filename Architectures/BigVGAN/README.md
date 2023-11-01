@@ -1,1 +1,0 @@
-This directory contains the code needed to train a BigVGAN vocoder on the spectrogram representation that we use.

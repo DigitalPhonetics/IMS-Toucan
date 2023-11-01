@@ -6,7 +6,7 @@ import sys
 import torch
 
 from TrainingPipelines.AlignerPipeline import run as aligner
-from TrainingPipelines.BigVGAN_combined import run as BigVGAN
+from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
 from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingPipelines.ToucanTTS_MLS_English import run as mls
@@ -29,7 +29,7 @@ pipeline_dict = {
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)
-    "bigvgan"                        : BigVGAN
+    "hifigan"                        : HiFiGAN()
 }
 
 if __name__ == '__main__':

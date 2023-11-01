@@ -51,7 +51,8 @@ def train_loop(net,
                train_embed,
                train_sampler,
                gpu_count,
-               steps_per_checkpoint
+               steps_per_checkpoint,
+               dataloader_workers
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -87,7 +88,7 @@ def train_loop(net,
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
                               batch_sampler=batch_sampler_train,
-                              num_workers=1,
+                              num_workers=dataloader_workers,
                               pin_memory=True,
                               prefetch_factor=4,
                               collate_fn=collate_and_pad,

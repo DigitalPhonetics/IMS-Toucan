@@ -2,10 +2,10 @@ import time
 
 import wandb
 
-from Architectures.BigVGAN.BigVGAN import BigVGAN
-from Architectures.BigVGAN.BigVGAN_Dataset import BigVGANDataset
-from Architectures.BigVGAN.BigVGAN_train_loop import train_loop
-from Architectures.BigVGAN.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
+from Architectures.Vocoder.HiFiGAN_Dataset import HiFiGANDataset
+from Architectures.Vocoder.HiFiGAN_Discriminators import AvocodoHiFiGANJointDiscriminator
+from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
+from Architectures.Vocoder.HiFiGAN_train_loop import train_loop
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
@@ -17,7 +17,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
         device = torch.device("cuda")
 
     if gpu_count > 1:
-        print("Multi GPU training not supported for BigVGAN!")
+        print("Multi GPU training not supported for HiFiGAN!")
         import sys
         sys.exit()
 
@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = os.path.join(MODELS_DIR, "BigVGAN")
+        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN")
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -75,9 +75,9 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     fisher_yates_shuffle(file_lists_for_this_run_combined)
     print("filepaths randomized")
 
-    train_set = BigVGANDataset(list_of_paths=file_lists_for_this_run_combined[:300000])  # adjust the sample size until it fits into RAM
+    train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined[:300000])  # adjust the sample size until it fits into RAM
 
-    generator = BigVGAN()
+    generator = HiFiGAN()
     discriminator = AvocodoHiFiGANJointDiscriminator()
 
     print("Training model")

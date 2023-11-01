@@ -286,10 +286,12 @@ Here are a few points that were brought up by users:
   reduced, in practice, the vocoder produces much fewer artifacts.
 - Lots of quality of life changes: Finetuning your own model from the provided pretrained checkpoints is easier than
   ever! Just follow the `finetuning_example.py` pipeline.
-- We now have the option of choosing between Avocodo and [BigVGAN](https://arxiv.org/abs/2206.04658), which has an improved  
+- We now have the option of choosing between Avocodo and [HiFiGAN](https://arxiv.org/abs/2206.04658), which has an
+  improved  
   generator over HiFiGAN.
 - We compile a bunch of quality enhancements from all our previous works so far into one very stable and nice sounding
-  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge 2023,
+  architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge
+  2023,
   you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
 - We switch from using spectrograms to using neural audio codecs as intermediate representations. That makes the vocoder obsolete, so we remove it. The compression also allows us to use orders of magnitudes more data.
 - We added multi-GPU training in order to train on massive amounts of data.
