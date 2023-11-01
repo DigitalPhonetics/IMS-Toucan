@@ -141,7 +141,7 @@ def train_loop(generator,
                                     discriminator_train_flag=True)
                 d_gold_outs, d_gold_fmaps = d(gold_wave,
                                               discriminator_train_flag=True)  # have to recompute unfortunately due to autograd behaviour
-                discriminator_loss = discriminator_adv_loss(d_gold_outs, d_outs)[0]
+                discriminator_loss = discriminator_adv_loss(d_gold_outs, d_outs)
                 optimizer_d.zero_grad()
                 discriminator_loss.backward()
                 discriminator_losses.append(discriminator_loss.item())

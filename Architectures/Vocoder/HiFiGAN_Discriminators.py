@@ -547,4 +547,4 @@ class AvocodoHiFiGANJointDiscriminator(torch.nn.Module):
                                              intermediate_wave_upsampled_once=intermediate_wave_upsampled_once,
                                              discriminator_train_flag=discriminator_train_flag)
         msbd_outs, msbd_feats = self.msbd(wave, discriminator_train_flag)
-        return [msd_outs, mpd_outs, mcmbd_outs, msbd_outs], msd_feats + mpd_feats + mcmbd_feats + msbd_feats
+        return msd_outs + mpd_outs + mcmbd_outs + msbd_outs, msd_feats + mpd_feats + mcmbd_feats + msbd_feats

@@ -39,22 +39,22 @@ class MultiCoMBDiscriminator(torch.nn.Module):
             features_of_predicted = []
 
             out3, p3_fmap_hat = self.combd_3(wave_final, discriminator_train_flag)
-            features_of_predicted.append(p3_fmap_hat)
+            features_of_predicted = features_of_predicted + p3_fmap_hat
 
             x2_hat_ = self.pqmf_2(wave_final)[:, :1, :]
             x1_hat_ = self.pqmf_4(wave_final)[:, :1, :]
 
             out2, p2_fmap_hat_ = self.combd_2(intermediate_wave_upsampled_twice, discriminator_train_flag)
-            features_of_predicted.append(p2_fmap_hat_)
+            features_of_predicted = features_of_predicted + p2_fmap_hat_
 
             out1, p1_fmap_hat_ = self.combd_1(intermediate_wave_upsampled_once, discriminator_train_flag)
-            features_of_predicted.append(p1_fmap_hat_)
+            features_of_predicted = features_of_predicted + p1_fmap_hat_
 
             out22, p2_fmap_hat = self.combd_2(x2_hat_, discriminator_train_flag)
-            features_of_predicted.append(p2_fmap_hat)
+            features_of_predicted = features_of_predicted + p2_fmap_hat
 
             out12, p1_fmap_hat = self.combd_1(x1_hat_, discriminator_train_flag)
-            features_of_predicted.append(p1_fmap_hat)
+            features_of_predicted = features_of_predicted + p1_fmap_hat
 
             return [out1, out12, out2, out22, out3], features_of_predicted
 
@@ -63,22 +63,22 @@ class MultiCoMBDiscriminator(torch.nn.Module):
             features_of_gold = []
 
             out3, p3_fmap = self.combd_3(wave_final, discriminator_train_flag)
-            features_of_gold.append(p3_fmap)
+            features_of_gold = features_of_gold + p3_fmap
 
             x2_ = self.pqmf_2(wave_final)[:, :1, :]  # Select first band
             x1_ = self.pqmf_4(wave_final)[:, :1, :]  # Select first band
 
             out2, p2_fmap_ = self.combd_2(x2_, discriminator_train_flag)
-            features_of_gold.append(p2_fmap_)
+            features_of_gold = features_of_gold + p2_fmap_
 
             out1, p1_fmap_ = self.combd_1(x1_, discriminator_train_flag)
-            features_of_gold.append(p1_fmap_)
+            features_of_gold = features_of_gold + p1_fmap_
 
             out22, p2_fmap = self.combd_2(x2_, discriminator_train_flag)
-            features_of_gold.append(p2_fmap)
+            features_of_gold = features_of_gold + p2_fmap
 
             out12, p1_fmap = self.combd_1(x1_, discriminator_train_flag)
-            features_of_gold.append(p1_fmap)
+            features_of_gold = features_of_gold + p1_fmap
 
             return [out1, out12, out2, out22, out3], features_of_gold
 
@@ -125,13 +125,13 @@ class MultiSubBandDiscriminator(torch.nn.Module):
         xn_hat = self.pqmf_n(wave)
 
         q3_hat, feat_q3_hat = self.tsbd3(xn_hat[:, :self.tsubband3, :], discriminator_train_flag)
-        fmap_hat.append(feat_q3_hat)
+        fmap_hat = fmap_hat + feat_q3_hat
 
         q2_hat, feat_q2_hat = self.tsbd2(xn_hat[:, :self.tsubband2, :], discriminator_train_flag)
-        fmap_hat.append(feat_q2_hat)
+        fmap_hat = fmap_hat + feat_q2_hat
 
         q1_hat, feat_q1_hat = self.tsbd1(xn_hat[:, :self.tsubband1, :], discriminator_train_flag)
-        fmap_hat.append(feat_q1_hat)
+        fmap_hat = fmap_hat + feat_q1_hat
 
         # Frequency analysis
         xm_hat = self.pqmf_m(wave)
@@ -139,7 +139,7 @@ class MultiSubBandDiscriminator(torch.nn.Module):
         xm_hat = xm_hat.transpose(-2, -1)
 
         q4_hat, feat_q4_hat = self.fsbd(xm_hat, discriminator_train_flag)
-        fmap_hat.append(feat_q4_hat)
+        fmap_hat = fmap_hat + feat_q4_hat
 
         return [q1_hat, q2_hat, q3_hat, q4_hat], fmap_hat
 
