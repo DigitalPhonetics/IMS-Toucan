@@ -139,7 +139,8 @@ def train_loop(generator,
                                     intermediate_wave_upsampled_twice=intermediate_wave_upsampled_twice.detach(),
                                     intermediate_wave_upsampled_once=intermediate_wave_upsampled_once.detach(),
                                     discriminator_train_flag=True)
-                d_gold_outs, d_gold_fmaps = d(gold_wave)  # have to recompute unfortunately due to autograd behaviour
+                d_gold_outs, d_gold_fmaps = d(gold_wave,
+                                              discriminator_train_flag=True)  # have to recompute unfortunately due to autograd behaviour
                 discriminator_loss = discriminator_adv_loss(d_gold_outs, d_outs)[0]
                 optimizer_d.zero_grad()
                 discriminator_loss.backward()
