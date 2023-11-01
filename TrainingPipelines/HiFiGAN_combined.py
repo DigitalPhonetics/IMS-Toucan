@@ -75,7 +75,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     fisher_yates_shuffle(file_lists_for_this_run_combined)
     print("filepaths randomized")
 
-    train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined[:300000])  # adjust the sample size until it fits into RAM
+    train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined[:250000])  # adjust the sample size until it fits into RAM
 
     generator = HiFiGAN()
     discriminator = AvocodoHiFiGANJointDiscriminator()

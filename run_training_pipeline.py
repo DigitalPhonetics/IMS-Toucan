@@ -29,7 +29,7 @@ pipeline_dict = {
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)
-    "hifigan"                        : HiFiGAN()
+    "hifigan": HiFiGAN
 }
 
 if __name__ == '__main__':
