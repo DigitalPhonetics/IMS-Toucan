@@ -108,6 +108,8 @@ class CodecAlignerDataset(Dataset):
         self.device = device
         self.cache_dir = cache_dir
         self.loading_status = "lazy"
+        self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')[0]
+        self.length = len(self.datapoints)
         self.datapoints = None
         self.speaker_embeddings = None
         print(f"Lazily loaded an Aligner dataset in {cache_dir}.")
@@ -215,13 +217,7 @@ class CodecAlignerDataset(Dataset):
             self.speaker_embeddings[index]
 
     def __len__(self):
-        if self.datapoints is not None:
-            return len(self.datapoints)
-        else:
-            self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')[0]
-            length = len(self.datapoints)
-            self.datapoints = None
-            return length
+        return self.length
 
 
 def fisher_yates_shuffle(lst):
