@@ -12,7 +12,7 @@ def feature_loss(fmap_r, fmap_g):
     for dr, dg in zip(fmap_r, fmap_g):
         loss += torch.mean(torch.abs(dr - dg))
 
-    return loss
+    return loss / len(fmap_g)
 
 
 class FeatureMatchLoss(torch.nn.Module):

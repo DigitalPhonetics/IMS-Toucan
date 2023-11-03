@@ -99,7 +99,7 @@ def train_loop(generator,
                 continue
 
             mel_loss = mel_l1(pred_wave.squeeze(1), gold_wave)
-            generator_total_loss = mel_loss * 45.0  # according to the Avocodo Paper
+            generator_total_loss = mel_loss * 85.0
 
             if step_counter > generator_warmup + 100:  # a bit of warmup helps, but it's not that important
                 d_outs, d_fmaps = d(wave=pred_wave,
@@ -112,7 +112,7 @@ def train_loop(generator,
                 d_gold_outs, d_gold_fmaps = d(gold_wave)
                 feature_matching_loss = feature_loss(d_gold_fmaps, d_fmaps)
                 feat_match_losses.append(feature_matching_loss.item())
-                generator_total_loss = generator_total_loss + feature_matching_loss * 2  # according to Avocodo Paper
+                generator_total_loss = generator_total_loss + feature_matching_loss
 
             if torch.isnan(generator_total_loss):
                 print("Loss turned to NaN, skipping. The GAN possibly collapsed.")

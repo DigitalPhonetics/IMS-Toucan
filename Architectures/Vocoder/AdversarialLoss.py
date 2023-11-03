@@ -21,7 +21,7 @@ def discriminator_adv_loss(disc_real_outputs, disc_generated_outputs):
         g_loss = g_loss_fun + g_loss_dir
         loss += (r_loss + g_loss)
 
-    return loss
+    return loss / len(disc_generated_outputs)
 
 
 def generator_adv_loss(disc_outputs):
@@ -30,7 +30,7 @@ def generator_adv_loss(disc_outputs):
         l = torch.mean(F.softplus(1 - dg) ** 2)
         loss += l
 
-    return loss
+    return loss / len(disc_outputs)
 
 
 class GeneratorAdversarialLoss(torch.nn.Module):
