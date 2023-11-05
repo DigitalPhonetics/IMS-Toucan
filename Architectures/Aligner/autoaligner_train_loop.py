@@ -10,14 +10,16 @@ from tqdm import tqdm
 
 from Architectures.Aligner.Aligner import Aligner
 from Architectures.Aligner.Reconstructor import Reconstructor
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len
+    # text, text_len, speech, speech_len, embed
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
+            [datapoint[2] for datapoint in batch],
+            None,
             torch.stack([datapoint[4] for datapoint in batch]).squeeze())
 
 
@@ -54,9 +56,12 @@ def train_loop(train_dataset,
                               num_workers=1,
                               pin_memory=False,
                               shuffle=True,
-                              prefetch_factor=2,
+                              prefetch_factor=8,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
+
+    ap = CodecAudioPreprocessor(input_sr=-1, device=device)  # only used to transform features into continuous matrices
+    spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
 
     asr_model = Aligner().to(device)
     optim_asr = RAdam(asr_model.parameters(), lr=0.0001)
@@ -91,9 +96,20 @@ def train_loop(train_dataset,
         for batch in tqdm(train_loader):
             tokens = batch[0].to(device)
             tokens_len = batch[1].to(device)
-            mel = batch[2].to(device)
-            mel_len = batch[3].to(device)
             speaker_embeddings = batch[4].to(device)
+
+            mels = list()
+            mel_lengths = list()
+            for datapoint in batch[2]:
+                with torch.inference_mode():
+                    # extremely unfortunate that we have to do this over here, but multiprocessing and this don't go together well
+                    speech = ap.indexes_to_audio(datapoint.int().transpose(0, 1).to(device))
+                    mel = spectrogram_extractor.audio_to_mel_spec_tensor(speech, explicit_sampling_rate=16000).transpose(0, 1).cpu()
+                speech_len = torch.LongTensor([len(mel)])
+                mels.append(mel.clone())
+                mel_lengths.append(speech_len)
+            mel = pad_sequence(mels, batch_first=True).to(device)
+            mel_len = torch.stack(mel_lengths).squeeze(1).to(device)
 
             pred = asr_model(mel, mel_len)
 
@@ -125,6 +141,19 @@ def train_loop(train_dataset,
                 optim_tts.step()
 
             step_counter += 1
+
+            if step_counter % 10000 == 0:
+                asr_model.eval()
+                torch.save({
+                    "asr_model"    : asr_model.state_dict(),
+                    "optimizer"    : optim_asr.state_dict(),
+                    "tts_model"    : tiny_tts.state_dict(),
+                    "tts_optimizer": optim_tts.state_dict(),
+                    "step_counter" : step_counter,
+                },
+                    os.path.join(save_directory, "aligner.pt"))
+                asr_model.train()
+
             loss_sum.append(loss.item())
         loss_this_epoch = sum(loss_sum) / len(loss_sum)
         loss_sum = list()

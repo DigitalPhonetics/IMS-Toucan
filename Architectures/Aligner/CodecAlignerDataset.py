@@ -10,7 +10,6 @@ from torch.utils.data import Dataset
 from torchaudio.transforms import Resample
 from tqdm import tqdm
 
-from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.storage_config import MODELS_DIR
@@ -104,8 +103,6 @@ class CodecAlignerDataset(Dataset):
 
         self.tf = None
         self.lang = lang
-        self.ap = None
-        self.spectrogram_extractor = None
         self.device = device
         self.cache_dir = cache_dir
         self.loading_status = "lazy"
@@ -119,8 +116,6 @@ class CodecAlignerDataset(Dataset):
         print(f"actually loading {self.cache_dir}")
         self.loading_status = "complete"
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
-        self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
-        self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)
         self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = self.datapoints[2]
         self.datapoints = self.datapoints[0]
@@ -206,16 +201,11 @@ class CodecAlignerDataset(Dataset):
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
-        speech_indexes = self.datapoints[index][1]
-        with torch.inference_mode():
-            speech = self.ap.indexes_to_audio(speech_indexes.int().transpose(0, 1).to(self.device)).detach()
-            mel = self.spectrogram_extractor.audio_to_mel_spec_tensor(speech, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
-        speech_len = torch.LongTensor([len(mel)])
 
         return tokens, \
             token_len, \
-            mel.clone(), \
-            speech_len, \
+            self.datapoints[index][1], \
+            None, \
             self.speaker_embeddings[index]
 
     def __len__(self):
