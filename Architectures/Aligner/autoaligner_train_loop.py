@@ -53,10 +53,10 @@ def train_loop(train_dataset,
     train_loader = DataLoader(batch_size=batch_size,
                               dataset=train_dataset,
                               drop_last=True,
-                              num_workers=1,
+                              num_workers=0,  # unfortunately necessary for big data due to mmap errors
                               pin_memory=False,
                               shuffle=True,
-                              prefetch_factor=8,
+                              prefetch_factor=None,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
