@@ -57,8 +57,7 @@ def train_loop(train_dataset,
                               pin_memory=False,
                               shuffle=True,
                               prefetch_factor=None,
-                              collate_fn=collate_and_pad,
-                              persistent_workers=True)
+                              collate_fn=collate_and_pad)
 
     ap = CodecAudioPreprocessor(input_sr=-1, device=device)  # only used to transform features into continuous matrices
     spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
