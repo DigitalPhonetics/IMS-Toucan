@@ -54,7 +54,7 @@ def train_loop(train_dataset,
                               num_workers=1,
                               pin_memory=False,
                               shuffle=True,
-                              prefetch_factor=4,
+                              prefetch_factor=2,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
 
