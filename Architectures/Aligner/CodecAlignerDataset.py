@@ -102,7 +102,8 @@ class CodecAlignerDataset(Dataset):
             torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
                        os.path.join(cache_dir, "aligner_train_cache.pt"))
 
-        self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+        self.tf = None
+        self.lang = lang
         self.ap = None
         self.spectrogram_extractor = None
         self.device = device
@@ -117,6 +118,7 @@ class CodecAlignerDataset(Dataset):
     def actually_load_everything(self):
         print(f"actually loading {self.cache_dir}")
         self.loading_status = "complete"
+        self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
         self.ap = CodecAudioPreprocessor(input_sr=-1, device=self.device)  # only used to transform features into continuous matrices
         self.spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=self.device)
         self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
