@@ -29,106 +29,117 @@ class CodecAlignerDataset(Dataset):
                  verbose=False,
                  phone_input=False,
                  allow_unknown_symbols=False):
-        os.makedirs(cache_dir, exist_ok=True)
-        if type(path_to_transcript_dict) != dict:
-            path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
-        self.pttd = path_to_transcript_dict
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
-            torch.multiprocessing.set_start_method('spawn', force=True)
-            resource_manager = Manager()
-            self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
-            key_list = list(self.path_to_transcript_dict.keys())
-            with open(os.path.join(cache_dir, "files_used.txt"), encoding='utf8', mode="w") as files_used_note:
-                files_used_note.write(str(key_list))
-            fisher_yates_shuffle(key_list)
-            # build cache
-            print("... building dataset cache ...")
-            self.result_pool = resource_manager.list()
-            # make processes
-            key_splits = list()
-            process_list = list()
-            for i in range(loading_processes):
-                key_splits.append(
-                    key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
-            for key_split in key_splits:
-                process_list.append(
-                    Process(target=self.cache_builder_process,
-                            args=(key_split,
-                                  lang,
-                                  min_len_in_seconds,
-                                  max_len_in_seconds,
-                                  verbose,
-                                  device,
-                                  phone_input,
-                                  allow_unknown_symbols),
-                            daemon=True))
-                process_list[-1].start()
-            for process in process_list:
-                process.join()
-            print("pooling results...")
-            pooled_datapoints = list()
-            for chunk in self.result_pool:
-                for datapoint in chunk:
-                    pooled_datapoints.append(datapoint)  # unpack into a joint list
-            self.result_pool = pooled_datapoints
-            del pooled_datapoints
-            print("converting text to tensors...")
-            text_tensors = [torch.ShortTensor(x[0]) for x in self.result_pool]  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
-            print("converting speech to tensors...")
-            speech_tensors = [torch.ShortTensor(x[1]) for x in self.result_pool]
-            print("converting waves to tensors...")
-            norm_waves = [torch.Tensor(x[2]) for x in self.result_pool]
-            print("unpacking file list...")
-            filepaths = [x[3] for x in self.result_pool]
-            del self.result_pool
-            self.datapoints = list(zip(text_tensors, speech_tensors))
-            del text_tensors
-            del speech_tensors
-            print("done!")
-
-            # add speaker embeddings
-            self.speaker_embeddings = list()
-            speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
-                                                                          run_opts={"device": str(device)},
-                                                                          savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
-            with torch.inference_mode():
-                for wave in tqdm(norm_waves):
-                    self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
-
-            # save to cache
-            if len(self.datapoints) == 0:
-                raise RuntimeError  # something went wrong and there are no datapoints
-            torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
-                       os.path.join(cache_dir, "aligner_train_cache.pt"))
-
-        self.tf = None
+            self._build_dataset_cache(path_to_transcript_dict=path_to_transcript_dict,
+                                      cache_dir=cache_dir,
+                                      lang=lang,
+                                      loading_processes=loading_processes,
+                                      device=device,
+                                      min_len_in_seconds=min_len_in_seconds,
+                                      max_len_in_seconds=max_len_in_seconds,
+                                      verbose=verbose,
+                                      phone_input=phone_input,
+                                      allow_unknown_symbols=allow_unknown_symbols)
         self.lang = lang
         self.device = device
         self.cache_dir = cache_dir
-        self.loading_status = "lazy"
-        self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')[0]
-        self.length = len(self.datapoints)
-        self.datapoints = None
-        self.speaker_embeddings = None
-        print(f"Lazily loaded an Aligner dataset in {cache_dir}.")
-
-    def actually_load_everything(self):
-        print(f"actually loading {self.cache_dir}")
-        self.loading_status = "complete"
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
         self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = self.datapoints[2]
         self.datapoints = self.datapoints[0]
+        print(f"Loaded an Aligner dataset with {len(self.datapoints)} datapoints from {cache_dir}.")
 
-    def cache_builder_process(self,
-                              path_list,
+    def _build_dataset_cache(self,
+                             path_to_transcript_dict,
+                             cache_dir,
+                             lang,
+                             loading_processes,
+                             device,
+                             min_len_in_seconds=1,
+                             max_len_in_seconds=15,
+                             verbose=False,
+                             phone_input=False,
+                             allow_unknown_symbols=False
+                             ):
+        os.makedirs(cache_dir, exist_ok=True)
+        if type(path_to_transcript_dict) != dict:
+            path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
+        torch.multiprocessing.set_start_method('spawn', force=True)
+        resource_manager = Manager()
+        self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
+        key_list = list(self.path_to_transcript_dict.keys())
+        with open(os.path.join(cache_dir, "files_used.txt"), encoding='utf8', mode="w") as files_used_note:
+            files_used_note.write(str(key_list))
+        fisher_yates_shuffle(key_list)
+        # build cache
+        print("... building dataset cache ...")
+        self.result_pool = resource_manager.list()
+        # make processes
+        key_splits = list()
+        process_list = list()
+        for i in range(loading_processes):
+            key_splits.append(
+                key_list[i * len(key_list) // loading_processes:(i + 1) * len(key_list) // loading_processes])
+        for key_split in key_splits:
+            process_list.append(
+                Process(target=self._cache_builder_process,
+                        args=(key_split,
                               lang,
-                              min_len,
-                              max_len,
+                              min_len_in_seconds,
+                              max_len_in_seconds,
                               verbose,
                               device,
                               phone_input,
-                              allow_unknown_symbols):
+                              allow_unknown_symbols),
+                        daemon=True))
+            process_list[-1].start()
+        for process in process_list:
+            process.join()
+        print("pooling results...")
+        pooled_datapoints = list()
+        for chunk in self.result_pool:
+            for datapoint in chunk:
+                pooled_datapoints.append(datapoint)  # unpack into a joint list
+        self.result_pool = pooled_datapoints
+        del pooled_datapoints
+        print("converting text to tensors...")
+        text_tensors = [torch.ShortTensor(x[0]) for x in self.result_pool]  # turn everything back to tensors (had to turn it to np arrays to avoid multiprocessing issues)
+        print("converting speech to tensors...")
+        speech_tensors = [torch.ShortTensor(x[1]) for x in self.result_pool]
+        print("converting waves to tensors...")
+        norm_waves = [torch.Tensor(x[2]) for x in self.result_pool]
+        print("unpacking file list...")
+        filepaths = [x[3] for x in self.result_pool]
+        del self.result_pool
+        self.datapoints = list(zip(text_tensors, speech_tensors))
+        del text_tensors
+        del speech_tensors
+        print("done!")
+
+        # add speaker embeddings
+        self.speaker_embeddings = list()
+        speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                                      run_opts={"device": str(device)},
+                                                                      savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
+        with torch.inference_mode():
+            for wave in tqdm(norm_waves):
+                self.speaker_embeddings.append(speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(device).unsqueeze(0)).squeeze().cpu())
+
+        # save to cache
+        if len(self.datapoints) == 0:
+            raise RuntimeError  # something went wrong and there are no datapoints
+        torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
+                   os.path.join(cache_dir, "aligner_train_cache.pt"))
+
+    def _cache_builder_process(self,
+                               path_list,
+                               lang,
+                               min_len,
+                               max_len,
+                               verbose,
+                               device,
+                               phone_input,
+                               allow_unknown_symbols):
         process_internal_dataset_chunk = list()
         tf = ArticulatoryCombinedTextFrontend(language=lang)
         _, sr = sf.read(path_list[0])
@@ -195,8 +206,6 @@ class CodecAlignerDataset(Dataset):
         self.result_pool.append(process_internal_dataset_chunk)
 
     def __getitem__(self, index):
-        if self.loading_status == "lazy":
-            self.actually_load_everything()
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
         tokens = torch.LongTensor(tokens)

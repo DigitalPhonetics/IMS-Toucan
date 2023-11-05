@@ -9,6 +9,8 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
@@ -21,10 +23,9 @@ from run_weight_averaging import save_model_for_use
 
 def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
-    # Assuming you have a list of tensors with shape [9, l, 1024]
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[2] for datapoint in batch], batch_first=True),
+            [datapoint[2] for datapoint in batch],
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
@@ -51,8 +52,7 @@ def train_loop(net,
                train_embed,
                train_sampler,
                gpu_count,
-               steps_per_checkpoint,
-               dataloader_workers
+               steps_per_checkpoint
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -88,11 +88,14 @@ def train_loop(net,
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
                               batch_sampler=batch_sampler_train,
-                              num_workers=dataloader_workers,
+                              num_workers=0,
                               pin_memory=True,
-                              prefetch_factor=4,
+                              prefetch_factor=None,
                               collate_fn=collate_and_pad,
                               persistent_workers=True)
+    ap = CodecAudioPreprocessor(input_sr=-1, device=device)
+    spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
+
     step_counter = 0
 
     if isinstance(net, torch.nn.parallel.DistributedDataParallel):
@@ -133,6 +136,25 @@ def train_loop(net,
         net.train()
         epoch += 1
         for batch in tqdm(train_loader):
+
+            text_tensors = batch[0].to(device)
+            text_lengths = batch[1].squeeze().to(device)
+            speech_indexes = batch[2]
+            speech_lengths = batch[3].squeeze().to(device)
+            gold_durations = batch[4].to(device)
+            gold_pitch = batch[6].unsqueeze(-1).to(device)  # mind the switched order
+            gold_energy = batch[5].unsqueeze(-1).to(device)  # mind the switched order
+            lang_ids = batch[8].squeeze(1).to(device)
+
+            speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
+            for speech_sample in speech_indexes:
+                with torch.inference_mode():
+                    wave = ap.indexes_to_audio(speech_sample.int().transpose(0, 1).to(device)).detach()
+                    mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
+                gold_speech_sample = mel.clone()
+                speech_batch.append(gold_speech_sample)
+            gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
+
             run_glow = step_counter > (warmup_steps * 2) or fine_tune
             if run_glow:
                 if first_time_glow is not False and not fine_tune:
@@ -151,20 +173,20 @@ def train_loop(net,
                             style_embedding_function.requires_grad_(True)
 
             train_loss = 0.0
-            style_embedding = style_embedding_function(batch_of_feature_sequences=batch[7].to(device),
-                                                       batch_of_feature_sequence_lengths=batch[3].to(device))
+            style_embedding = style_embedding_function(batch_of_feature_sequences=gold_speech,
+                                                       batch_of_feature_sequence_lengths=speech_lengths)
             utterance_embedding = torch.cat([style_embedding, batch[9].to(device)], dim=-1)
             regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
-                text_tensors=batch[0].to(device),
-                text_lengths=batch[1].to(device),
-                gold_speech=batch[2].to(device),
-                speech_lengths=batch[3].to(device),
-                gold_durations=batch[4].to(device),
-                gold_pitch=batch[6].to(device),  # mind the switched order
-                gold_energy=batch[5].to(device),  # mind the switched order
+                text_tensors=text_tensors,
+                text_lengths=text_lengths,
+                gold_speech=gold_speech,
+                speech_lengths=speech_lengths,
+                gold_durations=gold_durations,
+                gold_pitch=gold_pitch,
+                gold_energy=gold_energy,
                 utterance_embedding=utterance_embedding,
-                lang_ids=batch[8].to(device),
-                return_feats=True,
+                lang_ids=lang_ids,
+                return_feats=False,
                 run_glow=run_glow
             )
 
