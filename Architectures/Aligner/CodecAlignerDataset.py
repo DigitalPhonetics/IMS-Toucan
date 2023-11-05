@@ -218,7 +218,7 @@ class CodecAlignerDataset(Dataset):
             self.speaker_embeddings[index]
 
     def __len__(self):
-        return self.length
+        return len(self.datapoints)
 
 
 def fisher_yates_shuffle(lst):
