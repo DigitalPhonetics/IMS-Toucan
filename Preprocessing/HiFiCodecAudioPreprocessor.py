@@ -70,7 +70,6 @@ if __name__ == '__main__':
 
     import time
 
-    t0 = time.time()
 
     with torch.inference_mode():
         test_audio = "../audios/ry.wav"
@@ -80,13 +79,16 @@ if __name__ == '__main__':
         indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
         print(indexes.shape)
 
+        t0 = time.time()
+
         codes = ap.indexes_to_codec_frames(indexes)
         print(codes.shape)
 
         audio = ap.codes_to_audio(codes)
-        print(audio.shape)
 
         t1 = time.time()
 
+        print(audio.shape)
+
         print(t1 - t0)
-        soundfile.write(file=f"../audios/ry_reconstructed_in_{t1 - t0}.wav", data=audio, samplerate=16000)
+        soundfile.write(file=f"../audios/ry_reconstructed_in_{t1 - t0}_hifi.wav", data=audio, samplerate=16000)

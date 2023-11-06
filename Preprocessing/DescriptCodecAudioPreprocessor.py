@@ -5,7 +5,7 @@ from torchaudio.transforms import Resample
 
 class CodecAudioPreprocessor:
 
-    def __init__(self, input_sr, output_sr=44100, device="cpu"):
+    def __init__(self, input_sr, output_sr=16000, device="cpu"):
         from dac.model import DAC
         from dac.utils import load_model
         self.device = device
@@ -13,7 +13,7 @@ class CodecAudioPreprocessor:
         self.output_sr = output_sr
         self.resample = Resample(orig_freq=input_sr, new_freq=output_sr).to(self.device)
         self.model = DAC()
-        self.model = load_model(model_type="44kHz", tag="0.0.1")
+        self.model = load_model(model_type="16kHz", tag="0.0.5")
         self.model.eval()
         self.model.to(device)
 
@@ -32,7 +32,7 @@ class CodecAudioPreprocessor:
             audio = self.resample_audio(audio, current_sampling_rate)
         elif type(audio) != torch.tensor:
             audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["z"].squeeze()
+        return self.model.encode(audio.unsqueeze(0).unsqueeze(0))[0].squeeze()
 
     @torch.inference_mode()
     def audio_to_codebook_indexes(self, audio, current_sampling_rate):
@@ -40,19 +40,7 @@ class CodecAudioPreprocessor:
             audio = self.resample_audio(audio, current_sampling_rate)
         elif type(audio) != torch.tensor:
             audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        return self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze()
-
-    @torch.inference_mode()
-    def audio_to_one_hot_indexes(self, audio, current_sampling_rate):
-        if current_sampling_rate != self.output_sr:
-            audio = self.resample_audio(audio, current_sampling_rate)
-        elif type(audio) != torch.tensor:
-            audio = torch.tensor(audio, device=self.device, dtype=torch.float32)
-        return self.indexes_to_one_hot(self.model.encode(audio.unsqueeze(0).unsqueeze(0))["codes"].squeeze())
-
-    @torch.inference_mode()
-    def indexes_to_one_hot(self, indexes):
-        return torch.nn.functional.one_hot(indexes.squeeze(), num_classes=self.model.quantizer.codebook_size)
+        return self.model.encode(audio.unsqueeze(0).unsqueeze(0))[1].squeeze()
 
     @torch.inference_mode()
     def indexes_to_codec_frames(self, codebook_indexes):
@@ -71,24 +59,29 @@ class CodecAudioPreprocessor:
         for i, z_p in enumerate(z_ps):
             z_q_i = self.model.quantizer.quantizers[i].out_proj(z_p)
             z_q = z_q + z_q_i
-        return self.model.decode(z_q.unsqueeze(0))["audio"].squeeze()
+        return self.model.decode(z_q.unsqueeze(0)).squeeze()
 
 
 if __name__ == '__main__':
     import soundfile
 
+    import time
+
     with torch.inference_mode():
-        test_audio = "../audios/ad01_0003.wav"
+        test_audio = "../audios/ry.wav"
         wav, sr = soundfile.read(test_audio)
         ap = CodecAudioPreprocessor(input_sr=sr)
+
         indexes = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
         print(indexes.shape)
-        codes = ap.indexes_to_codec_frames(ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr))
-        print(codes.shape)
-        # z_ps = torch.split(codes, ap.model.codebook_dim, dim=0)
-        # combined = 0.0
-        # for i, z_p in enumerate(z_ps):
-        #    z_q_i = ap.model.quantizer.quantizers[i].out_proj(z_p)
-        #    combined = combined + z_q_i
-        #    audio = ap.model.decode(combined.unsqueeze(0))["audio"].squeeze()
-        #    soundfile.write(file=f"../audios/44_female_voice_{i + 1}_codebooks.wav", data=audio, samplerate=44100)
+
+        t0 = time.time()
+
+        audio = ap.indexes_to_audio(indexes)
+
+        t1 = time.time()
+
+        print(audio.shape)
+
+        print(t1 - t0)
+        soundfile.write(file=f"../audios/ry_reconstructed_in_{t1 - t0}_descript.wav", data=audio, samplerate=16000)
