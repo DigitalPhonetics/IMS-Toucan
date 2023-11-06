@@ -34,7 +34,8 @@ def train_loop(train_dataset,
                debug_img_path=None,
                use_reconstruction=True,
                gpu_count=1,
-               rank=0):
+               rank=0,
+               steps_per_checkpoint=None):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -52,6 +53,8 @@ def train_loop(train_dataset,
     torch.multiprocessing.set_sharing_strategy('file_system')
     torch.multiprocessing.set_start_method('spawn', force=True)
 
+    if steps_per_checkpoint is None:
+        steps_per_checkpoint = len(train_dataset) // batch_size
     ap = CodecAudioPreprocessor(input_sr=-1, device=device)  # only used to transform features into continuous matrices
     spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
 
@@ -157,9 +160,10 @@ def train_loop(train_dataset,
             if use_reconstruction:
                 optim_tts.step()
 
+            loss_sum.append(loss.item())
             step_counter += 1
 
-            if step_counter % 5000 == 0 and rank == 0:
+            if step_counter % steps_per_checkpoint == 0 and rank == 0:
                 asr_model.eval()
                 torch.save({
                     "asr_model"    : asr_model.state_dict(),
@@ -178,31 +182,10 @@ def train_loop(train_dataset,
                                         save_img_for_debug=debug_img_path + f"/{step_counter}.png",
                                         train=True)  # for testing
                 asr_model.train()
-            loss_sum.append(loss.item())
+                loss_sum = list()
 
-        loss_sum = list()
-
-        if rank == 0:
-            asr_model.eval()
-            torch.save({
-                "asr_model"    : asr_model.state_dict(),
-                "optimizer"    : optim_asr.state_dict(),
-                "tts_model"    : tiny_tts.state_dict(),
-                "tts_optimizer": optim_tts.state_dict(),
-                "step_counter" : step_counter,
-            },
-                os.path.join(save_directory, "aligner.pt"))
-            print("Total Loss:   {}".format(round(sum(loss_sum) / len(loss_sum), 3)))
-            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
-            print("Steps:        {}".format(step_counter))
-            if debug_img_path is not None:
-                asr_model.inference(features=mel[0][:mel_len[0]],
-                                    tokens=tokens[0][:tokens_len[0]],
-                                    save_img_for_debug=debug_img_path + f"/{step_counter}.png",
-                                    train=True)  # for testing
-        if step_counter > steps:
+        if step_counter > steps and step_counter % steps_per_checkpoint == 0:
             return
-
         if gpu_count > 1:
             # wait until eval is finished
             torch.distributed.barrier()
