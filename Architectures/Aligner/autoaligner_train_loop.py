@@ -32,7 +32,9 @@ def train_loop(train_dataset,
                fine_tune=False,
                resume=False,
                debug_img_path=None,
-               use_reconstruction=True):
+               use_reconstruction=True,
+               gpu_count=1,
+               rank=0):
     """
     Args:
         resume: whether to resume from the most recent checkpoint
@@ -50,15 +52,6 @@ def train_loop(train_dataset,
     torch.multiprocessing.set_sharing_strategy('file_system')
     torch.multiprocessing.set_start_method('spawn', force=True)
 
-    train_loader = DataLoader(batch_size=batch_size,
-                              dataset=train_dataset,
-                              drop_last=True,
-                              num_workers=0,  # unfortunately necessary for big data due to mmap errors
-                              pin_memory=False,
-                              shuffle=True,
-                              prefetch_factor=None,
-                              collate_fn=collate_and_pad)
-
     ap = CodecAudioPreprocessor(input_sr=-1, device=device)  # only used to transform features into continuous matrices
     spectrogram_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
 
@@ -67,6 +60,34 @@ def train_loop(train_dataset,
 
     tiny_tts = Reconstructor().to(device)
     optim_tts = RAdam(tiny_tts.parameters(), lr=0.0001)
+
+    if gpu_count > 1:
+        asr_model.to(rank)
+        tiny_tts.to(rank)
+        asr_model = torch.nn.parallel.DistributedDataParallel(
+            asr_model,
+            device_ids=[rank],
+            output_device=rank,
+            find_unused_parameters=True,
+        )
+        tiny_tts = torch.nn.parallel.DistributedDataParallel(
+            tiny_tts,
+            device_ids=[rank],
+            output_device=rank,
+            find_unused_parameters=True,
+        )
+        torch.distributed.barrier()
+    train_sampler = torch.utils.data.RandomSampler(train_dataset)
+    batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
+
+    train_loader = DataLoader(batch_size=batch_size,
+                              dataset=train_dataset,
+                              drop_last=True,
+                              num_workers=0,  # unfortunately necessary for big data due to mmap errors
+                              pin_memory=False,
+                              batch_sampler=batch_sampler_train,
+                              prefetch_factor=None,
+                              collate_fn=collate_and_pad)
 
     step_counter = 0
     loss_sum = list()
@@ -141,7 +162,7 @@ def train_loop(train_dataset,
 
             step_counter += 1
 
-            if step_counter % 10000 == 0:
+            if step_counter % 5000 == 0 and rank == 0:
                 asr_model.eval()
                 torch.save({
                     "asr_model"    : asr_model.state_dict(),
@@ -151,28 +172,40 @@ def train_loop(train_dataset,
                     "step_counter" : step_counter,
                 },
                     os.path.join(save_directory, "aligner.pt"))
+                print("Total Loss:   {}".format(round(sum(loss_sum) / len(loss_sum), 3)))
+                print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
+                print("Steps:        {}".format(step_counter))
+                if debug_img_path is not None:
+                    asr_model.inference(features=mel[0][:mel_len[0]],
+                                        tokens=tokens[0][:tokens_len[0]],
+                                        save_img_for_debug=debug_img_path + f"/{step_counter}.png",
+                                        train=True)  # for testing
                 asr_model.train()
-
             loss_sum.append(loss.item())
-        loss_this_epoch = sum(loss_sum) / len(loss_sum)
+
         loss_sum = list()
 
-        asr_model.eval()
-        torch.save({
-            "asr_model"    : asr_model.state_dict(),
-            "optimizer"    : optim_asr.state_dict(),
-            "tts_model"    : tiny_tts.state_dict(),
-            "tts_optimizer": optim_tts.state_dict(),
-            "step_counter" : step_counter,
-        },
-            os.path.join(save_directory, "aligner.pt"))
-        print("Total Loss:   {}".format(round(loss_this_epoch, 3)))
-        print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
-        print("Steps:        {}".format(step_counter))
-        if debug_img_path is not None:
-            asr_model.inference(features=mel[0][:mel_len[0]],
-                                tokens=tokens[0][:tokens_len[0]],
-                                save_img_for_debug=debug_img_path + f"/{step_counter}.png",
-                                train=True)  # for testing
+        if rank == 0:
+            asr_model.eval()
+            torch.save({
+                "asr_model"    : asr_model.state_dict(),
+                "optimizer"    : optim_asr.state_dict(),
+                "tts_model"    : tiny_tts.state_dict(),
+                "tts_optimizer": optim_tts.state_dict(),
+                "step_counter" : step_counter,
+            },
+                os.path.join(save_directory, "aligner.pt"))
+            print("Total Loss:   {}".format(round(sum(loss_sum) / len(loss_sum), 3)))
+            print("Time elapsed: {} Minutes".format(round((time.time() - start_time) / 60)))
+            print("Steps:        {}".format(step_counter))
+            if debug_img_path is not None:
+                asr_model.inference(features=mel[0][:mel_len[0]],
+                                    tokens=tokens[0][:tokens_len[0]],
+                                    save_img_for_debug=debug_img_path + f"/{step_counter}.png",
+                                    train=True)  # for testing
         if step_counter > steps:
             return
+
+        if gpu_count > 1:
+            # wait until eval is finished
+            torch.distributed.barrier()

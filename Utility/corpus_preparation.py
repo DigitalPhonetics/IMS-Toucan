@@ -7,13 +7,17 @@ from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 
 
-def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_input=False):
+def prepare_aligner_corpus(transcript_dict, corpus_dir, lang, device, phone_input=False,
+                           gpu_count=1,
+                           rank=0):
     return CodecAlignerDataset(transcript_dict,
                                cache_dir=corpus_dir,
                                lang=lang,
                                loading_processes=10,  # this can be increased for massive clusters, but the overheads that are introduced are kind of not really worth it
                                device=device,
-                               phone_input=phone_input)
+                               phone_input=phone_input,
+                               gpu_count=gpu_count,
+                               rank=rank)
 
 
 def prepare_tts_corpus(transcript_dict,

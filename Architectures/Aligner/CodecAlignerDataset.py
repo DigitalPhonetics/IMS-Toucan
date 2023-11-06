@@ -28,7 +28,11 @@ class CodecAlignerDataset(Dataset):
                  rebuild_cache=False,
                  verbose=False,
                  phone_input=False,
-                 allow_unknown_symbols=False):
+                 allow_unknown_symbols=False,
+                 gpu_count=1,
+                 rank=0):
+        self.gpu_count = gpu_count
+        self.rank = rank
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             self._build_dataset_cache(path_to_transcript_dict=path_to_transcript_dict,
                                       cache_dir=cache_dir,
@@ -39,7 +43,9 @@ class CodecAlignerDataset(Dataset):
                                       max_len_in_seconds=max_len_in_seconds,
                                       verbose=verbose,
                                       phone_input=phone_input,
-                                      allow_unknown_symbols=allow_unknown_symbols)
+                                      allow_unknown_symbols=allow_unknown_symbols,
+                                      gpu_count=gpu_count,
+                                      rank=rank)
         self.lang = lang
         self.device = device
         self.cache_dir = cache_dir
@@ -47,6 +53,13 @@ class CodecAlignerDataset(Dataset):
         self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = self.datapoints[2]
         self.datapoints = self.datapoints[0]
+        if self.gpu_count > 1:
+            # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
+            while len(self.datapoints) % self.gpu_count != 0:
+                self.datapoints.pop(-1)  # a bit unfortunate, but if you're using multiple GPUs, you probably have a ton of datapoints anyway.
+            chunksize = int(len(self.datapoints) / self.gpu_count)
+            self.datapoints = self.datapoints[chunksize * self.rank:chunksize * (self.rank + 1)]
+            self.speaker_embeddings = self.speaker_embeddings[chunksize * self.rank:chunksize * (self.rank + 1)]
         print(f"Loaded an Aligner dataset with {len(self.datapoints)} datapoints from {cache_dir}.")
 
     def _build_dataset_cache(self,
@@ -59,8 +72,14 @@ class CodecAlignerDataset(Dataset):
                              max_len_in_seconds=15,
                              verbose=False,
                              phone_input=False,
-                             allow_unknown_symbols=False
+                             allow_unknown_symbols=False,
+                             gpu_count=1,
+                             rank=0
                              ):
+        if gpu_count != 1:
+            import sys
+            print("Please run the feature extraction using only a single GPU. Multi-GPU is only supported for training.")
+            sys.exit()
         os.makedirs(cache_dir, exist_ok=True)
         if type(path_to_transcript_dict) != dict:
             path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
