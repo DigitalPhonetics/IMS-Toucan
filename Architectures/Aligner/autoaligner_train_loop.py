@@ -80,11 +80,8 @@ def train_loop(train_dataset,
     train_sampler = torch.utils.data.RandomSampler(train_dataset)
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
 
-    train_loader = DataLoader(batch_size=batch_size,
-                              dataset=train_dataset,
-                              drop_last=True,
+    train_loader = DataLoader(dataset=train_dataset,
                               num_workers=0,  # unfortunately necessary for big data due to mmap errors
-                              pin_memory=False,
                               batch_sampler=batch_sampler_train,
                               prefetch_factor=None,
                               collate_fn=collate_and_pad)
