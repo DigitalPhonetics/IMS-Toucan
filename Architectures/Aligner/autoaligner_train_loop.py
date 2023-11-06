@@ -69,13 +69,13 @@ def train_loop(train_dataset,
             device_ids=[rank],
             output_device=rank,
             find_unused_parameters=True,
-        )
+        ).module
         tiny_tts = torch.nn.parallel.DistributedDataParallel(
             tiny_tts,
             device_ids=[rank],
             output_device=rank,
             find_unused_parameters=True,
-        )
+        ).module
         torch.distributed.barrier()
     train_sampler = torch.utils.data.RandomSampler(train_dataset)
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
