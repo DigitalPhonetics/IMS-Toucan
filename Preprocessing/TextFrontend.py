@@ -174,6 +174,7 @@ class ArticulatoryCombinedTextFrontend:
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
+        self.text_vector_to_phone_cache = dict()
 
     @staticmethod
     def get_example_sentence(lang):
@@ -450,6 +451,10 @@ class ArticulatoryCombinedTextFrontend:
             if vector[get_feature_to_index_lookup()["word-boundary"]] == 0:
                 # we don't include word boundaries when performing alignment, since they are not always present in audio.
                 features = vector.cpu().numpy().tolist()
+                immutable_vector = tuple(features)
+                if immutable_vector in self.text_vector_to_phone_cache:
+                    tokens.append(self.phone_to_id[self.text_vector_to_phone_cache[immutable_vector]])
+                    continue
                 if vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
                     # for the sake of alignment, we ignore the difference between nasalized vowels and regular vowels
                     features[get_feature_to_index_lookup()["nasal"]] = 0
@@ -458,7 +463,8 @@ class ArticulatoryCombinedTextFrontend:
                 for phone in self.phone_to_vector:
                     if features == self.phone_to_vector[phone][13:]:
                         tokens.append(self.phone_to_id[phone])
-                        # this is terribly inefficient, but it's fine
+                        self.text_vector_to_phone_cache[immutable_vector] = phone
+                        # this is terribly inefficient, but it's fine, since we're building a cache over time that makes this instant
                         break
         return tokens
 
