@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.path_to_transcript_dicts import *
 from Utility.utils import delete_old_checkpoints
@@ -163,7 +163,7 @@ def train_loop(net,
         speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
         for speech_sample in speech_indexes:
             with torch.inference_mode():
-                wave = ap.indexes_to_audio(speech_sample.int().transpose(0, 1).to(device)).detach()
+                wave = ap.indexes_to_audio(speech_sample.int().to(device)).detach()
                 mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
             gold_speech_sample = mel.clone()
             speech_batch.append(gold_speech_sample)

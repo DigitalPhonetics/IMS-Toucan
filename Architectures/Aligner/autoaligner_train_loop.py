@@ -123,7 +123,7 @@ def train_loop(train_dataset,
             for datapoint in batch[2]:
                 with torch.inference_mode():
                     # extremely unfortunate that we have to do this over here, but multiprocessing and this don't go together well
-                    speech = ap.indexes_to_audio(datapoint.int().transpose(0, 1).to(device))
+                    speech = ap.indexes_to_audio(datapoint.int().to(device))
                     mel = spectrogram_extractor.audio_to_mel_spec_tensor(speech, explicit_sampling_rate=16000).transpose(0, 1).cpu()
                 speech_len = torch.LongTensor([len(mel)])
                 mels.append(mel.clone())

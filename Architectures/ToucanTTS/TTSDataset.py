@@ -126,7 +126,7 @@ class TTSDataset(Dataset):
             os.makedirs(vis_dir, exist_ok=True)
 
         for index in tqdm(range(len(self.dataset))):
-            decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().transpose(0, 1).to(device))
+            decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().to(device))
             with torch.inference_mode():
                 speech_timestamps = get_speech_timestamps(decoded_wave, silero_model, sampling_rate=16000)
             try:

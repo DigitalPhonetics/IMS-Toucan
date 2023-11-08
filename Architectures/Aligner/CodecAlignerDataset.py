@@ -49,6 +49,10 @@ class CodecAlignerDataset(Dataset):
         self.lang = lang
         self.device = device
         self.cache_dir = cache_dir
+        if os.path.exists(os.path.join(cache_dir, "SEMAPHORE")):
+            return
+        with open(os.path.join(cache_dir, "SEMAPHORE"), "w") as f:
+            f.write("transforming...")
         self._prepare_for_new_codec()
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
         cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
