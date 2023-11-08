@@ -11,7 +11,7 @@ from Architectures.ToucanTTS.DurationCalculator import DurationCalculator
 from Architectures.ToucanTTS.EnergyCalculator import EnergyCalculator
 from Architectures.ToucanTTS.PitchCalculator import Parselmouth
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import remove_elements
