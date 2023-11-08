@@ -20,6 +20,7 @@ class CodecAudioPreprocessor:
             name = k[7:]
             new_state_dict[name] = v
         self.model.load_state_dict(new_state_dict)
+        remove_encodec_weight_norm(self.model)
         self.model.eval()
         self.model.to(device)
 
@@ -44,6 +45,37 @@ class CodecAudioPreprocessor:
     @torch.inference_mode()
     def indexes_to_audio(self, codebook_indexes):
         return self.model.decode(codebook_indexes).squeeze()
+
+
+def remove_encodec_weight_norm(model):
+    from Preprocessing.Codec.seanet import SConv1d
+    from Preprocessing.Codec.seanet import SConvTranspose1d
+    from Preprocessing.Codec.seanet import SEANetResnetBlock
+    from torch.nn.utils import remove_weight_norm
+
+    encoder = model.encoder.model
+    for key in encoder._modules:
+        if isinstance(encoder._modules[key], SEANetResnetBlock):
+            remove_weight_norm(encoder._modules[key].shortcut.conv.conv)
+            block_modules = encoder._modules[key].block._modules
+            for skey in block_modules:
+                if isinstance(block_modules[skey], SConv1d):
+                    remove_weight_norm(block_modules[skey].conv.conv)
+        elif isinstance(encoder._modules[key], SConv1d):
+            remove_weight_norm(encoder._modules[key].conv.conv)
+
+    decoder = model.decoder.model
+    for key in decoder._modules:
+        if isinstance(decoder._modules[key], SEANetResnetBlock):
+            remove_weight_norm(decoder._modules[key].shortcut.conv.conv)
+            block_modules = decoder._modules[key].block._modules
+            for skey in block_modules:
+                if isinstance(block_modules[skey], SConv1d):
+                    remove_weight_norm(block_modules[skey].conv.conv)
+        elif isinstance(decoder._modules[key], SConvTranspose1d):
+            remove_weight_norm(decoder._modules[key].convtr.convtr)
+        elif isinstance(decoder._modules[key], SConv1d):
+            remove_weight_norm(decoder._modules[key].conv.conv)
 
 
 if __name__ == '__main__':

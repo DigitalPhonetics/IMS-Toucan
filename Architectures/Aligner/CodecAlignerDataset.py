@@ -66,12 +66,13 @@ class CodecAlignerDataset(Dataset):
     def _prepare_for_new_codec(self):
         datapoints, _, speaker_embeddings, filepaths = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         ap = None
+        dps = list()
         for index in range(len(filepaths)):
             wav, sr = sf.read(filepaths[index])
             if ap is None:
                 ap = CodecAudioPreprocessor(input_sr=sr, device=self.device)
-            datapoints[index][1] = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
-        torch.save((datapoints, None, speaker_embeddings, filepaths),
+            dps.append([datapoints[index][0], ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)])
+        torch.save((dps, None, speaker_embeddings, filepaths),
                    os.path.join(self.cache_dir, "aligner_train_cache.pt"))
 
     def _build_dataset_cache(self,
@@ -243,10 +244,10 @@ class CodecAlignerDataset(Dataset):
         token_len = torch.LongTensor([len(tokens)])
 
         return tokens, \
-            token_len, \
-            self.datapoints[index][1], \
-            None, \
-            self.speaker_embeddings[index]
+               token_len, \
+               self.datapoints[index][1], \
+               None, \
+               self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)
