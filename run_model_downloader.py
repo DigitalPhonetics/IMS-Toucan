@@ -58,8 +58,8 @@ def download_models():
     #############
     print("Downloading Codec Model")
     filename, headers = urllib.request.urlretrieve(
-        url="https://huggingface.co/Dongchao/AcademiCodec/resolve/main/HiFi-Codec-16k-320d",
-        filename=os.path.abspath(os.path.join("Preprocessing/Codec", "HiFi-Codec-16k-320d.pt")),
+        url="https://huggingface.co/Dongchao/AcademiCodec/resolve/main/encodec_16k_320d.pth",
+        filename=os.path.abspath(os.path.join("Preprocessing/Codec", "encodec_16k_320d.pt")),
         reporthook=report)
 
 

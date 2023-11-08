@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from torchaudio.transforms import Resample
 from tqdm import tqdm
 
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Utility.storage_config import MODELS_DIR
 
@@ -49,10 +49,11 @@ class CodecAlignerDataset(Dataset):
         self.lang = lang
         self.device = device
         self.cache_dir = cache_dir
+        self._prepare_for_new_codec()
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
-        self.datapoints = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-        self.speaker_embeddings = self.datapoints[2]
-        self.datapoints = self.datapoints[0]
+        cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+        self.speaker_embeddings = cache[2]
+        self.datapoints = cache[0]
         if self.gpu_count > 1:
             # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
             while len(self.datapoints) % self.gpu_count != 0:
@@ -61,6 +62,21 @@ class CodecAlignerDataset(Dataset):
             self.datapoints = self.datapoints[chunksize * self.rank:chunksize * (self.rank + 1)]
             self.speaker_embeddings = self.speaker_embeddings[chunksize * self.rank:chunksize * (self.rank + 1)]
         print(f"Loaded an Aligner dataset with {len(self.datapoints)} datapoints from {cache_dir}.")
+
+    def _prepare_for_new_codec(self):
+        datapoints, _, speaker_embeddings, filepaths = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
+        assumed_sr = 0
+        ap = None
+        resample = None
+        for index in range(len(filepaths)):
+            wav, sr = sf.read(filepaths[index])
+            if sr != assumed_sr:
+                assumed_sr = sr
+                ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=self.device)
+            self.datapoints[index][1] = ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)
+
+        torch.save((datapoints, None, speaker_embeddings, filepaths),
+                   os.path.join(self.cache_dir, "aligner_train_cache.pt"))
 
     def _build_dataset_cache(self,
                              path_to_transcript_dict,
