@@ -67,7 +67,7 @@ class CodecAlignerDataset(Dataset):
         datapoints, _, speaker_embeddings, filepaths = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         ap = None
         dps = list()
-        for index in range(len(filepaths)):
+        for index in tqdm(range(len(filepaths))):
             wav, sr = sf.read(filepaths[index])
             if ap is None:
                 ap = CodecAudioPreprocessor(input_sr=sr, device=self.device)
