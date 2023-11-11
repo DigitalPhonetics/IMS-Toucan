@@ -218,7 +218,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_file_list_singing_voice_audio_database().keys())
+    fl = build_file_list_singing_voice_audio_database()
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
