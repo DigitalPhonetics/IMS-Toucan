@@ -1,6 +1,7 @@
 import os
 import random
 
+import librosa
 import soundfile as sf
 import torch
 from speechbrain.pretrained import EncoderClassifier
@@ -49,11 +50,6 @@ class CodecAlignerDataset(Dataset):
         self.lang = lang
         self.device = device
         self.cache_dir = cache_dir
-        if os.path.exists(os.path.join(cache_dir, "SEMAPHORE")):
-            return
-        with open(os.path.join(cache_dir, "SEMAPHORE"), "w") as f:
-            f.write("transforming...")
-        self._prepare_for_new_codec()
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
         cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = cache[2]
@@ -66,18 +62,6 @@ class CodecAlignerDataset(Dataset):
             self.datapoints = self.datapoints[chunksize * self.rank:chunksize * (self.rank + 1)]
             self.speaker_embeddings = self.speaker_embeddings[chunksize * self.rank:chunksize * (self.rank + 1)]
         print(f"Loaded an Aligner dataset with {len(self.datapoints)} datapoints from {cache_dir}.")
-
-    def _prepare_for_new_codec(self):
-        datapoints, _, speaker_embeddings, filepaths = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
-        ap = None
-        dps = list()
-        for index in tqdm(range(len(filepaths))):
-            wav, sr = sf.read(filepaths[index])
-            if ap is None:
-                ap = CodecAudioPreprocessor(input_sr=sr, device=self.device)
-            dps.append([datapoints[index][0], ap.audio_to_codebook_indexes(wav, current_sampling_rate=sr)])
-        torch.save((dps, None, speaker_embeddings, filepaths),
-                   os.path.join(self.cache_dir, "aligner_train_cache.pt"))
 
     def _build_dataset_cache(self,
                              path_to_transcript_dict,
@@ -193,6 +177,8 @@ class CodecAlignerDataset(Dataset):
                 print(f"Problem with an audio file: {path}")
                 continue
 
+            wave = librosa.to_mono(wave)
+
             if sr != assumed_sr:
                 assumed_sr = sr
                 ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
@@ -230,11 +216,11 @@ class CodecAlignerDataset(Dataset):
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
 
-            silence = torch.zeros([sr // 2], device=device)
-            silence_padded_wave = torch.tensor(wave, device=device)
+            silence = torch.zeros([16000 // 4], device=device)
+            silence_padded_wave = torch.tensor(norm_wave, device=device)
             wave = torch.cat((silence, silence_padded_wave, silence), 0)
 
-            cached_speech = ap.audio_to_codebook_indexes(audio=wave, current_sampling_rate=sr).transpose(0, 1).cpu().numpy()
+            cached_speech = ap.audio_to_codebook_indexes(audio=wave, current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_speech,
                                                    norm_wave.cpu().detach().numpy(),
