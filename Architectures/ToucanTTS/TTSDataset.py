@@ -126,7 +126,10 @@ class TTSDataset(Dataset):
             os.makedirs(vis_dir, exist_ok=True)
 
         for index in tqdm(range(len(self.dataset))):
-            decoded_wave = self.codec_wrapper.indexes_to_audio(self.dataset[index][1].int().to(device))
+            codes = self.dataset[index][1]
+            if codes.size()[0] != 24:  # no clue why this is sometimes the case
+                codes = codes.transpose(0, 1)
+            decoded_wave = self.codec_wrapper.indexes_to_audio(codes.int().to(device))
             with torch.inference_mode():
                 speech_timestamps = get_speech_timestamps(decoded_wave, silero_model, sampling_rate=16000)
             try:
@@ -211,7 +214,7 @@ class TTSDataset(Dataset):
 
             self.datapoints.append([text,  # text tensor
                                     torch.LongTensor([len(text)]),  # length of text tensor
-                                    self.dataset[index][1],  # codec tensor (in index form)
+                                    codes,  # codec tensor (in index form)
                                     feature_lengths,  # length of spectrogram
                                     cached_duration.cpu(),  # duration
                                     cached_energy.float(),  # energy
@@ -271,15 +274,15 @@ class TTSDataset(Dataset):
 
     def __getitem__(self, index):
         return self.datapoints[index][0], \
-            self.datapoints[index][1], \
-            self.datapoints[index][2], \
-            self.datapoints[index][3], \
-            self.datapoints[index][4], \
-            self.datapoints[index][5], \
-            self.datapoints[index][6], \
-            None, \
-            self.language_id, \
-            self.datapoints[index][7]
+               self.datapoints[index][1], \
+               self.datapoints[index][2], \
+               self.datapoints[index][3], \
+               self.datapoints[index][4], \
+               self.datapoints[index][5], \
+               self.datapoints[index][6], \
+               None, \
+               self.language_id, \
+               self.datapoints[index][7]
 
     def __len__(self):
         return len(self.datapoints)

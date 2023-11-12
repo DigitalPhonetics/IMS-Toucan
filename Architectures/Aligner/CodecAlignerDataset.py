@@ -233,9 +233,13 @@ class CodecAlignerDataset(Dataset):
         tokens = torch.LongTensor(tokens)
         token_len = torch.LongTensor([len(tokens)])
 
+        codes = self.datapoints[index][1]
+        if codes.size()[0] != 24:  # no clue why this is sometimes the case
+            codes = codes.transpose(0, 1)
+
         return tokens, \
                token_len, \
-               self.datapoints[index][1], \
+               codes, \
                None, \
                self.speaker_embeddings[index]
 
