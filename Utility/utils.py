@@ -136,6 +136,18 @@ def plot_code_spec(pitch, energy, sentence, durations, mel, save_path, tf, step)
     plt.close()
 
 
+def plot_spec_tensor(spec, save_path, name):
+    fig, spec_plot_axis = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
+    spec_plot_axis.imshow(spec.detach().cpu().numpy(), origin="lower", cmap='GnBu')
+    spec_plot_axis.yaxis.set_visible(False)
+    spec_plot_axis.set_aspect("auto")
+    plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95, wspace=0.0, hspace=0.0)
+    os.makedirs(save_path, exist_ok=True)
+    plt.savefig(os.path.join(save_path, f"{name}.png"), dpi=100)
+    plt.clf()
+    plt.close()
+
+
 def cumsum_durations(durations):
     out = [0]
     for duration in durations:

@@ -11,7 +11,7 @@ from tqdm import tqdm
 from Architectures.Aligner.Aligner import Aligner
 from Architectures.Aligner.Reconstructor import Reconstructor
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
+from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 
 
 def collate_and_pad(batch):
