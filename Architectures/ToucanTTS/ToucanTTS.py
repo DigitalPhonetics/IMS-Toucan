@@ -388,7 +388,7 @@ class ToucanTTS(torch.nn.Module):
                 glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=preliminary_spectrogram, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
-            return preliminary_spectrogram.transpose(1, 2), \
+            return preliminary_spectrogram, \
                    glow_loss, \
                    predicted_durations, \
                    pitch_predictions, \

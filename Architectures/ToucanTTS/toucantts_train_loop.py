@@ -175,7 +175,7 @@ def train_loop(net,
             style_embedding = style_embedding_function(batch_of_feature_sequences=gold_speech,
                                                        batch_of_feature_sequence_lengths=speech_lengths)
             utterance_embedding = torch.cat([style_embedding, batch[9].to(device)], dim=-1)
-            regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss, generated_features = net(
+            regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss = net(
                 text_tensors=text_tensors,
                 text_lengths=text_lengths,
                 gold_speech=gold_speech,
