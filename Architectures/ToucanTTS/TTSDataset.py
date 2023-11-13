@@ -123,7 +123,8 @@ class TTSDataset(Dataset):
         vis_dir = os.path.join(cache_dir, "duration_vis")
         true_silence = torch.zeros([4000])
         if save_imgs:
-            os.makedirs(vis_dir, exist_ok=True)
+            os.makedirs(os.path.join(vis_dir, "post_clean"), exist_ok=True)
+            os.makedirs(os.path.join(vis_dir, "pre_clean"), exist_ok=True)
 
         for index in tqdm(range(len(self.dataset))):
             codes = self.dataset[index][1]
@@ -157,7 +158,7 @@ class TTSDataset(Dataset):
                     text_with_pauses.append(vector.numpy().tolist())
             text = torch.Tensor(text_with_pauses)
 
-            cached_duration, _ = self._calculate_durations(text, index, vis_dir, features, save_imgs)
+            cached_duration, _ = self._calculate_durations(text, index, os.path.join(vis_dir, "pre_clean"), features, save_imgs)
 
             cumsum = 0
             legal_silences = list()
@@ -194,7 +195,7 @@ class TTSDataset(Dataset):
                     illegal_silences.append(phoneme_indexes_of_silences[silence_index])
 
             text = remove_elements(text, illegal_silences)  # now we have all the silences where there should be silences and none where there shouldn't be any. We have to run the aligner again with this new information.
-            cached_duration, ctc_loss = self._calculate_durations(text, index, vis_dir, features, save_imgs)
+            cached_duration, ctc_loss = self._calculate_durations(text, index, os.path.join(vis_dir, "post_clean"), features, save_imgs)
 
             # silence is cleaned, yay
 
