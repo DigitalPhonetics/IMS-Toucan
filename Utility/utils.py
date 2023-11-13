@@ -382,12 +382,15 @@ def curve_smoother(curve):
 
 def remove_elements(tensor, indexes):
     # Create a boolean mask where True represents the elements to keep
+    print("\n\n\n")
+    print(tensor.shape)
+    print(indexes)
     mask = torch.ones(tensor.size(0), dtype=torch.bool)
     mask[indexes] = False
 
     # Use the mask to select the elements to keep
     result = tensor[mask, :]
-
+    print(result.shape)
     return result
 
 

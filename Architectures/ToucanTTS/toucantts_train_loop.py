@@ -30,7 +30,7 @@ def collate_and_pad(batch):
             pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[7] for datapoint in batch], batch_first=True),
+            None,
             torch.stack([datapoint[8] for datapoint in batch]),
             torch.stack([datapoint[9] for datapoint in batch]))
 
