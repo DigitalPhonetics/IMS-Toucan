@@ -236,8 +236,11 @@ def train_loop(net,
                 if rank == 0:
                     net.eval()
                     style_embedding_function.eval()
+                    with torch.inference_mode():
+                        wave = ap.indexes_to_audio(train_dataset[0][2].int().to(device)).detach()
+                        mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
                     default_embedding = torch.cat([style_embedding_function(
-                        batch_of_feature_sequences=train_dataset[0][7].unsqueeze(0).to(device),
+                        batch_of_feature_sequences=mel.clone().unsqueeze(0).to(device),
                         batch_of_feature_sequence_lengths=train_dataset[0][3].unsqueeze(0).to(device)).squeeze(),
                                                    train_dataset[0][9].to(device)], dim=-1)
                     torch.save({

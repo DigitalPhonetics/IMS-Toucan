@@ -418,8 +418,6 @@ class ToucanTTS(torch.nn.Module):
         text_pseudobatched, speech_pseudobatched = text.unsqueeze(0), None
         if speech is not None:
             speech_pseudobatched = speech.unsqueeze(0)
-        if lang_id is not None:
-            lang_id = lang_id.unsqueeze(0)
         utterance_embeddings = utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None
 
         outs, \
