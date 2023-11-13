@@ -124,7 +124,6 @@ class TTSDataset(Dataset):
         energy_calc = EnergyCalculator(fs=16000)
         self.dc = DurationCalculator()
         vis_dir = os.path.join(cache_dir, "duration_vis")
-        true_silence = torch.zeros([4000], device=device)
         if save_imgs:
             os.makedirs(os.path.join(vis_dir, "post_clean"), exist_ok=True)
             if annotate_silences:
@@ -135,13 +134,6 @@ class TTSDataset(Dataset):
             if codes.size()[0] != 24:  # no clue why this is sometimes the case
                 codes = codes.transpose(0, 1)
             decoded_wave = self.codec_wrapper.indexes_to_audio(codes.int().to(device))
-            with torch.inference_mode():
-                speech_timestamps = get_speech_timestamps(decoded_wave, silero_model, sampling_rate=16000)
-            try:
-                decoded_wave = decoded_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
-            except IndexError:
-                pass  # can happen for very short audios
-            decoded_wave = torch.cat([true_silence, decoded_wave, true_silence])
             decoded_wave_length = torch.LongTensor([len(decoded_wave)])
             features = self.spec_extractor_for_features.audio_to_mel_spec_tensor(decoded_wave, explicit_sampling_rate=16000)
             feature_lengths = torch.LongTensor([len(features[0])])
@@ -149,58 +141,7 @@ class TTSDataset(Dataset):
             text = self.dataset[index][0]
 
             if annotate_silences:
-                text_with_pauses = list()
-                for phoneme_index, vector in enumerate(text):
-                    # We add pauses before every word boundary, and later we remove the ones that were added too much
-                    if vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                        if text[phoneme_index - 1][get_feature_to_index_lookup()["silence"]] != 1:
-                            text_with_pauses.append([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.,
-                                                     0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                                                     0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                                                     0., 0., 0., 0., 0., 0., 0., 0.])
-                        text_with_pauses.append(vector.numpy().tolist())
-                    else:
-                        text_with_pauses.append(vector.numpy().tolist())
-                text = torch.Tensor(text_with_pauses)
-
-                cached_duration, _ = self._calculate_durations(text, index, os.path.join(vis_dir, "pre_clean"), features, save_imgs)
-
-                cumsum = 0
-                potential_silences = list()
-                phoneme_indexes_of_silences = list()
-                for phoneme_index, phone in enumerate(text):
-                    if phone[get_feature_to_index_lookup()["silence"]] == 1 or phone[get_feature_to_index_lookup()["end of sentence"]] == 1 or phone[get_feature_to_index_lookup()["questionmark"]] == 1 or phone[get_feature_to_index_lookup()["exclamationmark"]] == 1 or phone[get_feature_to_index_lookup()["fullstop"]] == 1:
-                        potential_silences.append([cumsum, cumsum + cached_duration[phoneme_index]])
-                        phoneme_indexes_of_silences.append(phoneme_index)
-                    cumsum = cumsum + cached_duration[phoneme_index]
-                with torch.inference_mode():
-                    speech_timestamps = get_speech_timestamps(torch.Tensor(decoded_wave).to(device), silero_model, sampling_rate=16000)
-                vad_silences = list()
-                prev_end = 0
-                for speech_segment in speech_timestamps:
-                    if prev_end != 0:
-                        vad_silences.append([prev_end, speech_segment["start"]])
-                    prev_end = speech_segment["end"]
-                # at this point we know all the silences and we know the legal silences.
-                # We have to transform them both into ratios, so we can compare them.
-                # If a silence overlaps with a legal silence, it can stay.
-                illegal_silences = list()
-                for silence_index, silence in enumerate(potential_silences):
-                    illegal = True
-                    start = silence[0] / len(features)
-                    end = silence[1] / len(features)
-                    for legal_silence in vad_silences:
-                        legal_start = legal_silence[0] / decoded_wave_length
-                        legal_end = legal_silence[1] / decoded_wave_length
-                        if legal_start < start < legal_end or legal_start < end < legal_end:
-                            illegal = False
-                            break
-                    if illegal:
-                        # If it is an illegal silence, it is marked for removal in the original wave according to ration with real samplingrate.
-                        illegal_silences.append(phoneme_indexes_of_silences[silence_index])
-
-                text = remove_elements(text, illegal_silences)  # now we have all the silences where there should be silences and none where there shouldn't be any. We have to run the aligner again with this new information.
-
+                text = self._annotate_silences(text, get_speech_timestamps, index, vis_dir, decoded_wave, device, features, silero_model, save_imgs, decoded_wave_length)
             cached_duration, ctc_loss = self._calculate_durations(text, index, os.path.join(vis_dir, "post_clean"), features, save_imgs)
 
             # silence is cleaned, yay
@@ -253,6 +194,63 @@ class TTSDataset(Dataset):
             print("No datapoints were prepared! Exiting...")
             sys.exit()
         del self.dataset
+
+    def _annotate_silences(self, text, get_speech_timestamps, index, vis_dir, decoded_wave, device, features, silero_model, save_imgs, decoded_wave_length):
+        """
+        Takes in a text tensor and returns a text tensor with pauses added in all locations, where there are actually pauses in the speech signal. Unfortunately, this tends to make mistakes and not work quite as intended yet. I might revisit it in the future, if I see the need for extremely accurate labels for a small dataset of e.g. special data.
+        """
+        text_with_pauses = list()
+        for phoneme_index, vector in enumerate(text):
+            # We add pauses before every word boundary, and later we remove the ones that were added too much
+            if vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
+                if text[phoneme_index - 1][get_feature_to_index_lookup()["silence"]] != 1:
+                    text_with_pauses.append([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.,
+                                             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                             0., 0., 0., 0., 0., 0., 0., 0.])
+                text_with_pauses.append(vector.numpy().tolist())
+            else:
+                text_with_pauses.append(vector.numpy().tolist())
+        text = torch.Tensor(text_with_pauses)
+
+        cached_duration, _ = self._calculate_durations(text, index, os.path.join(vis_dir, "pre_clean"), features, save_imgs)
+
+        cumsum = 0
+        potential_silences = list()
+        phoneme_indexes_of_silences = list()
+        for phoneme_index, phone in enumerate(text):
+            if phone[get_feature_to_index_lookup()["silence"]] == 1 or phone[get_feature_to_index_lookup()["end of sentence"]] == 1 or phone[get_feature_to_index_lookup()["questionmark"]] == 1 or phone[get_feature_to_index_lookup()["exclamationmark"]] == 1 or phone[get_feature_to_index_lookup()["fullstop"]] == 1:
+                potential_silences.append([cumsum, cumsum + cached_duration[phoneme_index]])
+                phoneme_indexes_of_silences.append(phoneme_index)
+            cumsum = cumsum + cached_duration[phoneme_index]
+        with torch.inference_mode():
+            speech_timestamps = get_speech_timestamps(torch.Tensor(decoded_wave).to(device), silero_model, sampling_rate=16000)
+        vad_silences = list()
+        prev_end = 0
+        for speech_segment in speech_timestamps:
+            if prev_end != 0:
+                vad_silences.append([prev_end, speech_segment["start"]])
+            prev_end = speech_segment["end"]
+        # at this point we know all the silences and we know the legal silences.
+        # We have to transform them both into ratios, so we can compare them.
+        # If a silence overlaps with a legal silence, it can stay.
+        illegal_silences = list()
+        for silence_index, silence in enumerate(potential_silences):
+            illegal = True
+            start = silence[0] / len(features)
+            end = silence[1] / len(features)
+            for legal_silence in vad_silences:
+                legal_start = legal_silence[0] / decoded_wave_length
+                legal_end = legal_silence[1] / decoded_wave_length
+                if legal_start < start < legal_end or legal_start < end < legal_end:
+                    illegal = False
+                    break
+            if illegal:
+                # If it is an illegal silence, it is marked for removal in the original wave according to ration with real samplingrate.
+                illegal_silences.append(phoneme_indexes_of_silences[silence_index])
+
+        text = remove_elements(text, illegal_silences)  # now we have all the silences where there should be silences and none where there shouldn't be any. We have to run the aligner again with this new information.
+        return text
 
     def _calculate_durations(self, text, index, vis_dir, features, save_imgs):
         # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.

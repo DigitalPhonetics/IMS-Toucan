@@ -23,7 +23,7 @@ from run_weight_averaging import save_model_for_use
 
 def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
-    return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True),
+    return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True).float(),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             [datapoint[2] for datapoint in batch],
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
@@ -141,8 +141,8 @@ def train_loop(net,
             speech_indexes = batch[2]
             speech_lengths = batch[3].squeeze().to(device)
             gold_durations = batch[4].to(device)
-            gold_pitch = batch[6].unsqueeze(-1).to(device)  # mind the switched order
-            gold_energy = batch[5].unsqueeze(-1).to(device)  # mind the switched order
+            gold_pitch = batch[6].to(device)  # mind the switched order
+            gold_energy = batch[5].to(device)  # mind the switched order
             lang_ids = batch[8].squeeze(1).to(device)
 
             speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
