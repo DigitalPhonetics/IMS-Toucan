@@ -282,7 +282,7 @@ class ToucanTTS(torch.nn.Module):
         if energy is not None:
             energy = energy.unsqueeze(0).to(text.device)
         if lang_id is not None:
-            lang_id = lang_id.unsqueeze(0).to(text.device)
+            lang_id = lang_id.to(text.device)
 
         outs, \
         predicted_durations, \
