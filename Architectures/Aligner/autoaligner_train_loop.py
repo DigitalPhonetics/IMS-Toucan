@@ -186,6 +186,3 @@ def train_loop(train_dataset,
 
         if step_counter > steps and step_counter % steps_per_checkpoint == 0:
             return
-        if gpu_count > 1:
-            # wait until eval is finished
-            torch.distributed.barrier()

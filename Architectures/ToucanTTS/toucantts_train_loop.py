@@ -301,8 +301,5 @@ def train_loop(net,
                     net.train()
                     if train_embed or path_to_embed_model is None:
                         style_embedding_function.train()
-            if gpu_count > 1:
-                # wait until eval is finished
-                torch.distributed.barrier()
 
         print("\n\n\nEPOCH COMPLETE\n\n\n")
