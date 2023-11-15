@@ -1,4 +1,3 @@
-import math
 import os
 import random
 from multiprocessing import Manager
@@ -9,6 +8,7 @@ import numpy
 import soundfile as sf
 import torch
 from torch.utils.data import Dataset
+from torchvision.transforms.v2 import GaussianBlur
 from tqdm import tqdm
 
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -47,6 +47,8 @@ class HiFiGANDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
+        self.blurrer = GaussianBlur(kernel_size=(3, 3))
+        self.augs = [self.blurrer, lambda x: x]
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):
@@ -82,25 +84,12 @@ class HiFiGANDataset(Dataset):
             audio_start = random.randint(0, max_audio_start)
             segment = wave[audio_start: audio_start + self.samples_per_segment]
 
-            if random.random() < 0.1 and self.use_random_corruption:
-                # apply distortion to random samples with a 10% chance
-                noise = torch.rand(size=(segment.shape[0],)) - 0.5  # get 0 centered noise
-                speech_power = segment.norm(p=2)
-                noise_power = noise.norm(p=2)
-                scale = math.sqrt(math.e) * noise_power / speech_power  # signal to noise ratio of 5db
-                noisy_segment = (scale * segment + noise) / 2
-                resampled_segment = self.melspec_ap.resample(noisy_segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
-            else:
-                resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
-            try:
-                melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
-                                                                   explicit_sampling_rate=16000,
-                                                                   normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
-            except librosa.util.exceptions.ParameterError:
-                # seems like sometimes adding noise and then resampling can introduce overflows which cause errors.
-                melspec = self.melspec_ap.audio_to_mel_spec_tensor(self.melspec_ap.resample(segment).float(),
-                                                                   explicit_sampling_rate=16000,
-                                                                   normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+            resampled_segment = self.melspec_ap.resample(segment)  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
+            melspec = self.melspec_ap.audio_to_mel_spec_tensor(resampled_segment.float(),
+                                                               explicit_sampling_rate=16000,
+                                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+            if self.use_random_corruption:
+                melspec = random.choice(self.augs)(melspec.unsqueeze(0)).squeeze(0)
             return segment, melspec
         except RuntimeError:
             print("encountered a runtime error, using fallback strategy")

@@ -26,7 +26,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN")
+        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN_with_aug")
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
@@ -230,7 +230,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     fisher_yates_shuffle(file_lists_for_this_run_combined)
     print("filepaths randomized")
 
-    train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined[:250000])  # adjust the sample size until it fits into RAM
+    train_set = HiFiGANDataset(list_of_paths=file_lists_for_this_run_combined[:250000], use_random_corruption=True)  # adjust the sample size until it fits into RAM
 
     generator = HiFiGAN()
     discriminator = AvocodoHiFiGANJointDiscriminator()
@@ -241,7 +241,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=24,
+    train_loop(batch_size=48,
                epochs=80000,
                generator=generator,
                discriminator=discriminator,
