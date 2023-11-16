@@ -219,6 +219,7 @@ class ToucanTTSInterface(torch.nn.Module):
                      duration_scaling_factor=1.0,
                      pitch_variance_scale=1.0,
                      energy_variance_scale=1.0,
+                     pause_duration_scaling_factor=1.0,
                      silent=False,
                      dur_list=None,
                      pitch_list=None,
@@ -259,7 +260,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                     energy=energy.to(self.device) if energy is not None else None,
                                                     duration_scaling_factor=duration_scaling_factor,
                                                     pitch_variance_scale=pitch_variance_scale,
-                                                    energy_variance_scale=energy_variance_scale)).cpu()
+                                                    energy_variance_scale=energy_variance_scale,
+                                                    pause_duration_scaling_factor=pause_duration_scaling_factor)).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         soundfile.write(file=file_location, data=float2pcm(wav), samplerate=24000, subtype="PCM_16")
 
