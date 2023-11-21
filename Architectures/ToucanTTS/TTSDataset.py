@@ -121,7 +121,7 @@ class TTSDataset(Dataset):
         # ==========================================
 
         parsel = Parselmouth(fs=16000)
-        energy_calc = EnergyCalculator(fs=16000)
+        energy_calc = EnergyCalculator(fs=16000).to(device)
         self.dc = DurationCalculator()
         vis_dir = os.path.join(cache_dir, "duration_vis")
         if save_imgs:
@@ -144,9 +144,7 @@ class TTSDataset(Dataset):
                 text = self._annotate_silences(text, get_speech_timestamps, index, vis_dir, decoded_wave, device, features, silero_model, save_imgs, decoded_wave_length)
             cached_duration, ctc_loss = self._calculate_durations(text, index, os.path.join(vis_dir, "post_clean"), features, save_imgs)
 
-            # silence is cleaned, yay
-
-            cached_energy = energy_calc(input_waves=torch.tensor(decoded_wave).unsqueeze(0),
+            cached_energy = energy_calc(input_waves=torch.tensor(decoded_wave).unsqueeze(0).to(device),
                                         input_waves_lengths=decoded_wave_length,
                                         feats_lengths=feature_lengths,
                                         text=text,
