@@ -104,6 +104,7 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    sound_of_silence_single_utt(version="BackToSpec",
+    sound_of_silence_single_utt(version="BigModel",
                                 model_id="Nancy",
-                                exec_device=exec_device)
+                                exec_device=exec_device,
+                                speaker_reference="audios/reference_audios/german_female.wav")

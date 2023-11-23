@@ -98,7 +98,7 @@ class ToucanTTSInterface(torch.nn.Module):
         wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
         spec = self.ap.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000)
         spec_len = torch.LongTensor([len(spec)])
-        style_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
+        style_embedding = self.style_embedding_function(spec.transpose(0, 1).unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
         speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
         self.default_utterance_embedding = torch.cat([style_embedding, speaker_embedding], dim=-1)
 
