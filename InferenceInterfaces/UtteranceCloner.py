@@ -10,7 +10,6 @@ from Architectures.ToucanTTS.EnergyCalculator import EnergyCalculator
 from Architectures.ToucanTTS.PitchCalculator import Parselmouth
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
-from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.storage_config import MODELS_DIR
@@ -26,8 +25,7 @@ class UtteranceCloner:
 
     def __init__(self, model_id, device, language="en"):
         self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
-        self.ap = AudioPreprocessor(input_sr=16000, output_sr=16000, cut_silence=False)
-        self.cap = CodecAudioPreprocessor(input_sr=100, device=device)
+        self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
@@ -69,12 +67,12 @@ class UtteranceCloner:
 
         norm_wave_length = torch.LongTensor([len(norm_wave)])
         text = self.tf.string_to_tensor(transcript, handle_missing=False).squeeze(0)
-        features = self.cap.audio_to_codec_tensor(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1)
+        features = self.ap.audio_to_mel_spec_tensor(audio=norm_wave, explicit_sampling_rate=16000).transpose(0, 1)
         feature_length = torch.LongTensor([len(features)]).numpy()
 
         if on_line_fine_tune:
             # we fine-tune the aligner for a couple steps using SGD. This makes cloning pretty slow, but the results are greatly improved.
-            steps = 10
+            steps = 4
             tokens = self.tf.text_vectors_to_id_sequence(text_vector=text)  # we need an ID sequence for training rather than a sequence of phonological features
             tokens = torch.LongTensor(tokens).squeeze().to(self.device)
             tokens_len = torch.LongTensor([len(tokens)]).to(self.device)
