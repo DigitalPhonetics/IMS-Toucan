@@ -412,6 +412,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                resume=resume,
                fine_tune=finetune,
                steps=200000,
+               steps_per_checkpoint=2000,
+               lr=0.0001,
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count)
