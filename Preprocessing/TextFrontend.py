@@ -59,107 +59,125 @@ class ArticulatoryCombinedTextFrontend:
         if language == "en":
             self.g2p_lang = "en-us"
             self.expand_abbreviations = english_text_expansion
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created an English Text-Frontend")
 
         elif language == "de":
             self.g2p_lang = "de"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a German Text-Frontend")
 
         elif language == "el":
             self.g2p_lang = "el"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Greek Text-Frontend")
 
         elif language == "es":
             self.g2p_lang = "es"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Spanish Text-Frontend")
 
         elif language == "fi":
             self.g2p_lang = "fi"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Finnish Text-Frontend")
 
         elif language == "ru":
             self.g2p_lang = "ru"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Russian Text-Frontend")
 
         elif language == "hu":
             self.g2p_lang = "hu"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Hungarian Text-Frontend")
 
         elif language == "nl":
             self.g2p_lang = "nl"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Dutch Text-Frontend")
 
         elif language == "fr":
             self.g2p_lang = "fr-fr"
             self.expand_abbreviations = remove_french_spacing
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a French Text-Frontend")
 
         elif language == "it":
             self.g2p_lang = "it"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Italian Text-Frontend")
 
         elif language == "pt":
             self.g2p_lang = "pt"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Portuguese Text-Frontend")
 
         elif language == "pt-br":
             self.g2p_lang = "pt-br"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Brazilian Portuguese Text-Frontend")
 
         elif language == "pl":
             self.g2p_lang = "pl"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Polish Text-Frontend")
 
         elif language == "cmn":
-            self.g2p_lang = "cmn"  # we don't use espeak for this case
+            self.g2p_lang = "cmn"
             self.expand_abbreviations = convert_kanji_to_pinyin_mandarin
+            self.phonemizer = "dragonmapper"
             if not silent:
                 print("Created a Mandarin-Chinese Text-Frontend")
 
         elif language == "vi":
             self.g2p_lang = "vi"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Northern-Vietnamese Text-Frontend")
 
         elif language == "uk":
             self.g2p_lang = "uk"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Ukrainian Text-Frontend")
 
         elif language == "fa":
             self.g2p_lang = "fa"
             self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
             if not silent:
                 print("Created a Farsi Text-Frontend")
 
         else:
-            print("Language not supported yet")
+            print("Language not supported yet")  # TODO this needs to change
+            self.phonemizer = "transphone"
             sys.exit()
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
@@ -293,10 +311,14 @@ class ArticulatoryCombinedTextFrontend:
         utt = self.expand_abbreviations(text)
 
         # phonemize
-        if self.g2p_lang == "cmn-latn-pinyin" or self.g2p_lang == "cmn":
-            phones = pinyin_to_ipa(utt)
-        else:
+        if self.phonemizer == "espeak":
             phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
+        elif self.phonemizer == "charsiu":
+            pass  # TODO
+        elif self.phonemizer == "transphone":
+            pass  # TODO
+        elif self.phonemizer == "dragonmapper":
+            phones = pinyin_to_ipa(utt)
 
         # Unfortunately tonal languages don't agree on the tone, most tonal
         # languages use different tones denoted by different numbering
@@ -530,6 +552,7 @@ def get_language_id(language):
         return torch.LongTensor([16])
     elif language == "pt-br":
         return torch.LongTensor([17])
+    # TODO automate the rest
 
 
 if __name__ == '__main__':
