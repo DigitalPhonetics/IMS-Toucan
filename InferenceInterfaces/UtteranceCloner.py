@@ -41,7 +41,7 @@ class UtteranceCloner:
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference_mode or no_grad
 
-    def extract_prosody(self, transcript, ref_audio_path, lang="de", on_line_fine_tune=True):
+    def extract_prosody(self, transcript, ref_audio_path, lang="eng", on_line_fine_tune=True):
         acoustic_model = Aligner()
         acoustic_model.load_state_dict(self.aligner_weights)
         acoustic_model = acoustic_model.to(self.device)
@@ -132,7 +132,7 @@ class UtteranceCloner:
                         path_to_reference_audio_for_voice,
                         transcription_of_intonation_reference,
                         filename_of_result=None,
-                        lang="en"):
+                        lang="eng"):
         """
         What is said in path_to_reference_audio_for_intonation has to match the text in the reference_transcription exactly!
         """

@@ -5,7 +5,7 @@ import torch
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
-def read_texts(model_id, sentence, filename, device="cpu", language="en", speaker_reference=None, pause_duration_scaling_factor=1.0):
+def read_texts(model_id, sentence, filename, device="cpu", language="eng", speaker_reference=None, pause_duration_scaling_factor=1.0):
     tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if speaker_reference is not None:
@@ -32,7 +32,7 @@ def the_raven(version, model_id="Meta", exec_device="cpu", speaker_reference=Non
                          'Thrilled me, filled me, with fantastic terrors, never felt before.'],
                filename=f"audios/the_raven_{version}.wav",
                device=exec_device,
-               language="en",
+               language="eng",
                speaker_reference=speaker_reference)
 
 
@@ -81,7 +81,7 @@ In tenement halls."
 And whispered, in the sounds, of silence."""],
                filename=f"audios/sound_of_silence_as_single_utterance_{version}.wav",
                device=exec_device,
-               language="en",
+               language="eng",
                speaker_reference=speaker_reference,
                pause_duration_scaling_factor=2.0)
 
@@ -96,7 +96,7 @@ def die_glocke(version, model_id="Meta", exec_device="cpu", speaker_reference=No
                          'Frisch, Gesellen, seid zur Hand!'],
                filename=f"audios/die_glocke_{version}.wav",
                device=exec_device,
-               language="de",
+               language="deu",
                speaker_reference=speaker_reference)
 
 

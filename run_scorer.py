@@ -4,8 +4,6 @@ Example use of the scorer utility to inspect data.
 (pre-)trained models and already cache files with extracted features are required.
 """
 
-import torch
-
 from Utility.Scorer import TTSScorer
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
@@ -23,5 +21,5 @@ tts_scorer.remove_samples_with_highest_loss(5)
 train_sets = list()
 train_sets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "IntegrationTest"),
-                                     lang="en"))
+                                     lang="eng"))
 make_silence_cleaned_versions(train_sets=train_sets)

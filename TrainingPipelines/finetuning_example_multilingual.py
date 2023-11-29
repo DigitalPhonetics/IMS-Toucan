@@ -6,7 +6,6 @@ Comments in ALL CAPS are instructions
 
 import time
 
-import torch
 import wandb
 from torch.utils.data import ConcatDataset
 
@@ -44,11 +43,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     german_datasets = list()
     german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_karlsson(),
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Karlsson"),
-                                              lang="de"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
+                                              lang="deu"))  # CHANGE THE TRANSCRIPT DICT, THE NAME OF THE CACHE DIRECTORY AND THE LANGUAGE TO YOUR NEEDS
 
     german_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_eva(),
                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Eva"),
-                                              lang="de"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
+                                              lang="deu"))  # YOU CAN SIMPLY ADD MODE CORPORA AND DO THE SAME, BUT YOU DON'T HAVE TO, ONE IS ENOUGH
 
     all_train_sets.append(ConcatDataset(german_datasets))
 
@@ -58,11 +57,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     english_datasets = list()
     english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                               lang="en"))
+                                               lang="eng"))
 
     english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech(),
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
-                                               lang="en"))
+                                               lang="eng"))
 
     all_train_sets.append(ConcatDataset(english_datasets))
 
@@ -83,7 +82,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                device=device,
                save_directory=save_dir,
                batch_size=12,  # YOU MIGHT GET OUT OF MEMORY ISSUES ON SMALL GPUs, IF SO, DECREASE THIS.
-               eval_lang="de",  # THE LANGUAGE YOUR PROGRESS PLOTS WILL BE MADE IN
+               eval_lang="deu",  # THE LANGUAGE YOUR PROGRESS PLOTS WILL BE MADE IN
                warmup_steps=500,
                lr=1e-5,  # if you have enough data (over ~1000 datapoints) you can increase this up to 1e-4 and it will still be stable, but learn quicker.
                # DOWNLOAD THESE INITIALIZATION MODELS FROM THE RELEASE PAGE OF THE GITHUB OR RUN THE DOWNLOADER SCRIPT TO GET THEM AUTOMATICALLY

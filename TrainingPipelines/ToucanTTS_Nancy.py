@@ -1,6 +1,5 @@
 import time
 
-import torch
 import wandb
 
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
@@ -34,7 +33,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                   lang="en",
+                                   lang="eng",
                                    save_imgs=False,
                                    gpu_count=gpu_count,
                                    rank=rank)
@@ -63,7 +62,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               eval_lang="en",
+               eval_lang="eng",
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                fine_tune=finetune,

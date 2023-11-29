@@ -4,7 +4,6 @@ This is basically an integration test
 
 import time
 
-import torch
 import wandb
 
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
@@ -38,7 +37,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_integration_test(),
                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "IntegrationTest"),
-                                   lang="en",
+                                   lang="eng",
                                    save_imgs=True,
                                    gpu_count=gpu_count,
                                    rank=rank)
@@ -68,7 +67,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                device=device,
                save_directory=save_dir,
                batch_size=8,
-               eval_lang="en",
+               eval_lang="eng",
                warmup_steps=500,
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=None,

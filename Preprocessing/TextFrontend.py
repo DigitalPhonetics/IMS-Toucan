@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
+import json
 import re
 import sys
 
@@ -56,119 +57,112 @@ class ArticulatoryCombinedTextFrontend:
                     elif register_to_height[first_tone] < register_to_height[second_tone] > register_to_height[third_tone]:
                         self.peaking_perms.append(first_tone + second_tone + third_tone)
 
-        if language == "en":
+        if language == "eng":
             self.g2p_lang = "en-us"
             self.expand_abbreviations = english_text_expansion
             self.phonemizer = "espeak"
             if not silent:
                 print("Created an English Text-Frontend")
 
-        elif language == "de":
+        elif language == "deu":
             self.g2p_lang = "de"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a German Text-Frontend")
 
-        elif language == "el":
+        elif language == "ell":
             self.g2p_lang = "el"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Greek Text-Frontend")
 
-        elif language == "es":
+        elif language == "spa":
             self.g2p_lang = "es"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Spanish Text-Frontend")
 
-        elif language == "fi":
+        elif language == "fin":
             self.g2p_lang = "fi"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Finnish Text-Frontend")
 
-        elif language == "ru":
+        elif language == "rus":
             self.g2p_lang = "ru"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Russian Text-Frontend")
 
-        elif language == "hu":
+        elif language == "hun":
             self.g2p_lang = "hu"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Hungarian Text-Frontend")
 
-        elif language == "nl":
+        elif language == "nld":
             self.g2p_lang = "nl"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Dutch Text-Frontend")
 
-        elif language == "fr":
+        elif language == "fra":
             self.g2p_lang = "fr-fr"
             self.expand_abbreviations = remove_french_spacing
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a French Text-Frontend")
 
-        elif language == "it":
+        elif language == "ita":
             self.g2p_lang = "it"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Italian Text-Frontend")
 
-        elif language == "pt":
+        elif language == "por":
             self.g2p_lang = "pt"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Portuguese Text-Frontend")
 
-        elif language == "pt-br":
-            self.g2p_lang = "pt-br"
-            self.expand_abbreviations = lambda x: x
-            self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Brazilian Portuguese Text-Frontend")
-
-        elif language == "pl":
+        elif language == "pol":
             self.g2p_lang = "pl"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Polish Text-Frontend")
 
-        elif language == "cmn":
+        elif language == "zho":
             self.g2p_lang = "cmn"
             self.expand_abbreviations = convert_kanji_to_pinyin_mandarin
             self.phonemizer = "dragonmapper"
             if not silent:
                 print("Created a Mandarin-Chinese Text-Frontend")
 
-        elif language == "vi":
+        elif language == "vie":
             self.g2p_lang = "vi"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Northern-Vietnamese Text-Frontend")
 
-        elif language == "uk":
+        elif language == "ukr":
             self.g2p_lang = "uk"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
             if not silent:
                 print("Created a Ukrainian Text-Frontend")
 
-        elif language == "fa":
+        elif language == "fas":
             self.g2p_lang = "fa"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
@@ -182,7 +176,7 @@ class ArticulatoryCombinedTextFrontend:
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
-        if self.g2p_lang != "cmn" and self.g2p_lang != "cmn-latn-pinyin":
+        if self.phonemizer == "espeak":
             self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
                                                     punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
                                                     preserve_punctuation=True,
@@ -518,60 +512,39 @@ def convert_kanji_to_pinyin_mandarin(text):
 
 
 def get_language_id(language):
-    if language == "de":
-        return torch.LongTensor([1])
-    elif language == "el":
-        return torch.LongTensor([2])
-    elif language == "es":
-        return torch.LongTensor([3])
-    elif language == "fi":
-        return torch.LongTensor([4])
-    elif language == "ru":
-        return torch.LongTensor([5])
-    elif language == "hu":
-        return torch.LongTensor([6])
-    elif language == "nl":
-        return torch.LongTensor([7])
-    elif language == "fr":
-        return torch.LongTensor([8])
-    elif language == "pt":
-        return torch.LongTensor([9])
-    elif language == "pl":
-        return torch.LongTensor([10])
-    elif language == "it":
-        return torch.LongTensor([11])
-    elif language == "en":
-        return torch.LongTensor([12])
-    elif language == "cmn":
-        return torch.LongTensor([13])
-    elif language == "vi":
-        return torch.LongTensor([14])
-    elif language == "uk":
-        return torch.LongTensor([15])
-    elif language == "fa":
-        return torch.LongTensor([16])
-    elif language == "pt-br":
-        return torch.LongTensor([17])
-    # TODO automate the rest
+    try:
+        iso_codes_to_ids = list(load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[1])
+    except FileNotFoundError:
+        iso_codes_to_ids = list(load_json_from_path("multilinguality/iso_lookup.json")[1])
+    if language not in iso_codes_to_ids:
+        print("Please specify the language as ISO 639-2 code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)")
+        return None
+    return torch.LongTensor([iso_codes_to_ids[language]])
+
+
+def load_json_from_path(path):
+    with open(path, "r", encoding="utf8") as f:
+        obj = json.loads(f.read())
+    return obj
 
 
 if __name__ == '__main__':
-    tf = ArticulatoryCombinedTextFrontend(language="en")
+    tf = ArticulatoryCombinedTextFrontend(language="eng")
     tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="de")
+    tf = ArticulatoryCombinedTextFrontend(language="deu")
     tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="cmn")
+    tf = ArticulatoryCombinedTextFrontend(language="zho")
     tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
     tf.string_to_tensor("李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。", view=True)
     tf.string_to_tensor("巴 拔 把 爸 吧", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="vi")
+    tf = ArticulatoryCombinedTextFrontend(language="vie")
     tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
     tf.string_to_tensor("ba bà bá bạ bả bã", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="fr")
+    tf = ArticulatoryCombinedTextFrontend(language="fra")
     tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
     print(tf.get_phone_string("Je ne te fais pas un dessin."))
     print(tf.string_to_tensor("un", view=True))

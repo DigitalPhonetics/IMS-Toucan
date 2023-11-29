@@ -36,7 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean,
                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                       lang="en",
+                                       lang="eng",
                                        gpu_count=gpu_count,
                                        rank=rank))
 
@@ -45,7 +45,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     for index in range(chunk_count):
         datasets.append(prepare_tts_corpus(transcript_dict=chunks[index],
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
-                                           lang="en",
+                                           lang="eng",
                                            gpu_count=gpu_count,
                                            rank=rank))
 
@@ -75,7 +75,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                datasets=[train_set],
                device=device,
                save_directory=save_dir,
-               eval_lang="en",
+               eval_lang="eng",
                path_to_checkpoint=resume_checkpoint,
                path_to_embed_model=None,
                fine_tune=finetune,

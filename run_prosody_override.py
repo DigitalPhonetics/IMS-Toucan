@@ -10,4 +10,4 @@ if __name__ == '__main__':
                        path_to_reference_audio_for_voice="audios/speaker_references_for_testing/female_mid_voice.wav",  # the two reference audios can be the same, but don't have to be
                        transcription_of_intonation_reference="This report is due tomorrow.",
                        filename_of_result="audios/test_cloned.wav",
-                       lang="en")
+                       lang="eng")
