@@ -190,33 +190,33 @@ class ArticulatoryCombinedTextFrontend:
 
     @staticmethod
     def get_example_sentence(lang):
-        if lang == "en":
+        if lang == "eng":
             return "This is a complex sentence, it even has a pause!"
-        elif lang == "de":
+        elif lang == "deu":
             return "Dies ist ein komplexer Satz, er hat sogar eine Pause!"
-        elif lang == "el":
+        elif lang == "ell":
             return "Αυτή είναι μια σύνθετη πρόταση, έχει ακόμη και παύση!"
-        elif lang == "es":
+        elif lang == "spa":
             return "Esta es una oración compleja, ¡incluso tiene una pausa!"
-        elif lang == "fi":
+        elif lang == "fin":
             return "Tämä on monimutkainen lause, sillä on jopa tauko!"
-        elif lang == "ru":
+        elif lang == "rus":
             return "Это сложное предложение, в нем даже есть пауза!"
-        elif lang == "hu":
+        elif lang == "hun":
             return "Ez egy összetett mondat, még szünet is van benne!"
-        elif lang == "nl":
+        elif lang == "nld":
             return "Dit is een complexe zin, er zit zelfs een pauze in!"
-        elif lang == "fr":
+        elif lang == "fra":
             return "C'est une phrase complexe, elle a même une pause !"
-        elif lang == "pt" or lang == "pt-br":
+        elif lang == "por":
             return "Esta é uma frase complexa, tem até uma pausa!"
-        elif lang == "pl":
+        elif lang == "pol":
             return "To jest zdanie złożone, ma nawet pauzę!"
-        elif lang == "it":
+        elif lang == "ita":
             return "Questa è una frase complessa, ha anche una pausa!"
-        elif lang == "cmn":
+        elif lang == "zho":
             return "这是一个复杂的句子，它甚至包含一个停顿。"
-        elif lang == "vi":
+        elif lang == "vie":
             return "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
         else:
             print(f"No example sentence specified for the language: {lang}\n "

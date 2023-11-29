@@ -27,7 +27,7 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  embedding_model_path=None,
-                 language="en",  # initial language of the model, can be changed later with the setter methods
+                 language="eng",  # initial language of the model, can be changed later with the setter methods
                  ):
         super().__init__()
         self.device = device
