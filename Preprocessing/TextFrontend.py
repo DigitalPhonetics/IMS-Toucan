@@ -513,9 +513,9 @@ def convert_kanji_to_pinyin_mandarin(text):
 
 def get_language_id(language):
     try:
-        iso_codes_to_ids = list(load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[1])
+        iso_codes_to_ids = list(load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1])
     except FileNotFoundError:
-        iso_codes_to_ids = list(load_json_from_path("multilinguality/iso_lookup.json")[1])
+        iso_codes_to_ids = list(load_json_from_path("multilinguality/iso_lookup.json")[-1])
     if language not in iso_codes_to_ids:
         print("Please specify the language as ISO 639-2 code (https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)")
         return None
