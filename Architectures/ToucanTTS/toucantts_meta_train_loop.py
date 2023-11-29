@@ -86,8 +86,7 @@ def train_loop(net,
                                         num_workers=0,
                                         pin_memory=True,
                                         prefetch_factor=None,
-                                        collate_fn=collate_and_pad,
-                                        persistent_workers=True))
+                                        collate_fn=collate_and_pad))
         train_iters.append(iter(train_loaders[-1]))
 
     # embedding training is not supported here
