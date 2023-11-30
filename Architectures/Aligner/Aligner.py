@@ -54,7 +54,7 @@ class Aligner(torch.nn.Module):
         ])
         self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
-        self.tf = ArticulatoryCombinedTextFrontend(language="en")
+        self.tf = ArticulatoryCombinedTextFrontend(language="eng")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
 
@@ -152,7 +152,7 @@ def binarize_alignment(alignment_prob):
 
 
 if __name__ == '__main__':
-    tf = ArticulatoryCombinedTextFrontend(language="en")
+    tf = ArticulatoryCombinedTextFrontend(language="eng")
     from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
 
     cap = CodecAudioPreprocessor(input_sr=-1)

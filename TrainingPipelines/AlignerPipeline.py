@@ -290,14 +290,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_css10cmn,
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "css10_chinese"),
-                                           lang="zho",
+                                           lang="cmn",
                                            device=device,
                                            gpu_count=gpu_count,
                                            rank=rank))
 
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_aishell3,
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "aishell3"),
-                                           lang="zho",
+                                           lang="cmn",
                                            device=device,
                                            gpu_count=gpu_count,
                                            rank=rank))

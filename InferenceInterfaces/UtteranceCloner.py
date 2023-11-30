@@ -23,7 +23,7 @@ class UtteranceCloner:
     Useful for Privacy Applications
     """
 
-    def __init__(self, model_id, device, language="en"):
+    def __init__(self, model_id, device, language="eng"):
         self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
