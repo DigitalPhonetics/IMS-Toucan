@@ -35,7 +35,7 @@ class ControllableInterface:
             'Polish'    : "pol",
             'Portuguese': "por",
             'Italian'   : "ita",
-            'Chinese'   : "zho",
+            'Chinese'   : "cmn",
             'Vietnamese': "vie",
         }
 

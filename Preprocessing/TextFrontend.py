@@ -141,7 +141,7 @@ class ArticulatoryCombinedTextFrontend:
             if not silent:
                 print("Created a Polish Text-Frontend")
 
-        elif language == "zho":
+        elif language == "cmn":
             self.g2p_lang = "cmn"
             self.expand_abbreviations = convert_kanji_to_pinyin_mandarin
             self.phonemizer = "dragonmapper"
@@ -214,7 +214,7 @@ class ArticulatoryCombinedTextFrontend:
             return "To jest zdanie złożone, ma nawet pauzę!"
         elif lang == "ita":
             return "Questa è una frase complessa, ha anche una pausa!"
-        elif lang == "zho":
+        elif lang == "cmn":
             return "这是一个复杂的句子，它甚至包含一个停顿。"
         elif lang == "vie":
             return "Đây là một câu phức tạp, nó thậm chí còn chứa một khoảng dừng."
@@ -535,7 +535,7 @@ if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="deu")
     tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="zho")
+    tf = ArticulatoryCombinedTextFrontend(language="cmn")
     tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
     tf.string_to_tensor("李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。", view=True)
     tf.string_to_tensor("巴 拔 把 爸 吧", view=True)
