@@ -22,11 +22,11 @@ def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True).float(),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            [datapoint[2] for datapoint in batch],
+            [torch.tensor(datapoint[2]) for datapoint in batch],
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[4].squeeze() for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[5].squeeze() for datapoint in batch], batch_first=True),
+            pad_sequence([datapoint[6].squeeze() for datapoint in batch], batch_first=True),
             None,
             torch.stack([datapoint[8] for datapoint in batch]),
             torch.stack([datapoint[9] for datapoint in batch]))
@@ -86,7 +86,7 @@ def train_loop(net,
                                         num_workers=0,
                                         pin_memory=True,
                                         prefetch_factor=None,
-                                        collate_fn=collate_and_pad))
+                                        collate_fn=lambda x: x[0]))
         train_iters.append(iter(train_loaders[-1]))
 
     # embedding training is not supported here
@@ -155,8 +155,8 @@ def train_loop(net,
         speech_indexes = batch[2]
         speech_lengths = batch[3].squeeze().to(device)
         gold_durations = batch[4].to(device)
-        gold_pitch = batch[6].to(device)  # mind the switched order
-        gold_energy = batch[5].to(device)  # mind the switched order
+        gold_pitch = batch[6].unsqueeze(-1).to(device)  # mind the switched order
+        gold_energy = batch[5].unsqueeze(-1).to(device)  # mind the switched order
         lang_ids = batch[8].squeeze(1).to(device)
 
         speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
@@ -218,11 +218,11 @@ def train_loop(net,
         optimizer.zero_grad()
         flow_optimizer.zero_grad()
         train_loss.backward()
-        torch.nn.utils.clip_grad_norm_([p for name, p in net.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
+        torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
         optimizer.step()
         scheduler.step()
         if run_glow:
-            torch.nn.utils.clip_grad_norm_(net.post_flow.parameters(), 1.0, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
             flow_optimizer.step()
             flow_scheduler.step()
 
