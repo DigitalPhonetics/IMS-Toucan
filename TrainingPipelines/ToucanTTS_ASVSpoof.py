@@ -22,7 +22,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_MLS_English")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_ASVSpoof")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
@@ -33,12 +33,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         torch.distributed.init_process_group(backend="nccl")
     else:
         rank = 0
-
-    datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_libritts_all_clean,
-                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "libri_all_clean"),
-                                       lang="eng",
-                                       gpu_count=gpu_count,
-                                       rank=rank))
 
     chunk_count = 50
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
