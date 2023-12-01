@@ -48,14 +48,6 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Cleaned MLS Texts")
-    os.makedirs(os.path.join(MODELS_DIR, "Embedding"), exist_ok=True)
-    filename, headers = urllib.request.urlretrieve(
-        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.asvspoof/mls_transcript_cache.pt",
-        filename="mls_transcript_cache.pt",
-        reporthook=report)
-
-    #############
     print("Downloading Codec Model")
     filename, headers = urllib.request.urlretrieve(
         url="https://huggingface.co/Dongchao/AcademiCodec/resolve/main/encodec_16k_320d.pth",
