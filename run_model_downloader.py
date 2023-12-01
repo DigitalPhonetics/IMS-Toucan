@@ -24,8 +24,8 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Multilingual ToucanTTS Model")
-    os.makedirs(os.path.join(MODELS_DIR, "ToucanTTS_Meta"), exist_ok=True)
+    print("Downloading ASVSpoof ToucanTTS Model")
+    os.makedirs(os.path.join(MODELS_DIR, "ASVSpoof"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
         url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.asvspoof/toucantts.pt",
         filename=os.path.abspath(os.path.join(MODELS_DIR, "ASVSpoof", "best.pt")),
