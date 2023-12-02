@@ -9,11 +9,13 @@ can help you find outliers in the audio part of text-audio pairs.
 import os
 
 import torch
+import torch.multiprocessing
 from tqdm import tqdm
 
 from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
-from Preprocessing.TextFrontend import get_language_id
+from Preprocessing.AudioPreprocessor import AudioPreprocessor
+from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.storage_config import MODELS_DIR
 
@@ -33,15 +35,7 @@ class TTSScorer:
         self.tts = ToucanTTS()
         checkpoint = torch.load(path_to_model, map_location='cpu')
         weights = checkpoint["model"]
-        try:
-            self.tts.load_state_dict(weights)
-        except RuntimeError:
-            try:
-                self.tts = ToucanTTS(lang_embs=None)
-                self.tts.load_state_dict(weights)
-            except RuntimeError:
-                self.tts = ToucanTTS(lang_embs=None, utt_embed_dim=None)
-                self.tts.load_state_dict(weights)
+        self.tts.load_state_dict(weights)
         self.style_embedding_function = StyleEmbedding().to(device)
         check_dict = torch.load(path_to_embedding_checkpoint, map_location=device)
         self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
@@ -49,6 +43,8 @@ class TTSScorer:
         self.style_embedding_function.to(device)
         self.nans_removed = False
         self.current_dset = None
+        self.ap = CodecAudioPreprocessor(input_sr=-1, device=device)
+        self.spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
 
     def score(self, path_to_toucantts_dataset, lang_id):
         """
@@ -62,24 +58,37 @@ class TTSScorer:
         self.path_to_id = dict()
         _ = dataset[0]
         for index in tqdm(range(len(dataset.datapoints))):
-            text, text_len, spec, spec_len, duration, energy, pitch, embed, filepath = dataset.datapoints[index]
-            codec_spec = dataset.ap.indexes_to_one_hot(spec.long().transpose(0, 1)).detach()
-            embed_spec = dataset.ap.indexes_to_codec_frames(spec.int().transpose(0, 1)).transpose(0, 1).detach()
-            style_embedding = self.style_embedding_function(batch_of_feature_sequences=embed_spec.unsqueeze(0).to(self.device),
-                                                            batch_of_feature_sequence_lengths=spec_len.unsqueeze(0).to(self.device))
+            datapoint = dataset.datapoints[index]
+            text_tensors = datapoint[0].to(self.device).unsqueeze(0).float()
+            text_lengths = datapoint[1].squeeze().to(self.device).unsqueeze(0)
+            speech_indexes = datapoint[2]
+            speech_lengths = datapoint[3].squeeze().to(self.device).unsqueeze(0)
+            gold_durations = datapoint[4].to(self.device).unsqueeze(0)
+            gold_pitch = datapoint[6].to(self.device).unsqueeze(0)  # mind the switched order
+            gold_energy = datapoint[5].to(self.device).unsqueeze(0)  # mind the switched order
+            lang_ids = dataset.language_id.to(self.device)
+            filepath = datapoint[8]
+            with torch.inference_mode():
+                wave = self.ap.indexes_to_audio(speech_indexes.int().to(self.device)).detach()
+                mel = self.spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
+            gold_speech_sample = mel.clone().to(self.device).unsqueeze(0)
+
+            style_embedding = self.style_embedding_function(batch_of_feature_sequences=gold_speech_sample,
+                                                            batch_of_feature_sequence_lengths=speech_lengths)
+            utterance_embedding = torch.cat([style_embedding, datapoint[7].unsqueeze(0).to(self.device)], dim=-1)
             try:
-                l1_loss, duration_loss, pitch_loss, energy_loss, glow_loss = sum(self.tts(text_tensors=text.unsqueeze(0).to(self.device),
-                                                                                          text_lengths=text_len.to(self.device),
-                                                                                          gold_speech=codec_spec.unsqueeze(0).float().to(self.device),
-                                                                                          speech_lengths=spec_len.to(self.device),
-                                                                                          gold_durations=duration.unsqueeze(0).to(self.device),
-                                                                                          gold_pitch=pitch.unsqueeze(0).to(self.device),
-                                                                                          gold_energy=energy.unsqueeze(0).to(self.device),
-                                                                                          utterance_embedding=style_embedding.to(self.device),
-                                                                                          lang_ids=get_language_id(lang_id).unsqueeze(0).to(self.device),
-                                                                                          return_feats=False,
-                                                                                          run_glow=False))
-                loss = l1_loss + duration_loss + pitch_loss + energy_loss  # we omit the glow loss
+                regression_loss, _, duration_loss, pitch_loss, energy_loss = self.tts(text_tensors=text_tensors,
+                                                                                      text_lengths=text_lengths,
+                                                                                      gold_speech=gold_speech_sample,
+                                                                                      speech_lengths=speech_lengths,
+                                                                                      gold_durations=gold_durations,
+                                                                                      gold_pitch=gold_pitch,
+                                                                                      gold_energy=gold_energy,
+                                                                                      utterance_embedding=utterance_embedding,
+                                                                                      lang_ids=lang_ids,
+                                                                                      return_feats=False,
+                                                                                      run_glow=False)
+                loss = regression_loss + duration_loss + pitch_loss + energy_loss  # we omit the glow loss
             except TypeError:
                 loss = torch.tensor(torch.nan)
             if torch.isnan(loss):
