@@ -3,12 +3,12 @@
 
 import json
 import re
-import sys
 
 import torch
 from dragonmapper.transcriptions import pinyin_to_ipa
 from phonemizer.backend import EspeakBackend
 from pypinyin import pinyin
+from transphone import read_tokenizer
 
 from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -58,121 +58,485 @@ class ArticulatoryCombinedTextFrontend:
                         self.peaking_perms.append(first_tone + second_tone + third_tone)
 
         if language == "eng":
-            self.g2p_lang = "en-us"
+            self.g2p_lang = "en-us"  # English as spoken in USA
             self.expand_abbreviations = english_text_expansion
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created an English Text-Frontend")
 
         elif language == "deu":
-            self.g2p_lang = "de"
+            self.g2p_lang = "de"  # German
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a German Text-Frontend")
 
         elif language == "ell":
-            self.g2p_lang = "el"
+            self.g2p_lang = "el"  # Greek
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Greek Text-Frontend")
 
         elif language == "spa":
-            self.g2p_lang = "es"
+            self.g2p_lang = "es"  # Spanish
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Spanish Text-Frontend")
 
         elif language == "fin":
-            self.g2p_lang = "fi"
+            self.g2p_lang = "fi"  # Finnish
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Finnish Text-Frontend")
 
         elif language == "rus":
-            self.g2p_lang = "ru"
+            self.g2p_lang = "ru"  # Russian
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Russian Text-Frontend")
 
         elif language == "hun":
-            self.g2p_lang = "hu"
+            self.g2p_lang = "hu"  # Hungarian
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Hungarian Text-Frontend")
 
         elif language == "nld":
-            self.g2p_lang = "nl"
+            self.g2p_lang = "nl"  # Dutch
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Dutch Text-Frontend")
 
         elif language == "fra":
-            self.g2p_lang = "fr-fr"
+            self.g2p_lang = "fr-fr"  # French
             self.expand_abbreviations = remove_french_spacing
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a French Text-Frontend")
 
         elif language == "ita":
-            self.g2p_lang = "it"
+            self.g2p_lang = "it"  # Italian
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Italian Text-Frontend")
 
         elif language == "por":
-            self.g2p_lang = "pt"
+            self.g2p_lang = "pt"  # Portuguese
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Portuguese Text-Frontend")
 
         elif language == "pol":
-            self.g2p_lang = "pl"
+            self.g2p_lang = "pl"  # Polish
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Polish Text-Frontend")
 
         elif language == "cmn":
-            self.g2p_lang = "cmn"
+            self.g2p_lang = "cmn"  # Mandarin
             self.expand_abbreviations = convert_kanji_to_pinyin_mandarin
             self.phonemizer = "dragonmapper"
-            if not silent:
-                print("Created a Mandarin-Chinese Text-Frontend")
 
         elif language == "vie":
-            self.g2p_lang = "vi"
+            self.g2p_lang = "vi"  # Northern Vietnamese
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Northern-Vietnamese Text-Frontend")
 
         elif language == "ukr":
-            self.g2p_lang = "uk"
+            self.g2p_lang = "uk"  # Ukrainian
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Ukrainian Text-Frontend")
 
         elif language == "fas":
-            self.g2p_lang = "fa"
+            self.g2p_lang = "fa"  # Farsi
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
-            if not silent:
-                print("Created a Farsi Text-Frontend")
+
+        elif language == "afr":
+            self.g2p_lang = "af"  # Afrikaans
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "aln":
+            self.g2p_lang = "sq"  # Albanian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "amh":
+            self.g2p_lang = "am"  # Amharic
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "arb":
+            self.g2p_lang = "ar"  # Arabic
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "arg":
+            self.g2p_lang = "an"  # Aragonese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "hye":
+            self.g2p_lang = "hy"  # East Armenian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "hyw":
+            self.g2p_lang = "hyw"  # West Armenian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "azj":
+            self.g2p_lang = "az"  # Azerbaijani
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "bak":
+            self.g2p_lang = "ba"  # Bashkir
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "chv":
+            self.g2p_lang = "cu"  # Chuvash
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "eus":
+            self.g2p_lang = "eu"  # Basque
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "bel":
+            self.g2p_lang = "be"  # Belarusian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ben":
+            self.g2p_lang = "bn"  # Bengali
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "bpy":
+            self.g2p_lang = "bpy"  # Bishnupriya Manipuri
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "bos":
+            self.g2p_lang = "bs"  # Bosnian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "bul":
+            self.g2p_lang = "bg"  # Bulgarian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "mya":
+            self.g2p_lang = "my"  # Burmese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "chr":
+            self.g2p_lang = "chr"  # Cherokee
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "yue":
+            self.g2p_lang = "yue"  # Chinese	Cantonese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "hak":
+            self.g2p_lang = "hak"  # Chinese	Hakka
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "haw":
+            self.g2p_lang = "haw"  # Hawaiian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "hrv":
+            self.g2p_lang = "hr"  # Croatian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ces":
+            self.g2p_lang = "cs"  # Czech
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "dan":
+            self.g2p_lang = "da"  # Danish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ekk":
+            self.g2p_lang = "et"  # Estonian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "gle":
+            self.g2p_lang = "ga"  # Gaelic	Irish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "gla":
+            self.g2p_lang = "gd"  # Gaelic	Scottish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "kat":
+            self.g2p_lang = "ka"  # Georgian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "kal":
+            self.g2p_lang = "kl"  # Greenlandic
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "guj":
+            self.g2p_lang = "gu"  # Gujarati
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "heb":
+            self.g2p_lang = "he"  # Hebrew
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "hin":
+            self.g2p_lang = "hi"  # Hindi
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "isl":
+            self.g2p_lang = "is"  # Icelandic
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ind":
+            self.g2p_lang = "id"  # Indonesian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "jpn":
+            self.g2p_lang = "ja"  # Japanese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "kan":
+            self.g2p_lang = "kn"  # Kannada
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "knn":
+            self.g2p_lang = "kok"  # Konkani
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "kor":
+            self.g2p_lang = "ko"  # Korean
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ckb":
+            self.g2p_lang = "ku"  # Kurdish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "kaz":
+            self.g2p_lang = "kk"  # Kazakh
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "kir":
+            self.g2p_lang = "ky"  # Kyrgyz
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "lat":
+            self.g2p_lang = "la"  # Latin
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ltz":
+            self.g2p_lang = "lb"  # Luxembourgish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "lvs":
+            self.g2p_lang = "lv"  # Latvian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "lit":
+            self.g2p_lang = "lt"  # Lithuanian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "mri":
+            self.g2p_lang = "mi"  # Māori
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "mkd":
+            self.g2p_lang = "mk"  # Macedonian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "zlm":
+            self.g2p_lang = "ms"  # Malay
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "mal":
+            self.g2p_lang = "ml"  # Malayalam
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "mlt":
+            self.g2p_lang = "mt"  # Maltese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "mar":
+            self.g2p_lang = "mr"  # Marathi
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "nci":
+            self.g2p_lang = "nci"  # Nahuatl
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "npi":
+            self.g2p_lang = "ne"  # Nepali
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "nob":
+            self.g2p_lang = "nb"  # Norwegian Bokmål
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "nog":
+            self.g2p_lang = "nog"  # Nogai
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ory":
+            self.g2p_lang = "or"  # Oriya
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "gaz":
+            self.g2p_lang = "om"  # Oromo
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "pap":
+            self.g2p_lang = "pap"  # Papiamento
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "pan":
+            self.g2p_lang = "pa"  # Punjabi
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "ron":
+            self.g2p_lang = "ro"  # Romanian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "lav":
+            self.g2p_lang = "ru-lv"  # Russian	Latvia
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "srp":
+            self.g2p_lang = "sr"  # Serbian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tsn":
+            self.g2p_lang = "tn"  # Setswana
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "snd":
+            self.g2p_lang = "sd"  # Sindhi
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "slk":
+            self.g2p_lang = "sk"  # Slovak
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "slv":
+            self.g2p_lang = "sl"  # Slovenian
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "smj":
+            self.g2p_lang = "smj"  # Lule Saami
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "swh":
+            self.g2p_lang = "sw"  # Swahili
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "swe":
+            self.g2p_lang = "sv"  # Swedish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tam":
+            self.g2p_lang = "ta"  # Tamil
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tha":
+            self.g2p_lang = "th"  # Thai
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tuk":
+            self.g2p_lang = "tk"  # Turkmen
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tat":
+            self.g2p_lang = "tt"  # Tatar
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tel":
+            self.g2p_lang = "te"  # Telugu
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "tur":
+            self.g2p_lang = "tr"  # Turkish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "uig":
+            self.g2p_lang = "ug"  # Uyghur
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "urd":
+            self.g2p_lang = "ur"  # Urdu
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "uzn":
+            self.g2p_lang = "uz"  # Uzbek
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "cym":
+            self.g2p_lang = "cy"  # Welsh
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
 
         else:
-            print("Language not supported yet")  # TODO this needs to change
+            # blanket solution for the rest
             self.phonemizer = "transphone"
-            sys.exit()
+            self.expand_abbreviations = lambda x: x
+            self.transphone = read_tokenizer(lang_id=language)
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
@@ -304,13 +668,50 @@ class ArticulatoryCombinedTextFrontend:
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 
-        # phonemize
+        # convert the graphemes to phonemes here
         if self.phonemizer == "espeak":
             phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
-        elif self.phonemizer == "charsiu":
-            pass  # TODO
         elif self.phonemizer == "transphone":
-            pass  # TODO
+            replacements = [
+                # punctuation in languages with non-latin script
+                ("。", "~"),
+                ("，", "~"),
+                ("【", '~'),
+                ("】", '~'),
+                ("、", "~"),
+                ("‥", "~"),
+                ("؟", "~"),
+                ("،", "~"),
+                ("“", '~'),
+                ("”", '~'),
+                ("؛", "~"),
+                ("《", '~'),
+                ("》", '~'),
+                ("？", "~"),
+                ("！", "~"),
+                (" ：", "~"),
+                (" ；", "~"),
+                ("－", "~"),
+                ("·", " "),
+                # symbols that indicate a pause or silence
+                ('"', "~"),
+                (" - ", "~ "),
+                ("- ", "~ "),
+                ("-", ""),
+                ("…", "~"),
+                (":", "~"),
+                (";", "~"),
+                (",", "~")  # make sure this remains the final one when adding new ones
+            ]
+            for replacement in replacements:
+                utt = utt.replace(replacement[0], replacement[1])
+            utt = re.sub("~+", "~", utt)
+            utt = re.sub(r"\s+", " ", utt)
+            utt = re.sub(r"\.+", ".", utt)
+            chunk_list = list()
+            for chunk in utt.split("~"):
+                chunk_list.append("".join(self.transphone.tokenize(chunk)))
+            phones = "~".join(chunk_list)
         elif self.phonemizer == "dragonmapper":
             phones = pinyin_to_ipa(utt)
 
