@@ -87,8 +87,8 @@ class HiFiGAN(torch.nn.Module):
                             1,
                             padding=(kernel_size - 1) // 2, ), torch.nn.Tanh(), )
 
-        self.out_proj_x1 = torch.nn.Conv1d(512 // 4, 1, 7, 1, padding=3)
-        self.out_proj_x2 = torch.nn.Conv1d(512 // 8, 1, 7, 1, padding=3)
+        self.out_proj_x1 = torch.nn.Conv1d(channels // 4, 1, 7, 1, padding=3)
+        self.out_proj_x2 = torch.nn.Conv1d(channels // 8, 1, 7, 1, padding=3)
 
         # apply weight norm
         self.apply_weight_norm()
