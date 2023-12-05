@@ -60,7 +60,9 @@ def train_loop(net,
         steps = steps + 1
     else:
         steps = steps + ((steps_per_checkpoint + 1) - (steps % steps_per_checkpoint))  # making sure to stop at the closest point that makes sense to the specified stopping point
-
+    if steps < warmup_steps * 4:
+        print(f"too much warmup given the amount of steps, reducing warmup to {warmup_steps} steps")
+        warmup_steps = steps // 4
     style_embedding_function = StyleEmbedding().to(device)
     first_time_glow = True
     check_dict = torch.load(path_to_embed_model, map_location=device)
@@ -122,10 +124,16 @@ def train_loop(net,
     # =============================
     # Actual train loop starts here
     # =============================
+    if fine_tune:
+        # we start off carefully by fine-tuning only the language embedding layer first
+        model.requires_grad_(False)
+        model.encoder.language_embedding(True)
     for step_counter in tqdm(range(steps_run_previously, steps)):
-        run_glow = step_counter > (warmup_steps * 2) or fine_tune
+        if fine_tune and step_counter == warmup_steps // 4:
+            model.requires_grad_(True)
+        run_glow = step_counter > (warmup_steps * 2)
         if run_glow:
-            if first_time_glow is not False and not fine_tune:
+            if first_time_glow is not False:
                 # We freeze the model and the embedding function for the first few steps of the flow,
                 # because at this point bad spikes can happen, that take a while to recover from.
                 # So we protect our nice weights at this point.
