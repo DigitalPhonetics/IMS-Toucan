@@ -45,10 +45,10 @@ class ToucanTTSInterface(torch.nn.Module):
         #####################################
         checkpoint = torch.load(tts_model_path, map_location='cpu')
         self.use_lang_id = True
-        self.phone2codec = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
+        self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
         with torch.no_grad():
-            self.phone2codec.store_inverse_all()  # this also removes weight norm
-        self.phone2codec = self.phone2codec.to(torch.device(device))
+            self.phone2mel.store_inverse_all()  # this also removes weight norm
+        self.phone2mel = self.phone2mel.to(torch.device(device))
 
         ######################################
         #  load features to style models     #
@@ -79,7 +79,7 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         self.default_utterance_embedding = checkpoint["default_emb"].to(self.device)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, device=device)
-        self.phone2codec.eval()
+        self.phone2mel.eval()
         self.vocoder.eval()
         self.style_embedding_function.eval()
         if self.use_lang_id:
@@ -159,17 +159,17 @@ class ToucanTTSInterface(torch.nn.Module):
         """
         with torch.inference_mode():
             phones = self.text2phone.string_to_tensor(text, input_phonemes=input_is_phones).to(torch.device(self.device))
-            mel, durations, pitch, energy = self.phone2codec(phones,
-                                                             return_duration_pitch_energy=True,
-                                                             utterance_embedding=self.default_utterance_embedding,
-                                                             durations=durations,
-                                                             pitch=pitch,
-                                                             energy=energy,
-                                                             lang_id=self.lang_id,
-                                                             duration_scaling_factor=duration_scaling_factor,
-                                                             pitch_variance_scale=pitch_variance_scale,
-                                                             energy_variance_scale=energy_variance_scale,
-                                                             pause_duration_scaling_factor=pause_duration_scaling_factor)
+            mel, durations, pitch, energy = self.phone2mel(phones,
+                                                           return_duration_pitch_energy=True,
+                                                           utterance_embedding=self.default_utterance_embedding,
+                                                           durations=durations,
+                                                           pitch=pitch,
+                                                           energy=energy,
+                                                           lang_id=self.lang_id,
+                                                           duration_scaling_factor=duration_scaling_factor,
+                                                           pitch_variance_scale=pitch_variance_scale,
+                                                           energy_variance_scale=energy_variance_scale,
+                                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
             # codec_frames=self.codec_wrapper.model.quantizer(codec_frames.unsqueeze(0))[0].squeeze()  # re-quantization
 
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
