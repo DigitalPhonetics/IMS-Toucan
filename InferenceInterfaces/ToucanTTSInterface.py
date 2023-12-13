@@ -170,7 +170,11 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            pitch_variance_scale=pitch_variance_scale,
                                                            energy_variance_scale=energy_variance_scale,
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor)
-            # codec_frames=self.codec_wrapper.model.quantizer(codec_frames.unsqueeze(0))[0].squeeze()  # re-quantization
+
+            mel = mel[:, durations[0]:-(durations[-1] + durations[-2])]
+            durations[0] = 0  # SILENCE
+            durations[-2] = 0  # SILENCE
+            durations[-1] = 0  # EOS
 
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu().numpy()
