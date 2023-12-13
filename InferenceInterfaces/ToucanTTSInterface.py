@@ -11,6 +11,7 @@ from torchaudio.transforms import Resample
 
 from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
+from Architectures.Vocoder.BigVGAN import BigVGAN
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
@@ -28,7 +29,7 @@ class ToucanTTSInterface(torch.nn.Module):
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  embedding_model_path=None,
                  language="eng",  # initial language of the model, can be changed later with the setter methods
-                 ):
+                 use_bigvgan=False):
         super().__init__()
         self.device = device
         if not tts_model_path.endswith(".pt"):
@@ -67,8 +68,13 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #  load mel to wave model      #
         ################################
-        vocoder_checkpoint = torch.load(vocoder_model_path, map_location="cpu")
-        self.vocoder = HiFiGAN()
+        if use_bigvgan:
+            vocoder_checkpoint = torch.load(os.path.join(MODELS_DIR, f"Vocoder", "bigvgan.pt"), map_location="cpu")
+            self.vocoder = BigVGAN()
+        else:
+            vocoder_checkpoint = torch.load(vocoder_model_path, map_location="cpu")
+            self.vocoder = HiFiGAN()
+
         self.vocoder.load_state_dict(vocoder_checkpoint)
         self.vocoder = self.vocoder.to(device).eval()
         self.vocoder.remove_weight_norm()

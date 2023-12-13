@@ -4,12 +4,12 @@ import librosa
 import soundfile as sf
 from tqdm import tqdm
 
-from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
+from InferenceInterfaces.UtteranceCloner import UtteranceCloner
 from Utility.utils import float2pcm
 
 PATH_TO_MLS_ENGLISH_TRAIN = "/mount/resources/speech/corpora/MultiLingLibriSpeech/mls_english/train"
 PATH_TO_GENERATION_FILE = "p1_ttsvc_surrogate.tsv"
-PATH_TO_OUTPUT_DIR = "asv_spoof_outputs_no_pros"
+PATH_TO_OUTPUT_DIR = "asv_spoof_outputs_with_pros"
 DEVICE = "cuda"
 USE_BIGVGAN = False
 
@@ -29,7 +29,7 @@ def build_path_to_transcript_dict_mls_english():
 
 if __name__ == '__main__':
     print("loading model...")
-    tts = ToucanTTSInterface(device=DEVICE, tts_model_path="ASVSpoof", use_bigvgan=USE_BIGVGAN)
+    uc = UtteranceCloner(model_id="ASVSpoof", device=DEVICE, language="eng", use_bigvgan=USE_BIGVGAN)
     print("prepare path to transcript lookup...")
     path_to_transcript_dict = build_path_to_transcript_dict_mls_english()
     filename_to_path = dict()
@@ -48,7 +48,10 @@ if __name__ == '__main__':
         source_list = list()
         for source in voice_source_list:
             source_list.append(filename_to_path[source])
-        tts.set_utterance_embedding(path_to_reference_audio=source_list)
-        cloned_utterance = tts(transcript)
+
+        cloned_utterance = uc.clone_utterance(path_to_reference_audio_for_voice=source_list,
+                                              path_to_reference_audio_for_intonation=filename_to_path[prosody_source],
+                                              transcription_of_intonation_reference=transcript)
+
         resampled_utt = librosa.resample(cloned_utterance, orig_sr=24000, target_sr=16000)
         sf.write(file=f"{PATH_TO_OUTPUT_DIR}/" + output_name + ".flac", data=float2pcm(resampled_utt), samplerate=16000, subtype="PCM_16")

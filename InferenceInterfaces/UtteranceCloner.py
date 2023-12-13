@@ -23,8 +23,8 @@ class UtteranceCloner:
     Useful for Privacy Applications
     """
 
-    def __init__(self, model_id, device, language="eng"):
-        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
+    def __init__(self, model_id, device, language="eng", use_bigvgan=False):
+        self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id, use_bigvgan=use_bigvgan)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
@@ -41,7 +41,7 @@ class UtteranceCloner:
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference_mode or no_grad
 
-    def extract_prosody(self, transcript, ref_audio_path, lang="eng", on_line_fine_tune=True):
+    def extract_prosody(self, transcript, ref_audio_path, lang="eng", on_line_fine_tune=False):
         acoustic_model = Aligner()
         acoustic_model.load_state_dict(self.aligner_weights)
         acoustic_model = acoustic_model.to(self.device)

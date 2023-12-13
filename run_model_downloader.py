@@ -32,11 +32,19 @@ def download_models():
         reporthook=report)
 
     #############
-    print("Downloading Vocoder")
+    print("Downloading HiFiGAN Vocoder")
     os.makedirs(os.path.join(MODELS_DIR, "Vocoder"), exist_ok=True)
     filename, headers = urllib.request.urlretrieve(
         url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.asvspoof/hifigan.pt",
         filename=os.path.abspath(os.path.join(MODELS_DIR, "Vocoder", "best.pt")),
+        reporthook=report)
+
+    #############
+    print("Downloading BigVGAN Vocoder")
+    os.makedirs(os.path.join(MODELS_DIR, "Vocoder"), exist_ok=True)
+    filename, headers = urllib.request.urlretrieve(
+        url="https://github.com/DigitalPhonetics/IMS-Toucan/releases/download/v2.asvspoof/bigvgan.pt",
+        filename=os.path.abspath(os.path.join(MODELS_DIR, "Vocoder", "bigvgan.pt")),
         reporthook=report)
 
     #############
