@@ -5,14 +5,14 @@ import torch
 from InferenceInterfaces.ToucanTTSInterface import ToucanTTSInterface
 
 
-def read_texts(model_id, sentence, filename, device="cpu", language="eng", speaker_reference=None, pause_duration_scaling_factor=1.0):
+def read_texts(model_id, sentence, filename, device="cpu", language="eng", speaker_reference=None, duration_scaling_factor=1.0):
     tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
     tts.set_language(language)
     if speaker_reference is not None:
         tts.set_utterance_embedding(speaker_reference)
     if type(sentence) == str:
         sentence = [sentence]
-    tts.read_to_file(text_list=sentence, file_location=filename, pause_duration_scaling_factor=pause_duration_scaling_factor)
+    tts.read_to_file(text_list=sentence, file_location=filename, duration_scaling_factor=duration_scaling_factor)
     del tts
 
 
@@ -40,71 +40,72 @@ def sound_of_silence_single_utt(version, model_id="Meta", exec_device="cpu", spe
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
-               sentence=["""Hello darkness, my old friend.
-I′ve come to talk with you again.
-Because a vision softly creeping,
-Left its seeds while I was sleeping,
-And the vision, that was planted, in my brain,
-Still remains,
-Within the sound, of silence.
-
-In restless dreams I walked alone,
+               sentence=["""In restless dreams I walked alone,
 Narrow streets of cobblestone.
 Beneath the halo of a streetlamp,
 I turned my collar to the cold and damp,
 When my eyes were stabbed, by the flash of a neon light,
 That split the night.
-And touched the sound, of silence.
-
-
-And in the naked light I saw,
-Ten thousand people, maybe more.
-People talking without speaking.
-People hearing without listening.
-People writing songs, that voices never shared.
-No one dared,
-Disturb the sound of silence.
-
-"Fools", said I, "You do not know.
-Silence, like a cancer grows.
-Hear my words that I might teach you,
-Take my arms that I might reach you!"
-But my words, like silent raindrops fell,
-And echoed, in the wells, of silence.
-
-And the people bowed and prayed,
-To the neon god they made.
-And the sign flashed out its warning,
-In the words that it was forming,
-And the sign said, "The words of the prophets, are written on the subway walls.
-In tenement halls."
-And whispered, in the sounds, of silence."""],
+And touched the sound, of silence."""],
                filename=f"audios/sound_of_silence_as_single_utterance_{version}.wav",
                device=exec_device,
                language="eng",
-               speaker_reference=speaker_reference,
-               pause_duration_scaling_factor=2.0)
+               speaker_reference=speaker_reference)
 
 
 def die_glocke(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
     os.makedirs("audios", exist_ok=True)
 
     read_texts(model_id=model_id,
-               sentence=['Fest gemauert in der Erden,',
-                         'Steht die Form, aus Lehm gebrannt.',
-                         'Heute muss die Glocke werden!',
-                         'Frisch, Gesellen, seid zur Hand!'],
+               sentence=["""Fest gemauert in der Erden,
+                         Steht die Form, aus Lehm gebrannt.
+                         Heute muss die Glocke werden!
+                         Frisch, Gesellen, seid zur Hand!"""],
                filename=f"audios/die_glocke_{version}.wav",
                device=exec_device,
                language="deu",
                speaker_reference=speaker_reference)
 
 
+def viet_poem(version, model_id="Meta", exec_device="cpu", speaker_reference=None):
+    os.makedirs("audios", exist_ok=True)
+
+    read_texts(model_id=model_id,
+               sentence=["""Thân phận,
+ở một nơi luôn phải nhắc mình,
+im miệng,
+thân phận,
+là khi nói về quá khứ,
+ngó trước nhìn sau,
+là phải biết nhắm mắt bịt tai làm lơ,
+thờ ơ,
+với tất cả những điều gai chướng,
+thân phận chúng tôi ở đó,
+những quyển sách chuyền tay nhau như ăn cắp,
+ngôn luận ư?
+không có đất cho nghĩa tự do."""],
+               filename=f"audios/viet_poem_{version}.wav",
+               device=exec_device,
+               language="vie",
+               speaker_reference=speaker_reference,
+               duration_scaling_factor=1.2)
+
+
 if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    sound_of_silence_single_utt(version="BigModel",
-                                model_id="Nancy",
+    sound_of_silence_single_utt(version="FemaleSpeaker",
+                                model_id="Meta",
                                 exec_device=exec_device,
-                                speaker_reference="audios/reference_audios/german_female.wav")
+                                speaker_reference="audios/female_voice.wav")
+
+    die_glocke(version="FemaleSpeaker",
+               model_id="Meta",
+               exec_device=exec_device,
+               speaker_reference="audios/female_voice.wav")
+
+    viet_poem(version="FemaleSpeaker",
+              model_id="Meta",
+              exec_device=exec_device,
+              speaker_reference="audios/female_voice.wav")
