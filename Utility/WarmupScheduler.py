@@ -9,11 +9,11 @@ class ToucanWarmupScheduler(_LRScheduler):
     A warmup scheduler that should be called after every batch.
     """
 
-    def __init__(self, optimizer, peak_lr=0.0005, warmup_steps=30000, max_steps=800000, last_epoch=-1):
+    def __init__(self, optimizer, peak_lr=0.0002, warmup_steps=20000, max_steps=200000, last_epoch=-1):
         self.warmup_steps = warmup_steps
         self.peak_lr = peak_lr
         self.max_steps = max_steps
-        self.plateau = self.warmup_steps * 5
+        self.plateau = self.warmup_steps * 4
         self.last_lr = 0.0
         # __init__() must be invoked before setting field
         # because step() is also invoked in __init__()
