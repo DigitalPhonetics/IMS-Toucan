@@ -371,1056 +371,1408 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     # DIVERSE
 
     lang_id = "nor"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nst_norwegian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nst_norwegian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "swe"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nst_swedish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nst_swedish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
-    lang_id = "afr"  # TODO
+    lang_id = "afr"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_afr(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_afr"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "nso"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_nso(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_nso"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sot"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_sot(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_sot"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ssw"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_ssw(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_ssw"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tsn"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_tsn(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_tsn"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tso"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_tso(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_tso"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ven"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_ven(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_ven"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "xho"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_xho(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_xho"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "zul"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_zul(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_zul"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bem"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_bembaspeech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "bembaspeech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "swh"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_alffa_sw(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "alffa_sw"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "amh"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_alffa_am(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "alffa_am"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "wol"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_alffa_wo(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "alffa_wo"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mal"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_malayalam(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "malayalam"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mal"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_msc(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "msc"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "chv"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_chuvash(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "chuvash"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "iba"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_iban(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "iban"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sun"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_sundanese_speech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "sundanese_speech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_sinhala_speech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "sinhala_speech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ben"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_bengali_speech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "bengali_speech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "npi"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nepali_speech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "nepali_speech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "jav"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_javanese_speech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "javanese_speech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "fon"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_fon_alf(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_fon_alf"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hau"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_hausa_cmv(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_hausa_cmv"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lbb"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_ibibio_lst(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_ibibio_lst"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kik"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_kikuyu_opb(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_kikuyu_opb"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_lingala_opb(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_lingala_opb"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lug"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_ganda_cmv(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_ganda_cmv"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "luo"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_luo_afv(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_luo_afv"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "luo"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_luo_opb(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_luo_opb"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "swh"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_swahili_llsti(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_swahili_llsti"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sxb"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_suba_afv(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_suba_afv"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "wol"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_wolof_alf(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_wolof_alf"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "yor"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_yoruba_opb(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_yoruba_opb"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "nya"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_zambezi_voice_nyanja(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "zambezi_voice_nyanja"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "loz"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_zambezi_voice_lozi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "zambezi_voice_lozi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "toi"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_zambezi_voice_tonga(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "zambezi_voice_tonga"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "afr"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_afrikaans(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_afrikaans"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "amh"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_amharic(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_amharic"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "arb"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_arabic(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_arabic"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "asm"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_assamese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_assamese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ast"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_asturian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_asturian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "azj"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_azerbaijani(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_azerbaijani"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bel"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_belarusian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_belarusian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bul"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_bulgarian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_bulgarian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ben"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_bengali(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_bengali"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bos"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_bosnian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_bosnian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "cat"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_catalan(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_catalan"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ceb"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_cebuano(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_cebuano"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sdh"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_sorani_kurdish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_sorani_kurdish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "cmn"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_mandarin(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_mandarin"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ces"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_czech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_czech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "cym"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_welsh(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_welsh"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "dan"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_danish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_danish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "deu"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_german(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_german"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ell"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_greek(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_greek"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "eng"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_english(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_english"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "spa"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_spanish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_spanish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ekk"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_estonian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_estonian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "pes"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_persian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_persian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ful"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_fula(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_fula"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "fin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_finnish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_finnish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "fil"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_filipino(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_filipino"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "fra"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_french(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_french"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "gle"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_irish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_irish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "glg"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_galician(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_galician"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "guj"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_gujarati(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_gujarati"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hau"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hausa(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hausa"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "heb"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hebrew(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hebrew"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hindi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hindi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hrv"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_croatian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_croatian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hun"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hungarian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hungarian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hye"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_armenian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_armenian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ind"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_indonesian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_indonesian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ibo"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_igbo(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_igbo"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "isl"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_icelandic(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_icelandic"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ita"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_italian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_italian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "jpn"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_japanese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_japanese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "jav"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_javanese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_javanese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kat"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_georgian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_georgian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kam"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kamba(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kamba"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kea"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kabuverdianu(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kabuverdianu"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kaz"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kazakh(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kazakh"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "khm"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_khmer(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_khmer"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kan"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kannada(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kannada"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kor"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_korean(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_korean"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kir"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kyrgyz(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kyrgyz"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ltz"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_luxembourgish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_luxembourgish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lug"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_ganda(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_ganda"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_lingala(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_lingala"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lao"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_lao(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_lao"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lit"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_lithuanian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_lithuanian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "luo"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_luo(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_luo"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "lvs"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_latvian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_latvian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mri"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_maori(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_maori"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mkd"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_macedonian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_macedonian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mal"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_malayalam(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_malayalam"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "xng"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_mongolian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_mongolian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mar"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_marathi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_marathi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "zsm"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_malay(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_malay"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mlt"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_maltese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_maltese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mya"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_burmese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_burmese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "nor"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_norwegian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_norwegian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "npi"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_nepali(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_nepali"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "nld"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_dutch(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_dutch"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sot"  # technically incorrect, this is the shorthand for southern sotho, but it seems northerns sotho is not in out list.
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_northern_sotho(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_northern_sotho"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "nya"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_nyanja(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_nyanja"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "oci"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_occitan(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_occitan"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "orm"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oroma(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oroma"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ory"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oriya(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oriya"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "pan"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_punjabi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_punjabi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "pol"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_polish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_polish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "pst"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_pashto(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_pashto"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "por"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_portuguese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_portuguese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ron"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_romanian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_romanian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "rus"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_russian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_russian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "snd"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_sindhi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_sindhi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "slk"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_slovak(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_slovak"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "slv"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_slovenian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_slovenian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "sna"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_shona(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_shona"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "som"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_somali(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_somali"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "srp"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_serbian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_serbian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "swe"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_swedish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_swedish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "swh"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_swahili(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_swahili"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tam"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_tamil(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_tamil"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tel"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_telugu(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_telugu"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tgk"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_tajik(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_tajik"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tha"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_thai(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_thai"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tur"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_turkish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_turkish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "urk"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_ukrainian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_ukrainian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "umb"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_umbundu(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_umbundu"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "urd"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_urdu(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_urdu"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "uzn"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_uzbek(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_uzbek"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "vie"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_vietnamese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_vietnamese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "wol"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_wolof(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_wolof"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "xho"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_xhosa(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_xhosa"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "yor"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_yoruba(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_yoruba"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "yue"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_cantonese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_cantonese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "zul"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_zulu(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_zulu"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "gle"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_irish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_irish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "nld"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_dutch(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_dutch"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "rus"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_russian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_russian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ron"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_romanian_db(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "romanian_db"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "fas"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_shemo(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "shemo"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "eng"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mslt_english(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_english"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "jap"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mslt_japanese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_japanese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "cmn"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mslt_chinese(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_chinese"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_rajasthani_hindi_speech(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "rajasthani_hindi_speech"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "eng"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_cmu_arctic(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "cmu_arctic"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tat"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_sevil_tatar(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "sevil_tatar"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ara"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_clartts(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "clartts"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bhd"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_bhadrawahi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_bhadrawahi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kfs"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_bilaspuri(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_bilaspuri"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "dgo"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_dogri(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_dogri"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "gbk"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_gaddi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_gaddi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bgc"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_haryanvi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_haryanvi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "hin"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_hindi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_hindi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "xnr"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kangri(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kangri"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kan"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kannada(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kannada"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kfx"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kulvi(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kulvi"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "kfx"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kulvi_outer_seraji(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kulvi_outer_seraji"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mal"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_malayalam(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_malayalam"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "mjl"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_mandeali(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_mandeali"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "bfz"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_pahari_mahasui(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_pahari_mahasui"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tam"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_tamil(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_tamil"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "tel"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_telugu(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_telugu"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ukr"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ukrainian_lada(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "ukrainian_lada"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "deu"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_german(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_german"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "spa"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_spanish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_spanish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "fra"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_french(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_french"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ita"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_italian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_italian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "pol"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_polish(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_polish"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "rus"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_russian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_russian"),
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
     lang_id = "ukr"
+    if lang_id not in lang_to_datasets:
+        lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_ukrainian(),
                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_ukrainian"),
                                                         lang=lang_id,

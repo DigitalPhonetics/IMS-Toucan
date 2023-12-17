@@ -24,6 +24,1077 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
+    lang_id = "nor"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nst_norwegian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nst_norwegian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "swe"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nst_swedish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nst_swedish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "afr"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_afr(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_afr"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "nso"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_nso(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_nso"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sot"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_sot(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_sot"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ssw"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_ssw(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_ssw"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tsn"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_tsn(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_tsn"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tso"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_tso(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_tso"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ven"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_ven(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_ven"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "xho"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_xho(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_xho"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "zul"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_zul(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nchlt_zul"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bem"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_bembaspeech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "bembaspeech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "swh"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_alffa_sw(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "alffa_sw"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "amh"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_alffa_am(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "alffa_am"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "wol"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_alffa_wo(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "alffa_wo"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mal"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_malayalam(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "malayalam"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mal"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_msc(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "msc"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "chv"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_chuvash(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "chuvash"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "iba"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_iban(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "iban"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sun"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_sundanese_speech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "sundanese_speech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_sinhala_speech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "sinhala_speech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ben"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_bengali_speech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "bengali_speech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "npi"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nepali_speech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "nepali_speech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "jav"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_javanese_speech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "javanese_speech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "fon"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_fon_alf(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_fon_alf"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hau"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_hausa_cmv(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_hausa_cmv"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lbb"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_ibibio_lst(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_ibibio_lst"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kik"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_kikuyu_opb(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_kikuyu_opb"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_lingala_opb(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_lingala_opb"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lug"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_ganda_cmv(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_ganda_cmv"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "luo"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_luo_afv(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_luo_afv"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "luo"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_luo_opb(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_luo_opb"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "swh"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_swahili_llsti(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_swahili_llsti"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sxb"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_suba_afv(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_suba_afv"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "wol"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_wolof_alf(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_wolof_alf"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "yor"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_african_voices_yoruba_opb(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "african_voices_yoruba_opb"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "nya"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_zambezi_voice_nyanja(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "zambezi_voice_nyanja"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "loz"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_zambezi_voice_lozi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "zambezi_voice_lozi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "toi"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_zambezi_voice_tonga(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "zambezi_voice_tonga"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "afr"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_afrikaans(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_afrikaans"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "amh"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_amharic(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_amharic"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "arb"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_arabic(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_arabic"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "asm"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_assamese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_assamese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ast"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_asturian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_asturian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "azj"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_azerbaijani(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_azerbaijani"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bel"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_belarusian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_belarusian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bul"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_bulgarian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_bulgarian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ben"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_bengali(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_bengali"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bos"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_bosnian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_bosnian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "cat"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_catalan(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_catalan"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ceb"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_cebuano(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_cebuano"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sdh"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_sorani_kurdish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_sorani_kurdish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "cmn"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_mandarin(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_mandarin"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ces"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_czech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_czech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "cym"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_welsh(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_welsh"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "dan"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_danish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_danish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "deu"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_german(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_german"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ell"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_greek(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_greek"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "eng"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_english(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_english"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "spa"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_spanish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_spanish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ekk"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_estonian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_estonian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "pes"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_persian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_persian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ful"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_fula(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_fula"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "fin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_finnish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_finnish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "fil"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_filipino(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_filipino"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "fra"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_french(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_french"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "gle"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_irish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_irish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "glg"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_galician(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_galician"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "guj"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_gujarati(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_gujarati"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hau"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hausa(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hausa"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "heb"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hebrew(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hebrew"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hindi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hindi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hrv"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_croatian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_croatian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hun"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_hungarian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_hungarian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hye"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_armenian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_armenian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ind"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_indonesian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_indonesian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ibo"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_igbo(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_igbo"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "isl"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_icelandic(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_icelandic"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ita"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_italian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_italian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "jpn"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_japanese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_japanese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "jav"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_javanese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_javanese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kat"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_georgian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_georgian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kam"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kamba(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kamba"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kea"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kabuverdianu(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kabuverdianu"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kaz"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kazakh(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kazakh"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "khm"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_khmer(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_khmer"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kan"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kannada(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kannada"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kor"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_korean(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_korean"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kir"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_kyrgyz(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_kyrgyz"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ltz"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_luxembourgish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_luxembourgish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lug"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_ganda(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_ganda"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_lingala(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_lingala"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lao"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_lao(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_lao"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lit"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_lithuanian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_lithuanian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "luo"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_luo(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_luo"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "lvs"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_latvian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_latvian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mri"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_maori(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_maori"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mkd"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_macedonian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_macedonian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mal"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_malayalam(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_malayalam"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "xng"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_mongolian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_mongolian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mar"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_marathi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_marathi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "zsm"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_malay(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_malay"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mlt"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_maltese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_maltese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mya"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_burmese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_burmese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "nor"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_norwegian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_norwegian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "npi"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_nepali(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_nepali"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "nld"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_dutch(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_dutch"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sot"  # technically incorrect, this is the shorthand for southern sotho, but it seems northerns sotho is not in out list.
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_northern_sotho(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_northern_sotho"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "nya"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_nyanja(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_nyanja"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "oci"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_occitan(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_occitan"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "orm"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oroma(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oroma"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ory"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oriya(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oriya"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "pan"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_punjabi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_punjabi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "pol"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_polish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_polish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "pst"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_pashto(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_pashto"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "por"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_portuguese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_portuguese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ron"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_romanian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_romanian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "rus"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_russian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_russian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "snd"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_sindhi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_sindhi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "slk"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_slovak(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_slovak"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "slv"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_slovenian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_slovenian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "sna"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_shona(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_shona"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "som"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_somali(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_somali"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "srp"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_serbian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_serbian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "swe"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_swedish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_swedish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "swh"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_swahili(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_swahili"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tam"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_tamil(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_tamil"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tel"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_telugu(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_telugu"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tgk"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_tajik(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_tajik"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tha"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_thai(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_thai"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tur"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_turkish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_turkish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "urk"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_ukrainian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_ukrainian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "umb"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_umbundu(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_umbundu"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "urd"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_urdu(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_urdu"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "uzn"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_uzbek(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_uzbek"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "vie"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_vietnamese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_vietnamese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "wol"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_wolof(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_wolof"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "xho"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_xhosa(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_xhosa"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "yor"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_yoruba(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_yoruba"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "yue"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_cantonese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_cantonese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "zul"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_zulu(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_zulu"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "gle"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_irish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_irish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "nld"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_dutch(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_dutch"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "rus"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_russian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_russian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ron"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_romanian_db(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "romanian_db"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "fas"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_shemo(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "shemo"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "eng"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mslt_english(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_english"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "jap"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mslt_japanese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_japanese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "cmn"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mslt_chinese(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_chinese"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_rajasthani_hindi_speech(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "rajasthani_hindi_speech"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "eng"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_cmu_arctic(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "cmu_arctic"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tat"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_sevil_tatar(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "sevil_tatar"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ara"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_clartts(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "clartts"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bhd"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_bhadrawahi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_bhadrawahi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kfs"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_bilaspuri(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_bilaspuri"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "dgo"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_dogri(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_dogri"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "gbk"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_gaddi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_gaddi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bgc"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_haryanvi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_haryanvi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "hin"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_hindi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_hindi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "xnr"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kangri(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kangri"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kan"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kannada(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kannada"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kfx"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kulvi(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kulvi"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "kfx"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_kulvi_outer_seraji(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_kulvi_outer_seraji"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mal"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_malayalam(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_malayalam"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "mjl"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_mandeali(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_mandeali"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "bfz"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_pahari_mahasui(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_pahari_mahasui"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tam"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_tamil(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_tamil"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "tel"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_snow_mountain_telugu(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "snow_mountain_telugu"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ukr"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_ukrainian_lada(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "ukrainian_lada"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "deu"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_german(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_german"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "spa"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_spanish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_spanish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "fra"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_french(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_french"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ita"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_italian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_italian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "pol"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_polish(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_polish"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "rus"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_russian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_russian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+    lang_id = "ukr"
+    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_m_ailabs_ukrainian(),
+                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "m_ailabs_ukrainian"),
+                                           lang=lang_id,
+                                           gpu_count=gpu_count,
+                                           rank=rank, device=device))
+
+    for lang in ['acf', 'acr', 'acu', 'agd', 'agg', 'agn', 'agr', 'agu', 'aia', 'aka', 'ake', 'alp', 'ame', 'amf', 'amk', 'apb', 'apr', 'arl', 'asm', 'ata', 'atb', 'atg', 'awb', 'azb', 'azg', 'azz', 'bao', 'bba', 'bbb', 'ben', 'bgt', 'bjr', 'bjv', 'bjz', 'bkd', 'blz', 'bmr', 'bmu', 'bnp', 'boa', 'boj', 'box', 'bpr', 'bps', 'bqc', 'bqp',
+                 'bss', 'bus', 'byr', 'bzh', 'bzj', 'caa', 'cab', 'cap', 'car', 'cax', 'cbc', 'cbi', 'cbr', 'cbs', 'cbt', 'cbu', 'cbv', 'cco', 'cek', 'cgc', 'chf', 'cjo', 'cme', 'cni', 'cnl', 'cnt', 'cof', 'con', 'cot', 'cpb', 'cpu', 'crn', 'cso', 'ctu', 'cuc', 'cui', 'cuk', 'cwe', 'daa', 'dah', 'ded', 'deu', 'dgr', 'dik', 'djk', 'dop',
+                 'dwr', 'emp', 'eng', 'ese', 'far', 'fra', 'gai', 'gam', 'geb', 'gmv', 'gng', 'grc', 'gub', 'guh', 'gum', 'guo', 'gux', 'gvc', 'gwi', 'gym', 'gyr', 'hat', 'hau', 'hlt', 'hns', 'hto', 'hub', 'hui', 'hun', 'huu', 'hvn', 'ign', 'ilo', 'imo', 'inb', 'ind', 'iou', 'ipi', 'jac', 'jic', 'jiv', 'jvn', 'kan', 'kaq', 'kbq', 'kde',
+                 'kdl', 'kek', 'ken', 'kik', 'kje', 'klv', 'kmu', 'kne', 'knf', 'knj', 'ksr', 'kvn', 'kwd', 'kwf', 'kwi', 'kyc', 'kyf', 'kyg', 'kyq', 'kyz', 'lac', 'lex', 'lgl', 'lid', 'lif', 'llg', 'lww', 'maj', 'mal', 'maq', 'mar', 'maz', 'mbb', 'mbc', 'mbh', 'mbj', 'mbt', 'mca', 'mcb', 'mcd', 'mco', 'mcp', 'mcq', 'mdy', 'med', 'mee',
+                 'meq', 'met', 'mgh', 'mib', 'mie', 'mih', 'mil', 'mio', 'mit', 'miz', 'mkl', 'mkn', 'mop', 'mox', 'mpm', 'mpp', 'mpx', 'mqb', 'mqj', 'msy', 'mto', 'muy', 'mxt', 'mya', 'myy', 'nab', 'nas', 'nca', 'nch', 'ncj', 'ncl', 'ncu', 'ndj', 'nfa', 'ngp', 'ngu', 'nhe', 'nhu', 'nhw', 'nhy', 'nin', 'nko', 'nld', 'nlg', 'noa', 'not',
+                 'obo', 'omw', 'ood', 'ory', 'ote', 'pad', 'pao', 'pib', 'pir', 'pjt', 'pls', 'poi', 'pol', 'por', 'prf', 'ptu', 'pwg', 'qub', 'quf', 'quh', 'qul', 'qvc', 'qvh', 'qvm', 'qvn', 'qvs', 'qvw', 'qvz', 'qwh', 'qxh', 'qxn', 'qxo', 'rai', 'rgu', 'ron', 'rop', 'rro', 'ruf', 'rug', 'sab', 'sey', 'sgb', 'shp', 'sja', 'snn', 'snp',
+                 'soy', 'spa', 'spp', 'spy', 'sri', 'srm', 'srn', 'stp', 'sus', 'swh', 'sxb', 'tac', 'taj', 'tam', 'tav', 'tbc', 'tbg', 'tbl', 'tbz', 'tca', 'tcs', 'tcz', 'tee', 'tel', 'tew', 'tfr', 'tgk', 'tgl', 'tgo', 'tgp', 'tna', 'tnk', 'tnn', 'tnp', 'toc', 'tos', 'tpi', 'tpt', 'trc', 'tte', 'tue', 'tuf', 'tuo', 'tur', 'txq', 'txu',
+                 'udu', 'upv', 'ura', 'urb', 'urt', 'usp', 'vid', 'vie', 'wap', 'xed', 'xon', 'xtd', 'xtm', 'yaa', 'yad', 'yal', 'ycn', 'yka', 'yre', 'yva', 'zaa', 'zab', 'zac', 'zad', 'zai', 'zam', 'zao', 'zar', 'zas', 'zav', 'zaw', 'zca', 'zga', 'zos', 'zpc', 'zpl', 'zpm', 'zpo', 'zpz', 'ztq', 'zty', 'zyp']:
+        datasets.append([prepare_aligner_corpus(transcript_dict=globals()[f"build_path_to_transcript_dict_mms_{lang}"](),
+                                                corpus_dir=os.path.join(PREPROCESSING_DIR, f"mms_{lang}"),
+                                                lang=f"{lang}",
+                                                gpu_count=gpu_count,
+                                                rank=rank, device=device)])
+
     # ENGLISH
 
     chunk_count = 50
