@@ -24,7 +24,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    lang_id = "nor"
+    lang_id = "nob"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nst_norwegian(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "nst_norwegian"),
                                            lang=lang_id,
@@ -648,7 +648,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang=lang_id,
                                            gpu_count=gpu_count,
                                            rank=rank, device=device))
-    lang_id = "nor"
+    lang_id = "nob"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_norwegian(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_norwegian"),
                                            lang=lang_id,
