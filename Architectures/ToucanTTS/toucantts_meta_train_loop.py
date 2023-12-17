@@ -60,11 +60,12 @@ def train_loop(net,
         steps = steps + 1
     else:
         steps = steps + ((steps_per_checkpoint + 1) - (steps % steps_per_checkpoint))  # making sure to stop at the closest point that makes sense to the specified stopping point
-    if steps < warmup_steps * 4:
+    if steps < warmup_steps * 5:
         print(f"too much warmup given the amount of steps, reducing warmup to {warmup_steps} steps")
-        warmup_steps = steps // 4
+        warmup_steps = steps // 5
     style_embedding_function = StyleEmbedding().to(device)
     first_time_glow = True
+    final_steps = False
     check_dict = torch.load(path_to_embed_model, map_location=device)
     style_embedding_function.load_state_dict(check_dict["style_emb_func"])
     style_embedding_function.eval()
@@ -144,6 +145,12 @@ def train_loop(net,
                 if step_counter > ((warmup_steps * 2) + (warmup_steps // 4)):
                     first_time_glow = False
                     model.requires_grad_(True)
+        if step_counter > steps - warmup_steps and not final_steps:
+            # for the final few steps, only the decoder, postnet and variance predictors are trained, inspired by the TorToiSE trick.
+            final_steps = True
+            model.encoder.requires_grad_(False)
+            style_embedding_function.requires_grad_(False)
+
         batches = []
         while len(batches) < batch_size:
             for index in random.sample(list(range(len(datasets))), len(datasets)):

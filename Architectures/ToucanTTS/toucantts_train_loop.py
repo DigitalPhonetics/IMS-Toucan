@@ -65,6 +65,10 @@ def train_loop(net,
     if steps_per_checkpoint is None:
         steps_per_checkpoint = len(train_dataset) // batch_size
 
+    if steps < warmup_steps * 5:
+        print(f"too much warmup given the amount of steps, reducing warmup to {warmup_steps} steps")
+        warmup_steps = steps // 5
+
     style_embedding_function = StyleEmbedding().to(device)
 
     if path_to_embed_model is not None:
@@ -114,6 +118,7 @@ def train_loop(net,
 
     epoch = 0
     first_time_glow = True
+    final_steps = False
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
@@ -170,6 +175,11 @@ def train_loop(net,
                         model.requires_grad_(True)
                         if path_to_embed_model is None or train_embed:
                             style_embedding_function.requires_grad_(True)
+            if step_counter > steps - warmup_steps and not final_steps:
+                # for the final few steps, only the decoder, postnet and variance predictors are trained, inspired by the TorToiSE trick.
+                final_steps = True
+                model.encoder.requires_grad_(False)
+                style_embedding_function.requires_grad_(False)
 
             train_loss = 0.0
             style_embedding = style_embedding_function(batch_of_feature_sequences=gold_speech,

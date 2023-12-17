@@ -1799,8 +1799,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     for lang in lang_to_datasets:
         datasets.append(ConcatDataset(lang_to_datasets[lang]))
-
-    print(f"Training jointly on {len(datasets)} languages! Good luck!")
+    re_ordered_datasets = list()
+    collection_dataset = list()
+    for dataset in datasets:
+        if len(dataset) < 1000:  # This language is too small to be a task on its own, so we join it with other tiny languages to make a combined task.
+            collection_dataset.append(dataset)
+        else:
+            re_ordered_datasets.append(dataset)
+    if len(collection_dataset) != 0:
+        re_ordered_datasets.append(ConcatDataset(collection_dataset))
+    print(f"Training jointly on {len(datasets)} languages in a setup of {len(re_ordered_datasets)} tasks! Good luck!")
 
     model = ToucanTTS()
 
@@ -1824,7 +1832,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=16,
+               batch_size=32,
                warmup_steps=25000,
                device=torch.device("cuda"),
                datasets=datasets,
