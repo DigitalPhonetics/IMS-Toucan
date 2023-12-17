@@ -534,6 +534,7 @@ class ArticulatoryCombinedTextFrontend:
 
         else:
             # blanket solution for the rest
+            self.g2p_lang = "None"
             self.phonemizer = "transphone"
             self.expand_abbreviations = lambda x: x
             self.transphone = read_tokenizer(lang_id=language)
@@ -728,6 +729,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('5', "˧˩˧")
             phones = phones.replace('6', "˧˩ʔ˨")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
+        # TODO add more of this handling for more tonal languages
 
         return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
 
