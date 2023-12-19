@@ -119,7 +119,9 @@ class Conformer(torch.nn.Module):
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
-            xs = (xs.transpose(1, 2) + lang_embs.unsqueeze(-1)).transpose(1, 2)  # offset phoneme representation by language specific offset
+            normalized_lang_embs = torch.nn.functional.normalize(lang_embs)
+            normalized_xs = torch.nn.functional.normalize(xs, dim=2)
+            xs = (normalized_xs.transpose(1, 2) + normalized_lang_embs.unsqueeze(-1)).transpose(1, 2)  # offset phoneme representation by language specific offset
 
         xs = self.pos_enc(xs)
 
@@ -131,7 +133,8 @@ class Conformer(torch.nn.Module):
                         x = integrate_with_utt_embed(hs=x, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
                     xs = (x, pos_emb)
                 else:
-                    xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
+                    if self.conformer_type != "encoder":
+                        xs = integrate_with_utt_embed(hs=xs, utt_embeddings=utterance_embedding, projection=self.decoder_embedding_projections[encoder_index], embedding_training=self.use_conditional_layernorm_embedding_integration)
             xs, masks = encoder(xs, masks)
 
         if isinstance(xs, tuple):
