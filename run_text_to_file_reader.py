@@ -95,17 +95,17 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    sound_of_silence_single_utt(version="FemaleSpeaker",
+    sound_of_silence_single_utt(version="ad00_0004",
                                 model_id="Meta",
                                 exec_device=exec_device,
-                                speaker_reference="audios/female_voice.wav")
+                                speaker_reference="audios/ad00_0004.wav")
 
-    die_glocke(version="FemaleSpeaker",
+    die_glocke(version="ad00_0004",
                model_id="Meta",
                exec_device=exec_device,
-               speaker_reference="audios/female_voice.wav")
+               speaker_reference="audios/ad00_0004.wav")
 
-    viet_poem(version="FemaleSpeaker",
+    viet_poem(version="ad00_0004",
               model_id="Meta",
               exec_device=exec_device,
-              speaker_reference="audios/female_voice.wav")
+              speaker_reference="audios/ad00_0004.wav")

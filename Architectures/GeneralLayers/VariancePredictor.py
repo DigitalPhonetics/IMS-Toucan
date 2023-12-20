@@ -6,7 +6,7 @@ from abc import ABC
 
 import torch
 
-from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
+from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Utility.utils import integrate_with_utt_embed
 
@@ -53,7 +53,7 @@ class VariancePredictor(torch.nn.Module, ABC):
         for idx in range(n_layers):
             if utt_embed_dim is not None:
                 if use_conditional_layernorm_embedding_integration:
-                    self.embedding_projections += [AdaIN1d(style_dim=utt_embed_dim, num_features=idim)]
+                    self.embedding_projections += [ConditionalLayerNorm(speaker_embedding_dim=utt_embed_dim, hidden_dim=idim)]
                 else:
                     self.embedding_projections += [torch.nn.Linear(utt_embed_dim + idim, idim)]
             else:

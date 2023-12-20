@@ -22,7 +22,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     if model_dir is not None:
         save_dir = model_dir
     else:
-        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_MLS_English")
+        save_dir = os.path.join(MODELS_DIR, "ToucanTTS_MLS_English_small")
     os.makedirs(save_dir, exist_ok=True)
 
     datasets = list()
@@ -80,6 +80,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=None,
                fine_tune=finetune,
                lr=0.0001,
+               batch_size=32,
+               steps=200000,
                resume=resume,
                use_wandb=use_wandb,
                train_embed=True,

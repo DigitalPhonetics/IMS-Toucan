@@ -5,7 +5,7 @@ Taken from ESPNet, but heavily modified
 import torch
 
 from Architectures.GeneralLayers.Attention import RelPositionMultiHeadedAttention
-from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
+from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Convolution import ConvolutionModule
 from Architectures.GeneralLayers.EncoderLayer import EncoderLayer
 from Architectures.GeneralLayers.LayerNorm import LayerNorm
@@ -68,12 +68,12 @@ class Conformer(torch.nn.Module):
         if utt_embed is not None:
             if conformer_type == "encoder":  # the encoder gets an additional conditioning signal added to its output
                 if use_conditional_layernorm_embedding_integration:
-                    self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
+                    self.encoder_embedding_projection = ConditionalLayerNorm(speaker_embedding_dim=utt_embed, hidden_dim=attention_dim)
                 else:
                     self.encoder_embedding_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
             else:
                 if use_conditional_layernorm_embedding_integration:
-                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: AdaIN1d(style_dim=utt_embed, num_features=attention_dim))
+                    self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: ConditionalLayerNorm(speaker_embedding_dim=utt_embed, hidden_dim=attention_dim))
                 else:
                     self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
         if lang_embs is not None:
