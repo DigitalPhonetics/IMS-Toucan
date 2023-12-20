@@ -42,8 +42,8 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=128,
-                 attention_heads=4,
+                 attention_dimension=384,
+                 attention_heads=6,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
@@ -223,7 +223,7 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=not embedding_integration in ["AdaIN", "ConditionalLayerNorm"],
+                                 use_output_norm=embedding_integration not in ["AdaIN", "ConditionalLayerNorm"],
                                  utt_embed=utt_embed_dim,
                                  embedding_integration=embedding_integration)
 

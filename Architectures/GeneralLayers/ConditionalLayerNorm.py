@@ -115,4 +115,4 @@ class AdaIN1d(nn.Module):
         h = self.fc(s)
         h = h.view(h.size(0), h.size(1), 1)
         gamma, beta = torch.chunk(h, chunks=2, dim=1)
-        return (1 + gamma.transpose(1, 2)) * self.norm(x) + beta.transpose(1, 2)
+        return (1 + gamma.transpose(1, 2)) * self.norm(x.transpose(1, 2)).transpose(1, 2) + beta.transpose(1, 2)
