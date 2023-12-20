@@ -69,7 +69,7 @@ class Conformer(torch.nn.Module):
         if utt_embed is not None:
             if conformer_type == "encoder":  # the encoder gets an additional conditioning signal added to its output
                 if embedding_integration == "AdaIN":
-                    self.decoder_embedding_projections = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
+                    self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
                 elif embedding_integration == "ConditionalLayerNorm":
                     self.encoder_embedding_projection = ConditionalLayerNorm(speaker_embedding_dim=utt_embed, hidden_dim=attention_dim)
                 else:
