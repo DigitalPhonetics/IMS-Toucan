@@ -8,7 +8,7 @@ import torch
 from dragonmapper.transcriptions import pinyin_to_ipa
 from phonemizer.backend import EspeakBackend
 from pypinyin import pinyin
-from transphone import read_tokenizer
+from transphone.g2p import read_g2p
 
 from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -534,10 +534,10 @@ class ArticulatoryCombinedTextFrontend:
 
         else:
             # blanket solution for the rest
-            self.g2p_lang = "None"
+            self.g2p_lang = language
             self.phonemizer = "transphone"
             self.expand_abbreviations = lambda x: x
-            self.transphone = read_tokenizer(lang_id=language)
+            self.transphone = read_g2p()
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
@@ -711,8 +711,13 @@ class ArticulatoryCombinedTextFrontend:
             utt = re.sub(r"\.+", ".", utt)
             chunk_list = list()
             for chunk in utt.split("~"):
-                chunk_list.append("".join(self.transphone.tokenize(chunk)))
-            phones = "~".join(chunk_list)
+                # unfortunately the transphone tokenizer is not suited for any languages besides English it seems
+                # this is not much better, but maybe a little.
+                word_list = list()
+                for word_by_whitespace in chunk.split():
+                    word_list.append(self.transphone.inference(word_by_whitespace, self.g2p_lang))
+                chunk_list.append(" ".join(["".join(word) for word in word_list]))
+            phones = "~ ".join(chunk_list)
         elif self.phonemizer == "dragonmapper":
             phones = pinyin_to_ipa(utt)
 
@@ -950,5 +955,9 @@ if __name__ == '__main__':
     tf = ArticulatoryCombinedTextFrontend(language="fra")
     tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
     print(tf.get_phone_string("Je ne te fais pas un dessin."))
+
+    tf = ArticulatoryCombinedTextFrontend(language="acr")
+    tf.string_to_tensor("I don't know this language, but this is just a dummy anyway.", view=True)
+    print(tf.get_phone_string("I don't know this language, but this is just a dummy anyway."))
 
     print(get_language_id("eng"))
