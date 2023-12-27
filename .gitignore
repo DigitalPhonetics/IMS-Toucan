@@ -30,3 +30,4 @@ run_phonemizer.py
 *.pyc
 *.png
 *.pdf
+*.pkl
