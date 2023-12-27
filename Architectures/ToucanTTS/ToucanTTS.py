@@ -42,8 +42,8 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=128,
-                 attention_heads=4,
+                 attention_dimension=384,
+                 attention_heads=6,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
@@ -97,54 +97,54 @@ class ToucanTTS(torch.nn.Module):
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
                  lang_embs=8000,
-                 use_conditional_layernorm_embedding_integration=True,
+                 embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
         super().__init__()
 
         self.config = {
-            "input_feature_dimensions"                       : input_feature_dimensions,
-            "attention_dimension"                            : attention_dimension,
-            "attention_heads"                                : attention_heads,
-            "positionwise_conv_kernel_size"                  : positionwise_conv_kernel_size,
-            "use_scaled_positional_encoding"                 : use_scaled_positional_encoding,
-            "init_type"                                      : init_type,
-            "use_macaron_style_in_conformer"                 : use_macaron_style_in_conformer,
-            "use_cnn_in_conformer"                           : use_cnn_in_conformer,
-            "encoder_layers"                                 : encoder_layers,
-            "encoder_units"                                  : encoder_units,
-            "encoder_normalize_before"                       : encoder_normalize_before,
-            "encoder_concat_after"                           : encoder_concat_after,
-            "conformer_encoder_kernel_size"                  : conformer_encoder_kernel_size,
-            "transformer_enc_dropout_rate"                   : transformer_enc_dropout_rate,
-            "transformer_enc_positional_dropout_rate"        : transformer_enc_positional_dropout_rate,
-            "transformer_enc_attn_dropout_rate"              : transformer_enc_attn_dropout_rate,
-            "decoder_layers"                                 : decoder_layers,
-            "decoder_units"                                  : decoder_units,
-            "decoder_concat_after"                           : decoder_concat_after,
-            "conformer_decoder_kernel_size"                  : conformer_decoder_kernel_size,
-            "decoder_normalize_before"                       : decoder_normalize_before,
-            "transformer_dec_dropout_rate"                   : transformer_dec_dropout_rate,
-            "transformer_dec_positional_dropout_rate"        : transformer_dec_positional_dropout_rate,
-            "transformer_dec_attn_dropout_rate"              : transformer_dec_attn_dropout_rate,
-            "duration_predictor_layers"                      : duration_predictor_layers,
-            "duration_predictor_kernel_size"                 : duration_predictor_kernel_size,
-            "duration_predictor_dropout_rate"                : duration_predictor_dropout_rate,
-            "pitch_predictor_layers"                         : pitch_predictor_layers,
-            "pitch_predictor_kernel_size"                    : pitch_predictor_kernel_size,
-            "pitch_predictor_dropout"                        : pitch_predictor_dropout,
-            "pitch_embed_kernel_size"                        : pitch_embed_kernel_size,
-            "pitch_embed_dropout"                            : pitch_embed_dropout,
-            "energy_predictor_layers"                        : energy_predictor_layers,
-            "energy_predictor_kernel_size"                   : energy_predictor_kernel_size,
-            "energy_predictor_dropout"                       : energy_predictor_dropout,
-            "energy_embed_kernel_size"                       : energy_embed_kernel_size,
-            "energy_embed_dropout"                           : energy_embed_dropout,
-            "utt_embed_dim"                                  : utt_embed_dim,
-            "lang_embs"                                      : lang_embs,
-            "use_conditional_layernorm_embedding_integration": use_conditional_layernorm_embedding_integration,
-            "glow_kernel_size"                               : glow_kernel_size,
-            "glow_blocks"                                    : glow_blocks,
-            "glow_layers"                                    : glow_layers
+            "input_feature_dimensions"               : input_feature_dimensions,
+            "attention_dimension"                    : attention_dimension,
+            "attention_heads"                        : attention_heads,
+            "positionwise_conv_kernel_size"          : positionwise_conv_kernel_size,
+            "use_scaled_positional_encoding"         : use_scaled_positional_encoding,
+            "init_type"                              : init_type,
+            "use_macaron_style_in_conformer"         : use_macaron_style_in_conformer,
+            "use_cnn_in_conformer"                   : use_cnn_in_conformer,
+            "encoder_layers"                         : encoder_layers,
+            "encoder_units"                          : encoder_units,
+            "encoder_normalize_before"               : encoder_normalize_before,
+            "encoder_concat_after"                   : encoder_concat_after,
+            "conformer_encoder_kernel_size"          : conformer_encoder_kernel_size,
+            "transformer_enc_dropout_rate"           : transformer_enc_dropout_rate,
+            "transformer_enc_positional_dropout_rate": transformer_enc_positional_dropout_rate,
+            "transformer_enc_attn_dropout_rate"      : transformer_enc_attn_dropout_rate,
+            "decoder_layers"                         : decoder_layers,
+            "decoder_units"                          : decoder_units,
+            "decoder_concat_after"                   : decoder_concat_after,
+            "conformer_decoder_kernel_size"          : conformer_decoder_kernel_size,
+            "decoder_normalize_before"               : decoder_normalize_before,
+            "transformer_dec_dropout_rate"           : transformer_dec_dropout_rate,
+            "transformer_dec_positional_dropout_rate": transformer_dec_positional_dropout_rate,
+            "transformer_dec_attn_dropout_rate"      : transformer_dec_attn_dropout_rate,
+            "duration_predictor_layers"              : duration_predictor_layers,
+            "duration_predictor_kernel_size"         : duration_predictor_kernel_size,
+            "duration_predictor_dropout_rate"        : duration_predictor_dropout_rate,
+            "pitch_predictor_layers"                 : pitch_predictor_layers,
+            "pitch_predictor_kernel_size"            : pitch_predictor_kernel_size,
+            "pitch_predictor_dropout"                : pitch_predictor_dropout,
+            "pitch_embed_kernel_size"                : pitch_embed_kernel_size,
+            "pitch_embed_dropout"                    : pitch_embed_dropout,
+            "energy_predictor_layers"                : energy_predictor_layers,
+            "energy_predictor_kernel_size"           : energy_predictor_kernel_size,
+            "energy_predictor_dropout"               : energy_predictor_dropout,
+            "energy_embed_kernel_size"               : energy_embed_kernel_size,
+            "energy_embed_dropout"                   : energy_embed_dropout,
+            "utt_embed_dim"                          : utt_embed_dim,
+            "lang_embs"                              : lang_embs,
+            "embedding_integration"                  : embedding_integration,
+            "glow_kernel_size"                       : glow_kernel_size,
+            "glow_blocks"                            : glow_blocks,
+            "glow_layers"                            : glow_layers
         }
 
         self.input_feature_dimensions = input_feature_dimensions
@@ -173,28 +173,28 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
                                  use_output_norm=True,
-                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                 embedding_integration=embedding_integration)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=attention_dimension,
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
                                                     utt_embed_dim=utt_embed_dim,
-                                                    use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                                    embedding_integration=embedding_integration)
 
         self.pitch_predictor = VariancePredictor(idim=attention_dimension, n_layers=pitch_predictor_layers,
                                                  n_chans=attention_dimension,
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout,
                                                  utt_embed_dim=utt_embed_dim,
-                                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                                 embedding_integration=embedding_integration)
 
         self.energy_predictor = VariancePredictor(idim=attention_dimension, n_layers=energy_predictor_layers,
                                                   n_chans=attention_dimension,
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout,
                                                   utt_embed_dim=utt_embed_dim,
-                                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                                  embedding_integration=embedding_integration)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -223,9 +223,9 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=not use_conditional_layernorm_embedding_integration,
+                                 use_output_norm=embedding_integration not in ["AdaIN", "ConditionalLayerNorm"],
                                  utt_embed=utt_embed_dim,
-                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                 embedding_integration=embedding_integration)
 
         # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
         self.output_projection = torch.nn.Linear(attention_dimension, 128)
@@ -380,19 +380,19 @@ class ToucanTTS(torch.nn.Module):
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
-                   predicted_durations.squeeze(), \
-                   pitch_predictions.squeeze(), \
-                   energy_predictions.squeeze()
+                predicted_durations.squeeze(), \
+                pitch_predictions.squeeze(), \
+                energy_predictions.squeeze()
         else:
             if run_glow:
                 glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=preliminary_spectrogram, encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
             return preliminary_spectrogram, \
-                   glow_loss, \
-                   predicted_durations, \
-                   pitch_predictions, \
-                   energy_predictions
+                glow_loss, \
+                predicted_durations, \
+                pitch_predictions, \
+                energy_predictions
 
     @torch.inference_mode()
     def inference(self,

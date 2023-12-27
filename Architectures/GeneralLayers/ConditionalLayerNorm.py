@@ -15,22 +15,18 @@ from torch import nn
 class ConditionalLayerNorm(nn.Module):
 
     def __init__(self,
-                 normal_shape,
+                 hidden_dim,
                  speaker_embedding_dim,
                  dim=-1):
         super(ConditionalLayerNorm, self).__init__()
         self.dim = dim
-        if isinstance(normal_shape, int):
-            self.normal_shape = normal_shape
+        if isinstance(hidden_dim, int):
+            self.normal_shape = hidden_dim
         self.speaker_embedding_dim = speaker_embedding_dim
-        self.W_scale = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.speaker_embedding_dim),
-                                     nn.Tanh(),
-                                     nn.Linear(self.speaker_embedding_dim, self.normal_shape),
+        self.W_scale = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.normal_shape),
                                      nn.Tanh(),
                                      nn.Linear(self.normal_shape, self.normal_shape))
-        self.W_bias = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.speaker_embedding_dim),
-                                    nn.Tanh(),
-                                    nn.Linear(self.speaker_embedding_dim, self.normal_shape),
+        self.W_bias = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.normal_shape),
                                     nn.Tanh(),
                                     nn.Linear(self.normal_shape, self.normal_shape))
         self.reset_parameters()
@@ -38,16 +34,12 @@ class ConditionalLayerNorm(nn.Module):
     def reset_parameters(self):
         torch.nn.init.constant_(self.W_scale[0].weight, 0.0)
         torch.nn.init.constant_(self.W_scale[2].weight, 0.0)
-        torch.nn.init.constant_(self.W_scale[4].weight, 0.0)
         torch.nn.init.constant_(self.W_scale[0].bias, 1.0)
         torch.nn.init.constant_(self.W_scale[2].bias, 1.0)
-        torch.nn.init.constant_(self.W_scale[4].bias, 1.0)
         torch.nn.init.constant_(self.W_bias[0].weight, 0.0)
         torch.nn.init.constant_(self.W_bias[2].weight, 0.0)
-        torch.nn.init.constant_(self.W_bias[4].weight, 0.0)
         torch.nn.init.constant_(self.W_bias[0].bias, 0.0)
         torch.nn.init.constant_(self.W_bias[2].bias, 0.0)
-        torch.nn.init.constant_(self.W_bias[4].bias, 0.0)
 
     def forward(self, x, speaker_embedding):
 
@@ -70,20 +62,16 @@ class ConditionalLayerNorm(nn.Module):
 class SequentialWrappableConditionalLayerNorm(nn.Module):
 
     def __init__(self,
-                 normal_shape,
+                 hidden_dim,
                  speaker_embedding_dim):
         super(SequentialWrappableConditionalLayerNorm, self).__init__()
-        if isinstance(normal_shape, int):
-            self.normal_shape = normal_shape
+        if isinstance(hidden_dim, int):
+            self.normal_shape = hidden_dim
         self.speaker_embedding_dim = speaker_embedding_dim
-        self.W_scale = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.speaker_embedding_dim),
-                                     nn.Tanh(),
-                                     nn.Linear(self.speaker_embedding_dim, self.normal_shape),
+        self.W_scale = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.normal_shape),
                                      nn.Tanh(),
                                      nn.Linear(self.normal_shape, self.normal_shape))
-        self.W_bias = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.speaker_embedding_dim),
-                                    nn.Tanh(),
-                                    nn.Linear(self.speaker_embedding_dim, self.normal_shape),
+        self.W_bias = nn.Sequential(nn.Linear(self.speaker_embedding_dim, self.normal_shape),
                                     nn.Tanh(),
                                     nn.Linear(self.normal_shape, self.normal_shape))
         self.reset_parameters()
@@ -91,16 +79,12 @@ class SequentialWrappableConditionalLayerNorm(nn.Module):
     def reset_parameters(self):
         torch.nn.init.constant_(self.W_scale[0].weight, 0.0)
         torch.nn.init.constant_(self.W_scale[2].weight, 0.0)
-        torch.nn.init.constant_(self.W_scale[4].weight, 0.0)
         torch.nn.init.constant_(self.W_scale[0].bias, 1.0)
         torch.nn.init.constant_(self.W_scale[2].bias, 1.0)
-        torch.nn.init.constant_(self.W_scale[4].bias, 1.0)
         torch.nn.init.constant_(self.W_bias[0].weight, 0.0)
         torch.nn.init.constant_(self.W_bias[2].weight, 0.0)
-        torch.nn.init.constant_(self.W_bias[4].weight, 0.0)
         torch.nn.init.constant_(self.W_bias[0].bias, 0.0)
         torch.nn.init.constant_(self.W_bias[2].bias, 0.0)
-        torch.nn.init.constant_(self.W_bias[4].bias, 0.0)
 
     def forward(self, packed_input):
         x, speaker_embedding = packed_input
@@ -131,4 +115,4 @@ class AdaIN1d(nn.Module):
         h = self.fc(s)
         h = h.view(h.size(0), h.size(1), 1)
         gamma, beta = torch.chunk(h, chunks=2, dim=1)
-        return (1 + gamma.transpose(1, 2)) * self.norm(x) + beta.transpose(1, 2)
+        return (1 + gamma.transpose(1, 2)) * self.norm(x.transpose(1, 2)).transpose(1, 2) + beta.transpose(1, 2)

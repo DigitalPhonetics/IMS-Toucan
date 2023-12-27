@@ -61,7 +61,7 @@ class ToucanTTS(torch.nn.Module):
         energy_embed_dropout = config.energy_embed_dropout
         utt_embed_dim = config.utt_embed_dim
         lang_embs = config.lang_embs
-        use_conditional_layernorm_embedding_integration = config.use_conditional_layernorm_embedding_integration
+        embedding_integration = config.embedding_integration
         glow_kernel_size = config.glow_kernel_size
         glow_blocks = config.glow_blocks
         glow_layers = config.glow_layers
@@ -92,7 +92,7 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
                                  use_output_norm=True,
-                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                 embedding_integration=embedding_integration)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension,
                                                     n_layers=duration_predictor_layers,
@@ -100,7 +100,7 @@ class ToucanTTS(torch.nn.Module):
                                                     kernel_size=duration_predictor_kernel_size,
                                                     dropout_rate=duration_predictor_dropout_rate,
                                                     utt_embed_dim=utt_embed_dim,
-                                                    use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                                    embedding_integration=embedding_integration)
 
         self.pitch_predictor = VariancePredictor(idim=attention_dimension,
                                                  n_layers=pitch_predictor_layers,
@@ -108,7 +108,7 @@ class ToucanTTS(torch.nn.Module):
                                                  kernel_size=pitch_predictor_kernel_size,
                                                  dropout_rate=pitch_predictor_dropout,
                                                  utt_embed_dim=utt_embed_dim,
-                                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                                 embedding_integration=embedding_integration)
 
         self.energy_predictor = VariancePredictor(idim=attention_dimension,
                                                   n_layers=energy_predictor_layers,
@@ -116,7 +116,7 @@ class ToucanTTS(torch.nn.Module):
                                                   kernel_size=energy_predictor_kernel_size,
                                                   dropout_rate=energy_predictor_dropout,
                                                   utt_embed_dim=utt_embed_dim,
-                                                  use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                                  embedding_integration=embedding_integration)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -147,9 +147,9 @@ class ToucanTTS(torch.nn.Module):
                                  macaron_style=use_macaron_style_in_conformer,
                                  use_cnn_module=use_cnn_in_conformer,
                                  cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=not use_conditional_layernorm_embedding_integration,
+                                 use_output_norm=not embedding_integration in ["AdaIN", "ConditionalLayerNorm"],
                                  utt_embed=utt_embed_dim,
-                                 use_conditional_layernorm_embedding_integration=use_conditional_layernorm_embedding_integration)
+                                 embedding_integration=embedding_integration)
 
         self.output_projection = torch.nn.Linear(attention_dimension, 128)
 

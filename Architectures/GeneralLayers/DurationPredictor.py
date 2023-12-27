@@ -6,6 +6,7 @@
 import torch
 
 from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
+from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.LayerNorm import LayerNorm
 from Utility.utils import integrate_with_utt_embed
 
@@ -37,7 +38,7 @@ class DurationPredictor(torch.nn.Module):
                  dropout_rate=0.1,
                  offset=1.0,
                  utt_embed_dim=None,
-                 use_conditional_layernorm_embedding_integration=False):
+                 embedding_integration="AdaIN"):
         """
         Initialize duration predictor module.
 
@@ -57,12 +58,14 @@ class DurationPredictor(torch.nn.Module):
         self.norms = torch.nn.ModuleList()
         self.embedding_projections = torch.nn.ModuleList()
         self.utt_embed_dim = utt_embed_dim
-        self.use_conditional_layernorm_embedding_integration = use_conditional_layernorm_embedding_integration
+        self.use_conditional_layernorm_embedding_integration = embedding_integration in ["AdaIN", "ConditionalLayerNorm"]
 
         for idx in range(n_layers):
             if utt_embed_dim is not None:
-                if use_conditional_layernorm_embedding_integration:
+                if embedding_integration == "AdaIN":
                     self.embedding_projections += [AdaIN1d(style_dim=utt_embed_dim, num_features=idim)]
+                elif embedding_integration == "ConditionalLayerNorm":
+                    self.embedding_projections += [ConditionalLayerNorm(speaker_embedding_dim=utt_embed_dim, hidden_dim=idim)]
                 else:
                     self.embedding_projections += [torch.nn.Linear(utt_embed_dim + idim, idim)]
             else:
