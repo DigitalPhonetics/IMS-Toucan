@@ -1763,29 +1763,15 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                         gpu_count=gpu_count,
                                                         rank=rank))
 
-    for lang in ['acf', 'acr', 'acu', 'agd', 'agg', 'agn', 'agr', 'agu', 'aia', 'aka', 'ake', 'alp', 'ame', 'amf', 'amk', 'apb',
-                 'apr', 'arl', 'asm', 'ata', 'atb', 'atg', 'awb', 'azb', 'azg', 'azz', 'bao', 'bba', 'bbb', 'ben', 'bgt', 'bjr',
-                 'bjv', 'bjz', 'bkd', 'blz', 'bmr', 'bmu', 'bnp', 'boa', 'boj', 'box', 'bpr', 'bps', 'bqc', 'bqp', 'bss', 'bus',
-                 'byr', 'bzh', 'bzj', 'caa', 'cab', 'cap', 'car', 'cax', 'cbc', 'cbi', 'cbr', 'cbs', 'cbt', 'cbu', 'cbv', 'cco',
-                 'cek', 'cgc', 'chf', 'cjo', 'cme', 'cni', 'cnl', 'cnt', 'cof', 'con', 'cot', 'cpb', 'cpu', 'crn', 'cso', 'ctu',
-                 'cuc', 'cui', 'cuk', 'cwe', 'daa', 'dah', 'ded', 'deu', 'dgr', 'dik', 'djk', 'dop', 'dwr', 'emp', 'eng', 'ese',
-                 'far', 'fra', 'gai', 'gam', 'geb', 'gmv', 'gng', 'grc', 'gub', 'guh', 'gum', 'guo', 'gux', 'gvc', 'gwi', 'gym',
-                 'gyr', 'hat', 'hau', 'hlt', 'hns', 'hto', 'hub', 'hui', 'hun', 'huu', 'hvn', 'ign', 'ilo', 'imo', 'inb', 'ind',
-                 'iou', 'ipi', 'jac', 'jic', 'jiv', 'jvn', 'kan', 'kaq', 'kbq', 'kde', 'kdl', 'kek', 'ken', 'kik', 'kje', 'klv',
-                 'kmu', 'kne', 'knf', 'knj', 'ksr', 'kvn', 'kwd', 'kwf', 'kwi', 'kyc', 'kyf', 'kyg', 'kyq', 'kyz', 'lac', 'lex',
-                 'lgl', 'lid', 'lif', 'llg', 'lww', 'maj', 'mal', 'maq', 'mar', 'maz', 'mbb', 'mbc', 'mbh', 'mbj', 'mbt', 'mca',
-                 'mcb', 'mcd', 'mco', 'mcp', 'mcq', 'mdy', 'med', 'mee', 'meq', 'met', 'mgh', 'mib', 'mie', 'mih', 'mil', 'mio',
-                 'mit', 'miz', 'mkl', 'mkn', 'mop', 'mox', 'mpm', 'mpp', 'mpx', 'mqb', 'mqj', 'msy', 'mto', 'muy', 'mxt', 'mya',
-                 'myy', 'nab', 'nas', 'nca', 'nch', 'ncj', 'ncl', 'ncu', 'ndj', 'nfa', 'ngp', 'ngu', 'nhe', 'nhu', 'nhw', 'nhy',
-                 'nin', 'nko', 'nld', 'nlg', 'noa', 'not', 'obo', 'omw', 'ood', 'ory', 'ote', 'pad', 'pao', 'pib', 'pir', 'pjt',
-                 'pls', 'poi', 'pol', 'por', 'prf', 'ptu', 'pwg', 'qub', 'quf', 'quh', 'qul', 'qvc', 'qvh', 'qvm', 'qvn', 'qvs',
-                 'qvw', 'qvz', 'qwh', 'qxh', 'qxn', 'qxo', 'rai', 'rgu', 'ron', 'rop', 'rro', 'ruf', 'rug', 'sab', 'sey', 'sgb',
-                 'shp', 'sja', 'snn', 'snp', 'soy', 'spa', 'spp', 'spy', 'sri', 'srm', 'srn', 'stp', 'sus', 'swh', 'sxb', 'tac',
-                 'taj', 'tam', 'tav', 'tbc', 'tbg', 'tbl', 'tbz', 'tca', 'tcs', 'tcz', 'tee', 'tel', 'tew', 'tfr', 'tgk', 'tgl',
-                 'tgo', 'tgp', 'tna', 'tnk', 'tnn', 'tnp', 'toc', 'tos', 'tpi', 'tpt', 'trc', 'tte', 'tue', 'tuf', 'tuo', 'tur',
-                 'txq', 'txu', 'udu', 'upv', 'ura', 'urb', 'urt', 'usp', 'vid', 'vie', 'wap', 'xed', 'xon', 'xtd', 'xtm', 'yaa',
-                 'yad', 'yal', 'ycn', 'yka', 'yre', 'yva', 'zaa', 'zab', 'zac', 'zad', 'zai', 'zam', 'zao', 'zar', 'zas', 'zav',
-                 'zaw', 'zca', 'zga', 'zos', 'zpc', 'zpl', 'zpm', 'zpo', 'zpz', 'ztq', 'zty', 'zyp']:
+    for lang in ["acf", "bss", "deu", "inb", "mar", "nca", "quh", "tam", "wap", "acr", "bus", "dgr", "ind", "maz", "nch", "qul", "tav", "wmw", "acu", "byr", "dik", "iou", "mbb", "ncj", "qvc", "tbc", "xed", "agd", "bzh", "djk", "ipi", "mbc", "ncl", "qve", "tbg", "xon", "agg", "bzj", "dop", "jac", "mbh", "ncu", "qvh", "tbl", "xtd", "agn",
+                 "caa", "dwr", "jic", "mbj", "ndj", "qvm", "tbz", "xtm", "agr", "cab", "emp", "jiv", "mbt", "nfa", "qvn", "tca", "yaa", "agu", "cap", "eng", "jvn", "mca", "ngp", "qvs", "tcs", "yad", "aia", "car", "ese", "kan", "mcb", "ngu", "qvw", "tcz", "yal", "aka", "cax", "ewe", "kaq", "mcd", "nhe", "qvz", "tee", "ycn", "ake", "cbc",
+                 "far", "kbq", "mco", "nhi", "qwh", "tel", "yka", "alp", "cbi", "fra", "kdc", "mcp", "nhu", "qxh", "ter", "yor", "ame", "cbr", "gai", "kde", "mcq", "nhw", "qxn", "tew", "yre", "amf", "cbs", "gam", "kdl", "mdy", "nhy", "qxo", "tfr", "yva", "amk", "cbt", "geb", "kek", "med", "nin", "rai", "tgk", "zaa", "apb", "cbu", "glk",
+                 "ken", "mee", "nko", "rgu", "tgl", "zab", "apr", "cbv", "gmv", "kik", "meq", "nld", "ron", "tgo", "zac", "arl", "cco", "gng", "kje", "met", "nlg", "rop", "tgp", "zad", "asm", "ceb", "grc", "klv", "mgh", "nnq", "rro", "tha", "zai", "ata", "cek", "gub", "kmu", "mib", "noa", "ruf", "tna", "zam", "atb", "cgc", "guh", "kne",
+                 "mie", "not", "rug", "tnk", "zao", "atg", "chf", "guj", "knf", "mih", "npl", "rus", "tnn", "zar", "awb", "chz", "gum", "knj", "mil", "nya", "sab", "tnp", "zas", "azb", "cjo", "guo", "ksr", "mio", "obo", "seh", "toc", "zav", "azg", "cle", "gux", "kue", "mit", "omw", "sey", "tos", "zaw", "azz", "cme", "gvc", "kvn", "miz",
+                 "ood", "sgb", "tpi", "zca", "bao", "cni", "gwi", "kwd", "mkl", "ory", "shp", "tpt", "zga", "bba", "cnl", "gym", "kwf", "mkn", "ote", "sja", "trc", "ziw", "bbb", "cnt", "gyr", "kwi", "mop", "otq", "snn", "ttc", "zlm", "ben", "cof", "hat", "kyc", "mox", "pab", "snp", "tte", "zos", "bgt", "con", "hau", "kyf", "mpm", "pad",
+                 "som", "tue", "zpc", "bjr", "cot", "heb", "kyg", "mpp", "pan", "soy", "tuf", "zpl", "bjv", "cpa", "hin", "kyq", "mpx", "pao", "spa", "tuo", "zpm", "bjz", "cpb", "hlt", "kyz", "mqb", "pib", "spp", "tur", "zpo", "bkd", "cpu", "hns", "lac", "mqj", "pir", "spy", "txq", "zpu", "blz", "crn", "hto", "lat", "msy", "pjt", "sri",
+                 "txu", "zpz", "bmr", "cso", "hub", "lex", "mto", "pls", "srm", "udu", "ztq", "bmu", "ctu", "hui", "lgl", "muy", "poi", "srn", "ukr", "zty", "bnp", "cuc", "hun", "lid", "mxb", "pol", "stp", "upv", "zyp", "boa", "cui", "huu", "lif", "mxq", "por", "sus", "ura", "boj", "cuk", "huv", "llg", "mxt", "poy", "suz", "urb", "box",
+                 "cwe", "hvn", "lug", "mya", "prf", "swe", "urt", "bpr", "cya", "ign", "lww", "myk", "ptu", "swh", "usp", "bps", "daa", "ikk", "maj", "myy", "pwg", "sxb", "vid", "bqc", "dah", "ilo", "mal", "nab", "qub", "tac", "vie", "bqp", "ded", "imo", "maq", "nas", "quf", "taj", "vmy"]:
 
         if lang not in lang_to_datasets:
             lang_to_datasets[lang] = list()
