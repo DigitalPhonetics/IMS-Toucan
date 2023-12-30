@@ -1078,7 +1078,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                  "som", "tue", "zpc", "bjr", "cot", "heb", "kyg", "mpp", "pan", "soy", "tuf", "zpl", "bjv", "cpa", "hin", "kyq", "mpx", "pao", "spa", "tuo", "zpm", "bjz", "cpb", "hlt", "kyz", "mqb", "pib", "spp", "tur", "zpo", "bkd", "cpu", "hns", "lac", "mqj", "pir", "spy", "txq", "zpu", "blz", "crn", "hto", "lat", "msy", "pjt", "sri",
                  "txu", "zpz", "bmr", "cso", "hub", "lex", "mto", "pls", "srm", "udu", "ztq", "bmu", "ctu", "hui", "lgl", "muy", "poi", "srn", "ukr", "zty", "bnp", "cuc", "hun", "lid", "mxb", "pol", "stp", "upv", "zyp", "boa", "cui", "huu", "lif", "mxq", "por", "sus", "ura", "boj", "cuk", "huv", "llg", "mxt", "poy", "suz", "urb", "box",
                  "cwe", "hvn", "lug", "mya", "prf", "swe", "urt", "bpr", "cya", "ign", "lww", "myk", "ptu", "swh", "usp", "bps", "daa", "ikk", "maj", "myy", "pwg", "sxb", "vid", "bqc", "dah", "ilo", "mal", "nab", "qub", "tac", "vie", "bqp", "ded", "imo", "maq", "nas", "quf", "taj", "vmy"]:
-        datasets.append([prepare_aligner_corpus(transcript_dict=globals()[f"build_path_to_transcript_dict_mms_{lang}"](),
+        datasets.append([prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mms_template(lang=lang),
                                                 corpus_dir=os.path.join(PREPROCESSING_DIR, f"mms_{lang}"),
                                                 lang=f"{lang}",
                                                 gpu_count=gpu_count,
