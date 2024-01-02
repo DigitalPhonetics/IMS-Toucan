@@ -1776,11 +1776,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
         if lang not in lang_to_datasets:
             lang_to_datasets[lang] = list()
 
-        lang_to_datasets[lang].append([prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mms_template(lang=lang),
-                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, f"mms_{lang}"),
-                                                          lang=f"{lang}",
-                                                          gpu_count=gpu_count,
-                                                          rank=rank)])
+        lang_to_datasets[lang].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mms_template(lang=lang),
+                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, f"mms_{lang}"),
+                                                         lang=f"{lang}",
+                                                         gpu_count=gpu_count,
+                                                         rank=rank))
 
     for lang in lang_to_datasets:
         datasets.append(ConcatDataset(lang_to_datasets[lang]))
