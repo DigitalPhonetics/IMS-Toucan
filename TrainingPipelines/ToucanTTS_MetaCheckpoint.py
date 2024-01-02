@@ -65,12 +65,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                gpu_count=gpu_count,
                                                rank=rank))
 
-    english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_elizabeth,
-                                               corpus_dir=os.path.join(PREPROCESSING_DIR, "Elizabeth"),
-                                               lang="eng",  # technically, she's british english, not american english
-                                               gpu_count=gpu_count,
-                                               rank=rank))
-
     english_datasets.append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ryanspeech,
                                                corpus_dir=os.path.join(PREPROCESSING_DIR, "Ryan"),
                                                lang="eng",
@@ -136,15 +130,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                lang="eng",
                                                gpu_count=gpu_count,
                                                rank=rank))
-
-    chunk_count = 30
-    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_gigaspeech(), split_n=chunk_count)
-    for index in range(chunk_count):
-        english_datasets.append(prepare_tts_corpus(transcript_dict=chunks[index],
-                                                   corpus_dir=os.path.join(PREPROCESSING_DIR, f"gigaspeech_chunk_{index}"),
-                                                   lang="eng",
-                                                   gpu_count=gpu_count,
-                                                   rank=rank))
 
     # GERMAN
 
