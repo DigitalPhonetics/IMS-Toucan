@@ -8,7 +8,6 @@ import torch
 from dragonmapper.transcriptions import pinyin_to_ipa
 from phonemizer.backend import EspeakBackend
 from pypinyin import pinyin
-from transphone.g2p import read_g2p
 
 from Preprocessing.articulatory_features import generate_feature_table
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
@@ -27,6 +26,10 @@ class ArticulatoryCombinedTextFrontend:
         """
         Mostly preparing ID lookups
         """
+
+        # this locks the device, so it has to happen here and not at the top
+        from transphone.g2p import read_g2p
+
         self.language = language
         self.use_explicit_eos = use_explicit_eos
         self.use_stress = use_lexical_stress
@@ -668,68 +671,6 @@ class ArticulatoryCombinedTextFrontend:
         if self.phonemizer == "espeak":
             phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
         elif self.phonemizer == "transphone":
-            # TODO additional handling required
-            """  
-unknown phoneme: %
-unknown phoneme: &
-unknown phoneme: (
-unknown phoneme: )
-unknown phoneme: +
-unknown phoneme: [
-unknown phoneme: ]
-unknown phoneme: ^
-unknown phoneme: `
-unknown phoneme: °
-unknown phoneme: ‘
-unknown phoneme: ’
-unknown phoneme: ％
-unknown phoneme: （
-unknown phoneme: ）
-unknown phoneme: ：
-unknown phoneme: ̊
-unknown phoneme: 0
-unknown phoneme: 1
-unknown phoneme: 2
-unknown phoneme: 3
-unknown phoneme: 4
-unknown phoneme: 5
-unknown phoneme: 6
-unknown phoneme: 7
-unknown phoneme: 8
-unknown phoneme: 9
-unknown phoneme: A
-unknown phoneme: ä
-unknown phoneme: B
-unknown phoneme: C
-unknown phoneme: D
-unknown phoneme: F
-unknown phoneme: g
-unknown phoneme: G
-unknown phoneme: H
-unknown phoneme: I
-unknown phoneme: J
-unknown phoneme: K
-unknown phoneme: L
-unknown phoneme: ł
-unknown phoneme: M
-unknown phoneme: N
-unknown phoneme: ñ
-unknown phoneme: Õ
-unknown phoneme: P
-unknown phoneme: Q
-unknown phoneme: R
-unknown phoneme: S
-unknown phoneme: T
-unknown phoneme: U
-unknown phoneme: V
-unknown phoneme: W
-unknown phoneme: X
-unknown phoneme: Y
-unknown phoneme: Z
-unknown phoneme: ˤ
-unknown phoneme: ᵝ
-unknown phoneme: ε
-"""
             replacements = [
                 # punctuation in languages with non-latin script
                 ("。", "~"),
