@@ -35,7 +35,7 @@ class CacheCreator:
             if lang_1 not in lang_1_to_lang_2_to_tree_dist.keys():
                 lang_1_to_lang_2_to_tree_dist[lang_1] = dict()
             lang_1_to_lang_2_to_tree_dist[lang_1][lang_2] = dist
-        with open('Preprocessing/lang_1_to_lang_2_to_tree_dist.json', 'w', encoding='utf-8') as f:
+        with open('lang_1_to_lang_2_to_tree_dist.json', 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_tree_dist, f, ensure_ascii=False, indent=4)
 
         #######
@@ -57,7 +57,7 @@ class CacheCreator:
                 lang_1_to_lang_2_to_map_dist[lang_1] = dict()
             lang_1_to_lang_2_to_map_dist[lang_1][lang_2] = dist
 
-        with open('Preprocessing/lang_1_to_lang_2_to_map_dist.json', 'w', encoding='utf-8') as f:
+        with open('lang_1_to_lang_2_to_map_dist.json', 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_map_dist, f, ensure_ascii=False, indent=4)
 
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5):
