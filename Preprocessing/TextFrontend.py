@@ -135,8 +135,8 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
-        elif language == "fas":
-            self.g2p_lang = "fa"  # Farsi
+        elif language == "pes":
+            self.g2p_lang = "fa"  # Western Farsi
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
