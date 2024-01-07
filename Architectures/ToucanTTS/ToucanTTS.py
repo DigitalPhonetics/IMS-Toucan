@@ -447,6 +447,14 @@ if __name__ == '__main__':
     print(sum(p.numel() for p in model.parameters() if p.requires_grad))
     print(sum(p.numel() for p in model.post_flow.parameters() if p.requires_grad))
 
+    print(" TESTING INFERENCE ")
+    dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
+    dummy_utterance_embed = torch.randn([208])  # [Dimensions of Speaker Embedding]
+    dummy_language_id = torch.LongTensor([2])
+    print(model.inference(dummy_text_batch,
+                          utterance_embedding=dummy_utterance_embed,
+                          lang_id=dummy_language_id).shape)
+
     print(" TESTING TRAINING ")
 
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
@@ -460,7 +468,7 @@ if __name__ == '__main__':
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
 
     dummy_utterance_embed = torch.randn([3, 208])  # [Batch, Dimensions of Speaker Embedding]
-    dummy_language_id = torch.LongTensor([5, 3, 2]).unsqueeze(1)
+    dummy_language_id = torch.LongTensor([5, 3, 2])
 
     ce, fl, dl, pl, el = model(dummy_text_batch,
                                dummy_text_lens,
@@ -475,11 +483,3 @@ if __name__ == '__main__':
     loss = ce + dl + pl + el
     print(loss)
     loss.backward()
-
-    print(" TESTING INFERENCE ")
-    dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
-    dummy_utterance_embed = torch.randn([208])  # [Dimensions of Speaker Embedding]
-    dummy_language_id = torch.LongTensor([2])
-    print(model.inference(dummy_text_batch,
-                          utterance_embedding=dummy_utterance_embed,
-                          lang_id=dummy_language_id).shape)
