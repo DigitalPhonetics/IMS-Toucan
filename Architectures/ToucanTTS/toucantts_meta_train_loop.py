@@ -5,6 +5,7 @@ from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
 from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
+from Architectures.ToucanTTS.LanguageEmbeddingSpaceStructureLoss import LanguageEmbeddingSpaceStructureLoss
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
@@ -71,6 +72,10 @@ def train_loop(net,
     style_embedding_function.eval()
     style_embedding_function.requires_grad_(False)
 
+    less_loss = LanguageEmbeddingSpaceStructureLoss()
+    # there are 7233 language IDs
+    valid_language_ids = list(range(7233))
+
     if isinstance(net, torch.nn.parallel.DistributedDataParallel):
         model = net.module
     else:
@@ -105,6 +110,7 @@ def train_loop(net,
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
+    less_losses_total = list()
 
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
@@ -204,6 +210,10 @@ def train_loop(net,
             run_glow=run_glow
         )
 
+        language_ids = random.sample(valid_language_ids, batch_size * 4)
+        language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids, device=device))
+        less_value = less_loss(language_ids, language_embeddings)
+
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
 
@@ -224,11 +234,14 @@ def train_loop(net,
             train_loss = train_loss + pitch_loss
         if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
             train_loss = train_loss + energy_loss
+        if not torch.isnan(less_value) and (not run_glow or not first_time_glow):
+            train_loss = train_loss + less_value
 
         regression_losses_total.append(regression_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
+        less_losses_total.append(less_value.item())
 
         optimizer.zero_grad()
         flow_optimizer.zero_grad()
@@ -276,12 +289,13 @@ def train_loop(net,
 
                 if use_wandb:
                     wandb.log({
-                        "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
-                        "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
-                        "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                        "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                        "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
-                        "learning_rate"  : optimizer.param_groups[0]['lr']
+                        "regression_loss"         : round(sum(regression_losses_total) / len(regression_losses_total), 5),
+                        "glow_loss"               : round(sum(glow_losses_total) / len(glow_losses_total), 5),
+                        "duration_loss"           : round(sum(duration_losses_total) / len(duration_losses_total), 5),
+                        "pitch_loss"              : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
+                        "energy_loss"             : round(sum(energy_losses_total) / len(energy_losses_total), 5),
+                        "embedding_structure_loss": round(sum(less_losses_total) / len(less_losses_total), 5) if len(less_losses_total) != 0 else 0.0,
+                        "learning_rate"           : optimizer.param_groups[0]['lr']
                     }, step=step_counter)
 
                 try:
@@ -311,3 +325,4 @@ def train_loop(net,
             duration_losses_total = list()
             pitch_losses_total = list()
             energy_losses_total = list()
+            less_losses_total = list()

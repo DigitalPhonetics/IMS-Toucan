@@ -7,7 +7,7 @@ from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
 from Preprocessing.multilinguality.create_map_and_tree_dist_lookups import CacheCreator
 
 
-class LESL(torch.nn.Module):
+class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
@@ -25,10 +25,6 @@ class LESL(torch.nn.Module):
             self.asp_sim = pickle.load(dictfile)
         self.lang_list = list(self.asp_sim.keys())  # list of all languages, to get lang_b's index
 
-        self.largest_value_tree_dist = 0.0
-        for _, values in self.tree_dist.items():
-            for _, value in values.items():
-                self.largest_value_tree_dist = max(self.largest_value_tree_dist, value)
         self.largest_value_map_dist = 0.0
         for _, values in self.map_dist.items():
             for _, value in values.items():
@@ -58,10 +54,16 @@ class LESL(torch.nn.Module):
                     lang_2 = self.ids_to_iso_codes[language_id_2.cpu().item()]
 
                     # Value Range Normalized Tree Dist
-                    tree_dist = self.tree_dist[lang_1][lang_2] / self.largest_value_tree_dist
+                    try:
+                        tree_dist = self.tree_dist[lang_1][lang_2]
+                    except KeyError:
+                        tree_dist = self.tree_dist[lang_2][lang_1]
 
                     # Value Range Normalized Map Dist
-                    map_dist = self.map_dist[lang_1][lang_2] / self.largest_value_map_dist
+                    try:
+                        map_dist = self.map_dist[lang_1][lang_2] / self.largest_value_map_dist
+                    except KeyError:
+                        map_dist = self.map_dist[lang_2][lang_1] / self.largest_value_map_dist
 
                     # Value Range Normalized ASP Dist
                     lang_2_idx = self.lang_list.index(lang_2)
