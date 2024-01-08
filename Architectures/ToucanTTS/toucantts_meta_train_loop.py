@@ -49,7 +49,8 @@ def train_loop(net,
                warmup_steps,
                use_wandb,
                train_samplers,
-               gpu_count
+               gpu_count,
+               use_less_loss=False
                ):
     """
     see train loop arbiter for explanations of the arguments
@@ -234,7 +235,7 @@ def train_loop(net,
             train_loss = train_loss + pitch_loss
         if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
             train_loss = train_loss + energy_loss
-        if not torch.isnan(less_value) and (not run_glow or not first_time_glow):
+        if not torch.isnan(less_value) and (not run_glow or not first_time_glow) and use_less_loss:
             train_loss = train_loss + less_value
 
         regression_losses_total.append(regression_loss.item())
