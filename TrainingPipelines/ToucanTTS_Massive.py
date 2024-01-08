@@ -850,14 +850,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
-    lang_id = "ful"
-    if lang_id not in lang_to_datasets:
-        lang_to_datasets[lang_id] = list()
-    lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_fula(),
-                                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_fula"),
-                                                        lang=lang_id,
-                                                        gpu_count=gpu_count,
-                                                        rank=rank))
+    # lang_id = "ful"
+    # if lang_id not in lang_to_datasets:
+    #    lang_to_datasets[lang_id] = list()
+    # lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_fula(),
+    #                                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_fula"),
+    #                                                    lang=lang_id,
+    #                                                    gpu_count=gpu_count,
+    #                                                    rank=rank))
     lang_id = "fin"
     if lang_id not in lang_to_datasets:
         lang_to_datasets[lang_id] = list()
@@ -1234,14 +1234,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
-    lang_id = "orm"
-    if lang_id not in lang_to_datasets:
-        lang_to_datasets[lang_id] = list()
-    lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oroma(),
-                                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oroma"),
-                                                        lang=lang_id,
-                                                        gpu_count=gpu_count,
-                                                        rank=rank))
+    # lang_id = "orm"
+    # if lang_id not in lang_to_datasets:
+    #    lang_to_datasets[lang_id] = list()
+    # lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oroma(),
+    #                                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oroma"),
+    #                                                    lang=lang_id,
+    #                                                    gpu_count=gpu_count,
+    #                                                    rank=rank))
     lang_id = "ory"
     if lang_id not in lang_to_datasets:
         lang_to_datasets[lang_id] = list()
@@ -1514,7 +1514,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
-    lang_id = "fas"
+    lang_id = "pes"
     if lang_id not in lang_to_datasets:
         lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_shemo(),
@@ -1530,14 +1530,14 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
-    lang_id = "jap"
-    if lang_id not in lang_to_datasets:
-        lang_to_datasets[lang_id] = list()
-    lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mslt_japanese(),
-                                                        corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_japanese"),
-                                                        lang=lang_id,
-                                                        gpu_count=gpu_count,
-                                                        rank=rank))
+    # lang_id = "jpn"
+    # if lang_id not in lang_to_datasets:
+    #    lang_to_datasets[lang_id] = list()
+    # lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mslt_japanese(),
+    #                                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_japanese"),
+    #                                                    lang=lang_id,
+    #                                                    gpu_count=gpu_count,
+    #                                                    rank=rank))
     lang_id = "cmn"
     if lang_id not in lang_to_datasets:
         lang_to_datasets[lang_id] = list()
@@ -1570,7 +1570,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     #                                                    lang=lang_id,
     #                                                    gpu_count=gpu_count,
     #                                                    rank=rank))
-    lang_id = "ara"
+    lang_id = "arb"
     if lang_id not in lang_to_datasets:
         lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_clartts(),

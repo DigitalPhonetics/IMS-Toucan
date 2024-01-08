@@ -10,7 +10,7 @@ from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
 from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingPipelines.ToucanTTS_MLS_English import run as mls
-from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
+from TrainingPipelines.ToucanTTS_Massive import run as meta
 from TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingPipelines.finetuning_example_multilingual import run as fine_tuning_example_multilingual
 from TrainingPipelines.finetuning_example_simple import run as fine_tuning_example_simple

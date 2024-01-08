@@ -384,12 +384,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang=lang_id,
                                            gpu_count=gpu_count,
                                            rank=rank, device=device))
-    lang_id = "ful"
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_fula(),
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_fula"),
-                                           lang=lang_id,
-                                           gpu_count=gpu_count,
-                                           rank=rank, device=device))
+    # lang_id = "ful"
+    # datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_fula(),
+    #                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_fula"),
+    #                                       lang=lang_id,
+    #                                       gpu_count=gpu_count,
+    #                                       rank=rank, device=device))
     lang_id = "fin"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_finnish(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_finnish"),
@@ -672,12 +672,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang=lang_id,
                                            gpu_count=gpu_count,
                                            rank=rank, device=device))
-    lang_id = "orm"
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oroma(),
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oroma"),
-                                           lang=lang_id,
-                                           gpu_count=gpu_count,
-                                           rank=rank, device=device))
+    # lang_id = "orm"
+    # datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oroma(),
+    #                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oroma"),
+    #                                       lang=lang_id,
+    #                                       gpu_count=gpu_count,
+    #                                       rank=rank, device=device))
     lang_id = "ory"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_oriya(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_oriya"),
@@ -834,12 +834,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang=lang_id,
                                            gpu_count=gpu_count,
                                            rank=rank, device=device))
-    lang_id = "xho"
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_xhosa(),
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_xhosa"),
-                                           lang=lang_id,
-                                           gpu_count=gpu_count,
-                                           rank=rank, device=device))
+    # lang_id = "xho"
+    # datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_xhosa(),
+    #                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_xhosa"),
+    #                                       lang=lang_id,
+    #                                       gpu_count=gpu_count,
+    #                                       rank=rank, device=device))
     lang_id = "yor"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_yoruba(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_yoruba"),
@@ -852,12 +852,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     #                                       lang=lang_id,
     #                                       gpu_count=gpu_count,
     #                                       rank=rank, device=device))
-    lang_id = "zul"
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_zulu(),
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_zulu"),
-                                           lang=lang_id,
-                                           gpu_count=gpu_count,
-                                           rank=rank, device=device))
+    # lang_id = "zul"
+    # datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_zulu(),
+    #                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "fleurs_zulu"),
+    #                                       lang=lang_id,
+    #                                       gpu_count=gpu_count,
+    #                                       rank=rank, device=device))
     lang_id = "gle"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_living_audio_dataset_irish(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "living_audio_dataset_irish"),
@@ -882,7 +882,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang=lang_id,
                                            gpu_count=gpu_count,
                                            rank=rank, device=device))
-    lang_id = "fas"
+    lang_id = "pes"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_shemo(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "shemo"),
                                            lang=lang_id,
@@ -894,12 +894,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                            lang=lang_id,
                                            gpu_count=gpu_count,
                                            rank=rank, device=device))
-    lang_id = "jap"
-    datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mslt_japanese(),
-                                           corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_japanese"),
-                                           lang=lang_id,
-                                           gpu_count=gpu_count,
-                                           rank=rank, device=device))
+    # lang_id = "jpn"
+    # datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mslt_japanese(),
+    #                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_japanese"),
+    #                                       lang=lang_id,
+    #                                       gpu_count=gpu_count,
+    #                                       rank=rank, device=device))
     lang_id = "cmn"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_mslt_chinese(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "mslt_chinese"),
@@ -924,7 +924,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     #                                       lang=lang_id,
     #                                       gpu_count=gpu_count,
     #                                       rank=rank, device=device))
-    lang_id = "ara"
+    lang_id = "arb"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_clartts(),
                                            corpus_dir=os.path.join(PREPROCESSING_DIR, "clartts"),
                                            lang=lang_id,
