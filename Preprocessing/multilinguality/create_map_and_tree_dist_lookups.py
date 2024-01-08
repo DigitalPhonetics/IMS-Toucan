@@ -5,16 +5,16 @@ from tqdm import tqdm
 
 
 class CacheCreator:
-    def __init__(self):
-        self.iso_codes = list(load_json_from_path("iso_to_fullname.json").keys())
+    def __init__(self, cache_root="."):
+        self.iso_codes = list(load_json_from_path(os.path.join(cache_root, "iso_to_fullname.json")).keys())
 
         self.pairs = list()  # ignore order, collect all language pairs
         for index_1 in tqdm(range(len(self.iso_codes))):
             for index_2 in range(index_1, len(self.iso_codes)):
                 self.pairs.append((self.iso_codes[index_1], self.iso_codes[index_2]))
 
-    def create_tree_cache(self):
-        iso_to_familiy_memberships = load_json_from_path("iso_to_memberships.json")
+    def create_tree_cache(self, cache_root="."):
+        iso_to_familiy_memberships = load_json_from_path(os.path.join(cache_root, "iso_to_memberships.json"))
 
         self.pair_to_tree_similarity = dict()
         self.pair_to_depth = dict()
@@ -39,13 +39,13 @@ class CacheCreator:
             if lang_1 not in lang_1_to_lang_2_to_tree_dist.keys():
                 lang_1_to_lang_2_to_tree_dist[lang_1] = dict()
             lang_1_to_lang_2_to_tree_dist[lang_1][lang_2] = dist
-        with open('lang_1_to_lang_2_to_tree_dist.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_tree_dist.json'), 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_tree_dist, f, ensure_ascii=False, indent=4)
 
-    def create_map_cache(self):
+    def create_map_cache(self, cache_root="."):
 
         self.pair_to_map_dist = dict()
-        iso_to_long_lat = load_json_from_path("iso_to_long_lat.json")
+        iso_to_long_lat = load_json_from_path(os.path.join(cache_root, "iso_to_long_lat.json"))
         for pair in tqdm(self.pairs):
             try:
                 long, lat = iso_to_long_lat[pair[0]]
@@ -62,7 +62,7 @@ class CacheCreator:
                 lang_1_to_lang_2_to_map_dist[lang_1] = dict()
             lang_1_to_lang_2_to_map_dist[lang_1][lang_2] = dist
 
-        with open('lang_1_to_lang_2_to_map_dist.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_map_dist.json'), 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_map_dist, f, ensure_ascii=False, indent=4)
 
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5):

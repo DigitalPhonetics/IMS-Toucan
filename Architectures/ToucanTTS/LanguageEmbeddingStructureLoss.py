@@ -11,8 +11,11 @@ class LESL(torch.nn.Module):
 
     def __init__(self):
         super().__init__()
-        if not os.path.exists('Preprocessing/multilinguality/lang_1_to_lang_2_to_tree_dist.json') or not os.path.exists('Preprocessing/multilinguality/lang_1_to_lang_2_to_tree_dist.json'):
-            CacheCreator()
+        cc = CacheCreator(cache_root="Preprocessing/multilinguality")
+        if not os.path.exists('Preprocessing/multilinguality/lang_1_to_lang_2_to_tree_dist.json'):
+            cc.create_tree_cache(cache_root="Preprocessing/multilinguality")
+        if not os.path.exists('Preprocessing/multilinguality/lang_1_to_lang_2_to_tree_dist.json'):
+            cc.create_map_cache(cache_root="Preprocessing/multilinguality")
         if not os.path.exists("Preprocessing/multilinguality/asp_dict.pkl"):
             print("download asp file")  # TODO downloader script with release
 
