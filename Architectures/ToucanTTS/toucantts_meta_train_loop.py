@@ -23,7 +23,7 @@ def collate_and_pad(batch):
     # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True).float(),
             torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
-            [torch.tensor(datapoint[2]) for datapoint in batch],
+            [datapoint[2] for datapoint in batch],
             torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
             pad_sequence([datapoint[4].squeeze() for datapoint in batch], batch_first=True),
             pad_sequence([datapoint[5].squeeze() for datapoint in batch], batch_first=True),
