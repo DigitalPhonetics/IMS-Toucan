@@ -5,42 +5,47 @@ from tqdm import tqdm
 
 
 class CacheCreator:
-    def __init__(self):
-        self.iso_codes = list(load_json_from_path("iso_to_fullname.json").keys())
+    def __init__(self, cache_root="."):
+        self.iso_codes = list(load_json_from_path(os.path.join(cache_root, "iso_to_fullname.json")).keys())
 
         self.pairs = list()  # ignore order, collect all language pairs
         for index_1 in tqdm(range(len(self.iso_codes))):
             for index_2 in range(index_1, len(self.iso_codes)):
                 self.pairs.append((self.iso_codes[index_1], self.iso_codes[index_2]))
 
-        iso_to_familiy_memberships = load_json_from_path("iso_to_memberships.json")
+    def create_tree_cache(self, cache_root="."):
+        iso_to_familiy_memberships = load_json_from_path(os.path.join(cache_root, "iso_to_memberships.json"))
 
-        #######
-        self.pair_to_tree_dist = dict()
+        self.pair_to_tree_similarity = dict()
+        self.pair_to_depth = dict()
         for pair in tqdm(self.pairs):
-            self.pair_to_tree_dist[pair] = len(
-                set(iso_to_familiy_memberships[pair[0]]).intersection(set(iso_to_familiy_memberships[pair[1]])))
-        pruning_keys = list()
-        for key in tqdm(self.pair_to_tree_dist):
-            if self.pair_to_tree_dist[key] < 2:
-                pruning_keys.append(key)
-        for key in pruning_keys:
-            self.pair_to_tree_dist.pop(key)
+            self.pair_to_tree_similarity[pair] = len(set(iso_to_familiy_memberships[pair[0]]).intersection(set(iso_to_familiy_memberships[pair[1]])))
+            self.pair_to_depth[pair] = len(iso_to_familiy_memberships[pair[0]]) + len(iso_to_familiy_memberships[pair[1]])
+        # pruning_keys = list()
+        # for key in tqdm(self.pair_to_tree_similarity):
+        #    if self.pair_to_tree_similarity[key] < 2:
+        #        pruning_keys.append(key)
+        # for key in pruning_keys:
+        #    self.pair_to_tree_similarity.pop(key)
         # approx 2mio pairs with a tree similarity of 2 or higher left
         lang_1_to_lang_2_to_tree_dist = dict()
-        for pair in self.pair_to_tree_dist:
+        for pair in self.pair_to_tree_similarity:
             lang_1 = pair[0]
             lang_2 = pair[1]
-            dist = self.pair_to_tree_dist[pair]
+            if self.pair_to_tree_similarity[pair] == 2:
+                dist = 0.0
+            else:
+                dist = (self.pair_to_tree_similarity[pair] * 2) / self.pair_to_depth[pair]
             if lang_1 not in lang_1_to_lang_2_to_tree_dist.keys():
                 lang_1_to_lang_2_to_tree_dist[lang_1] = dict()
             lang_1_to_lang_2_to_tree_dist[lang_1][lang_2] = dist
-        with open('lang_1_to_lang_2_to_tree_dist.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_tree_dist.json'), 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_tree_dist, f, ensure_ascii=False, indent=4)
 
-        #######
+    def create_map_cache(self, cache_root="."):
+
         self.pair_to_map_dist = dict()
-        iso_to_long_lat = load_json_from_path("iso_to_long_lat.json")
+        iso_to_long_lat = load_json_from_path(os.path.join(cache_root, "iso_to_long_lat.json"))
         for pair in tqdm(self.pairs):
             try:
                 long, lat = iso_to_long_lat[pair[0]]
@@ -57,17 +62,17 @@ class CacheCreator:
                 lang_1_to_lang_2_to_map_dist[lang_1] = dict()
             lang_1_to_lang_2_to_map_dist[lang_1][lang_2] = dist
 
-        with open('lang_1_to_lang_2_to_map_dist.json', 'w', encoding='utf-8') as f:
+        with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_map_dist.json'), 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_map_dist, f, ensure_ascii=False, indent=4)
 
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5):
         langs_to_sim = dict()
         for supervised_lang in supervised_langs:
             try:
-                langs_to_sim[supervised_lang] = self.pair_to_tree_dist[(lang, supervised_lang)]
+                langs_to_sim[supervised_lang] = self.pair_to_tree_similarity[(lang, supervised_lang)]
             except KeyError:
                 try:
-                    langs_to_sim[supervised_lang] = self.pair_to_tree_dist[(supervised_lang, lang)]
+                    langs_to_sim[supervised_lang] = self.pair_to_tree_similarity[(supervised_lang, lang)]
                 except KeyError:
                     pass
         return sorted(langs_to_sim, key=langs_to_sim.get, reverse=True)[:n_closest]
@@ -90,6 +95,8 @@ def load_json_from_path(path):
 
 
 if __name__ == '__main__':
-    if not (os.path.exists("lang_1_to_lang_2_to_map_dist.json") and os.path.exists(
-            "lang_1_to_lang_2_to_tree_dist.json")):
-        CacheCreator()
+    cc = CacheCreator()
+    if not os.path.exists("lang_1_to_lang_2_to_tree_dist.json"):
+        cc.create_tree_cache()
+    if not os.path.exists("lang_1_to_lang_2_to_map_dist.json"):
+        cc.create_map_cache()
