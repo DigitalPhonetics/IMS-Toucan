@@ -1,95 +1,100 @@
 """
 Example use of the scorer utility to inspect data.
-
-(pre-)trained models and already cache files with extracted features are required.
-"""
+(pre-trained models and already cache files with extracted features are required.)"""
 
 from Utility.Scorer import TTSScorer
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
 from Utility.storage_config import PREPROCESSING_DIR
 
-exec_device = "cuda:0" if torch.cuda.is_available() else "cpu"
+exec_device = "cuda:8"
 
-chunk_count = 30
-for index in range(chunk_count):
-    if index > 3:
-        tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-        tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, f"gigaspeech_chunk_{index}"), lang_id="eng")
-        tts_scorer.show_samples_with_highest_loss(20)
-        tts_scorer.remove_samples_with_highest_loss(5)
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "blizzard2013"), lang_id="eng")
+lang_id = "fon"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_fon_alf"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "jenny"), lang_id="eng")
+
+lang_id = "hau"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_hausa_cmv"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# SPANISH
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_Spanish"), lang_id="spa")
+
+lang_id = "lbb"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_ibibio_lst"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "spanish_blizzard"), lang_id="spa")
+
+lang_id = "kik"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_kikuyu_opb"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# CHINESE
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_chinese"), lang_id="cmn")
+
+lang_id = "lin"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_lingala_opb"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "aishell3"), lang_id="cmn")
+
+lang_id = "lug"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_ganda_cmv"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# PORTUGUESE
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "mls_porto"), lang_id="por")
+
+lang_id = "luo"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_luo_afv"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# POLISH
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "mls_polish"), lang_id="pol")
+
+lang_id = "luo"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_luo_opb"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# ITALIAN
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "mls_italian"), lang_id="ita")
+
+lang_id = "swh"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_swahili_llsti"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# DUTCH
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "mls_dutch"), lang_id="nld")
+
+lang_id = "sxb"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_suba_afv"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_Dutch"), lang_id="nld")
+
+lang_id = "wol"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_wolof_alf"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# GREEK
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_Greek"), lang_id="ell")
+
+lang_id = "yor"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "african_voices_yoruba_opb"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# FINNISH
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_Finnish"), lang_id="fin")
+
+lang_id = "nya"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "zambezi_voice_nyanja"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# VIETNAMESE
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "VIVOS_viet"), lang_id="vie")
+
+lang_id = "loz"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "zambezi_voice_lozi"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
-# RUSSIAN
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_Russian"), lang_id="rus")
-tts_scorer.show_samples_with_highest_loss(20)
-tts_scorer.remove_samples_with_highest_loss(5)
-# HUNGARIAN
-tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Meta", "checkpoint_2000.pt"), device=exec_device)
-tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "css10_Hungarian"), lang_id="hun")
+
+lang_id = "toi"
+tts_scorer = TTSScorer(path_to_model=os.path.join(MODELS_DIR, "ToucanTTS_Massive", "best.pt"), device=exec_device)
+tts_scorer.score(path_to_toucantts_dataset=os.path.join(PREPROCESSING_DIR, "zambezi_voice_tonga"), lang_id=lang_id)
 tts_scorer.show_samples_with_highest_loss(20)
 tts_scorer.remove_samples_with_highest_loss(5)
