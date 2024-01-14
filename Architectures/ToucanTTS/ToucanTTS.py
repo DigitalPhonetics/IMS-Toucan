@@ -42,7 +42,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
-                 attention_dimension=384,
+                 attention_dimension=192,
                  attention_heads=6,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -90,9 +90,9 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=5,
-                 glow_blocks=16,
-                 glow_layers=3,
+                 glow_kernel_size=9,
+                 glow_blocks=18,
+                 glow_layers=4,
 
                  # additional features
                  utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding

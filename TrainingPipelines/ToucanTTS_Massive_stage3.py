@@ -1,3 +1,9 @@
+"""
+
+STAGE 3: Training on as much data as possible
+
+"""
+
 import time
 
 import torch.multiprocessing
@@ -19,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage3")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -41,6 +47,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["eng"] = list()
 
+    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
+                                                      lang="eng",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
     chunk_count = 50
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
     for index in range(chunk_count):
@@ -49,12 +60,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                           lang="eng",
                                                           gpu_count=gpu_count,
                                                           rank=rank))
-
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy,
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                                      lang="eng",
-                                                      gpu_count=gpu_count,
-                                                      rank=rank))
 
     lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ryanspeech,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Ryan"),
@@ -1819,8 +1824,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=4,
-               warmup_steps=25000,
+               batch_size=8,
+               warmup_steps=8000,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
                save_directory=meta_save_dir,
@@ -1828,7 +1833,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_embed_model=os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"),
                resume=resume,
                fine_tune=finetune,
-               steps=300000,
+               steps=100000,
                steps_per_checkpoint=1000,
                lr=0.0001,
                use_wandb=use_wandb,

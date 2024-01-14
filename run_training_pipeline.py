@@ -10,7 +10,11 @@ from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
 from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingPipelines.ToucanTTS_MLS_English import run as mls
-from TrainingPipelines.ToucanTTS_Massive import run as meta
+from TrainingPipelines.ToucanTTS_Massive_stage1 import run as stage1
+from TrainingPipelines.ToucanTTS_Massive_stage2 import run as stage2
+from TrainingPipelines.ToucanTTS_Massive_stage3 import run as stage3
+from TrainingPipelines.ToucanTTS_Massive_stage4 import run as stage4
+from TrainingPipelines.ToucanTTS_MetaCheckpoint import run as meta
 from TrainingPipelines.ToucanTTS_Nancy import run as nancy
 from TrainingPipelines.finetuning_example_multilingual import run as fine_tuning_example_multilingual
 from TrainingPipelines.finetuning_example_simple import run as fine_tuning_example_simple
@@ -26,10 +30,14 @@ pipeline_dict = {
     "mls"                            : mls,
     "nancystoch"                     : nancystoch,
     "meta"                           : meta,
+    "stage1"                         : stage1,
+    "stage2"                         : stage2,
+    "stage3"                         : stage3,
+    "stage4"                         : stage4,
     # training the aligner from scratch (not recommended, best to use provided checkpoint)
     "aligner"                        : aligner,
     # vocoder training (not recommended, best to use provided checkpoint)
-    "hifigan": HiFiGAN
+    "hifigan"                        : HiFiGAN
 }
 
 if __name__ == '__main__':
