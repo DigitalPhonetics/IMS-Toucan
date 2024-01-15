@@ -9,7 +9,6 @@ import torch
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
-from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -26,7 +25,6 @@ class ToucanTTSInterface(torch.nn.Module):
                  device="cpu",  # device that everything computes on. If a cuda device is available, this can speed things up by an order of magnitude.
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
-                 embedding_model_path=None,
                  language="eng",  # initial language of the model, can be changed later with the setter methods
                  ):
         super().__init__()
@@ -53,13 +51,6 @@ class ToucanTTSInterface(torch.nn.Module):
         ######################################
         #  load features to style models     #
         ######################################
-        self.style_embedding_function = StyleEmbedding()
-        if embedding_model_path is None:
-            check_dict = torch.load(os.path.join(MODELS_DIR, "Embedding", "embedding_function.pt"), map_location="cpu")
-        else:
-            check_dict = torch.load(embedding_model_path, map_location="cpu")
-        self.style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-        self.style_embedding_function.to(self.device)
         self.speaker_embedding_func_ecapa = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                                                            run_opts={"device": str(device)},
                                                                            savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
@@ -93,29 +84,19 @@ class ToucanTTSInterface(torch.nn.Module):
         if embedding is not None:
             self.default_utterance_embedding = embedding.squeeze().to(self.device)
             return
-        if type(path_to_reference_audio) == list:
-            if len(path_to_reference_audio) > 0:
-                for path in path_to_reference_audio:
-                    assert os.path.exists(path)
-                speaker_embs = list()
-                for path in path_to_reference_audio:
-                    wave, sr = soundfile.read(path)
-                    wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
-                    spec = self.ap.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1)
-                    spec_len = torch.LongTensor([len(spec)])
-                    style_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
-                    speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
-                    speaker_embs.append(torch.cat([style_embedding, speaker_embedding], dim=-1))
-                self.default_utterance_embedding = sum(speaker_embs) / len(speaker_embs)
-        else:
-            assert os.path.exists(path_to_reference_audio)
-            wave, sr = soundfile.read(path_to_reference_audio)
-            wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
-            spec = self.ap.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1)
-            spec_len = torch.LongTensor([len(spec)])
-            style_embedding = self.style_embedding_function(spec.unsqueeze(0).to(self.device), spec_len.unsqueeze(0).to(self.device)).squeeze()
-            speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
-            self.default_utterance_embedding = torch.cat([style_embedding, speaker_embedding], dim=-1)
+        if type(path_to_reference_audio) != list:
+            path_to_reference_audio = [path_to_reference_audio]
+
+        if len(path_to_reference_audio) > 0:
+            for path in path_to_reference_audio:
+                assert os.path.exists(path)
+            speaker_embs = list()
+            for path in path_to_reference_audio:
+                wave, sr = soundfile.read(path)
+                wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
+                speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
+                speaker_embs.append(speaker_embedding)
+            self.default_utterance_embedding = sum(speaker_embs) / len(speaker_embs)
 
     def set_language(self, lang_id):
         """

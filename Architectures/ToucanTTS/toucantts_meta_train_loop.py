@@ -4,7 +4,6 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
-from Architectures.EmbeddingModel.StyleEmbedding import StyleEmbedding
 from Architectures.ToucanTTS.LanguageEmbeddingSpaceStructureLoss import LanguageEmbeddingSpaceStructureLoss
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
@@ -43,7 +42,6 @@ def train_loop(net,
                lr,
                path_to_checkpoint,
                lang,
-               path_to_embed_model,
                resume,
                fine_tune,
                warmup_steps,
@@ -65,13 +63,8 @@ def train_loop(net,
     if steps < warmup_steps * 5:
         print(f"too much warmup given the amount of steps, reducing warmup to {warmup_steps} steps")
         warmup_steps = steps // 5
-    style_embedding_function = StyleEmbedding().to(device)
     first_time_glow = True
     final_steps = False
-    check_dict = torch.load(path_to_embed_model, map_location=device)
-    style_embedding_function.load_state_dict(check_dict["style_emb_func"])
-    style_embedding_function.eval()
-    style_embedding_function.requires_grad_(False)
 
     if use_less_loss:
         less_loss = LanguageEmbeddingSpaceStructureLoss()
@@ -157,7 +150,6 @@ def train_loop(net,
             # for the final few steps, only the decoder, postnet and variance predictors are trained, inspired by the TorToiSE trick.
             final_steps = True
             model.encoder.requires_grad_(False)
-            style_embedding_function.requires_grad_(False)
 
         batches = []
         while len(batches) < batch_size:
@@ -195,9 +187,8 @@ def train_loop(net,
         # we sum the loss for each task, as we would do for the
         # second order regular MAML, but we do it only over one
         # step (i.e. iterations of inner loop = 1)
-        style_embedding = style_embedding_function(batch_of_feature_sequences=gold_speech,
-                                                   batch_of_feature_sequence_lengths=speech_lengths)
-        utterance_embedding = torch.cat([style_embedding, batch[9].to(device)], dim=-1)
+
+        utterance_embedding = batch[9].to(device)
         regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss = net(
             text_tensors=text_tensors,
             text_lengths=text_lengths,
@@ -269,14 +260,7 @@ def train_loop(net,
                 rank = 0
             if rank == 0:
                 net.eval()
-                style_embedding_function.eval()
-                with torch.inference_mode():
-                    wave = ap.indexes_to_audio(datasets[0][0][2].int().to(device)).detach()
-                    mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
-                default_embedding = torch.cat([style_embedding_function(
-                    batch_of_feature_sequences=mel.clone().unsqueeze(0).to(device),
-                    batch_of_feature_sequence_lengths=datasets[0][0][3].unsqueeze(0).to(device)).squeeze(),
-                                               datasets[0][0][9].to(device)], dim=-1)
+                default_embedding = datasets[0][0][9].to(device)
                 print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
                 print("Steps:                  {}\n".format(step_counter))
                 torch.save({

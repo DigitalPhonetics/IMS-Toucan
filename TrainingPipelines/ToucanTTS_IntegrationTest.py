@@ -70,12 +70,10 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                eval_lang="eng",
                warmup_steps=500,
                path_to_checkpoint=resume_checkpoint,
-               path_to_embed_model=None,
                fine_tune=finetune,
                resume=resume,
                steps=5000,
                use_wandb=use_wandb,
-               train_embed=True,
                train_samplers=[train_sampler],
                gpu_count=gpu_count)
     if use_wandb:

@@ -55,7 +55,7 @@ class ToucanTTS(torch.nn.Module):
                  encoder_units=1280,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
-                 conformer_encoder_kernel_size=5,
+                 conformer_encoder_kernel_size=7,
                  transformer_enc_dropout_rate=0.1,
                  transformer_enc_positional_dropout_rate=0.1,
                  transformer_enc_attn_dropout_rate=0.1,
@@ -95,7 +95,7 @@ class ToucanTTS(torch.nn.Module):
                  glow_layers=4,
 
                  # additional features
-                 utt_embed_dim=208,  # 192 dim speaker embedding + 16 dim prosody embedding
+                 utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
                  embedding_integration="AdaIN",  # ["AdaIN" | "ConditionalLayerNorm" | "ConcatProject"]
                  ):
@@ -449,7 +449,7 @@ if __name__ == '__main__':
 
     print(" TESTING INFERENCE ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
-    dummy_utterance_embed = torch.randn([208])  # [Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([192])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
     print(model.inference(dummy_text_batch,
                           utterance_embedding=dummy_utterance_embed,
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     dummy_pitch = torch.Tensor([[[1.0], [0.], [0.]], [[1.1], [1.2], [0.8]], [[1.1], [1.2], [0.8]]])
     dummy_energy = torch.Tensor([[[1.0], [1.3], [0.]], [[1.1], [1.4], [0.8]], [[1.1], [1.2], [0.8]]])
 
-    dummy_utterance_embed = torch.randn([3, 208])  # [Batch, Dimensions of Speaker Embedding]
+    dummy_utterance_embed = torch.randn([3, 192])  # [Batch, Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([5, 3, 2])
 
     ce, fl, dl, pl, el = model(dummy_text_batch,
