@@ -72,7 +72,6 @@ class ToucanTTSInterface(torch.nn.Module):
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, device=device)
         self.phone2mel.eval()
         self.vocoder.eval()
-        self.style_embedding_function.eval()
         if self.use_lang_id:
             self.lang_id = get_language_id(language)
         else:

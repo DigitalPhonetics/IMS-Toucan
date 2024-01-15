@@ -70,13 +70,10 @@ class Conformer(torch.nn.Module):
             if conformer_type == "encoder":  # the encoder gets an additional conditioning signal added to its output
                 if embedding_integration == "AdaIN":
                     self.encoder_embedding_projection = AdaIN1d(style_dim=utt_embed, num_features=attention_dim)
-                    self.encoder_language_embedding_projection = AdaIN1d(style_dim=attention_dim, num_features=attention_dim)
                 elif embedding_integration == "ConditionalLayerNorm":
                     self.encoder_embedding_projection = ConditionalLayerNorm(speaker_embedding_dim=utt_embed, hidden_dim=attention_dim)
-                    self.encoder_language_embedding_projection = ConditionalLayerNorm(speaker_embedding_dim=attention_dim, hidden_dim=attention_dim)
                 else:
                     self.encoder_embedding_projection = torch.nn.Linear(attention_dim + utt_embed, attention_dim)
-                    self.encoder_language_embedding_projection = torch.nn.Linear(attention_dim + attention_dim, attention_dim)
             else:
                 if embedding_integration == "AdaIN":
                     self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: AdaIN1d(style_dim=utt_embed, num_features=attention_dim))
@@ -126,10 +123,10 @@ class Conformer(torch.nn.Module):
             xs = self.embed(xs)
 
         if lang_ids is not None:
-            xs = integrate_with_utt_embed(hs=xs,
-                                          utt_embeddings=self.language_embedding(lang_ids),
-                                          projection=self.encoder_language_embedding_projection,
-                                          embedding_training=self.use_conditional_layernorm_embedding_integration)
+            lang_embs = self.language_embedding(lang_ids)
+            normalized_lang_embs = torch.nn.functional.normalize(lang_embs)
+            normalized_xs = torch.nn.functional.normalize(xs, dim=2)
+            xs = (normalized_xs.transpose(1, 2) + normalized_lang_embs.unsqueeze(-1)).transpose(1, 2)  # offset phoneme representation by language specific offset
 
         xs = self.pos_enc(xs)
 

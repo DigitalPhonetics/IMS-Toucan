@@ -85,6 +85,15 @@ def plot_progress_spec_toucantts(net,
 def plot_code_spec(pitch, energy, sentence, durations, mel, save_path, tf, step):
     fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 8))
 
+    expanded_pitch = list()
+    expanded_energy = list()
+    for p, e, d in zip(pitch.cpu().squeeze().numpy(), energy.cpu().squeeze().numpy(), durations.cpu().numpy()):
+        for _ in range(d):
+            expanded_energy.append(e)
+            expanded_pitch.append(p)
+    pitch = expanded_pitch
+    energy = expanded_energy
+
     spec_plot_axis = ax[1]
     pitch_and_energy_axis = ax[0]
 
@@ -123,8 +132,8 @@ def plot_code_spec(pitch, energy, sentence, durations, mel, save_path, tf, step)
     spec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=15, linewidth=1.0)
     spec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=15, linewidth=2.0)
 
-    pitch_and_energy_axis.plot(pitch.cpu().squeeze().numpy(), color="blue")
-    pitch_and_energy_axis.plot(energy.cpu().squeeze().numpy(), color="green")
+    pitch_and_energy_axis.plot(pitch, color="blue")
+    pitch_and_energy_axis.plot(energy, color="green")
 
     spec_plot_axis.set_aspect("auto")
     pitch_and_energy_axis.set_aspect("auto")

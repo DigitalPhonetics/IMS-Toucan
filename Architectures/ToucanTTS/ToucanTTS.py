@@ -43,7 +43,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  attention_dimension=192,
-                 attention_heads=6,
+                 attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
                  init_type="xavier_uniform",
@@ -51,8 +51,8 @@ class ToucanTTS(torch.nn.Module):
                  use_cnn_in_conformer=True,
 
                  # encoder
-                 encoder_layers=8,
-                 encoder_units=1280,
+                 encoder_layers=6,
+                 encoder_units=1536,
                  encoder_normalize_before=True,
                  encoder_concat_after=False,
                  conformer_encoder_kernel_size=7,
@@ -61,29 +61,29 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=10,
-                 decoder_units=1280,
+                 decoder_layers=6,
+                 decoder_units=1536,
                  decoder_concat_after=False,
                  conformer_decoder_kernel_size=31,  # 31 works for spectrograms
-                 decoder_normalize_before=False,  # when we're using conditional layernorm, we should not destroy this information with regular layernorm directly after
+                 decoder_normalize_before=True,
                  transformer_dec_dropout_rate=0.1,
                  transformer_dec_positional_dropout_rate=0.1,
                  transformer_dec_attn_dropout_rate=0.1,
 
                  # duration predictor
-                 duration_predictor_layers=7,
-                 duration_predictor_kernel_size=5,
+                 duration_predictor_layers=3,
+                 duration_predictor_kernel_size=3,
                  duration_predictor_dropout_rate=0.2,
 
                  # pitch predictor
-                 pitch_predictor_layers=9,
+                 pitch_predictor_layers=5,
                  pitch_predictor_kernel_size=5,
                  pitch_predictor_dropout=0.3,
                  pitch_embed_kernel_size=1,
                  pitch_embed_dropout=0.0,
 
                  # energy predictor
-                 energy_predictor_layers=5,
+                 energy_predictor_layers=3,
                  energy_predictor_kernel_size=3,
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
@@ -358,7 +358,7 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
+            pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding).detach()
             energy_predictions = self.energy_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             predicted_durations = self.duration_predictor(encoded_texts, padding_mask=padding_masks, utt_embed=utterance_embedding)
 

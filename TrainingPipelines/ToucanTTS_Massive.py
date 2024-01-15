@@ -1783,6 +1783,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                          rank=rank))
 
     for lang in lang_to_datasets:
+        print(lang)
         datasets.append(ConcatDataset(lang_to_datasets[lang]))
     re_ordered_datasets = list()
     collection_dataset = list()
