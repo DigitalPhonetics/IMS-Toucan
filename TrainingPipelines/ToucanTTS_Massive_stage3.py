@@ -198,7 +198,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=12,
+               batch_size=20,
                warmup_steps=500,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
