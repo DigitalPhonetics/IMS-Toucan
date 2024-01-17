@@ -93,13 +93,24 @@ if __name__ == '__main__':
         print(f"No GPU specified, using CPU. Training will likely not work without GPU.")
         gpu_count = 1  # for technical reasons this is set to one, indicating it's not gpu_count training, even though there is no GPU in this case
     else:
-        os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-        os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
-        device = torch.device("cuda")
-        print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device(s).")
         gpu_count = len(args.gpu_id.replace(",", " ").split())
-        # example call for gpu_count training:
-        # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --gpu_id "1,2,3"
+
+        if gpu_count == 1:
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+            os.environ["CUDA_VISIBLE_DEVICES"] = f"{args.gpu_id}"
+            device = torch.device("cuda")
+            print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device(s).")
+
+        else:
+            os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+            rank = int(os.environ["LOCAL_RANK"])
+            id_for_this_process = args.gpu_id.replace(",", " ").split()[rank]
+            os.environ["CUDA_VISIBLE_DEVICES"] = f"{id_for_this_process}"
+            device = torch.device("cuda")
+            print(f"Making GPU {os.environ['CUDA_VISIBLE_DEVICES']} the only visible device(s).")
+
+            # example call for gpu_count training:
+            # torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py nancy --gpu_id "1,2,3"
 
     torch.manual_seed(9665)
     random.seed(9665)

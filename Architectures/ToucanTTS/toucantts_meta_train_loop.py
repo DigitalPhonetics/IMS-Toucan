@@ -214,7 +214,7 @@ def train_loop(net,
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
 
-        if torch.isnan(regression_loss) or torch.isnan(glow_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss) or torch.isnan(less_value):
+        if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss) or torch.isnan(less_value):
             print("One of the losses turned to NaN! Skipping this batch ...")
             continue
 
@@ -226,6 +226,9 @@ def train_loop(net,
             if use_less_loss:
                 train_loss = train_loss + less_value
         if glow_loss is not None:
+            if torch.isnan(glow_loss):
+                print("Glow loss turned to NaN! Skipping this batch ...")
+                continue
             train_loss = train_loss + glow_loss
             if not first_time_glow:
                 glow_losses_total.append(glow_loss.item())

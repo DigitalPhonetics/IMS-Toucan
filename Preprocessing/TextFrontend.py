@@ -730,7 +730,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('3', "˧˥")  # I'm fairly certain that this is a bug in espeak and ɜ is meant to be 3
             phones = phones.replace('4', "˦˧˥")
             phones = phones.replace('5', "˧˩˧")
-            phones = phones.replace('6', "˧˩ʔ˨")  # very weird tone, because the tone introduces another phoneme
+            phones = phones.replace('6', "˧˩˨ʔ")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
         # TODO add more of this handling for more tonal languages
 

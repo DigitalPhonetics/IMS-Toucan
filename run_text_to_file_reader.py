@@ -72,18 +72,18 @@ def viet_poem(version, model_id="Meta", exec_device="cpu", speaker_reference=Non
 
     read_texts(model_id=model_id,
                sentence=["""Thân phận,
-ở một nơi luôn phải nhắc mình,
-im miệng,
-thân phận,
-là khi nói về quá khứ,
-ngó trước nhìn sau,
-là phải biết nhắm mắt bịt tai làm lơ,
-thờ ơ,
-với tất cả những điều gai chướng,
-thân phận chúng tôi ở đó,
-những quyển sách chuyền tay nhau như ăn cắp,
-ngôn luận ư?
-không có đất cho nghĩa tự do."""],
+                            ở một nơi luôn phải nhắc mình,
+                            im miệng,
+                            thân phận,
+                            là khi nói về quá khứ,
+                            ngó trước nhìn sau,
+                            là phải biết nhắm mắt bịt tai làm lơ,
+                            thờ ơ,
+                            với tất cả những điều gai chướng,
+                            thân phận chúng tôi ở đó,
+                            những quyển sách chuyền tay nhau như ăn cắp,
+                            ngôn luận ư?
+                            không có đất cho nghĩa tự do."""],
                filename=f"audios/viet_poem_{version}.wav",
                device=exec_device,
                language="vie",
@@ -95,17 +95,17 @@ if __name__ == '__main__':
     exec_device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"running on {exec_device}")
 
-    sound_of_silence_single_utt(version="ad00_0004",
+    sound_of_silence_single_utt(version="massive",
                                 model_id="Meta",
                                 exec_device=exec_device,
-                                speaker_reference="audios/ad00_0004.wav")
+                                speaker_reference="audios/reference_audios/voice_2.wav")
 
-    die_glocke(version="ad00_0004",
+    die_glocke(version="massive",
                model_id="Meta",
                exec_device=exec_device,
-               speaker_reference="audios/ad00_0004.wav")
+               speaker_reference="audios/reference_audios/voice_2.wav")
 
-    viet_poem(version="ad00_0004",
+    viet_poem(version="massive",
               model_id="Meta",
               exec_device=exec_device,
-              speaker_reference="audios/ad00_0004.wav")
+              speaker_reference="audios/reference_audios/voice_2.wav")
