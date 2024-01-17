@@ -214,26 +214,25 @@ def train_loop(net,
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
 
-        if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
+        if torch.isnan(regression_loss) or torch.isnan(glow_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss) or torch.isnan(less_value):
+            print("One of the losses turned to NaN! Skipping this batch ...")
+            continue
+
+        if not run_glow or not first_time_glow:
             train_loss = train_loss + regression_loss
+            train_loss = train_loss + duration_loss
+            train_loss = train_loss + pitch_loss
+            train_loss = train_loss + energy_loss
+            if use_less_loss:
+                train_loss = train_loss + less_value
         if glow_loss is not None:
+            train_loss = train_loss + glow_loss
             if not first_time_glow:
                 glow_losses_total.append(glow_loss.item())
             else:
-                glow_losses_total.append(0)
-            if not torch.isnan(glow_loss):
-                train_loss = train_loss + glow_loss
+                glow_losses_total.append(0)  # just to avoid super large numbers during plotting that mess up the scaling
         else:
             glow_losses_total.append(0)
-        if not torch.isnan(duration_loss) and (not run_glow or not first_time_glow):
-            train_loss = train_loss + duration_loss
-        if not torch.isnan(pitch_loss) and (not run_glow or not first_time_glow):
-            train_loss = train_loss + pitch_loss
-        if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
-            train_loss = train_loss + energy_loss
-        if use_less_loss:
-            if not torch.isnan(less_value) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + less_value
 
         regression_losses_total.append(regression_loss.item())
         duration_losses_total.append(duration_loss.item())
