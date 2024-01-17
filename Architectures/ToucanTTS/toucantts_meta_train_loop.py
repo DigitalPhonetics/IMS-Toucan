@@ -68,8 +68,11 @@ def train_loop(net,
 
     if use_less_loss:
         less_loss = LanguageEmbeddingSpaceStructureLoss()
-        # there are 7233 language IDs
-        valid_language_ids = list(range(7233))
+        # there are 7233 language IDs, but there are a few illegal ones: "ajp", "ajt", "en-sc", "en-us", "fr-be", "fr-sw", "lak", "lno", "nul", "pii", "plj", "pt-br", "slq", "smd", "snb", "spa-lat", "tpw", "vi-ctr", "vi-so", "wya", "zua"
+        valid_language_ids = list(less_loss.ids_to_iso_codes.keys())
+        for illegal_lang in ["ajp", "ajt", "en-sc", "en-us", "fr-be", "fr-sw", "lak", "lno", "nul", "pii", "plj", "pt-br", "slq", "smd", "snb", "spa-lat", "tpw", "vi-ctr", "vi-so", "wya", "zua"]:
+            remove_id = less_loss.iso_codes_to_ids[illegal_lang]
+            valid_language_ids.remove(remove_id)
 
     if isinstance(net, torch.nn.parallel.DistributedDataParallel):
         model = net.module
@@ -205,7 +208,7 @@ def train_loop(net,
 
         if use_less_loss:
             language_ids = random.sample(valid_language_ids, batch_size)
-            language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids, device=device))
+            language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value = less_loss(language_ids, language_embeddings)
 
         # then we directly update our meta-parameters without

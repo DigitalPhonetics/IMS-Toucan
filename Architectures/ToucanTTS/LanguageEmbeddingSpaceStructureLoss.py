@@ -30,10 +30,8 @@ class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
             for _, value in values.items():
                 self.largest_value_map_dist = max(self.largest_value_map_dist, value)
 
-        self.dist = torch.nn.L1Loss()
-
-        iso_codes_to_ids = load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1]
-        self.ids_to_iso_codes = {v: k for k, v in iso_codes_to_ids.items()}
+        self.iso_codes_to_ids = load_json_from_path("Preprocessing/multilinguality/iso_lookup.json")[-1]
+        self.ids_to_iso_codes = {v: k for k, v in self.iso_codes_to_ids.items()}
 
     def forward(self, language_ids, language_embeddings):
         """
@@ -49,9 +47,9 @@ class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
         for language_id_1, language_embedding_1 in zip(language_ids, language_embeddings):
             for language_id_2, language_embedding_2 in zip(language_ids, language_embeddings):
                 if language_id_1 != language_id_2:
-                    embed_dist = self.dist(language_embedding_1, language_embedding_2)
-                    lang_1 = self.ids_to_iso_codes[language_id_1.cpu().item()]
-                    lang_2 = self.ids_to_iso_codes[language_id_2.cpu().item()]
+                    embed_dist = torch.nn.functional.l1_loss(language_embedding_1, language_embedding_2)
+                    lang_1 = self.ids_to_iso_codes[language_id_1]
+                    lang_2 = self.ids_to_iso_codes[language_id_2]
 
                     # Value Range Normalized Tree Dist
                     try:
@@ -71,6 +69,6 @@ class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
 
                     # Total distance should be similar to bring some structure into the embedding-space
                     metric_dist = (tree_dist + map_dist + asp_dist) / 3
-                    losses.append(self.dist(embed_dist, metric_dist))
+                    losses.append(torch.nn.functional.l1_loss(embed_dist, torch.tensor(metric_dist)))
 
         return sum(losses) / len(losses)
