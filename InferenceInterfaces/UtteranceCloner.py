@@ -29,7 +29,7 @@ class UtteranceCloner:
         self.tf = ArticulatoryCombinedTextFrontend(language=language)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
-        self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location='cpu')["asr_model"]
+        self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"]
         torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
         # careful: assumes 16kHz or 8kHz audio
         self.silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
@@ -40,14 +40,17 @@ class UtteranceCloner:
         (self.get_speech_timestamps, _, _, _, _) = utils
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference_mode or no_grad
+        self.acoustic_model = Aligner()
+        self.acoustic_model = self.acoustic_model.to(self.device)
+        self.acoustic_model.load_state_dict(self.aligner_weights)
+        self.parsel = Parselmouth(reduction_factor=1, fs=16000)
+        self.energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
+        self.dc = DurationCalculator(reduction_factor=1)
 
     def extract_prosody(self, transcript, ref_audio_path, lang="eng", on_line_fine_tune=True):
-        acoustic_model = Aligner()
-        acoustic_model.load_state_dict(self.aligner_weights)
-        acoustic_model = acoustic_model.to(self.device)
-        parsel = Parselmouth(reduction_factor=1, fs=16000)
-        energy_calc = EnergyCalculator(reduction_factor=1, fs=16000)
-        dc = DurationCalculator(reduction_factor=1)
+        if on_line_fine_tune:
+            self.acoustic_model.load_state_dict(self.aligner_weights)
+
         wave, sr = sf.read(ref_audio_path)
         if self.tf.language != lang:
             self.tf = ArticulatoryCombinedTextFrontend(language=lang)
@@ -79,17 +82,17 @@ class UtteranceCloner:
             mel = features.unsqueeze(0).to(self.device)
             mel_len = torch.LongTensor([len(mel[0])]).to(self.device)
             # actual fine-tuning starts here
-            optim_asr = torch.optim.Adam(acoustic_model.parameters(), lr=0.00001)
-            acoustic_model.train()
+            optim_asr = torch.optim.Adam(self.acoustic_model.parameters(), lr=0.00001)
+            self.acoustic_model.train()
             for _ in range(steps):
-                pred = acoustic_model(mel.clone())
-                loss = acoustic_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
+                pred = self.acoustic_model(mel.clone())
+                loss = self.acoustic_model.ctc_loss(pred.transpose(0, 1).log_softmax(2), tokens, mel_len, tokens_len)
                 print(loss.item())
                 optim_asr.zero_grad()
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(acoustic_model.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(self.acoustic_model.parameters(), 1.0)
                 optim_asr.step()
-            acoustic_model.eval()
+            self.acoustic_model.eval()
 
         # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
         # We note the index of word boundaries and insert durations of 0 afterwards
@@ -102,29 +105,29 @@ class UtteranceCloner:
                 indexes_of_word_boundaries.append(phoneme_index)
         matrix_without_word_boundaries = torch.Tensor(text_without_word_boundaries)
 
-        alignment_path = acoustic_model.inference(features=features.to(self.device),
-                                                  tokens=matrix_without_word_boundaries.to(self.device),
-                                                  return_ctc=False)
+        alignment_path = self.acoustic_model.inference(features=features.to(self.device),
+                                                       tokens=matrix_without_word_boundaries.to(self.device),
+                                                       return_ctc=False)
 
-        duration = dc(torch.LongTensor(alignment_path), vis=None).cpu()
+        duration = self.dc(torch.LongTensor(alignment_path), vis=None).cpu()
 
         for index_of_word_boundary in indexes_of_word_boundaries:
             duration = torch.cat([duration[:index_of_word_boundary],
                                   torch.LongTensor([0]),  # insert a 0 duration wherever there is a word boundary
                                   duration[index_of_word_boundary:]])
 
-        energy = energy_calc(input_waves=norm_wave.unsqueeze(0),
-                             input_waves_lengths=norm_wave_length,
-                             feats_lengths=feature_length,
-                             text=text,
-                             durations=duration.unsqueeze(0),
-                             durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
-        pitch = parsel(input_waves=norm_wave.unsqueeze(0),
-                       input_waves_lengths=norm_wave_length,
-                       feats_lengths=feature_length,
-                       text=text,
-                       durations=duration.unsqueeze(0),
-                       durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
+        energy = self.energy_calc(input_waves=norm_wave.unsqueeze(0),
+                                  input_waves_lengths=norm_wave_length,
+                                  feats_lengths=feature_length,
+                                  text=text,
+                                  durations=duration.unsqueeze(0),
+                                  durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
+        pitch = self.parsel(input_waves=norm_wave.unsqueeze(0),
+                            input_waves_lengths=norm_wave_length,
+                            feats_lengths=feature_length,
+                            text=text,
+                            durations=duration.unsqueeze(0),
+                            durations_lengths=torch.LongTensor([len(duration)]))[0].squeeze(0).cpu()
         return duration, pitch, energy, start_silence, end_silence
 
     def clone_utterance(self,
