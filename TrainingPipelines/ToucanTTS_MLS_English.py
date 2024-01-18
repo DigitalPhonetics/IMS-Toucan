@@ -29,6 +29,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     if gpu_count > 1:
         rank = int(os.environ["LOCAL_RANK"])
+        torch.cuda.set_device(rank)
         torch.distributed.init_process_group(backend="nccl")
     else:
         rank = 0
@@ -53,12 +54,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     model = ToucanTTS()
 
     if gpu_count > 1:
-        model.to("cuda")
-        torch.distributed.barrier()
+        model.to(rank)
         model = torch.nn.parallel.DistributedDataParallel(
             model,
-            device_ids=[0],  # this will be the only visible device
-            output_device=0,
+            device_ids=[rank],
+            output_device=rank,
             find_unused_parameters=True,
         )
         torch.distributed.barrier()

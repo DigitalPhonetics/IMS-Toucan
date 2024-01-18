@@ -36,6 +36,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     if gpu_count > 1:
         rank = int(os.environ["LOCAL_RANK"])
+        torch.cuda.set_device(rank)
         torch.distributed.init_process_group(backend="nccl")
     else:
         rank = 0
@@ -1805,12 +1806,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     train_samplers = list()
     if gpu_count > 1:
-        model.to("cuda")
-        torch.distributed.barrier()
+        model.to(rank)
         model = torch.nn.parallel.DistributedDataParallel(
             model,
-            device_ids=[0],  # this will be the only visible device
-            output_device=0,
+            device_ids=[rank],
+            output_device=rank,
             find_unused_parameters=True,
         )
         torch.distributed.barrier()
@@ -1824,8 +1824,8 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=40,
-               warmup_steps=8000,
+               batch_size=20,
+               warmup_steps=12000,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
                save_directory=meta_save_dir,
@@ -1834,7 +1834,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=finetune,
                steps=100000,
                steps_per_checkpoint=1000,
-               lr=0.0001,
+               lr=0.0005,
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,
