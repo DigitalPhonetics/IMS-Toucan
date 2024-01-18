@@ -283,7 +283,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["por"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
-                                                      lang="pt-br",
+                                                      lang="por",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
