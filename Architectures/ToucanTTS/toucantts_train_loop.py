@@ -109,6 +109,7 @@ def train_loop(net,
     duration_losses_total = list()
     pitch_losses_total = list()
     energy_losses_total = list()
+    previous_glow_loss = 1e28  # this is needed for collapse detection
     while True:
         net.train()
         epoch += 1
@@ -168,13 +169,15 @@ def train_loop(net,
 
             if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
                 train_loss = train_loss + regression_loss
-            if glow_loss is not None:
-                if not first_time_glow:
+            if run_glow:
+                if not first_time_glow or glow_loss < 0.0:
                     glow_losses_total.append(glow_loss.item())
                 else:
                     glow_losses_total.append(0)
-                if not torch.isnan(glow_loss):
+                add_glow_loss = not torch.isnan(glow_loss) and glow_loss < previous_glow_loss
+                if add_glow_loss:
                     train_loss = train_loss + glow_loss
+                    previous_glow_loss = glow_loss.item()  # to prevent collapse.
             else:
                 glow_losses_total.append(0)
             if not torch.isnan(duration_loss) and (not run_glow or not first_time_glow):
@@ -196,9 +199,10 @@ def train_loop(net,
             optimizer.step()
             scheduler.step()
             if run_glow:
-                torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
-                flow_optimizer.step()
-                flow_scheduler.step()
+                if add_glow_loss:
+                    torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
+                    flow_optimizer.step()
+                    flow_scheduler.step()
             step_counter += 1
             if step_counter % steps_per_checkpoint == 0:
                 # evaluation interval is happening

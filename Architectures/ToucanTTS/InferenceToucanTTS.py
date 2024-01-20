@@ -4,12 +4,15 @@ from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
 
+from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
+from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
 from Architectures.GeneralLayers.DurationPredictor import DurationPredictor
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.GeneralLayers.VariancePredictor import VariancePredictor
 from Architectures.ToucanTTS.Glow import Glow
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
+from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
 
 
@@ -65,12 +68,18 @@ class ToucanTTS(torch.nn.Module):
         glow_kernel_size = config.glow_kernel_size
         glow_blocks = config.glow_blocks
         glow_layers = config.glow_layers
+        try:
+            integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
+        except KeyError:
+            integrate_language_embedding_into_encoder_out = False
 
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
         self.use_scaled_pos_enc = use_scaled_positional_encoding
         self.multilingual_model = lang_embs is not None
         self.multispeaker_model = utt_embed_dim is not None
+        self.integrate_language_embedding_into_encoder_out = integrate_language_embedding_into_encoder_out
+        self.use_conditional_layernorm_embedding_integration = embedding_integration in ["AdaIN", "ConditionalLayerNorm"]
 
         articulatory_feature_embedding = Sequential(Linear(input_feature_dimensions, 100), Tanh(), Linear(100, attention_dimension))
         self.encoder = Conformer(conformer_type="encoder",
@@ -93,6 +102,14 @@ class ToucanTTS(torch.nn.Module):
                                  lang_embs=lang_embs,
                                  use_output_norm=True,
                                  embedding_integration=embedding_integration)
+
+        if self.integrate_language_embedding_into_encoder_out:
+            if embedding_integration == "AdaIN":
+                self.language_information_integration = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
+            elif embedding_integration == "ConditionalLayerNorm":
+                self.language_information_integration = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
+            else:
+                self.language_information_integration = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension,
                                                     n_layers=duration_predictor_layers,
@@ -196,6 +213,10 @@ class ToucanTTS(torch.nn.Module):
         # encoding the texts
         text_masks = make_non_pad_mask(text_lengths, device=text_lengths.device).unsqueeze(-2)
         encoded_texts, _ = self.encoder(text_tensors, text_masks, utterance_embedding=utterance_embedding, lang_ids=lang_ids)
+
+        if self.integrate_language_embedding_into_encoder_out:
+            lang_embs = self.encoder.language_embedding(lang_ids).squeeze(-1).detach()
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_information_integration, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations
         pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding) if gold_pitch is None else gold_pitch

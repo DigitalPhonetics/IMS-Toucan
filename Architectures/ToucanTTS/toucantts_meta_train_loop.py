@@ -48,11 +48,14 @@ def train_loop(net,
                use_wandb,
                train_samplers,
                gpu_count,
-               use_less_loss=False
+               use_less_loss,
+               frozen_encoder
                ):
     """
     see train loop arbiter for explanations of the arguments
     """
+    if frozen_encoder and not fine_tune:
+        print("\n\nWARNING: You are not training the encoder, but you don't start from a pretrained model!\n\n")
     net = net.to(device)
     if steps_per_checkpoint is None:
         steps_per_checkpoint = 1000
@@ -103,6 +106,7 @@ def train_loop(net,
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 8, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     steps_run_previously = 0
+    previous_glow_loss = 1e28
     regression_losses_total = list()
     glow_losses_total = list()
     duration_losses_total = list()
@@ -114,7 +118,10 @@ def train_loop(net,
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
-        model.load_state_dict(check_dict["model"])
+        model.load_state_dict(check_dict["model"], strict=not frozen_encoder)
+        if frozen_encoder:
+            # in this case, we want to reset all parameters except for the encoder
+            model.reset_parameters_except_encoder()
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
@@ -129,12 +136,12 @@ def train_loop(net,
     # =============================
     # Actual train loop starts here
     # =============================
-    if fine_tune:
+    if fine_tune and not frozen_encoder:
         # we start off carefully by fine-tuning only the language embedding layer first
         model.requires_grad_(False)
         model.encoder.language_embedding.requires_grad_(True)
     for step_counter in tqdm(range(steps_run_previously, steps)):
-        if fine_tune and step_counter == warmup_steps // 4:
+        if fine_tune and not frozen_encoder and step_counter == warmup_steps // 4:
             model.requires_grad_(True)
         run_glow = step_counter > (warmup_steps * 2)
         if run_glow:
@@ -149,7 +156,9 @@ def train_loop(net,
                 if step_counter > ((warmup_steps * 2) + (warmup_steps // 4)):
                     first_time_glow = False
                     model.requires_grad_(True)
-        if step_counter > steps - warmup_steps and not final_steps:
+                    if frozen_encoder:
+                        model.encoder.requires_grad_(False)
+        if (step_counter > steps - warmup_steps and not final_steps) or (frozen_encoder and not final_steps):
             # for the final few steps, only the decoder, postnet and variance predictors are trained, inspired by the TorToiSE trick.
             final_steps = True
             model.encoder.requires_grad_(False)
@@ -221,19 +230,24 @@ def train_loop(net,
             print("One of the losses turned to NaN! Skipping this batch ...")
             continue
 
-        if not run_glow or not first_time_glow:
+        if not run_glow or not first_time_glow:  # so whenever we're not in the glow warmup phase
             train_loss = train_loss + regression_loss
             train_loss = train_loss + duration_loss
             train_loss = train_loss + pitch_loss
             train_loss = train_loss + energy_loss
             if use_less_loss:
                 train_loss = train_loss + less_value
-        if glow_loss is not None:
+        if run_glow:
             if torch.isnan(glow_loss):
                 print("Glow loss turned to NaN! Skipping this batch ...")
                 continue
-            train_loss = train_loss + glow_loss
-            if not first_time_glow:
+
+            add_glow_loss = not torch.isnan(glow_loss) and glow_loss < previous_glow_loss
+            if add_glow_loss:
+                train_loss = train_loss + glow_loss
+                previous_glow_loss = glow_loss.item()  # to prevent collapse.
+
+            if not first_time_glow or glow_loss > 0.0:
                 glow_losses_total.append(glow_loss.item())
             else:
                 glow_losses_total.append(0)  # just to avoid super large numbers during plotting that mess up the scaling
@@ -254,9 +268,10 @@ def train_loop(net,
         optimizer.step()
         scheduler.step()
         if run_glow:
-            torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
-            flow_optimizer.step()
-            flow_scheduler.step()
+            if add_glow_loss:
+                torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
+                flow_optimizer.step()
+                flow_scheduler.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
