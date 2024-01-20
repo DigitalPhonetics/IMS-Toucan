@@ -455,12 +455,12 @@ class ToucanTTS(torch.nn.Module):
             return outs.squeeze().transpose(0, 1), duration_predictions, pitch_predictions, energy_predictions
         return outs.squeeze().transpose(0, 1)
 
-    def _reset_parameters(self, init_type):
+    def _reset_parameters(self, init_type="xavier_uniform"):
         # initialize parameters
         if init_type != "pytorch":
             initialize(self, init_type)
 
-    def reset_parameters_except_encoder(self, init_type):
+    def reset_parameters_except_encoder(self, init_type="xavier_uniform"):
         # overwrite parameters
         initialize(self.post_flow, init_type)
         initialize(self.decoder, init_type)
