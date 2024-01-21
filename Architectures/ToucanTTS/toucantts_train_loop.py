@@ -169,7 +169,7 @@ def train_loop(net,
 
             if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
                 train_loss = train_loss + regression_loss
-            if run_glow:
+            if glow_loss is not None:
                 if not first_time_glow or glow_loss < 0.0:
                     glow_losses_total.append(glow_loss.item())
                 else:
@@ -198,7 +198,7 @@ def train_loop(net,
             torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
-            if run_glow:
+            if glow_loss is not None:
                 if add_glow_loss:
                     torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
                     flow_optimizer.step()

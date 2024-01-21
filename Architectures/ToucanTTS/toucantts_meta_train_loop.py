@@ -237,7 +237,7 @@ def train_loop(net,
             train_loss = train_loss + energy_loss
             if use_less_loss:
                 train_loss = train_loss + less_value
-        if run_glow:
+        if glow_loss is not None:  # even if run_glow is true, this can still happen if the log prob cannot be calculated.
             if torch.isnan(glow_loss):
                 print("Glow loss turned to NaN! Skipping this batch ...")
                 continue
@@ -267,7 +267,7 @@ def train_loop(net,
         torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
         optimizer.step()
         scheduler.step()
-        if run_glow:
+        if glow_loss is not None:
             if add_glow_loss:
                 torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
                 flow_optimizer.step()
