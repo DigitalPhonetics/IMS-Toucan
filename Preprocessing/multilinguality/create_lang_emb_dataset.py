@@ -5,6 +5,7 @@ import json
 import yaml
 import pickle
 import torch
+from torch.utils.data import Dataset
 from tqdm import tqdm
 from copy import deepcopy
 import sys
@@ -18,8 +19,13 @@ ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
 LANG_PAIRS_GEO_PATH = "lang_1_to_lang_2_to_map_dist.json"
 LANG_PAIRS_PHYLO_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
-LANG_EMBS_PATH = "LangEmbs/lang_embs_for_15_languages.pt"
-LANG_EMBS_MAPPING_PATH = "LangEmbs/mapping_lang_embs_for_15_languages.yaml"
+NUM_LANGS = 500
+LOSS_TYPE = "without_LESS_loss"
+LANG_EMBS_PATH = f"LangEmbs/model_{LOSS_TYPE}.pt"
+
+LANG_EMBS_MAPPING_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
+JSON_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/dataset_{NUM_LANGS}_{LOSS_TYPE}.json"
+JSON_1D_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/dataset_1D_{NUM_LANGS}_{LOSS_TYPE}.json"
 TEXT_FRONTEND_PATH = "../TextFrontend.py"
 
 
@@ -179,7 +185,7 @@ class DatasetCreator():
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.index.name = "language"
         df.columns = dataset_columns
-        df.to_json("/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/dataset.json")
+        df.to_json(JSON_OUT_PATH)
 
 
     def create_1D_json(self, n_closest=5, use_phylo=True):
@@ -205,10 +211,9 @@ class DatasetCreator():
             dataset_columns.append(f"{key}_emb_dim")
         dataset_columns.append("language_embedding")
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
-        print(df)
         df.index.name = "language"
         df.columns = dataset_columns
-        df.to_json("/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/dataset_1D.json")
+        df.to_json(JSON_1D_OUT_PATH)
 
     def check_features_for_all_languages(self):
         """Check feature generation for all language combinations.
@@ -237,6 +242,34 @@ class DatasetCreator():
         with open(erroneous_codes_save_path, "w") as f:
             json.dump(erroneous_codes, f)
 
+
+class LangEmbDataset(Dataset):
+    def __init__(self,
+                 annotations_file,
+                 use_phylo=True,
+                 transform=None,
+                 target_transform=None):
+        self.dataset_df = pd.read_json(annotations_file)
+        self.labels = self.dataset_df["language_embedding"]
+        self.transform = transform
+        self.target_transform = target_transform
+        self.use_phylo = use_phylo
+
+    def __len__(self):
+        return len(self.labels)
+    
+    def __getitem__(self, idx):
+        # return tuple of features and label, all as tensors
+        features = self.dataset_df.iloc[idx, :-1]
+
+        for feat_idx, feat_val in features:
+            if not isinstance(feat_val, torch.Tensor):
+                features[feat_idx] = torch.tensor(feat_val)
+        label = self.dataset_df[idx, -1]
+        label = label if isinstance(label, torch.Tensor) else torch.tensor(label)
+        
+        return features, label
+        
 
 # def asp(lang_a, lang_b, path_to_dict):
 #     """
@@ -300,7 +333,7 @@ if __name__ == "__main__":
 
     # # feature_dict, lang_emb_dict = dc.get_language_pair_features()
 
-    # dc.create_json()
+    dc.create_json()
     dc.create_1D_json()
 
     check_features_for_all_languages = False

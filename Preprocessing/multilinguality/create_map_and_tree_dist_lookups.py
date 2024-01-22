@@ -1,6 +1,7 @@
 import json
 import os.path
 
+from geopy.distance import geodesic
 from tqdm import tqdm
 
 
@@ -48,9 +49,10 @@ class CacheCreator:
         iso_to_long_lat = load_json_from_path(os.path.join(cache_root, "iso_to_long_lat.json"))
         for pair in tqdm(self.pairs):
             try:
-                long, lat = iso_to_long_lat[pair[0]]
+                long_1, lat_1 = iso_to_long_lat[pair[0]]
                 long_2, lat_2 = iso_to_long_lat[pair[1]]
-                self.pair_to_map_dist[pair] = abs(((long + 9999) - (long_2 + 9999)) + ((lat + 9999) - (lat_2 + 9999)))
+                geodesic((lat_1, long_1), (lat_2, long_2))
+                self.pair_to_map_dist[pair] = geodesic((lat_1, long_1), (lat_2, long_2)).miles
             except KeyError:
                 pass
         lang_1_to_lang_2_to_map_dist = dict()
