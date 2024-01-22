@@ -184,11 +184,11 @@ class ToucanTTS(torch.nn.Module):
 
         if self.integrate_language_embedding_into_encoder_out:
             if embedding_integration == "AdaIN":
-                self.language_information_integration_projection = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
+                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
             elif embedding_integration == "ConditionalLayerNorm":
-                self.language_information_integration_projection = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
+                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
             else:
-                self.language_information_integration_projection = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
+                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension, n_layers=duration_predictor_layers,
                                                     n_chans=attention_dimension,
@@ -355,7 +355,7 @@ class ToucanTTS(torch.nn.Module):
 
         if self.integrate_language_embedding_into_encoder_out:
             lang_embs = self.encoder.language_embedding(lang_ids).squeeze(-1).detach()
-            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_information_integration_projection, embedding_training=self.use_conditional_layernorm_embedding_integration)
+            encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         if is_inference:
             # predicting pitch, energy and durations
@@ -470,7 +470,7 @@ class ToucanTTS(torch.nn.Module):
         initialize(self.energy_predictor, init_type)
         initialize(self.duration_predictor, init_type)
         initialize(self.output_projection, init_type)
-        initialize(self.language_information_integration_projection, init_type)
+        initialize(self.language_embedding_infusion, init_type)
 
 
 if __name__ == '__main__':
