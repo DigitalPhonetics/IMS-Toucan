@@ -70,7 +70,7 @@ class ToucanTTS(torch.nn.Module):
         glow_layers = config.glow_layers
         try:
             integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
-        except KeyError:
+        except AttributeError:
             integrate_language_embedding_into_encoder_out = False
 
         self.input_feature_dimensions = input_feature_dimensions

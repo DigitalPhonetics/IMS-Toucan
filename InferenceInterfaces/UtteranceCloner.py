@@ -64,6 +64,8 @@ class UtteranceCloner:
 
         with torch.inference_mode():
             speech_timestamps = self.get_speech_timestamps(norm_wave, self.silero_model, sampling_rate=16000)
+        if len(speech_timestamps) == 0:
+            speech_timestamps = [{'start': 0, 'end': len(norm_wave)}]
         start_silence = speech_timestamps[0]['start']
         end_silence = len(norm_wave) - speech_timestamps[-1]['end']
         norm_wave = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
