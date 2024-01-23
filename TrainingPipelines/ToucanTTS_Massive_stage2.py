@@ -1825,7 +1825,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
                batch_size=20,
-               warmup_steps=12000,
+               warmup_steps=2000,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
                save_directory=meta_save_dir,
@@ -1834,7 +1834,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                fine_tune=finetune,
                steps=100000,
                steps_per_checkpoint=1000,
-               lr=0.001,
+               lr=0.0005,
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,

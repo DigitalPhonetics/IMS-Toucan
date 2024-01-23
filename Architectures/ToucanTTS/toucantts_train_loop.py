@@ -194,6 +194,9 @@ def train_loop(net,
 
             optimizer.zero_grad()
             flow_optimizer.zero_grad()
+            if type(train_loss) is float:
+                print("There is no loss for this step! Skipping ...")
+                continue
             train_loss.backward()
             torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
             optimizer.step()
