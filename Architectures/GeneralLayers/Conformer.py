@@ -83,7 +83,7 @@ class Conformer(torch.nn.Module):
                     self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
         if lang_embs is not None:
             self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
-
+            self.language_embedding_projection = torch.nn.Linear(attention_dim, attention_dim)
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
         encoder_selfattn_layer_args = (attention_heads, attention_dim, attention_dropout_rate, zero_triu)
@@ -124,9 +124,8 @@ class Conformer(torch.nn.Module):
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
-            normalized_lang_embs = torch.nn.functional.normalize(lang_embs)
-            normalized_xs = torch.nn.functional.normalize(xs, dim=2)
-            xs = (normalized_xs.transpose(1, 2) + normalized_lang_embs.unsqueeze(-1)).transpose(1, 2)  # offset phoneme representation by language specific offset
+            projected_lang_embs = torch.nn.functional.tanh(self.language_embedding_projection(lang_embs))
+            xs = (xs.transpose(1, 2) + projected_lang_embs.unsqueeze(-1)).transpose(1, 2)  # offset phoneme representation by language specific offset
 
         xs = self.pos_enc(xs)
 
