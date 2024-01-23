@@ -1402,7 +1402,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                         lang=lang_id,
                                                         gpu_count=gpu_count,
                                                         rank=rank))
-    lang_id = "urk"
+    lang_id = "ukr"
     if lang_id not in lang_to_datasets:
         lang_to_datasets[lang_id] = list()
     lang_to_datasets[lang_id].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_fleurs_ukrainian(),
