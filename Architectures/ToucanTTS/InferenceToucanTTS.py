@@ -68,10 +68,8 @@ class ToucanTTS(torch.nn.Module):
         glow_kernel_size = config.glow_kernel_size
         glow_blocks = config.glow_blocks
         glow_layers = config.glow_layers
-        try:
-            integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
-        except AttributeError:
-            integrate_language_embedding_into_encoder_out = False
+        lang_emb_size = config.lang_emb_size
+        integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
 
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
@@ -100,16 +98,17 @@ class ToucanTTS(torch.nn.Module):
                                  zero_triu=False,
                                  utt_embed=utt_embed_dim,
                                  lang_embs=lang_embs,
+                                 lang_emb_size=lang_emb_size,
                                  use_output_norm=True,
                                  embedding_integration=embedding_integration)
 
         if self.integrate_language_embedding_into_encoder_out:
             if embedding_integration == "AdaIN":
-                self.language_embedding_infusion = AdaIN1d(style_dim=attention_dimension, num_features=attention_dimension)
+                self.language_embedding_infusion = AdaIN1d(style_dim=lang_emb_size, num_features=attention_dimension)
             elif embedding_integration == "ConditionalLayerNorm":
-                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=attention_dimension, hidden_dim=attention_dimension)
+                self.language_embedding_infusion = ConditionalLayerNorm(speaker_embedding_dim=lang_emb_size, hidden_dim=attention_dimension)
             else:
-                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + attention_dimension, attention_dimension)
+                self.language_embedding_infusion = torch.nn.Linear(attention_dimension + lang_emb_size, attention_dimension)
 
         self.duration_predictor = DurationPredictor(idim=attention_dimension,
                                                     n_layers=duration_predictor_layers,

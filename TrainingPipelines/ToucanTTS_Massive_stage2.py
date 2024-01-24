@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage2_LESS")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage2_LESS_small_dim")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:

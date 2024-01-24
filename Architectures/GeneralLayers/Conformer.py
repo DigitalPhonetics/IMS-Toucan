@@ -45,7 +45,7 @@ class Conformer(torch.nn.Module):
 
     def __init__(self, conformer_type, attention_dim=256, attention_heads=4, linear_units=2048, num_blocks=6, dropout_rate=0.1, positional_dropout_rate=0.1,
                  attention_dropout_rate=0.0, input_layer="conv2d", normalize_before=True, concat_after=False, positionwise_conv_kernel_size=1,
-                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, use_output_norm=True, embedding_integration="AdaIN"):
+                 macaron_style=False, use_cnn_module=False, cnn_module_kernel=31, zero_triu=False, utt_embed=None, lang_embs=None, lang_emb_size=16, use_output_norm=True, embedding_integration="AdaIN"):
         super(Conformer, self).__init__()
 
         activation = Swish()
@@ -82,8 +82,8 @@ class Conformer(torch.nn.Module):
                 else:
                     self.decoder_embedding_projections = repeat(num_blocks, lambda lnum: torch.nn.Linear(attention_dim + utt_embed, attention_dim))
         if lang_embs is not None:
-            self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=attention_dim)
-            self.language_embedding_projection = torch.nn.Linear(attention_dim, attention_dim)
+            self.language_embedding = torch.nn.Embedding(num_embeddings=lang_embs, embedding_dim=lang_emb_size)
+            self.language_embedding_projection = torch.nn.Linear(lang_emb_size, attention_dim)
         # self-attention module definition
         encoder_selfattn_layer = RelPositionMultiHeadedAttention
         encoder_selfattn_layer_args = (attention_heads, attention_dim, attention_dropout_rate, zero_triu)
@@ -124,7 +124,7 @@ class Conformer(torch.nn.Module):
 
         if lang_ids is not None:
             lang_embs = self.language_embedding(lang_ids)
-            projected_lang_embs = torch.nn.functional.tanh(self.language_embedding_projection(lang_embs))
+            projected_lang_embs = self.language_embedding_projection(lang_embs)
             xs = (xs.transpose(1, 2) + projected_lang_embs.unsqueeze(-1)).transpose(1, 2)  # offset phoneme representation by language specific offset
 
         xs = self.pos_enc(xs)
