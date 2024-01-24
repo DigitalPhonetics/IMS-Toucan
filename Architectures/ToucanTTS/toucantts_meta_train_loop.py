@@ -106,7 +106,6 @@ def train_loop(net,
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 8, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     steps_run_previously = 0
-    previous_glow_loss = 1e28
     regression_losses_total = list()
     glow_losses_total = list()
     duration_losses_total = list()
@@ -236,16 +235,14 @@ def train_loop(net,
             train_loss = train_loss + pitch_loss
             train_loss = train_loss + energy_loss
             if use_less_loss:
-                train_loss = train_loss + less_value
+                train_loss = train_loss + less_value * 2
         if glow_loss is not None:  # even if run_glow is true, this can still happen if the log prob cannot be calculated.
+
             if torch.isnan(glow_loss):
                 print("Glow loss turned to NaN! Skipping this batch ...")
                 continue
 
-            add_glow_loss = not torch.isnan(glow_loss) and glow_loss < previous_glow_loss
-            if add_glow_loss:
-                train_loss = train_loss + glow_loss
-                previous_glow_loss = glow_loss.item()  # to prevent collapse.
+            train_loss = train_loss + glow_loss
 
             if not first_time_glow or glow_loss > 0.0:
                 glow_losses_total.append(glow_loss.item())
@@ -271,10 +268,9 @@ def train_loop(net,
         optimizer.step()
         scheduler.step()
         if glow_loss is not None:
-            if add_glow_loss:
-                torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
-                flow_optimizer.step()
-                flow_scheduler.step()
+            torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
+            flow_optimizer.step()
+            flow_scheduler.step()
 
         if step_counter % steps_per_checkpoint == 0 and step_counter != 0:
             # ==============================
