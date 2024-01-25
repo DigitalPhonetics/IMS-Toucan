@@ -93,8 +93,8 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=9,
-                 glow_blocks=18,
+                 glow_kernel_size=7,
+                 glow_blocks=14,
                  glow_layers=4,
 
                  # additional features
@@ -407,7 +407,7 @@ class ToucanTTS(torch.nn.Module):
                    energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=preliminary_spectrogram, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=decoder_masks)
+                glow_loss = self.post_flow(tgt_mels=gold_speech, infer=is_inference, mel_out=preliminary_spectrogram.detach(), encoded_texts=upsampled_enriched_encoded_texts.detach(), tgt_nonpadding=decoder_masks)
             else:
                 glow_loss = None
             return preliminary_spectrogram, \
