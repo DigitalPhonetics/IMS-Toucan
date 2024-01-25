@@ -463,17 +463,9 @@ class ToucanTTS(torch.nn.Module):
         if init_type != "pytorch":
             initialize(self, init_type)
 
-    def reset_parameters_except_encoder(self, init_type="xavier_uniform"):
-        # overwrite parameters
+    def reset_postnet(self, init_type="xavier_uniform"):
+        # useful for after they explode
         initialize(self.post_flow, init_type)
-        initialize(self.decoder, init_type)
-        initialize(self.pitch_embed, init_type)
-        initialize(self.pitch_predictor, init_type)
-        initialize(self.energy_embed, init_type)
-        initialize(self.energy_predictor, init_type)
-        initialize(self.duration_predictor, init_type)
-        initialize(self.output_projection, init_type)
-        initialize(self.language_embedding_infusion, init_type)
 
 
 if __name__ == '__main__':
