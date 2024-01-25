@@ -90,8 +90,6 @@ def train_loop(net,
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 8, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     epoch = 0
-    first_time_glow = True
-    final_steps = False
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
@@ -133,22 +131,6 @@ def train_loop(net,
             gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
 
             run_glow = step_counter > (warmup_steps * 2) or fine_tune
-            if run_glow:
-                if first_time_glow is not False and not fine_tune:
-                    # We freeze the model and the embedding function for the first few steps of the flow,
-                    # because at this point bad spikes can happen, that take a while to recover from.
-                    # So we protect our nice weights at this point.
-                    if first_time_glow != 2:
-                        model.requires_grad_(False)
-                        model.post_flow.requires_grad_(True)
-                        first_time_glow = 2
-                    if step_counter > ((warmup_steps * 2) + (warmup_steps // 4)):
-                        first_time_glow = False
-                        model.requires_grad_(True)
-            if step_counter > steps - warmup_steps and not final_steps:
-                # for the final few steps, only the decoder, postnet and variance predictors are trained, inspired by the TorToiSE trick.
-                final_steps = True
-                model.encoder.requires_grad_(False)
 
             train_loss = 0.0
             utterance_embedding = batch[9].to(device)
@@ -166,33 +148,34 @@ def train_loop(net,
                 run_glow=run_glow
             )
 
-            if not torch.isnan(regression_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + regression_loss
+            if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
+                print("One of the losses turned to NaN! Skipping this batch ...")
+                continue
+
+            train_loss = train_loss + duration_loss
+            train_loss = train_loss + pitch_loss
+            train_loss = train_loss + energy_loss
+            train_loss = train_loss + regression_loss
+
+            regression_losses_total.append(regression_loss.item())
+            duration_losses_total.append(duration_loss.item())
+            pitch_losses_total.append(pitch_loss.item())
+            energy_losses_total.append(energy_loss.item())
+
             if glow_loss is not None:
 
                 if torch.isnan(glow_loss):
                     print("Glow loss turned to NaN! Skipping this batch ...")
                     continue
 
-                if not first_time_glow or glow_loss < 0.0:
+                if glow_loss < 0.0:
                     glow_losses_total.append(glow_loss.item())
                 else:
-                    glow_losses_total.append(0)
+                    glow_losses_total.append(0.1)
 
                 train_loss = train_loss + glow_loss
             else:
                 glow_losses_total.append(0)
-            if not torch.isnan(duration_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + duration_loss
-            if not torch.isnan(pitch_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + pitch_loss
-            if not torch.isnan(energy_loss) and (not run_glow or not first_time_glow):
-                train_loss = train_loss + energy_loss
-
-            regression_losses_total.append(regression_loss.item())
-            duration_losses_total.append(duration_loss.item())
-            pitch_losses_total.append(pitch_loss.item())
-            energy_losses_total.append(energy_loss.item())
 
             optimizer.zero_grad()
             flow_optimizer.zero_grad()
