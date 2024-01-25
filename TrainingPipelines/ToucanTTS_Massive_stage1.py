@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_LESS_small_dim")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_LESS_small_dim_normalized")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -52,6 +52,15 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       lang="eng",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
+
+    chunk_count = 50
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
+    for index in range(chunk_count):
+        lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=chunks[index],
+                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_english_chunk_{index}"),
+                                                          lang="eng",
+                                                          gpu_count=gpu_count,
+                                                          rank=rank))
 
     lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ryanspeech,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "Ryan"),
@@ -110,6 +119,15 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
+    chunk_count = 10
+    chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_german(), split_n=chunk_count)
+    for index in range(chunk_count):
+        lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=chunks[index],
+                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, f"mls_german_chunk_{index}"),
+                                                          lang="deu",
+                                                          gpu_count=gpu_count,
+                                                          rank=rank))
+
     # FRENCH
 
     lang_to_datasets["fra"] = list()
@@ -128,6 +146,12 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard2023_neb_e_silence_removed,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "neb_e"),
+                                                      lang="fra",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    lang_to_datasets["fra"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_french,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_french"),
                                                       lang="fra",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
@@ -168,6 +192,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
+    # PORTUGUESE
+
+    lang_to_datasets["por"] = list()
+
+    lang_to_datasets["por"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mls_portuguese,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "mls_porto"),
+                                                      lang="por",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
     # ITALIAN
 
     lang_to_datasets["ita"] = list()
@@ -197,27 +231,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       lang="vie",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
-
-    # DIVERSE
-
-    for lang in ["acf", "bss", "deu", "inb", "nca", "quh", "wap", "acr", "bus", "dgr", "ind", "maz", "nch", "qul", "tav", "wmw", "acu", "byr", "dik", "iou", "mbb", "ncj", "qvc", "tbc", "xed", "agd", "bzh", "djk", "ipi", "mbc", "ncl", "qve", "tbg", "xon", "agg", "bzj", "dop", "jac", "mbh", "ncu", "qvh", "tbl", "xtd", "agn",
-                 "caa", "jic", "mbj", "ndj", "qvm", "tbz", "xtm", "agr", "cab", "emp", "jiv", "mbt", "nfa", "qvn", "tca", "yaa", "agu", "cap", "eng", "jvn", "mca", "ngp", "qvs", "tcs", "yad", "aia", "car", "ese", "mcb", "ngu", "qvw", "yal", "cax", "kaq", "mcd", "nhe", "qvz", "tee", "ycn", "ake", "cbc",
-                 "far", "mco", "qwh", "yka", "alp", "cbi", "fra", "kdc", "mcp", "nhu", "qxh", "ame", "cbr", "gai", "kde", "mcq", "nhw", "qxn", "tew", "yre", "amf", "cbs", "gam", "kdl", "mdy", "nhy", "qxo", "tfr", "yva", "amk", "cbt", "geb", "kek", "med", "nin", "rai", "zaa", "apb", "cbu", "glk",
-                 "ken", "mee", "nko", "rgu", "zab", "apr", "cbv", "meq", "nld", "tgo", "zac", "arl", "cco", "gng", "kje", "met", "nlg", "rop", "tgp", "zad", "grc", "klv", "mgh", "nnq", "rro", "zai", "ata", "cek", "gub", "kmu", "mib", "noa", "ruf", "tna", "zam", "atb", "cgc", "guh", "kne",
-                 "mie", "not", "rug", "tnk", "zao", "atg", "chf", "knf", "mih", "npl", "rus", "tnn", "zar", "awb", "chz", "gum", "knj", "mil", "sab", "tnp", "zas", "cjo", "guo", "ksr", "mio", "obo", "seh", "toc", "zav", "azg", "cle", "gux", "kue", "mit", "omw", "sey", "tos", "zaw", "azz", "cme", "gvc", "kvn", "miz",
-                 "ood", "sgb", "tpi", "zca", "bao", "cni", "gwi", "kwd", "mkl", "shp", "tpt", "zga", "bba", "cnl", "gym", "kwf", "mkn", "ote", "sja", "trc", "ziw", "bbb", "cnt", "gyr", "kwi", "mop", "otq", "snn", "ttc", "zlm", "cof", "hat", "kyc", "mox", "pab", "snp", "tte", "zos", "bgt", "con", "kyf", "mpm", "pad",
-                 "som", "tue", "zpc", "bjr", "cot", "heb", "kyg", "mpp", "soy", "tuf", "zpl", "bjv", "cpa", "kyq", "mpx", "pao", "spa", "tuo", "zpm", "bjz", "cpb", "hlt", "kyz", "mqb", "pib", "spp", "tur", "zpo", "bkd", "cpu", "hns", "lac", "mqj", "pir", "spy", "txq", "zpu", "blz", "crn", "hto", "lat", "msy", "pjt", "sri",
-                 "txu", "zpz", "bmr", "cso", "hub", "lex", "mto", "pls", "srm", "udu", "ztq", "bmu", "ctu", "lgl", "muy", "poi", "srn", "ukr", "zty", "bnp", "cuc", "lid", "mxb", "pol", "stp", "upv", "zyp", "boa", "cui", "huu", "mxq", "por", "sus", "ura", "boj", "cuk", "huv", "llg", "mxt", "poy", "suz", "urb", "box",
-                 "cwe", "hvn", "prf", "swe", "urt", "bpr", "cya", "ign", "lww", "myk", "ptu", "swh", "usp", "bps", "daa", "ikk", "maj", "myy", "sxb", "vid", "bqc", "dah", "nab", "qub", "tac", "vie", "bqp", "ded", "imo", "maq", "nas", "quf", "taj", "vmy"]:
-
-        if lang not in lang_to_datasets:
-            lang_to_datasets[lang] = list()
-
-        lang_to_datasets[lang].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_mms_template(lang=lang),
-                                                         corpus_dir=os.path.join(PREPROCESSING_DIR, f"mms_{lang}"),
-                                                         lang=f"{lang}",
-                                                         gpu_count=gpu_count,
-                                                         rank=rank))
 
     for lang in lang_to_datasets:
         datasets.append(ConcatDataset(lang_to_datasets[lang]))

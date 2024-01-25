@@ -127,6 +127,15 @@ def train_loop(net,
     # =============================
     # Actual train loop starts here
     # =============================
+
+    if fine_tune:
+        # we start off carefully by fine-tuning only the language embedding layer first
+        model.requires_grad_(False)
+        model.encoder.language_embedding.requires_grad_(True)
+    for step_counter in tqdm(range(steps_run_previously, steps)):
+        if fine_tune and step_counter == warmup_steps:
+            model.requires_grad_(True)
+
     for step_counter in tqdm(range(steps_run_previously, steps)):
         run_glow = step_counter > (warmup_steps * 2)
 

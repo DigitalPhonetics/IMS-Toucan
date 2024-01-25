@@ -93,8 +93,8 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_dropout=0.0,
 
                  # post glow
-                 glow_kernel_size=7,
-                 glow_blocks=14,
+                 glow_kernel_size=9,
+                 glow_blocks=18,
                  glow_layers=4,
 
                  # additional features
