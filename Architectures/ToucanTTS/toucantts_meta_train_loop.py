@@ -98,7 +98,7 @@ def train_loop(net,
     flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr * 8)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr * 8, warmup_steps=(warmup_steps // 4), max_steps=steps)
+    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     steps_run_previously = 0
     regression_losses_total = list()
