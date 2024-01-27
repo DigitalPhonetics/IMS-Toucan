@@ -200,7 +200,7 @@ class ToucanTTS(torch.nn.Module):
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
                  pause_duration_scaling_factor=1.0,
-                 glow_sampling_temperature=0.8):
+                 glow_sampling_temperature=0.2):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -267,7 +267,7 @@ class ToucanTTS(torch.nn.Module):
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
-                glow_sampling_temperature=0.8):
+                glow_sampling_temperature=0.2):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
