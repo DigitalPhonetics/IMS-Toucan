@@ -199,7 +199,8 @@ class ToucanTTS(torch.nn.Module):
                  lang_ids=None,
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
-                 pause_duration_scaling_factor=1.0):
+                 pause_duration_scaling_factor=1.0,
+                 glow_sampling_temperature=0.8):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -249,7 +250,7 @@ class ToucanTTS(torch.nn.Module):
 
         frames = self.output_projection(decoded_speech)
 
-        refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None)
+        refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None, glow_sampling_temperature=glow_sampling_temperature)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
@@ -265,7 +266,8 @@ class ToucanTTS(torch.nn.Module):
                 duration_scaling_factor=1.0,
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
-                pause_duration_scaling_factor=1.0):
+                pause_duration_scaling_factor=1.0,
+                glow_sampling_temperature=0.8):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
@@ -316,7 +318,8 @@ class ToucanTTS(torch.nn.Module):
                                            duration_scaling_factor=duration_scaling_factor,
                                            pitch_variance_scale=pitch_variance_scale,
                                            energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                           glow_sampling_temperature=glow_sampling_temperature)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions

@@ -125,7 +125,8 @@ class ToucanTTSInterface(torch.nn.Module):
                 energy=None,
                 input_is_phones=False,
                 return_plot_as_filepath=False,
-                loudness_in_db=-24.0):
+                loudness_in_db=-24.0,
+                glow_sampling_temperature=0.8):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -149,7 +150,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            duration_scaling_factor=duration_scaling_factor,
                                                            pitch_variance_scale=pitch_variance_scale,
                                                            energy_variance_scale=energy_variance_scale,
-                                                           pause_duration_scaling_factor=pause_duration_scaling_factor)
+                                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                                           glow_sampling_temperature=glow_sampling_temperature)
 
             mel = mel[:, durations[0]:-(durations[-1] + durations[-2])]
             durations[0] = 0  # SILENCE
@@ -222,7 +224,8 @@ class ToucanTTSInterface(torch.nn.Module):
                      silent=False,
                      dur_list=None,
                      pitch_list=None,
-                     energy_list=None):
+                     energy_list=None,
+                     glow_sampling_temperature=0.8):
         """
         Args:
             silent: Whether to be verbose about the process
@@ -260,7 +263,8 @@ class ToucanTTSInterface(torch.nn.Module):
                                                     duration_scaling_factor=duration_scaling_factor,
                                                     pitch_variance_scale=pitch_variance_scale,
                                                     energy_variance_scale=energy_variance_scale,
-                                                    pause_duration_scaling_factor=pause_duration_scaling_factor)).cpu()
+                                                    pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                                    glow_sampling_temperature=glow_sampling_temperature)).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         soundfile.write(file=file_location, data=float2pcm(wav), samplerate=24000, subtype="PCM_16")
 
@@ -270,14 +274,16 @@ class ToucanTTSInterface(torch.nn.Module):
                    duration_scaling_factor=1.0,
                    pitch_variance_scale=1.0,
                    energy_variance_scale=1.0,
-                   blocking=False):
+                   blocking=False,
+                   glow_sampling_temperature=0.8):
         if text.strip() == "":
             return
         wav = torch.tensor(self(text,
                                 view,
                                 duration_scaling_factor=duration_scaling_factor,
                                 pitch_variance_scale=pitch_variance_scale,
-                                energy_variance_scale=energy_variance_scale))
+                                energy_variance_scale=energy_variance_scale,
+                                glow_sampling_temperature=glow_sampling_temperature))
         wav = torch.cat((torch.zeros([10000]), wav, torch.zeros([10000])), 0).numpy()
         sounddevice.play(float2pcm(wav), samplerate=24000)
         if view:

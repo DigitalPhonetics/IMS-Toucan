@@ -339,7 +339,7 @@ class Glow(nn.Module):
                     use_weightnorm=use_weightnorm
                 ))
 
-    def forward(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding):
+    def forward(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, glow_sampling_temperature=0.8):
         x_recon = mel_out.transpose(1, 2)
         g = x_recon
         B, _, T = g.shape
@@ -360,7 +360,7 @@ class Glow(nn.Module):
             return postflow_loss
         else:
             nonpadding = torch.ones_like(x_recon[:, :1, :]) if tgt_nonpadding is None else tgt_nonpadding
-            z_post = torch.randn(x_recon.shape).to(g.device) * 0.6  # TODO experiment with the noise scale
+            z_post = torch.randn(x_recon.shape).to(g.device) * glow_sampling_temperature
             x_recon, _ = self._forward(z_post, nonpadding, g, reverse=True)
             return x_recon.transpose(1, 2)
 
