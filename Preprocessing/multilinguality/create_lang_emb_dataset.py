@@ -16,120 +16,37 @@ from Preprocessing.multilinguality.asp import asp, load_asp_dict
 
 ISO_LOOKUP_PATH = "iso_lookup.json"
 ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
-LANG_PAIRS_GEO_PATH = "lang_1_to_lang_2_to_map_dist.json"
-LANG_PAIRS_PHYLO_PATH = "lang_1_to_lang_2_to_tree_dist.json"
+LANG_PAIRS_map_PATH = "lang_1_to_lang_2_to_map_dist.json"
+LANG_PAIRS_tree_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
 NUM_LANGS = 500
-LOSS_TYPE = "without_LESS_loss"
-LANG_EMBS_PATH = f"LangEmbs/model_{LOSS_TYPE}.pt"
+LOSS_TYPE = "with_less_loss"
+LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
 
 LANG_EMBS_MAPPING_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
-JSON_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/dataset_{NUM_LANGS}_{LOSS_TYPE}.json"
-JSON_1D_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/dataset_1D_{NUM_LANGS}_{LOSS_TYPE}.json"
+JSON_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_{NUM_LANGS}_{LOSS_TYPE}.json"
+JSON_1D_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_1D_{NUM_LANGS}_{LOSS_TYPE}.json"
+ASP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_asp_{NUM_LANGS}_{LOSS_TYPE}.csv"
+MAP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_map_{NUM_LANGS}_{LOSS_TYPE}.csv"
+TREE_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_tree_{NUM_LANGS}_{LOSS_TYPE}.csv"
+COMBINED_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_COMBINED_correct_sims_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TEXT_FRONTEND_PATH = "../TextFrontend.py"
-
-
-# TODO: replace lang_embs_mapping with a function using get_language_id()
 
 
 class DatasetCreator():
     def __init__(self):
-        (self.lang_pairs_geo, 
-         self.lang_pairs_phylo, 
+        (self.lang_pairs_map, 
+         self.lang_pairs_tree, 
          self.lang_pairs_asp, 
          self.lang_embs, 
-         self.lang_embs_mapping, 
+         self.lang_embs_mapping, # only keys are used to get all languages, no mapping to langembs
          self.languages_in_text_frontend,
          self.iso_lookup) = load_feature_and_embedding_data()
-        
-    def check_if_language_features_available(self):
-        """For each language for which we have a language embedding, check if corresponding features are available"""
-        print("Checking if all required features are available...")
-        lang_codes = sorted(self.lang_embs_mapping.keys())
-        for lang_code in lang_codes:
-            assert self.lang_pairs_geo[lang_code], f"language code {lang_code} not found in geographic distance file"
-            assert self.lang_pairs_phylo[lang_code], f"language code {lang_code} not found in phylogenetic distance file"
-            assert self.lang_pairs_asp[lang_code] is not None, f"language code {lang_code} not found in ASP file"
-        return
 
-    def check_all_languages_in_text_frontend(self, save_path):
-        """For all language codes specified in Preprocessing/TextFrontend.py, check if features exist for them.
-        Create a dict with all language codes where features are missing, and write it to a JSON file.
-        Return the dict that was written to file."""
-        geo_errors = []
-        phylo_errors = []
-        asp_errors = []
 
-        for lang in self.languages_in_text_frontend:
-            try:
-                self.lang_pairs_geo[lang]
-            except KeyError:
-                geo_errors.append(lang)
-            try:
-                self.lang_pairs_phylo[lang]
-            except KeyError:
-                phylo_errors.append(lang)
-            try:
-                self.lang_pairs_asp[lang]
-            except KeyError:
-                asp_errors.append(lang)
-        
-        key_error_dict = {"geo_errors": geo_errors, "phylo_errors": phylo_errors, "asp_errors": asp_errors}
-        with open(save_path, "w") as f:
-            json.dump(key_error_dict, f)
-        return key_error_dict
-
-    def get_language_pair_features(self, use_phylo=True):
-        """Get features for all language-pair combinations."""
-        print("Retrieving features for language pairs...")
-        feature_dict = dict()
-        lang_emb_dict = dict()
-        languages = sorted(self.lang_embs_mapping.keys())
-        # iterate over all langauges
-        for lang_a_idx, lang_a in enumerate(languages):
-            if lang_a_idx < len(languages)-1:
-                feature_dict[lang_a] = dict()
-                # iterate over all remaining languages to get all language pairs
-                for lang_b in languages[lang_a_idx+1:]:
-                    feature_dict[lang_a][lang_b] = dict()
-                    feature_dict[lang_a][lang_b]["geo_distance"] = self.lang_pairs_geo[lang_a][lang_b]
-                    if use_phylo:
-                        try:
-                            lang_pair_phylo = self.lang_pairs_phylo[lang_a][lang_b]
-                        except KeyError:
-                            lang_pair_phylo = 0
-                        feature_dict[lang_a][lang_b]["phylo_distance"] = lang_pair_phylo
-                    feature_dict[lang_a][lang_b]["asp"] = asp(lang_a, lang_b, self.lang_pairs_asp)
-            # add language embedding, i.e. the label
-            lang_emb_dict[lang_a] = self.lang_embs[self.lang_embs_mapping[lang_a]]
-        return feature_dict, lang_emb_dict
-
-    # def get_features_for_one_language(self, specified_language, languages, use_phylo=True):
-    #     """Get all features for one specific language code"""
-    #     feature_dict = {"geo_distance": [], "phylo_distance": [], "asp": []}
-    #     specified_lang_idx = languages.index(specified_language) # index of the desired language
-
-    #     # get all pairwise features
-    #     for idx, other_lang in enumerate(languages):
-    #         if idx <= specified_lang_idx:
-    #             lang_a, lang_b = other_lang, specified_language
-    #         else:
-    #             lang_a, lang_b = specified_language, other_lang
-    #         feature_dict["geo_distance"].append(self.lang_pairs_geo[lang_a][lang_b])
-    #         if use_phylo:
-    #             try:
-    #                 lang_pair_phylo = self.lang_pairs_phylo[lang_a][lang_b]
-    #             except KeyError:
-    #                 lang_pair_phylo = 0
-    #             feature_dict["phylo_distance"].append(lang_pair_phylo)
-    #         asp_return = asp(lang_a, lang_b, self.lang_pairs_asp)
-    #         if isinstance(asp_return, ValueError) or isinstance(asp_return, KeyError):
-    #             return asp_return
-    #         feature_dict["asp"].append(asp_return)
-    #     return feature_dict
-    def get_features_for_one_language(self, sim_solver: SimilaritySolver, specified_language, languages, n_closest, use_phylo=True):
+    def get_features_for_one_language(self, sim_solver: SimilaritySolver, specified_language, languages, n_closest, use_tree=True):
         """Get features for one specific language code"""
-        # feature_dict = {"geo_distance": [], "phylo_distance": [], "asp": []}
+        # feature_dict = {"map_distance": [], "tree_distance": [], "asp": []}
         feature_dict = dict()
 
         # get all pairwise features
@@ -139,25 +56,25 @@ class DatasetCreator():
         for idx, other_lang in enumerate(closest_langs_on_map):
             # assign feature to dict
             try:
-                feature_dict[f"geo_distance_{idx}"] = [self.lang_pairs_geo[specified_language][other_lang]]
+                feature_dict[f"map_distance_{idx}"] = [self.lang_pairs_map[specified_language][other_lang]]
             except KeyError:
-                feature_dict[f"geo_distance_{idx}"] = [self.lang_pairs_geo[other_lang][specified_language]]
+                feature_dict[f"map_distance_{idx}"] = [self.lang_pairs_map[other_lang][specified_language]]
             # append language embedding to feature
-            feature_dict[f"geo_distance_{idx}"].extend(self.lang_embs[self.lang_embs_mapping[other_lang]].numpy())
+            feature_dict[f"map_distance_{idx}"].extend(self.lang_embs[self.lang_embs_mapping[other_lang]].numpy())
 
-        if use_phylo:
+        if use_tree:
             closest_langs_in_family = sim_solver.find_closest_in_family(lang=specified_language, supervised_langs=languages, n_closest=n_closest)
 
             for idx, other_lang in enumerate(closest_langs_in_family):
                 try:
-                    lang_pair_phylo = self.lang_pairs_phylo[specified_language][other_lang]
+                    lang_pair_tree = self.lang_pairs_tree[specified_language][other_lang]
                 except KeyError:
                     try:
-                        lang_pair_phylo = self.lang_pairs_phylo[other_lang][specified_language]
+                        lang_pair_tree = self.lang_pairs_tree[other_lang][specified_language]
                     except KeyError:
-                        lang_pair_phylo = 0
-                feature_dict[f"phylo_distance_{idx}"] = [lang_pair_phylo]
-                feature_dict[f"phylo_distance_{idx}"].extend(self.lang_embs[self.lang_embs_mapping[other_lang]].numpy())
+                        lang_pair_tree = 0
+                feature_dict[f"tree_distance_{idx}"] = [lang_pair_tree]
+                feature_dict[f"tree_distance_{idx}"].extend(self.lang_embs[self.lang_embs_mapping[other_lang]].numpy())
 
         closest_langs_aspf = sim_solver.find_closest_aspf(specified_language, languages, n_closest=n_closest)
         for idx, other_lang in enumerate(closest_langs_aspf):
@@ -167,13 +84,109 @@ class DatasetCreator():
         return feature_dict
 
 
-    def create_json(self, n_closest=5, use_phylo=True):
+    def create_combined_csv(self, distance_type="average", n_closest=5):
+        """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
+        distance_type = distance_type
+        for lang in sorted(self.lang_embs_mapping.keys()):
+            dataset_dict[lang] = [lang] # target language as first column
+            feature_dict = sim_solver.find_closest_combined(lang, 
+                                                            sorted(self.lang_embs_mapping.keys()), 
+                                                            distance=distance_type, 
+                                                            n_closest=n_closest)
+            # create entry for a single close lang
+            for _, close_lang in enumerate(feature_dict):
+                close_lang_euclid = feature_dict[close_lang]["combined_distance"]
+                close_lang_distances = feature_dict[close_lang]["individual_distances"]
+                # column order: compared closest language, euclid_dist, map_dist, tree_dist, asp_dist
+                close_lang_feature_list = [close_lang, close_lang_euclid] + close_lang_distances
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n_closest):
+            dataset_columns.extend([f"closest_lang_{i}", f"{distance_type}_dist_{i}", f"map_dist_{i}", f"tree_dist_{i}", f"asp_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{distance_type}" + ".csv"
+        df.to_csv(out_path, sep="|", index=False)
+
+    def create_aspf_csv(self, n_closest=5):
+        """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
+        for lang in sorted(self.lang_embs_mapping.keys()):
+            dataset_dict[lang] = [lang] # target language as first column
+            feature_dict = sim_solver.find_closest_aspf(lang, 
+                                                        sorted(self.lang_embs_mapping.keys()), 
+                                                        n_closest=n_closest)
+            # create entry for a single close lang
+            for _, close_lang in enumerate(feature_dict):
+                score = feature_dict[close_lang]
+                # column order: compared closest language, asp_dist
+                close_lang_feature_list = [close_lang, score]
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n_closest):
+            dataset_columns.extend([f"closest_lang_{i}", f"asp_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        out_path = ASP_CSV_OUT_PATH
+        df.to_csv(out_path, sep="|", index=False)
+
+    def create_map_csv(self, n_closest=5):
+        """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
+        for lang in sorted(self.lang_embs_mapping.keys()):
+            dataset_dict[lang] = [lang] # target language as first column
+            feature_dict = sim_solver.find_closest_on_map(lang, 
+                                                        sorted(self.lang_embs_mapping.keys()), 
+                                                        n_closest=n_closest)
+            # create entry for a single close lang
+            for _, close_lang in enumerate(feature_dict):
+                score = feature_dict[close_lang]
+                # column order: compared closest language, asp_dist
+                close_lang_feature_list = [close_lang, score]
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n_closest):
+            dataset_columns.extend([f"closest_lang_{i}", f"map_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        out_path = MAP_CSV_OUT_PATH
+        df.to_csv(out_path, sep="|", index=False)
+
+    def create_tree_csv(self, n_closest=5):
+        """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
+        for lang in sorted(self.lang_embs_mapping.keys()):
+            dataset_dict[lang] = [lang] # target language as first column
+            feature_dict = sim_solver.find_closest_in_family(lang, 
+                                                        sorted(self.lang_embs_mapping.keys()), 
+                                                        n_closest=n_closest)
+            # create entry for a single close lang
+            for _, close_lang in enumerate(feature_dict):
+                score = feature_dict[close_lang]
+                # column order: compared closest language, asp_dist
+                close_lang_feature_list = [close_lang, score]
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n_closest):
+            dataset_columns.extend([f"closest_lang_{i}", f"tree_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        out_path = TREE_CSV_OUT_PATH
+        df.to_csv(out_path, sep="|", index=False)
+
+
+    def create_json(self, n_closest=5, use_tree=True):
         """Create dataset in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         # TODO: create smaller lookup dicts containing only the values for the currently used languages 
-        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_phylo, map_dist=self.lang_pairs_geo, asp_dict=self.lang_pairs_asp)
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
         for lang in sorted(self.lang_embs_mapping.keys()):
-            feature_dict = self.get_features_for_one_language(sim_solver, lang, sorted(self.lang_embs_mapping.keys()), n_closest=n_closest, use_phylo=use_phylo)
+            feature_dict = self.get_features_for_one_language(sim_solver, lang, sorted(self.lang_embs_mapping.keys()), n_closest=n_closest, use_tree=use_tree)
             y_lang_emb = self.lang_embs[self.lang_embs_mapping[lang]]
             dataset_dict[lang] = []
             for feat in feature_dict.keys():
@@ -187,33 +200,6 @@ class DatasetCreator():
         df.columns = dataset_columns
         df.to_json(JSON_OUT_PATH)
 
-
-    def create_1D_json(self, n_closest=5, use_phylo=True):
-        """Create dataset in a dict, and saves it to a JSON file."""
-        dataset_dict = dict()
-        # TODO: create smaller lookup dicts containing only the values for the currently used languages 
-        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_phylo, map_dist=self.lang_pairs_geo, asp_dict=self.lang_pairs_asp)
-        for lang in sorted(self.lang_embs_mapping.keys()):
-            feature_dict = self.get_features_for_one_language(sim_solver, lang, sorted(self.lang_embs_mapping.keys()), n_closest=n_closest, use_phylo=use_phylo)
-            y_lang_emb = self.lang_embs[self.lang_embs_mapping[lang]].numpy()
-            for dim in range(y_lang_emb.size):
-                lang_dim_key = f"{lang}_{dim}"
-                dataset_dict[lang_dim_key] = [dim]
-                for feat in feature_dict.keys():
-
-                    dataset_dict[lang_dim_key].append(feature_dict[feat][0]) # get feature, e.g. geo_distance of closest lang
-                    dataset_dict[lang_dim_key].append(feature_dict[feat][dim+1]) # get 1 dimension of corresponding lang's lang emb
-                dataset_dict[lang_dim_key].append(y_lang_emb[dim]) # get target, i.e. 1 dimension of target lang emb
-
-        dataset_columns = ["dim"]
-        for key in feature_dict.keys():
-            dataset_columns.append(f"{key}_score")
-            dataset_columns.append(f"{key}_emb_dim")
-        dataset_columns.append("language_embedding")
-        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
-        df.index.name = "language"
-        df.columns = dataset_columns
-        df.to_json(JSON_1D_OUT_PATH)
 
     def check_features_for_all_languages(self):
         """Check feature generation for all language combinations.
@@ -243,54 +229,6 @@ class DatasetCreator():
             json.dump(erroneous_codes, f)
 
 
-class LangEmbDataset(Dataset):
-    def __init__(self,
-                 annotations_file,
-                 use_phylo=True,
-                 transform=None,
-                 target_transform=None):
-        self.dataset_df = pd.read_json(annotations_file)
-        self.labels = self.dataset_df["language_embedding"]
-        self.transform = transform
-        self.target_transform = target_transform
-        self.use_phylo = use_phylo
-
-    def __len__(self):
-        return len(self.labels)
-    
-    def __getitem__(self, idx):
-        # return tuple of features and label, all as tensors
-        features = self.dataset_df.iloc[idx, :-1]
-
-        for feat_idx, feat_val in features:
-            if not isinstance(feat_val, torch.Tensor):
-                features[feat_idx] = torch.tensor(feat_val)
-        label = self.dataset_df[idx, -1]
-        label = label if isinstance(label, torch.Tensor) else torch.tensor(label)
-        
-        return features, label
-        
-
-# def asp(lang_a, lang_b, path_to_dict):
-#     """
-#     Based on Phat Do's code.
-#     Look up and return the ASP between lang_a and lang_b from (pre-calculated) dictionary at path_to_dict
-#     """
-#     asp_dict = load_asp_dict(path_to_dict)
-#
-#     lang_list = list(asp_dict.keys()) # list of all languages, to get lang_b's index
-#     try:
-#         lang_b_idx = lang_list.index(lang_b) # lang_b's index
-#     except:
-#         return ValueError(lang_b)
-#     try:
-#         asp = asp_dict[lang_a][lang_b_idx] # asp_dict's structure: {lang: numpy array of all corresponding ASPs}
-#     except:
-#         return KeyError(lang_a)
-    
-#     return asp
-
-
 def get_languages_from_text_frontend(filepath=TEXT_FRONTEND_PATH):
     """Load TextFrontend.py and extract all ISO 639-2 language codes for which G2P rules exist.
     Return a list containing all extracted languages."""
@@ -305,10 +243,10 @@ def get_languages_from_text_frontend(filepath=TEXT_FRONTEND_PATH):
 def load_feature_and_embedding_data():
     """Load all features as well as the language embeddings."""
     print("Loading feature and embedding data...")
-    with open(LANG_PAIRS_GEO_PATH, "r") as f:
-        lang_pairs_geo = json.load(f)
-    with open(LANG_PAIRS_PHYLO_PATH, "r") as f:
-        lang_pairs_phylo = json.load(f)
+    with open(LANG_PAIRS_map_PATH, "r") as f:
+        lang_pairs_map = json.load(f)
+    with open(LANG_PAIRS_tree_PATH, "r") as f:
+        lang_pairs_tree = json.load(f)
     with open(LANG_PAIRS_ASP_PATH, "rb") as f:
         lang_pairs_asp = pickle.load(f)
     lang_embs = torch.load(LANG_EMBS_PATH)
@@ -319,7 +257,7 @@ def load_feature_and_embedding_data():
     languages_in_text_frontend = get_languages_from_text_frontend()
 
 
-    return lang_pairs_geo, lang_pairs_phylo, lang_pairs_asp, lang_embs, lang_embs_mapping, languages_in_text_frontend, iso_lookup
+    return lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_embs, lang_embs_mapping, languages_in_text_frontend, iso_lookup
 
 
 
@@ -331,10 +269,13 @@ if __name__ == "__main__":
     # key_error_save_path = "Preprocessing/multilinguality/key_errors_for_languages_from_text_frontend.json"
     # key_error_dict = dc.check_all_languages_in_text_frontend(save_path=key_error_save_path)
 
-    # # feature_dict, lang_emb_dict = dc.get_language_pair_features()
 
-    dc.create_json()
-    dc.create_1D_json()
+    #dc.create_json()
+    #dc.create_1D_json()
+    #dc.create_combined_csv()
+    dc.create_aspf_csv()
+    dc.create_map_csv()
+    dc.create_tree_csv()
 
     check_features_for_all_languages = False
     if check_features_for_all_languages:

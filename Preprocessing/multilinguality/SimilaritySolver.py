@@ -1,6 +1,7 @@
 import json
 import pickle
 import os
+import numpy as np
 # TODO: remove sys.path.append
 import sys
 sys.path.append("/home/behringe/hdd_behringe/IMS-Toucan")
@@ -29,12 +30,16 @@ class SimilaritySolver():
         else:
             map_dist_path = 'lang_1_to_lang_2_to_map_dist.json' if not map_dist_path else map_dist_path
             self.lang_1_to_lang_2_to_map_dist = load_json_from_path(map_dist_path)
+        self.largest_value_map_dist = 0.0
+        for _, values in self.lang_1_to_lang_2_to_map_dist.items():
+            for _, value in values.items():
+                self.largest_value_map_dist = max(self.largest_value_map_dist, value)
         if asp_dict:
             self.asp_dict = asp_dict
         else:
             asp_dict_path = "asp_dict.pkl" if not asp_dict_path else asp_dict_path
             with open(asp_dict_path, "rb") as f:
-                self.asp_dict = pickle.load(asp_dict_path)
+                self.asp_dict = pickle.load(f)
         if iso_to_fullname:
             self.iso_to_fullname = iso_to_fullname
         else:
@@ -53,17 +58,15 @@ class SimilaritySolver():
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5, verbose=False):
         langs_to_sim = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")        
         if lang in supervised_langs:
             supervised_langs.remove(lang)
-        for supervised_lang in supervised_langs:
-            try:
-                langs_to_sim[supervised_lang] = self.lang_1_to_lang_2_to_tree_dist[lang][supervised_lang]
-            except KeyError:
-                try:
-                    langs_to_sim[supervised_lang] = self.lang_1_to_lang_2_to_tree_dist[supervised_lang][lang]
-                except KeyError:
-                    pass
-        results = sorted(langs_to_sim, key=langs_to_sim.get, reverse=True)[:n_closest]
+        for sup_lang in supervised_langs:
+            dist = self.get_tree_distance(lang, sup_lang)
+            if dist is not None:
+                langs_to_sim[sup_lang] = dist
+        results = dict(sorted(langs_to_sim.items(), key=lambda x: x[1], reverse=True)[:n_closest])
         if verbose:
             print(f"{n_closest} most similar languages to {self.iso_to_fullname[lang]} in the given list are:")
             for result in results:
@@ -79,17 +82,15 @@ class SimilaritySolver():
         """Find the closest n supervised languages on the map, i.e. for which language embeddings are available."""
         langs_to_dist = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")
         if lang in supervised_langs:
             supervised_langs.remove(lang)
-        for supervised_lang in supervised_langs:
-            try:
-                langs_to_dist[supervised_lang] = self.lang_1_to_lang_2_to_map_dist[lang][supervised_lang]
-            except KeyError:
-                try:
-                    langs_to_dist[supervised_lang] = self.lang_1_to_lang_2_to_map_dist[supervised_lang][lang]
-                except KeyError:
-                    pass
-        results = sorted(langs_to_dist, key=langs_to_dist.get, reverse=False)[:n_closest]
+        for sup_lang in supervised_langs:
+            dist = self.get_map_distance(lang, sup_lang)
+            if dist is not None:
+                langs_to_dist[sup_lang] = dist
+        results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=False)[:n_closest])
         if verbose:
             print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} in the given list on the worldmap are:")
             for result in results:
@@ -104,23 +105,95 @@ class SimilaritySolver():
         """Find the closest n languages in terms of Angular Similarity of Phoneme Frequencies (ASPF)"""
         langs_to_sim = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")
         if lang in supervised_langs:
             supervised_langs.remove(lang)
         for supervised_lang in supervised_langs:
-            try:
-                langs_to_sim[supervised_lang] = asp(lang, supervised_lang, self.asp_dict)
-            except KeyError:
-                pass
-        results = sorted(langs_to_sim, key=langs_to_sim.get, reverse=True)[:n_closest]
+            asp_score = asp(lang, supervised_lang, self.asp_dict)
+            if asp_score is not None:
+                langs_to_sim[supervised_lang] = asp_score
+        results = dict(sorted(langs_to_sim.items(), key=lambda x: x[1], reverse=True)[:n_closest])
         if verbose:
             print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} w.r.t. ASPF are:")
             for result in results:
                 try:
                     print(self.iso_to_fullname[result])
+                    print(results[result])
                 except KeyError:
                     print("Full Name of Language Missing")
         return results
             
+    def find_closest_combined(self, lang, supervised_langs, distance: ["average", "euclidean"], n_closest=5, verbose=False):
+        """Find the n closest languages according to the combined Euclidean distance of map distance, tree distance, and ASP distance.
+        Returns a dict of dicts of the format {"supervised_lang_1": 
+                                                {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
+                                              "supervised_lang_2":
+                                                {...}, ...}"""
+        combined_dict = {}
+        supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")
+        if lang in supervised_langs:
+            supervised_langs.remove(lang)
+        for sup_lang in supervised_langs:
+            map_dist = self.get_map_distance(lang, sup_lang)
+            tree_dist = self.get_tree_distance(lang, sup_lang)
+            asp_score = asp(lang, sup_lang, self.asp_dict)
+            # if getting one of the scores failed, ignore this language
+            if None in {map_dist, tree_dist, asp_score}:
+                continue           
+
+            # asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
+            # dist_array = np.array([map_dist, tree_dist, asp_dist])
+            map_sim = 1 - map_dist # turn into sim since other 2 are also sims
+            dist_array = np.array([map_sim, tree_dist, asp_score])
+            if distance == "euclidean":
+                euclidean_dist = np.sqrt(np.sum(dist_array**2)) # no subtraction because lang has dist [0,0,0]
+                # combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
+                combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
+            elif distance == "average":
+                avg_dist = np.mean(dist_array)
+                # combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
+                combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
+            else:
+                raise ValueError("distance needs to be `average` or `euclidean`")
+        # results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"])[:n_closest])
+        results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=True)[:n_closest])
+        if verbose:
+            print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} w.r.t. the combined features are:")
+            for result in results:
+                try:
+                    print(self.iso_to_fullname[result])
+                    print(results[result])
+                except KeyError:
+                    print("Full Name of Language Missing")
+        return results
+
+    def get_map_distance(self, lang_1, lang_2):
+        """Returns normalized map distance between two languages.
+        If no value can be retrieved, returns None."""
+        try:
+            dist = self.lang_1_to_lang_2_to_map_dist[lang_1][lang_2]
+        except KeyError:
+            try:
+                dist = self.lang_1_to_lang_2_to_map_dist[lang_2][lang_1]
+            except KeyError:
+                return None
+        dist = dist / self.largest_value_map_dist # normalize
+        return dist
+    
+    def get_tree_distance(self, lang_1, lang_2):
+        """Returns normalized tree distance between two languages.
+        If no value can be retrieved, returns None."""
+        try:
+            dist = self.lang_1_to_lang_2_to_tree_dist[lang_1][lang_2]
+        except KeyError:
+            try:
+                dist = self.lang_1_to_lang_2_to_tree_dist[lang_2][lang_1]
+            except KeyError:
+                return None
+        return dist
 
 def load_json_from_path(path):
     with open(path, "r", encoding="utf8") as f:
@@ -159,6 +232,29 @@ if __name__ == '__main__':
                                       "dhi",
                                       "dhl"], 5, verbose=True)
     
+    ss.find_closest_combined("vie", ["dga",
+                                      "dgb",
+                                      "dgc",
+                                      "dgd",
+                                      "dge",
+                                      "dgg",
+                                      "dgh",
+                                      "dgi",
+                                      "dgk",
+                                      "dgl",
+                                      "dgn",
+                                      "dgo",
+                                      "dgr",
+                                      "dgs",
+                                      "dgt",
+                                      "dgw",
+                                      "dgx",
+                                      "dgz",
+                                      "dhd",
+                                      "dhg",
+                                      "dhi",
+                                      "dhl"], 5, verbose=True)
+
     ss.find_closest_in_family("vie", ["dga",
                                       "dgb",
                                       "dgc",
