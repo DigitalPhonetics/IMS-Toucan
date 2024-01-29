@@ -56,7 +56,7 @@ class SimilaritySolver():
             json.dump(self.iso_to_fullname, f, ensure_ascii=False, indent=4)
 
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5, verbose=False):
-        langs_to_sim = dict()
+        langs_to_dist = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
         if "urk" in supervised_langs:
             supervised_langs.remove("urk")        
@@ -65,8 +65,8 @@ class SimilaritySolver():
         for sup_lang in supervised_langs:
             dist = self.get_tree_distance(lang, sup_lang)
             if dist is not None:
-                langs_to_sim[sup_lang] = dist
-        results = dict(sorted(langs_to_sim.items(), key=lambda x: x[1], reverse=True)[:n_closest])
+                langs_to_dist[sup_lang] = dist
+        results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=False)[:n_closest])
         if verbose:
             print(f"{n_closest} most similar languages to {self.iso_to_fullname[lang]} in the given list are:")
             for result in results:
@@ -144,22 +144,22 @@ class SimilaritySolver():
             if None in {map_dist, tree_dist, asp_score}:
                 continue           
 
-            # asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
-            # dist_array = np.array([map_dist, tree_dist, asp_dist])
-            map_sim = 1 - map_dist # turn into sim since other 2 are also sims
-            dist_array = np.array([map_sim, tree_dist, asp_score])
+            asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
+            dist_array = np.array([map_dist, tree_dist, asp_dist])
+            #map_sim = 1 - map_dist # turn into sim since other 2 are also sims
+            #dist_array = np.array([map_sim, tree_dist, asp_score])
             if distance == "euclidean":
                 euclidean_dist = np.sqrt(np.sum(dist_array**2)) # no subtraction because lang has dist [0,0,0]
-                # combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
-                combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
+                combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
+                #combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
             elif distance == "average":
                 avg_dist = np.mean(dist_array)
-                # combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
-                combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
+                combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
+                #combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
             else:
                 raise ValueError("distance needs to be `average` or `euclidean`")
         # results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"])[:n_closest])
-        results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=True)[:n_closest])
+        results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=False)[:n_closest])
         if verbose:
             print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} w.r.t. the combined features are:")
             for result in results:
@@ -253,7 +253,10 @@ if __name__ == '__main__':
                                       "dhd",
                                       "dhg",
                                       "dhi",
-                                      "dhl"], 5, verbose=True)
+                                      "dhl"], 
+                                      distance="average", 
+                                      n_closest=5, 
+                                      verbose=True)
 
     ss.find_closest_in_family("vie", ["dga",
                                       "dgb",
