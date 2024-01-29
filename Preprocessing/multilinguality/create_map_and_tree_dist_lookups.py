@@ -34,9 +34,9 @@ class CacheCreator:
             lang_1 = pair[0]
             lang_2 = pair[1]
             if self.pair_to_tree_similarity[pair] == 2:
-                dist = 0.0
+                dist = 1.0
             else:
-                dist = (self.pair_to_tree_similarity[pair] * 2) / self.pair_to_depth[pair]
+                dist = 1 - ((self.pair_to_tree_similarity[pair] * 2) / self.pair_to_depth[pair])
             if lang_1 not in lang_1_to_lang_2_to_tree_dist.keys():
                 lang_1_to_lang_2_to_tree_dist[lang_1] = dict()
             lang_1_to_lang_2_to_tree_dist[lang_1][lang_2] = dist
