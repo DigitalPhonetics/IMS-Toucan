@@ -10,7 +10,7 @@ from tqdm import tqdm
 from copy import deepcopy
 import sys
 sys.path.append("/home/behringe/hdd_behringe/IMS-Toucan")
-from Preprocessing.TextFrontend import get_language_id
+from Preprocessing.TextFrontend import get_language_id, load_json_from_path
 from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
 from Preprocessing.multilinguality.asp import asp, load_asp_dict
 
@@ -24,6 +24,7 @@ LOSS_TYPE = "with_less_loss"
 LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
 
 LANG_EMBS_MAPPING_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
+# TODO: get lang_embs in a nicer way than from this mapping
 JSON_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_{NUM_LANGS}_{LOSS_TYPE}.json"
 JSON_1D_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_1D_{NUM_LANGS}_{LOSS_TYPE}.json"
 ASP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_asp_{NUM_LANGS}_{LOSS_TYPE}.csv"
@@ -39,7 +40,7 @@ class DatasetCreator():
          self.lang_pairs_tree, 
          self.lang_pairs_asp, 
          self.lang_embs, 
-         self.lang_embs_mapping, # only keys are used to get all languages, no mapping to langembs
+         self.lang_embs_mapping, # only keys are used to get all supervised languages, no mapping to langembs
          self.languages_in_text_frontend,
          self.iso_lookup) = load_feature_and_embedding_data()
 
@@ -84,17 +85,33 @@ class DatasetCreator():
         return feature_dict
 
 
-    def create_combined_csv(self, distance_type="average", n_closest=5):
+    def create_combined_csv(self, distance_type="average", zero_shot=False, n_closest=5):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
         distance_type = distance_type
-        for lang in sorted(self.lang_embs_mapping.keys()):
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        zero_shot_suffix= ""
+        if zero_shot:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            # remove supervised languages from iso dict
+            for sup_lang in supervised_langs:
+                iso_codes_to_ids.pop(sup_lang, None)
+                zero_shot_suffix = "zero_shot_"
+            lang_codes = list(iso_codes_to_ids.keys())
+        else:
+            lang_codes = sorted(self.lang_embs_mapping.keys())
+        failed_langs = []
+        for lang in lang_codes:
             dataset_dict[lang] = [lang] # target language as first column
             feature_dict = sim_solver.find_closest_combined(lang, 
-                                                            sorted(self.lang_embs_mapping.keys()), 
+                                                            supervised_langs, 
                                                             distance=distance_type, 
                                                             n_closest=n_closest)
+            # sort out incomplete results
+            if len(feature_dict) < n_closest:
+                failed_langs.append(lang)
+                continue
             # create entry for a single close lang
             for _, close_lang in enumerate(feature_dict):
                 close_lang_euclid = feature_dict[close_lang]["combined_distance"]
@@ -107,18 +124,35 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"{distance_type}_dist_{i}", f"map_dist_{i}", f"tree_dist_{i}", f"asp_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{distance_type}" + ".csv"
+        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{zero_shot_suffix}{distance_type}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
+        print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
-    def create_aspf_csv(self, n_closest=5):
+    def create_aspf_csv(self, zero_shot=False, n_closest=5):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
-        for lang in sorted(self.lang_embs_mapping.keys()):
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        zero_shot_suffix= ""
+        if zero_shot:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            # remove supervised languages from iso dict
+            for sup_lang in supervised_langs:
+                iso_codes_to_ids.pop(sup_lang, None)
+                zero_shot_suffix = "_zero_shot"
+            lang_codes = list(iso_codes_to_ids.keys())
+        else:
+            lang_codes = sorted(self.lang_embs_mapping.keys())
+        failed_langs = []        
+        for lang in lang_codes:
             dataset_dict[lang] = [lang] # target language as first column
             feature_dict = sim_solver.find_closest_aspf(lang, 
-                                                        sorted(self.lang_embs_mapping.keys()), 
+                                                        supervised_langs, 
                                                         n_closest=n_closest)
+            # sort out incomplete results
+            if len(feature_dict) < n_closest:
+                failed_langs.append(lang)
+                continue            
             # create entry for a single close lang
             for _, close_lang in enumerate(feature_dict):
                 score = feature_dict[close_lang]
@@ -130,18 +164,35 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"asp_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = ASP_CSV_OUT_PATH
+        out_path = ASP_CSV_OUT_PATH.split(".")[0] + f"{zero_shot_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
+        print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
-    def create_map_csv(self, n_closest=5):
+    def create_map_csv(self, zero_shot=False, n_closest=5):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
-        for lang in sorted(self.lang_embs_mapping.keys()):
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        zero_shot_suffix= ""
+        if zero_shot:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            # remove supervised languages from iso dict
+            for sup_lang in supervised_langs:
+                iso_codes_to_ids.pop(sup_lang, None)
+                zero_shot_suffix = "_zero_shot"
+            lang_codes = list(iso_codes_to_ids.keys())
+        else:
+            lang_codes = sorted(self.lang_embs_mapping.keys())
+        failed_langs = []        
+        for lang in lang_codes:
             dataset_dict[lang] = [lang] # target language as first column
             feature_dict = sim_solver.find_closest_on_map(lang, 
-                                                        sorted(self.lang_embs_mapping.keys()), 
+                                                        supervised_langs,
                                                         n_closest=n_closest)
+            # sort out incomplete results
+            if len(feature_dict) < n_closest:
+                failed_langs.append(lang)
+                continue            
             # create entry for a single close lang
             for _, close_lang in enumerate(feature_dict):
                 score = feature_dict[close_lang]
@@ -153,18 +204,36 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"map_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = MAP_CSV_OUT_PATH
+        out_path = MAP_CSV_OUT_PATH.split(".")[0] + f"{zero_shot_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
+        print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
-    def create_tree_csv(self, n_closest=5):
+
+    def create_tree_csv(self, zero_shot=False, n_closest=5):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
-        for lang in sorted(self.lang_embs_mapping.keys()):
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        zero_shot_suffix= ""
+        if zero_shot:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            # remove supervised languages from iso dict
+            for sup_lang in supervised_langs:
+                iso_codes_to_ids.pop(sup_lang, None)
+                zero_shot_suffix = "_zero_shot"
+            lang_codes = list(iso_codes_to_ids.keys())
+        else:
+            lang_codes = sorted(self.lang_embs_mapping.keys())
+        failed_langs = []
+        for lang in lang_codes:
             dataset_dict[lang] = [lang] # target language as first column
-            feature_dict = sim_solver.find_closest_in_family(lang, 
-                                                        sorted(self.lang_embs_mapping.keys()), 
+            feature_dict = sim_solver.find_closest_in_family(lang,
+                                                        supervised_langs,
                                                         n_closest=n_closest)
+            # sort out incomplete results
+            if len(feature_dict) < n_closest:
+                failed_langs.append(lang)
+                continue            
             # create entry for a single close lang
             for _, close_lang in enumerate(feature_dict):
                 score = feature_dict[close_lang]
@@ -176,8 +245,9 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"tree_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = TREE_CSV_OUT_PATH
+        out_path = TREE_CSV_OUT_PATH.split(".")[0] + f"{zero_shot_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
+        print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
 
     def create_json(self, n_closest=5, use_tree=True):
@@ -269,14 +339,13 @@ if __name__ == "__main__":
     # key_error_save_path = "Preprocessing/multilinguality/key_errors_for_languages_from_text_frontend.json"
     # key_error_dict = dc.check_all_languages_in_text_frontend(save_path=key_error_save_path)
 
-
-    #dc.create_json()
-    #dc.create_1D_json()
-    #dc.create_combined_csv()
-    dc.create_aspf_csv()
-    dc.create_map_csv()
-    dc.create_tree_csv()
-
     check_features_for_all_languages = False
     if check_features_for_all_languages:
         dc.check_features_for_all_languages()
+
+    #dc.create_json()
+    #dc.create_1D_json()
+    #dc.create_combined_csv(zero_shot=True)
+    dc.create_aspf_csv(zero_shot=True)
+    dc.create_map_csv(zero_shot=True)
+    dc.create_tree_csv(zero_shot=True)

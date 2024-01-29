@@ -6,8 +6,9 @@ import pandas as pd
 sys.path.append("/home/behringe/hdd_behringe/IMS-Toucan")
 from Preprocessing.TextFrontend import get_language_id
 
-# csv_path = "datasets/dataset_COMBINED_500_with_less_loss_average.csv"
+csv_path = "datasets/dataset_COMBINED_500_with_less_loss_average.csv"
 csv_path = "datasets/dataset_COMBINED_correct_sims_500_with_less_loss_average.csv"
+#csv_path = "datasets/dataset_COMBINED_500_with_LESS_loss_smaller_dim_average.csv"
 #csv_path = "datasets/dataset_asp_500_with_less_loss.csv"
 #csv_path = "datasets/dataset_map_500_with_less_loss.csv"
 #csv_path = "datasets/dataset_tree_500_with_less_loss.csv"
@@ -28,8 +29,7 @@ else:
 assert n_closest == 5
 
 for row in dataset_df.itertuples():
-    target_lang = row.target_lang
-    y = language_embeddings[get_language_id(target_lang).item()]
+    y = language_embeddings[get_language_id(row.target_lang).item()]
     avg_emb = torch.zeros([16])
     langs = [row.closest_lang_0, row.closest_lang_1, row.closest_lang_2, row.closest_lang_3, row.closest_lang_4]
     for lang in langs:
@@ -38,6 +38,11 @@ for row in dataset_df.itertuples():
     avg_emb /= 5 # take average
     current_loss = loss_fn(avg_emb, y).item()
     running_loss += current_loss
+    # print(y)
+    # print(avg_emb)
+    # l1loss = torch.nn.L1Loss(reduction="none")
+    # print(l1loss(y, avg_emb))
+    # print(running_loss)
 avg_loss = running_loss / len(dataset_df)
 
 print(f"csv_path: {csv_path}")

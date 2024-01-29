@@ -36,18 +36,20 @@ class LangEmbDataset(Dataset):
         return len(self.dataset_df)
     
     def __getitem__(self, idx):
-        """return tuple of features and label, all as tensors"""
+        """Return tuple of features and label (as tensors), 
+        and the language_embedding id (for zero-shot prediction to replace lang_emb at correct index)."""
         features = self.dataset_df.iloc[idx, :]
-        target_lang = features["target_lang"]
+        target_lang_code = features["target_lang"]
+        target_lang_emb_index = get_language_id(target_lang_code)
         dist_plus_lang_emb_tensors = []
-        y = self.language_embeddings[get_language_id(target_lang).item()]
+        y = self.language_embeddings[target_lang_emb_index.item()]
         for i in range(self.n_closest):
             dist = torch.tensor([features[f"{self.distance_type}_dist_{i}"]], dtype=torch.float32)
             lang = features[f"closest_lang_{i}"]
             lang_emb = self.language_embeddings[get_language_id(lang).item()]
             dist_plus_lang_emb_tensors.append(torch.cat((dist, lang_emb)))
         feature_tensor = torch.cat(dist_plus_lang_emb_tensors)
-        return feature_tensor, y
+        return feature_tensor, y, target_lang_emb_index
 
 
 class LangEmbPredictor(torch.nn.Module):
@@ -66,11 +68,14 @@ class LangEmbPredictor(torch.nn.Module):
     
 def train(model: LangEmbPredictor, 
           train_set: LangEmbDataset, 
-          test_set: LangEmbDataset, 
           device, 
+          checkpoint_dir,
+          test_set: LangEmbDataset = None, 
           lr=0.001,
           batch_size=4,
-          n_epochs=10):
+          n_epochs: int = 10,
+          save_ckpt_every=10):
+    os.makedirs(checkpoint_dir, exist_ok=True)
     model.to(device)    
     loss_fn = torch.nn.MSELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
@@ -78,15 +83,16 @@ def train(model: LangEmbPredictor,
                               batch_size=batch_size,
                               shuffle=True,
                               collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
-    test_loader = DataLoader(test_set,
-                             batch_size=batch_size,
-                             shuffle=True,
-                             collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
+    if test_set:
+        test_loader = DataLoader(test_set,
+                                batch_size=batch_size,
+                                shuffle=True,
+                                collate_fn=lambda x: tuple(x_.to(device) for x_ in default_collate(x)))
     for epoch in tqdm(range(n_epochs), total=n_epochs, desc="Epoch"):
         model.train()
         running_loss = 0.
         for _, data in enumerate(train_loader):
-            x, y = data
+            x, y, _ = data
             optimizer.zero_grad()
             outputs = model(x)
             loss = loss_fn(outputs, y)
@@ -95,14 +101,22 @@ def train(model: LangEmbPredictor,
             running_loss += loss.item()
         avg_train_loss = running_loss / len(train_loader)
 
-        model.eval()
-        running_val_loss = 0.
-        for _, data in enumerate(test_loader):
-            val_x, val_y = data
-            val_outputs = model(val_x)
-            val_loss = loss_fn(val_outputs, val_y)
-            running_val_loss += val_loss.item()
-        avg_val_loss = running_val_loss / len(test_loader)
-        # print(f"Epoch {epoch+1} | Train loss: {avg_loss} | Val loss: {avg_val_loss}")    
-    print(f"Train loss: {avg_train_loss} | Val loss: {avg_val_loss}")
-    return avg_train_loss, avg_val_loss
+        if test_set:
+            model.eval()
+            running_val_loss = 0.
+            for _, data in enumerate(test_loader):
+                val_x, val_y, _ = data
+                val_outputs = model(val_x)
+                val_loss = loss_fn(val_outputs, val_y)
+                running_val_loss += val_loss.item()
+            avg_val_loss = running_val_loss / len(test_loader)
+
+        if epoch > 0 and (epoch+1) % save_ckpt_every == 0:
+            model_path = os.path.join(checkpoint_dir, f"ckpt_{epoch+1}.pt")
+            torch.save(model.state_dict(), model_path)
+    if test_set:
+        print(f"Train loss: {avg_train_loss} | Val loss: {avg_val_loss}")
+        return avg_train_loss, avg_val_loss        
+    else:
+        print(f"Train loss: {avg_train_loss}")
+        return avg_train_loss
