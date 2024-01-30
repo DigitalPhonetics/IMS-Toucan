@@ -25,7 +25,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     datasets = list()
 
-    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_LESS_small_dim_normalized")
+    base_dir = os.path.join(MODELS_DIR, "ToucanTTS_MassiveDataBigModel_stage1_LESS_all_fixed")
     if model_dir is not None:
         meta_save_dir = model_dir
     else:
@@ -269,7 +269,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=8,
+               batch_size=20,
                warmup_steps=4000,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
@@ -277,7 +277,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_checkpoint=resume_checkpoint,
                resume=resume,
                fine_tune=finetune,
-               steps=80000,
+               steps=40000,
                steps_per_checkpoint=1000,
                lr=0.001,
                use_wandb=use_wandb,
