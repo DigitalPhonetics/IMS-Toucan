@@ -58,7 +58,7 @@ class ToucanTTS(torch.nn.Module):
                  glow_layers=3,
 
                  # additional features
-                 utt_embed_dim=None,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
+                 utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=None,
                  lang_emb_size=None,
                  integrate_language_embedding_into_encoder_out=False,
@@ -150,6 +150,7 @@ class ToucanTTS(torch.nn.Module):
                 text_tensors,
                 gold_speech,
                 speech_lengths,
+                spk_embed,
                 return_feats=False,
                 run_glow=True
                 ):
@@ -164,6 +165,7 @@ class ToucanTTS(torch.nn.Module):
         outs, glow_loss = self._forward(text_tensors=text_tensors,
                                         gold_speech=gold_speech,
                                         speech_lengths=speech_lengths,
+                                        spk_embed=spk_embed,
                                         is_inference=False,
                                         run_glow=run_glow)
 
@@ -180,12 +182,13 @@ class ToucanTTS(torch.nn.Module):
                  text_tensors,
                  gold_speech=None,
                  speech_lengths=None,
+                 spk_embed=None,
                  is_inference=False,
                  run_glow=False):
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
-        decoded_speech, _ = self.decoder(text_tensors, decoder_masks, utterance_embedding=None)
+        decoded_speech, _ = self.decoder(text_tensors, decoder_masks, utterance_embedding=spk_embed)
 
         preliminary_spectrogram = self.output_projection(decoded_speech)
 
@@ -205,6 +208,7 @@ class ToucanTTS(torch.nn.Module):
     @torch.inference_mode()
     def inference(self,
                   text,
+                  spk_embed,
                   run_glow=True):
         """
         Args:
@@ -216,10 +220,12 @@ class ToucanTTS(torch.nn.Module):
         # setup batch axis
         ilens = torch.tensor([text.shape[0]], dtype=torch.long, device=text.device)
         text_pseudobatched, speech_pseudobatched = text.unsqueeze(0), None
+        spk_embed = spk_embed.unsqueeze(0)
 
         outs = self._forward(text_pseudobatched,
                              ilens,
                              speech_pseudobatched,
+                             spk_embed,
                              is_inference=True,
                              run_glow=run_glow)  # (1, L, odim)
         self.train()
@@ -243,18 +249,21 @@ if __name__ == '__main__':
 
     print(" TESTING INFERENCE ")
     dummy_text_batch = torch.randint(low=0, high=2, size=[30, 384]).float()  # [Sequence Length, Features per Phone]
-    print(model.inference(dummy_text_batch).shape)
+    dummy_spk_batch = torch.randint(low=0, high=2, size=[192]).float()
+    print(model.inference(dummy_text_batch, dummy_spk_batch).shape)
 
     print(" TESTING TRAINING ")
 
     dummy_text_batch = torch.randint(low=0, high=2, size=[3, 30, 384]).float()  # [Batch, Sequence Length, Features per Phone]
+    dummy_spk_batch = torch.randint(low=0, high=2, size=[3, 192]).float()  # [Batch, Sequence Length, Features per Phone]
 
     dummy_speech_batch = torch.randn([3, 30, 128])  # [Batch, Sequence Length, Spectrogram Buckets]
     dummy_speech_lens = torch.LongTensor([10, 30, 20])
 
     ce, fl = model(dummy_text_batch,
                    dummy_speech_batch,
-                   dummy_speech_lens)
+                   dummy_speech_lens,
+                   dummy_spk_batch)
 
     print(ce)
     ce.backward()

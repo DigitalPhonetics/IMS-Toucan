@@ -1,14 +1,12 @@
 import os
 
 import pyloudnorm
-import soundfile
 import torch
 
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Utility.storage_config import MODELS_DIR
-from Utility.utils import float2pcm
 
 
 class ToucanTTSInterface(torch.nn.Module):
@@ -56,10 +54,12 @@ class ToucanTTSInterface(torch.nn.Module):
 
     def forward(self,
                 latent_sequence,
+                spk_embed,
                 loudness_in_db=-24.0,
                 glow_sampling_temperature=0.2):
         with torch.inference_mode():
             mel = self.phone2mel(latent_sequence,
+                                 spk_embed,
                                  glow_sampling_temperature=glow_sampling_temperature)
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu().numpy()
@@ -69,12 +69,4 @@ class ToucanTTSInterface(torch.nn.Module):
         except ValueError:
             # if the audio is too short, a value error will arise
             pass
-        return wave
-
-    def read_to_file(self,
-                     latent_sequence,
-                     file_location,
-                     glow_sampling_temperature=0.2):
-        wav = torch.tensor(self(latent_sequence,
-                                glow_sampling_temperature=glow_sampling_temperature)).cpu()
-        soundfile.write(file=file_location, data=float2pcm(wav), samplerate=24000, subtype="PCM_16")
+        return wave  # returns a 24kHz wave with normalized loudness

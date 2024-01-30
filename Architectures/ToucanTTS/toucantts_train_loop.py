@@ -4,6 +4,7 @@ import time
 import torch
 import torch.multiprocessing
 import wandb
+from speechbrain.pretrained import EncoderClassifier
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
@@ -11,6 +12,7 @@ from tqdm import tqdm
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
+from Utility.storage_config import MODELS_DIR
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec_toucantts
@@ -64,6 +66,9 @@ def train_loop(net,
                               collate_fn=collate_and_pad)
     ap = CodecAudioPreprocessor(input_sr=-1, device=device)
     spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
+    speaker_embedding_func = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
+                                                            run_opts={"device": str(device)},
+                                                            savedir=os.path.join(MODELS_DIR, "Embedding", "speechbrain_speaker_embedding_ecapa"))
 
     step_counter = 0
 
@@ -102,13 +107,16 @@ def train_loop(net,
             speech_lengths = batch[2].squeeze().to(device)
 
             speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
+            spk_embed_batch = list()
             for speech_sample in speech_indexes:
                 with torch.inference_mode():
                     wave = ap.indexes_to_audio(speech_sample.int().to(device)).detach()
                     mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
                 gold_speech_sample = mel.clone()
                 speech_batch.append(gold_speech_sample)
+                spk_embed_batch.append(speaker_embedding_func.encode_batch(wavs=wave).squeeze())
             gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
+            spk_embed_batch = torch.stack(spk_embed_batch)
 
             run_glow = step_counter > (warmup_steps * 2) or fine_tune
 
@@ -117,6 +125,7 @@ def train_loop(net,
                 text_tensors=text_tensors,
                 gold_speech=gold_speech,
                 speech_lengths=speech_lengths,
+                spk_embed=spk_embed_batch,
                 return_feats=False,
                 run_glow=run_glow
             )

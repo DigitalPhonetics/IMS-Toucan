@@ -89,9 +89,10 @@ class ToucanTTS(torch.nn.Module):
 
     def _forward(self,
                  text_tensors,
+                 spk_embed,
                  glow_sampling_temperature=0.2):
         # decoding spectrogram
-        decoded_speech, _ = self.decoder(text_tensors, None, utterance_embedding=None)
+        decoded_speech, _ = self.decoder(text_tensors, None, utterance_embedding=spk_embed)
         frames = self.output_projection(decoded_speech)
         refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=text_tensors, tgt_nonpadding=None, glow_sampling_temperature=glow_sampling_temperature)
         return refined_codec_frames
@@ -99,6 +100,7 @@ class ToucanTTS(torch.nn.Module):
     @torch.inference_mode()
     def forward(self,
                 text,
+                spk_embed,
                 glow_sampling_temperature=0.2):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
@@ -111,6 +113,7 @@ class ToucanTTS(torch.nn.Module):
 
         """
         outs = self._forward(text.unsqueeze(0),
+                             spk_embed.unsqueeze(0),
                              glow_sampling_temperature=glow_sampling_temperature)
         return outs.squeeze().transpose(0, 1)
 
@@ -121,4 +124,5 @@ class ToucanTTS(torch.nn.Module):
             except ValueError:  # this module didn't have weight norm
                 return
 
+        self.post_flow.store_inverse()
         self.apply(remove_weight_norm)

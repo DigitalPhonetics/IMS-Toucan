@@ -5,7 +5,7 @@ import sys
 
 import torch
 
-from TrainingPipelines.ToucanTTS_Nancy import run as nancy
+from TrainingPipelines.TrainingPipeline import run as nancy
 
 pipeline_dict = {
     "nancy": nancy,
