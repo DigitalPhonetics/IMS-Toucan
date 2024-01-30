@@ -128,6 +128,21 @@ def train_loop(net,
     # Actual train loop starts here
     # =============================
 
+    if not fine_tune and not resume and use_less_loss:
+        print("Priming the language embedding space...")
+        less_values = list()
+        for i in tqdm(range(warmup_steps * 2)):
+            language_ids = random.sample(valid_language_ids, batch_size * 40)
+            language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
+            less_value_unsupervised = less_loss(language_ids, language_embeddings)
+            less_values.append(less_value_unsupervised.item())
+            less_value_unsupervised.backward()
+            optimizer.zero_grad()
+            optimizer.step()
+            if i % warmup_steps // 2 == 0:
+                print(sum(less_values) / len(less_values))
+                less_values = list()
+
     for step_counter in tqdm(range(steps_run_previously, steps)):
         run_glow = step_counter > (warmup_steps * 2)
 
@@ -186,7 +201,7 @@ def train_loop(net,
         if use_less_loss:
             language_embeddings = model.encoder.language_embedding(lang_ids)
             less_value_supervised = less_loss(lang_ids.cpu().squeeze().tolist(), language_embeddings)
-            language_ids = random.sample(valid_language_ids, batch_size)
+            language_ids = random.sample(valid_language_ids, batch_size * 10)
             language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value_unsupervised = less_loss(language_ids, language_embeddings)
             less_value = less_value_supervised + less_value_unsupervised
