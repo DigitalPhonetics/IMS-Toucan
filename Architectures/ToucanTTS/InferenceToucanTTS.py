@@ -331,7 +331,7 @@ class ToucanTTS(torch.nn.Module):
                 torch.nn.utils.remove_weight_norm(m)
             except ValueError:  # this module didn't have weight norm
                 return
-
+        self.post_flow.store_inverse()
         self.apply(remove_weight_norm)
 
 
