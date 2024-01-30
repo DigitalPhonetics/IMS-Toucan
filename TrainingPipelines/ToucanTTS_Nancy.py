@@ -3,7 +3,7 @@ import time
 import wandb
 
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
-from Architectures.ToucanTTS.toucantts_train_loop_arbiter import train_loop
+from Architectures.ToucanTTS.toucantts_train_loop import train_loop
 from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
@@ -31,10 +31,9 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
-    train_set = prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_nancy(),
+    train_set = prepare_tts_corpus(path_list=list(),  # TODO
+                                   latents_list=list(),  # TODO
                                    corpus_dir=os.path.join(PREPROCESSING_DIR, "Nancy"),
-                                   lang="eng",
-                                   save_imgs=False,
                                    gpu_count=gpu_count,
                                    rank=rank)
 
@@ -59,15 +58,20 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 resume="must" if wandb_resume_id is not None else None)
     print("Training model")
     train_loop(net=model,
-               datasets=[train_set],
+               train_dataset=train_set,
                device=device,
                save_directory=save_dir,
-               eval_lang="eng",
                path_to_checkpoint=resume_checkpoint,
                fine_tune=finetune,
                resume=resume,
                use_wandb=use_wandb,
-               train_samplers=[train_sampler],
-               gpu_count=gpu_count)
+               train_sampler=train_sampler,
+               gpu_count=gpu_count,
+               batch_size=12,
+               lr=0.001,
+               warmup_steps=8000,
+               steps=100000,
+               steps_per_checkpoint=1000
+               )
     if use_wandb:
         wandb.finish()

@@ -14,24 +14,13 @@ from Utility.WarmupScheduler import ToucanWarmupScheduler as WarmupScheduler
 from Utility.utils import delete_old_checkpoints
 from Utility.utils import get_most_recent_checkpoint
 from Utility.utils import plot_progress_spec_toucantts
-from run_weight_averaging import average_checkpoints
-from run_weight_averaging import get_n_recent_checkpoints_paths
-from run_weight_averaging import load_net_toucan
-from run_weight_averaging import save_model_for_use
 
 
 def collate_and_pad(batch):
-    # text, text_len, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
+    # text, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True).float(),
-            torch.stack([datapoint[1] for datapoint in batch]).squeeze(1),
             [datapoint[2] for datapoint in batch],
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1),
-            pad_sequence([datapoint[4] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[5] for datapoint in batch], batch_first=True),
-            pad_sequence([datapoint[6] for datapoint in batch], batch_first=True),
-            None,
-            torch.stack([datapoint[8] for datapoint in batch]),
-            torch.stack([datapoint[9] for datapoint in batch]))
+            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
 
 
 def train_loop(net,
@@ -39,7 +28,6 @@ def train_loop(net,
                device,
                save_directory,
                batch_size,
-               lang,
                lr,
                warmup_steps,
                path_to_checkpoint,
@@ -84,7 +72,7 @@ def train_loop(net,
     else:
         model = net
     optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr)
-    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr * 8)
+    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=(warmup_steps // 4), max_steps=steps)
@@ -104,22 +92,14 @@ def train_loop(net,
     start_time = time.time()
     regression_losses_total = list()
     glow_losses_total = list()
-    duration_losses_total = list()
-    pitch_losses_total = list()
-    energy_losses_total = list()
     while True:
         net.train()
         epoch += 1
         for batch in tqdm(train_loader):
 
             text_tensors = batch[0].to(device)
-            text_lengths = batch[1].squeeze().to(device)
-            speech_indexes = batch[2]
-            speech_lengths = batch[3].squeeze().to(device)
-            gold_durations = batch[4].to(device)
-            gold_pitch = batch[6].to(device)  # mind the switched order
-            gold_energy = batch[5].to(device)  # mind the switched order
-            lang_ids = batch[8].squeeze(1).to(device)
+            speech_indexes = batch[1]
+            speech_lengths = batch[2].squeeze().to(device)
 
             speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
             for speech_sample in speech_indexes:
@@ -133,34 +113,20 @@ def train_loop(net,
             run_glow = step_counter > (warmup_steps * 2) or fine_tune
 
             train_loss = 0.0
-            utterance_embedding = batch[9].to(device)
-            regression_loss, glow_loss, duration_loss, pitch_loss, energy_loss = net(
+            regression_loss, glow_loss = net(
                 text_tensors=text_tensors,
-                text_lengths=text_lengths,
                 gold_speech=gold_speech,
                 speech_lengths=speech_lengths,
-                gold_durations=gold_durations,
-                gold_pitch=gold_pitch,
-                gold_energy=gold_energy,
-                utterance_embedding=utterance_embedding,
-                lang_ids=lang_ids,
                 return_feats=False,
                 run_glow=run_glow
             )
 
-            if torch.isnan(regression_loss) or torch.isnan(duration_loss) or torch.isnan(pitch_loss) or torch.isnan(energy_loss):
-                print("One of the losses turned to NaN! Skipping this batch ...")
+            if torch.isnan(regression_loss):
+                print("Regression loss turned to NaN! Skipping this batch ...")
                 continue
 
-            train_loss = train_loss + duration_loss
-            train_loss = train_loss + pitch_loss
-            train_loss = train_loss + energy_loss
             train_loss = train_loss + regression_loss
-
             regression_losses_total.append(regression_loss.item())
-            duration_losses_total.append(duration_loss.item())
-            pitch_losses_total.append(pitch_loss.item())
-            energy_losses_total.append(energy_loss.item())
 
             if glow_loss is not None:
 
@@ -218,32 +184,20 @@ def train_loop(net,
                         wandb.log({
                             "regression_loss": round(sum(regression_losses_total) / len(regression_losses_total), 5),
                             "glow_loss"      : round(sum(glow_losses_total) / len(glow_losses_total), 5),
-                            "duration_loss"  : round(sum(duration_losses_total) / len(duration_losses_total), 5),
-                            "pitch_loss"     : round(sum(pitch_losses_total) / len(pitch_losses_total), 5),
-                            "energy_loss"    : round(sum(energy_losses_total) / len(energy_losses_total), 5),
                             "learning_rate"  : optimizer.param_groups[0]['lr']
                         }, step=step_counter)
                     regression_losses_total = list()
                     glow_losses_total = list()
-                    duration_losses_total = list()
-                    pitch_losses_total = list()
-                    energy_losses_total = list()
 
                     path_to_most_recent_plot = plot_progress_spec_toucantts(model,
-                                                                            device,
+                                                                            example_input=text_tensors[0],
                                                                             save_dir=save_directory,
                                                                             step=step_counter,
-                                                                            lang=lang,
-                                                                            default_emb=default_embedding,
                                                                             run_glow=run_glow)
                     if use_wandb:
                         wandb.log({
                             "progress_plot": wandb.Image(path_to_most_recent_plot)
                         }, step=step_counter)
-
-                    checkpoint_paths = get_n_recent_checkpoints_paths(checkpoint_dir=save_directory, n=1)
-                    averaged_model, default_embed = average_checkpoints(checkpoint_paths, load_func=load_net_toucan)
-                    save_model_for_use(model=averaged_model, default_embed=default_embed, name=os.path.join(save_directory, "best.pt"))
 
                     if step_counter > steps:
                         return  # DONE

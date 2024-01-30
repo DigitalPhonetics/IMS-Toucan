@@ -11,8 +11,6 @@ import torch.multiprocessing
 from matplotlib.lines import Line2D
 
 import Architectures.GeneralLayers.ConditionalLayerNorm
-from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
-from Preprocessing.TextFrontend import get_language_id
 
 
 def integrate_with_utt_embed(hs, utt_embeddings, projection, embedding_training):
@@ -61,82 +59,26 @@ def pad_to_multiple_of_n(x, n=4, seq_dim=1, pad_value=0):
 
 @torch.inference_mode()
 def plot_progress_spec_toucantts(net,
-                                 device,
+                                 example_input,
                                  save_dir,
                                  step,
-                                 lang,
-                                 default_emb,
                                  run_glow):
-    tf = ArticulatoryCombinedTextFrontend(language=lang)
-    sentence = tf.get_example_sentence(lang=lang)
-    if sentence is None:
-        return None
-    phoneme_vector = tf.string_to_tensor(sentence).squeeze(0).to(device)
-    mel, durations, pitch, energy = net.inference(text=phoneme_vector,
-                                                  return_duration_pitch_energy=True,
-                                                  utterance_embedding=default_emb,
-                                                  lang_id=get_language_id(lang).to(device),
-                                                  run_glow=run_glow)
+    mel = net.inference(text=example_input,
+                        run_glow=run_glow)
 
-    plot_code_spec(pitch, energy, sentence, durations, mel, os.path.join(save_dir, "visualization"), tf, step)
+    plot_code_spec(mel, os.path.join(save_dir, "visualization"), step)
     return os.path.join(os.path.join(save_dir, "visualization"), f"{step}.png")
 
 
-def plot_code_spec(pitch, energy, sentence, durations, mel, save_path, tf, step):
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(9, 8))
+def plot_code_spec(mel, save_path, step):
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 8))
 
-    expanded_pitch = list()
-    expanded_energy = list()
-    for p, e, d in zip(pitch.cpu().squeeze().numpy(), energy.cpu().squeeze().numpy(), durations.cpu().numpy()):
-        for _ in range(d):
-            expanded_energy.append(e)
-            expanded_pitch.append(p)
-    pitch = expanded_pitch
-    energy = expanded_energy
-
-    spec_plot_axis = ax[1]
-    pitch_and_energy_axis = ax[0]
+    spec_plot_axis = ax
 
     spec_plot_axis.imshow(mel.cpu().numpy(), origin="lower", cmap='GnBu')
-    pitch_and_energy_axis.yaxis.set_visible(False)
-    pitch_and_energy_axis.xaxis.set_visible(False)
     spec_plot_axis.yaxis.set_visible(False)
-    duration_splits, label_positions = cumsum_durations(durations.cpu().numpy())
-    spec_plot_axis.xaxis.grid(True, which='minor')
-    spec_plot_axis.set_xticks(label_positions, minor=False)
-    phones = tf.get_phone_string(sentence, for_plot_labels=True)
-    spec_plot_axis.set_xticklabels(phones)
-    word_boundaries = list()
-    for label_index, phone in enumerate(phones):
-        if phone == "|":
-            word_boundaries.append(label_positions[label_index])
-    try:
-        prev_word_boundary = 0
-        word_label_positions = list()
-        for word_boundary in word_boundaries:
-            word_label_positions.append((word_boundary + prev_word_boundary) / 2)
-            prev_word_boundary = word_boundary
-        word_label_positions.append((duration_splits[-1] + prev_word_boundary) / 2)
-
-        secondary_ax = spec_plot_axis.secondary_xaxis('bottom')
-        secondary_ax.tick_params(axis="x", direction="out", pad=24)
-        secondary_ax.set_xticks(word_label_positions, minor=False)
-        secondary_ax.set_xticklabels(sentence.split())
-        secondary_ax.tick_params(axis='x', colors='orange')
-        secondary_ax.xaxis.label.set_color('orange')
-    except ValueError:
-        spec_plot_axis.set_title(sentence)
-    except IndexError:
-        spec_plot_axis.set_title(sentence)
-
-    spec_plot_axis.vlines(x=duration_splits, colors="green", linestyles="solid", ymin=0, ymax=15, linewidth=1.0)
-    spec_plot_axis.vlines(x=word_boundaries, colors="orange", linestyles="solid", ymin=0, ymax=15, linewidth=2.0)
-
-    pitch_and_energy_axis.plot(pitch, color="blue")
-    pitch_and_energy_axis.plot(energy, color="green")
 
     spec_plot_axis.set_aspect("auto")
-    pitch_and_energy_axis.set_aspect("auto")
 
     plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95, wspace=0.0, hspace=0.0)
     os.makedirs(save_path, exist_ok=True)
