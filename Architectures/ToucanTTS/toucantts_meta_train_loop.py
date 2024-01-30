@@ -95,7 +95,7 @@ def train_loop(net,
 
     # embedding training is not supported here
     optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr)
-    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr * 8)
+    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=(warmup_steps // 4), max_steps=steps)
@@ -132,7 +132,7 @@ def train_loop(net,
         print("Priming the language embedding space...")
         less_values = list()
         for i in tqdm(range(warmup_steps * 2)):
-            language_ids = random.sample(valid_language_ids, batch_size * 40)
+            language_ids = random.sample(valid_language_ids, batch_size * 2)
             language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value_unsupervised = less_loss(language_ids, language_embeddings)
             less_values.append(less_value_unsupervised.item())
@@ -200,7 +200,7 @@ def train_loop(net,
 
         if use_less_loss:
             language_embeddings_seen = model.encoder.language_embedding(lang_ids)
-            language_ids = random.sample(valid_language_ids, batch_size * 5)
+            language_ids = random.sample(valid_language_ids, batch_size * 2)
             language_embeddings_random = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
             less_value = less_loss(lang_ids.cpu().squeeze().tolist() + language_ids, torch.cat([language_embeddings_seen, language_embeddings_random], dim=0))
 
