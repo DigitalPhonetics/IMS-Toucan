@@ -68,7 +68,8 @@ class LanguageEmbeddingSpaceStructureLoss(torch.nn.Module):
                     asp_dist = 1.0 - self.asp_sim[lang_1][lang_2_idx]  # it's a similarity measure that goes from 0 to 1, so we subtract it from 1 to turn it into a distance
 
                     # Total distance should be similar to bring some structure into the embedding-space
-                    metric_dist = (tree_dist + map_dist + asp_dist) / 3
-                    losses.append(torch.nn.functional.l1_loss(embed_dist, torch.tensor(metric_dist)))
+                    losses.append(torch.nn.functional.l1_loss(embed_dist, torch.tensor(tree_dist)))
+                    losses.append(torch.nn.functional.l1_loss(embed_dist, torch.tensor(map_dist)))
+                    losses.append(torch.nn.functional.l1_loss(embed_dist, torch.tensor(asp_dist)))
 
         return sum(losses) / len(losses)

@@ -199,12 +199,10 @@ def train_loop(net,
         )
 
         if use_less_loss:
-            language_embeddings = model.encoder.language_embedding(lang_ids)
-            less_value_supervised = less_loss(lang_ids.cpu().squeeze().tolist(), language_embeddings)
-            language_ids = random.sample(valid_language_ids, batch_size * 10)
-            language_embeddings = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
-            less_value_unsupervised = less_loss(language_ids, language_embeddings)
-            less_value = less_value_supervised + less_value_unsupervised
+            language_embeddings_seen = model.encoder.language_embedding(lang_ids)
+            language_ids = random.sample(valid_language_ids, batch_size * 5)
+            language_embeddings_random = model.encoder.language_embedding(torch.LongTensor(language_ids).to(device))
+            less_value = less_loss(lang_ids.cpu().squeeze().tolist() + language_ids, torch.cat([language_embeddings_seen, language_embeddings_random], dim=0))
 
         # then we directly update our meta-parameters without
         # the need for any task specific parameters
