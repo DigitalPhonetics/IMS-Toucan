@@ -2,6 +2,7 @@ import json
 import pickle
 import os
 import numpy as np
+import random
 # TODO: remove sys.path.append
 import sys
 sys.path.append("/home/behringe/hdd_behringe/IMS-Toucan")
@@ -100,6 +101,20 @@ class SimilaritySolver():
                     print("Full Name of Language Missing")
         return results
 
+
+    def get_random_languages(self, lang, supervised_langs, n=5, random_seed=42):
+        """Get n random languages that should be treated as `closest` to the target language.
+        The similarity/distance value is always 0.5."""
+        supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")
+        if lang in supervised_langs:
+            supervised_langs.remove(lang)
+        random.seed(random_seed)
+        random_langs = random.sample(supervised_langs, n)
+        # create dict with all 0.5 values
+        random_dict = {rand_lang: 0.5 for rand_lang in random_langs}
+        return random_dict
 
     def find_closest_aspf(self, lang, supervised_langs, n_closest=5, verbose=False):
         """Find the closest n languages in terms of Angular Similarity of Phoneme Frequencies (ASPF)"""

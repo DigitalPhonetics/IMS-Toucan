@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+import random
 import json
 import yaml
 import pickle
@@ -19,7 +20,7 @@ ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
 LANG_PAIRS_map_PATH = "lang_1_to_lang_2_to_map_dist.json"
 LANG_PAIRS_tree_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
-NUM_LANGS = 500
+NUM_LANGS = 463
 LOSS_TYPE = "with_less_loss"
 LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
 
@@ -31,6 +32,7 @@ ASP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multil
 MAP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_map_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TREE_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_tree_{NUM_LANGS}_{LOSS_TYPE}.csv"
 COMBINED_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_COMBINED_correct_sims_{NUM_LANGS}_{LOSS_TYPE}.csv"
+RANDOM_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_random_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TEXT_FRONTEND_PATH = "../TextFrontend.py"
 
 
@@ -127,6 +129,32 @@ class DatasetCreator():
         out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{zero_shot_suffix}{distance_type}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
+
+    def create_random_csv(self, n=5):
+        """Create dataset with randomly assigned `closest` languages, and each similarity/distance value set to 0.5."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        random.seed(42)
+        cumulative_seed = 0
+        for lang in supervised_langs:
+            cumulative_seed += 1
+            dataset_dict[lang] = [lang]
+            feature_dict = sim_solver.get_random_languages(lang,
+                                                           supervised_langs,
+                                                           n=n,
+                                                           random_seed=cumulative_seed)
+            for _, close_lang in enumerate(feature_dict):
+                score = feature_dict[close_lang]
+                # column order: compared closest language, asp_dist
+                close_lang_feature_list = [close_lang, score]
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n):
+            dataset_columns.extend([f"closest_lang_{i}", f"fixed_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        df.to_csv(RANDOM_CSV_OUT_PATH, sep="|", index=False)
 
     def create_aspf_csv(self, zero_shot=False, n_closest=5):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
@@ -362,6 +390,7 @@ if __name__ == "__main__":
     #dc.create_json()
     #dc.create_1D_json()
     #dc.create_combined_csv(zero_shot=True)
-    dc.create_aspf_csv(zero_shot=True)
-    dc.create_map_csv(zero_shot=True)
-    dc.create_tree_csv(zero_shot=True)
+    #dc.create_aspf_csv(zero_shot=True)
+    #dc.create_map_csv(zero_shot=True)
+    #dc.create_tree_csv(zero_shot=True)
+    dc.create_random_csv()
