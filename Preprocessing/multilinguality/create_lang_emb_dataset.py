@@ -250,6 +250,22 @@ class DatasetCreator():
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
 
+def create_repeated_df(df, out_path=None, n_repeats=100):
+    """
+    Create repeated df which can then be used for noise augmentation.
+    Return the repeated df.
+    """
+    # shuffle before repeating
+    new_df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+    # repeat
+    new_df = pd.DataFrame(np.repeat(new_df.values, repeats=n_repeats, axis=0))
+    new_df.columns = df.columns
+    if out_path:
+        new_df.to_csv(out_path, sep="|")
+    return new_df
+
+
+
     def create_json(self, n_closest=5, use_tree=True):
         """Create dataset in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
