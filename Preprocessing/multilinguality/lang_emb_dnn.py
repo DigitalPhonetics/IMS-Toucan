@@ -13,8 +13,12 @@ from Preprocessing.TextFrontend import get_language_id
 class LangEmbDataset(Dataset):
     def __init__(self,
                  dataset_df,
-                 lang_embs_path="LangEmbs/final_model_with_less_loss.pt"):
+                 lang_embs_path="LangEmbs/final_model_with_less_loss.pt",
+                 add_noise=False,
+                 noise_std=0.01):
         self.dataset_df = dataset_df
+        self.add_noise = add_noise
+        self.noise_std = noise_std if add_noise else None
          # for combined feats, df has 5 features per closest lang + 1 target lang column
         if "average_dist_0" in self.dataset_df.columns or "euclidean_dist_0" in self.dataset_df.columns:
             self.n_closest = len(self.dataset_df.columns) // 5
@@ -41,12 +45,20 @@ class LangEmbDataset(Dataset):
         features = self.dataset_df.iloc[idx, :]
         target_lang_code = features["target_lang"]
         target_lang_emb_index = get_language_id(target_lang_code)
+        if target_lang_emb_index is None:
+            print(f"target_lang_code: {target_lang_code}")
         dist_plus_lang_emb_tensors = []
         y = self.language_embeddings[target_lang_emb_index.item()]
+        if self.add_noise:
+            noise = torch.normal(mean=0, std=0.01, size=y.size())
+            y += noise
         for i in range(self.n_closest):
             dist = torch.tensor([features[f"{self.distance_type}_dist_{i}"]], dtype=torch.float32)
             lang = features[f"closest_lang_{i}"]
             lang_emb = self.language_embeddings[get_language_id(lang).item()]
+            if self.add_noise:
+                noise = torch.normal(mean=0, std=self.noise_std, size=lang_emb.size())
+                lang_emb += noise
             dist_plus_lang_emb_tensors.append(torch.cat((dist, lang_emb)))
         feature_tensor = torch.cat(dist_plus_lang_emb_tensors)
         return feature_tensor, y, target_lang_emb_index
@@ -91,7 +103,7 @@ def train(model: LangEmbPredictor,
     for epoch in tqdm(range(n_epochs), total=n_epochs, desc="Epoch"):
         model.train()
         running_loss = 0.
-        for _, data in enumerate(train_loader):
+        for _, data in tqdm(enumerate(train_loader), total=len(train_loader)):
             x, y, _ = data
             optimizer.zero_grad()
             outputs = model(x)
@@ -104,18 +116,19 @@ def train(model: LangEmbPredictor,
         if test_set:
             model.eval()
             running_val_loss = 0.
-            for _, data in enumerate(test_loader):
-                val_x, val_y, _ = data
-                val_outputs = model(val_x)
-                val_loss = loss_fn(val_outputs, val_y)
-                running_val_loss += val_loss.item()
+            with torch.inference_mode():
+                for _, data in tqdm(enumerate(test_loader), total=len(test_loader)):
+                    val_x, val_y, _ = data
+                    val_outputs = model(val_x)
+                    val_loss = loss_fn(val_outputs, val_y)
+                    running_val_loss += val_loss.item()
             avg_val_loss = running_val_loss / len(test_loader)
-
+        print(f"Epoch {epoch+1} | Train loss: {avg_train_loss} | Val loss: {avg_val_loss}")
         if epoch > 0 and (epoch+1) % save_ckpt_every == 0:
             model_path = os.path.join(checkpoint_dir, f"ckpt_{epoch+1}.pt")
             torch.save(model.state_dict(), model_path)
     if test_set:
-        print(f"Train loss: {avg_train_loss} | Val loss: {avg_val_loss}")
+        print(f"Final train loss: {avg_train_loss} | Final val loss: {avg_val_loss}")
         return avg_train_loss, avg_val_loss        
     else:
         print(f"Train loss: {avg_train_loss}")
