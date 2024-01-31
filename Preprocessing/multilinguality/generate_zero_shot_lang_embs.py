@@ -51,10 +51,11 @@ LEP_model = LangEmbPredictor(idim=17*5)
 LEP_model.load_state_dict(torch.load(langemb_predictor_path))
 LEP_model.to(device)
 LEP_model.eval()
-for data in data_loader:
-    x, _, lang_emb_index = data # the label is useless so we ignore it
-    prediction = LEP_model(x)
-    lang_embs[lang_emb_index] = prediction
+with torch.inference_mode():
+    for data in data_loader:
+        x, _, lang_emb_index = data # the label is useless so we ignore it
+        prediction = LEP_model(x)
+        lang_embs[lang_emb_index] = prediction
 
 # insert into Toucan model
 toucan_model["model"]["encoder.language_embedding.weight"] = lang_embs
