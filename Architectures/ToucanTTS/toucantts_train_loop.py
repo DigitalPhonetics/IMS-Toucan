@@ -19,10 +19,11 @@ from Utility.utils import plot_progress_spec_toucantts
 
 
 def collate_and_pad(batch):
-    # text, speech, speech_len, durations, energy, pitch, utterance condition, language_id, speaker embedding
+    # latents, speech, speech_len, speaker embedding
     return (pad_sequence([datapoint[0] for datapoint in batch], batch_first=True).float(),
-            [datapoint[2] for datapoint in batch],
-            torch.stack([datapoint[3] for datapoint in batch]).squeeze(1))
+            pad_sequence([datapoint[1] for datapoint in batch], batch_first=True).float(),
+            torch.stack([datapoint[2] for datapoint in batch]).squeeze(1),
+            torch.stack([datapoint[3] for datapoint in batch]).squeeze())
 
 
 def train_loop(net,
@@ -60,9 +61,10 @@ def train_loop(net,
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
                               batch_sampler=batch_sampler_train,
-                              num_workers=0,
+                              num_workers=4,
+                              persistent_workers=True,
                               pin_memory=True,
-                              prefetch_factor=None,
+                              prefetch_factor=4,
                               collate_fn=collate_and_pad)
     ap = CodecAudioPreprocessor(input_sr=-1, device=device)
     spec_extractor = AudioPreprocessor(input_sr=16000, output_sr=16000, device=device)
@@ -102,30 +104,19 @@ def train_loop(net,
         epoch += 1
         for batch in tqdm(train_loader):
 
-            text_tensors = batch[0].to(device)
-            speech_indexes = batch[1]
-            speech_lengths = batch[2].squeeze().to(device)
-
-            speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
-            spk_embed_batch = list()
-            for speech_sample in speech_indexes:
-                with torch.inference_mode():
-                    wave = ap.indexes_to_audio(speech_sample.int().to(device)).detach()
-                    mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
-                gold_speech_sample = mel.clone()
-                speech_batch.append(gold_speech_sample)
-                spk_embed_batch.append(speaker_embedding_func.encode_batch(wavs=wave).squeeze())
-            gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
-            spk_embed_batch = torch.stack(spk_embed_batch)
+            latent_batch = batch[0]
+            spectrogram_batch = batch[1]
+            spectrogram_length_batch = batch[2]
+            spk_embed_batch = batch[3]
 
             run_glow = step_counter > (warmup_steps * 2) or fine_tune
 
             train_loss = 0.0
             regression_loss, glow_loss = net(
-                text_tensors=text_tensors,
-                gold_speech=gold_speech,
-                speech_lengths=speech_lengths,
-                spk_embed=spk_embed_batch,
+                text_tensors=latent_batch.to(device),
+                gold_speech=spectrogram_batch.to(device),
+                speech_lengths=spectrogram_length_batch.to(device),
+                spk_embed=spk_embed_batch.to(device),
                 return_feats=False,
                 run_glow=run_glow
             )
@@ -199,7 +190,7 @@ def train_loop(net,
                     glow_losses_total = list()
 
                     path_to_most_recent_plot = plot_progress_spec_toucantts(model,
-                                                                            example_input=text_tensors[0],
+                                                                            example_input=latent_batch[0],
                                                                             save_dir=save_directory,
                                                                             step=step_counter,
                                                                             run_glow=run_glow)

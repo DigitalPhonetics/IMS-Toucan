@@ -2,12 +2,11 @@ import time
 
 import wandb
 
+from Architectures.ToucanTTS.TTSDataset import TTSDataset
 from Architectures.ToucanTTS.ToucanTTS import ToucanTTS
 from Architectures.ToucanTTS.toucantts_train_loop import train_loop
-from Utility.corpus_preparation import prepare_tts_corpus
 from Utility.path_to_transcript_dicts import *
 from Utility.storage_config import MODELS_DIR
-from Utility.storage_config import PREPROCESSING_DIR
 
 
 def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb_resume_id, gpu_count):
@@ -31,11 +30,11 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
-    train_set = prepare_tts_corpus(path_list=list(),  # TODO
-                                   latents_list=list(),  # TODO
-                                   corpus_dir=os.path.join(PREPROCESSING_DIR, "LatentToSpectrogram"),
-                                   gpu_count=gpu_count,
-                                   rank=rank)
+    train_set = TTSDataset(path_list=list(),  # TODO
+                           latents_list=list(),  # TODO
+                           gpu_count=gpu_count,
+                           device=device,
+                           rank=rank)
 
     model = ToucanTTS()
 
