@@ -30,8 +30,10 @@ class LangEmbDataset(Dataset):
                 self.distance_type = "map"
             elif "tree_dist_0" in self.dataset_df.columns:
                 self.distance_type = "tree"
-            else:
+            elif "asp_dist_0" in self.dataset_df.columns:
                 self.distance_type = "asp"
+            else:
+                self.distance_type = "fixed" # for random dataset
         
 
         self.language_embeddings = torch.load(lang_embs_path)
