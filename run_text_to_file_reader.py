@@ -97,17 +97,17 @@ if __name__ == '__main__':
 
     merged_speaker_references = ["audios/speaker_references/" + ref for ref in os.listdir("audios/speaker_references/")]
 
-    sound_of_silence_single_utt(version="merged",
+    sound_of_silence_single_utt(version="final",
                                 model_id="Meta",
                                 exec_device=exec_device,
                                 speaker_reference=merged_speaker_references)
 
-    die_glocke(version="merged",
+    die_glocke(version="final",
                model_id="Meta",
                exec_device=exec_device,
                speaker_reference=merged_speaker_references)
 
-    viet_poem(version="merged",
+    viet_poem(version="final",
               model_id="Meta",
               exec_device=exec_device,
               speaker_reference=merged_speaker_references)
