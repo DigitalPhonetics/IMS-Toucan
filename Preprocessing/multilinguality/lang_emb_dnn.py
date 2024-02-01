@@ -126,7 +126,9 @@ def train(model: LangEmbPredictor,
                     val_loss = loss_fn(val_outputs, val_y)
                     running_val_loss += val_loss.item()
             avg_val_loss = running_val_loss / len(test_loader)
-        print(f"Epoch {epoch+1} | Train loss: {avg_train_loss} | Val loss: {avg_val_loss}")
+            print(f"Epoch {epoch+1} | Train loss: {avg_train_loss} | Val loss: {avg_val_loss}")
+        else:
+            print(f"Epoch {epoch+1} | Train loss: {avg_train_loss}")
         if epoch > 0 and (epoch+1) % save_ckpt_every == 0:
             model_path = os.path.join(checkpoint_dir, f"ckpt_{epoch+1}.pt")
             torch.save(model.state_dict(), model_path)
