@@ -51,11 +51,19 @@ LEP_model = LangEmbPredictor(idim=17*5)
 LEP_model.load_state_dict(torch.load(langemb_predictor_path))
 LEP_model.to(device)
 LEP_model.eval()
+faulty_df_indices = []
 with torch.inference_mode():
     for data in data_loader:
-        x, _, lang_emb_index = data # the label is useless so we ignore it
-        prediction = LEP_model(x)
-        lang_embs[lang_emb_index] = prediction
+        try:
+            x, _, lang_emb_index = data # the label is useless so we ignore it
+            prediction = LEP_model(x)
+            lang_embs[lang_emb_index] = prediction
+        except:
+            # in case of error, only the dataframe index is returned which cause the error
+            faulty_df_idx = data
+            faulty_df_indices.append(faulty_df_idx)
+
+print(f"Failed to predict language embedding for the following indices of the used DataFrame: {faulty_df_indices}")
 
 # insert into Toucan model
 toucan_model["model"]["encoder.language_embedding.weight"] = lang_embs

@@ -46,9 +46,10 @@ class LangEmbDataset(Dataset):
         and the language_embedding id (for zero-shot prediction to replace lang_emb at correct index)."""
         features = self.dataset_df.iloc[idx, :]
         target_lang_code = features["target_lang"]
-        target_lang_emb_index = get_language_id(target_lang_code)
+        target_lang_emb_index = get_language_id(str(target_lang_code)) # use str() to avoid 'nan' interpreted as NaN
         if target_lang_emb_index is None:
-            print(f"target_lang_code: {target_lang_code}")
+            # return faulty index for easier troubleshooting
+            return torch.tensor([idx])
         dist_plus_lang_emb_tensors = []
         y = self.language_embeddings[target_lang_emb_index.item()]
         if self.add_noise:
