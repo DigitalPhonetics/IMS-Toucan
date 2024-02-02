@@ -21,7 +21,7 @@ LANG_PAIRS_map_PATH = "lang_1_to_lang_2_to_map_dist.json"
 LANG_PAIRS_tree_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
 NUM_LANGS = 463
-LOSS_TYPE = "with_less_loss"
+LOSS_TYPE = "with_less_loss_fixed_tree_distance"
 LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
 
 LANG_EMBS_MAPPING_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
@@ -31,7 +31,7 @@ JSON_1D_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multil
 ASP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_asp_{NUM_LANGS}_{LOSS_TYPE}.csv"
 MAP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_map_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TREE_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_tree_{NUM_LANGS}_{LOSS_TYPE}.csv"
-COMBINED_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_COMBINED_correct_sims_{NUM_LANGS}_{LOSS_TYPE}.csv"
+COMBINED_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_COMBINED_{NUM_LANGS}_{LOSS_TYPE}.csv"
 RANDOM_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_random_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TEXT_FRONTEND_PATH = "../TextFrontend.py"
 
@@ -389,8 +389,12 @@ if __name__ == "__main__":
 
     #dc.create_json()
     #dc.create_1D_json()
-    #dc.create_combined_csv(zero_shot=True)
-    #dc.create_aspf_csv(zero_shot=True)
-    #dc.create_map_csv(zero_shot=True)
-    #dc.create_tree_csv(zero_shot=True)
+    dc.create_combined_csv()
+    dc.create_aspf_csv()
+    dc.create_map_csv()
+    dc.create_tree_csv()        
+    dc.create_combined_csv(zero_shot=True)
+    dc.create_aspf_csv(zero_shot=True)
+    dc.create_map_csv(zero_shot=True)
+    dc.create_tree_csv(zero_shot=True)
     dc.create_random_csv()
