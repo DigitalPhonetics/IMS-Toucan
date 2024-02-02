@@ -68,15 +68,22 @@ def compute_mse_for_averaged_embeddings(csv_path, language_embeddings, weighted_
 
 if __name__ == "__main__":
     csv_paths = [
-#        "datasets/dataset_COMBINED_500_with_less_loss_average.csv",
-#        "datasets/dataset_COMBINED_correct_sims_500_with_less_loss_average.csv",
-#        "datasets/dataset_random_463_with_less_loss.csv",
-        "datasets/dataset_asp_500_with_less_loss.csv",
-        "datasets/dataset_map_500_with_less_loss.csv",
-        "datasets/dataset_tree_500_with_less_loss.csv"
+        #"datasets/OLD/dataset_COMBINED_500_with_less_loss_average.csv",
+        #"datasets/OLD/dataset_COMBINED_correct_sims_500_with_less_loss_average.csv",
+        #"datasets/OLD/dataset_random_463_with_less_loss.csv",
+        #"datasets/OLD/dataset_asp_463_with_less_loss.csv",
+        #"datasets/OLD/dataset_map_463_with_less_loss.csv",
+        #"datasets/dataset_tree_463_with_less_loss.csv",
+        #"datasets/dataset_asp_463_with_less_loss_fixed_tree_distance.csv",
+        #"datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average.csv",
+        #"datasets/dataset_map_463_with_less_loss_fixed_tree_distance.csv",
+        #"datasets/dataset_tree_463_with_less_loss_fixed_tree_distance.csv",
+        #"datasets/dataset_random_463_with_less_loss_fixed_tree_distance.csv",
+
     ]
     weighted = [True, False]
-    lang_embs_path = "LangEmbs/final_model_with_less_loss.pt"
+    #lang_embs_path = "LangEmbs/final_model_with_less_loss.pt"
+    lang_embs_path = "LangEmbs/final_model_with_less_loss_fixed_tree_distance.pt"
     language_embeddings = torch.load(lang_embs_path)
 
     for csv_path in csv_paths:

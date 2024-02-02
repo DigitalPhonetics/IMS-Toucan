@@ -89,9 +89,11 @@ def train(model: LangEmbPredictor,
           lr=0.001,
           batch_size=4,
           n_epochs: int = 10,
-          save_ckpt_every=10):
+          save_ckpt_every=10,
+          model_id=None):
     os.makedirs(checkpoint_dir, exist_ok=True)
-    model.to(device)    
+    model_id_suffix = f"_model{model_id}" if model_id else ""
+    model.to(device)
     loss_fn = torch.nn.MSELoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     train_loader = DataLoader(train_set,
@@ -130,7 +132,7 @@ def train(model: LangEmbPredictor,
         else:
             print(f"Epoch {epoch+1} | Train loss: {avg_train_loss}")
         if epoch > 0 and (epoch+1) % save_ckpt_every == 0:
-            model_path = os.path.join(checkpoint_dir, f"ckpt_{epoch+1}.pt")
+            model_path = os.path.join(checkpoint_dir, f"ckpt{model_id_suffix}_ep{epoch+1}.pt")
             torch.save(model.state_dict(), model_path)
     if test_set:
         print(f"Final train loss: {avg_train_loss} | Final val loss: {avg_val_loss}")

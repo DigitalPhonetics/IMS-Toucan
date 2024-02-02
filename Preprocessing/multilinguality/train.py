@@ -28,7 +28,9 @@ def added_noise_kfold_train_loop(csv_path,
     device = "cuda" if torch.cuda.is_available() else "cpu"
     train_losses, val_losses = [], []
     log_path = os.path.join(log_dir, f"{os.path.basename(checkpoint_dir)}.log")
-
+    with open(log_path, "w") as f:
+        f.write(f"csv_path: {csv_path}\n")            
+        f.write(f"train mode: noise_kfold | n_repeats: {n_repeats} | noise_std: {noise_std} | n_splits: {n_splits} | n_epochs: {n_epochs} | batch_size: {batch_size}\n")    
     df = pd.read_csv(csv_path, sep="|")
     repeated_df = create_repeated_df(df, n_repeats=n_repeats)
 
@@ -118,6 +120,9 @@ def kfold_train_loop(csv_path, checkpoint_dir, log_dir, n_splits=10, n_epochs: i
 
     train_losses, val_losses = [], []
     log_path = os.path.join(log_dir, f"{os.path.basename(checkpoint_dir)}.log")
+    with open(log_path, "w") as f:
+        f.write(f"csv_path: {csv_path}\n")
+        f.write(f"train mode: kfold | n_splits: {n_splits} | n_epochs: {n_epochs} | batch_size: {batch_size}\n")    
     for i, (train_index, test_index) in enumerate(kfold.split(df)):
         train_df = df.iloc[train_index]
         test_df = df.iloc[test_index]
@@ -128,12 +133,13 @@ def kfold_train_loop(csv_path, checkpoint_dir, log_dir, n_splits=10, n_epochs: i
         print(f"Model {i+1}/{n_splits}")
         train_loss, val_loss = train(model, 
                                     train_set, 
-                                    test_set, 
                                     device, 
                                     checkpoint_dir,
+                                    test_set=test_set, 
                                     batch_size=batch_size,
                                     n_epochs=n_epochs,
-                                    save_ckpt_every=save_ckpt_every)
+                                    save_ckpt_every=save_ckpt_every,
+                                    model_id=i+1)
         train_losses.append(train_loss)
         val_losses.append(val_loss)
         with open(log_path, "a") as f:
@@ -154,7 +160,9 @@ def full_train_loop(csv_path, checkpoint_dir, log_dir, n_epochs: int = 10, save_
 
     train_losses = []
     log_path = os.path.join(log_dir, f"{os.path.basename(checkpoint_dir)}.log")
-
+    with open(log_path, "w") as f:
+        f.write(f"csv_path: {csv_path}\n")        
+        f.write(f"train mode: full | n_epochs: {n_epochs} | batch_size: {batch_size}\n")    
     train_set = LangEmbDataset(dataset_df=train_df)
 
     model = LangEmbPredictor(idim=17*5)
