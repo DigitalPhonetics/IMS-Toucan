@@ -1,11 +1,15 @@
 import itertools
 import os
+from typing import cast
 
 import matplotlib.pyplot as plt
 import pyloudnorm
 import sounddevice
 import soundfile
 import torch
+from audioseal.builder import create_generator
+from omegaconf import DictConfig
+from omegaconf import OmegaConf
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
@@ -32,6 +36,11 @@ class ToucanTTSInterface(torch.nn.Module):
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
+        if "USER" not in os.environ:
+            os.environ["USER"] = ""  # that's the case under Windows, but omegaconf needs this
+        watermark_conf = cast(DictConfig, OmegaConf.load("InferenceInterfaces/audioseal_wm_16bits.yaml"))
+        self.watermark = create_generator(watermark_conf)
+        self.watermark.load_state_dict(torch.load("Models/audioseal/generator.pth", map_location="cpu")["model"])  # downloaded from https://dl.fbaipublicfiles.com/audioseal/6edcf62f/generator.pth originally
 
         ################################
         #   build text to phone        #
@@ -166,6 +175,7 @@ class ToucanTTSInterface(torch.nn.Module):
         except ValueError:
             # if the audio is too short, a value error will arise
             pass
+        wave = (torch.tensor(wave) + self.watermark.get_watermark(torch.tensor(wave).unsqueeze(0).unsqueeze(0)).squeeze()).detach().cpu().numpy()
 
         if view or return_plot_as_filepath:
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
