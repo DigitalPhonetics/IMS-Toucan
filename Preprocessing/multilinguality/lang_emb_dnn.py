@@ -20,7 +20,8 @@ class LangEmbDataset(Dataset):
         self.add_noise = add_noise
         self.noise_std = noise_std if add_noise else None
          # for combined feats, df has 5 features per closest lang + 1 target lang column
-        if "average_dist_0" in self.dataset_df.columns or "euclidean_dist_0" in self.dataset_df.columns:
+        if ("average_dist_0" in self.dataset_df.columns and "asp_dist_0" in self.dataset_df.columns) or \
+            ("euclidean_dist_0" in self.dataset_df.columns and "asp_dist_0" in self.dataset_df.columns):
             self.n_closest = len(self.dataset_df.columns) // 5
             self.distance_type = "average" if  "average_dist_0" in self.dataset_df.columns else "euclidean"
         # else, df has 2 features per closest lang + 1 target lang column
@@ -32,6 +33,10 @@ class LangEmbDataset(Dataset):
                 self.distance_type = "tree"
             elif "asp_dist_0" in self.dataset_df.columns:
                 self.distance_type = "asp"
+            elif "average_dist_0" in self.dataset_df.columns:
+                self.distance_type = "average"
+            elif "euclidean_dist_0" in self.dataset_df.columns:
+                self.distance_type = "euclidean"
             else:
                 self.distance_type = "fixed" # for random dataset
         
