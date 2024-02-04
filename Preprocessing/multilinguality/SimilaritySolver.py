@@ -139,7 +139,7 @@ class SimilaritySolver():
                     print("Full Name of Language Missing")
         return results
             
-    def find_closest_combined(self, lang, supervised_langs, distance: ["average", "euclidean"], n_closest=5, verbose=False):
+    def find_closest_combined(self, lang, supervised_langs, distance: ["average", "euclidean"], n_closest=5, individual_distances=False, verbose=False):
         """Find the n closest languages according to the combined Euclidean distance of map distance, tree distance, and ASP distance.
         Returns a dict of dicts of the format {"supervised_lang_1": 
                                                 {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
@@ -158,21 +158,25 @@ class SimilaritySolver():
             # if getting one of the scores failed, ignore this language
             if None in {map_dist, tree_dist, asp_score}:
                 continue           
-
+            
+            combined_dict[sup_lang] = {}
             asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
             dist_array = np.array([map_dist, tree_dist, asp_dist])
             #map_sim = 1 - map_dist # turn into sim since other 2 are also sims
             #dist_array = np.array([map_sim, tree_dist, asp_score])
             if distance == "euclidean":
                 euclidean_dist = np.sqrt(np.sum(dist_array**2)) # no subtraction because lang has dist [0,0,0]
-                combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
+                combined_dict[sup_lang]["combined_distance"] = euclidean_dist
                 #combined_dict[sup_lang] = {"combined_distance": euclidean_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
             elif distance == "average":
                 avg_dist = np.mean(dist_array)
-                combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_dist, tree_dist, asp_dist]}
-                #combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
+                combined_dict[sup_lang]["combined_distance"] = avg_dist
             else:
-                raise ValueError("distance needs to be `average` or `euclidean`")
+                raise ValueError("distance needs to be `average` or `euclidean`")                
+            if individual_distances:
+                combined_dict[sup_lang]["individual_distances"] = [map_dist, tree_dist, asp_dist]
+                #combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
+
         # results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"])[:n_closest])
         results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=False)[:n_closest])
         if verbose:

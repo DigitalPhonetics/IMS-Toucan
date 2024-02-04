@@ -87,19 +87,23 @@ class DatasetCreator():
         return feature_dict
 
 
-    def create_combined_csv(self, distance_type="average", zero_shot=False, n_closest=5):
+    def create_combined_csv(self, distance_type="average", zero_shot=False, individual_distances=False, n_closest=5):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
         distance_type = distance_type
-        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        supervised_langs = sorted(list(self.lang_embs_mapping.keys()))
+        illegal_langs = ["deu", "eng"]
+        for il_lang in illegal_langs:
+            supervised_langs.remove(il_lang)
+        individual_dist_suffix = "_individual_dists" if individual_distances else ""
         zero_shot_suffix= ""
         if zero_shot:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            zero_shot_suffix = "zero_shot_"
             # remove supervised languages from iso dict
             for sup_lang in supervised_langs:
                 iso_codes_to_ids.pop(sup_lang, None)
-                zero_shot_suffix = "zero_shot_"
             lang_codes = list(iso_codes_to_ids.keys())
         else:
             lang_codes = sorted(self.lang_embs_mapping.keys())
@@ -109,7 +113,8 @@ class DatasetCreator():
             feature_dict = sim_solver.find_closest_combined(lang, 
                                                             supervised_langs, 
                                                             distance=distance_type, 
-                                                            n_closest=n_closest)
+                                                            n_closest=n_closest,
+                                                            individual_distances=individual_distances)
             # sort out incomplete results
             if len(feature_dict) < n_closest:
                 failed_langs.append(lang)
@@ -117,16 +122,20 @@ class DatasetCreator():
             # create entry for a single close lang
             for _, close_lang in enumerate(feature_dict):
                 close_lang_euclid = feature_dict[close_lang]["combined_distance"]
-                close_lang_distances = feature_dict[close_lang]["individual_distances"]
+                close_lang_feature_list = [close_lang, close_lang_euclid]
+                if individual_distances:
+                    close_lang_distances = feature_dict[close_lang]["individual_distances"]
+                    close_lang_feature_list.extend(close_lang_distances)
                 # column order: compared closest language, euclid_dist, map_dist, tree_dist, asp_dist
-                close_lang_feature_list = [close_lang, close_lang_euclid] + close_lang_distances
                 dataset_dict[lang].extend(close_lang_feature_list)
         dataset_columns = ["target_lang"]
         for i in range(n_closest):
-            dataset_columns.extend([f"closest_lang_{i}", f"{distance_type}_dist_{i}", f"map_dist_{i}", f"tree_dist_{i}", f"asp_dist_{i}"])
+            dataset_columns.extend([f"closest_lang_{i}", f"{distance_type}_dist_{i}"])
+            if individual_distances:
+                dataset_columns.extend([f"map_dist_{i}", f"tree_dist_{i}", f"asp_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{zero_shot_suffix}{distance_type}" + ".csv"
+        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{zero_shot_suffix}{distance_type}{individual_dist_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
@@ -164,10 +173,10 @@ class DatasetCreator():
         zero_shot_suffix= ""
         if zero_shot:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            zero_shot_suffix = "_zero_shot"
             # remove supervised languages from iso dict
             for sup_lang in supervised_langs:
                 iso_codes_to_ids.pop(sup_lang, None)
-                zero_shot_suffix = "_zero_shot"
             lang_codes = list(iso_codes_to_ids.keys())
         else:
             lang_codes = sorted(self.lang_embs_mapping.keys())
@@ -204,10 +213,10 @@ class DatasetCreator():
         zero_shot_suffix= ""
         if zero_shot:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            zero_shot_suffix = "_zero_shot"
             # remove supervised languages from iso dict
             for sup_lang in supervised_langs:
                 iso_codes_to_ids.pop(sup_lang, None)
-                zero_shot_suffix = "_zero_shot"
             lang_codes = list(iso_codes_to_ids.keys())
         else:
             lang_codes = sorted(self.lang_embs_mapping.keys())
@@ -245,10 +254,10 @@ class DatasetCreator():
         zero_shot_suffix= ""
         if zero_shot:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            zero_shot_suffix = "_zero_shot"
             # remove supervised languages from iso dict
             for sup_lang in supervised_langs:
                 iso_codes_to_ids.pop(sup_lang, None)
-                zero_shot_suffix = "_zero_shot"
             lang_codes = list(iso_codes_to_ids.keys())
         else:
             lang_codes = sorted(self.lang_embs_mapping.keys())
@@ -277,6 +286,70 @@ class DatasetCreator():
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
+    def create_feature_csv_from_lookup_csv(self, csv_path, out_path, single_dim=False):
+        """Takes as input a dataset CSV containing only the ISO codes of the closest languages 
+        (i.e. the actual features still need to be looked up), and creates a new dataset CSV that 
+        contains the actual language embedding features of the closest languages.
+        If single_dim is set to True, creates one csv file for each dimension of the language embeddings.
+        """
+
+        df = pd.read_csv(csv_path, sep="|")
+        if single_dim:
+            lang_emb_dims = self.lang_embs.shape[1]
+            dim_specific_dicts = {dim: {} for dim in range(lang_emb_dims)}
+        else:
+            new_dataset_dict = {}
+        for row in df.itertuples():
+            features_for_one_sample = []
+            target_lang = getattr(row, "target_lang")
+            for i, val in enumerate(row):
+                # use index as key for dict
+                if i == 0 and val == row.Index:
+                    row_key = val
+                    continue
+                # strings are lang codes and need to be looked up
+                if isinstance(val, str):
+                    if val == target_lang: # ignore target_lang for now and add it at the end
+                        continue
+                    lang_emb = self.lang_embs[get_language_id(val)].squeeze(0).numpy()
+                    lang_emb = lang_emb.tolist()
+                    if single_dim:
+                        for dim_key, dim_val in enumerate(lang_emb):
+                            if not row_key in dim_specific_dicts[dim_key]:
+                                dim_specific_dicts[dim_key][row_key] = [dim_val]
+                            else:
+                                dim_specific_dicts[dim_key][row_key].append(dim_val)
+                    else:
+                        features_for_one_sample.extend(lang_emb)
+
+                else:
+                    # distance value as float
+                    if single_dim: 
+                        for dim_key in dim_specific_dicts:
+                            dim_specific_dicts[dim_key][row_key].append(val)
+                    else:
+                        features_for_one_sample.append(val)
+            # add target lang at the end of each row
+            target_lang_emb = self.lang_embs[get_language_id(row.target_lang)].squeeze(0).numpy()
+            target_lang_emb = target_lang_emb.tolist()
+            if single_dim:
+                for dim_key, dim_val in enumerate(target_lang_emb):
+                    dim_specific_dicts[dim_key][row_key].append(dim_val)
+            else:
+                features_for_one_sample.extend(target_lang_emb)
+                # add all features of one row to the dict
+                new_dataset_dict[row_key] = features_for_one_sample
+        if single_dim:
+            for dim_key, dim_dict in enumerate(dim_specific_dicts):
+                df = pd.DataFrame.from_dict(dim_specific_dicts[dim_dict], orient="index")
+                out_path_prefix, out_path_ext = out_path.split(".")
+                df.to_csv(f"{out_path_prefix}_dim{dim_key}.{out_path_ext}", sep="|", index=False)
+        else:
+            # create the dataframe
+            dataset_with_features_df = pd.DataFrame.from_dict(new_dataset_dict, orient="index")
+            # write to file
+            dataset_with_features_df.to_csv(out_path, sep="|", index=False)
+
 
 def create_repeated_df(df, out_path=None, n_repeats=100):
     """
@@ -291,7 +364,6 @@ def create_repeated_df(df, out_path=None, n_repeats=100):
     if out_path:
         new_df.to_csv(out_path, sep="|")
     return new_df
-
 
 
     def create_json(self, n_closest=5, use_tree=True):
@@ -389,12 +461,32 @@ if __name__ == "__main__":
 
     #dc.create_json()
     #dc.create_1D_json()
-    dc.create_combined_csv()
-    dc.create_aspf_csv()
-    dc.create_map_csv()
-    dc.create_tree_csv()        
-    dc.create_combined_csv(zero_shot=True)
-    dc.create_aspf_csv(zero_shot=True)
-    dc.create_map_csv(zero_shot=True)
-    dc.create_tree_csv(zero_shot=True)
-    dc.create_random_csv()
+    #dc.create_combined_csv(individual_distances=False)
+    #dc.create_combined_csv(individual_distances=True)
+    # dc.create_aspf_csv()
+    # dc.create_map_csv()
+    # dc.create_tree_csv()        
+    #dc.create_combined_csv(zero_shot=True)
+    # dc.create_aspf_csv(zero_shot=True)
+    # dc.create_map_csv(zero_shot=True)
+    # dc.create_tree_csv(zero_shot=True)
+    # dc.create_random_csv()
+        
+    dataset_paths = [
+        'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance.csv', 
+        #'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
+        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average.csv', 
+        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average_individual_dists.csv', 
+        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_zero_shot_average.csv', 
+        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_zero_shot_average_individual_dists.csv', 
+        'datasets/dataset_map_463_with_less_loss_fixed_tree_distance.csv', 
+        #'datasets/dataset_map_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
+        'datasets/dataset_random_463_with_less_loss_fixed_tree_distance.csv', 
+        'datasets/dataset_tree_463_with_less_loss_fixed_tree_distance.csv', 
+        #'datasets/dataset_tree_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
+        ]
+    for csv_path in dataset_paths:
+        out_path = os.path.join(os.path.dirname(csv_path), f"feature_{os.path.basename(csv_path)}")
+        dc.create_feature_csv_from_lookup_csv(csv_path, out_path, single_dim=False)
+        out_path = out_path.replace("datasets/", "datasets/single_dim/")
+        dc.create_feature_csv_from_lookup_csv(csv_path, out_path, single_dim=True)
