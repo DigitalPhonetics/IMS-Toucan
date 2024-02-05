@@ -63,7 +63,7 @@ class LangEmbDataset(Dataset):
         for i in range(self.n_closest):
             dist = torch.tensor([features[f"{self.distance_type}_dist_{i}"]], dtype=torch.float32)
             lang = features[f"closest_lang_{i}"]
-            lang_emb = self.language_embeddings[get_language_id(lang).item()]
+            lang_emb = self.language_embeddings[get_language_id(str(lang)).item()]
             if self.add_noise:
                 noise = torch.normal(mean=0, std=self.noise_std, size=lang_emb.size())
                 lang_emb += noise
