@@ -87,15 +87,23 @@ class DatasetCreator():
         return feature_dict
 
 
-    def create_combined_csv(self, distance_type="average", zero_shot=False, individual_distances=False, n_closest=5):
+    def create_combined_csv(self, 
+                            distance_type="average", 
+                            zero_shot=False, 
+                            individual_distances=False, 
+                            n_closest=5,
+                            remove_illegal_languages=False,
+                            illegal_languages=[]):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
         distance_type = distance_type
         supervised_langs = sorted(list(self.lang_embs_mapping.keys()))
-        illegal_langs = ["deu", "eng"]
-        for il_lang in illegal_langs:
-            supervised_langs.remove(il_lang)
+        removed_langs_suffix = ""
+        if remove_illegal_languages:
+            removed_langs_suffix = "_no_illegal_langs"
+            for il_lang in illegal_languages:
+                supervised_langs.remove(il_lang)
         individual_dist_suffix = "_individual_dists" if individual_distances else ""
         zero_shot_suffix= ""
         if zero_shot:
@@ -106,7 +114,7 @@ class DatasetCreator():
                 iso_codes_to_ids.pop(sup_lang, None)
             lang_codes = list(iso_codes_to_ids.keys())
         else:
-            lang_codes = sorted(self.lang_embs_mapping.keys())
+            lang_codes = supervised_langs
         failed_langs = []
         for lang in lang_codes:
             dataset_dict[lang] = [lang] # target language as first column
@@ -135,7 +143,7 @@ class DatasetCreator():
                 dataset_columns.extend([f"map_dist_{i}", f"tree_dist_{i}", f"asp_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{zero_shot_suffix}{distance_type}{individual_dist_suffix}" + ".csv"
+        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_{zero_shot_suffix}{distance_type}{individual_dist_suffix}{removed_langs_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
@@ -471,22 +479,27 @@ if __name__ == "__main__":
     # dc.create_map_csv(zero_shot=True)
     # dc.create_tree_csv(zero_shot=True)
     # dc.create_random_csv()
+    illegal_langs = ["deu", "eng"]
+    #dc.create_combined_csv(individual_distances=True, remove_illegal_languages=True, illegal_languages=illegal_langs)
+    dc.create_combined_csv(individual_distances=True, remove_illegal_languages=True, illegal_languages=illegal_langs, zero_shot=True)
+
         
-    dataset_paths = [
-        'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance.csv', 
-        #'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
-        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average.csv', 
-        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average_individual_dists.csv', 
-        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_zero_shot_average.csv', 
-        #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_zero_shot_average_individual_dists.csv', 
-        'datasets/dataset_map_463_with_less_loss_fixed_tree_distance.csv', 
-        #'datasets/dataset_map_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
-        'datasets/dataset_random_463_with_less_loss_fixed_tree_distance.csv', 
-        'datasets/dataset_tree_463_with_less_loss_fixed_tree_distance.csv', 
-        #'datasets/dataset_tree_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
-        ]
-    for csv_path in dataset_paths:
-        out_path = os.path.join(os.path.dirname(csv_path), f"feature_{os.path.basename(csv_path)}")
-        dc.create_feature_csv_from_lookup_csv(csv_path, out_path, single_dim=False)
-        out_path = out_path.replace("datasets/", "datasets/single_dim/")
-        dc.create_feature_csv_from_lookup_csv(csv_path, out_path, single_dim=True)
+        
+    # dataset_paths = [
+    #     'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance.csv', 
+    #     #'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
+    #     #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average.csv', 
+    #     #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average_individual_dists.csv', 
+    #     #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_zero_shot_average.csv', 
+    #     #'datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_zero_shot_average_individual_dists.csv', 
+    #     'datasets/dataset_map_463_with_less_loss_fixed_tree_distance.csv', 
+    #     #'datasets/dataset_map_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
+    #     'datasets/dataset_random_463_with_less_loss_fixed_tree_distance.csv', 
+    #     'datasets/dataset_tree_463_with_less_loss_fixed_tree_distance.csv', 
+    #     #'datasets/dataset_tree_463_with_less_loss_fixed_tree_distance_zero_shot.csv', 
+    #     ]
+    # for csv_path in dataset_paths:
+    #     out_path = os.path.join(os.path.dirname(csv_path), f"feature_{os.path.basename(csv_path)}")
+    #     dc.create_feature_csv_from_lookup_csv(csv_path, out_path, single_dim=False)
+    #     out_path = out_path.replace("datasets/", "datasets/single_dim/")
+    #     dc.create_feature_csv_from_lookup_csv(csv_path, out_path, single_dim=True)
