@@ -14,11 +14,13 @@ class LangEmbDataset(Dataset):
     def __init__(self,
                  dataset_df,
                  lang_embs_path="LangEmbs/final_model_with_less_loss.pt",
+                 use_individual_distances=False,
                  add_noise=False,
                  noise_std=0.01):
         self.dataset_df = dataset_df
         self.add_noise = add_noise
         self.noise_std = noise_std if add_noise else None
+        self.use_individual_distances = use_individual_distances
          # for combined feats, df has 5 features per closest lang + 1 target lang column
         if ("average_dist_0" in self.dataset_df.columns and "asp_dist_0" in self.dataset_df.columns) or \
             ("euclidean_dist_0" in self.dataset_df.columns and "asp_dist_0" in self.dataset_df.columns):
@@ -61,7 +63,13 @@ class LangEmbDataset(Dataset):
             noise = torch.normal(mean=0, std=0.01, size=y.size())
             y += noise
         for i in range(self.n_closest):
-            dist = torch.tensor([features[f"{self.distance_type}_dist_{i}"]], dtype=torch.float32)
+            if self.distance_type == "average" and self.use_individual_distances:
+                asp_dist = torch.tensor([features[f"asp_dist_{i}"]], dtype=torch.float32)
+                map_dist = torch.tensor([features[f"map_dist_{i}"]], dtype=torch.float32)
+                tree_dist = torch.tensor([features[f"tree_dist_{i}"]], dtype=torch.float32)
+                dist = torch.concat([asp_dist, map_dist, tree_dist])
+            else:
+                dist = torch.tensor([features[f"{self.distance_type}_dist_{i}"]], dtype=torch.float32)
             lang = features[f"closest_lang_{i}"]
             lang_emb = self.language_embeddings[get_language_id(str(lang)).item()]
             if self.add_noise:

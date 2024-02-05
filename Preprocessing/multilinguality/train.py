@@ -109,7 +109,14 @@ def added_noise_kfold_train_loop(csv_path,
     return avg_train_loss, avg_val_loss
 
 
-def kfold_train_loop(csv_path, checkpoint_dir, log_dir, n_splits=10, n_epochs: int = 10, save_ckpt_every=10, batch_size=4):
+def kfold_train_loop(csv_path, 
+                     checkpoint_dir, 
+                     log_dir, 
+                     n_splits=10, 
+                     n_epochs: int = 10, 
+                     save_ckpt_every=10, 
+                     batch_size=4,
+                     use_individual_distances=False):
     """Train with k-fold cross-validation and save checkpoints to a specified dir.
     csv_path: str
     """
@@ -125,11 +132,11 @@ def kfold_train_loop(csv_path, checkpoint_dir, log_dir, n_splits=10, n_epochs: i
         f.write(f"train mode: kfold | n_splits: {n_splits} | n_epochs: {n_epochs} | batch_size: {batch_size}\n")    
     for i, (train_index, test_index) in enumerate(kfold.split(df)):
         train_df = df.iloc[train_index]
-        test_df = df.iloc[test_index]
-
-        train_set = LangEmbDataset(dataset_df=train_df)
-        test_set = LangEmbDataset(test_df)
-        model = LangEmbPredictor(idim=17*5)
+        test_df = df.iloc[test_index]    
+        train_set = LangEmbDataset(dataset_df=train_df, use_individual_distances=use_individual_distances)
+        test_set = LangEmbDataset(dataset_df=test_df, use_individual_distances=use_individual_distances)
+        idim = 19*5 if use_individual_distances else 17*5
+        model = LangEmbPredictor(idim=idim)
         print(f"Model {i+1}/{n_splits}")
         train_loss, val_loss = train(model, 
                                     train_set, 
@@ -198,6 +205,7 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_dir", help="directory for saving checkpoints")
     parser.add_argument("--train_mode", choices=["kfold", "full", "noise_kfold", "noise_full"], default="kfold", help="choose training mode")
     parser.add_argument("--noise_std", type=float, default=0.01, help="standard deviation of the noise added to samples (if a `noise` train_mode is selected")
+    parser.add_argument("--use_individual_distances", action="store_true", help="if True, use the individual distances of the combined-feature dataset instead of the average distance")
     args = parser.parse_args()
     timestamp = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir else f"checkpoints/{timestamp}_{args.n_epochs}ep"
@@ -212,7 +220,8 @@ if __name__ == "__main__":
                          log_dir=log_dir, 
                          n_epochs=args.n_epochs, 
                          n_splits=args.n_splits, 
-                         batch_size=args.batch_size)
+                         batch_size=args.batch_size,
+                         use_individual_distances=args.use_individual_distances)
     elif args.train_mode == "noise_kfold":
         print("Performing training with increased, noise-augmented dataset and k-fold cross-validation.")
         added_noise_kfold_train_loop(csv_path=args.csv_path, 
