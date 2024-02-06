@@ -13,7 +13,7 @@ from Preprocessing.TextFrontend import get_language_id
 class LangEmbDataset(Dataset):
     def __init__(self,
                  dataset_df,
-                 lang_embs_path="LangEmbs/final_model_with_less_loss.pt",
+                 lang_embs_path="LangEmbs/final_model_with_less_loss_fixed_tree_distance.pt",
                  use_individual_distances=False,
                  add_noise=False,
                  noise_std=0.01):
