@@ -81,13 +81,13 @@ class LangEmbDataset(Dataset):
 
 
 class LangEmbPredictor(torch.nn.Module):
-    def __init__(self, idim, hdim=16, odim=16, n_layers=2, dropout_rate=3, n_closest=5):
+    def __init__(self, idim, hdim=16, odim=16, use_tanh=False, n_layers=2, dropout_rate=3, n_closest=5):
         super().__init__()
         self.linear1 = torch.nn.Linear(idim, hdim)
         self.linear2 = torch.nn.Linear(hdim, odim)
-        self.leaky_relu = torch.nn.LeakyReLU()
+        self.activation = torch.nn.Tanh() if use_tanh else torch.nn.LeakyReLU()
         self.layers = torch.nn.Sequential(self.linear1, 
-                                          self.leaky_relu,
+                                          self.activation,
                                           self.linear2)
 
     def forward(self, xs):

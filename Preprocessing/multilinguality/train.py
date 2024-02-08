@@ -116,7 +116,8 @@ def kfold_train_loop(csv_path,
                      n_epochs: int = 10, 
                      save_ckpt_every=10, 
                      batch_size=4,
-                     use_individual_distances=False):
+                     use_individual_distances=False,
+                     use_tanh=False):
     """Train with k-fold cross-validation and save checkpoints to a specified dir.
     csv_path: str
     """
@@ -136,7 +137,7 @@ def kfold_train_loop(csv_path,
         train_set = LangEmbDataset(dataset_df=train_df, use_individual_distances=use_individual_distances)
         test_set = LangEmbDataset(dataset_df=test_df, use_individual_distances=use_individual_distances)
         idim = 19*5 if use_individual_distances else 17*5
-        model = LangEmbPredictor(idim=idim)
+        model = LangEmbPredictor(idim=idim, use_tanh=use_tanh)
         print(f"Model {i+1}/{n_splits}")
         train_loss, val_loss = train(model, 
                                     train_set, 
@@ -157,7 +158,13 @@ def kfold_train_loop(csv_path,
         f.write(f"Summary | Average train loss: {avg_train_loss} | Average val loss: {avg_val_loss}\n")
     return avg_train_loss, avg_val_loss
 
-def full_train_loop(csv_path, checkpoint_dir, log_dir, n_epochs: int = 10, save_ckpt_every=10, batch_size=4):
+def full_train_loop(csv_path, 
+                    checkpoint_dir, 
+                    log_dir, 
+                    n_epochs: int = 10, 
+                    save_ckpt_every=10, 
+                    batch_size=4,
+                    use_individual_distances=False):
     """Train on all but 1 datapoints (with only 1 test sample) and save checkpoints to a specified dir.
     csv_path: str
     """
@@ -170,9 +177,9 @@ def full_train_loop(csv_path, checkpoint_dir, log_dir, n_epochs: int = 10, save_
     with open(log_path, "w") as f:
         f.write(f"csv_path: {csv_path}\n")        
         f.write(f"train mode: full | n_epochs: {n_epochs} | batch_size: {batch_size}\n")    
-    train_set = LangEmbDataset(dataset_df=train_df)
-
-    model = LangEmbPredictor(idim=17*5)
+    train_set = LangEmbDataset(dataset_df=train_df, use_individual_distances=use_individual_distances)
+    idim = 19*5 if use_individual_distances else 17*5
+    model = LangEmbPredictor(idim=idim)
     train_loss = train(model, 
                         train_set, 
                         device, 
@@ -206,13 +213,21 @@ if __name__ == "__main__":
     parser.add_argument("--train_mode", choices=["kfold", "full", "noise_kfold", "noise_full"], default="kfold", help="choose training mode")
     parser.add_argument("--noise_std", type=float, default=0.01, help="standard deviation of the noise added to samples (if a `noise` train_mode is selected")
     parser.add_argument("--use_individual_distances", action="store_true", help="if True, use the individual distances of the combined-feature dataset instead of the average distance")
+    parser.add_argument("--use_tanh", action="store_true", help="if True, use tanh activation")
     args = parser.parse_args()
     timestamp = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
-    checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir else f"checkpoints/{timestamp}_{args.n_epochs}ep"
+    tanh_suffix = "_tanh" if args.use_tanh else ""
+    indiv_suffix = "_indiv" if args.use_individual_distances else ""
+    checkpoint_dir = args.checkpoint_dir if args.checkpoint_dir else f"checkpoints/{timestamp}{args.train_mode}{tanh_suffix}{indiv_suffix}_{args.batch_size}_{args.n_epochs}ep"
     log_dir = "logs"
     if args.train_mode == "full":
         print("Using all but 1 datapoints for training, only 1 test sample.")
-        full_train_loop(csv_path=args.csv_path, checkpoint_dir=checkpoint_dir, log_dir=log_dir, n_epochs=args.n_epochs, batch_size=args.batch_size)
+        full_train_loop(csv_path=args.csv_path, 
+                        checkpoint_dir=checkpoint_dir, 
+                        log_dir=log_dir, 
+                        n_epochs=args.n_epochs, 
+                        batch_size=args.batch_size,
+                        use_individual_distances=args.use_individual_distances)
     elif args.train_mode == "kfold":
         print("Performing training with k-fold cross-validation.")
         kfold_train_loop(csv_path=args.csv_path, 
@@ -221,7 +236,9 @@ if __name__ == "__main__":
                          n_epochs=args.n_epochs, 
                          n_splits=args.n_splits, 
                          batch_size=args.batch_size,
-                         use_individual_distances=args.use_individual_distances)
+                         use_individual_distances=args.use_individual_distances,
+                         use_tanh=args.use_tanh
+                         )
     elif args.train_mode == "noise_kfold":
         print("Performing training with increased, noise-augmented dataset and k-fold cross-validation.")
         added_noise_kfold_train_loop(csv_path=args.csv_path, 
