@@ -12,7 +12,6 @@ sys.path.append("/media/hdd/behringe/IMS-Toucan")
 from Preprocessing.multilinguality import asp
 from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
 from Preprocessing.TextFrontend import get_language_id
-from time import time
 
 class ScoringModel(torch.nn.Module):
     def __init__(self):
@@ -105,8 +104,6 @@ def train(model: ScoringModel,
             scores = torch.stack(scores, dim=1)
             weighted_lang_embs_without_target = scores * lang_embs_without_target
             predicted_target_lang_emb = weighted_lang_embs_without_target.sum(dim=1) / distances.shape[1]
-            print(f"Pred:\n{predicted_target_lang_emb}")
-            print(f"GT:\n{y}")
             loss = loss_fn(predicted_target_lang_emb, y)
             loss.backward()
             optimizer.step()
