@@ -138,13 +138,23 @@ class SimilaritySolver():
                 except KeyError:
                     print("Full Name of Language Missing")
         return results
-            
-    def find_closest_combined(self, lang, supervised_langs, distance: ["average", "euclidean"], n_closest=5, individual_distances=False, verbose=False):
+    
+
+    def find_closest_combined(self, 
+                              lang, 
+                              supervised_langs, 
+                              distance, 
+                              n_closest=5, 
+                              individual_distances=False, 
+                              verbose=False, 
+                              learned_weights=False):
         """Find the n closest languages according to the combined Euclidean distance of map distance, tree distance, and ASP distance.
         Returns a dict of dicts of the format {"supervised_lang_1": 
                                                 {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
                                               "supervised_lang_2":
                                                 {...}, ...}"""
+        if distance not in ["average", "euclidean"]:
+            raise ValueError
         combined_dict = {}
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
         if "urk" in supervised_langs:
@@ -161,7 +171,10 @@ class SimilaritySolver():
             
             combined_dict[sup_lang] = {}
             asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
-            dist_array = np.array([map_dist, tree_dist, asp_dist])
+            if learned_weights:
+                dist_array = np.array([0.0128*map_dist, 0.4611*tree_dist, 0.3058*asp_dist]) # apply learned weights
+            else:
+                dist_array = np.array([map_dist, tree_dist, asp_dist])
             #map_sim = 1 - map_dist # turn into sim since other 2 are also sims
             #dist_array = np.array([map_sim, tree_dist, asp_score])
             if distance == "euclidean":
