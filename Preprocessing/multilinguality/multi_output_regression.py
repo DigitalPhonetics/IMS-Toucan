@@ -12,12 +12,12 @@ import torch
 def evaluate_all_models(csv_path, out_path, single_dim=False):
     df = pd.read_csv(csv_path, sep="|")
     np_dataset = df.to_numpy()
-    if len(df.columns) > 50:
-        X = np_dataset[:, :-16]
-        y = np_dataset[:, -16:]
-    else:
+    if single_dim:
         X = np_dataset[:, :-1]
         y = np_dataset[:, -1:].ravel()
+    else:
+        X = np_dataset[:, :-16]
+        y = np_dataset[:, -16:]        
 
     lrregressor = LinearRegression()
     dtregressor = DecisionTreeRegressor()
@@ -75,15 +75,16 @@ if __name__ == "__main__":
             evaluate_all_models(feature_csv_path, out_path, single_dim=True)
     
     # COMBINED
-    for cond in ["", "_individual_dists"]:
-        feature_csv_path = f"datasets/feature_dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average{cond}.csv"
-        out_path = f"logs/multi_output_regression_COMBINED{cond}.log"
-        print(f"Evaluating {feature_csv_path}")
-        evaluate_all_models(feature_csv_path, out_path, single_dim=False)     
-
-        # single-dim
-        for i in range(16):
-            feature_csv_path = f"datasets/single_dim/feature_dataset_COMBINED_463_with_less_loss_fixed_tree_distance_average{cond}_dim{i}.csv"
-            out_path = f"logs/single_dim/multi_output_regression_COMBINED{cond}_dim{i}.log"
+    for k in [20, 25, 30]:
+        for cond in ["", "_individual_dists"]:
+            feature_csv_path = f"datasets/feature_dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top{k}_average{cond}.csv"
+            out_path = f"logs/multi_output_regression_top{k}_COMBINED{cond}.log"
             print(f"Evaluating {feature_csv_path}")
-            evaluate_all_models(feature_csv_path, out_path, single_dim=True)
+            evaluate_all_models(feature_csv_path, out_path, single_dim=False)     
+
+            # single-dim
+            for i in range(16):
+                feature_csv_path = f"datasets/single_dim/feature_dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top{k}_average{cond}_dim{i}.csv"
+                out_path = f"logs/single_dim/multi_output_regression_top{k}_COMBINED{cond}_dim{i}.log"
+                print(f"Evaluating {feature_csv_path}")
+                evaluate_all_models(feature_csv_path, out_path, single_dim=True)
