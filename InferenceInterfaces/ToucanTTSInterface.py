@@ -42,8 +42,7 @@ class ToucanTTSInterface(torch.nn.Module):
         #   load phone to features model    #
         #####################################
         checkpoint = torch.load(tts_model_path, map_location='cpu')
-        self.use_lang_id = True
-        self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])  # multi speaker multi language
+        self.phone2mel = ToucanTTS(weights=checkpoint["model"], config=checkpoint["config"])
         with torch.no_grad():
             self.phone2mel.store_inverse_all()  # this also removes weight norm
         self.phone2mel = self.phone2mel.to(torch.device(device))
@@ -72,10 +71,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, device=device)
         self.phone2mel.eval()
         self.vocoder.eval()
-        if self.use_lang_id:
-            self.lang_id = get_language_id(language)
-        else:
-            self.lang_id = None
+        self.lang_id = get_language_id(language)
         self.to(torch.device(device))
         self.eval()
 
