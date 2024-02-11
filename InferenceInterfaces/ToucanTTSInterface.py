@@ -113,10 +113,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
 
     def set_accent_language(self, lang_id):
-        if self.use_lang_id:
-            self.lang_id = get_language_id(lang_id).to(self.device)
-        else:
-            self.lang_id = None
+        self.lang_id = get_language_id(lang_id).to(self.device)
 
     def forward(self,
                 text,
