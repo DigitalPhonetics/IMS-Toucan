@@ -155,11 +155,6 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            pause_duration_scaling_factor=pause_duration_scaling_factor,
                                                            glow_sampling_temperature=glow_sampling_temperature)
 
-            mel = mel[:, durations[0]:-(durations[-1] + durations[-2])]
-            durations[0] = 0  # SILENCE
-            durations[-2] = 0  # SILENCE
-            durations[-1] = 0  # EOS
-
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu().numpy()
         try:
