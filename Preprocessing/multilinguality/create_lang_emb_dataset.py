@@ -20,6 +20,7 @@ ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
 LANG_PAIRS_map_PATH = "lang_1_to_lang_2_to_map_dist.json"
 LANG_PAIRS_tree_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
+LANG_PAIRS_learned_dist_PATH = "lang_1_to_lang_2_to_learned_dist.json"
 NUM_LANGS = 463
 LOSS_TYPE = "with_less_loss_fixed_tree_distance"
 LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
@@ -31,6 +32,7 @@ JSON_1D_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multil
 ASP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_asp_{NUM_LANGS}_{LOSS_TYPE}.csv"
 MAP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_map_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TREE_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_tree_{NUM_LANGS}_{LOSS_TYPE}.csv"
+LEARNED_DIST_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_learned_dist_{NUM_LANGS}_{LOSS_TYPE}.csv"
 COMBINED_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_COMBINED_{NUM_LANGS}_{LOSS_TYPE}.csv"
 RANDOM_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_random_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TEXT_FRONTEND_PATH = "../TextFrontend.py"
@@ -41,6 +43,7 @@ class DatasetCreator():
         (self.lang_pairs_map, 
          self.lang_pairs_tree, 
          self.lang_pairs_asp, 
+         self.lang_pairs_learned_dist,
          self.lang_embs, 
          self.lang_embs_mapping, # only keys are used to get all supervised languages, no mapping to langembs
          self.languages_in_text_frontend,
@@ -94,7 +97,10 @@ class DatasetCreator():
                             n_closest=5,
                             remove_illegal_languages=False,
                             illegal_languages=[],
-                            learned_weights=False):
+                            learned_weights=False,
+                            excluded_features=[],
+                            find_furthest=False,
+                            include_learned_dist=False):
         """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
@@ -107,6 +113,9 @@ class DatasetCreator():
                 supervised_langs.remove(il_lang)
         individual_dist_suffix = "_individual_dists" if individual_distances else ""
         weighted_suffix = "_learned_weights" if learned_weights else ""
+        excluded_feat_suffix = "" if len(excluded_features) == 0 else "_excl_" + "".join(excluded_features)
+        furthest_suffix = "furthest_" if find_furthest else ""
+        learned_dist_suffix = "with_learned_dist_" if include_learned_dist else ""
         zero_shot_suffix= ""
         if zero_shot:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
@@ -125,7 +134,10 @@ class DatasetCreator():
                                                             distance=distance_type, 
                                                             n_closest=n_closest,
                                                             individual_distances=individual_distances,
-                                                            learned_weights=learned_weights)
+                                                            learned_weights=learned_weights,
+                                                            excluded_features=excluded_features,
+                                                            find_furthest=find_furthest,
+                                                            include_learned_dist=include_learned_dist)
             # sort out incomplete results
             if len(feature_dict) < n_closest:
                 failed_langs.append(lang)
@@ -146,7 +158,7 @@ class DatasetCreator():
                 dataset_columns.extend([f"map_dist_{i}", f"tree_dist_{i}", f"asp_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"_top{n_closest}_{zero_shot_suffix}{distance_type}{individual_dist_suffix}{weighted_suffix}{removed_langs_suffix}" + ".csv"
+        out_path = COMBINED_CSV_OUT_PATH.split(".")[0] + f"{excluded_feat_suffix}_top{n_closest}_{learned_dist_suffix}{furthest_suffix}{zero_shot_suffix}{distance_type}{individual_dist_suffix}{weighted_suffix}{removed_langs_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
@@ -213,15 +225,24 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"asp_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = ASP_CSV_OUT_PATH.split(".")[0] + f"{zero_shot_suffix}" + ".csv"
+        out_path = ASP_CSV_OUT_PATH.split(".")[0] + f"_top{n_closest}{zero_shot_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
-    def create_map_csv(self, zero_shot=False, n_closest=5):
-        """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
+    def create_map_csv(self, 
+                       zero_shot=False, 
+                       n_closest=5,
+                       remove_illegal_languages=False,
+                       illegal_languages=[]):
+        """Create dataset with map distance in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
         supervised_langs = sorted(self.lang_embs_mapping.keys())
+        remove_langs_suffix = ""
+        if remove_illegal_languages:
+            remove_langs_suffix = "_no_illegal_langs"
+            for il_lang in illegal_languages:
+                supervised_langs.remove(il_lang)        
         zero_shot_suffix= ""
         if zero_shot:
             iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
@@ -253,13 +274,13 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"map_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = MAP_CSV_OUT_PATH.split(".")[0] + f"{zero_shot_suffix}" + ".csv"
+        out_path = MAP_CSV_OUT_PATH.split(".")[0] + f"_top{n_closest}{zero_shot_suffix}{remove_langs_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
 
     def create_tree_csv(self, zero_shot=False, n_closest=5):
-        """Create dataset (with combined Euclidean distance) in a dict, and saves it to a JSON file."""
+        """Create dataset with tree distance in a dict, and saves it to a JSON file."""
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
         supervised_langs = sorted(self.lang_embs_mapping.keys())
@@ -294,9 +315,50 @@ class DatasetCreator():
             dataset_columns.extend([f"closest_lang_{i}", f"tree_dist_{i}"])
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
-        out_path = TREE_CSV_OUT_PATH.split(".")[0] + f"{zero_shot_suffix}" + ".csv"
+        out_path = TREE_CSV_OUT_PATH.split(".")[0] + f"_top{n_closest}{zero_shot_suffix}" + ".csv"
         df.to_csv(out_path, sep="|", index=False)
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
+
+    def create_learned_csv(self, zero_shot=False, n_closest=5):
+        """Create dataset with the learned distance in a dict, and saves it to a JSON file."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp, learned_dist=self.lang_pairs_learned_dist)
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        zero_shot_suffix= ""
+        if zero_shot:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            zero_shot_suffix = "_zero_shot"
+            # remove supervised languages from iso dict
+            for sup_lang in supervised_langs:
+                iso_codes_to_ids.pop(sup_lang, None)
+            lang_codes = list(iso_codes_to_ids.keys())
+        else:
+            lang_codes = sorted(self.lang_embs_mapping.keys())
+        failed_langs = []
+        for lang in lang_codes:
+            dataset_dict[lang] = [lang] # target language as first column
+            feature_dict = sim_solver.find_closest_learned_dist(lang,
+                                                        supervised_langs,
+                                                        n_closest=n_closest)
+            # sort out incomplete results
+            if len(feature_dict) < n_closest:
+                failed_langs.append(lang)
+                continue            
+            # create entry for a single close lang
+            for _, close_lang in enumerate(feature_dict):
+                score = feature_dict[close_lang]
+                # column order: compared closest language, asp_dist
+                close_lang_feature_list = [close_lang, score]
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n_closest):
+            dataset_columns.extend([f"closest_lang_{i}", f"tree_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        out_path = LEARNED_DIST_CSV_OUT_PATH.split(".")[0] + f"_top{n_closest}{zero_shot_suffix}" + ".csv"
+        df.to_csv(out_path, sep="|", index=False)
+        print(f"Failed to retrieve scores for the following languages: {failed_langs}")
+
 
     def create_feature_csv_from_lookup_csv(self, csv_path, out_path, single_dim=False):
         """Takes as input a dataset CSV containing only the ISO codes of the closest languages 
@@ -447,6 +509,8 @@ def load_feature_and_embedding_data():
         lang_pairs_map = json.load(f)
     with open(LANG_PAIRS_tree_PATH, "r") as f:
         lang_pairs_tree = json.load(f)
+    with open(LANG_PAIRS_learned_dist_PATH, "r") as f:
+        lang_pairs_learned_dist = json.load(f)        
     with open(LANG_PAIRS_ASP_PATH, "rb") as f:
         lang_pairs_asp = pickle.load(f)
     lang_embs = torch.load(LANG_EMBS_PATH)
@@ -457,7 +521,7 @@ def load_feature_and_embedding_data():
     languages_in_text_frontend = get_languages_from_text_frontend()
 
 
-    return lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_embs, lang_embs_mapping, languages_in_text_frontend, iso_lookup
+    return lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_pairs_learned_dist, lang_embs, lang_embs_mapping, languages_in_text_frontend, iso_lookup
 
 
 
@@ -483,7 +547,7 @@ if __name__ == "__main__":
     # dc.create_map_csv(zero_shot=True)
     # dc.create_tree_csv(zero_shot=True)
     # dc.create_random_csv()
-    illegal_langs = ["deu", "eng"]
+    illegal_langs = ["deu", "eng", "fra", "spa"]
     #dc.create_combined_csv(individual_distances=True, remove_illegal_languages=True, illegal_languages=illegal_langs)
     #dc.create_combined_csv(individual_distances=True, remove_illegal_languages=True, illegal_languages=illegal_langs, zero_shot=True)
     # dc.create_combined_csv(n_closest=1, individual_distances=True)
@@ -495,6 +559,18 @@ if __name__ == "__main__":
     # dc.create_combined_csv(n_closest=40, individual_distances=True)
     # dc.create_combined_csv(n_closest=50, individual_distances=True)
     # dc.create_combined_csv(n_closest=100, individual_distances=True)
+    # dc.create_aspf_csv()
+    # dc.create_map_csv()
+    # dc.create_tree_csv()     
+    # dc.create_aspf_csv(n_closest=20)
+    # dc.create_map_csv(n_closest=20)
+    # dc.create_tree_csv(n_closest=20)
+    # dc.create_aspf_csv(n_closest=25)
+    # dc.create_map_csv(n_closest=25)
+    # dc.create_tree_csv(n_closest=25)
+    # dc.create_aspf_csv(n_closest=30)
+    # dc.create_map_csv(n_closest=30)
+    # dc.create_tree_csv(n_closest=30)        
     # dc.create_random_csv(n=20)
     # dc.create_random_csv(n=25)
     # dc.create_random_csv(n=30)
@@ -508,7 +584,30 @@ if __name__ == "__main__":
     # dc.create_combined_csv(n_closest=25)
     # dc.create_combined_csv(n_closest=30)        
     #dc.create_combined_csv(n_closest=30, individual_distances=True, remove_illegal_languages=True, illegal_languages=illegal_langs)
-    dc.create_combined_csv(n_closest=30, remove_illegal_languages=True, illegal_languages=illegal_langs)
+    # dc.create_combined_csv(n_closest=30, remove_illegal_languages=True, illegal_languages=illegal_langs)
+    # dc.create_combined_csv(n_closest=20, individual_distances=True, excluded_features=["map"])
+    # dc.create_combined_csv(n_closest=25, individual_distances=True, excluded_features=["map"])
+    # dc.create_combined_csv(n_closest=30, individual_distances=True, excluded_features=["map"])
+    # dc.create_combined_csv(n_closest=20, individual_distances=True, excluded_features=["asp"])
+    # dc.create_combined_csv(n_closest=25, individual_distances=True, excluded_features=["asp"])
+    # dc.create_combined_csv(n_closest=30, individual_distances=True, excluded_features=["asp"])
+    # dc.create_combined_csv(n_closest=20, individual_distances=True, excluded_features=["tree"])
+    # dc.create_combined_csv(n_closest=25, individual_distances=True, excluded_features=["tree"])
+    # dc.create_combined_csv(n_closest=30, individual_distances=True, excluded_features=["tree"])
+    # dc.create_map_csv(n_closest=40)
+    # dc.create_map_csv(n_closest=50)
+    # dc.create_tree_csv(n_closest=50)
+    # dc.create_aspf_csv(n_closest=50)    
+    # dc.create_combined_csv(n_closest=30, zero_shot=True, remove_illegal_languages=True, illegal_languages=illegal_langs)
+    # dc.create_combined_csv(n_closest=30, zero_shot=True)
+    # dc.create_combined_csv(n_closest=30, find_furthest=True)
+    # dc.create_learned_csv(n_closest=30)
+    # dc.create_learned_csv(n_closest=20)
+    # dc.create_learned_csv(n_closest=40)
+    # dc.create_learned_csv(n_closest=50)
+    #dc.create_combined_csv(n_closest=30, include_learned_dist=True)
+    dc.create_combined_csv(n_closest=30, include_learned_dist=True, excluded_features=["map"])
+
 
     dataset_paths = [
     #     'datasets/dataset_asp_463_with_less_loss_fixed_tree_distance.csv', 
@@ -532,7 +631,7 @@ if __name__ == "__main__":
         # "datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top25_average_learned_weights.csv",
         # "datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top30_average_learned_weights.csv",        
         #"datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top30_average_individual_dists_no_illegal_langs.csv",
-        "datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top30_average_no_illegal_langs.csv",
+        # "datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top30_average_no_illegal_langs.csv",
         ]
     for csv_path in dataset_paths:
         out_path = os.path.join(os.path.dirname(csv_path), f"feature_{os.path.basename(csv_path)}")

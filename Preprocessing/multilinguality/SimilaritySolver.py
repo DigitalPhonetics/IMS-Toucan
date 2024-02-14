@@ -20,7 +20,9 @@ class SimilaritySolver():
                  map_dist_path=None, 
                  asp_dict_path=None,
                  iso_to_fullname=None, 
-                 iso_to_fullname_path=None):
+                 iso_to_fullname_path=None,
+                 learned_dist=None,
+                 learned_dist_path=None):
         if tree_dist:
             self.lang_1_to_lang_2_to_tree_dist = tree_dist
         else:
@@ -35,6 +37,11 @@ class SimilaritySolver():
         for _, values in self.lang_1_to_lang_2_to_map_dist.items():
             for _, value in values.items():
                 self.largest_value_map_dist = max(self.largest_value_map_dist, value)
+        if learned_dist:
+            self.lang_1_to_lang_2_to_learned_dist = learned_dist
+        else:
+            learned_dist_path = 'lang_1_to_lang_2_to_learned_dist.json' if not learned_dist_path else tree_dist_path
+            self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)                
         if asp_dict:
             self.asp_dict = asp_dict
         else:
@@ -101,6 +108,28 @@ class SimilaritySolver():
                     print("Full Name of Language Missing")
         return results
 
+    def find_closest_learned_dist(self, lang, supervised_langs, n_closest=5, verbose=False):
+        """Find the closest n supervised languages w.r.t. the learned distance, i.e. for which language embeddings are available."""
+        langs_to_dist = dict()
+        supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")
+        if lang in supervised_langs:
+            supervised_langs.remove(lang)
+        for sup_lang in supervised_langs:
+            dist = self.get_learned_distance(lang, sup_lang)
+            if dist is not None:
+                langs_to_dist[sup_lang] = dist
+        results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=False)[:n_closest])
+        if verbose:
+            print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} in the given list on the worldmap are:")
+            for result in results:
+                try:
+                    print(self.iso_to_fullname[result])
+                except KeyError:
+                    print("Full Name of Language Missing")
+        return results
+
 
     def get_random_languages(self, lang, supervised_langs, n=5, random_seed=42):
         """Get n random languages that should be treated as `closest` to the target language.
@@ -127,8 +156,9 @@ class SimilaritySolver():
         for supervised_lang in supervised_langs:
             asp_score = asp(lang, supervised_lang, self.asp_dict)
             if asp_score is not None:
-                langs_to_sim[supervised_lang] = asp_score
-        results = dict(sorted(langs_to_sim.items(), key=lambda x: x[1], reverse=True)[:n_closest])
+                asp_dist = 1 - asp_score
+                langs_to_sim[supervised_lang] = asp_dist
+        results = dict(sorted(langs_to_sim.items(), key=lambda x: x[1], reverse=False)[:n_closest])
         if verbose:
             print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} w.r.t. ASPF are:")
             for result in results:
@@ -147,7 +177,10 @@ class SimilaritySolver():
                               n_closest=5, 
                               individual_distances=False, 
                               verbose=False, 
-                              learned_weights=False):
+                              learned_weights=False,
+                              excluded_features=[],
+                              find_furthest=False,
+                              include_learned_dist=False):
         """Find the n closest languages according to the combined Euclidean distance of map distance, tree distance, and ASP distance.
         Returns a dict of dicts of the format {"supervised_lang_1": 
                                                 {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
@@ -165,6 +198,10 @@ class SimilaritySolver():
             map_dist = self.get_map_distance(lang, sup_lang)
             tree_dist = self.get_tree_distance(lang, sup_lang)
             asp_score = asp(lang, sup_lang, self.asp_dict)
+            if include_learned_dist:
+                learned_dist = self.get_learned_distance(lang, sup_lang)
+                if learned_dist is None:
+                    continue
             # if getting one of the scores failed, ignore this language
             if None in {map_dist, tree_dist, asp_score}:
                 continue           
@@ -172,9 +209,20 @@ class SimilaritySolver():
             combined_dict[sup_lang] = {}
             asp_dist = 1 - asp_score # turn into dist since other 2 are also dists
             if learned_weights:
-                dist_array = np.array([0.0128*map_dist, 0.4611*tree_dist, 0.3058*asp_dist]) # apply learned weights
-            else:
-                dist_array = np.array([map_dist, tree_dist, asp_dist])
+                # apply learned weights
+                map_dist *= 0.0128
+                tree_dist *= 0.4611
+                asp_dist *= 0.3058
+            dist_list = []
+            if "map" not in excluded_features:
+                dist_list.append(map_dist)
+            if "asp" not in excluded_features:
+                dist_list.append(asp_dist)
+            if "tree_dist" not in excluded_features:
+                dist_list.append(tree_dist)
+            if include_learned_dist and "learned_dist" not in excluded_features:
+                dist_list.append(learned_dist)
+            dist_array = np.array(dist_list)
             #map_sim = 1 - map_dist # turn into sim since other 2 are also sims
             #dist_array = np.array([map_sim, tree_dist, asp_score])
             if distance == "euclidean":
@@ -191,7 +239,7 @@ class SimilaritySolver():
                 #combined_dict[sup_lang] = {"combined_distance": avg_dist, "individual_distances": [map_sim, tree_dist, asp_score]}
 
         # results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"])[:n_closest])
-        results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=False)[:n_closest])
+        results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=find_furthest)[:n_closest])
         if verbose:
             print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} w.r.t. the combined features are:")
             for result in results:
@@ -223,6 +271,18 @@ class SimilaritySolver():
         except KeyError:
             try:
                 dist = self.lang_1_to_lang_2_to_tree_dist[lang_2][lang_1]
+            except KeyError:
+                return None
+        return dist
+
+    def get_learned_distance(self, lang_1, lang_2):
+        """Returns normalized learned distance between two languages.
+        If no value can be retrieved, returns None."""
+        try:
+            dist = self.lang_1_to_lang_2_to_learned_dist[lang_1][lang_2]
+        except KeyError:
+            try:
+                dist = self.lang_1_to_lang_2_to_learned_dist[lang_2][lang_1]
             except KeyError:
                 return None
         return dist
