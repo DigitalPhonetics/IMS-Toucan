@@ -33,6 +33,7 @@ ASP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multil
 MAP_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_map_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TREE_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_tree_{NUM_LANGS}_{LOSS_TYPE}.csv"
 LEARNED_DIST_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_learned_dist_{NUM_LANGS}_{LOSS_TYPE}.csv"
+LANG_EMB_DIST_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_lang_emb_dist_{NUM_LANGS}_{LOSS_TYPE}.csv"
 COMBINED_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_COMBINED_{NUM_LANGS}_{LOSS_TYPE}.csv"
 RANDOM_CSV_OUT_PATH = f"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_random_{NUM_LANGS}_{LOSS_TYPE}.csv"
 TEXT_FRONTEND_PATH = "../TextFrontend.py"
@@ -372,6 +373,60 @@ class DatasetCreator():
         print(f"Failed to retrieve scores for the following languages: {failed_langs}")
 
 
+    def create_lang_emb_csv(self, 
+                           zero_shot=False, 
+                           n_closest=5, 
+                           remove_illegal_languages=False, 
+                           illegal_languages=[],
+                           find_furthest=False):
+        """Create dataset with the language embedding distance in a dict, and saves it to a JSON file."""
+        dataset_dict = dict()
+        sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp, learned_dist=self.lang_pairs_learned_dist)
+        supervised_langs = sorted(self.lang_embs_mapping.keys())
+        furthest_suffix = "furthest_" if find_furthest else ""
+        remove_langs_suffix = ""
+        if remove_illegal_languages:
+            remove_langs_suffix = "_no_illegal_langs"
+            for il_lang in illegal_languages:
+                supervised_langs.remove(il_lang)                
+        zero_shot_suffix= ""
+        if zero_shot:
+            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            zero_shot_suffix = "_zero_shot"
+            # remove supervised languages from iso dict
+            for sup_lang in supervised_langs:
+                iso_codes_to_ids.pop(sup_lang, None)
+            lang_codes = list(iso_codes_to_ids.keys())
+        else:
+            lang_codes = sorted(self.lang_embs_mapping.keys())
+        failed_langs = []
+        for lang in lang_codes:
+            feature_dict = sim_solver.find_closest_lang_emb_dist(lang,
+                                                        supervised_langs,
+                                                        n_closest=n_closest,
+                                                        find_furthest=find_furthest)
+            # sort out incomplete results
+            if len(feature_dict) < n_closest:
+                failed_langs.append(lang)
+                continue      
+            dataset_dict[lang] = [lang] # target language as first column
+            # create entry for a single close lang
+            for _, close_lang in enumerate(feature_dict):
+                score = feature_dict[close_lang]
+                # column order: compared closest language, asp_dist
+                close_lang_feature_list = [close_lang, score]
+                dataset_dict[lang].extend(close_lang_feature_list)
+        dataset_columns = ["target_lang"]
+        for i in range(n_closest):
+            dataset_columns.extend([f"closest_lang_{i}", f"lang_emb_dist_{i}"])
+        df = pd.DataFrame.from_dict(dataset_dict, orient="index")
+        df.columns = dataset_columns
+        out_path = LANG_EMB_DIST_CSV_OUT_PATH.split(".")[0] + f"_top{n_closest}{furthest_suffix}{zero_shot_suffix}{remove_langs_suffix}" + ".csv"
+        df.to_csv(out_path, sep="|", index=False)
+        print(f"Failed to retrieve scores for the following languages: {failed_langs}")
+
+
+
     def create_feature_csv_from_lookup_csv(self, csv_path, out_path, single_dim=False):
         """Takes as input a dataset CSV containing only the ISO codes of the closest languages 
         (i.e. the actual features still need to be looked up), and creates a new dataset CSV that 
@@ -559,7 +614,8 @@ if __name__ == "__main__":
     # dc.create_combined_csv(n_closest=30, find_furthest=True)
 
     # dc.create_learned_csv(n_closest=50)
-    dc.create_learned_csv(n_closest=50, zero_shot=True, remove_illegal_languages=True, illegal_languages=illegal_langs)
+    # dc.create_learned_csv(n_closest=50, zero_shot=True, remove_illegal_languages=True, illegal_languages=illegal_langs)
+    dc.create_lang_emb_csv(n_closest=50)
 
     dataset_paths = [
         # "datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top30_average.csv",          

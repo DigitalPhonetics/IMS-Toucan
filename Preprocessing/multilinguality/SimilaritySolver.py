@@ -22,7 +22,9 @@ class SimilaritySolver():
                  iso_to_fullname=None, 
                  iso_to_fullname_path=None,
                  learned_dist=None,
-                 learned_dist_path=None):
+                 learned_dist_path=None,
+                 lang_emb_dist=None,
+                 lang_emb_dist_path=None):
         if tree_dist:
             self.lang_1_to_lang_2_to_tree_dist = tree_dist
         else:
@@ -41,7 +43,13 @@ class SimilaritySolver():
             self.lang_1_to_lang_2_to_learned_dist = learned_dist
         else:
             learned_dist_path = 'lang_1_to_lang_2_to_learned_dist.json' if not learned_dist_path else tree_dist_path
-            self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)                
+            self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)          
+            
+        if lang_emb_dist:
+            self.lang_1_to_lang_2_to_lang_emb_dist = lang_emb_dist
+        else:
+            lang_emb_dist_path = 'lang_1_to_lang_2_to_lang_emb_dist.json' if not lang_emb_dist_path else lang_emb_dist_path
+            self.lang_1_to_lang_2_to_lang_emb_dist = load_json_from_path(lang_emb_dist_path)                      
         if asp_dict:
             self.asp_dict = asp_dict
         else:
@@ -108,7 +116,7 @@ class SimilaritySolver():
                     print("Full Name of Language Missing")
         return results
 
-    def find_closest_learned_dist(self, lang, supervised_langs, n_closest=5, verbose=False):
+    def find_closest_learned_dist(self, lang, supervised_langs, n_closest=5, verbose=False, find_furthest=False):
         """Find the closest n supervised languages w.r.t. the learned distance, i.e. for which language embeddings are available."""
         langs_to_dist = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
@@ -120,7 +128,7 @@ class SimilaritySolver():
             dist = self.get_learned_distance(lang, sup_lang)
             if dist is not None:
                 langs_to_dist[sup_lang] = dist
-        results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=False)[:n_closest])
+        results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=find_furthest)[:n_closest])
         if verbose:
             print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} in the given list on the worldmap are:")
             for result in results:
@@ -129,6 +137,28 @@ class SimilaritySolver():
                 except KeyError:
                     print("Full Name of Language Missing")
         return results
+    
+    def find_closest_lang_emb_dist(self, lang, supervised_langs, n_closest=5, verbose=False, find_furthest=False):
+        """Find the closest n supervised languages w.r.t. the oracle language embedding distance, i.e. for which language embeddings are available."""
+        langs_to_dist = dict()
+        supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
+        if "urk" in supervised_langs:
+            supervised_langs.remove("urk")
+        if lang in supervised_langs:
+            supervised_langs.remove(lang)
+        for sup_lang in supervised_langs:
+            dist = self.get_lang_emb_distance(lang, sup_lang)
+            if dist is not None:
+                langs_to_dist[sup_lang] = dist
+        results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=find_furthest)[:n_closest])
+        if verbose:
+            print(f"{n_closest} closest languages to {self.iso_to_fullname[lang]} in the given list on the worldmap are:")
+            for result in results:
+                try:
+                    print(self.iso_to_fullname[result])
+                except KeyError:
+                    print("Full Name of Language Missing")
+        return results    
 
 
     def get_random_languages(self, lang, supervised_langs, n=5, random_seed=42):
@@ -286,6 +316,18 @@ class SimilaritySolver():
             except KeyError:
                 return None
         return dist
+    
+    def get_lang_emb_distance(self, lang_1, lang_2):
+        """Returns oracle language embedding distance (MSE) between two languages.
+        If no value can be retrieved, returns None."""
+        try:
+            dist = self.lang_1_to_lang_2_to_lang_emb_dist[lang_1][lang_2]
+        except KeyError:
+            try:
+                dist = self.lang_1_to_lang_2_to_lang_emb_dist[lang_2][lang_1]
+            except KeyError:
+                return None
+        return dist    
 
 def load_json_from_path(path):
     with open(path, "r", encoding="utf8") as f:
