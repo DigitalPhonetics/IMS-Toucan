@@ -75,7 +75,8 @@ class CacheCreator:
         lang_embs = torch.load(model_path)["model"]["encoder.language_embedding.weight"]
         for pair in tqdm(self.pairs):
             try:
-                dist = loss_fn(lang_embs[self.iso_lookup[-1][pair[0]]], lang_embs[self.iso_lookup[-1][pair[1]]])
+                dist = loss_fn(lang_embs[self.iso_lookup[-1][pair[0]]], lang_embs[self.iso_lookup[-1][pair[1]]]).item()
+                self.pair_to_lang_emb_dist[pair] = dist
             except KeyError:
                 pass
         lang_1_to_lang_2_lang_emb_dist = dict()
@@ -85,11 +86,10 @@ class CacheCreator:
             dist = self.pair_to_lang_emb_dist[pair]
             if lang_1 not in lang_1_to_lang_2_lang_emb_dist.keys():
                 lang_1_to_lang_2_lang_emb_dist[lang_1] = dict()
-            lang_1_to_lang_2_lang_emb_dist[lang_1][lang_2] = dist
+            lang_1_to_lang_2_lang_emb_dist[lang_1][lang_2] = dist         
         with open(os.path.join(cache_root, "lang_1_to_lang_2_to_lang_emb_dist.json"), "w", encoding="utf-8") as f:
             json.dump(lang_1_to_lang_2_lang_emb_dist, f, ensure_ascii=False, indent=4)
 
-                            
 
 
     def find_closest_in_family(self, lang, supervised_langs, n_closest=5):
