@@ -163,7 +163,8 @@ class ToucanTTSInterface(torch.nn.Module):
         except ValueError:
             # if the audio is too short, a value error will arise
             pass
-        wave = (torch.tensor(wave) + self.watermark.get_watermark(torch.tensor(wave).unsqueeze(0).unsqueeze(0)).squeeze()).detach().cpu().numpy()
+        with torch.inference_mode():
+            wave = (torch.tensor(wave) + self.watermark.get_watermark(torch.tensor(wave).to(self.device).unsqueeze(0).unsqueeze(0)).squeeze().detach().cpu()).detach().numpy()
 
         if view or return_plot_as_filepath:
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
