@@ -99,13 +99,13 @@ class AudioPreprocessor:
         if type(audio) != torch.tensor and type(audio) != torch.Tensor:
             audio = torch.tensor(audio, device=self.device)
         if explicit_sampling_rate is None or explicit_sampling_rate == self.output_sr:
-            return self.wave_to_spectrogram(audio)
+            return self.wave_to_spectrogram(audio.float())
         else:
             if explicit_sampling_rate != self.input_sr:
                 print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
                 self.resample = Resample(orig_freq=explicit_sampling_rate, new_freq=self.output_sr).to(self.device)
                 self.input_sr = explicit_sampling_rate
-            audio = self.resample(audio)
+            audio = self.resample(audio.float())
             return self.wave_to_spectrogram(audio)
 
 
@@ -127,7 +127,7 @@ class LogMelSpec(torch.nn.Module):
                                    mel_scale='htk')
 
     def forward(self, audio):
-        melspec = self.spec(audio)
+        melspec = self.spec(audio.float())
         zero_mask = melspec == 0
         melspec[zero_mask] = 1e-8
         logmelspec = torch.log10(melspec)

@@ -621,6 +621,9 @@ class ArticulatoryCombinedTextFrontend:
             elif char == '̃':
                 # nasalized (vowel)
                 phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 1
+            elif char == "̧":
+                # palatalized
+                phones_vector[-1][get_feature_to_index_lookup()["palatal"]] = 1
             elif char == "˥":
                 # very high tone
                 phones_vector[-1][get_feature_to_index_lookup()["very-high-tone"]] = 1
@@ -733,7 +736,6 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('6', "˧˩˨ʔ")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
         # TODO add more of this handling for more tonal languages
-
         return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
 
     def postprocess_phoneme_string(self, phoneme_string, for_feature_extraction, include_eos_symbol, for_plot_labels):
