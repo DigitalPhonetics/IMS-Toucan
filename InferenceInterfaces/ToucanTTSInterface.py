@@ -37,7 +37,7 @@ class ToucanTTSInterface(torch.nn.Module):
         super().__init__()
         self.device = device
         if enhance is None:
-            enhance = device != "cpu" or device != torch.device("cpu")
+            enhance = device != "cpu" and device != torch.device("cpu")
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
