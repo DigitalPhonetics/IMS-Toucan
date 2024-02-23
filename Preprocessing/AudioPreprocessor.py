@@ -22,7 +22,7 @@ class AudioPreprocessor:
         self.output_sr = output_sr
         self.meter = pyln.Meter(input_sr)
         self.final_sr = input_sr
-        self.wave_to_spectrogram = LogMelSpec(output_sr).to(device)
+        self.wave_to_spectrogram = LogMelSpec(output_sr if output_sr is not None else input_sr).to(device)
         if cut_silence:
             torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
             # careful: assumes 16kHz or 8kHz audio
@@ -105,7 +105,7 @@ class AudioPreprocessor:
                 print("WARNING: different sampling rate used, this will be very slow if it happens often. Consider creating a dedicated audio processor.")
                 self.resample = Resample(orig_freq=explicit_sampling_rate, new_freq=self.output_sr).to(self.device)
                 self.input_sr = explicit_sampling_rate
-            audio = self.resample(audio)
+            audio = self.resample(audio.float())
             return self.wave_to_spectrogram(audio)
 
 

@@ -112,13 +112,13 @@ class ControllableInterface:
                     self.current_accent = "English"
 
         print(prompt)
-        wav, fig = self.model(prompt,
-                              input_is_phones=False,
-                              duration_scaling_factor=duration_scaling_factor,
-                              pitch_variance_scale=pitch_variance_scale,
-                              energy_variance_scale=energy_variance_scale,
-                              pause_duration_scaling_factor=pause_duration_scaling_factor,
-                              return_plot_as_filepath=True)
+        wav, sr, fig = self.model(prompt,
+                                  input_is_phones=False,
+                                  duration_scaling_factor=duration_scaling_factor,
+                                  pitch_variance_scale=pitch_variance_scale,
+                                  energy_variance_scale=energy_variance_scale,
+                                  pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                  return_plot_as_filepath=True)
         wav = wav.cpu().numpy()
         wav = [val for val in wav for _ in (0, 1)]  # doubling the sampling rate for better compatibility (24kHz is not as standard as 48kHz)
-        return 24000, wav, fig
+        return sr, wav, fig
