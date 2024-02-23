@@ -32,10 +32,12 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
-                 enhance=True  # TODO maybe make this dependent on cuda availability? Need to decide.
+                 enhance=None
                  ):
         super().__init__()
         self.device = device
+        if enhance is None:
+            enhance = device != "cpu" or device != torch.device("cpu")
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
