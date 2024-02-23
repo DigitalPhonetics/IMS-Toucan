@@ -53,12 +53,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ryanspeech,
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "Ryan"),
-                                                      lang="eng",
-                                                      gpu_count=gpu_count,
-                                                      rank=rank))
-
     lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_ljspeech,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "LJSpeech"),
                                                       lang="eng",
@@ -71,11 +65,6 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_RAVDESS,
-                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "ravdess"),
-                                                      lang="eng",
-                                                      gpu_count=gpu_count,
-                                                      rank=rank))
 
     lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_blizzard_2013,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "blizzard2013"),
@@ -198,7 +187,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=20,
+               batch_size=32,
                warmup_steps=500,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,

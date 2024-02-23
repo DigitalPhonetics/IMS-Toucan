@@ -148,9 +148,9 @@ class UtteranceCloner:
         self.tts.set_language(lang)
         start_sil = numpy.zeros([int(silence_frames_start * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
         end_sil = numpy.zeros([int(silence_frames_end * 1.5)])  # timestamps are from 16kHz, but now we're using 24000Hz, so upsampling required
-        cloned_speech = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
+        cloned_speech, sr = self.tts(transcription_of_intonation_reference, view=False, durations=duration, pitch=pitch, energy=energy)
         cloned_utt = numpy.concatenate([start_sil, cloned_speech, end_sil], axis=0)
         if filename_of_result is not None:
-            sf.write(file=filename_of_result, data=float2pcm(cloned_utt), samplerate=24000, subtype="PCM_16")
+            sf.write(file=filename_of_result, data=float2pcm(cloned_utt), samplerate=sr, subtype="PCM_16")
 
-        return cloned_utt
+        return cloned_utt, sr

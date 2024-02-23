@@ -13,6 +13,8 @@ from omegaconf import OmegaConf
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
+from Architectures.Enhancer.enhancer.inference import inference
+from Architectures.Enhancer.enhancer.inference import load_enhancer
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -30,9 +32,12 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
+                 enhance=None
                  ):
         super().__init__()
         self.device = device
+        if enhance is None:
+            enhance = device != "cpu" and device != torch.device("cpu")
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
@@ -71,7 +76,15 @@ class ToucanTTSInterface(torch.nn.Module):
         self.vocoder.load_state_dict(vocoder_checkpoint)
         self.vocoder = self.vocoder.to(device).eval()
         self.vocoder.remove_weight_norm()
-        self.meter = pyloudnorm.Meter(24000)
+        self.meter = pyloudnorm.Meter(24000 if enhance == False else 44100)
+
+        ################################
+        #  load mel to wave model      #
+        ################################
+        if enhance:
+            self.enhancer = load_enhancer(f"{MODELS_DIR}/Enhancer", device)
+            self.enhancer.configurate_(nfe=128, solver="midpoint", lambd=0.2, tau=0.5)
+        self.enhance = enhance
 
         ################################
         #  set defaults                #
@@ -156,7 +169,13 @@ class ToucanTTSInterface(torch.nn.Module):
                                                            glow_sampling_temperature=glow_sampling_temperature)
 
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
-            wave = wave.squeeze().cpu().numpy()
+            wave = wave.squeeze().cpu()
+        if self.enhance:
+            wave, sr = inference(model=self.enhancer, dwav=wave, sr=24000, device=self.device)
+            wave = wave.detach().cpu().numpy()
+        else:
+            wave = wave.numpy()
+            sr = 24000
         try:
             loudness = self.meter.integrated_loudness(wave)
             wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
@@ -210,8 +229,8 @@ class ToucanTTSInterface(torch.nn.Module):
 
             if return_plot_as_filepath:
                 plt.savefig("tmp.png")
-                return wave, "tmp.png"
-        return wave
+                return wave, sr, "tmp.png"
+        return wave, sr
 
     def read_to_file(self,
                      text_list,
@@ -249,23 +268,23 @@ class ToucanTTSInterface(torch.nn.Module):
             pitch_list = []
         if not energy_list:
             energy_list = []
-        silence = torch.zeros([14300])
+        silence = torch.zeros([14300]) if not self.enhance else torch.zeros([25800])
         wav = silence.clone()
         for (text, durations, pitch, energy) in itertools.zip_longest(text_list, dur_list, pitch_list, energy_list):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
-                spoken_sentence = torch.tensor(self(text,
-                                                    durations=durations.to(self.device) if durations is not None else None,
-                                                    pitch=pitch.to(self.device) if pitch is not None else None,
-                                                    energy=energy.to(self.device) if energy is not None else None,
-                                                    duration_scaling_factor=duration_scaling_factor,
-                                                    pitch_variance_scale=pitch_variance_scale,
-                                                    energy_variance_scale=energy_variance_scale,
-                                                    pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                                    glow_sampling_temperature=glow_sampling_temperature)).cpu()
+                spoken_sentence, sr = torch.tensor(self(text,
+                                                        durations=durations.to(self.device) if durations is not None else None,
+                                                        pitch=pitch.to(self.device) if pitch is not None else None,
+                                                        energy=energy.to(self.device) if energy is not None else None,
+                                                        duration_scaling_factor=duration_scaling_factor,
+                                                        pitch_variance_scale=pitch_variance_scale,
+                                                        energy_variance_scale=energy_variance_scale,
+                                                        pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                                        glow_sampling_temperature=glow_sampling_temperature)).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
-        soundfile.write(file=file_location, data=float2pcm(wav), samplerate=24000, subtype="PCM_16")
+        soundfile.write(file=file_location, data=float2pcm(wav), samplerate=sr, subtype="PCM_16")
 
     def read_aloud(self,
                    text,
@@ -277,14 +296,15 @@ class ToucanTTSInterface(torch.nn.Module):
                    glow_sampling_temperature=0.2):
         if text.strip() == "":
             return
-        wav = torch.tensor(self(text,
-                                view,
-                                duration_scaling_factor=duration_scaling_factor,
-                                pitch_variance_scale=pitch_variance_scale,
-                                energy_variance_scale=energy_variance_scale,
-                                glow_sampling_temperature=glow_sampling_temperature))
-        wav = torch.cat((torch.zeros([10000]), wav, torch.zeros([10000])), 0).numpy()
-        sounddevice.play(float2pcm(wav), samplerate=24000)
+        wav, sr = self(text,
+                       view,
+                       duration_scaling_factor=duration_scaling_factor,
+                       pitch_variance_scale=pitch_variance_scale,
+                       energy_variance_scale=energy_variance_scale,
+                       glow_sampling_temperature=glow_sampling_temperature)
+        silence = torch.zeros([sr // 2])
+        wav = torch.cat((silence, torch.tensor(wav), silence), 0).numpy()
+        sounddevice.play(float2pcm(wav), samplerate=sr)
         if view:
             plt.show()
         if blocking:
