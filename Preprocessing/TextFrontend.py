@@ -672,7 +672,16 @@ class ArticulatoryCombinedTextFrontend:
 
         # convert the graphemes to phonemes here
         if self.phonemizer == "espeak":
-            phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
+            try:
+                phones = self.phonemizer_backend.phonemize([utt], strip=True)[0]  # To use a different phonemizer, this is the only line that needs to be exchanged
+            except:
+                print(f"There was an error with espeak. \nFalling back to transphone.\nSentence: {utt} \nLanguage {self.g2p_lang}")
+                from transphone.g2p import read_g2p
+                self.g2p_lang = self.language
+                self.phonemizer = "transphone"
+                self.expand_abbreviations = lambda x: x
+                self.transphone = read_g2p()
+                return self.get_phone_string(text, include_eos_symbol, for_feature_extraction, for_plot_labels)
         elif self.phonemizer == "transphone":
             replacements = [
                 # punctuation in languages with non-latin script
