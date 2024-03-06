@@ -667,6 +667,8 @@ class ArticulatoryCombinedTextFrontend:
         return torch.Tensor(phones_vector, device=device)
 
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
+        if text == "":
+            return ""
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 
