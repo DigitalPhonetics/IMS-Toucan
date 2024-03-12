@@ -100,7 +100,7 @@ class HiFiGANDataset(Dataset):
             if self.use_random_corruption:
                 # augmentations for the spec
                 melspec = random.choice(self.spec_augs)(melspec.unsqueeze(0)).squeeze(0)
-            return segment, melspec
+            return segment.detach(), melspec.detach()
         except RuntimeError:
             print("encountered a runtime error, using fallback strategy")
             if index == 0:
