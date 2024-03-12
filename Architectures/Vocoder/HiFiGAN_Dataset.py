@@ -7,6 +7,7 @@ import librosa
 import numpy
 import soundfile as sf
 import torch
+import torchaudio
 from torch.utils.data import Dataset
 from torchvision.transforms.v2 import GaussianBlur
 from tqdm import tqdm
@@ -48,7 +49,11 @@ class HiFiGANDataset(Dataset):
             for process in process_list:
                 process.join()
         self.blurrer = GaussianBlur(kernel_size=(3, 3))
-        self.augs = [self.blurrer, lambda x: x]
+        self.masker = torchaudio.transforms.FrequencyMasking(freq_mask_param=8)  # up to 8 consecutive bands can be masked
+        self.spec_augs = [self.blurrer, self.masker, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # TODO verify that these work as intended
+        self.codec_simulator = CodecSimulator()
+        self.pitch_shifter = torchaudio.transforms.PitchShift(sample_rate=24000, n_steps=4)
+        self.wave_augs = [self.codec_simulator, self.pitch_shifter, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # TODO verify that these work as intended
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):
@@ -80,6 +85,10 @@ class HiFiGANDataset(Dataset):
                 # add some true silence in the mix, so the vocoder is exposed to that as well during training
             wave = torch.Tensor(wave)
 
+            if self.use_random_corruption:
+                # augmentations for the wave
+                wave = random.choice(self.wave_augs)(wave.unsqueeze(0)).squeeze(0)
+
             max_audio_start = len(wave) - self.samples_per_segment
             audio_start = random.randint(0, max_audio_start)
             segment = wave[audio_start: audio_start + self.samples_per_segment]
@@ -89,11 +98,23 @@ class HiFiGANDataset(Dataset):
                                                                explicit_sampling_rate=16000,
                                                                normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
             if self.use_random_corruption:
-                melspec = random.choice(self.augs)(melspec.unsqueeze(0)).squeeze(0)
+                # augmentations for the spec
+                melspec = random.choice(self.spec_augs)(melspec.unsqueeze(0)).squeeze(0)
             return segment, melspec
         except RuntimeError:
             print("encountered a runtime error, using fallback strategy")
+            if index == 0:
+                index = len(self.waves) - 1
             return self.__getitem__(index - 1)
 
     def __len__(self):
         return len(self.waves)
+
+
+class CodecSimulator(torch.nn.Module):
+    def __int__(self):
+        self.encoder = torchaudio.transforms.MuLawEncoding(quantization_channels=128)
+        self.decoder = torchaudio.transforms.MuLawDecoding(quantization_channels=128)
+
+    def forward(self, x):
+        return self.decoder(self.encoder(x))
