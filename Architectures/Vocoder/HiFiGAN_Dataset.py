@@ -112,9 +112,17 @@ class HiFiGANDataset(Dataset):
 
 
 class CodecSimulator(torch.nn.Module):
-    def __int__(self):
+
+    def __init__(self):
+        super().__init__()
         self.encoder = torchaudio.transforms.MuLawEncoding(quantization_channels=128)
         self.decoder = torchaudio.transforms.MuLawDecoding(quantization_channels=128)
 
     def forward(self, x):
         return self.decoder(self.encoder(x))
+
+
+if __name__ == '__main__':
+    cs = CodecSimulator()
+    test = cs(torch.rand([2, 200]))
+    print(test)
