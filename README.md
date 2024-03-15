@@ -272,8 +272,8 @@ Here are a few points that were brought up by users:
   architecture, which we call **ToucanTTS**. We submitted a system based on this architecture to the Blizzard Challenge
   2023,
   you can try out our system [speaking French here](https://huggingface.co/spaces/Flux9665/Blizzard2023IMS).
-- We switch from using spectrograms to using neural audio codecs as intermediate representations. That makes the vocoder obsolete, so we remove it. The compression also allows us to use orders of magnitudes more data.
-- We added multi-GPU training in order to train on massive amounts of data.
+- We use a [encodec, a neural audio codec](https://github.com/yangdongchao/AcademiCodec) as intermediate representation for caching the train data to save space and allow for the use of great quantities of data.
+- We now support multi-GPU training in order to train on massive amounts of data.
 
 ### 2024
 
@@ -282,14 +282,15 @@ Here are a few points that were brought up by users:
 
 ---
 
-The basic PyTorch Modules of [FastSpeech 2](https://arxiv.org/abs/2006.04558) are taken from
-[ESPnet](https://github.com/espnet/espnet), the PyTorch Modules of
-[HiFiGAN](https://arxiv.org/abs/2010.05646) are taken from
-the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN)
-which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan-bayashi). Some Modules related to the
-Normalizing Flow based PostNet as outlined in
-[PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) are taken
+The basic PyTorch modules of FastSpeech 2 and GST are taken from
+[ESPnet](https://github.com/espnet/espnet), the PyTorch modules of
+HiFi-GAN are taken from the [ParallelWaveGAN repository](https://github.com/kan-bayashi/ParallelWaveGAN).
+Some modules related to the Glow based PostNet as outlined in PortaSpeech are taken
 from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech).
+We use audio watermarking from [audioseal](https://github.com/facebookresearch/audioseal) and speech restoration
+from [resemble enhance](https://github.com/resemble-ai/resemble-enhance) as postprocessing. For
+grapheme-to-phoneme conversion, we rely on the aforementioned eSpeak-NG as
+well as [transphone](https://github.com/xinjli/transphone).
 
 ## Citation 🐧
 
@@ -300,8 +301,8 @@ from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech)
   year         = 2021,
   title        = {{The IMS Toucan system for the Blizzard Challenge 2021}},
   author       = {Florian Lux and Julia Koch and Antje Schweitzer and Ngoc Thang Vu},
-  booktitle    = {{Proc. Blizzard Challenge Workshop}},
-  publisher    = {Speech Synthesis SIG},
+  booktitle    = {Blizzard Challenge Workshop},
+  publisher    = {ISCA Speech Synthesis SIG},
 }
 ```
 
@@ -312,8 +313,7 @@ from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech)
   year         = 2022,
   title        = {{Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory Features}},
   author       = {Florian Lux and Ngoc Thang Vu},
-  booktitle    = {{Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics}},
-  pages        = {6858--6868}
+  booktitle    = {ACL},
 }
 ```
 
@@ -324,7 +324,8 @@ from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech)
   year         = 2022,
   title        = {{Exact Prosody Cloning in Zero-Shot Multispeaker Text-to-Speech}},
   author       = {Lux, Florian and Koch, Julia and Vu, Ngoc Thang},
-  booktitle    = {{Proc. IEEE SLT}}
+  booktitle    = {SLT},
+  publisher    = {IEEE}
 }
 ```
 
@@ -335,7 +336,7 @@ from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech)
   year         = 2022,
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Julia Koch and Ngoc Thang Vu},
-  booktitle    = {{Proceedings of the 2nd Conference of the Asia-Pacific Chapter of the Association for Computational Linguistics}},
+  booktitle    = {AACL},
 }
 ```
 
@@ -346,7 +347,7 @@ from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech)
   year         = 2023,
   title        = {{Low-Resource Multilingual and Zero-Shot Multispeaker TTS}},
   author       = {Florian Lux and Pascal Tilli and Sarina Meyer and Ngoc Thang Vu},
-  booktitle    = {{Interspeech}},
+  booktitle    = {Interspeech},
 }
 ```
 
@@ -357,7 +358,7 @@ from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech)
   year         = 2023,
   title        = {{The IMS Toucan System for the Blizzard Challenge 2023}},
   author       = {Florian Lux and Julia Koch and Sarina Meyer and Thomas Bott and Nadja Schauffler and Pavel Denisov and Antje Schweitzer and Ngoc Thang Vu},
-  booktitle    = {{Proc. Blizzard Challenge Workshop}},
-  publisher    = {Speech Synthesis SIG},
+  booktitle    = {Blizzard Challenge Workshop},
+  publisher    = {ISCA Speech Synthesis SIG},
 }
 ```

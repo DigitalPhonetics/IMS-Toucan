@@ -63,5 +63,7 @@ def download_models():
         reporthook=report)
 
 
+# TODO add asp pickle, audioseal, enhance
+
 if __name__ == '__main__':
     download_models()
