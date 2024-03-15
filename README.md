@@ -6,7 +6,7 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 
 ---
 
-## Demonstrations 🦚
+## Demos 🦚
 
 ### Pre-Generated Audios
 
@@ -25,15 +25,6 @@ PyTorch based to keep it as simple and beginner-friendly, yet powerful as possib
 [Check out our human-in-the-loop poetry reading demo on Huggingface🤗](https://huggingface.co/spaces/Flux9665/PoeticTTS)
 
 [You can also design the voice of a speaker who doesn't exist on Huggingface🤗](https://huggingface.co/spaces/Flux9665/ThisSpeakerDoesNotExist)
-
-### Pretrained models are available!
-
-You can just try it yourself! Pretrained checkpoints for our massively multi-lingual model, the self-contained aligner,
-the embedding function, and the embedding GAN are available in the
-[release section](https://github.com/DigitalPhonetics/IMS-Toucan/releases). Run the `run_model_downloader.py` script
-to automatically download them from the release page and put them into their appropriate locations with appropriate
-names.
-
 
 ---
 
@@ -64,11 +55,10 @@ logged out in the meantime. To make use of a GPU, you don't need to do anything 
 machine, have a look at [the official PyTorch website](https://pytorch.org/) for the install-command that enables GPU
 support.
 
-#### espeak-ng
+#### \[optional] eSpeak-NG
 
-And finally you need to have espeak-ng installed on your system, because it is used as backend for the phonemizer. If
-you replace the phonemizer, you don't need it. On most Linux environments it will be installed already, and if it is
-not, and you have the sufficient rights, you can install it by simply running
+eSpeak-NG is an optional requirement, that handles lots of special cases in many languages, so it's good to have.
+On most Linux environments it will be installed already, and if it is not, and you have the sufficient rights, you can install it by simply running
 
 ```
 apt-get install espeak-ng
@@ -93,18 +83,42 @@ You don't need to use pretrained models, but it can speed things up tremendously
 script to automatically download them from the release page and put them into their appropriate locations with
 appropriate names.
 
+
+---
+
+## Inference 🦢
+
+You can load your trained models, or the pretrained provided one, using the `InferenceInterfaces/ToucanTTSInterface.py`. Simply create an object from it with the proper directory handle
+identifying the model you want to use. The rest should work out in the background. You might want to set a language
+embedding or a speaker embedding using the *set_language* and *set_speaker_embedding* functions. Most things should be self-explanatory.
+
+An *InferenceInterface* contains two methods to create audio from text. They are
+*read_to_file* and
+*read_aloud*.
+
+- *read_to_file* takes as input a list of strings and a filename. It will synthesize the sentences in the list and
+  concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument.
+
+- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
+  speakers. If you set the optional argument
+  *view* to
+  *True*, a visualization will pop up, that you need to close for the program to continue.
+
+Their use is demonstrated in
+*run_interactive_demo.py* and
+*run_text_to_file_reader.py*.
+
+There are simple scaling parameters to control the duration, the variance of the pitch curve and the variance of the
+energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
+pass them to the interface when you use it in your own code.
+
 ---
 
 ## Creating a new Training Pipeline 🦆
 
-What we call ToucanTTS is actually mostly FastSpeech 2, but with a couple of changes, such as the normalizing flow
-based PostNet that was introduced in PortaSpeech. We found the VAE used in PortaSpeech too unstable for low-resource
-cases, so we continue experimenting with those in experimental branches of the toolkit. There are a bunch of other
-changes that mostly relate to low-resource scenarios. For more info, have a look at the ToucanTTS docstring.
-
 In the directory called
 *Utility* there is a file called
-*path_to_transcript_dicts.py*. In this file you should write a function that returns a dictionary that has all the
+`path_to_transcript_dicts.py`. In this file you should write a function that returns a dictionary that has all the
 absolute paths to each of the audio files in your dataset as strings as the keys and the textual transcriptions of the
 corresponding audios as the values.
 
@@ -113,13 +127,8 @@ Then go to the directory
 as reference and only make the necessary changes to use the new dataset. Find the call(s) to the *prepare_tts_corpus* function. Replace the path_to_transcript_dict used there with the one(s) you just created. Then change the name of the corresponding cache directory to something that makes sense for the dataset.
 Also look out for the variable *save_dir*, which is where the checkpoints will be saved to. This is a default value, you can overwrite it when calling
 the pipeline later using a command line argument, in case you want to fine-tune from a checkpoint and thus save into a
-different directory.
-
-Since we are using text here, we have to make sure that the text processing is adequate for the language. So check in
-*Preprocessing/TextFrontend* whether the TextFrontend already has a language ID (e.g. 'en' and 'de') for the language of
-your dataset. If not, you'll have to implement handling for that, but it should be pretty simple by just doing it
-analogous to what is there already. Now back in the pipeline, change the
-*lang* argument in the creation of the dataset and in the call to the train loop function to the language ID that
+different directory. Finally, change the
+*lang* argument in the creation of the dataset and in the call to the train loop function to the ISO 639-3 language ID that
 matches your data.
 
 The arguments that are given to the train loop in the finetuning examples are meant for the case of finetuning from a pretrained model. If you want
@@ -127,7 +136,7 @@ to train from scratch, have a look at a different pipeline that has ToucanTTS in
 used there.
 
 Once this is complete, we are almost done, now we just need to make it available to the
-*run_training_pipeline.py* file in the top level. In said file, import the
+`run_training_pipeline.py` file in the top level. In said file, import the
 *run* function from the pipeline you just created and give it a meaningful name. Now in the
 *pipeline_dict*, add your imported function as value and use as key a shorthand that makes sense.
 
@@ -166,14 +175,14 @@ For multi-GPU training, you have to supply multiple GPU ids (comma separated) an
 torchrun --standalone --nproc_per_node=4 --nnodes=1 run_training_pipeline.py <shorthand of the pipeline> --gpu_id "0,1,2,3"
 ```
 
-After every epoch (or alternatively after certain step counts), some logs will be written to the console. If you get cuda out of memory errors, you need to decrease
+After every epoch (or alternatively after certain step counts), some logs will be written to the console and to the Weights and Biases website, if you are logged in and set the flag. If you get cuda out of memory errors, you need to decrease
 the batchsize in the arguments of the call to the training_loop in the pipeline you are running. Try decreasing the
 batchsize in small steps until you get no more out of cuda memory errors.
 
 In the directory you specified for saving, checkpoint files and spectrogram visualization
 data will appear. Since the checkpoints are quite big, only the five most recent ones will be kept. The amount of
 training steps highly depends on the data you are using and whether you're finetuning from a pretrained checkpoint or
-training from scratch. The fewer data you have, the fewer steps you should take to prevent overfitting issues. If
+training from scratch. The fewer data you have, the fewer steps you should take to prevent a possible collapse. If
 you want to stop earlier, just kill the process, since everything is daemonic all the child-processes should die with
 it. In case there are some ghost-processes left behind, you can use the following command to find them and kill them
 manually.
@@ -183,36 +192,6 @@ fuser -v /dev/nvidia*
 ```
 
 Whenever a checkpoint is saved, a compressed version that can be used for inference is also created, which is named _best.py_
-
----
-
-## Using a trained Model for Inference 🦢
-
-You can load your trained models using an inference interface. Simply instanciate it with the proper directory handle
-identifying the model you want to use, the rest should work out in the background. You might want to set a language
-embedding or a speaker embedding. The methods for that should be self-explanatory.
-
-An *InferenceInterface* contains two methods to create audio from text. They are
-*read_to_file* and
-*read_aloud*.
-
-- *read_to_file* takes as input a list of strings and a filename. It will synthesize the sentences in the list and
-  concatenate them with a short pause inbetween and write them to the filepath you supply as the other argument.
-
-- *read_aloud* takes just a string, which it will then convert to speech and immediately play using the system's
-  speakers. If you set the optional argument
-  *view* to
-  *True* when calling it, it will also show a plot of the phonemes it produced, the spectrogram it came up with, and the
-  wave it created from that spectrogram. So all the representations can be seen, text to phoneme, phoneme to spectrogram
-  and finally spectrogram to wave.
-
-Their use is demonstrated in
-*run_interactive_demo.py* and
-*run_text_to_file_reader.py*.
-
-There are simple scaling parameters to control the duration, the variance of the pitch curve and the variance of the
-energy curve. You can either change them in the code when using the interactive demo or the reader, or you can simply
-pass them to the interface when you use it in your own code.
 
 ---
 
@@ -296,6 +275,10 @@ Here are a few points that were brought up by users:
 - We switch from using spectrograms to using neural audio codecs as intermediate representations. That makes the vocoder obsolete, so we remove it. The compression also allows us to use orders of magnitudes more data.
 - We added multi-GPU training in order to train on massive amounts of data.
 
+### 2024
+
+- We extended the pipeline to be able to handle all spoken languages in the ISO 639-3 standard.
+- Through a zero-shot mechanism, we approximate unseen languages. So now you can use a pretrained TTS system for over 7000 languages! For most languages, it will not be very good, but it can quickly get better with very small amounts of clean data in a language, if you finetune this pretrained model.
 
 ---
 
@@ -307,10 +290,6 @@ which are also authored by the brilliant [Tomoki Hayashi](https://github.com/kan
 Normalizing Flow based PostNet as outlined in
 [PortaSpeech](https://proceedings.neurips.cc/paper/2021/file/748d6b6ed8e13f857ceaa6cfbdca14b8-Paper.pdf) are taken
 from the [official PortaSpeech codebase](https://github.com/NATSpeech/NATSpeech).
-
-For a version of the toolkit that includes [TransformerTTS](https://arxiv.org/abs/1809.08895),
-[Tacotron 2](https://arxiv.org/abs/1712.05884) or [MelGAN](https://arxiv.org/abs/1910.06711), check out the other
-branches. They are separated to keep the code clean, simple and minimal as the development progresses.
 
 ## Citation 🐧
 
