@@ -274,15 +274,16 @@ class ToucanTTSInterface(torch.nn.Module):
             if text.strip() != "":
                 if not silent:
                     print("Now synthesizing: {}".format(text))
-                spoken_sentence, sr = torch.tensor(self(text,
-                                                        durations=durations.to(self.device) if durations is not None else None,
-                                                        pitch=pitch.to(self.device) if pitch is not None else None,
-                                                        energy=energy.to(self.device) if energy is not None else None,
-                                                        duration_scaling_factor=duration_scaling_factor,
-                                                        pitch_variance_scale=pitch_variance_scale,
-                                                        energy_variance_scale=energy_variance_scale,
-                                                        pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                                        glow_sampling_temperature=glow_sampling_temperature)).cpu()
+                spoken_sentence, sr = self(text,
+                                           durations=durations.to(self.device) if durations is not None else None,
+                                           pitch=pitch.to(self.device) if pitch is not None else None,
+                                           energy=energy.to(self.device) if energy is not None else None,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                           glow_sampling_temperature=glow_sampling_temperature)
+                spoken_sentence = torch.tensor(spoken_sentence).cpu()
                 wav = torch.cat((wav, spoken_sentence, silence), 0)
         soundfile.write(file=file_location, data=float2pcm(wav), samplerate=sr, subtype="PCM_16")
 

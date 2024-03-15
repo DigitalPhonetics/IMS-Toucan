@@ -6,7 +6,7 @@ from Utility.utils import float2pcm
 
 class TTSWebUI:
 
-    def __init__(self, gpu_id="cpu", title="Controllable Embeddings", article="", available_artificial_voices=1000):
+    def __init__(self, gpu_id="cpu", title="Text-to-Speech for over 7000 Languages", article="", available_artificial_voices=1000):
         self.controllable_ui = ControllableInterface(gpu_id=gpu_id,
                                                      available_artificial_voices=available_artificial_voices)
         self.iface = gr.Interface(fn=self.read,
