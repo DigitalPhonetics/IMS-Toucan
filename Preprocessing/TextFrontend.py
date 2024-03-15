@@ -540,12 +540,21 @@ class ArticulatoryCombinedTextFrontend:
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
         if self.phonemizer == "espeak":
-            self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
-                                                    punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
-                                                    preserve_punctuation=True,
-                                                    language_switch='remove-flags',
-                                                    with_stress=self.use_stress)
-
+            try:
+                self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
+                                                        punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                        preserve_punctuation=True,
+                                                        language_switch='remove-flags',
+                                                        with_stress=self.use_stress)
+            except RuntimeError:
+                print("Error in loading espeak! \n"
+                      "Maybe espeak is not installed on your system? \n"
+                      "Falling back to transphone.")
+                from transphone.g2p import read_g2p
+                self.g2p_lang = self.language
+                self.phonemizer = "transphone"
+                self.expand_abbreviations = lambda x: x
+                self.transphone = read_g2p()
         self.phone_to_vector = generate_feature_table()
         self.phone_to_id = get_phone_to_id()
         self.id_to_phone = {v: k for k, v in self.phone_to_id.items()}
