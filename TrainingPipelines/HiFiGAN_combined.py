@@ -26,12 +26,12 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if model_dir is not None:
         model_save_dir = model_dir
     else:
-        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN_with_aug_cont")
+        model_save_dir = os.path.join(MODELS_DIR, "HiFiGAN_clean_data_and_augmentation")
     os.makedirs(model_save_dir, exist_ok=True)
 
     print("Preparing new data...")
 
-    take_all = True  # use only files with a large enough samplerate or just use all of them
+    take_all = False  # use only files with a large enough samplerate or just use all of them
 
     file_lists_for_this_run_combined = list()
     fl = list(build_path_to_transcript_dict_mls_italian().keys())
@@ -129,11 +129,6 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
-    fl = list(build_path_to_transcript_dict_vietTTS().keys())
-    wav, sr = sf.read(fl[0])
-    if sr >= 24000 or take_all:
-        file_lists_for_this_run_combined += fl
-
     fl = list(build_path_to_transcript_dict_thorsten_emotional().keys())
     wav, sr = sf.read(fl[0])
     if sr >= 24000 or take_all:
@@ -208,6 +203,35 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     if sr >= 24000 or take_all:
         file_lists_for_this_run_combined += fl
 
+    fl = list(build_path_to_transcript_dict_CREMA_D().keys())
+    wav, sr = sf.read(fl[0])
+    if sr >= 24000 or take_all:
+        file_lists_for_this_run_combined += fl
+
+    root = "/mount/arbeitsdaten61/studenten3/advanced-ml/2022/dhyanitr/projects/speech_datasets/Datasets/"
+    for a in os.listdir(root):
+        if os.path.isdir(a):
+            for b in os.listdir(os.path.join(root, a)):
+                if os.path.isdir(a):
+                    for c in os.listdir(os.path.join(root, a)):
+                        if os.path.isdir(a):
+                            print("If you can read this, the directories were more nested than I thought.")
+                        else:
+                            if c.endswith(".wav") or c.endswith(".flac"):
+                                _, sr = sf.read(os.path.join(root, a, b, c))
+                                if sr >= 24000 or take_all:
+                                    file_lists_for_this_run_combined.append(os.path.join(root, a, b, c))
+                else:
+                    if b.endswith(".wav") or b.endswith(".flac"):
+                        _, sr = sf.read(os.path.join(root, a, b))
+                        if sr >= 24000 or take_all:
+                            file_lists_for_this_run_combined.append(os.path.join(root, a, b))
+        else:
+            if a.endswith(".wav") or a.endswith(".flac"):
+                _, sr = sf.read(os.path.join(root, a))
+                if sr >= 24000 or take_all:
+                    file_lists_for_this_run_combined.append(os.path.join(root, a))
+
     print("filepaths collected")
 
     fisher_yates_shuffle(file_lists_for_this_run_combined)
@@ -215,7 +239,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     fisher_yates_shuffle(file_lists_for_this_run_combined)
     print("filepaths randomized")
 
-    selection = file_lists_for_this_run_combined[:250000]  # adjust the sample size until it fits into RAM
+    selection = file_lists_for_this_run_combined[:200000]  # adjust the sample size until it fits into RAM
 
     fl = list(build_path_to_transcript_dict_RAVDESS().keys())  # these two datasets are kind of important to represent some out-of-distribution data for what we expect.
     wav, sr = sf.read(fl[0])
@@ -241,8 +265,8 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
             name=f"{__name__.split('.')[-1]}_{time.strftime('%Y%m%d-%H%M%S')}" if wandb_resume_id is None else None,
             id=wandb_resume_id,  # this is None if not specified in the command line arguments.
             resume="must" if wandb_resume_id is not None else None)
-    train_loop(batch_size=48,
-               epochs=80000,
+    train_loop(batch_size=64,
+               epochs=180000,
                generator=generator,
                discriminator=discriminator,
                train_dataset=train_set,

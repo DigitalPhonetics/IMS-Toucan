@@ -15,6 +15,14 @@ from tqdm import tqdm
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 
+def random_pitch_shifter(x):
+    return torchaudio.transforms.PitchShift(sample_rate=24000, n_steps=random.randint(-16, 16))(x)
+
+
+def polarity_inverter(x):
+    return x * -1
+
+
 class HiFiGANDataset(Dataset):
 
     def __init__(self,
@@ -48,13 +56,11 @@ class HiFiGANDataset(Dataset):
                 process_list[-1].start()
             for process in process_list:
                 process.join()
-        self.blurrer = GaussianBlur(kernel_size=(3, 3))
-        self.masker = torchaudio.transforms.FrequencyMasking(freq_mask_param=8)  # up to 8 consecutive bands can be masked
-        self.spec_augs = [self.blurrer, self.masker, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # TODO verify that these work as intended
-        self.codec_simulator = CodecSimulator()
-        self.pitch_shifter = torchaudio.transforms.PitchShift(sample_rate=24000, n_steps=4)
-        self.wave_augs = [self.pitch_shifter, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # TODO verify that these work as intended
-        self.wave_distortions = [self.codec_simulator, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # TODO verify that these work as intended
+        self.blurrer = GaussianBlur(kernel_size=(5, 5), sigma=(0.5, 2.0))  # simulating the smoothness of a generated spectrogram
+        # self.masker = torchaudio.transforms.FrequencyMasking(freq_mask_param=16, iid_masks=True)  # up to 16 consecutive bands can be masked, each element in the batch gets a different mask. Taken out because it seems too extreme.
+        self.spec_augs = [self.blurrer, lambda x: x, lambda x: x, lambda x: x, lambda x: x]
+        self.wave_augs = [random_pitch_shifter, polarity_inverter, lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # just some data augmentation
+        self.wave_distortions = [CodecSimulator(), lambda x: x, lambda x: x, lambda x: x, lambda x: x]  # simulating the fact, that we train the TTS on codec-compressed waves
         print("{} eligible audios found".format(len(self.waves)))
 
     def cache_builder_process(self, path_split):
@@ -127,13 +133,51 @@ class CodecSimulator(torch.nn.Module):
 
 
 if __name__ == '__main__':
-    cs = CodecSimulator()
-    inp = torch.rand([500])
-    pad = torch.Tensor([0.0, 0.0])
-    out = cs(inp)
-    out = torch.cat([pad, out], dim=0)
     import matplotlib.pyplot as plt
 
-    plt.plot(inp, alpha=0.5)
+    wav, sr = sf.read("../../audios/speaker_references/female_high_voice.wav")
+    resampled_wave = torch.Tensor(librosa.resample(y=wav, orig_sr=sr, target_sr=24000))
+    audio = torch.tensor(resampled_wave)
+    melspec_ap = AudioPreprocessor(input_sr=24000,
+                                   output_sr=16000,
+                                   cut_silence=False)
+
+    spec = melspec_ap.audio_to_mel_spec_tensor(melspec_ap.resample(resampled_wave).float(),
+                                               explicit_sampling_rate=16000,
+                                               normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+
+    cs = CodecSimulator()
+    blurrer = GaussianBlur(kernel_size=(5, 5), sigma=(0.5, 2.0))
+    masker = torchaudio.transforms.FrequencyMasking(freq_mask_param=16, iid_masks=True)  # up to 8 consecutive bands can be masked
+
+    # testing codec simulator
+    out = cs(resampled_wave.unsqueeze(0)).squeeze(0)
+
+    plt.plot(resampled_wave, alpha=0.5)
     plt.plot(out, alpha=0.5)
+    plt.title("Codec Simulator")
     plt.show()
+
+    # testing Gaussian blur
+    blurred_spec = blurrer(spec.unsqueeze(0)).squeeze(0)
+    plt.imshow(blurred_spec.cpu().numpy(), origin="lower", cmap='GnBu')
+    plt.title("Blurred Spec")
+    plt.show()
+
+    # testing spectrogram masking
+    for _ in range(5):
+        masked_spec = masker(spec.unsqueeze(0)).squeeze(0)
+        print(masked_spec)
+        plt.imshow(masked_spec.cpu().numpy(), origin="lower", cmap='GnBu')
+        plt.title("Masked Spec")
+        plt.show()
+
+    # testing pitch shift
+    for _ in range(5):
+        shifted_wave = random_pitch_shifter(resampled_wave.unsqueeze(0)).squeeze(0)
+        shifted_spec = melspec_ap.audio_to_mel_spec_tensor(melspec_ap.resample(shifted_wave).float(),
+                                                           explicit_sampling_rate=16000,
+                                                           normalize=False).transpose(0, 1)[:-1].transpose(0, 1)
+        plt.imshow(shifted_spec.detach().cpu().numpy(), origin="lower", cmap='GnBu')
+        plt.title("Pitch Shifted Spec")
+        plt.show()
