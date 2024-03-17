@@ -16,7 +16,8 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 
 
 def random_pitch_shifter(x):
-    return torchaudio.transforms.PitchShift(sample_rate=24000, n_steps=random.randint(-16, 16))(x)
+    n_steps = random.choice([-12, -9, -6, 3, 12])  # when using 12 steps per octave, these are the only ones that are pretty fast. I benchmarked it and the variance is many orders of magnitude.
+    return torchaudio.transforms.PitchShift(sample_rate=24000, n_steps=n_steps)(x)
 
 
 def polarity_inverter(x):
