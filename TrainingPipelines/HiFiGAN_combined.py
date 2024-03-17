@@ -239,7 +239,7 @@ def run(gpu_id, resume_checkpoint, finetune, resume, model_dir, use_wandb, wandb
     fisher_yates_shuffle(file_lists_for_this_run_combined)
     print("filepaths randomized")
 
-    selection = file_lists_for_this_run_combined[:200000]  # adjust the sample size until it fits into RAM
+    selection = file_lists_for_this_run_combined[:250000]  # adjust the sample size until it fits into RAM
 
     fl = list(build_path_to_transcript_dict_RAVDESS().keys())  # these two datasets are kind of important to represent some out-of-distribution data for what we expect.
     wav, sr = sf.read(fl[0])
