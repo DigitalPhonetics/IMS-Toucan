@@ -37,10 +37,13 @@ process, with which I am unfortunately not familiar.
 #### Basic Requirements
 
 To install this toolkit, clone it onto the machine you want to use it on
-(should have at least one GPU if you intend to train models on that machine. For inference, you don't need a GPU).
+(should have at least one cuda enabled GPU if you intend to train models on that machine. For inference, you don't need
+a GPU).
 Navigate to the directory you have cloned. We recommend creating and activating a
 [virtual environment](https://docs.python.org/3/library/venv.html)
-to install the basic requirements into. The commands below summarize everything you need to do under Linux. If you are running Windows, the second line needs to be changed, please have a look at the [venv documentation](https://docs.python.org/3/library/venv.html).
+to install the basic requirements into. The commands below summarize everything you need to do under Linux. If you are
+running Windows, the second line needs to be changed, please have a look at
+the [venv documentation](https://docs.python.org/3/library/venv.html).
 
 ```
 python -m venv <path_to_where_you_want_your_env_to_be>
@@ -55,21 +58,6 @@ logged out in the meantime. To make use of a GPU, you don't need to do anything 
 machine, have a look at [the official PyTorch website](https://pytorch.org/) for the install-command that enables GPU
 support.
 
-#### \[optional] eSpeak-NG
-
-eSpeak-NG is an optional requirement, that handles lots of special cases in many languages, so it's good to have.
-On most Linux environments it will be installed already, and if it is not, and you have the sufficient rights, you can install it by simply running
-
-```
-apt-get install espeak-ng
-```
-
-For other systems, e.g. Windows, they provide a convenient .msi installer file
-[on their GitHub release page](https://github.com/espeak-ng/espeak-ng/releases). After installation on non-linux
-systems, you'll also need to tell the phonemizer library where to find your espeak installation, which is discussed in
-[this issue](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718). Since the project is still in
-active development, there are frequent updates, which can actually benefit your use significantly.
-
 #### Storage configuration
 
 If you don't want the pretrained and trained models as well as the cache files resulting from preprocessing your
@@ -83,14 +71,51 @@ You don't need to use pretrained models, but it can speed things up tremendously
 script to automatically download them from the release page and put them into their appropriate locations with
 appropriate names.
 
+#### \[optional] eSpeak-NG
+
+eSpeak-NG is an optional requirement, that handles lots of special cases in many languages, so it's good to have.
+
+On most **Linux** environments it will be installed already, and if it is not, and you have the sufficient rights, you
+can install it by simply running
+
+```
+apt-get install espeak-ng
+```
+
+For **Windows**, they provide a convenient .msi installer file
+[on their GitHub release page](https://github.com/espeak-ng/espeak-ng/releases). After installation on non-linux
+systems, you'll also need to tell the phonemizer library where to find your espeak installation by setting the
+`PHONEMIZER_ESPEAK_LIBRARY` environment variable, which is discussed in
+[this issue](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718).
+
+For **Mac** it's unfortunately a lot more complicated. Thanks to Sang Hyun Park, here is a guide for installing it on
+Mac:
+For M1 Macs, the most convenient method to install espeak-ng onto your system is via a
+[MacPorts port of espeak-ng](https://ports.macports.org/port/espeak-ng/). MacPorts itself can be installed from the
+[MacPorts website](https://www.macports.org/install.php), which also requires Apple's
+[XCode](https://developer.apple.com/xcode/). Once XCode and MacPorts have been installed, you can install the port of
+espeak-ng via
+
+```
+sudo port install espeak-n
+```
+
+As stated in the Windows install instructions, the espeak-ng installation will need to be set as a variable for the
+phonemizer library. The environment variable is `PHONEMIZER_ESPEAK_LIBRARY` as given in the
+[GitHub thread](https://github.com/bootphon/phonemizer/issues/44#issuecomment-1008449718) linked above.
+However, the espeak-ng installation file you need to set this variable to is a .dylib file rather than a .dll file on
+Mac. In order to locate the espeak-ng library file, you can run `port contents espeak-ng`. The specific file you are
+looking for is named `libespeak-ng.dylib`.
 
 ---
 
 ## Inference 🦢
 
-You can load your trained models, or the pretrained provided one, using the `InferenceInterfaces/ToucanTTSInterface.py`. Simply create an object from it with the proper directory handle
+You can load your trained models, or the pretrained provided one, using the `InferenceInterfaces/ToucanTTSInterface.py`.
+Simply create an object from it with the proper directory handle
 identifying the model you want to use. The rest should work out in the background. You might want to set a language
-embedding or a speaker embedding using the *set_language* and *set_speaker_embedding* functions. Most things should be self-explanatory.
+embedding or a speaker embedding using the *set_language* and *set_speaker_embedding* functions. Most things should be
+self-explanatory.
 
 An *InferenceInterface* contains two methods to create audio from text. They are
 *read_to_file* and
