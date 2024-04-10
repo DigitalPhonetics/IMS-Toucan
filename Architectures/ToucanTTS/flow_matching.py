@@ -101,10 +101,6 @@ class CFMDecoder(torch.nn.Module):
             y: conditional flow
                 shape: (batch_size, n_feats, mel_timesteps)
         """
-        print(x1.shape)
-        print(mask.shape)
-        print(mu.shape)
-        print(c.shape)
         b, _, t = mu.shape
 
         # random timestep
