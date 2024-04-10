@@ -32,7 +32,7 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
-                 enhance=None
+                 enhance=None  # boolean to indicate whether enhancement step should be applied. If None is passed, the decision is made based on GPU availability.
                  ):
         super().__init__()
         self.device = device

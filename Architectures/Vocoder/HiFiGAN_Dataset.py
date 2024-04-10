@@ -93,13 +93,13 @@ class HiFiGANDataset(Dataset):
                 # add some true silence in the mix, so the vocoder is exposed to that as well during training
             wave = torch.Tensor(wave)
 
-            if self.use_random_corruption:
-                # augmentations for the wave
-                wave = random.choice(self.wave_augs)(wave.unsqueeze(0)).squeeze(0)
-
             max_audio_start = len(wave) - self.samples_per_segment
             audio_start = random.randint(0, max_audio_start)
             segment = wave[audio_start: audio_start + self.samples_per_segment]
+
+            if self.use_random_corruption:
+                # augmentations for the wave
+                segment = random.choice(self.wave_augs)(segment.unsqueeze(0)).squeeze(0)
 
             resampled_segment = self.melspec_ap.resample(segment).float()  # 16kHz spectrogram as input, 24kHz wave as output, see Blizzard 2021 DelightfulTTS
             if self.use_random_corruption:
