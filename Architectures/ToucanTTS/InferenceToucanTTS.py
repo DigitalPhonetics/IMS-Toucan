@@ -10,7 +10,7 @@ from Architectures.GeneralLayers.Conformer import Conformer
 from Architectures.GeneralLayers.DurationPredictor import DurationPredictor
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
 from Architectures.GeneralLayers.VariancePredictor import VariancePredictor
-from Architectures.ToucanTTS.Glow import Glow
+from Architectures.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import integrate_with_utt_embed
 from Utility.utils import make_non_pad_mask
@@ -65,9 +65,6 @@ class ToucanTTS(torch.nn.Module):
         utt_embed_dim = config.utt_embed_dim
         lang_embs = config.lang_embs
         embedding_integration = config.embedding_integration
-        glow_kernel_size = config.glow_kernel_size
-        glow_blocks = config.glow_blocks
-        glow_layers = config.glow_layers
         lang_emb_size = config.lang_emb_size
         integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
 
@@ -169,21 +166,7 @@ class ToucanTTS(torch.nn.Module):
 
         self.output_projection = torch.nn.Linear(attention_dimension, 128)
 
-        self.post_flow = Glow(
-            in_channels=128,
-            hidden_channels=attention_dimension,  # post_glow_hidden
-            kernel_size=glow_kernel_size,  # post_glow_kernel_size
-            dilation_rate=1,
-            n_blocks=glow_blocks,  # post_glow_n_blocks (original 12 in paper)
-            n_layers=glow_layers,  # post_glow_n_block_layers (original 3 in paper)
-            n_split=4,
-            n_sqz=2,
-            text_condition_channels=attention_dimension,
-            share_cond_layers=False,  # post_share_cond_layers
-            share_wn_layers=4,
-            sigmoid_scale=False,
-            condition_integration_projection=torch.nn.Conv1d(128 + attention_dimension, attention_dimension, 5, padding=2)
-        )
+        self.flow_matching_decoder = CFMDecoder(hidden_channels=128 * 2, out_channels=128, filter_channels=512, n_heads=4, n_layers=5, kernel_size=5, p_dropout=0.1, gin_channels=utt_embed_dim)
 
         self.load_state_dict(weights)
         self.eval()
@@ -200,7 +183,7 @@ class ToucanTTS(torch.nn.Module):
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
                  pause_duration_scaling_factor=1.0,
-                 glow_sampling_temperature=0.2):
+                 glow_sampling_temperature=0.7):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -250,7 +233,7 @@ class ToucanTTS(torch.nn.Module):
 
         frames = self.output_projection(decoded_speech)
 
-        refined_codec_frames = self.post_flow(tgt_mels=None, infer=True, mel_out=frames, encoded_texts=upsampled_enriched_encoded_texts, tgt_nonpadding=None, glow_sampling_temperature=glow_sampling_temperature)
+        refined_codec_frames = self.flow_matching_decoder(mu=frames.transpose(1, 2), mask=make_non_pad_mask([len(frames[0])], device=frames.device).unsqueeze(-2), n_timesteps=20, temperature=glow_sampling_temperature, c=utterance_embedding)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
@@ -267,7 +250,7 @@ class ToucanTTS(torch.nn.Module):
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
-                glow_sampling_temperature=0.2):
+                glow_sampling_temperature=0.7):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 

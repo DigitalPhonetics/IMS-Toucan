@@ -92,11 +92,6 @@ class ToucanTTS(torch.nn.Module):
                  energy_embed_kernel_size=1,
                  energy_embed_dropout=0.0,
 
-                 # post glow
-                 glow_kernel_size=5,
-                 glow_blocks=12,
-                 glow_layers=3,
-
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
                  lang_embs=8000,
@@ -148,9 +143,6 @@ class ToucanTTS(torch.nn.Module):
             "lang_embs"                                    : lang_embs,
             "lang_emb_size"                                : lang_emb_size,
             "embedding_integration"                        : embedding_integration,
-            "glow_kernel_size"                             : glow_kernel_size,
-            "glow_blocks"                                  : glow_blocks,
-            "glow_layers"                                  : glow_layers,
             "integrate_language_embedding_into_encoder_out": integrate_language_embedding_into_encoder_out
         }
 
