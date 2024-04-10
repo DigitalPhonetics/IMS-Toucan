@@ -389,7 +389,7 @@ class ToucanTTS(torch.nn.Module):
                 energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks, mu=preliminary_spectrogram.transpose(1, 2), c=utterance_embedding)
+                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks, mu=preliminary_spectrogram.transpose(1, 2), c=utterance_embedding)
             else:
                 glow_loss = None
             return preliminary_spectrogram, \
