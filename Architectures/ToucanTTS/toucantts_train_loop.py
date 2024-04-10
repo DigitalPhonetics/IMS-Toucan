@@ -83,8 +83,8 @@ def train_loop(net,
         model = net.module
     else:
         model = net
-    optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'post_flow' not in name], lr=lr)
-    flow_optimizer = torch.optim.Adam(model.post_flow.parameters(), lr=lr)
+    optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'flow_matching_decoder' not in name], lr=lr)
+    flow_optimizer = torch.optim.Adam(model.flow_matching_decoder.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
     flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=(warmup_steps // 4), max_steps=steps)
