@@ -95,7 +95,7 @@ class HiFiGANDataset(Dataset):
 
             if self.use_random_corruption:
                 # augmentations for the wave
-                wave = random.choice(self.wave_augs)(wave.unsqueeze(0)).squeeze(0)
+                wave = random.choice(self.wave_augs)(wave.unsqueeze(0)).squeeze(0)  # it is intentional that this affects the target as well. This is not a distortion, but an augmentation.
 
             max_audio_start = len(wave) - self.samples_per_segment
             audio_start = random.randint(0, max_audio_start)
