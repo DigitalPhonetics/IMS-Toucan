@@ -261,11 +261,11 @@ def train_loop(net,
             print("There is no loss for this step! Skipping ...")
             continue
         train_loss.backward()
-        torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'post_flow' not in name], 1.0, error_if_nonfinite=False)
+        torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'flow_matching_decoder' not in name], 1.0, error_if_nonfinite=False)
         optimizer.step()
         scheduler.step()
         if glow_loss is not None:
-            torch.nn.utils.clip_grad_norm_(model.post_flow.parameters(), 1.0, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_(model.flow_matching_decoder.parameters(), 1.0, error_if_nonfinite=False)
             flow_optimizer.step()
             flow_scheduler.step()
 
