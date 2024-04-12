@@ -62,8 +62,14 @@ class ToucanTTS(torch.nn.Module):
         energy_predictor_dropout = config.energy_predictor_dropout
         energy_embed_kernel_size = config.energy_embed_kernel_size
         energy_embed_dropout = config.energy_embed_dropout
+        cfm_filter_channels = config.cfm_filter_channels
+        cfm_heads = config.cfm_heads
+        cfm_layers = config.cfm_layers
+        cfm_kernel_size = config.cfm_kernel_size
+        cfm_p_dropout = config.cfm_p_dropout
         utt_embed_dim = config.utt_embed_dim
         lang_embs = config.lang_embs
+        spec_channels = config.spec_channels
         embedding_integration = config.embedding_integration
         lang_emb_size = config.lang_emb_size
         integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
@@ -166,8 +172,14 @@ class ToucanTTS(torch.nn.Module):
 
         self.output_projection = torch.nn.Linear(attention_dimension, 128)
 
-        self.flow_matching_decoder = CFMDecoder(hidden_channels=128 * 2, out_channels=128, filter_channels=512, n_heads=4, n_layers=5, kernel_size=5, p_dropout=0.1, gin_channels=utt_embed_dim)
-
+        self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels * 2,
+                                                out_channels=spec_channels,
+                                                filter_channels=cfm_filter_channels,
+                                                n_heads=cfm_heads,
+                                                n_layers=cfm_layers,
+                                                kernel_size=cfm_kernel_size,
+                                                p_dropout=cfm_p_dropout,
+                                                gin_channels=utt_embed_dim)
         self.load_state_dict(weights)
         self.eval()
 
@@ -233,7 +245,7 @@ class ToucanTTS(torch.nn.Module):
 
         frames = self.output_projection(decoded_speech)
 
-        refined_codec_frames = self.flow_matching_decoder(mu=frames.transpose(1, 2), mask=make_non_pad_mask([len(frames[0])], device=frames.device).unsqueeze(-2), n_timesteps=20, temperature=glow_sampling_temperature, c=utterance_embedding)
+        refined_codec_frames = self.flow_matching_decoder(mu=frames.transpose(1, 2), mask=make_non_pad_mask([len(frames[0])], device=frames.device).unsqueeze(-2), n_timesteps=20, temperature=glow_sampling_temperature, c=utterance_embedding).transpose(1, 2)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 

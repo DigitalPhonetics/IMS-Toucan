@@ -45,6 +45,7 @@ class ToucanTTS(torch.nn.Module):
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
+                 spec_channels=128,
                  attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
@@ -91,6 +92,13 @@ class ToucanTTS(torch.nn.Module):
                  energy_predictor_dropout=0.5,
                  energy_embed_kernel_size=1,
                  energy_embed_dropout=0.0,
+
+                 # cfm decoder
+                 cfm_filter_channels=512,
+                 cfm_heads=4,
+                 cfm_layers=4,
+                 cfm_kernel_size=5,
+                 cfm_p_dropout=0.1,
 
                  # additional features
                  utt_embed_dim=192,  # 192 dim speaker embedding + 16 dim prosody embedding optionally (see older version, this one doesn't use the prosody embedding)
@@ -139,6 +147,12 @@ class ToucanTTS(torch.nn.Module):
             "energy_predictor_dropout"                     : energy_predictor_dropout,
             "energy_embed_kernel_size"                     : energy_embed_kernel_size,
             "energy_embed_dropout"                         : energy_embed_dropout,
+            "spec_channels"                                : spec_channels,
+            "cfm_filter_channels"                          : cfm_filter_channels,
+            "cfm_heads"                                    : cfm_heads,
+            "cfm_layers"                                   : cfm_layers,
+            "cfm_kernel_size"                              : cfm_kernel_size,
+            "cfm_p_dropout"                                : cfm_p_dropout,
             "utt_embed_dim"                                : utt_embed_dim,
             "lang_embs"                                    : lang_embs,
             "lang_emb_size"                                : lang_emb_size,
@@ -241,7 +255,7 @@ class ToucanTTS(torch.nn.Module):
                                  embedding_integration=embedding_integration)
 
         # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
-        self.output_projection = torch.nn.Linear(attention_dimension, 128)
+        self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
@@ -249,7 +263,14 @@ class ToucanTTS(torch.nn.Module):
             torch.nn.init.normal_(self.encoder.language_embedding.weight, mean=0, std=attention_dimension ** -0.5)
 
         # has its own init function, so it comes AFTER the init.
-        self.flow_matching_decoder = CFMDecoder(hidden_channels=128 * 2, out_channels=128, filter_channels=512, n_heads=2, n_layers=2, kernel_size=3, p_dropout=0.1, gin_channels=utt_embed_dim)
+        self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels * 2,
+                                                out_channels=spec_channels,
+                                                filter_channels=cfm_filter_channels,
+                                                n_heads=cfm_heads,
+                                                n_layers=cfm_layers,
+                                                kernel_size=cfm_kernel_size,
+                                                p_dropout=cfm_p_dropout,
+                                                gin_channels=utt_embed_dim)
 
         self.criterion = ToucanTTSLoss()
 
@@ -380,7 +401,7 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             if run_glow:
-                refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2), mask=make_non_pad_mask([len(preliminary_spectrogram[0])], device=preliminary_spectrogram.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding)
+                refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2), mask=make_non_pad_mask([len(preliminary_spectrogram[0])], device=preliminary_spectrogram.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding).transpose(1, 2)
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
