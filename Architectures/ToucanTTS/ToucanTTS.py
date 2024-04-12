@@ -380,7 +380,7 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             if run_glow:
-                refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2), mask=make_non_pad_mask([len(preliminary_spectrogram[0])], device=preliminary_spectrogram.device).unsqueeze(-2), n_timesteps=20, temperature=0.7, c=utterance_embedding)
+                refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2), mask=make_non_pad_mask([len(preliminary_spectrogram[0])], device=preliminary_spectrogram.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding)
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
@@ -389,7 +389,7 @@ class ToucanTTS(torch.nn.Module):
                    energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks, mu=preliminary_spectrogram.transpose(1, 2), c=utterance_embedding)
+                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks.float(), mu=preliminary_spectrogram.transpose(1, 2), c=utterance_embedding)
             else:
                 glow_loss = None
             return preliminary_spectrogram, \

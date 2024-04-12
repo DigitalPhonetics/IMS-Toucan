@@ -121,7 +121,7 @@ class DiTConVBlock(nn.Module):
 
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).unsqueeze(2).chunk(6, dim=1)  # shape: [batch_size, channel, 1]
         x = x + gate_msa * self.attn(self.modulate(self.norm1(x.transpose(1, 2)).transpose(1, 2), shift_msa, scale_msa), attn_mask) * x_mask
-        x = x.masked_fill(~x_mask, 0.0)
+        # x = x.masked_fill(~x_mask, 0.0)
         x = x + gate_mlp * self.mlp(self.modulate(self.norm2(x.transpose(1, 2)).transpose(1, 2), shift_mlp, scale_mlp), x_mask)
 
         # no condition version
