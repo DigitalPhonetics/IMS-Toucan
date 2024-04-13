@@ -6,10 +6,12 @@ https://github.com/KdaiP/StableTTS/blob/eebb177ebf195fd1246dedabec4ef69d9351a4f8
 Code is under MIT License
 """
 
+import imageio
 import torch
 import torch.nn.functional as F
 
 from Architectures.ToucanTTS.dit_wrapper import Decoder
+from Utility.utils import plot_spec_tensor
 
 
 # copied from https://github.com/jaywalnut310/vits/blob/main/commons.py#L121
@@ -53,7 +55,7 @@ class CFMDecoder(torch.nn.Module):
         t_span = torch.linspace(0, 1, n_timesteps + 1, device=mu.device)
         return self.solve_euler(z, t_span=t_span, mu=mu, mask=mask, c=c)
 
-    def solve_euler(self, x, t_span, mu, mask, c):
+    def solve_euler(self, x, t_span, mu, mask, c, plot_solutions=False):
         """
         Fixed euler solver for ODEs.
         Args:
@@ -81,6 +83,9 @@ class CFMDecoder(torch.nn.Module):
             sol.append(x)
             if step < len(t_span) - 1:
                 dt = t_span[step + 1] - t
+
+        if plot_solutions:
+            create_plot_of_all_solutions(sol)
 
         return sol[-1]
 
@@ -115,3 +120,14 @@ class CFMDecoder(torch.nn.Module):
                 torch.sum(mask) * u.shape[1]
         )
         return loss, y
+
+
+def create_plot_of_all_solutions(sol):
+    gif_collector = list()
+    for step_index, solution in enumerate(sol):
+        unbatched_solution = solution[0]  # remove the batch axis (if there are more than one element in the batch, we only take the first)
+        plot_spec_tensor(unbatched_solution, "tmp", step_index, title=step_index + 1)
+        gif_collector.append(imageio.v2.imread(f"tmp/{step_index}.png"))
+    for _ in range(10):
+        gif_collector.append(gif_collector[-1])
+    imageio.mimsave("tmp/animation.gif", gif_collector, fps=6, loop=0)

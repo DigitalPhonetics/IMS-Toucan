@@ -145,12 +145,14 @@ def plot_code_spec(pitch, energy, sentence, durations, mel, save_path, tf, step)
     plt.close()
 
 
-def plot_spec_tensor(spec, save_path, name):
+def plot_spec_tensor(spec, save_path, name, title=None):
     fig, spec_plot_axis = plt.subplots(nrows=1, ncols=1, figsize=(9, 4))
     spec_plot_axis.imshow(spec.detach().cpu().numpy(), origin="lower", cmap='GnBu')
     spec_plot_axis.yaxis.set_visible(False)
     spec_plot_axis.set_aspect("auto")
-    plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95, wspace=0.0, hspace=0.0)
+    if title is not None:
+        spec_plot_axis.set_title(title)
+    plt.subplots_adjust(left=0.05, bottom=0.1, right=0.95, top=.95 if title is None else .85, wspace=0.0, hspace=0.0)
     os.makedirs(save_path, exist_ok=True)
     plt.savefig(os.path.join(save_path, f"{name}.png"), dpi=100)
     plt.clf()

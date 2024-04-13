@@ -246,7 +246,7 @@ class ToucanTTS(torch.nn.Module):
 
         # frames = self.output_projection(decoded_speech) # this is only needed for training
 
-        refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2), n_timesteps=20, temperature=glow_sampling_temperature, c=utterance_embedding).transpose(1, 2)
+        refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2), n_timesteps=15, temperature=glow_sampling_temperature, c=utterance_embedding).transpose(1, 2)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 
