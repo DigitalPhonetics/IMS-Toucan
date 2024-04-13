@@ -162,7 +162,6 @@ class Decoder(nn.Module):
         Returns:
             _type_: _description_
         """
-
         t = self.time_mlp(self.time_embeddings(t))
         x = torch.cat((x, mu), dim=1)
 

@@ -170,7 +170,8 @@ class ToucanTTS(torch.nn.Module):
                                  utt_embed=utt_embed_dim,
                                  embedding_integration=embedding_integration)
 
-        self.output_projection = torch.nn.Linear(attention_dimension, 128)
+        self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
+        self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
 
         self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels * 2,
                                                 out_channels=spec_channels,
@@ -245,7 +246,7 @@ class ToucanTTS(torch.nn.Module):
 
         frames = self.output_projection(decoded_speech)
 
-        refined_codec_frames = self.flow_matching_decoder(mu=frames.transpose(1, 2), mask=make_non_pad_mask([len(frames[0])], device=frames.device).unsqueeze(-2), n_timesteps=20, temperature=glow_sampling_temperature, c=utterance_embedding).transpose(1, 2)
+        refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2), n_timesteps=20, temperature=glow_sampling_temperature, c=utterance_embedding).transpose(1, 2)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
 

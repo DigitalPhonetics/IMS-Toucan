@@ -256,6 +256,7 @@ class ToucanTTS(torch.nn.Module):
 
         # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
+        self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
@@ -401,7 +402,7 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             if run_glow:
-                refined_codec_frames = self.flow_matching_decoder(mu=preliminary_spectrogram.transpose(1, 2), mask=make_non_pad_mask([len(preliminary_spectrogram[0])], device=preliminary_spectrogram.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding).transpose(1, 2)
+                refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding).transpose(1, 2)
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
@@ -410,7 +411,7 @@ class ToucanTTS(torch.nn.Module):
                    energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks.float(), mu=preliminary_spectrogram.transpose(1, 2), c=utterance_embedding)
+                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks.float(), mu=self.cfm_projection(decoded_speech).transpose(1, 2), c=utterance_embedding)
             else:
                 glow_loss = None
             return preliminary_spectrogram, \
