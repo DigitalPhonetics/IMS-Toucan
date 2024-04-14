@@ -65,14 +65,14 @@ class ToucanTTS(torch.nn.Module):
                  transformer_enc_attn_dropout_rate=0.1,
 
                  # decoder
-                 decoder_layers=1,
-                 decoder_units=1536,
-                 decoder_concat_after=False,
-                 conformer_decoder_kernel_size=31,  # 31 works for spectrograms
-                 decoder_normalize_before=True,
-                 transformer_dec_dropout_rate=0.1,
-                 transformer_dec_positional_dropout_rate=0.1,
-                 transformer_dec_attn_dropout_rate=0.1,
+                 # decoder_layers=1,
+                 # decoder_units=1536,
+                 # decoder_concat_after=False,
+                 # conformer_decoder_kernel_size=31,  # 31 works for spectrograms
+                 # decoder_normalize_before=True,
+                 # transformer_dec_dropout_rate=0.1,
+                 # transformer_dec_positional_dropout_rate=0.1,
+                 # transformer_dec_attn_dropout_rate=0.1,
 
                  # duration predictor
                  duration_predictor_layers=3,
@@ -126,14 +126,14 @@ class ToucanTTS(torch.nn.Module):
             "transformer_enc_dropout_rate"                 : transformer_enc_dropout_rate,
             "transformer_enc_positional_dropout_rate"      : transformer_enc_positional_dropout_rate,
             "transformer_enc_attn_dropout_rate"            : transformer_enc_attn_dropout_rate,
-            "decoder_layers"                               : decoder_layers,
-            "decoder_units"                                : decoder_units,
-            "decoder_concat_after"                         : decoder_concat_after,
-            "conformer_decoder_kernel_size"                : conformer_decoder_kernel_size,
-            "decoder_normalize_before"                     : decoder_normalize_before,
-            "transformer_dec_dropout_rate"                 : transformer_dec_dropout_rate,
-            "transformer_dec_positional_dropout_rate"      : transformer_dec_positional_dropout_rate,
-            "transformer_dec_attn_dropout_rate"            : transformer_dec_attn_dropout_rate,
+            # "decoder_layers"                               : decoder_layers,
+            # "decoder_units"                                : decoder_units,
+            # "decoder_concat_after"                         : decoder_concat_after,
+            # "conformer_decoder_kernel_size"                : conformer_decoder_kernel_size,
+            # "decoder_normalize_before"                     : decoder_normalize_before,
+            # "transformer_dec_dropout_rate"                 : transformer_dec_dropout_rate,
+            # "transformer_dec_positional_dropout_rate"      : transformer_dec_positional_dropout_rate,
+            # "transformer_dec_attn_dropout_rate"            : transformer_dec_attn_dropout_rate,
             "duration_predictor_layers"                    : duration_predictor_layers,
             "duration_predictor_kernel_size"               : duration_predictor_kernel_size,
             "duration_predictor_dropout_rate"              : duration_predictor_dropout_rate,
@@ -235,24 +235,24 @@ class ToucanTTS(torch.nn.Module):
 
         self.length_regulator = LengthRegulator()
 
-        self.decoder = Conformer(conformer_type="decoder",
-                                 attention_dim=attention_dimension,
-                                 attention_heads=attention_heads,
-                                 linear_units=decoder_units,
-                                 num_blocks=decoder_layers,
-                                 input_layer=None,
-                                 dropout_rate=transformer_dec_dropout_rate,
-                                 positional_dropout_rate=transformer_dec_positional_dropout_rate,
-                                 attention_dropout_rate=transformer_dec_attn_dropout_rate,
-                                 normalize_before=decoder_normalize_before,
-                                 concat_after=decoder_concat_after,
-                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-                                 macaron_style=use_macaron_style_in_conformer,
-                                 use_cnn_module=use_cnn_in_conformer,
-                                 cnn_module_kernel=conformer_decoder_kernel_size,
-                                 use_output_norm=embedding_integration not in ["AdaIN", "ConditionalLayerNorm"],
-                                 utt_embed=utt_embed_dim,
-                                 embedding_integration=embedding_integration)
+        # self.decoder = Conformer(conformer_type="decoder",
+        #                         attention_dim=attention_dimension,
+        #                         attention_heads=attention_heads,
+        #                         linear_units=decoder_units,
+        #                         num_blocks=decoder_layers,
+        #                         input_layer=None,
+        #                         dropout_rate=transformer_dec_dropout_rate,
+        #                         positional_dropout_rate=transformer_dec_positional_dropout_rate,
+        #                         attention_dropout_rate=transformer_dec_attn_dropout_rate,
+        #                         normalize_before=decoder_normalize_before,
+        #                         concat_after=decoder_concat_after,
+        #                         positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+        #                         macaron_style=use_macaron_style_in_conformer,
+        #                         use_cnn_module=use_cnn_in_conformer,
+        #                         cnn_module_kernel=conformer_decoder_kernel_size,
+        #                         use_output_norm=embedding_integration not in ["AdaIN", "ConditionalLayerNorm"],
+        #                         utt_embed=utt_embed_dim,
+        #                         embedding_integration=embedding_integration)
 
         # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
@@ -367,16 +367,17 @@ class ToucanTTS(torch.nn.Module):
         if is_inference:
             # predicting pitch, energy and durations
             pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
-            energy_predictions = self.energy_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
-            predicted_durations = self.duration_predictor.inference(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
+            embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+            energy_predictions = self.energy_predictor(encoded_texts + pitch_predictions, padding_mask=None, utt_embed=utterance_embedding)
+            embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+            predicted_durations = self.duration_predictor.inference(encoded_texts + pitch_predictions + energy_predictions, padding_mask=None, utt_embed=utterance_embedding)
 
             # modifying the predictions
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
                 if phoneme_vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
                     predicted_durations[0][phoneme_index] = 0
             # enriching the text with pitch and energy info
-            embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
-            embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+
             enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
 
             # predicting durations for text and upsampling accordingly
@@ -385,24 +386,27 @@ class ToucanTTS(torch.nn.Module):
         else:
             # training with teacher forcing
             pitch_predictions = self.pitch_predictor(encoded_texts.detach(), padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
-            energy_predictions = self.energy_predictor(encoded_texts, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
-            predicted_durations = self.duration_predictor(encoded_texts, padding_mask=padding_masks, utt_embed=utterance_embedding)
-
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
+            energy_predictions = self.energy_predictor(encoded_texts + embedded_pitch_curve, padding_mask=padding_masks.unsqueeze(-1), utt_embed=utterance_embedding)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
+            predicted_durations = self.duration_predictor(encoded_texts + embedded_pitch_curve + embedded_energy_curve, padding_mask=padding_masks, utt_embed=utterance_embedding)
+
             enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
 
             upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, gold_durations)
 
         # decoding spectrogram
         decoder_masks = make_non_pad_mask(speech_lengths, device=speech_lengths.device).unsqueeze(-2) if speech_lengths is not None and not is_inference else None
-        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
+        # decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, decoder_masks, utterance_embedding=utterance_embedding)
 
-        preliminary_spectrogram = self.output_projection(decoded_speech)
+        # preliminary_spectrogram = self.output_projection(decoded_speech)
+        preliminary_spectrogram = self.output_projection(upsampled_enriched_encoded_texts)
 
         if is_inference:
             if run_glow:
-                refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding).transpose(1, 2)
+                # refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7, c=utterance_embedding).transpose(1, 2)
+                refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(upsampled_enriched_encoded_texts).transpose(1, 2), mask=make_non_pad_mask([len(upsampled_enriched_encoded_texts[0])], device=upsampled_enriched_encoded_texts.device).unsqueeze(-2).float(), n_timesteps=20, temperature=0.7,
+                                                                  c=utterance_embedding).transpose(1, 2)
             else:
                 refined_codec_frames = preliminary_spectrogram
             return refined_codec_frames, \
@@ -411,7 +415,7 @@ class ToucanTTS(torch.nn.Module):
                    energy_predictions.squeeze()
         else:
             if run_glow:
-                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks.float(), mu=self.cfm_projection(decoded_speech).transpose(1, 2), c=utterance_embedding)
+                glow_loss, _ = self.flow_matching_decoder.compute_loss(x1=gold_speech.transpose(1, 2), mask=decoder_masks.float(), mu=self.cfm_projection(upsampled_enriched_encoded_texts).transpose(1, 2), c=utterance_embedding)
             else:
                 glow_loss = None
             return preliminary_spectrogram, \

@@ -83,11 +83,9 @@ def train_loop(net,
         model = net.module
     else:
         model = net
-    optimizer = torch.optim.Adam([p for name, p in model.named_parameters() if 'flow_matching_decoder' not in name], lr=lr)
-    flow_optimizer = torch.optim.Adam(model.flow_matching_decoder.parameters(), lr=lr)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     scheduler = WarmupScheduler(optimizer, peak_lr=lr, warmup_steps=warmup_steps, max_steps=steps)
-    flow_scheduler = WarmupScheduler(flow_optimizer, peak_lr=lr, warmup_steps=(warmup_steps // 4), max_steps=steps)
 
     epoch = 0
     if resume:
@@ -98,8 +96,6 @@ def train_loop(net,
         if not fine_tune:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
-            flow_optimizer.load_state_dict(check_dict["flow_optimizer"])
-            flow_scheduler.load_state_dict(check_dict["flow_scheduler"])
             step_counter = check_dict["step_counter"]
     start_time = time.time()
     regression_losses_total = list()
@@ -121,7 +117,7 @@ def train_loop(net,
             gold_energy = batch[5].to(device)  # mind the switched order
             lang_ids = batch[8].squeeze(1).to(device)
 
-            speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
+            speech_batch = list()  # TODO revisit this. I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
             for speech_sample in speech_indexes:
                 with torch.inference_mode():
                     wave = ap.indexes_to_audio(speech_sample.int().to(device)).detach()
@@ -130,7 +126,7 @@ def train_loop(net,
                 speech_batch.append(gold_speech_sample)
             gold_speech = pad_sequence(speech_batch, batch_first=True).to(device)
 
-            run_glow = step_counter > (warmup_steps * 2) or fine_tune
+            run_glow = (step_counter > warmup_steps) or fine_tune
 
             train_loss = 0.0
             utterance_embedding = batch[9].to(device)
@@ -155,9 +151,10 @@ def train_loop(net,
             train_loss = train_loss + duration_loss
             train_loss = train_loss + pitch_loss
             train_loss = train_loss + energy_loss
-            train_loss = train_loss + regression_loss
+            if not run_glow:
+                train_loss = train_loss + regression_loss
+                regression_losses_total.append(regression_loss.item())
 
-            regression_losses_total.append(regression_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
@@ -168,28 +165,19 @@ def train_loop(net,
                     print("Glow loss turned to NaN! Skipping this batch ...")
                     continue
 
-                if glow_loss < 0.0:
-                    glow_losses_total.append(glow_loss.item())
-                else:
-                    glow_losses_total.append(0.1)
-
+                glow_losses_total.append(glow_loss.item())
                 train_loss = train_loss + glow_loss
             else:
                 glow_losses_total.append(0)
 
             optimizer.zero_grad()
-            flow_optimizer.zero_grad()
             if type(train_loss) is float:
                 print("There is no loss for this step! Skipping ...")
                 continue
             train_loss.backward()
-            torch.nn.utils.clip_grad_norm_([p for name, p in model.named_parameters() if 'flow_matching_decoder' not in name], 1.0, error_if_nonfinite=False)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=False)
             optimizer.step()
             scheduler.step()
-            if glow_loss is not None:
-                torch.nn.utils.clip_grad_norm_(model.flow_matching_decoder.parameters(), 1.0, error_if_nonfinite=False)
-                flow_optimizer.step()
-                flow_scheduler.step()
             step_counter += 1
             if step_counter % steps_per_checkpoint == 0:
                 # evaluation interval is happening
@@ -201,8 +189,6 @@ def train_loop(net,
                         "optimizer"     : optimizer.state_dict(),
                         "step_counter"  : step_counter,
                         "scheduler"     : scheduler.state_dict(),
-                        "flow_optimizer": flow_optimizer.state_dict(),
-                        "flow_scheduler": flow_scheduler.state_dict(),
                         "default_emb"   : default_embedding,
                         "config"        : model.config
                     }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))

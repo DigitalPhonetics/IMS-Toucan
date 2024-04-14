@@ -19,7 +19,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                path_to_checkpoint=None,  # path to a trained checkpoint to either continue training or fine-tune from.
                lr=0.0001,  # learning rate of the model.
                resume=False,  # whether to automatically load the most recent checkpoint and resume training from it.
-               warmup_steps=2000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
+               warmup_steps=8000,  # how many steps until the learning rate reaches the specified value and starts decreasing again.
                use_wandb=False,  # whether to use online experiment tracking with weights and biases. Requires prior CLI login.
                batch_size=32,  # how many samples to put into one batch. Higher batch size is more stable, but requires more VRAM.
                eval_lang="eng",  # in which language the evaluation sentence is to be plotted.
