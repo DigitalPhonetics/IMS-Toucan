@@ -154,6 +154,8 @@ def train_loop(net,
             if not run_glow:
                 train_loss = train_loss + regression_loss
                 regression_losses_total.append(regression_loss.item())
+            else:
+                regression_losses_total.append(0.0)
 
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
@@ -162,7 +164,7 @@ def train_loop(net,
             if glow_loss is not None:
 
                 if torch.isnan(glow_loss):
-                    print("Glow loss turned to NaN! Skipping this batch ...")
+                    print("Flow loss turned to NaN! Skipping this batch ...")
                     continue
 
                 glow_losses_total.append(glow_loss.item())
@@ -185,19 +187,22 @@ def train_loop(net,
                     net.eval()
                     default_embedding = train_dataset[0][9].to(device)
                     torch.save({
-                        "model"         : model.state_dict(),
-                        "optimizer"     : optimizer.state_dict(),
-                        "step_counter"  : step_counter,
-                        "scheduler"     : scheduler.state_dict(),
-                        "default_emb"   : default_embedding,
-                        "config"        : model.config
+                        "model"       : model.state_dict(),
+                        "optimizer"   : optimizer.state_dict(),
+                        "step_counter": step_counter,
+                        "scheduler"   : scheduler.state_dict(),
+                        "default_emb" : default_embedding,
+                        "config"      : model.config
                     }, os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
 
                     delete_old_checkpoints(save_directory, keep=5)
 
                     print(f"\nEpoch:                  {epoch}")
                     print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
-                    print(f"Reconstruction Loss:    {round(sum(regression_losses_total) / len(regression_losses_total), 4)}")
+                    if not run_glow:
+                        print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
+                    else:
+                        print("Flow Loss:    {}".format(round(sum(glow_losses_total) / len(glow_losses_total), 3)))
                     print(f"Steps:                  {step_counter}\n")
 
                     if use_wandb:

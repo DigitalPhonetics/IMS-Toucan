@@ -241,6 +241,8 @@ def train_loop(net,
 
         if not run_glow:
             regression_losses_total.append(regression_loss.item())
+        else:
+            regression_losses_total.append(0.0)
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
@@ -267,15 +269,19 @@ def train_loop(net,
             if rank == 0:
                 net.eval()
                 default_embedding = datasets[0][0][9].to(device)
-                print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
+                if not run_glow:
+                    print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
+                else:
+                    print("Flow Loss:    {}".format(round(sum(glow_losses_total) / len(glow_losses_total), 3)))
+
                 print("Steps:                  {}\n".format(step_counter))
                 torch.save({
-                    "model"         : model.state_dict(),
-                    "optimizer"     : optimizer.state_dict(),
-                    "scheduler"     : scheduler.state_dict(),
-                    "step_counter"  : step_counter,
-                    "default_emb"   : default_embedding,
-                    "config"        : model.config
+                    "model"       : model.state_dict(),
+                    "optimizer"   : optimizer.state_dict(),
+                    "scheduler"   : scheduler.state_dict(),
+                    "step_counter": step_counter,
+                    "default_emb" : default_embedding,
+                    "config"      : model.config
                 },
                     os.path.join(save_directory, "checkpoint_{}.pt".format(step_counter)))
                 delete_old_checkpoints(save_directory, keep=5)
