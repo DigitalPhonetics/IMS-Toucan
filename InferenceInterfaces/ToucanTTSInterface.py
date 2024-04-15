@@ -1,20 +1,15 @@
 import itertools
 import os
-from typing import cast
 
 import matplotlib.pyplot as plt
 import pyloudnorm
 import sounddevice
 import soundfile
 import torch
-from audioseal.builder import create_generator
-from omegaconf import DictConfig
-from omegaconf import OmegaConf
+import torchaudio
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
-from Architectures.Enhancer.enhancer.inference import inference
-from Architectures.Enhancer.enhancer.inference import load_enhancer
 from Architectures.ToucanTTS.InferenceToucanTTS import ToucanTTS
 from Architectures.Vocoder.HiFiGAN_Generator import HiFiGAN
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
@@ -24,6 +19,8 @@ from Utility.storage_config import MODELS_DIR
 from Utility.utils import cumsum_durations
 from Utility.utils import float2pcm
 
+torchaudio.set_audio_backend("soundfile")
+
 
 class ToucanTTSInterface(torch.nn.Module):
 
@@ -32,20 +29,12 @@ class ToucanTTSInterface(torch.nn.Module):
                  tts_model_path=os.path.join(MODELS_DIR, f"ToucanTTS_Meta", "best.pt"),  # path to the ToucanTTS checkpoint or just a shorthand if run standalone
                  vocoder_model_path=os.path.join(MODELS_DIR, f"Vocoder", "best.pt"),  # path to the Vocoder checkpoint
                  language="eng",  # initial language of the model, can be changed later with the setter methods
-                 enhance=None  # boolean to indicate whether enhancement step should be applied. If None is passed, the decision is made based on GPU availability.
                  ):
         super().__init__()
         self.device = device
-        if enhance is None:
-            enhance = device != "cpu" and device != torch.device("cpu")
         if not tts_model_path.endswith(".pt"):
             # default to shorthand system
             tts_model_path = os.path.join(MODELS_DIR, f"ToucanTTS_{tts_model_path}", "best.pt")
-        if "USER" not in os.environ:
-            os.environ["USER"] = ""  # that's the case under Windows, but omegaconf needs this
-        watermark_conf = cast(DictConfig, OmegaConf.load("InferenceInterfaces/audioseal_wm_16bits.yaml"))
-        self.watermark = create_generator(watermark_conf)
-        self.watermark.load_state_dict(torch.load("Models/audioseal/generator.pth", map_location="cpu")["model"])  # downloaded from https://dl.fbaipublicfiles.com/audioseal/6edcf62f/generator.pth originally
 
         ################################
         #   build text to phone        #
@@ -76,15 +65,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.vocoder.load_state_dict(vocoder_checkpoint)
         self.vocoder = self.vocoder.to(device).eval()
         self.vocoder.remove_weight_norm()
-        self.meter = pyloudnorm.Meter(24000 if enhance == False else 44100)
-
-        ################################
-        #  load mel to wave model      #
-        ################################
-        if enhance:
-            self.enhancer = load_enhancer(f"{MODELS_DIR}/Enhancer", device)
-            self.enhancer.configurate_(nfe=128, solver="midpoint", lambd=0.2, tau=0.5)
-        self.enhance = enhance
+        self.meter = pyloudnorm.Meter(24000)
 
         ################################
         #  set defaults                #
@@ -170,20 +151,14 @@ class ToucanTTSInterface(torch.nn.Module):
 
             wave, _, _ = self.vocoder(mel.unsqueeze(0))
             wave = wave.squeeze().cpu()
-        if self.enhance:
-            wave, sr = inference(model=self.enhancer, dwav=wave, sr=24000, device=self.device)
-            wave = wave.detach().cpu().numpy()
-        else:
-            wave = wave.numpy()
-            sr = 24000
+        wave = wave.numpy()
+        sr = 24000
         try:
             loudness = self.meter.integrated_loudness(wave)
             wave = pyloudnorm.normalize.loudness(wave, loudness, loudness_in_db)
         except ValueError:
             # if the audio is too short, a value error will arise
             pass
-        with torch.inference_mode():
-            wave = (torch.tensor(wave) + self.watermark.get_watermark(torch.tensor(wave).to(self.device).unsqueeze(0).unsqueeze(0)).squeeze().detach().cpu()).detach().numpy()
 
         if view or return_plot_as_filepath:
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
