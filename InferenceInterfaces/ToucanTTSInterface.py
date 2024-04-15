@@ -6,7 +6,6 @@ import pyloudnorm
 import sounddevice
 import soundfile
 import torch
-import torchaudio
 from speechbrain.pretrained import EncoderClassifier
 from torchaudio.transforms import Resample
 
@@ -18,8 +17,6 @@ from Preprocessing.TextFrontend import get_language_id
 from Utility.storage_config import MODELS_DIR
 from Utility.utils import cumsum_durations
 from Utility.utils import float2pcm
-
-torchaudio.set_audio_backend("soundfile")
 
 
 class ToucanTTSInterface(torch.nn.Module):
