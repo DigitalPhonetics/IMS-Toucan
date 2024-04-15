@@ -41,14 +41,14 @@ class ToucanTTS(torch.nn.Module):
         transformer_enc_dropout_rate = config.transformer_enc_dropout_rate
         transformer_enc_positional_dropout_rate = config.transformer_enc_positional_dropout_rate
         transformer_enc_attn_dropout_rate = config.transformer_enc_attn_dropout_rate
-        # decoder_layers = config.decoder_layers
-        # decoder_units = config.decoder_units
-        # decoder_concat_after = config.decoder_concat_after
-        # conformer_decoder_kernel_size = config.conformer_decoder_kernel_size
-        # decoder_normalize_before = config.decoder_normalize_before
-        # transformer_dec_dropout_rate = config.transformer_dec_dropout_rate
-        # transformer_dec_positional_dropout_rate = config.transformer_dec_positional_dropout_rate
-        # transformer_dec_attn_dropout_rate = config.transformer_dec_attn_dropout_rate
+        decoder_layers = config.decoder_layers
+        decoder_units = config.decoder_units
+        decoder_concat_after = config.decoder_concat_after
+        conformer_decoder_kernel_size = config.conformer_decoder_kernel_size
+        decoder_normalize_before = config.decoder_normalize_before
+        transformer_dec_dropout_rate = config.transformer_dec_dropout_rate
+        transformer_dec_positional_dropout_rate = config.transformer_dec_positional_dropout_rate
+        transformer_dec_attn_dropout_rate = config.transformer_dec_attn_dropout_rate
         duration_predictor_layers = config.duration_predictor_layers
         duration_predictor_kernel_size = config.duration_predictor_kernel_size
         duration_predictor_dropout_rate = config.duration_predictor_dropout_rate
@@ -151,24 +151,24 @@ class ToucanTTS(torch.nn.Module):
 
         self.length_regulator = LengthRegulator()
 
-        # self.decoder = Conformer(conformer_type="decoder",
-        #                         attention_dim=attention_dimension,
-        #                         attention_heads=attention_heads,
-        #                         linear_units=decoder_units,
-        #                         num_blocks=decoder_layers,
-        #                         input_layer=None,
-        #                         dropout_rate=transformer_dec_dropout_rate,
-        #                         positional_dropout_rate=transformer_dec_positional_dropout_rate,
-        #                         attention_dropout_rate=transformer_dec_attn_dropout_rate,
-        #                         normalize_before=decoder_normalize_before,
-        #                         concat_after=decoder_concat_after,
-        #                         positionwise_conv_kernel_size=positionwise_conv_kernel_size,
-        #                         macaron_style=use_macaron_style_in_conformer,
-        #                         use_cnn_module=use_cnn_in_conformer,
-        #                         cnn_module_kernel=conformer_decoder_kernel_size,
-        #                         use_output_norm=not embedding_integration in ["AdaIN", "ConditionalLayerNorm"],
-        #                         utt_embed=utt_embed_dim,
-        #                         embedding_integration=embedding_integration)
+        self.decoder = Conformer(conformer_type="decoder",
+                                 attention_dim=attention_dimension,
+                                 attention_heads=attention_heads,
+                                 linear_units=decoder_units,
+                                 num_blocks=decoder_layers,
+                                 input_layer=None,
+                                 dropout_rate=transformer_dec_dropout_rate,
+                                 positional_dropout_rate=transformer_dec_positional_dropout_rate,
+                                 attention_dropout_rate=transformer_dec_attn_dropout_rate,
+                                 normalize_before=decoder_normalize_before,
+                                 concat_after=decoder_concat_after,
+                                 positionwise_conv_kernel_size=positionwise_conv_kernel_size,
+                                 macaron_style=use_macaron_style_in_conformer,
+                                 use_cnn_module=use_cnn_in_conformer,
+                                 cnn_module_kernel=conformer_decoder_kernel_size,
+                                 use_output_norm=not embedding_integration in ["AdaIN", "ConditionalLayerNorm"],
+                                 utt_embed=utt_embed_dim,
+                                 embedding_integration=embedding_integration)
 
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
@@ -244,13 +244,12 @@ class ToucanTTS(torch.nn.Module):
         upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
 
         # decoding spectrogram
-        # decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
+        decoded_speech, _ = self.decoder(upsampled_enriched_encoded_texts, None, utterance_embedding=utterance_embedding)
 
         # frames = self.output_projection(decoded_speech) # this is only needed for training
 
-        # refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2), mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2), n_timesteps=15, temperature=glow_sampling_temperature, c=utterance_embedding).transpose(1, 2)
-        refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(upsampled_enriched_encoded_texts).transpose(1, 2),
-                                                          mask=make_non_pad_mask([len(upsampled_enriched_encoded_texts[0])], device=upsampled_enriched_encoded_texts.device).unsqueeze(-2),
+        refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
+                                                          mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
                                                           n_timesteps=15,
                                                           temperature=glow_sampling_temperature,
                                                           c=utterance_embedding).transpose(1, 2)

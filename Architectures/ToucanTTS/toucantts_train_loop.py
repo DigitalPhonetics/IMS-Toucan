@@ -151,12 +151,9 @@ def train_loop(net,
             train_loss = train_loss + duration_loss
             train_loss = train_loss + pitch_loss
             train_loss = train_loss + energy_loss
-            if not run_glow:
-                train_loss = train_loss + regression_loss
-                regression_losses_total.append(regression_loss.item())
-            else:
-                regression_losses_total.append(0.0)
+            train_loss = train_loss + regression_loss
 
+            regression_losses_total.append(regression_loss.item())
             duration_losses_total.append(duration_loss.item())
             pitch_losses_total.append(pitch_loss.item())
             energy_losses_total.append(energy_loss.item())
@@ -199,10 +196,7 @@ def train_loop(net,
 
                     print(f"\nEpoch:                  {epoch}")
                     print(f"Time elapsed:           {round((time.time() - start_time) / 60)} Minutes")
-                    if not run_glow:
-                        print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
-                    else:
-                        print("Flow Loss:    {}".format(round(sum(glow_losses_total) / len(glow_losses_total), 3)))
+                    print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
                     print(f"Steps:                  {step_counter}\n")
 
                     if use_wandb:

@@ -222,8 +222,7 @@ def train_loop(net,
             print("One of the losses turned to NaN! Skipping this batch ...")
             continue
 
-        if not run_glow:
-            train_loss = train_loss + regression_loss
+        train_loss = train_loss + regression_loss
         train_loss = train_loss + duration_loss
         train_loss = train_loss + pitch_loss
         train_loss = train_loss + energy_loss
@@ -239,10 +238,7 @@ def train_loop(net,
         else:
             glow_losses_total.append(0)
 
-        if not run_glow:
-            regression_losses_total.append(regression_loss.item())
-        else:
-            regression_losses_total.append(0.0)
+        regression_losses_total.append(regression_loss.item())
         duration_losses_total.append(duration_loss.item())
         pitch_losses_total.append(pitch_loss.item())
         energy_losses_total.append(energy_loss.item())
@@ -269,10 +265,7 @@ def train_loop(net,
             if rank == 0:
                 net.eval()
                 default_embedding = datasets[0][0][9].to(device)
-                if not run_glow:
-                    print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
-                else:
-                    print("Flow Loss:    {}".format(round(sum(glow_losses_total) / len(glow_losses_total), 3)))
+                print("Reconstruction Loss:    {}".format(round(sum(regression_losses_total) / len(regression_losses_total), 3)))
 
                 print("Steps:                  {}\n".format(step_counter))
                 torch.save({
