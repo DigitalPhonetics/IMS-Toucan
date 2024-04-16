@@ -20,33 +20,23 @@ from Utility.utils import make_pad_mask
 
 class ToucanTTS(torch.nn.Module):
     """
-    ToucanTTS module, which is mostly just a FastSpeech 2 module,
+    ToucanTTS module, which is based on a FastSpeech 2 module,
     but with lots of designs from different architectures accumulated
-    and some major components added to put a large focus on multilinguality.
-
-    Original contributions:
-    - Inputs are configurations of the articulatory tract
-    - Word boundaries are modeled explicitly in the encoder end removed before the decoder
-    - Speaker embedding conditioning is derived from GST and Adaspeech 4
-    - Responsiveness of variance predictors to utterance embedding is increased through conditional layer norm
-    - The final output receives a GAN discriminator feedback signal
+    and some major components added to put a large focus on
+    multilinguality and controllability.
 
     Contributions inspired from elsewhere:
-    - The PostNet is also a normalizing flow, like in PortaSpeech
+    - The Decoder is a flow matching network, like in Matcha-TTS and StableTTS
     - Pitch and energy values are averaged per-phone, as in FastPitch to enable great controllability
     - The encoder and decoder are Conformers
 
-    Things that were tried, but showed inferior performance so far:
-    - Stochastic Duration Prediction
-    - Stochastic Pitch Prediction
-    - Stochastic Energy prediction
     """
 
     def __init__(self,
                  # network structure related
                  input_feature_dimensions=62,
                  spec_channels=128,
-                 attention_dimension=192,
+                 attention_dimension=256,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,

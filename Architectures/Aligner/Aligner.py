@@ -89,7 +89,8 @@ class Aligner(torch.nn.Module):
 
         # run monotonic alignment search
 
-        alignment_matrix = binarize_alignment(pred_max)
+        # alignment_matrix = binarize_alignment(pred_max)
+        alignment_matrix = pred_max
 
         if save_img_for_debug is not None:
             phones = list()
@@ -149,16 +150,3 @@ def binarize_alignment(alignment_prob):
         curr_text_idx = prev_ind[i, curr_text_idx]
     opt[0, curr_text_idx] = 1
     return opt
-
-
-if __name__ == '__main__':
-    tf = ArticulatoryCombinedTextFrontend(language="eng")
-    from Preprocessing.HiFiCodecAudioPreprocessor import CodecAudioPreprocessor
-
-    cap = CodecAudioPreprocessor(input_sr=-1)
-    dummy_codebook_indexes = torch.randint(low=0, high=1023, size=[9, 20])
-    codebook_frames = cap.indexes_to_codec_frames(dummy_codebook_indexes)
-    alignment = Aligner().inference(codebook_frames.transpose(0, 1), tokens=tf.string_to_tensor("Hello world"))
-    print(alignment.shape)
-    plt.imshow(alignment, origin="lower", cmap="GnBu")
-    plt.show()

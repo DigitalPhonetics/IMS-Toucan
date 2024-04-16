@@ -22,7 +22,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
 
     print("Preparing")
 
-    datasets = list()
+    datasets = list()  # TODO clean dataset selection for a final clean aligner training
 
     lang_id = "afr"
     datasets.append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_nchlt_afr(),
