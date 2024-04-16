@@ -368,9 +368,9 @@ class ToucanTTS(torch.nn.Module):
             # predicting pitch, energy and durations
             pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
-            energy_predictions = self.energy_predictor(encoded_texts + pitch_predictions, padding_mask=None, utt_embed=utterance_embedding)
+            energy_predictions = self.energy_predictor(encoded_texts + embedded_pitch_curve, padding_mask=None, utt_embed=utterance_embedding)
             embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
-            predicted_durations = self.duration_predictor.inference(encoded_texts + pitch_predictions + energy_predictions, padding_mask=None, utt_embed=utterance_embedding)
+            predicted_durations = self.duration_predictor.inference(encoded_texts + embedded_pitch_curve + embedded_energy_curve, padding_mask=None, utt_embed=utterance_embedding)
 
             # modifying the predictions
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
