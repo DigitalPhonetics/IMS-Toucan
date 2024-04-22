@@ -370,11 +370,20 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            pitch_loss, _ = self.pitch_predictor.compute_loss(mu=encoded_texts.transpose(1, 2).detach(), x1=gold_pitch.transpose(1, 2), mask=text_masks.float(), c=utterance_embedding)
+            pitch_loss, _ = self.pitch_predictor.compute_loss(mu=torchfunc.dropout(encoded_texts, p=0.3).transpose(1, 2),
+                                                              x1=gold_pitch.transpose(1, 2),
+                                                              mask=text_masks.float(),
+                                                              c=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            energy_loss, _ = self.energy_predictor.compute_loss(mu=(encoded_texts + embedded_pitch_curve).transpose(1, 2), x1=gold_energy.transpose(1, 2), mask=text_masks.float(), c=utterance_embedding)
+            energy_loss, _ = self.energy_predictor.compute_loss(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve), p=0.3).transpose(1, 2),
+                                                                x1=gold_energy.transpose(1, 2),
+                                                                mask=text_masks.float(),
+                                                                c=utterance_embedding)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            duration_loss, _ = self.duration_predictor.compute_loss(mu=(encoded_texts + embedded_pitch_curve + embedded_energy_curve).transpose(1, 2), x1=gold_durations.unsqueeze(-1).transpose(1, 2).float(), mask=text_masks.float(), c=utterance_embedding)
+            duration_loss, _ = self.duration_predictor.compute_loss(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.3).transpose(1, 2),
+                                                                    x1=gold_durations.unsqueeze(-1).transpose(1, 2).float(),
+                                                                    mask=text_masks.float(),
+                                                                    c=utterance_embedding)
 
             enriched_encoded_texts = encoded_texts + embedded_energy_curve + embedded_pitch_curve
 
