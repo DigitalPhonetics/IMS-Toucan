@@ -14,7 +14,6 @@ from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
 from Preprocessing.TextFrontend import get_language_id
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
-from Utility.utils import remove_elements
 
 
 class TTSDataset(Dataset):
@@ -108,14 +107,6 @@ class TTSDataset(Dataset):
         self.acoustic_model.load_state_dict(torch.load(acoustic_checkpoint_path, map_location="cpu")["asr_model"])
         self.acoustic_model = self.acoustic_model.to(device)
 
-        torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
-        # careful: assumes 16kHz or 8kHz audio
-        silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad', model='silero_vad', force_reload=False, onnx=False, verbose=False)
-        (get_speech_timestamps, save_audio, read_audio, VADIterator, collect_chunks) = utils
-        torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
-        # this to false globally during model loading rather than using inference_mode or no_grad
-        silero_model = silero_model.to(device)
-
         # ==========================================
         # actual creation of datapoints starts here
         # ==========================================
@@ -140,8 +131,6 @@ class TTSDataset(Dataset):
 
             text = self.dataset[index][0]
 
-            if annotate_silences:
-                text = self._annotate_silences(text, get_speech_timestamps, index, vis_dir, decoded_wave, device, features, silero_model, save_imgs, decoded_wave_length)
             cached_duration, ctc_loss = self._calculate_durations(text, index, os.path.join(vis_dir, "post_clean"), features, save_imgs)
 
             cached_energy = energy_calc(input_waves=torch.tensor(decoded_wave).unsqueeze(0).to(device),
@@ -192,63 +181,6 @@ class TTSDataset(Dataset):
             print("No datapoints were prepared! Exiting...")
             sys.exit()
         del self.dataset
-
-    def _annotate_silences(self, text, get_speech_timestamps, index, vis_dir, decoded_wave, device, features, silero_model, save_imgs, decoded_wave_length):
-        """
-        Takes in a text tensor and returns a text tensor with pauses added in all locations, where there are actually pauses in the speech signal. Unfortunately, this tends to make mistakes and not work quite as intended yet. I might revisit it in the future, if I see the need for extremely accurate labels for a small dataset of e.g. special data.
-        """
-        text_with_pauses = list()
-        for phoneme_index, vector in enumerate(text):
-            # We add pauses before every word boundary, and later we remove the ones that were added too much
-            if vector[get_feature_to_index_lookup()["word-boundary"]] == 1:
-                if text[phoneme_index - 1][get_feature_to_index_lookup()["silence"]] != 1:
-                    text_with_pauses.append([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.,
-                                             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                                             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
-                                             0., 0., 0., 0., 0., 0., 0., 0.])
-                text_with_pauses.append(vector.numpy().tolist())
-            else:
-                text_with_pauses.append(vector.numpy().tolist())
-        text = torch.Tensor(text_with_pauses)
-
-        cached_duration, _ = self._calculate_durations(text, index, os.path.join(vis_dir, "pre_clean"), features, save_imgs)
-
-        cumsum = 0
-        potential_silences = list()
-        phoneme_indexes_of_silences = list()
-        for phoneme_index, phone in enumerate(text):
-            if phone[get_feature_to_index_lookup()["silence"]] == 1 or phone[get_feature_to_index_lookup()["end of sentence"]] == 1 or phone[get_feature_to_index_lookup()["questionmark"]] == 1 or phone[get_feature_to_index_lookup()["exclamationmark"]] == 1 or phone[get_feature_to_index_lookup()["fullstop"]] == 1:
-                potential_silences.append([cumsum, cumsum + cached_duration[phoneme_index]])
-                phoneme_indexes_of_silences.append(phoneme_index)
-            cumsum = cumsum + cached_duration[phoneme_index]
-        with torch.inference_mode():
-            speech_timestamps = get_speech_timestamps(torch.Tensor(decoded_wave).to(device), silero_model, sampling_rate=16000)
-        vad_silences = list()
-        prev_end = 0
-        for speech_segment in speech_timestamps:
-            if prev_end != 0:
-                vad_silences.append([prev_end, speech_segment["start"]])
-            prev_end = speech_segment["end"]
-        # at this point we know all the silences and we know the legal silences.
-        # We have to transform them both into ratios, so we can compare them.
-        # If a silence overlaps with a legal silence, it can stay.
-        illegal_silences = list()
-        for silence_index, silence in enumerate(potential_silences):
-            illegal = True
-            start = silence[0] / len(features)
-            end = silence[1] / len(features)
-            for legal_silence in vad_silences:
-                legal_start = legal_silence[0] / decoded_wave_length
-                legal_end = legal_silence[1] / decoded_wave_length
-                if legal_start < start < legal_end or legal_start < end < legal_end:
-                    illegal = False
-                    break
-            if illegal:
-                # If it is an illegal silence, it is marked for removal in the original wave according to ration with real samplingrate.
-                illegal_silences.append(phoneme_indexes_of_silences[silence_index])
-
-        text = remove_elements(text, illegal_silences)  # now we have all the silences where there should be silences and none where there shouldn't be any. We have to run the aligner again with this new information.
-        return text
 
     def _calculate_durations(self, text, index, vis_dir, features, save_imgs):
         # We deal with the word boundaries by having 2 versions of text: with and without word boundaries.
