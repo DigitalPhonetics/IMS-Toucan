@@ -167,6 +167,7 @@ class CodecAlignerDataset(Dataset):
         assumed_sr = sr
         ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
         resample = Resample(orig_freq=assumed_sr, new_freq=16000).to(device)
+        silence = torch.zeros([16000 // 4], device=device)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
@@ -194,6 +195,7 @@ class CodecAlignerDataset(Dataset):
                 if verbose:
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
+            norm_wave = torch.cat([silence, norm_wave, silence])
 
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
