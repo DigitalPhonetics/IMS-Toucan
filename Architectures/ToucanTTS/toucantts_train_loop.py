@@ -70,7 +70,7 @@ def train_loop(net,
     batch_sampler_train = torch.utils.data.BatchSampler(train_sampler, batch_size, drop_last=True)
     train_loader = DataLoader(dataset=train_dataset,
                               batch_sampler=batch_sampler_train,
-                              num_workers=0,
+                              num_workers=0,  # has to be 0, otherwise copies of the dataset are created, which is not feasible for large scale trainings. This is not optimal for small trainings, but necessary for scalability.
                               pin_memory=True,
                               prefetch_factor=None,
                               collate_fn=collate_and_pad)
@@ -117,7 +117,7 @@ def train_loop(net,
             gold_energy = batch[5].to(device)  # mind the switched order
             lang_ids = batch[8].squeeze(1).to(device)
 
-            speech_batch = list()  # TODO revisit this. I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
+            speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
             for speech_sample in speech_indexes:
                 with torch.inference_mode():
                     wave = ap.indexes_to_audio(speech_sample.int().to(device)).detach()
