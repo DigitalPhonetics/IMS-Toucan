@@ -72,6 +72,7 @@ class ToucanTTS(torch.nn.Module):
         embedding_integration = config.embedding_integration
         lang_emb_size = config.lang_emb_size
         integrate_language_embedding_into_encoder_out = config.integrate_language_embedding_into_encoder_out
+        prosody_channels = config.prosody_channels
 
         self.input_feature_dimensions = input_feature_dimensions
         self.attention_dimension = attention_dimension
@@ -112,27 +113,27 @@ class ToucanTTS(torch.nn.Module):
             else:
                 self.language_embedding_infusion = torch.nn.Linear(attention_dimension + lang_emb_size, attention_dimension)
 
-        self.duration_predictor = CFMDecoder(hidden_channels=attention_dimension,
+        self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                              out_channels=1,
-                                             filter_channels=attention_dimension,
+                                             filter_channels=prosody_channels,
                                              n_heads=1,
                                              n_layers=duration_predictor_layers,
                                              kernel_size=duration_predictor_kernel_size,
                                              p_dropout=duration_predictor_dropout_rate,
                                              gin_channels=utt_embed_dim)
 
-        self.pitch_predictor = CFMDecoder(hidden_channels=attention_dimension,
+        self.pitch_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                           out_channels=1,
-                                          filter_channels=attention_dimension,
+                                          filter_channels=prosody_channels,
                                           n_heads=1,
                                           n_layers=pitch_predictor_layers,
                                           kernel_size=pitch_predictor_kernel_size,
                                           p_dropout=pitch_predictor_dropout,
                                           gin_channels=utt_embed_dim)
 
-        self.energy_predictor = CFMDecoder(hidden_channels=attention_dimension,
+        self.energy_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                            out_channels=1,
-                                           filter_channels=attention_dimension,
+                                           filter_channels=prosody_channels,
                                            n_heads=1,
                                            n_layers=energy_predictor_layers,
                                            kernel_size=energy_predictor_kernel_size,
@@ -174,6 +175,9 @@ class ToucanTTS(torch.nn.Module):
 
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
+        self.pitch_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+        self.energy_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+        self.duration_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
 
         self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels,
                                                 out_channels=spec_channels,
@@ -217,16 +221,18 @@ class ToucanTTS(torch.nn.Module):
             encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations
-
-        pitch_predictions = self.pitch_predictor(mu=torchfunc.dropout(encoded_texts, p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_pitch is None else gold_pitch
+        reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.2).transpose(1, 2)
+        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_pitch is None else gold_pitch
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
-        energy_predictions = self.energy_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_energy is None else gold_energy
+        reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.2).transpose(1, 2)
+        energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_energy is None else gold_energy
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
         embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
-        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding)), min=0.0).long().squeeze(
+        reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.2).transpose(1, 2)
+        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding)), min=0.0).long().squeeze(
             1) if gold_durations is None else gold_durations
 
         # modifying the predictions with control parameters

@@ -34,7 +34,7 @@ class ToucanTTS(torch.nn.Module):
                  # network structure related
                  input_feature_dimensions=62,
                  spec_channels=128,
-                 attention_dimension=256,
+                 attention_dimension=192,
                  attention_heads=4,
                  positionwise_conv_kernel_size=1,
                  use_scaled_positional_encoding=True,
@@ -63,6 +63,7 @@ class ToucanTTS(torch.nn.Module):
                  transformer_dec_attn_dropout_rate=0.1,
 
                  # duration predictor
+                 prosody_channels=8,
                  duration_predictor_layers=2,
                  duration_predictor_kernel_size=3,
                  duration_predictor_dropout_rate=0.2,
@@ -137,6 +138,7 @@ class ToucanTTS(torch.nn.Module):
             "energy_embed_dropout"                         : energy_embed_dropout,
             "spec_channels"                                : spec_channels,
             "cfm_filter_channels"                          : cfm_filter_channels,
+            "prosody_channels"                             : prosody_channels,
             "cfm_heads"                                    : cfm_heads,
             "cfm_layers"                                   : cfm_layers,
             "cfm_kernel_size"                              : cfm_kernel_size,
@@ -221,6 +223,9 @@ class ToucanTTS(torch.nn.Module):
         # due to the nature of the residual vector quantization, we have to predict the codebooks in a hierarchical way.
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
+        self.pitch_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+        self.energy_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
+        self.duration_latent_reduction = torch.nn.Linear(attention_dimension, prosody_channels)
 
         # initialize parameters
         self._reset_parameters(init_type=init_type)
@@ -229,27 +234,27 @@ class ToucanTTS(torch.nn.Module):
 
         # the following modules have their own init function, so they come AFTER the init.
 
-        self.duration_predictor = CFMDecoder(hidden_channels=attention_dimension,
+        self.duration_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                              out_channels=1,
-                                             filter_channels=attention_dimension,
+                                             filter_channels=prosody_channels,
                                              n_heads=1,
                                              n_layers=duration_predictor_layers,
                                              kernel_size=duration_predictor_kernel_size,
                                              p_dropout=duration_predictor_dropout_rate,
                                              gin_channels=utt_embed_dim)
 
-        self.pitch_predictor = CFMDecoder(hidden_channels=attention_dimension,
+        self.pitch_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                           out_channels=1,
-                                          filter_channels=attention_dimension,
+                                          filter_channels=prosody_channels,
                                           n_heads=1,
                                           n_layers=pitch_predictor_layers,
                                           kernel_size=pitch_predictor_kernel_size,
                                           p_dropout=pitch_predictor_dropout,
                                           gin_channels=utt_embed_dim)
 
-        self.energy_predictor = CFMDecoder(hidden_channels=attention_dimension,
+        self.energy_predictor = CFMDecoder(hidden_channels=prosody_channels,
                                            out_channels=1,
-                                           filter_channels=attention_dimension,
+                                           filter_channels=prosody_channels,
                                            n_heads=1,
                                            n_layers=energy_predictor_layers,
                                            kernel_size=energy_predictor_kernel_size,
@@ -350,11 +355,16 @@ class ToucanTTS(torch.nn.Module):
 
         if is_inference:
             # predicting pitch, energy and durations
-            pitch_predictions = self.pitch_predictor(mu=torchfunc.dropout(encoded_texts, p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.2).transpose(1, 2)
+            pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
-            energy_predictions = self.energy_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+
+            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.2).transpose(1, 2)
+            energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
-            predicted_durations = self.duration_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
+
+            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.2).transpose(1, 2)
+            predicted_durations = self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
 
             # modifying the predictions
@@ -370,17 +380,22 @@ class ToucanTTS(torch.nn.Module):
 
         else:
             # training with teacher forcing
-            pitch_loss, _ = self.pitch_predictor.compute_loss(mu=torchfunc.dropout(encoded_texts, p=0.3).transpose(1, 2),
+            reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.2).transpose(1, 2)
+            pitch_loss, _ = self.pitch_predictor.compute_loss(mu=reduced_pitch_space,
                                                               x1=gold_pitch.transpose(1, 2),
                                                               mask=text_masks.float(),
                                                               c=utterance_embedding)
             embedded_pitch_curve = self.pitch_embed(gold_pitch.transpose(1, 2)).transpose(1, 2)
-            energy_loss, _ = self.energy_predictor.compute_loss(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve), p=0.3).transpose(1, 2),
+
+            reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.2).transpose(1, 2)
+            energy_loss, _ = self.energy_predictor.compute_loss(mu=reduced_energy_space,
                                                                 x1=gold_energy.transpose(1, 2),
                                                                 mask=text_masks.float(),
                                                                 c=utterance_embedding)
             embedded_energy_curve = self.energy_embed(gold_energy.transpose(1, 2)).transpose(1, 2)
-            duration_loss, _ = self.duration_predictor.compute_loss(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.3).transpose(1, 2),
+
+            reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.2).transpose(1, 2)
+            duration_loss, _ = self.duration_predictor.compute_loss(mu=reduced_duration_space,
                                                                     x1=gold_durations.unsqueeze(-1).transpose(1, 2).float(),
                                                                     mask=text_masks.float(),
                                                                     c=utterance_embedding)
