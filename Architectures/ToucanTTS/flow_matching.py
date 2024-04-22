@@ -53,7 +53,7 @@ class CFMDecoder(torch.nn.Module):
         """
         size = list(mu.size())
         size[1] = self.out_channels
-        z = torch.randn(size=size) * temperature
+        z = torch.randn(size=size).to(mu.device) * temperature
         t_span = torch.linspace(0, 1, n_timesteps + 1, device=mu.device)
         return self.solve_euler(z, t_span=t_span, mu=mu, mask=mask, c=c)
 
