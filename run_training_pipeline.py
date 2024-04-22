@@ -7,7 +7,6 @@ import torch
 
 from TrainingPipelines.AlignerPipeline import run as aligner
 from TrainingPipelines.HiFiGAN_combined import run as HiFiGAN
-from TrainingPipelines.StochasticToucanTTS_Nancy import run as nancystoch
 from TrainingPipelines.ToucanTTS_IntegrationTest import run as tt_integration_test
 from TrainingPipelines.ToucanTTS_MLS_English import run as mls
 from TrainingPipelines.ToucanTTS_Massive_stage1 import run as stage1
@@ -26,7 +25,6 @@ pipeline_dict = {
     # regular ToucanTTS pipelines
     "nancy"                          : nancy,
     "mls"                            : mls,
-    "nancystoch"                     : nancystoch,
     "meta"                           : meta,
     "stage1"                         : stage1,
     "stage2"                         : stage2,
