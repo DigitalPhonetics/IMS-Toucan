@@ -175,7 +175,7 @@ class ToucanTTS(torch.nn.Module):
         self.output_projection = torch.nn.Linear(attention_dimension, spec_channels)
         self.cfm_projection = torch.nn.Linear(attention_dimension, spec_channels)
 
-        self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels * 2,
+        self.flow_matching_decoder = CFMDecoder(hidden_channels=spec_channels,
                                                 out_channels=spec_channels,
                                                 filter_channels=cfm_filter_channels,
                                                 n_heads=cfm_heads,
