@@ -8,7 +8,7 @@ from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
 from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
-from Architectures.ToucanTTS.StochasticToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
+from Architectures.ToucanTTS.StochasticToucanTTSLoss import StochasticToucanTTSLoss
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import initialize
@@ -26,7 +26,7 @@ class ToucanTTS(torch.nn.Module):
     Contributions inspired from elsewhere:
     - The Decoder is a flow matching network, like in Matcha-TTS and StableTTS
     - Pitch and energy values are averaged per-phone, as in FastPitch to enable great controllability
-    - The encoder and decoder are Conformers
+    - The encoder and decoder are Conformers, like in ESPnet
 
     """
 
@@ -355,7 +355,7 @@ class ToucanTTS(torch.nn.Module):
             energy_predictions = self.energy_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
             embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
             predicted_durations = self.duration_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=1.0, c=utterance_embedding)
-            predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().transpose(1, 2)
+            predicted_durations = torch.clamp(torch.ceil(predicted_durations), min=0.0).long().squeeze(1)
 
             # modifying the predictions
             for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
@@ -366,7 +366,7 @@ class ToucanTTS(torch.nn.Module):
             enriched_encoded_texts = encoded_texts + embedded_pitch_curve + embedded_energy_curve
 
             # predicting durations for text and upsampling accordingly
-            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations.squeeze(-1))
+            upsampled_enriched_encoded_texts = self.length_regulator(enriched_encoded_texts, predicted_durations)
 
         else:
             # training with teacher forcing

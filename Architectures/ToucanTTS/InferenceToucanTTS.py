@@ -1,5 +1,6 @@
 import dotwiz
 import torch
+import torch.nn.functional as torchfunc
 from torch.nn import Linear
 from torch.nn import Sequential
 from torch.nn import Tanh
@@ -7,9 +8,7 @@ from torch.nn import Tanh
 from Architectures.GeneralLayers.ConditionalLayerNorm import AdaIN1d
 from Architectures.GeneralLayers.ConditionalLayerNorm import ConditionalLayerNorm
 from Architectures.GeneralLayers.Conformer import Conformer
-from Architectures.GeneralLayers.DurationPredictor import DurationPredictor
 from Architectures.GeneralLayers.LengthRegulator import LengthRegulator
-from Architectures.GeneralLayers.VariancePredictor import VariancePredictor
 from Architectures.ToucanTTS.flow_matching import CFMDecoder
 from Preprocessing.articulatory_features import get_feature_to_index_lookup
 from Utility.utils import integrate_with_utt_embed
@@ -113,29 +112,32 @@ class ToucanTTS(torch.nn.Module):
             else:
                 self.language_embedding_infusion = torch.nn.Linear(attention_dimension + lang_emb_size, attention_dimension)
 
-        self.duration_predictor = DurationPredictor(idim=attention_dimension,
-                                                    n_layers=duration_predictor_layers,
-                                                    n_chans=attention_dimension,
-                                                    kernel_size=duration_predictor_kernel_size,
-                                                    dropout_rate=duration_predictor_dropout_rate,
-                                                    utt_embed_dim=utt_embed_dim,
-                                                    embedding_integration=embedding_integration)
+        self.duration_predictor = CFMDecoder(hidden_channels=attention_dimension,
+                                             out_channels=1,
+                                             filter_channels=attention_dimension,
+                                             n_heads=1,
+                                             n_layers=duration_predictor_layers,
+                                             kernel_size=duration_predictor_kernel_size,
+                                             p_dropout=duration_predictor_dropout_rate,
+                                             gin_channels=utt_embed_dim)
 
-        self.pitch_predictor = VariancePredictor(idim=attention_dimension,
-                                                 n_layers=pitch_predictor_layers,
-                                                 n_chans=attention_dimension,
-                                                 kernel_size=pitch_predictor_kernel_size,
-                                                 dropout_rate=pitch_predictor_dropout,
-                                                 utt_embed_dim=utt_embed_dim,
-                                                 embedding_integration=embedding_integration)
+        self.pitch_predictor = CFMDecoder(hidden_channels=attention_dimension,
+                                          out_channels=1,
+                                          filter_channels=attention_dimension,
+                                          n_heads=1,
+                                          n_layers=pitch_predictor_layers,
+                                          kernel_size=pitch_predictor_kernel_size,
+                                          p_dropout=pitch_predictor_dropout,
+                                          gin_channels=utt_embed_dim)
 
-        self.energy_predictor = VariancePredictor(idim=attention_dimension,
-                                                  n_layers=energy_predictor_layers,
-                                                  n_chans=attention_dimension,
-                                                  kernel_size=energy_predictor_kernel_size,
-                                                  dropout_rate=energy_predictor_dropout,
-                                                  utt_embed_dim=utt_embed_dim,
-                                                  embedding_integration=embedding_integration)
+        self.energy_predictor = CFMDecoder(hidden_channels=attention_dimension,
+                                           out_channels=1,
+                                           filter_channels=attention_dimension,
+                                           n_heads=1,
+                                           n_layers=energy_predictor_layers,
+                                           kernel_size=energy_predictor_kernel_size,
+                                           p_dropout=energy_predictor_dropout,
+                                           gin_channels=utt_embed_dim)
 
         self.pitch_embed = Sequential(torch.nn.Conv1d(in_channels=1,
                                                       out_channels=attention_dimension,
@@ -215,17 +217,17 @@ class ToucanTTS(torch.nn.Module):
             encoded_texts = integrate_with_utt_embed(hs=encoded_texts, utt_embeddings=lang_embs, projection=self.language_embedding_infusion, embedding_training=self.use_conditional_layernorm_embedding_integration)
 
         # predicting pitch, energy and durations
-        pitch_predictions = self.pitch_predictor(encoded_texts, padding_mask=None, utt_embed=utterance_embedding) if gold_pitch is None else gold_pitch
-        pitch_predictions = make_near_zero_to_zero(pitch_predictions.squeeze(0)).unsqueeze(0)
+
+        pitch_predictions = self.pitch_predictor(mu=torchfunc.dropout(encoded_texts, p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_pitch is None else gold_pitch
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
-        embedded_pitch_curve = self.pitch_embed(pitch_predictions.transpose(1, 2)).transpose(1, 2)
+        embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
-        energy_predictions = self.energy_predictor(encoded_texts + embedded_pitch_curve, padding_mask=None, utt_embed=utterance_embedding) if gold_energy is None else gold_energy
-        energy_predictions = make_near_zero_to_zero(energy_predictions.squeeze(0)).unsqueeze(0)
+        energy_predictions = self.energy_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_energy is None else gold_energy
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
-        embedded_energy_curve = self.energy_embed(energy_predictions.transpose(1, 2)).transpose(1, 2)
+        embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
-        predicted_durations = self.duration_predictor.inference(encoded_texts + embedded_pitch_curve + embedded_energy_curve, padding_mask=None, utt_embed=utterance_embedding) if gold_durations is None else gold_durations
+        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=torchfunc.dropout((encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.3).transpose(1, 2), mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding)), min=0.0).long().squeeze(
+            1) if gold_durations is None else gold_durations
 
         # modifying the predictions with control parameters
         for phoneme_index, phoneme_vector in enumerate(text_tensors.squeeze(0)):
@@ -309,19 +311,19 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.to(text.device)
 
         outs, \
-        predicted_durations, \
-        pitch_predictions, \
-        energy_predictions = self._forward(text.unsqueeze(0),
-                                           text_length,
-                                           gold_durations=durations,
-                                           gold_pitch=pitch,
-                                           gold_energy=energy,
-                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                           duration_scaling_factor=duration_scaling_factor,
-                                           pitch_variance_scale=pitch_variance_scale,
-                                           energy_variance_scale=energy_variance_scale,
-                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                           glow_sampling_temperature=glow_sampling_temperature)
+            predicted_durations, \
+            pitch_predictions, \
+            energy_predictions = self._forward(text.unsqueeze(0),
+                                               text_length,
+                                               gold_durations=durations,
+                                               gold_pitch=pitch,
+                                               gold_energy=energy,
+                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                               duration_scaling_factor=duration_scaling_factor,
+                                               pitch_variance_scale=pitch_variance_scale,
+                                               energy_variance_scale=energy_variance_scale,
+                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                               glow_sampling_temperature=glow_sampling_temperature)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions

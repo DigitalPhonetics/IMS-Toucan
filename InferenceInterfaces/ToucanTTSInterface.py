@@ -119,7 +119,7 @@ class ToucanTTSInterface(torch.nn.Module):
                 input_is_phones=False,
                 return_plot_as_filepath=False,
                 loudness_in_db=-24.0,
-                glow_sampling_temperature=0.2):
+                glow_sampling_temperature=0.7):
         """
         duration_scaling_factor: reasonable values are 0.8 < scale < 1.2.
                                      1.0 means no scaling happens, higher values increase durations for the whole
@@ -215,7 +215,7 @@ class ToucanTTSInterface(torch.nn.Module):
                      dur_list=None,
                      pitch_list=None,
                      energy_list=None,
-                     glow_sampling_temperature=0.2):
+                     glow_sampling_temperature=0.7):
         """
         Args:
             silent: Whether to be verbose about the process
@@ -266,7 +266,7 @@ class ToucanTTSInterface(torch.nn.Module):
                    pitch_variance_scale=1.0,
                    energy_variance_scale=1.0,
                    blocking=False,
-                   glow_sampling_temperature=0.2):
+                   glow_sampling_temperature=0.7):
         if text.strip() == "":
             return
         wav, sr = self(text,

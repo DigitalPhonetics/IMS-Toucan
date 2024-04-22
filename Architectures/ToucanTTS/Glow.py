@@ -339,7 +339,7 @@ class Glow(nn.Module):
                     use_weightnorm=use_weightnorm
                 ))
 
-    def forward(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, glow_sampling_temperature=0.2):
+    def forward(self, tgt_mels, infer, mel_out, encoded_texts, tgt_nonpadding, glow_sampling_temperature=0.7):
         x_recon = mel_out.transpose(1, 2)
         g = x_recon
         B, _, T = g.shape
