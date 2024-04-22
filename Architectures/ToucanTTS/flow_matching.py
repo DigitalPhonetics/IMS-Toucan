@@ -51,7 +51,9 @@ class CFMDecoder(torch.nn.Module):
             sample: generated mel-spectrogram
                 shape: (batch_size, n_feats, mel_timesteps)
         """
-        z = torch.randn_like(mu) * temperature
+        size = list(mu.size())
+        size[1] = self.out_channels
+        z = torch.randn(size=size) * temperature
         t_span = torch.linspace(0, 1, n_timesteps + 1, device=mu.device)
         return self.solve_euler(z, t_span=t_span, mu=mu, mask=mask, c=c)
 
@@ -71,11 +73,10 @@ class CFMDecoder(torch.nn.Module):
         """
         t, _, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 
-        # I am storing this because I can later plot it by putting a debugger here and saving it to a file
-        # Or in future might add like a return_all_steps flag
         sol = []
 
         for step in range(1, len(t_span)):
+
             dphi_dt = self.estimator(x, mask, mu, t, c)
 
             x = x + dt * dphi_dt
@@ -116,9 +117,9 @@ class CFMDecoder(torch.nn.Module):
         y = (1 - (1 - self.sigma_min) * t) * z + t * x1
         u = x1 - (1 - self.sigma_min) * z
 
-        loss = F.mse_loss(self.estimator(y, mask, mu, t.squeeze(), c), u, reduction="sum") / (
-                torch.sum(mask) * u.shape[1]
-        )
+        loss = F.mse_loss(self.estimator(y, mask, mu, t.squeeze(), c),
+                          u,
+                          reduction="sum") / (torch.sum(mask) * u.shape[1])
         return loss, y
 
 

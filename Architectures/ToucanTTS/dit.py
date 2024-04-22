@@ -95,16 +95,16 @@ class DiTConVBlock(nn.Module):
     A DiT block with adaptive layer norm zero (adaLN-Zero) conditioning.
     """
 
-    def __init__(self, hidden_channels, filter_channels, num_heads, kernel_size=3, p_dropout=0.1, gin_channels=0):
+    def __init__(self, hidden_channels, out_channels, filter_channels, num_heads, kernel_size=3, p_dropout=0.1, gin_channels=0):
         super().__init__()
-        self.norm1 = nn.LayerNorm(hidden_channels, elementwise_affine=False, eps=1e-6)
-        self.attn = MultiHeadAttention(hidden_channels, hidden_channels, num_heads, p_dropout)
-        self.norm2 = nn.LayerNorm(hidden_channels, elementwise_affine=False, eps=1e-6)
-        self.mlp = FFN(hidden_channels, hidden_channels, filter_channels, kernel_size, p_dropout=p_dropout)
+        self.norm1 = nn.LayerNorm(hidden_channels + out_channels, elementwise_affine=False, eps=1e-6)
+        self.attn = MultiHeadAttention(hidden_channels + out_channels, hidden_channels + out_channels, num_heads, p_dropout)
+        self.norm2 = nn.LayerNorm(hidden_channels + out_channels, elementwise_affine=False, eps=1e-6)
+        self.mlp = FFN(hidden_channels + out_channels, hidden_channels + out_channels, filter_channels, kernel_size, p_dropout=p_dropout)
         self.adaLN_modulation = nn.Sequential(
-            nn.Linear(gin_channels, hidden_channels) if gin_channels != hidden_channels else nn.Identity(),
+            nn.Linear(gin_channels, hidden_channels + out_channels) if gin_channels != hidden_channels + out_channels else nn.Identity(),
             nn.SiLU(),
-            nn.Linear(hidden_channels, 6 * hidden_channels, bias=True)
+            nn.Linear(hidden_channels + out_channels, 6 * (hidden_channels + out_channels), bias=True)
         )
 
     def forward(self, x, c, x_mask):
@@ -122,7 +122,7 @@ class DiTConVBlock(nn.Module):
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).unsqueeze(2).chunk(6, dim=1)  # shape: [batch_size, channel, 1]
         x = x + gate_msa * self.attn(self.modulate(self.norm1(x.transpose(1, 2)).transpose(1, 2), shift_msa, scale_msa), attn_mask) * x_mask
         # x = x.masked_fill(~x_mask, 0.0)
-        x = x + gate_mlp * self.mlp(self.modulate(self.norm2(x.transpose(1, 2)).transpose(1, 2), shift_mlp, scale_mlp), x_mask)
+        x = x + gate_mlp * self.mlp(self.modulate(self.norm2(x.transpose(1, 2)).transpose(1, 2), shift_mlp, scale_mlp), x_mask) * x_mask
 
         # no condition version
         # x = x + self.attn(self.norm1(x.transpose(1,2)).transpose(1,2),  attn_mask)

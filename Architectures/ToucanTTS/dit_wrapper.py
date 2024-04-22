@@ -17,13 +17,13 @@ from Architectures.ToucanTTS.dit import DiTConVBlock
 class DitWrapper(nn.Module):
     """ add FiLM layer to condition time embedding to DiT """
 
-    def __init__(self, hidden_channels, filter_channels, num_heads, kernel_size=3, p_dropout=0.1, gin_channels=0, time_channels=0):
+    def __init__(self, hidden_channels, out_channels, filter_channels, num_heads, kernel_size=3, p_dropout=0.1, gin_channels=0, time_channels=0):
         super().__init__()
-        self.time_fusion = FiLMLayer(hidden_channels, time_channels)
-        self.conv1 = ConvNeXtBlock(hidden_channels, filter_channels, gin_channels)
-        self.conv2 = ConvNeXtBlock(hidden_channels, filter_channels, gin_channels)
-        self.conv3 = ConvNeXtBlock(hidden_channels, filter_channels, gin_channels)
-        self.block = DiTConVBlock(hidden_channels, hidden_channels, num_heads, kernel_size, p_dropout, gin_channels)
+        self.time_fusion = FiLMLayer(hidden_channels, out_channels, time_channels)
+        self.conv1 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
+        self.conv2 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
+        self.conv3 = ConvNeXtBlock(hidden_channels, out_channels, filter_channels, gin_channels)
+        self.block = DiTConVBlock(hidden_channels, out_channels, hidden_channels, num_heads, kernel_size, p_dropout, gin_channels)
 
     def forward(self, x, c, t, x_mask):
         x = self.time_fusion(x, t) * x_mask
@@ -40,10 +40,10 @@ class FiLMLayer(nn.Module):
     Reference: https://arxiv.org/abs/1709.07871
     """
 
-    def __init__(self, in_channels, cond_channels):
+    def __init__(self, in_channels, out_channels, cond_channels):
         super(FiLMLayer, self).__init__()
         self.in_channels = in_channels
-        self.film = nn.Conv1d(cond_channels, in_channels * 2, 1)
+        self.film = nn.Conv1d(cond_channels, (in_channels + out_channels) * 2, 1)
 
     def forward(self, x, c):
         gamma, beta = torch.chunk(self.film(c.unsqueeze(2)), chunks=2, dim=1)
@@ -51,13 +51,13 @@ class FiLMLayer(nn.Module):
 
 
 class ConvNeXtBlock(nn.Module):
-    def __init__(self, in_channels, filter_channels, gin_channels):
+    def __init__(self, in_channels, out_channels, filter_channels, gin_channels):
         super().__init__()
-        self.dwconv = nn.Conv1d(in_channels, in_channels, kernel_size=7, padding=3, groups=in_channels)
-        self.norm = StyleAdaptiveLayerNorm(in_channels, gin_channels)
-        self.pwconv = nn.Sequential(nn.Linear(in_channels, filter_channels),
+        self.dwconv = nn.Conv1d(in_channels + out_channels, in_channels + out_channels, kernel_size=7, padding=3, groups=in_channels + out_channels)
+        self.norm = StyleAdaptiveLayerNorm(in_channels + out_channels, gin_channels)
+        self.pwconv = nn.Sequential(nn.Linear(in_channels + out_channels, filter_channels),
                                     nn.GELU(),
-                                    nn.Linear(filter_channels, in_channels))
+                                    nn.Linear(filter_channels, in_channels + out_channels))
 
     def forward(self, x, c, x_mask) -> torch.Tensor:
         residual = x
@@ -136,8 +136,8 @@ class Decoder(nn.Module):
         self.time_embeddings = SinusoidalPosEmb(hidden_channels)
         self.time_mlp = TimestepEmbedding(hidden_channels, hidden_channels, filter_channels)
 
-        self.blocks = nn.ModuleList([DitWrapper(hidden_channels, filter_channels, n_heads, kernel_size, dropout, gin_channels, hidden_channels) for _ in range(n_layers)])
-        self.final_proj = nn.Conv1d(hidden_channels, out_channels, 1)
+        self.blocks = nn.ModuleList([DitWrapper(hidden_channels, out_channels, filter_channels, n_heads, kernel_size, dropout, gin_channels, hidden_channels) for _ in range(n_layers)])
+        self.final_proj = nn.Conv1d(hidden_channels + out_channels, out_channels, 1)
 
         self.initialize_weights()
 
@@ -163,6 +163,7 @@ class Decoder(nn.Module):
             _type_: _description_
         """
         t = self.time_mlp(self.time_embeddings(t))
+
         x = torch.cat((x, mu), dim=1)
 
         for block in self.blocks:
