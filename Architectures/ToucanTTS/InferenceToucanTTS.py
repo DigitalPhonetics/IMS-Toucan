@@ -202,7 +202,7 @@ class ToucanTTS(torch.nn.Module):
                  pitch_variance_scale=1.0,
                  energy_variance_scale=1.0,
                  pause_duration_scaling_factor=1.0,
-                 glow_sampling_temperature=0.7):
+                 prosody_creativity=0.7):
 
         if not self.multilingual_model:
             lang_ids = None
@@ -222,17 +222,17 @@ class ToucanTTS(torch.nn.Module):
 
         # predicting pitch, energy and durations
         reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.2).transpose(1, 2)
-        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_pitch is None else gold_pitch
+        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=10, temperature=prosody_creativity, c=utterance_embedding) if gold_pitch is None else gold_pitch
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
         reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.2).transpose(1, 2)
-        energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding) if gold_energy is None else gold_energy
+        energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=10, temperature=prosody_creativity, c=utterance_embedding) if gold_energy is None else gold_energy
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
         embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
         reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.2).transpose(1, 2)
-        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=glow_sampling_temperature, c=utterance_embedding)), min=0.0).long().squeeze(
+        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=10, temperature=prosody_creativity, c=utterance_embedding)), min=0.0).long().squeeze(
             1) if gold_durations is None else gold_durations
 
         # modifying the predictions with control parameters
@@ -259,7 +259,7 @@ class ToucanTTS(torch.nn.Module):
         refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                           mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
                                                           n_timesteps=15,
-                                                          temperature=glow_sampling_temperature,
+                                                          temperature=0.1,  # low temperature, so the model follows the specified prosody curves better.
                                                           c=utterance_embedding).transpose(1, 2)
 
         return refined_codec_frames, predicted_durations.squeeze(), pitch_predictions.squeeze(), energy_predictions.squeeze()
@@ -277,7 +277,7 @@ class ToucanTTS(torch.nn.Module):
                 pitch_variance_scale=1.0,
                 energy_variance_scale=1.0,
                 pause_duration_scaling_factor=1.0,
-                glow_sampling_temperature=0.7):
+                prosody_creativity=0.7):
         """
         Generate the sequence of spectrogram frames given the sequence of vectorized phonemes.
 
@@ -317,19 +317,19 @@ class ToucanTTS(torch.nn.Module):
             lang_id = lang_id.to(text.device)
 
         outs, \
-            predicted_durations, \
-            pitch_predictions, \
-            energy_predictions = self._forward(text.unsqueeze(0),
-                                               text_length,
-                                               gold_durations=durations,
-                                               gold_pitch=pitch,
-                                               gold_energy=energy,
-                                               utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
-                                               duration_scaling_factor=duration_scaling_factor,
-                                               pitch_variance_scale=pitch_variance_scale,
-                                               energy_variance_scale=energy_variance_scale,
-                                               pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                               glow_sampling_temperature=glow_sampling_temperature)
+        predicted_durations, \
+        pitch_predictions, \
+        energy_predictions = self._forward(text.unsqueeze(0),
+                                           text_length,
+                                           gold_durations=durations,
+                                           gold_pitch=pitch,
+                                           gold_energy=energy,
+                                           utterance_embedding=utterance_embedding.unsqueeze(0) if utterance_embedding is not None else None, lang_ids=lang_id,
+                                           duration_scaling_factor=duration_scaling_factor,
+                                           pitch_variance_scale=pitch_variance_scale,
+                                           energy_variance_scale=energy_variance_scale,
+                                           pause_duration_scaling_factor=pause_duration_scaling_factor,
+                                           prosody_creativity=prosody_creativity)
 
         if return_duration_pitch_energy:
             return outs.squeeze().transpose(0, 1), predicted_durations, pitch_predictions, energy_predictions
