@@ -53,7 +53,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    chunk_count = 50
+    chunk_count = 100
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_english(), split_n=chunk_count)
     for index in range(chunk_count):
         lang_to_datasets["eng"].append(prepare_tts_corpus(transcript_dict=chunks[index],
@@ -119,7 +119,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
-    chunk_count = 10
+    chunk_count = 20
     chunks = split_dictionary_into_chunks(build_path_to_transcript_dict_mls_german(), split_n=chunk_count)
     for index in range(chunk_count):
         lang_to_datasets["deu"].append(prepare_tts_corpus(transcript_dict=chunks[index],

@@ -1,35 +1,20 @@
 """
 taken and adapted from https://github.com/as-ideas/DeepForcedAligner
+
+refined with insights from https://www.audiolabs-erlangen.de/resources/NLUI/2023-ICASSP-eval-alignment-tts
+EVALUATING SPEECH–PHONEME ALIGNMENT AND ITS IMPACT ON NEURAL TEXT-TO-SPEECH SYNTHESIS
+by Frank Zalkow, Prachi Govalkar, Meinard Muller, Emanuel A. P. Habets, Christian Dittmar
 """
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.multiprocessing
-import torch.nn as nn
 from torch.nn import CTCLoss
 from torch.nn.utils.rnn import pack_padded_sequence
 from torch.nn.utils.rnn import pad_packed_sequence
 
 from Preprocessing.TextFrontend import ArticulatoryCombinedTextFrontend
-
-
-class BatchNormConv(nn.Module):
-
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int):
-        super().__init__()
-        self.conv = nn.Conv1d(
-            in_channels, out_channels, kernel_size,
-            stride=1, padding=kernel_size // 2, bias=False)
-        self.bnorm = nn.BatchNorm1d(out_channels)
-        self.relu = nn.ReLU()
-
-    def forward(self, x):
-        x = x.transpose(1, 2)
-        x = self.conv(x)
-        x = self.relu(x)
-        x = self.bnorm(x)
-        x = x.transpose(1, 2)
-        return x
+from Utility.utils import make_non_pad_mask
 
 
 class Aligner(torch.nn.Module):
@@ -37,38 +22,27 @@ class Aligner(torch.nn.Module):
     def __init__(self,
                  n_features=128,
                  num_symbols=145,
-                 lstm_dim=512,
-                 conv_dim=512):
+                 lstm_dim=256):
         super().__init__()
-        self.convs = nn.ModuleList([
-            BatchNormConv(n_features, conv_dim, 3),
-            nn.Dropout(p=0.5),
-            BatchNormConv(conv_dim, conv_dim, 3),
-            nn.Dropout(p=0.5),
-            BatchNormConv(conv_dim, conv_dim, 3),
-            nn.Dropout(p=0.5),
-            BatchNormConv(conv_dim, conv_dim, 3),
-            nn.Dropout(p=0.5),
-            BatchNormConv(conv_dim, conv_dim, 3),
-            nn.Dropout(p=0.5),
-        ])
-        self.rnn = torch.nn.LSTM(conv_dim, lstm_dim, batch_first=True, bidirectional=True)
+
+        self.rnn1 = torch.nn.LSTM(n_features, lstm_dim, batch_first=True, bidirectional=True)
+        self.rnn2 = torch.nn.LSTM(2 * lstm_dim, lstm_dim, batch_first=True, bidirectional=True)
         self.proj = torch.nn.Linear(2 * lstm_dim, num_symbols)
         self.tf = ArticulatoryCombinedTextFrontend(language="eng")
         self.ctc_loss = CTCLoss(blank=144, zero_infinity=True)
         self.vector_to_id = dict()
 
     def forward(self, x, lens=None):
-        for conv in self.convs:
-            x = conv(x)
-
         if lens is not None:
             x = pack_padded_sequence(x, lens.cpu(), batch_first=True, enforce_sorted=False)
-        x, _ = self.rnn(x)
+        x, _ = self.rnn1(x)
+        x, _ = self.rnn2(x)
         if lens is not None:
             x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.proj(x)
+        out_masks = make_non_pad_mask(lens).unsqueeze(-1).to(x.device)
+        x = x * out_masks.float()
 
         return x
 
@@ -88,9 +62,7 @@ class Aligner(torch.nn.Module):
         pred_max = pred[:, tokens]
 
         # run monotonic alignment search
-
-        # alignment_matrix = binarize_alignment(pred_max)
-        alignment_matrix = pred_max
+        alignment_matrix = binarize_alignment(pred_max)
 
         if save_img_for_debug is not None:
             phones = list()
@@ -114,7 +86,6 @@ class Aligner(torch.nn.Module):
         if return_ctc:
             return alignment_matrix, ctc_loss
         return alignment_matrix
-
 
 
 def binarize_alignment(alignment_prob):
@@ -150,3 +121,8 @@ def binarize_alignment(alignment_prob):
         curr_text_idx = prev_ind[i, curr_text_idx]
     opt[0, curr_text_idx] = 1
     return opt
+
+
+if __name__ == '__main__':
+    print(sum(p.numel() for p in Aligner().parameters() if p.requires_grad))
+    print(Aligner()(x=torch.randn(size=[3, 30, 128]), lens=torch.LongTensor([20, 30, 10])).shape)
