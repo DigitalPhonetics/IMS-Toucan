@@ -306,9 +306,13 @@ class ArticulatoryCombinedTextFrontend:
             self.phonemizer = "espeak"
 
         elif language == "jpn":
-            self.g2p_lang = "ja"  # Japanese
-            self.expand_abbreviations = lambda x: x
-            self.phonemizer = "espeak"
+            import pykakasi
+
+            self.kakasi = pykakasi.Kakasi()  # this is not a satisfactory solution, but it is the best one I could come up with so far.
+            self.expand_abbreviations = lambda x: " ".join([chunk["hepburn"] for chunk in self.kakasi.convert(x)])
+            self.g2p_lang = language
+            self.phonemizer = "transphone"
+            self.transphone = read_g2p()
 
         elif language == "kan":
             self.g2p_lang = "kn"  # Kannada
@@ -532,6 +536,7 @@ class ArticulatoryCombinedTextFrontend:
 
         else:
             # blanket solution for the rest
+            print("Using Transphone. A specialized phonemizer might work better.")
             self.g2p_lang = language
             self.phonemizer = "transphone"
             self.expand_abbreviations = lambda x: x
@@ -957,27 +962,27 @@ def load_json_from_path(path):
 
 
 if __name__ == '__main__':
+    print("\n\nEnglish Test")
     tf = ArticulatoryCombinedTextFrontend(language="eng")
     tf.string_to_tensor("This is a complex sentence, it even has a pause! But can it do this? Nice.", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="deu")
-    tf.string_to_tensor("Alles klar, jetzt testen wir einen deutschen Satz. Ich hoffe es gibt nicht mehr viele unspezifizierte Phoneme.", view=True)
-
+    print("\n\nChinese Test")
     tf = ArticulatoryCombinedTextFrontend(language="cmn")
     tf.string_to_tensor("这是一个复杂的句子，它甚至包含一个停顿。", view=True)
     tf.string_to_tensor("李绅 《悯农》 锄禾日当午， 汗滴禾下土。 谁知盘中餐， 粒粒皆辛苦。", view=True)
     tf.string_to_tensor("巴 拔 把 爸 吧", view=True)
 
+    print("\n\nVietnamese Test")
     tf = ArticulatoryCombinedTextFrontend(language="vie")
     tf.string_to_tensor("Xin chào thế giới, quả là một ngày tốt lành để học nói tiếng Việt!", view=True)
     tf.string_to_tensor("ba bà bá bạ bả bã", view=True)
 
-    tf = ArticulatoryCombinedTextFrontend(language="fra")
-    tf.string_to_tensor("Je ne te fais pas un dessin.", view=True)
-    print(tf.get_phone_string("Je ne te fais pas un dessin."))
+    print("\n\nJapanese Test")
+    tf = ArticulatoryCombinedTextFrontend(language="jpn")
+    tf.string_to_tensor("医師会がなくても、近隣の病院なら紹介してくれると思います。", view=True)
+    print(tf.get_phone_string("医師会がなくても、近隣の病院なら紹介してくれると思います。"))
 
+    print("\n\nZero-Shot Test")
     tf = ArticulatoryCombinedTextFrontend(language="acr")
-    tf.string_to_tensor("I don't know this language, but this is just a dummy anyway.", view=True)
-    print(tf.get_phone_string("I don't know this language, but this is just a dummy anyway."))
-
-    print(get_language_id("eng"))
+    tf.string_to_tensor("I don't know this language, but this is just a dummy text anyway.", view=True)
+    print(tf.get_phone_string("I don't know this language, but this is just a dummy text anyway."))

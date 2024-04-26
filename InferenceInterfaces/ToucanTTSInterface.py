@@ -1,6 +1,7 @@
 import itertools
 import os
 
+import librosa
 import matplotlib.pyplot as plt
 import pyloudnorm
 import sounddevice
@@ -88,6 +89,7 @@ class ToucanTTSInterface(torch.nn.Module):
             speaker_embs = list()
             for path in path_to_reference_audio:
                 wave, sr = soundfile.read(path)
+                wave = librosa.to_mono(wave)
                 wave = Resample(orig_freq=sr, new_freq=16000).to(self.device)(torch.tensor(wave, device=self.device, dtype=torch.float32))
                 speaker_embedding = self.speaker_embedding_func_ecapa.encode_batch(wavs=wave.to(self.device).unsqueeze(0)).squeeze()
                 speaker_embs.append(speaker_embedding)
