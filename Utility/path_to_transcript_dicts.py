@@ -1,6 +1,10 @@
 import glob
+import json
 import os
 import random
+import xml.etree.ElementTree as ET
+from csv import DictReader
+from pathlib import Path
 
 import torch
 
@@ -884,6 +888,41 @@ def build_path_to_transcript_dict_css10hu(re_cache=False):
     return torch.load(cache_path)
 
 
+# JAPANESE
+
+def build_path_to_transcript_dict_captain_japanese(re_cache=False):
+    root = "/mount/resources/speech/corpora/HiFiCaptainJapanese"
+    cache_path = os.path.join(root, "pttd_cache.pt")
+    if not os.path.exists(cache_path) or re_cache:
+        path_to_transcript = dict()
+        with open(root + "/male/text/train_parallel.txt", encoding="utf8") as f:
+            transcriptions = f.read()
+        for line in transcriptions.split("\n"):
+            if line.strip() != "":
+                parsed_line = line.split()
+                audio_path = parsed_line[0]
+                transcript = parsed_line[1]
+                audio_path = os.path.join(root, "male", "wav", "train_parallel", audio_path + ".wav")
+                if os.path.exists(audio_path):
+                    path_to_transcript[audio_path] = transcript.strip()
+                else:
+                    print(f"{audio_path} does not seem to exist!")
+        with open(root + "/female/text/train_parallel.txt", encoding="utf8") as f:
+            transcriptions = f.read()
+        for line in transcriptions.split("\n"):
+            if line.strip() != "":
+                parsed_line = line.split()
+                audio_path = parsed_line[0]
+                transcript = parsed_line[1]
+                audio_path = os.path.join(root, "female", "wav", "train_parallel", audio_path + ".wav")
+                if os.path.exists(audio_path):
+                    path_to_transcript[audio_path] = transcript.strip()
+                else:
+                    print(f"{audio_path} does not seem to exist!")
+        torch.save(path_to_transcript, cache_path)
+    return torch.load(cache_path)
+
+
 # OTHER
 
 def build_file_list_singing_voice_audio_database(re_cache=False):
@@ -897,12 +936,6 @@ def build_file_list_singing_voice_audio_database(re_cache=False):
                     file_list.append(os.path.join(root, corw, singer, audio))
         torch.save(file_list, cache_path)
     return torch.load(cache_path)
-
-
-from pathlib import Path
-import xml.etree.ElementTree as ET
-from csv import DictReader
-import json
 
 
 def build_path_to_transcript_dict_nst_norwegian():

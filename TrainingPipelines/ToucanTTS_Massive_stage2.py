@@ -41,7 +41,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     else:
         rank = 0
 
-    lang_to_datasets = dict()  # TODO japanese is really underrepresented, look into HiFi-Captain japanese Dataset
+    lang_to_datasets = dict()
 
     # ENGLISH
 
@@ -350,6 +350,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
     lang_to_datasets["vie"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_VIVOS_viet,
                                                       corpus_dir=os.path.join(PREPROCESSING_DIR, "VIVOS_viet"),
                                                       lang="vie",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
+    # Japanese
+
+    lang_to_datasets["jpn"] = list()
+
+    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_captain_japanese,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "captain_japanese"),
+                                                      lang="jpn",
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
