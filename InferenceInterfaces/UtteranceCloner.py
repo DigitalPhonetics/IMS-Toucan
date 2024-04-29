@@ -26,7 +26,7 @@ class UtteranceCloner:
     def __init__(self, model_id, device, language="eng"):
         self.tts = ToucanTTSInterface(device=device, tts_model_path=model_id)
         self.ap = AudioPreprocessor(input_sr=100, output_sr=16000, cut_silence=False)
-        self.tf = ArticulatoryCombinedTextFrontend(language=language)
+        self.tf = ArticulatoryCombinedTextFrontend(language=language, device=device)
         self.device = device
         acoustic_checkpoint_path = os.path.join(MODELS_DIR, "Aligner", "aligner.pt")
         self.aligner_weights = torch.load(acoustic_checkpoint_path, map_location=device)["asr_model"]
@@ -53,7 +53,7 @@ class UtteranceCloner:
 
         wave, sr = sf.read(ref_audio_path)
         if self.tf.language != lang:
-            self.tf = ArticulatoryCombinedTextFrontend(language=lang)
+            self.tf = ArticulatoryCombinedTextFrontend(language=lang, device=self.device)
         if self.ap.input_sr != sr:
             self.ap = AudioPreprocessor(input_sr=sr, output_sr=16000, cut_silence=False)
         try:

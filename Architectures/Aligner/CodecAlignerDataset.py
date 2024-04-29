@@ -50,7 +50,7 @@ class CodecAlignerDataset(Dataset):
         self.lang = lang
         self.device = device
         self.cache_dir = cache_dir
-        self.tf = ArticulatoryCombinedTextFrontend(language=self.lang)
+        self.tf = ArticulatoryCombinedTextFrontend(language=self.lang, device=device)
         cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = cache[2]
         self.datapoints = cache[0]
@@ -162,7 +162,7 @@ class CodecAlignerDataset(Dataset):
                                allow_unknown_symbols):
         process_internal_dataset_chunk = list()
 
-        tf = ArticulatoryCombinedTextFrontend(language=lang)
+        tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
         ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)

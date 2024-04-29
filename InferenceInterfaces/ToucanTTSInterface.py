@@ -37,7 +37,7 @@ class ToucanTTSInterface(torch.nn.Module):
         ################################
         #   build text to phone        #
         ################################
-        self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True)
+        self.text2phone = ArticulatoryCombinedTextFrontend(language=language, add_silence_to_end=True, device=device)
 
         #####################################
         #   load phone to features model    #
@@ -103,7 +103,7 @@ class ToucanTTSInterface(torch.nn.Module):
         self.set_accent_language(lang_id=lang_id)
 
     def set_phonemizer_language(self, lang_id):
-        self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True)
+        self.text2phone = ArticulatoryCombinedTextFrontend(language=lang_id, add_silence_to_end=True, device=self.device)
 
     def set_accent_language(self, lang_id):
         self.lang_id = get_language_id(lang_id).to(self.device)

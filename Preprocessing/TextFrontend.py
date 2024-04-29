@@ -22,7 +22,8 @@ class ArticulatoryCombinedTextFrontend:
                  use_lexical_stress=True,
                  silent=True,
                  add_silence_to_end=True,
-                 use_word_boundaries=True):
+                 use_word_boundaries=True,
+                 device="cpu"):
         """
         Mostly preparing ID lookups
         """
@@ -312,7 +313,7 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = lambda x: " ".join([chunk["hepburn"] for chunk in self.kakasi.convert(x)])
             self.g2p_lang = language
             self.phonemizer = "transphone"
-            self.transphone = read_g2p()
+            self.transphone = read_g2p(device=device)
 
         elif language == "kan":
             self.g2p_lang = "kn"  # Kannada
@@ -540,7 +541,7 @@ class ArticulatoryCombinedTextFrontend:
             self.g2p_lang = language
             self.phonemizer = "transphone"
             self.expand_abbreviations = lambda x: x
-            self.transphone = read_g2p()
+            self.transphone = read_g2p(device=device)
 
         # remember to also update get_language_id() below when adding something here, as well as the get_example_sentence function
 
