@@ -388,6 +388,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                           rank=rank,
                                                           device=device))
 
+    lang_to_datasets["jpn"].append(prepare_aligner_corpus(transcript_dict=build_path_to_transcript_dict_jvs,
+                                                          corpus_dir=os.path.join(PREPROCESSING_DIR, "jvs"),
+                                                          lang="jpn",
+                                                          gpu_count=gpu_count,
+                                                          rank=rank,
+                                                          device=device))
+
     # RUSSIAN
 
     lang_to_datasets["rus"] = list()

@@ -232,6 +232,16 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                                                       gpu_count=gpu_count,
                                                       rank=rank))
 
+    # JAPANESE
+
+    lang_to_datasets["jpn"] = list()
+
+    lang_to_datasets["jpn"].append(prepare_tts_corpus(transcript_dict=build_path_to_transcript_dict_jvs,
+                                                      corpus_dir=os.path.join(PREPROCESSING_DIR, "jvs"),
+                                                      lang="jpn",
+                                                      gpu_count=gpu_count,
+                                                      rank=rank))
+
     for lang in lang_to_datasets:
         datasets.append(ConcatDataset(lang_to_datasets[lang]))
     re_ordered_datasets = list()
