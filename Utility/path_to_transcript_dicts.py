@@ -929,20 +929,20 @@ def build_path_to_transcript_dict_jvs(re_cache=False):
     if not os.path.exists(cache_path) or re_cache:
         path_to_transcript = dict()
         for data_dir in os.listdir(root):
-            if os.path.isdir(data_dir):
+            if os.path.isdir(os.path.join(root, data_dir)):
                 for data_type in ["parallel100", "nonpara30"]:
                     with open(os.path.join(root, data_dir, data_type, "transcripts_utf8.txt"), encoding="utf8") as f:
                         transcriptions = f.read()
-                        for line in transcriptions.split("\n"):
-                            if line.strip() != "":
-                                parsed_line = line.split(":")
-                                audio_path = parsed_line[0]
-                                transcript = parsed_line[1]
-                                audio_path = os.path.join(root, data_dir, data_type, "wav24kHz16bit", audio_path + ".wav")
-                                if os.path.exists(audio_path):
-                                    path_to_transcript[audio_path] = transcript.strip()
-                                else:
-                                    print(f"{audio_path} does not seem to exist!")
+                    for line in transcriptions.split("\n"):
+                        if line.strip() != "":
+                            parsed_line = line.split(":")
+                            audio_path = parsed_line[0]
+                            transcript = parsed_line[1]
+                            audio_path = os.path.join(root, data_dir, data_type, "wav24kHz16bit", audio_path + ".wav")
+                            if os.path.exists(audio_path):
+                                path_to_transcript[audio_path] = transcript.strip()
+                            else:
+                                print(f"{audio_path} does not seem to exist!")
         torch.save(path_to_transcript, cache_path)
     return torch.load(cache_path)
 
