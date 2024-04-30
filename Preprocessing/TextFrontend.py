@@ -800,6 +800,7 @@ class ArticulatoryCombinedTextFrontend:
             ("«", '"'),
             ("»", '"'),
             # unifying some phoneme representations
+            ("N", "ŋ"),  # somehow transphone doesn't transform this to IPA
             ("ɫ", "l"),  # alveolopalatal
             ("ɚ", "ə"),
             ('ᵻ', 'ɨ'),
