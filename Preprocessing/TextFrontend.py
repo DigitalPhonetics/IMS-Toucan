@@ -548,7 +548,7 @@ class ArticulatoryCombinedTextFrontend:
         if self.phonemizer == "espeak":
             try:
                 self.phonemizer_backend = EspeakBackend(language=self.g2p_lang,
-                                                        punctuation_marks=';:,.!?¡¿—…"«»“”~/。【】、‥،؟“”؛',
+                                                        punctuation_marks=';:,.!?¡¿—…()"«»“”~/。【】、‥،؟“”؛',
                                                         preserve_punctuation=True,
                                                         language_switch='remove-flags',
                                                         with_stress=self.use_stress)
@@ -633,12 +633,58 @@ class ArticulatoryCombinedTextFrontend:
             elif char == '\u0306':
                 # shortened
                 phones_vector[-1][get_feature_to_index_lookup()["shortened"]] = 1
-            elif char == '̃':
+            elif char == '̃' and phones_vector[-1][get_feature_to_index_lookup()["nasal"]] != 1:
                 # nasalized (vowel)
-                phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 1
-            elif char == "̧":
+                phones_vector[-1][get_feature_to_index_lookup()["nasal"]] = 2
+            elif char == "̧" != phones_vector[-1][get_feature_to_index_lookup()["palatal"]] != 1:
                 # palatalized
-                phones_vector[-1][get_feature_to_index_lookup()["palatal"]] = 1
+                phones_vector[-1][get_feature_to_index_lookup()["palatal"]] = 2
+            elif char == "ʷ" and phones_vector[-1][get_feature_to_index_lookup()["labial-velar"]] != 1:
+                # labialized
+                phones_vector[-1][get_feature_to_index_lookup()["labial-velar"]] = 2
+            elif char == "ʰ" and phones_vector[-1][get_feature_to_index_lookup()["aspirated"]] != 1:
+                # aspirated
+                phones_vector[-1][get_feature_to_index_lookup()["aspirated"]] = 2
+            elif char == "ˠ" and phones_vector[-1][get_feature_to_index_lookup()["velar"]] != 1:
+                # velarized
+                phones_vector[-1][get_feature_to_index_lookup()["velar"]] = 2
+            elif char == "ˁ" and phones_vector[-1][get_feature_to_index_lookup()["pharyngal"]] != 1:
+                # pharyngealized
+                phones_vector[-1][get_feature_to_index_lookup()["pharyngal"]] = 2
+            elif char == "ˀ" and phones_vector[-1][get_feature_to_index_lookup()["glottal"]] != 1:
+                # glottalized
+                phones_vector[-1][get_feature_to_index_lookup()["glottal"]] = 2
+            elif char == "ʼ" and phones_vector[-1][get_feature_to_index_lookup()["ejective"]] != 1:
+                # ejective
+                phones_vector[-1][get_feature_to_index_lookup()["ejective"]] = 2
+            elif char == "̹" and phones_vector[-1][get_feature_to_index_lookup()["rounded"]] != 1:
+                # rounding
+                phones_vector[-1][get_feature_to_index_lookup()["rounded"]] = 2
+            elif char == "̞" and phones_vector[-1][get_feature_to_index_lookup()["open"]] != 1:
+                # open
+                phones_vector[-1][get_feature_to_index_lookup()["open"]] = 2
+            elif char == "̪" and phones_vector[-1][get_feature_to_index_lookup()["dental"]] != 1:
+                # dental
+                phones_vector[-1][get_feature_to_index_lookup()["dental"]] = 2
+            elif char == "̬" and phones_vector[-1][get_feature_to_index_lookup()["voiced"]] != 1:
+                # voiced
+                phones_vector[-1][get_feature_to_index_lookup()["voiced"]] = 2
+            elif char == "̝" and phones_vector[-1][get_feature_to_index_lookup()["close"]] != 1:
+                # closed
+                phones_vector[-1][get_feature_to_index_lookup()["close"]] = 2
+            elif char == "̰" and phones_vector[-1][get_feature_to_index_lookup()["glottal"]] != 1 and phones_vector[-1][get_feature_to_index_lookup()["epiglottal"]] != 1:
+                # laryngalization
+                phones_vector[-1][get_feature_to_index_lookup()["glottal"]] = 2
+                phones_vector[-1][get_feature_to_index_lookup()["epiglottal"]] = 2
+            elif char == "̈" and phones_vector[-1][get_feature_to_index_lookup()["central"]] != 1:
+                # centralization
+                phones_vector[-1][get_feature_to_index_lookup()["central"]] = 2
+            elif char == "̜" and phones_vector[-1][get_feature_to_index_lookup()["unrounded"]] != 1:
+                # unrounded
+                phones_vector[-1][get_feature_to_index_lookup()["unrounded"]] = 2
+            elif char == "̥" and phones_vector[-1][get_feature_to_index_lookup()["unvoiced"]] != 1:
+                # voiceless
+                phones_vector[-1][get_feature_to_index_lookup()["unvoiced"]] = 2
             elif char == "˥":
                 # very high tone
                 phones_vector[-1][get_feature_to_index_lookup()["very-high-tone"]] = 1
@@ -721,6 +767,7 @@ class ArticulatoryCombinedTextFrontend:
                 (" ；", "~"),
                 ("－", "~"),
                 ("·", " "),
+                ("`", ""),
                 # symbols that indicate a pause or silence
                 ('"', "~"),
                 (" - ", "~ "),
@@ -792,6 +839,8 @@ class ArticulatoryCombinedTextFrontend:
             # latin script punctuation
             ("/", " "),
             ("—", ""),
+            ("(", "~"),
+            (")", "~"),
             ("...", "…"),
             ("\n", ", "),
             ("\t", " "),
@@ -803,6 +852,10 @@ class ArticulatoryCombinedTextFrontend:
             ("N", "ŋ"),  # somehow transphone doesn't transform this to IPA
             ("ɫ", "l"),  # alveolopalatal
             ("ɚ", "ə"),
+            ("g", "ɡ"),
+            ("ε", "e"),
+            ("ʦ", "ts"),
+            ("ˤ", "ˁ"),
             ('ᵻ', 'ɨ'),
             ("ɧ", "ç"),  # velopalatal
             ("ɥ", "j"),  # labiopalatal
@@ -833,11 +886,8 @@ class ArticulatoryCombinedTextFrontend:
             (";", "~"),
             (",", "~")  # make sure this remains the final one when adding new ones
         ]
-        unsupported_ipa_characters = {'̹', '̙', '̞', '̯', '̤', '̪', '̩', '̠', '̟', 'ꜜ',
-                                      '̬', '̽', 'ʰ', '|', '̝', '•', 'ˠ', '↘',
-                                      '‖', '̰', '‿', 'ᷝ', '̈', 'ᷠ', '̜', 'ʷ',
-                                      '̚', '↗', 'ꜛ', '̻', '̥', 'ˁ', '̘', '͡', '̺'}
-        # TODO support more of these. Problem: bridge over to aligner ID lookups after modifying the feature vector
+        unsupported_ipa_characters = {'̙', '̯', '̤', '̩', '̠', '̟', 'ꜜ', '̽', '|', '•', '↘',
+                                      '‖', '‿', 'ᷝ', 'ᷠ', '̚', '↗', 'ꜛ', '̻', '̘', '͡', '̺'}
         #  https://en.wikipedia.org/wiki/IPA_number
         for char in unsupported_ipa_characters:
             replacements.append((char, ""))
@@ -906,11 +956,12 @@ class ArticulatoryCombinedTextFrontend:
                 if immutable_vector in self.text_vector_to_phone_cache:
                     tokens.append(self.phone_to_id[self.text_vector_to_phone_cache[immutable_vector]])
                     continue
-                if vector[get_feature_to_index_lookup()["vowel"]] == 1 and vector[get_feature_to_index_lookup()["nasal"]] == 1:
-                    # for the sake of alignment, we ignore the difference between nasalized vowels and regular vowels
-                    features[get_feature_to_index_lookup()["nasal"]] = 0
                 features = features[13:]
                 # the first 12 dimensions are for modifiers, so we ignore those when trying to find the phoneme in the ID lookup
+                for index in range(len(features)):
+                    if features[index] == 2:
+                        # we remove all features that stem from a modifier, so we can map back to the unmodified sound
+                        features[index] = 0
                 for phone in self.phone_to_vector:
                     if features == self.phone_to_vector[phone][13:]:
                         tokens.append(self.phone_to_id[phone])

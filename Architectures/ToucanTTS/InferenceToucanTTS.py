@@ -204,6 +204,9 @@ class ToucanTTS(torch.nn.Module):
                  pause_duration_scaling_factor=1.0,
                  prosody_creativity=0.7):
 
+        text_tensors = torch.clamp(text_tensors, max=1.0)
+        # this is necessary, because of the way we represent modifiers to keep them identifiable.
+
         if not self.multilingual_model:
             lang_ids = None
 

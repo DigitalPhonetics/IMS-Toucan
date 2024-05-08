@@ -32,7 +32,7 @@ class ToucanTTS(torch.nn.Module):
 
     def __init__(self,
                  # network structure related
-                 input_feature_dimensions=62,
+                 input_feature_dimensions=64,
                  spec_channels=128,
                  attention_dimension=192,
                  attention_heads=4,
@@ -337,6 +337,9 @@ class ToucanTTS(torch.nn.Module):
                  lang_ids=None,
                  run_glow=False):
 
+        text_tensors = torch.clamp(text_tensors, max=1.0)
+        # this is necessary, because of the way we represent modifiers to keep them identifiable.
+
         if not self.multilingual_model:
             lang_ids = None
 
@@ -495,7 +498,7 @@ if __name__ == '__main__':
 
     print(" TESTING TRAINING ")
 
-    dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 62]).float()  # [Batch, Sequence Length, Features per Phone]
+    dummy_text_batch = torch.randint(low=0, high=2, size=[3, 3, 64]).float()  # [Batch, Sequence Length, Features per Phone]
     dummy_text_lens = torch.LongTensor([2, 3, 3])
 
     dummy_speech_batch = torch.randn([3, 30, 128])  # [Batch, Sequence Length, Spectrogram Buckets]
@@ -523,7 +526,7 @@ if __name__ == '__main__':
     loss.backward()
 
     print(" TESTING INFERENCE ")
-    dummy_text_batch = torch.randint(low=0, high=2, size=[12, 62]).float()  # [Sequence Length, Features per Phone]
+    dummy_text_batch = torch.randint(low=0, high=2, size=[12, 64]).float()  # [Sequence Length, Features per Phone]
     dummy_utterance_embed = torch.randn([192])  # [Dimensions of Speaker Embedding]
     dummy_language_id = torch.LongTensor([2])
     print(model.inference(dummy_text_batch,

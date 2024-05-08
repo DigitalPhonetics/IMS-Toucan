@@ -894,10 +894,12 @@ def get_feature_to_index_lookup():
         "implosive"          : 57,
         "vibrant"            : 58,
         "click"              : 59,
+        "ejective"           : 60,
 
         # TYPE
-        "unvoiced"           : 60,
-        "voiced"             : 61,
+        "aspirated"          : 61,
+        "unvoiced"           : 62,
+        "voiced"             : 63,
     }
 
 
