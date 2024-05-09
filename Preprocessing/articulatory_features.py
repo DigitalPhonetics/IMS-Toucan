@@ -935,8 +935,8 @@ def generate_feature_table():
     phone_to_vector = dict()
     for ipa in ipa_to_phonemefeats:
         if len(ipa) == 1:
-            phone_to_vector[ipa] = [0] * (13 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
-            # there are 13 features which do not occur in the vectors, because they are context dependent and not lexical
+            phone_to_vector[ipa] = [0] * (15 + sum([len(values) for values in [feat_to_val_set[feat] for feat in feat_to_val_set]]))
+            # 15 features come from modifiers, not from lexical sounds, so we have to add them to the ones we encounter naturally in the lexical sounds
             for feat in ipa_to_phonemefeats[ipa]:
                 if ipa_to_phonemefeats[ipa][feat] in value_to_index:
                     phone_to_vector[ipa][value_to_index[ipa_to_phonemefeats[ipa][feat]]] = 1
