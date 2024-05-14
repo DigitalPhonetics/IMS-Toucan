@@ -238,7 +238,7 @@ class PQMF(torch.nn.Module):
         for k in range(N):
             constant_factor = (2 * k + 1) * (np.pi /
                                              (2 * N)) * (np.arange(taps + 1) -
-                                                         ((taps - 1) / 2))  # TODO: (taps - 1) -> taps
+                                                         ((taps - 1) / 2))
             phase = (-1) ** k * np.pi / 4
             H[k] = 2 * QMF * np.cos(constant_factor + phase)
 

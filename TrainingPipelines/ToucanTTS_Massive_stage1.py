@@ -293,6 +293,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,
-               use_less_loss=True)
+               use_less_loss=False,  # when training from scratch, this should be true and the next argument should be false.
+               freeze_lang_embs=True)
     if use_wandb:
         wandb.finish()

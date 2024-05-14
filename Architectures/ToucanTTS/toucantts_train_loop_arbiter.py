@@ -26,6 +26,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                fine_tune=False,  # whether to use the provided checkpoint as basis for fine-tuning.
                steps=200000,  # how many updates to run until training is completed
                use_less_loss=False,  # whether to use the loss that enforces a structure in the language embedding space
+               freeze_lang_embs=False,  # whether to use the language embeddings from a checkpoint without modifying them, to maintain compatibility with the zero-shot method. This treats language embeddings from the given checkpoint as constants.
                ):
     torch.multiprocessing.set_start_method('spawn', force=True)
     if type(datasets) != list:
@@ -48,6 +49,7 @@ def train_loop(net,  # an already initialized ToucanTTS model that should be tra
                             use_wandb=use_wandb,
                             gpu_count=gpu_count,
                             use_less_loss=use_less_loss,
+                            freeze_lang_embs=freeze_lang_embs
                             )
     else:
         mono_language_loop(net=net,

@@ -808,7 +808,7 @@ class ArticulatoryCombinedTextFrontend:
             phones = phones.replace('5', "˧˩˧")
             phones = phones.replace('6', "˧˩˨ʔ")  # very weird tone, because the tone introduces another phoneme
             phones = phones.replace('7', "˧")
-        # TODO add more of this handling for more tonal languages
+        # more of this handling for more tonal languages can be added here, simply make an elif statement and check for the language.
         return self.postprocess_phoneme_string(phones, for_feature_extraction, include_eos_symbol, for_plot_labels)
 
     def postprocess_phoneme_string(self, phoneme_string, for_feature_extraction, include_eos_symbol, for_plot_labels):
