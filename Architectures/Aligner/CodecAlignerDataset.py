@@ -232,10 +232,10 @@ class CodecAlignerDataset(Dataset):
             codes = codes.transpose(0, 1)
 
         return tokens, \
-               token_len, \
-               codes, \
-               None, \
-               self.speaker_embeddings[index]
+            token_len, \
+            codes, \
+            None, \
+            self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)
