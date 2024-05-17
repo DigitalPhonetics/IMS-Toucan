@@ -152,6 +152,8 @@ def train_loop(train_dataset,
             optim_asr.zero_grad()
             if use_reconstruction:
                 optim_tts.zero_grad()
+            if gpu_count > 1:
+                torch.distributed.barrier()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(asr_model.parameters(), 1.0)
             if use_reconstruction:

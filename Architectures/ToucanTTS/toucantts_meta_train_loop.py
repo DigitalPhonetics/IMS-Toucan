@@ -282,6 +282,8 @@ def train_loop(net,
         if type(train_loss) is float:
             print("There is no loss for this step! Skipping ...")
             continue
+        if gpu_count > 1:
+            torch.distributed.barrier()
         train_loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0, error_if_nonfinite=False)
         optimizer.step()
