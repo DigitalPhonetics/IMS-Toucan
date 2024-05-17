@@ -41,8 +41,9 @@ class Aligner(torch.nn.Module):
             x, _ = pad_packed_sequence(x, batch_first=True)
 
         x = self.proj(x)
-        out_masks = make_non_pad_mask(lens).unsqueeze(-1).to(x.device)
-        x = x * out_masks.float()
+        if lens is not None:
+            out_masks = make_non_pad_mask(lens).unsqueeze(-1).to(x.device)
+            x = x * out_masks.float()
 
         return x
 
