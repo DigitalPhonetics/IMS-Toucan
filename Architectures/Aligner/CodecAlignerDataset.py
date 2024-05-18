@@ -221,6 +221,25 @@ class CodecAlignerDataset(Dataset):
                                                    path])
         self.result_pool.append(process_internal_dataset_chunk)
 
+    def get_length_overview(self):
+        text_lens = list()
+        spec_lens = list()
+
+        for i in range(len(self)):
+            d = self[i]
+            text_len = d[1]
+            spec_len = len(d[2][1])
+            text_lens.append(text_len)
+            spec_lens.append(spec_len)
+
+        text_lens.sort()
+        spec_lens.sort()
+
+        print(text_lens)
+        print("\n\n")
+        print(spec_lens)
+        print("\n\n")
+
     def __getitem__(self, index):
         text_vector = self.datapoints[index][0]
         tokens = self.tf.text_vectors_to_id_sequence(text_vector=text_vector)
@@ -232,10 +251,10 @@ class CodecAlignerDataset(Dataset):
             codes = codes.transpose(0, 1)
 
         return tokens, \
-            token_len, \
-            codes, \
-            None, \
-            self.speaker_embeddings[index]
+               token_len, \
+               codes, \
+               None, \
+               self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)
