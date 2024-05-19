@@ -68,9 +68,7 @@ class Aligner(torch.nn.Module):
         if save_img_for_debug is not None:
             phones = list()
             for index in tokens:
-                for phone in self.tf.phone_to_id:
-                    if self.tf.phone_to_id[phone] == index:
-                        phones.append(phone)
+                phones.append(self.tf.id_to_phone[index])
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(10, 5))
 
             ax.imshow(alignment_matrix, interpolation='nearest', aspect='auto', origin="lower", cmap='cividis')
