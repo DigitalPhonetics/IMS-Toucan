@@ -1711,7 +1711,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                   device=device,
                   save_directory=save_dir,
                   steps=1500000,
-                  batch_size=64,
+                  batch_size=16,
                   path_to_checkpoint=resume_checkpoint,
                   fine_tune=finetune,
                   debug_img_path=save_dir_aligner,

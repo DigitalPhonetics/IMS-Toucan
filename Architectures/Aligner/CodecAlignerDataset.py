@@ -53,6 +53,7 @@ class CodecAlignerDataset(Dataset):
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang, device=device)
         cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = cache[2]
+        self.filepaths = cache[3]
         self.datapoints = cache[0]
         if self.gpu_count > 1:
             # we only keep a chunk of the dataset in memory to avoid redundancy. Which chunk, we figure out using the rank.
@@ -258,6 +259,15 @@ class CodecAlignerDataset(Dataset):
 
     def __len__(self):
         return len(self.datapoints)
+
+    def remove_samples(self, list_of_samples_to_remove):
+        for remove_id in sorted(list_of_samples_to_remove, reverse=True):
+            self.datapoints.pop(remove_id)
+            self.speaker_embeddings.pop(remove_id)
+            self.filepaths.pop(remove_id)
+        torch.save((self.datapoints, None, self.speaker_embeddings, self.filepaths),
+                   os.path.join(self.cache_dir, "aligner_train_cache.pt"))
+        print("Dataset updated!")
 
 
 def fisher_yates_shuffle(lst):
