@@ -811,6 +811,14 @@ def get_phone_to_id():
     phone_to_id = dict()
     for index, phone in enumerate("~#?!ǃ.ɜəaðɛɪŋɔɒɾʃθʊʌʒæbʔdefghijklmnɳopɡɹrstuvwxzʀøçɐœyʏɑcɲɣʎβʝɟqɕɭɵʑʋʁɨʂɓʙɗɖχʛʟɽɢɠǂɦǁĩʍʕɻʄũɤɶõʡʈʜɱɯǀɸʘʐɰɘħɞʉɴʢѵ"):
         phone_to_id[phone] = index
+    # the following lines fix an issue with the aligner: While the different punctuation marks have
+    # different effects on their context, their realization in the signal is typically just silence.
+    # Since this is common for all of them, the CTC objective malfunctions for our purposes of
+    # alignment search. So it turned out that it's better to map all punctuation marks to silence.
+    phone_to_id["#"] = phone_to_id["~"]
+    phone_to_id["?"] = phone_to_id["~"]
+    phone_to_id["!"] = phone_to_id["~"]
+    phone_to_id["."] = phone_to_id["~"]
     return phone_to_id
 
 
