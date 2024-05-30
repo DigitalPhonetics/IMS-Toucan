@@ -157,8 +157,8 @@ def train_loop(net,
         if freeze_lang_embs:
             filtered_state_dict = {}
             for name, param in check_dict["model"].items():
-                if name in model.state_dict:
-                    if param.size() == model.state_dict[name].size():
+                if name in model.state_dict():
+                    if param.size() == model.state_dict()[name].size():
                         filtered_state_dict[name] = param
                         print(f"Loading parameter {name}")
             model.load_state_dict(filtered_state_dict, strict=False)
