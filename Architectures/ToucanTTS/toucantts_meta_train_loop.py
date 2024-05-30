@@ -155,11 +155,17 @@ def train_loop(net,
     if path_to_checkpoint is not None:
         check_dict = torch.load(path_to_checkpoint, map_location=device)
         if freeze_lang_embs:
-            model.load_state_dict(check_dict["model"], strict=False)
+            filtered_state_dict = {}
+            for name, param in check_dict["model"].items():
+                if name in model.state_dict:
+                    if param.size() == model.state_dict[name].size():
+                        filtered_state_dict[name] = param
+                        print(f"Loading parameter {name}")
+            model.load_state_dict(filtered_state_dict, strict=False)
             model.encoder.language_embedding.weight.requires_grad = False  # and we never reset that.
         else:
             model.load_state_dict(check_dict["model"])
-        if not fine_tune:
+        if not fine_tune and not freeze_lang_embs:
             optimizer.load_state_dict(check_dict["optimizer"])
             scheduler.load_state_dict(check_dict["scheduler"])
             steps_run_previously = check_dict["step_counter"]
