@@ -212,6 +212,11 @@ class CodecAlignerDataset(Dataset):
             with torch.inference_mode():
                 speech_timestamps = get_speech_timestamps(norm_wave, silero_model, sampling_rate=16000)
             try:
+                silence_timestamps = invert_segments(speech_timestamps, len(norm_wave))
+                for silence_timestamp in silence_timestamps:
+                    begin = silence_timestamp['start']
+                    end = silence_timestamp['end']
+                    norm_wave = torch.cat([norm_wave[:begin], torch.zeros([end - begin]), norm_wave[end:]])
                 result = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
             except IndexError:
                 print("Audio might be too short to cut silences from front and back.")
@@ -275,3 +280,22 @@ def fisher_yates_shuffle(lst):
     for i in range(len(lst) - 1, 0, -1):
         j = random.randint(0, i)
         lst[i], lst[j] = lst[j], lst[i]
+
+
+def invert_segments(segments, total_duration):
+    if not segments:
+        return [{'start': 0, 'end': total_duration}]
+
+    inverted_segments = []
+    previous_end = 0
+
+    for segment in segments:
+        start = segment['start']
+        if previous_end < start:
+            inverted_segments.append({'start': previous_end, 'end': start})
+        previous_end = segment['end']
+
+    if previous_end < total_duration:
+        inverted_segments.append({'start': previous_end, 'end': total_duration})
+
+    return inverted_segments
