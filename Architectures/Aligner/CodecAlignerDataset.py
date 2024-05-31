@@ -32,6 +32,7 @@ class CodecAlignerDataset(Dataset):
                  allow_unknown_symbols=False,
                  gpu_count=1,
                  rank=0):
+
         self.gpu_count = gpu_count
         self.rank = rank
         if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
@@ -176,7 +177,8 @@ class CodecAlignerDataset(Dataset):
          collect_chunks) = utils
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference mode or no_grad
-        silence = torch.zeros([16000 // 8])
+        silero_model = silero_model.to(device)
+        silence = torch.zeros([16000 // 8]).to(device)
         tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
@@ -201,7 +203,7 @@ class CodecAlignerDataset(Dataset):
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             try:
-                norm_wave = resample(torch.tensor(wave).float())
+                norm_wave = resample(torch.tensor(wave, device=device).float()).cpu()
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
@@ -216,7 +218,7 @@ class CodecAlignerDataset(Dataset):
                 for silence_timestamp in silence_timestamps:
                     begin = silence_timestamp['start']
                     end = silence_timestamp['end']
-                    norm_wave = torch.cat([norm_wave[:begin], torch.zeros([end - begin]), norm_wave[end:]])
+                    norm_wave = torch.cat([norm_wave[:begin], torch.zeros([end - begin], device=device), norm_wave[end:]])
                 result = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
             except IndexError:
                 print("Audio might be too short to cut silences from front and back.")
@@ -240,7 +242,7 @@ class CodecAlignerDataset(Dataset):
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
 
-            cached_speech = ap.audio_to_codebook_indexes(audio=norm_wave.to(device), current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
+            cached_speech = ap.audio_to_codebook_indexes(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_speech,
                                                    norm_wave.cpu().detach().numpy(),
@@ -258,10 +260,10 @@ class CodecAlignerDataset(Dataset):
             codes = codes.transpose(0, 1)
 
         return tokens, \
-               token_len, \
-               codes, \
-               None, \
-               self.speaker_embeddings[index]
+            token_len, \
+            codes, \
+            None, \
+            self.speaker_embeddings[index]
 
     def __len__(self):
         return len(self.datapoints)
