@@ -176,8 +176,7 @@ class CodecAlignerDataset(Dataset):
          collect_chunks) = utils
         torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
         # this to false globally during model loading rather than using inference mode or no_grad
-        silero_model = silero_model.to(device)
-        silence = torch.zeros([16000 // 8], device=device)
+        silence = torch.zeros([16000 // 8])
         tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
@@ -198,11 +197,11 @@ class CodecAlignerDataset(Dataset):
             if sr != assumed_sr:
                 assumed_sr = sr
                 ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
-                resample = Resample(orig_freq=assumed_sr, new_freq=16000).to(device)
+                resample = Resample(orig_freq=assumed_sr, new_freq=16000)
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             try:
-                norm_wave = resample(torch.tensor(wave).float().to(device))
+                norm_wave = resample(torch.tensor(wave).float())
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
@@ -210,7 +209,7 @@ class CodecAlignerDataset(Dataset):
                 if verbose:
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
-            with torch.no_grad():
+            with torch.inference_mode():
                 speech_timestamps = get_speech_timestamps(norm_wave, silero_model, sampling_rate=16000)
             try:
                 result = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
@@ -236,7 +235,7 @@ class CodecAlignerDataset(Dataset):
                 # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
                 continue
 
-            cached_speech = ap.audio_to_codebook_indexes(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
+            cached_speech = ap.audio_to_codebook_indexes(audio=norm_wave.to(device), current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             process_internal_dataset_chunk.append([cached_text,
                                                    cached_speech,
                                                    norm_wave.cpu().detach().numpy(),
