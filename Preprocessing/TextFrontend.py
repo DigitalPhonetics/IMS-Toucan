@@ -610,7 +610,7 @@ class ArticulatoryCombinedTextFrontend:
         if input_phonemes:
             phones = text
         else:
-            phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True)
+            phones = self.get_phone_string(text=". " + text, include_eos_symbol=True, for_feature_extraction=True)  # the addition of ". " is a dirty hack, but it makes it sound better.
         phones = phones.replace("ɚ", "ə").replace("ᵻ", "ɨ")
         if view:
             print("Phonemes: \n{}\n".format(phones))

@@ -162,13 +162,27 @@ class CodecAlignerDataset(Dataset):
                                phone_input,
                                allow_unknown_symbols):
         process_internal_dataset_chunk = list()
-
+        torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
+        # careful: assumes 16kHz or 8kHz audio
+        silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
+                                             model='silero_vad',
+                                             force_reload=False,
+                                             onnx=False,
+                                             verbose=False)
+        (get_speech_timestamps,
+         save_audio,
+         read_audio,
+         VADIterator,
+         collect_chunks) = utils
+        torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
+        # this to false globally during model loading rather than using inference mode or no_grad
+        silero_model = silero_model.to(device)
+        silence = torch.zeros([16000 // 8], device=device)
         tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
         ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
         resample = Resample(orig_freq=assumed_sr, new_freq=16000).to(device)
-        silence = torch.zeros([16000 // 4], device=device)
 
         for path in tqdm(path_list):
             if self.path_to_transcript_dict[path].strip() == "":
@@ -196,7 +210,14 @@ class CodecAlignerDataset(Dataset):
                 if verbose:
                     print(f"Excluding {path} because of its duration of {round(dur_in_seconds, 2)} seconds.")
                 continue
-            norm_wave = torch.cat([silence, norm_wave, silence])
+            with torch.no_grad():
+                speech_timestamps = get_speech_timestamps(norm_wave, silero_model, sampling_rate=16000)
+            try:
+                result = norm_wave[speech_timestamps[0]['start']:speech_timestamps[-1]['end']]
+            except IndexError:
+                print("Audio might be too short to cut silences from front and back.")
+                continue
+            norm_wave = torch.cat([silence, result, silence])
 
             # raw audio preprocessing is done
             transcript = self.path_to_transcript_dict[path]
