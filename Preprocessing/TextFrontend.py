@@ -610,7 +610,7 @@ class ArticulatoryCombinedTextFrontend:
         if input_phonemes:
             phones = text
         else:
-            phones = self.get_phone_string(text=". " + text, include_eos_symbol=True, for_feature_extraction=True)  # the addition of ". " is a dirty hack, but it makes it sound better.
+            phones = self.get_phone_string(text=text, include_eos_symbol=True, for_feature_extraction=True)
         phones = phones.replace("ɚ", "ə").replace("ᵻ", "ɨ")
         if view:
             print("Phonemes: \n{}\n".format(phones))
@@ -730,6 +730,7 @@ class ArticulatoryCombinedTextFrontend:
     def get_phone_string(self, text, include_eos_symbol=True, for_feature_extraction=False, for_plot_labels=False):
         if text == "":
             return ""
+        text = ". " + text  # the addition of ". " is a dirty hack, but it makes it sound better.
         # expand abbreviations
         utt = self.expand_abbreviations(text)
 
