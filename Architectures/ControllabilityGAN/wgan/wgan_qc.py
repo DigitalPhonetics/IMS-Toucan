@@ -3,7 +3,6 @@ import time
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from cvxopt import matrix
 from cvxopt import solvers
@@ -45,8 +44,8 @@ class WassersteinGanQuadraticCost:
         self.Kr = np.sqrt(self.K)
         self.LAMBDA = 2 * self.Kr * gamma * 2
 
-        self.G = nn.DataParallel(self.G.to(self.device))
-        self.D = nn.DataParallel(self.D.to(self.device))
+        self.G = self.G.to(self.device)
+        self.D = self.D.to(self.device)
 
         self.schedulerD = self._build_lr_scheduler_(self.D_opt, milestones, lr_anneal)
         self.schedulerG = self._build_lr_scheduler_(self.G_opt, milestones, lr_anneal)

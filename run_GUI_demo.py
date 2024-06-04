@@ -1,4 +1,5 @@
 import gradio as gr
+import torch.cuda
 
 from InferenceInterfaces.ControllableInterface import ControllableInterface
 from Preprocessing.multilinguality.SimilaritySolver import load_json_from_path
@@ -30,6 +31,7 @@ class TTSWebUI:
                                           gr.Slider(minimum=0, maximum=available_artificial_voices, step=1,
                                                     value=279,
                                                     label="Random Seed for the artificial Voice"),
+                                          gr.Slider(minimum=0.0, maximum=1.0, step=0.1, value=0.7, label="Prosody Creativity"),
                                           gr.Slider(minimum=0.5, maximum=1.5, step=0.1, value=1.0, label="Duration Scale"),
                                           gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=1.0, label="Pause Duration Scale"),
                                           gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=1.0, label="Pitch Variance Scale"),
@@ -40,6 +42,7 @@ class TTSWebUI:
                                           gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="???"),
                                           gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="???"),
                                           gr.Slider(minimum=-20.0, maximum=20.0, step=0.1, value=0.0, label="???"),
+                                          gr.Slider(minimum=-32.0, maximum=-20, step=1, value=-24.0, label="Loudness in dB")
                                           ],
                                   outputs=[gr.Audio(type="numpy", label="Speech"),
                                            gr.Image(label="Visualization")],
@@ -54,6 +57,7 @@ class TTSWebUI:
              language,
              accent,
              voice_seed,
+             prosody_creativity,
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
@@ -63,12 +67,14 @@ class TTSWebUI:
              emb3,
              emb4,
              emb5,
-             emb6
+             emb6,
+             loudness_in_db
              ):
         sr, wav, fig = self.controllable_ui.read(prompt,
                                                  language[-4:-1],
                                                  accent[-4:-1],
                                                  voice_seed,
+                                                 prosody_creativity,
                                                  duration_scaling_factor,
                                                  pause_duration_scaling_factor,
                                                  pitch_variance_scale,
@@ -78,9 +84,10 @@ class TTSWebUI:
                                                  emb3,
                                                  emb4,
                                                  emb5,
-                                                 emb6)
+                                                 emb6,
+                                                 loudness_in_db)
         return (sr, float2pcm(wav)), fig
 
 
 if __name__ == '__main__':
-    TTSWebUI(gpu_id="cpu")
+    TTSWebUI(gpu_id="cuda" if torch.cuda.is_available() else "cpu")

@@ -15,7 +15,7 @@ class ControllableInterface:
         else:
             os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
             os.environ["CUDA_VISIBLE_DEVICES"] = f"{gpu_id}"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if gpu_id != "cpu" else "cpu"
         self.model = ToucanTTSInterface(device=self.device, tts_model_path="Meta")
         self.wgan = GanWrapper(os.path.join(MODELS_DIR, "Embedding", "embedding_gan.pt"), device=self.device)
         self.generated_speaker_embeds = list()
@@ -28,6 +28,7 @@ class ControllableInterface:
              language,
              accent,
              voice_seed,
+             prosody_creativity,
              duration_scaling_factor,
              pause_duration_scaling_factor,
              pitch_variance_scale,
@@ -37,7 +38,8 @@ class ControllableInterface:
              emb_slider_3,
              emb_slider_4,
              emb_slider_5,
-             emb_slider_6
+             emb_slider_6,
+             loudness_in_db
              ):
         if self.current_language != language:
             self.model.set_phonemizer_language(language)
@@ -100,5 +102,7 @@ class ControllableInterface:
                                   pitch_variance_scale=pitch_variance_scale,
                                   energy_variance_scale=energy_variance_scale,
                                   pause_duration_scaling_factor=pause_duration_scaling_factor,
-                                  return_plot_as_filepath=True)
+                                  return_plot_as_filepath=True,
+                                  prosody_creativity=prosody_creativity,
+                                  loudness_in_db=loudness_in_db)
         return sr, wav, fig

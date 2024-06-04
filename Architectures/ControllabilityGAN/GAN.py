@@ -20,21 +20,34 @@ class GanWrapper:
 
         self.z_list = list()
         for _ in range(1100):
-            self.z_list.append(self.wgan.G.module.sample_latent(1, 16))
+            self.z_list.append(self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.7))
         self.z = self.z_list[0]
 
     def set_latent(self, seed):
         self.z = self.z = self.z_list[seed]
 
     def reset_default_latent(self):
-        self.z = self.wgan.G.module.sample_latent(1, 16)
+        self.z = self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.7)
 
     def load_model(self, path):
         gan_checkpoint = torch.load(path, map_location="cpu")
 
         self.wgan = create_wgan(parameters=gan_checkpoint['model_parameters'], device=self.device)
-        self.wgan.G.load_state_dict(gan_checkpoint['generator_state_dict'])
-        self.wgan.D.load_state_dict(gan_checkpoint['critic_state_dict'])
+        # Create a new state dict without 'module.' prefix
+        new_state_dict_G = {}
+        for key, value in gan_checkpoint['generator_state_dict'].items():
+            # Remove 'module.' prefix
+            new_key = key.replace('module.', '')
+            new_state_dict_G[new_key] = value
+
+        new_state_dict_D = {}
+        for key, value in gan_checkpoint['critic_state_dict'].items():
+            # Remove 'module.' prefix
+            new_key = key.replace('module.', '')
+            new_state_dict_D[new_key] = value
+
+        self.wgan.G.load_state_dict(new_state_dict_G)
+        self.wgan.D.load_state_dict(new_state_dict_D)
 
         self.mean = gan_checkpoint["dataset_mean"]
         self.std = gan_checkpoint["dataset_std"]
@@ -68,7 +81,7 @@ class GanWrapper:
     def modify_embed(self, x):
         self.wgan.G.eval()
         z_new = self.z.squeeze() + torch.matmul(self.U.solution.t(), x)
-        embed_modified = self.wgan.G.module.forward(z_new.unsqueeze(0).to(self.device))
+        embed_modified = self.wgan.G.forward(z_new.unsqueeze(0).to(self.device))
         if self.normalize:
             embed_modified = inverse_normalize(
                 embed_modified.cpu(),
