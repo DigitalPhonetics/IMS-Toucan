@@ -50,7 +50,7 @@ class TTSWebUI:
                                   theme="default",
                                   allow_flagging="never",
                                   article=article)
-        self.iface.launch(enable_queue=True)
+        self.iface.launch()
 
     def read(self,
              prompt,
