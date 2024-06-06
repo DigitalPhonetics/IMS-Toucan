@@ -225,17 +225,17 @@ class ToucanTTS(torch.nn.Module):
 
         # predicting pitch, energy and durations
         reduced_pitch_space = torchfunc.dropout(self.pitch_latent_reduction(encoded_texts), p=0.1).transpose(1, 2)
-        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=20, temperature=prosody_creativity, c=utterance_embedding) if gold_pitch is None else gold_pitch
+        pitch_predictions = self.pitch_predictor(mu=reduced_pitch_space, mask=text_masks.float(), n_timesteps=30, temperature=prosody_creativity, c=utterance_embedding) if gold_pitch is None else gold_pitch
         pitch_predictions = _scale_variance(pitch_predictions, pitch_variance_scale)
         embedded_pitch_curve = self.pitch_embed(pitch_predictions).transpose(1, 2)
 
         reduced_energy_space = torchfunc.dropout(self.energy_latent_reduction(encoded_texts + embedded_pitch_curve), p=0.1).transpose(1, 2)
-        energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=20, temperature=prosody_creativity, c=utterance_embedding) if gold_energy is None else gold_energy
+        energy_predictions = self.energy_predictor(mu=reduced_energy_space, mask=text_masks.float(), n_timesteps=30, temperature=prosody_creativity, c=utterance_embedding) if gold_energy is None else gold_energy
         energy_predictions = _scale_variance(energy_predictions, energy_variance_scale)
         embedded_energy_curve = self.energy_embed(energy_predictions).transpose(1, 2)
 
         reduced_duration_space = torchfunc.dropout(self.duration_latent_reduction(encoded_texts + embedded_pitch_curve + embedded_energy_curve), p=0.1).transpose(1, 2)
-        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=20, temperature=prosody_creativity, c=utterance_embedding)), min=0.0).long().squeeze(
+        predicted_durations = torch.clamp(torch.ceil(self.duration_predictor(mu=reduced_duration_space, mask=text_masks.float(), n_timesteps=30, temperature=prosody_creativity, c=utterance_embedding)), min=0.0).long().squeeze(
             1) if gold_durations is None else gold_durations
 
         # modifying the predictions with control parameters
@@ -261,7 +261,7 @@ class ToucanTTS(torch.nn.Module):
 
         refined_codec_frames = self.flow_matching_decoder(mu=self.cfm_projection(decoded_speech).transpose(1, 2),
                                                           mask=make_non_pad_mask([len(decoded_speech[0])], device=decoded_speech.device).unsqueeze(-2),
-                                                          n_timesteps=20,
+                                                          n_timesteps=30,
                                                           temperature=0.05,  # low temperature, so the model follows the specified prosody curves better.
                                                           c=utterance_embedding).transpose(1, 2)
 

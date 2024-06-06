@@ -4,6 +4,7 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
+from Architectures.Aligner.CodecAlignerDataset import invert_segments
 from Architectures.ToucanTTS.LanguageEmbeddingSpaceStructureLoss import LanguageEmbeddingSpaceStructureLoss
 from Preprocessing.AudioPreprocessor import AudioPreprocessor
 from Preprocessing.EnCodecAudioPreprocessor import CodecAudioPreprocessor
@@ -150,6 +151,22 @@ def train_loop(net,
     energy_losses_total = list()
     less_losses_total = list()
 
+    torch.hub._validate_not_a_forked_repo = lambda a, b, c: True  # torch 1.9 has a bug in the hub loading, this is a workaround
+    # careful: assumes 16kHz or 8kHz audio
+    silero_model, utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
+                                         model='silero_vad',
+                                         force_reload=False,
+                                         onnx=False,
+                                         verbose=False)
+    (get_speech_timestamps,
+     save_audio,
+     read_audio,
+     VADIterator,
+     collect_chunks) = utils
+    torch.set_grad_enabled(True)  # finding this issue was very infuriating: silero sets
+    # this to false globally during model loading rather than using inference mode or no_grad
+    silero_model = silero_model.to(device)
+
     if resume:
         path_to_checkpoint = get_most_recent_checkpoint(checkpoint_dir=save_directory)
     if path_to_checkpoint is not None:
@@ -220,9 +237,46 @@ def train_loop(net,
         lang_ids = batch[8].squeeze(1).to(device)
 
         speech_batch = list()  # I wish this could be done in the collate function or in the getitem, but using DL models in multiprocessing on very large datasets causes just way too many issues.
-        for speech_sample in speech_indexes:
+        for index, speech_sample in enumerate(speech_indexes):
             with torch.inference_mode():
                 wave = ap.indexes_to_audio(speech_sample.int().to(device)).detach()
+                # in the following lines, we fix some mistakes that the feature extraction commonly makes.
+                speech_timestamps = get_speech_timestamps(wave, silero_model, sampling_rate=16000)
+                silence_timestamps = invert_segments(speech_timestamps, len(wave))
+                for silence_timestamp in silence_timestamps:
+                    begin = silence_timestamp['start']
+                    end = silence_timestamp['end']
+                    wave = torch.cat([wave[:begin], torch.zeros([end - begin], device=device), wave[end:]])
+                if len(silence_timestamp) > 0:
+                    voice_onset_time = silence_timestamps[0]['end']
+                    voice_onset_proportional = len(wave) / voice_onset_time
+                    duration_total = sum(gold_durations[index])
+                    duration_voice_onset = round(duration_total / voice_onset_proportional)
+                    if gold_durations[index][0] < duration_voice_onset:
+                        # we found a case, where the pause in the beginning as detected by the aligner is shorter than it should be. Let's fix the durations accordingly.
+                        if gold_durations[index][0] + gold_durations[index][1] + gold_durations[index][2] < duration_voice_onset:
+                            # this is messed up beyond repair. The silence is longer than the first two phones and the initial silence together, as predicted by the aligner. It seems the aligner did an oopsie.
+                            pass
+                        elif gold_durations[index][0] + gold_durations[index][1] > duration_voice_onset > gold_durations[index][0] + gold_durations[index][1] + gold_durations[index][2]:
+                            # the silence ends somewhere within the duration of the first phoneme. We just have to move some duration from the first phone to the initial silence.
+                            difference_to_desired_silence = duration_voice_onset - gold_durations[index][0]
+                            gold_durations[index][0] + difference_to_desired_silence
+                            gold_durations[index][1] - difference_to_desired_silence
+                        elif gold_durations[index][0] + gold_durations[index][1] < duration_voice_onset:
+                            # the first phone is over before the speech even began. Here we have to consider the second phone as well. It has to be within the second phone, because we excluded the case of it being even later above. Technically this branch could just be else, but I like it explicit.
+                            difference_to_desired_silence = duration_voice_onset - gold_durations[index][0]
+                            # first we move over the duration from the first phone to the initial silence.
+                            gold_durations[index][0] + difference_to_desired_silence
+                            gold_durations[index][1] - difference_to_desired_silence
+                            # this will likely leave our first phone negative. We fill it up with duration from the second phone, so it is at least half as long as the second phone.
+                            total_available_frames_for_first_two = gold_durations[index][1] + gold_durations[index][2]
+                            if total_available_frames_for_first_two % 2 == 0:
+                                gold_durations[index][1] = total_available_frames_for_first_two // 2
+                                gold_durations[index][2] = total_available_frames_for_first_two // 2
+                            else:
+                                gold_durations[index][1] = (total_available_frames_for_first_two - 1) // 2
+                                gold_durations[index][2] = ((total_available_frames_for_first_two - 1) // 2) + 1
+
                 mel = spec_extractor.audio_to_mel_spec_tensor(wave, explicit_sampling_rate=16000).transpose(0, 1).detach().cpu()
             gold_speech_sample = mel.clone()
             speech_batch.append(gold_speech_sample)

@@ -279,7 +279,7 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                 id=wandb_resume_id,  # this is None if not specified in the command line arguments.
                 resume="must" if wandb_resume_id is not None else None)
     train_loop(net=model,
-               batch_size=20,
+               batch_size=30,
                warmup_steps=8000,
                device=torch.device("cuda"),
                datasets=re_ordered_datasets,
@@ -287,13 +287,13 @@ def run(gpu_id, resume_checkpoint, finetune, model_dir, resume, use_wandb, wandb
                path_to_checkpoint=resume_checkpoint,
                resume=resume,
                fine_tune=finetune,
-               steps=80000,
+               steps=140000,
                steps_per_checkpoint=1000,
                lr=0.001,
                use_wandb=use_wandb,
                train_samplers=train_samplers,
                gpu_count=gpu_count,
-               use_less_loss=False,  # when training from scratch, this should be true and the next argument should be false.
+               use_less_loss=False,  # when training from scratch, this should be true and the next argument should be false. But for the sake of compatibility, we freeze the language embeddings from a pretrained model.
                freeze_lang_embs=True)
     if use_wandb:
         wandb.finish()

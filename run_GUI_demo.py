@@ -42,7 +42,7 @@ class TTSWebUI:
                                           gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="Latent Variable 4"),
                                           gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="Latent Variable 5"),
                                           gr.Slider(minimum=-20.0, maximum=20.0, step=0.1, value=0.0, label="Latent Variable 6"),
-                                          gr.Slider(minimum=-32.0, maximum=-20, step=1, value=-14.0, label="Loudness in dB")
+                                          gr.Slider(minimum=-32.0, maximum=-14, step=1, value=-24.0, label="Loudness in dB")
                                           ],
                                   outputs=[gr.Audio(type="numpy", label="Speech"),
                                            gr.Image(label="Visualization")],
