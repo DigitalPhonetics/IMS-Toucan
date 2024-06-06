@@ -37,12 +37,12 @@ class TTSWebUI:
                                           gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=1.0, label="Pitch Variance Scale"),
                                           gr.Slider(minimum=0.0, maximum=2.0, step=0.1, value=1.0, label="Energy Variance Scale"),
                                           gr.Slider(minimum=-50.0, maximum=50.0, step=0.1, value=0.0, label="Femininity / Masculinity"),
-                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="???"),
-                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="???"),
-                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="???"),
-                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="???"),
-                                          gr.Slider(minimum=-20.0, maximum=20.0, step=0.1, value=0.0, label="???"),
-                                          gr.Slider(minimum=-32.0, maximum=-20, step=1, value=-24.0, label="Loudness in dB")
+                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="Voice Depth"),
+                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="Latent Variable 3"),
+                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="Latent Variable 4"),
+                                          gr.Slider(minimum=-30.0, maximum=30.0, step=0.1, value=0.0, label="Latent Variable 5"),
+                                          gr.Slider(minimum=-20.0, maximum=20.0, step=0.1, value=0.0, label="Latent Variable 6"),
+                                          gr.Slider(minimum=-32.0, maximum=-20, step=1, value=-14.0, label="Loudness in dB")
                                           ],
                                   outputs=[gr.Audio(type="numpy", label="Speech"),
                                            gr.Image(label="Visualization")],
@@ -71,8 +71,8 @@ class TTSWebUI:
              loudness_in_db
              ):
         sr, wav, fig = self.controllable_ui.read(prompt,
-                                                 language[-4:-1],
-                                                 accent[-4:-1],
+                                                 language.split(" ")[-1].split("(")[1].split(")")[0],
+                                                 accent.split(" ")[-1].split("(")[1].split(")")[0],
                                                  voice_seed,
                                                  prosody_creativity,
                                                  duration_scaling_factor,

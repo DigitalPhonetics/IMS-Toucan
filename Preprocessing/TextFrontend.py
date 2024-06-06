@@ -61,7 +61,7 @@ class ArticulatoryCombinedTextFrontend:
                     elif register_to_height[first_tone] < register_to_height[second_tone] > register_to_height[third_tone]:
                         self.peaking_perms.append(first_tone + second_tone + third_tone)
 
-        if language == "eng":
+        if language == "eng" or language == "en-us":
             self.g2p_lang = "en-us"  # English as spoken in USA
             self.expand_abbreviations = english_text_expansion
             self.phonemizer = "espeak"
@@ -78,6 +78,11 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "spa":
             self.g2p_lang = "es"  # Spanish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "spa-lat":
+            self.g2p_lang = "es-419"  # Spanish
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -106,6 +111,16 @@ class ArticulatoryCombinedTextFrontend:
             self.expand_abbreviations = remove_french_spacing
             self.phonemizer = "espeak"
 
+        elif language == "fr-be":
+            self.g2p_lang = "fr-be"  # French
+            self.expand_abbreviations = remove_french_spacing
+            self.phonemizer = "espeak"
+
+        elif language == "fr-sw":
+            self.g2p_lang = "fr-ch"  # French
+            self.expand_abbreviations = remove_french_spacing
+            self.phonemizer = "espeak"
+
         elif language == "ita":
             self.g2p_lang = "it"  # Italian
             self.expand_abbreviations = lambda x: x
@@ -113,6 +128,11 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "por":
             self.g2p_lang = "pt"  # Portuguese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "pt-br":
+            self.g2p_lang = "pt-br"  # Portuguese
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -128,6 +148,16 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "vie":
             self.g2p_lang = "vi"  # Northern Vietnamese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "vi-ctr":
+            self.g2p_lang = "vi-vn-x-central"  # Central Vietnamese
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "vi-so":
+            self.g2p_lang = "vi-vn-x-south"  # Southern Vietnamese
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
@@ -268,6 +298,11 @@ class ArticulatoryCombinedTextFrontend:
 
         elif language == "gla":
             self.g2p_lang = "gd"  # Gaelic	Scottish
+            self.expand_abbreviations = lambda x: x
+            self.phonemizer = "espeak"
+
+        elif language == "en-sc":
+            self.g2p_lang = "en-gb-scotland"
             self.expand_abbreviations = lambda x: x
             self.phonemizer = "espeak"
 
