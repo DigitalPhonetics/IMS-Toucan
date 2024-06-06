@@ -146,9 +146,9 @@ def train_loop(net,
                         wave = torch.cat([wave[:begin], torch.zeros([end - begin], device=device), wave[end:]])
                     if len(silence_timestamp) > 0:
                         voice_onset_time = silence_timestamps[0]['end']
-                        voice_onset_proportional = len(wave) / voice_onset_time
+                        voice_onset_relative = voice_onset_time / len(wave)
                         duration_total = sum(gold_durations[index]).item()
-                        duration_voice_onset = round(duration_total / voice_onset_proportional)
+                        duration_voice_onset = round(duration_total * voice_onset_relative)
                         if gold_durations[index][0] < duration_voice_onset:
                             # we found a case, where the pause in the beginning as detected by the aligner is shorter than it should be. Let's fix the durations accordingly.
                             if gold_durations[index][0] + gold_durations[index][1] + gold_durations[index][2] < duration_voice_onset:
