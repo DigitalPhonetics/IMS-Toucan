@@ -69,7 +69,7 @@ class CacheCreator:
         with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_map_dist.json'), 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_map_dist, f, ensure_ascii=False, indent=4)
 
-    def create_lang_emb_distance_cache(self, model_path, cache_root="."):
+    def create_oracle_distance_cache(self, model_path, cache_root="."):
         loss_fn = torch.nn.MSELoss(reduction="mean")
         self.pair_to_lang_emb_dist = dict()
         lang_embs = torch.load(model_path)["model"]["encoder.language_embedding.weight"]
@@ -87,32 +87,12 @@ class CacheCreator:
             if lang_1 not in lang_1_to_lang_2_lang_emb_dist.keys():
                 lang_1_to_lang_2_lang_emb_dist[lang_1] = dict()
             lang_1_to_lang_2_lang_emb_dist[lang_1][lang_2] = dist         
-        with open(os.path.join(cache_root, "lang_1_to_lang_2_to_lang_emb_dist.json"), "w", encoding="utf-8") as f:
+        with open(os.path.join(cache_root, "lang_1_to_lang_2_to_oracle_dist.json"), "w", encoding="utf-8") as f:
             json.dump(lang_1_to_lang_2_lang_emb_dist, f, ensure_ascii=False, indent=4)
 
 
-
-    def find_closest_in_family(self, lang, supervised_langs, n_closest=5):
-        langs_to_sim = dict()
-        for supervised_lang in supervised_langs:
-            try:
-                langs_to_sim[supervised_lang] = self.pair_to_tree_similarity[(lang, supervised_lang)]
-            except KeyError:
-                try:
-                    langs_to_sim[supervised_lang] = self.pair_to_tree_similarity[(supervised_lang, lang)]
-                except KeyError:
-                    pass
-        return sorted(langs_to_sim, key=langs_to_sim.get, reverse=True)[:n_closest]
-
-    def find_closest_on_map(self, lang, n_closest=5):
-        langs_to_dist = dict()
-        for pair in self.pair_to_map_dist:
-            if lang in pair:
-                if lang == pair[0]:
-                    langs_to_dist[pair[1]] = self.pair_to_map_dist[pair]
-                else:
-                    langs_to_dist[pair[0]] = self.pair_to_map_dist[pair]
-        return sorted(langs_to_dist, key=langs_to_dist.get, reverse=False)[:n_closest]
+    def create_learned_distance_cache(self, model_path, cache_root="."):
+        pass # TODO
 
 
 def load_json_from_path(path):
@@ -130,5 +110,5 @@ if __name__ == '__main__':
         cc.create_tree_cache()
     if not os.path.exists("lang_1_to_lang_2_to_map_dist.json"):
         cc.create_map_cache()
-    if not os.path.exists("lang_1_to_lang_2_to_lang_emb_dist.json"):
-        cc.create_lang_emb_distance_cache(model_path=args.model_path)
+    if not os.path.exists("lang_1_to_lang_2_to_oracle_dist.json"):
+        cc.create_oracle_distance_cache(model_path=args.model_path)
