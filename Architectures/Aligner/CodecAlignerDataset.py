@@ -35,13 +35,7 @@ class CodecAlignerDataset(Dataset):
 
         self.gpu_count = gpu_count
         self.rank = rank
-        if os.path.exists(os.path.join(cache_dir, "blocker")):
-            print(f"skipping {cache_dir}")
-            return
-        with open(os.path.join(cache_dir, "blocker"), "w") as f:
-            f.write("in progress ...")
-        print(f"working on {cache_dir}")
-        if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache_improved.pt")) or rebuild_cache:
+        if not os.path.exists(os.path.join(cache_dir, "aligner_train_cache.pt")) or rebuild_cache:
             self._build_dataset_cache(path_to_transcript_dict=path_to_transcript_dict,
                                       cache_dir=cache_dir,
                                       lang=lang,
@@ -58,7 +52,7 @@ class CodecAlignerDataset(Dataset):
         self.device = device
         self.cache_dir = cache_dir
         self.tf = ArticulatoryCombinedTextFrontend(language=self.lang, device=device)
-        cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache_improved.pt"), map_location='cpu')
+        cache = torch.load(os.path.join(self.cache_dir, "aligner_train_cache.pt"), map_location='cpu')
         self.speaker_embeddings = cache[2]
         self.filepaths = cache[3]
         self.datapoints = cache[0]
@@ -92,22 +86,9 @@ class CodecAlignerDataset(Dataset):
         os.makedirs(cache_dir, exist_ok=True)
         if type(path_to_transcript_dict) != dict:
             path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
-
-        tts_d = torch.load(os.path.join(cache_dir, "tts_train_cache.pt"), map_location='cpu')
-        pttd_filtered = dict()
-        path_to_phones = dict()
-        for i in range(len(tts_d)):
-            pttd_filtered[tts_d[i][8]] = path_to_transcript_dict[tts_d[i][8]]
-            path_to_phones[tts_d[i][8]] = tts_d[i][0]
-        path_to_transcript_dict = pttd_filtered
-        del tts_d
-
         torch.multiprocessing.set_start_method('spawn', force=True)
         resource_manager = Manager()
         self.path_to_transcript_dict = resource_manager.dict(path_to_transcript_dict)
-
-        self.path_to_phones = resource_manager.dict(path_to_phones)
-
         key_list = list(self.path_to_transcript_dict.keys())
         with open(os.path.join(cache_dir, "files_used.txt"), encoding='utf8', mode="w") as files_used_note:
             files_used_note.write(str(key_list))
@@ -170,7 +151,7 @@ class CodecAlignerDataset(Dataset):
         if len(self.datapoints) == 0:
             raise RuntimeError  # something went wrong and there are no datapoints
         torch.save((self.datapoints, None, self.speaker_embeddings, filepaths),
-                   os.path.join(cache_dir, "aligner_train_cache_improved.pt"))
+                   os.path.join(cache_dir, "aligner_train_cache.pt"))
 
     def _cache_builder_process(self,
                                path_list,
@@ -198,6 +179,7 @@ class CodecAlignerDataset(Dataset):
         # this to false globally during model loading rather than using inference mode or no_grad
         silero_model = silero_model.to(device)
         silence = torch.zeros([16000 // 8]).to(device)
+        tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
         ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
@@ -221,7 +203,7 @@ class CodecAlignerDataset(Dataset):
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             try:
-                norm_wave = resample(torch.tensor(wave, device=device).float())
+                norm_wave = resample(torch.tensor(wave, device=device).float()).cpu()
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
@@ -244,21 +226,21 @@ class CodecAlignerDataset(Dataset):
             norm_wave = torch.cat([silence, result, silence])
 
             # raw audio preprocessing is done
-            cached_text = self.path_to_phones[path].squeeze(0).cpu().numpy()
+            transcript = self.path_to_transcript_dict[path]
 
-            # try:
-            #    try:
-            #        cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
-            #    except KeyError:
-            #        cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
-            #        if not allow_unknown_symbols:
-            #            continue  # we skip sentences with unknown symbols
-            # except ValueError:
-            # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
-            #    continue
-            # except KeyError:
-            # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
-            #    continue
+            try:
+                try:
+                    cached_text = tf.string_to_tensor(transcript, handle_missing=False, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                except KeyError:
+                    cached_text = tf.string_to_tensor(transcript, handle_missing=True, input_phonemes=phone_input).squeeze(0).cpu().numpy()
+                    if not allow_unknown_symbols:
+                        continue  # we skip sentences with unknown symbols
+            except ValueError:
+                # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
+                continue
+            except KeyError:
+                # this can happen for Mandarin Chinese, when the syllabification of pinyin doesn't work. In that case, we just skip the sample.
+                continue
 
             cached_speech = ap.audio_to_codebook_indexes(audio=norm_wave, current_sampling_rate=16000).transpose(0, 1).cpu().numpy()
             process_internal_dataset_chunk.append([cached_text,
