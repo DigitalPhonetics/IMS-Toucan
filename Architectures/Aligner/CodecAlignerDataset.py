@@ -93,7 +93,7 @@ class CodecAlignerDataset(Dataset):
         if type(path_to_transcript_dict) != dict:
             path_to_transcript_dict = path_to_transcript_dict()  # in this case we passed a function instead of the dict, so that the function isn't executed if not necessary.
 
-        tts_d = torch.load(os.path.join(self.cache_dir, "tts_train_cache.pt"), map_location='cpu')
+        tts_d = torch.load(os.path.join(cache_dir, "tts_train_cache.pt"), map_location='cpu')
         pttd_filtered = dict()
         path_to_phones = dict()
         for i in range(len(tts_d)):
