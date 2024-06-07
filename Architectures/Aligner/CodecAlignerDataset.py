@@ -198,7 +198,6 @@ class CodecAlignerDataset(Dataset):
         # this to false globally during model loading rather than using inference mode or no_grad
         silero_model = silero_model.to(device)
         silence = torch.zeros([16000 // 8]).to(device)
-        tf = ArticulatoryCombinedTextFrontend(language=lang, device=device)
         _, sr = sf.read(path_list[0])
         assumed_sr = sr
         ap = CodecAudioPreprocessor(input_sr=assumed_sr, device=device)
@@ -222,7 +221,7 @@ class CodecAlignerDataset(Dataset):
                 print(f"{path} has a different sampling rate --> adapting the codec processor")
 
             try:
-                norm_wave = resample(torch.tensor(wave, device=device).float()).cpu()
+                norm_wave = resample(torch.tensor(wave, device=device).float())
             except ValueError:
                 continue
             dur_in_seconds = len(norm_wave) / 16000
