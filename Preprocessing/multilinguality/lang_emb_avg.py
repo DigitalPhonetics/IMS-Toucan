@@ -12,38 +12,39 @@ import matplotlib.pyplot as plt
 
 
 def compute_mse_for_averaged_embeddings(csv_path, iso_lookup, language_embeddings, weighted_avg=False, min_n_langs=5, max_n_langs=30, threshold_percentile=95, loss_fn="MSE"):
-    dataset_df = pd.read_csv(csv_path, sep="|")
+    df = pd.read_csv(csv_path, sep="|")
 
     if loss_fn == "L1":
         loss_fn = torch.nn.L1Loss()
     else:
         loss_fn = torch.nn.MSELoss()
 
-    running_loss = 0.
-
-    # for combined feats, df has 5 features per closest lang + 1 target lang column
-    if "combined_dist_0" in dataset_df.columns and "map_dist_0" in dataset_df.columns:
-        n_closest = len(dataset_df.columns) // 5
+    features_per_closest_lang = 2
+    # for combined, df has up to 5 features (if containing individual distances) per closest lang + 1 target lang column
+    if "combined_dist_0" in df.columns: 
+        if "map_dist_0" in df.columns:
+            features_per_closest_lang += 1
+        if "asp_dist_0" in df.columns:
+            features_per_closest_lang += 1
+        if "tree_dist_0" in df.columns:
+            features_per_closest_lang += 1
+        n_closest = len(df.columns) // features_per_closest_lang
         distance_type = "combined"
-    # else, df has 2 features per closest lang + 1 target lang column
+    # else, df has 2 features per closest lang + 1 target lang column        
     else:
-        n_closest = len(dataset_df.columns) // 2
-        if "combined_dist_0" in dataset_df.columns:
-            distance_type = "combined"
-        # elif "euclidean_dist_0" in dataset_df.columns:
-        #     distance_type = "euclidean"
-        elif "map_dist_0" in dataset_df.columns:
+        n_closest = len(df.columns) // features_per_closest_lang
+        if "map_dist_0" in df.columns:
             distance_type = "map"
-        elif "tree_dist_0" in dataset_df.columns:
+        elif "tree_dist_0" in df.columns:
             distance_type = "tree"
-        elif "asp_dist_0" in dataset_df.columns:
+        elif "asp_dist_0" in df.columns:
             distance_type = "asp"
-        elif "learned_dist_0" in dataset_df.columns:
+        elif "learned_dist_0" in df.columns:
             distance_type = "learned"
-        elif "oracle_dist_0" in dataset_df.columns:
+        elif "oracle_dist_0" in df.columns:
             distance_type = "oracle"
         else:
-            distance_type = "random" # for random dataset
+            distance_type = "random"
 
     closest_lang_columns = [f"closest_lang_{i}" for i in range(n_closest)]
     closest_dist_columns = [f"{distance_type}_dist_{i}" for i in range(n_closest)]
@@ -51,12 +52,12 @@ def compute_mse_for_averaged_embeddings(csv_path, iso_lookup, language_embedding
     closest_lang_columns = closest_lang_columns[:max_n_langs]
     closest_dist_columns = closest_dist_columns[:max_n_langs]
 
-    threshold = np.percentile(dataset_df[closest_dist_columns[-1]], threshold_percentile)
+    threshold = np.percentile(df[closest_dist_columns[-1]], threshold_percentile)
     print(f"threshold: {threshold}")
 
     all_losses = []
 
-    for row in dataset_df.itertuples():
+    for row in df.itertuples():
         try:
             y = language_embeddings[iso_lookup[-1][row.target_lang]]
         except KeyError:
@@ -92,15 +93,15 @@ if __name__ == "__main__":
     parser.add_argument("--loss_fn", choices=["MSE", "L1"], type=str, default="MSE", help="loss function used")
     args = parser.parse_args()
     csv_paths = [
-        # DATASETS FOR BOXPLOTS
+        # DATASETS FOR PAPER BOXPLOT
         #"datasets/dataset_learned_dist_463_with_less_loss_fixed_tree_distance_top50furthest_.csv",
         #"datasets/dataset_random_463_with_less_loss_fixed_tree_distance_random30.csv",
-        #"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_top50.csv",
-        #"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_tree_463_with_less_loss_fixed_tree_distance_top50.csv",        
-        #"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_map_463_with_less_loss_fixed_tree_distance_top50.csv",
+        #"datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_top50.csv",
+        #"datasets/dataset_tree_463_with_less_loss_fixed_tree_distance_top50.csv",        
+        #"datasets/dataset_map_463_with_less_loss_fixed_tree_distance_top50.csv",
         #"datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top50_average_individual_dists.csv",
-        #"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_learned_dist_463_with_less_loss_fixed_tree_distance_top50_4.csv",
-        #"/home/behringe/hdd_behringe/IMS-Toucan/Preprocessing/multilinguality/datasets/dataset_lang_emb_dist_463_with_less_loss_fixed_tree_distance_top50.csv", # ORACLE
+        #"datasets/dataset_learned_dist_463_with_less_loss_fixed_tree_distance_top50_4.csv",
+        #"datasets/dataset_lang_emb_dist_463_with_less_loss_fixed_tree_distance_top50.csv", # ORACLE
 ############################
 
         "new_datasets/dataset_random_top30_no-illegal-langs.csv",
