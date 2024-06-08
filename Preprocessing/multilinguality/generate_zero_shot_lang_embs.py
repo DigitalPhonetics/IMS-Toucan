@@ -3,17 +3,14 @@ import numpy as np
 import pandas as pd
 import json
 import argparse
+from tqdm import tqdm
 import os
 from Utility.storage_config import MODELS_DIR
 
-def overwrite_language_embeddings(model_path, min_n_langs=5, max_n_langs=30, threshold_percentile=95):
+def approximate_and_inject_language_embeddings(model_path, df, iso_lookup, min_n_langs=5, max_n_langs=25, threshold_percentile=50):
     # load pretrained language_embeddings
     model = torch.load(model_path, map_location="cpu")
     lang_embs = model["model"]["encoder.language_embedding.weight"]
-
-    # load language distance dataset
-    csv_path = "datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_top50_zero_shot_no_illegal_langs_no_deu_eng.csv"
-    df = pd.read_csv(csv_path, sep="|")
 
     features_per_closest_lang = 2
     # for combined, df has up to 5 features (if containing individual distances) per closest lang + 1 target lang column
@@ -50,7 +47,7 @@ def overwrite_language_embeddings(model_path, min_n_langs=5, max_n_langs=30, thr
     # get threshold based on distance of a certain percentile of the furthest language across all samples
     threshold = np.percentile(df[closest_dist_columns[-1]], threshold_percentile)
     print(f"threshold: {threshold:.4f}")
-    for row in df.itertuples():
+    for row in tqdm(df.itertuples(), total=df.shape[0], desc="Approximating language embeddings"):
         avg_emb = torch.zeros([16])
         dists = [getattr(row, d) for i, d in enumerate(closest_dist_columns) if i < min_n_langs or getattr(row, d) < threshold]
         langs = [getattr(row, l) for l in closest_lang_columns[:len(dists)]]
@@ -61,16 +58,19 @@ def overwrite_language_embeddings(model_path, min_n_langs=5, max_n_langs=30, thr
         avg_emb /= len(langs) # normalize
         lang_embs[iso_lookup[-1][str(row.target_lang)]] = avg_emb
 
-    # insert language embeddings into Toucan model and save
+    # inject language embeddings into Toucan model and save
     model["model"]["encoder.language_embedding.weight"] = lang_embs
-    modified_model_path = os.path.join(model_path.split(".")[0], "_zeroshot_lang_embs.pt")
+    modified_model_path = model_path.split(".")[0] + "_zeroshot_lang_embs.pt"
     torch.save(model, modified_model_path)
+    print(f"Replaced unsupervised language embeddings with zero-shot approximations.\nSaved modified model to {modified_model_path}")
 
 
 if __name__ == "__main__":
     default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location
+    default_csv_path = "distance_datasets/dataset_learned_top30.csv"
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default=default_model_path, help="path of the model for which the language embeddings should be modified")
+    parser.add_argument("--dataset_path", type=str, default=default_csv_path, help="path to distance dataset CSV")
     parser.add_argument("--min_n_langs", type=int, default=5, help="minimum amount of languages used for averaging")
     parser.add_argument("--max_n_langs", type=int, default=25, help="maximum amount of languages used for averaging")
     parser.add_argument("--threshold_percentile", type=int, default=50, help="percentile of the furthest used languages \
@@ -79,7 +79,11 @@ if __name__ == "__main__":
     ISO_LOOKUP_PATH = "iso_lookup.json"
     with open(ISO_LOOKUP_PATH, "r") as f:
         iso_lookup = json.load(f) # iso_lookup[-1] = iso2id mapping
-    overwrite_language_embeddings(model_path=args.model_path,
+    # load language distance dataset
+    distance_df = pd.read_csv(args.dataset_path, sep="|")
+    approximate_and_inject_language_embeddings(model_path=args.model_path,
+                                  df=distance_df,
+                                  iso_lookup=iso_lookup,
                                   min_n_langs=args.min_n_langs,
                                   max_n_langs=args.max_n_langs,
                                   threshold_percentile=args.threshold_percentile)
