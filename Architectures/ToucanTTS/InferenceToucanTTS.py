@@ -356,9 +356,9 @@ def _scale_variance(sequence, scale):
     sequence = sequence - average  # center sequence around 0
     sequence = sequence * scale  # scale the variance
     sequence = sequence + average  # move center back to original with changed variance
-    for sequence_index in range(len(sequence[0])):
-        if sequence[0][sequence_index] < 0.0:
-            sequence[0][sequence_index] = 0.0
+    for sequence_index in range(len(sequence[0][0])):
+        if sequence[0][0][sequence_index] < 0.0:
+            sequence[0][0][sequence_index] = 0.0
     return sequence
 
 

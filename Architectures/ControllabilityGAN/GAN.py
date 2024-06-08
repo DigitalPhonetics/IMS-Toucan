@@ -21,14 +21,14 @@ class GanWrapper:
         self.z_list = list()
 
         for _ in range(1100):
-            self.z_list.append(self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.5))
+            self.z_list.append(self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.8))
         self.z = self.z_list[0]
 
     def set_latent(self, seed):
         self.z = self.z = self.z_list[seed]
 
     def reset_default_latent(self):
-        self.z = self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.5)
+        self.z = self.wgan.G.sample_latent(1, self.wgan.G.z_dim, temperature=0.8)
 
     def load_model(self, path):
         gan_checkpoint = torch.load(path, map_location="cpu")
@@ -53,7 +53,7 @@ class GanWrapper:
         self.mean = gan_checkpoint["dataset_mean"]
         self.std = gan_checkpoint["dataset_std"]
 
-    def compute_controllability(self, n_samples=50000):
+    def compute_controllability(self, n_samples=100000):
         _, intermediate, z = self.wgan.sample_generator(num_samples=n_samples, nograd=True, return_intermediate=True)
         intermediate = intermediate.cpu()
         z = z.cpu()
