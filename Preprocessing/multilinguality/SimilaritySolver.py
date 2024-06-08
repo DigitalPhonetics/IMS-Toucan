@@ -38,7 +38,7 @@ class SimilaritySolver():
         if learned_dist:
             self.lang_1_to_lang_2_to_learned_dist = learned_dist
         else:
-            learned_dist_path = 'lang_1_to_lang_2_to_learned_dist_focal4.json' if not learned_dist_path else tree_dist_path
+            learned_dist_path = 'lang_1_to_lang_2_to_learned_dist.json' if not learned_dist_path else tree_dist_path
             self.lang_1_to_lang_2_to_learned_dist = load_json_from_path(learned_dist_path)          
             
         if lang_emb_dist:
@@ -67,11 +67,10 @@ class SimilaritySolver():
         with open(iso_to_fullname_path, 'w', encoding='utf-8') as f:
             json.dump(self.iso_to_fullname, f, ensure_ascii=False, indent=4)
   
-
-    def find_closest_multifeature(self, 
+    def find_closest_combined_distance(self, 
                               lang, 
                               supervised_langs, 
-                              distance="average", 
+                              combined_distance="average", 
                               k=50, 
                               individual_distances=False, 
                               verbose=False, 
@@ -82,7 +81,7 @@ class SimilaritySolver():
                                                 {"euclidean_distance": 5.39, "individual_distances": [<map_dist>, <tree_dist>, <asp_dist>]},
                                               "supervised_lang_2":
                                                 {...}, ...}"""
-        if distance not in ["average", "euclidean"]:
+        if combined_distance not in ["average", "euclidean"]:
             raise ValueError("distance needs to be `average` or `euclidean`")
         combined_dict = {}
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
@@ -109,10 +108,10 @@ class SimilaritySolver():
             if "tree" not in excluded_features:
                 dist_list.append(tree_dist)
             dist_array = np.array(dist_list)
-            if distance == "euclidean":
+            if combined_distance == "euclidean":
                 euclidean_dist = np.sqrt(np.sum(dist_array**2)) # no subtraction since lang has dist [0,0,0]
                 combined_dict[sup_lang]["combined_distance"] = euclidean_dist
-            elif distance == "average":
+            elif combined_distance == "average":
                 avg_dist = np.mean(dist_array)
                 combined_dict[sup_lang]["combined_distance"] = avg_dist
 
@@ -131,14 +130,12 @@ class SimilaritySolver():
                     print("Full Name of Language Missing")
         return results
 
-
-
-    def find_closest(self, feature, lang, supervised_langs, k=50, find_furthest=False, random_seed=42, verbose=False):
+    def find_closest(self, distance_type, lang, supervised_langs, k=50, find_furthest=False, random_seed=42, verbose=False):
         """Find the k nearest languages in terms of a given feature.
         Returns a dict {language: distance} sorted by distance."""
-        features = ["learned", "map", "tree", "asp", "random", "oracle"]
-        if feature not in features:
-            raise ValueError(f"Invalid feature. Expected one of {features}")        
+        distance_types = ["learned", "map", "tree", "asp", "random", "oracle"]
+        if distance_type not in distance_types:
+            raise ValueError(f"Invalid distance type {distance_type}. Expected one of {distance_types}")        
         langs_to_dist = dict()
         supervised_langs = set(supervised_langs) if isinstance(supervised_langs, list) else supervised_langs
         # avoid error with `urk`
@@ -147,33 +144,33 @@ class SimilaritySolver():
         if lang in supervised_langs:
             supervised_langs.remove(lang)
 
-        if feature == "learned":
+        if distance_type == "learned":
             for sup_lang in supervised_langs:
                 dist = self.get_learned_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
-        elif feature == "map":
+        elif distance_type == "map":
             for sup_lang in supervised_langs:                
                 dist = self.get_map_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
-        elif feature == "tree":
+        elif distance_type == "tree":
             for sup_lang in supervised_langs:                                
                 dist = self.get_tree_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
-        elif feature == "asp":
+        elif distance_type == "asp":
             for sup_lang in supervised_langs:                                
                 asp_score = self.get_asp(lang, sup_lang, self.asp_dict)
                 if asp_score is not None:
                     asp_dist = 1 - asp_score
                     langs_to_dist[sup_lang] = asp_dist
-        elif feature == "oracle":
+        elif distance_type == "oracle":
             for sup_lang in supervised_langs:
                 dist = self.get_lang_emb_distance(lang, sup_lang)
                 if dist is not None:
                     langs_to_dist[sup_lang] = dist
-        elif feature == "random":
+        elif distance_type == "random":
             random.seed(random_seed)
             random_langs = random.sample(supervised_langs, k)
             # create dict with all 0.5 values
@@ -184,7 +181,7 @@ class SimilaritySolver():
         results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=find_furthest)[:k])
         if verbose:
             sorted_by = "closest" if not find_furthest else "furthest"            
-            print(f"{k} {sorted_by} languages to {self.iso_to_fullname[lang]} w.r.t. {feature} are:")
+            print(f"{k} {sorted_by} languages to {self.iso_to_fullname[lang]} w.r.t. {distance_type} are:")
             for result in results:
                 try:
                     print(self.iso_to_fullname[result])
@@ -192,7 +189,6 @@ class SimilaritySolver():
                 except KeyError:
                     print("Full Name of Language Missing")
         return results
-
 
     def get_map_distance(self, lang_1, lang_2):
         """Returns normalized map distance between two languages.
@@ -265,7 +261,6 @@ def load_asp_dict(path_to_dict):
             asp_dict = pickle.load(dictfile)
         return asp_dict
 
-
 def load_json_from_path(path):
     with open(path, "r", encoding="utf8") as f:
         obj = json.loads(f.read())
@@ -306,7 +301,7 @@ if __name__ == '__main__':
                                       "dhi",
                                       "dhl"], k=5, verbose=True)
     
-    ss.find_closest_multifeature("aym", ["dga",
+    ss.find_closest_combined_distance("aym", ["dga",
                                       "dgb",
                                       "dgc",
                                       "dgd",

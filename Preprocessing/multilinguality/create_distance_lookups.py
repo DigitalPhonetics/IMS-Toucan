@@ -13,25 +13,19 @@ class CacheCreator:
         self.iso_codes = list(load_json_from_path(os.path.join(cache_root, "iso_to_fullname.json")).keys())
         self.iso_lookup = load_json_from_path(os.path.join(cache_root, "iso_lookup.json"))
         self.pairs = list()  # ignore order, collect all language pairs
-        for index_1 in tqdm(range(len(self.iso_codes))):
+        for index_1 in tqdm(range(len(self.iso_codes)), desc="Collecting language pairs"):
             for index_2 in range(index_1, len(self.iso_codes)):
                 self.pairs.append((self.iso_codes[index_1], self.iso_codes[index_2]))
 
     def create_tree_cache(self, cache_root="."):
-        iso_to_familiy_memberships = load_json_from_path(os.path.join(cache_root, "iso_to_memberships.json"))
+        iso_to_family_memberships = load_json_from_path(os.path.join(cache_root, "iso_to_memberships.json"))
 
         self.pair_to_tree_similarity = dict()
         self.pair_to_depth = dict()
         for pair in tqdm(self.pairs):
-            self.pair_to_tree_similarity[pair] = len(set(iso_to_familiy_memberships[pair[0]]).intersection(set(iso_to_familiy_memberships[pair[1]])))
-            self.pair_to_depth[pair] = len(iso_to_familiy_memberships[pair[0]]) + len(iso_to_familiy_memberships[pair[1]])
-        # pruning_keys = list()
-        # for key in tqdm(self.pair_to_tree_similarity):
-        #    if self.pair_to_tree_similarity[key] < 2:
-        #        pruning_keys.append(key)
-        # for key in pruning_keys:
-        #    self.pair_to_tree_similarity.pop(key)
-        # approx 2mio pairs with a tree similarity of 2 or higher left
+            self.pair_to_tree_similarity[pair] = len(set(iso_to_family_memberships[pair[0]]).intersection(set(iso_to_family_memberships[pair[1]])))
+            self.pair_to_depth[pair] = len(iso_to_family_memberships[pair[0]]) + len(iso_to_family_memberships[pair[1]])
+        
         lang_1_to_lang_2_to_tree_dist = dict()
         for pair in self.pair_to_tree_similarity:
             lang_1 = pair[0]
@@ -47,7 +41,6 @@ class CacheCreator:
             json.dump(lang_1_to_lang_2_to_tree_dist, f, ensure_ascii=False, indent=4)
 
     def create_map_cache(self, cache_root="."):
-
         self.pair_to_map_dist = dict()
         iso_to_long_lat = load_json_from_path(os.path.join(cache_root, "iso_to_long_lat.json"))
         for pair in tqdm(self.pairs):
@@ -97,6 +90,21 @@ class CacheCreator:
         # TODO
         raise NotImplementedError("currently located in MetricMetaLearner.py")
 
+    def create_required_files(self, model_path=None, create_oracle=False):
+        if not os.path.exists("lang_1_to_lang_2_to_tree_dist.json"):
+            self.create_tree_cache()
+        if not os.path.exists("lang_1_to_lang_2_to_map_dist.json"):
+            self.create_map_cache()
+        if not os.path.exists("lang_1_to_lang_2_to_learned_dist.json"):
+            self.create_learned_cache(model_path=args.model_path)
+        if not os.path.exists("asp_dict.pkl"):
+            raise FileNotFoundError("asp_dict.pkl must be downloaded separately.")
+        if create_oracle:
+            if not os.path.exists("lang_1_to_lang_2_to_oracle_dist.json"):
+                if not model_path:
+                    raise ValueError("model_path is required for creating oracle cache.")
+                self.create_oracle_cache(model_path=args.model_path)
+        print("All required cache files exist.")
 
 def load_json_from_path(path):
     with open(path, "r", encoding="utf8") as f:
@@ -107,16 +115,7 @@ def load_json_from_path(path):
 if __name__ == '__main__':
     default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str, default=default_model_path, help="model path that should be used for creating lang_emb_distance_cache")
+    parser.add_argument("--model_path", type=str, default=default_model_path, help="model path that should be used for creating oracle lang emb distance cache")
     args = parser.parse_args()
     cc = CacheCreator()
-    if not os.path.exists("lang_1_to_lang_2_to_tree_dist.json"):
-        cc.create_tree_cache()
-    if not os.path.exists("lang_1_to_lang_2_to_map_dist.json"):
-        cc.create_map_cache()
-    if not os.path.exists("lang_1_to_lang_2_to_oracle_dist.json"):
-        cc.create_oracle_cache(model_path=args.model_path)
-    if not os.path.exists("lang_1_to_lang_2_to_learned_dist.json"):
-        cc.create_learned_cache(model_path=args.model_path)
-    if not os.path.exists("asp_dict.pkl"):
-        raise FileNotFoundError("asp_dict.pkl must be downloaded separately.")
+    cc.create_required_files(args.model_path, create_oracle=True)
