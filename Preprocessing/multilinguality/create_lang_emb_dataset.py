@@ -1,16 +1,10 @@
-import numpy as np
 import pandas as pd
 import os
-import random
-import json
-import yaml
 import pickle
 import torch
-from tqdm import tqdm
-from copy import deepcopy
-
 from Preprocessing.TextFrontend import load_json_from_path
 from Preprocessing.multilinguality.SimilaritySolver import SimilaritySolver
+from Utility.storage_config import MODELS_DIR
 import argparse
 
 ISO_LOOKUP_PATH = "iso_lookup.json"
@@ -18,26 +12,45 @@ ISO_TO_FULLNAME_PATH = "iso_to_fullname.json"
 LANG_PAIRS_MAP_PATH = "lang_1_to_lang_2_to_map_dist.json"
 LANG_PAIRS_TREE_PATH = "lang_1_to_lang_2_to_tree_dist.json"
 LANG_PAIRS_ASP_PATH = "asp_dict.pkl"
-LANG_PAIRS_LEARNED_DIST_PATH = "lang_1_to_lang_2_to_learned_dist_focal4.json"
-NUM_LANGS = 463
-LOSS_TYPE = "with_less_loss_fixed_tree_distance"
-LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
-
-SUPVERVISED_LANGUAGES_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
-# TODO: get lang_embs in a nicer way than from this mapping
-
-DATASET_SAVE_DIR = "new_datasets/"
+LANG_PAIRS_LEARNED_DIST_PATH = "lang_1_to_lang_2_to_learned_dist.json"
+SUPVERVISED_LANGUAGES_PATH = "supervised_languages.json"
+DATASET_SAVE_DIR = "distance_datasets/"
 
 
 class LangDistDatasetCreator():
-    def __init__(self, learned_dist_path=None):
+    def __init__(self, model_path, learned_dist_path=None):
+        self.model_path = model_path
         (self.lang_pairs_map, 
          self.lang_pairs_tree, 
          self.lang_pairs_asp, 
          self.lang_pairs_learned_dist,
          self.lang_embs, 
          self.supervised_langs, # only keys are used to get all supervised languages, no mapping to langembs
-         self.iso_lookup) = load_feature_and_embedding_data(learned_dist_path=learned_dist_path)
+         self.iso_lookup) = self.load_feature_and_embedding_data(learned_dist_path)
+
+    def load_feature_and_embedding_data(self, learned_dist_path):
+        """Load supervised languages, all features, as well as the language embeddings."""
+        print("Loading feature and embedding data...")
+        try:
+            supervised_langs = load_json_from_path(SUPVERVISED_LANGUAGES_PATH)
+            lang_pairs_map = load_json_from_path(LANG_PAIRS_MAP_PATH)
+            lang_pairs_tree = load_json_from_path(LANG_PAIRS_TREE_PATH)
+            if not learned_dist_path:
+                learned_dist_path = LANG_PAIRS_LEARNED_DIST_PATH
+            lang_pairs_learned_dist = load_json_from_path(learned_dist_path)        
+            with open(LANG_PAIRS_ASP_PATH, "rb") as f:
+                lang_pairs_asp = pickle.load(f)
+        except FileNotFoundError as e:
+            raise FileNotFoundError("Please create all lookup files via create_distance_lookups.py") from e
+        lang_embs = self.get_pretrained_language_embeddings()
+        iso_lookup = load_json_from_path(ISO_LOOKUP_PATH)
+        return (lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_pairs_learned_dist, lang_embs, supervised_langs, 
+                iso_lookup)
+
+    def get_pretrained_language_embeddings(self):
+        model_checkpoint = torch.load(self.model_path, map_location="cpu")
+        lang_embs = model_checkpoint["model"]["language_embedding.weight"]
+        return lang_embs
 
     def create_csv(self, 
                        feature: str = "learned",
@@ -68,7 +81,7 @@ class LangDistDatasetCreator():
         furthest_suffix = "furthest_" if find_furthest else ""                
         zero_shot_suffix= ""
         if zero_shot:
-            iso_codes_to_ids = load_json_from_path("iso_lookup.json")[-1]
+            iso_codes_to_ids = self.iso_lookup[-1]
             zero_shot_suffix = "_zeroshot"
             # remove supervised languages from iso dict
             for sup_lang in supervised_langs:
@@ -146,38 +159,14 @@ class LangDistDatasetCreator():
         print(f"Failed to retrieve distances for the following languages: {failed_langs}")
 
 
-def load_feature_and_embedding_data(learned_dist_path=None):
-    """Load all features as well as the language embeddings."""
-    print("Loading feature and embedding data...")
-    with open(LANG_PAIRS_MAP_PATH, "r") as f:
-        lang_pairs_map = json.load(f)
-    with open(LANG_PAIRS_TREE_PATH, "r") as f:
-        lang_pairs_tree = json.load(f)
-    if not learned_dist_path:
-        learned_dist_path = LANG_PAIRS_LEARNED_DIST_PATH
-    with open(learned_dist_path, "r") as f:
-        lang_pairs_learned_dist = json.load(f)        
-    with open(LANG_PAIRS_ASP_PATH, "rb") as f:
-        lang_pairs_asp = pickle.load(f)
-    lang_embs = torch.load(LANG_EMBS_PATH)
-    with open(SUPVERVISED_LANGUAGES_PATH, "r") as f:
-        supervised_langs = yaml.safe_load(f)
-    with open(ISO_LOOKUP_PATH, "r") as f:
-        iso_lookup = json.load(f)
-
-
-    return (lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_pairs_learned_dist, lang_embs, supervised_langs, 
-            iso_lookup)
-
-
-
-
 if __name__ == "__main__":
+    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--learned_dist_path", type=str, default="lang_1_to_lang_2_to_learned_dist_focal4.json", help="filepath of JSON file containing the meta-learned pairwise distances")
+    parser.add_argument("--model_path", type=str, default=default_model_path, help="model path from which to obtain pretrained language embeddings")
+    parser.add_argument("--learned_dist_path", type=str, default="lang_1_to_lang_2_to_learned_dist.json", help="filepath of JSON file containing the meta-learned pairwise distances")
     args = parser.parse_args()
 
-    dc = LangDistDatasetCreator(learned_dist_path=args.learned_dist_path)
+    dc = LangDistDatasetCreator(args.model_path, learned_dist_path=args.learned_dist_path)
     excluded_langs = ["deu"]
 
     dc.create_csv(feature="tree", n_closest=30, zero_shot=False)
