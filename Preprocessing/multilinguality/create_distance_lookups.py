@@ -5,6 +5,7 @@ from geopy.distance import geodesic
 from tqdm import tqdm
 import torch
 import argparse
+from Utility.storage_config import MODELS_DIR
 
 
 class CacheCreator:
@@ -69,13 +70,16 @@ class CacheCreator:
         with open(os.path.join(cache_root, 'lang_1_to_lang_2_to_map_dist.json'), 'w', encoding='utf-8') as f:
             json.dump(lang_1_to_lang_2_to_map_dist, f, ensure_ascii=False, indent=4)
 
-    def create_oracle_distance_cache(self, model_path, cache_root="."):
+    def create_oracle_cache(self, model_path, cache_root="."):
+        """Oracle language-embedding distance of supervised languages is only used for evaluation, not usable for zero-shot."""
         loss_fn = torch.nn.MSELoss(reduction="mean")
         self.pair_to_lang_emb_dist = dict()
         lang_embs = torch.load(model_path)["model"]["encoder.language_embedding.weight"]
+        lang_embs.requires_grad_(False)
         for pair in tqdm(self.pairs):
             try:
-                dist = loss_fn(lang_embs[self.iso_lookup[-1][pair[0]]], lang_embs[self.iso_lookup[-1][pair[1]]])
+                dist = loss_fn(lang_embs[self.iso_lookup[-1][pair[0]]], lang_embs[self.iso_lookup[-1][pair[1]]]).item()
+                self.pair_to_lang_emb_dist[pair] = dist
             except KeyError:
                 pass
         lang_1_to_lang_2_lang_emb_dist = dict()
@@ -85,12 +89,13 @@ class CacheCreator:
             dist = self.pair_to_lang_emb_dist[pair]
             if lang_1 not in lang_1_to_lang_2_lang_emb_dist.keys():
                 lang_1_to_lang_2_lang_emb_dist[lang_1] = dict()
-            lang_1_to_lang_2_lang_emb_dist[lang_1][lang_2] = dist
+            lang_1_to_lang_2_lang_emb_dist[lang_1][lang_2] = dist         
         with open(os.path.join(cache_root, "lang_1_to_lang_2_to_oracle_dist.json"), "w", encoding="utf-8") as f:
             json.dump(lang_1_to_lang_2_lang_emb_dist, f, ensure_ascii=False, indent=4)
 
-                            
-
+    def create_learned_cache(self, model_path, cache_root="."):
+        # TODO
+        raise NotImplementedError("currently located in MetricMetaLearner.py")
 
 
 def load_json_from_path(path):
@@ -100,8 +105,9 @@ def load_json_from_path(path):
 
 
 if __name__ == '__main__':
+    default_model_path = os.path.join(MODELS_DIR, "ToucanTTS_Meta", "best.pt") # MODELS_DIR must be absolute path, the relative path will fail at this location
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path", type=str, help="model_path that should be used for creating lang_emb_distance_cache")
+    parser.add_argument("--model_path", type=str, default=default_model_path, help="model path that should be used for creating lang_emb_distance_cache")
     args = parser.parse_args()
     cc = CacheCreator()
     if not os.path.exists("lang_1_to_lang_2_to_tree_dist.json"):
@@ -109,4 +115,8 @@ if __name__ == '__main__':
     if not os.path.exists("lang_1_to_lang_2_to_map_dist.json"):
         cc.create_map_cache()
     if not os.path.exists("lang_1_to_lang_2_to_oracle_dist.json"):
-        cc.create_oracle_distance_cache(model_path=args.model_path)
+        cc.create_oracle_cache(model_path=args.model_path)
+    if not os.path.exists("lang_1_to_lang_2_to_learned_dist.json"):
+        cc.create_learned_cache(model_path=args.model_path)
+    if not os.path.exists("asp_dict.pkl"):
+        raise FileNotFoundError("asp_dict.pkl must be downloaded separately.")

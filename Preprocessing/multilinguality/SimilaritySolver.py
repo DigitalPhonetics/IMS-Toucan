@@ -4,7 +4,7 @@ import os
 import numpy as np
 import random
 
-from Preprocessing.multilinguality.create_map_and_tree_dist_lookups import CacheCreator
+from Preprocessing.multilinguality.create_distance_lookups import CacheCreator
 
 
 class SimilaritySolver():
@@ -121,7 +121,8 @@ class SimilaritySolver():
 
         results = dict(sorted(combined_dict.items(), key=lambda x: x[1]["combined_distance"], reverse=find_furthest)[:k])
         if verbose:
-            print(f"{k} closest languages to {self.iso_to_fullname[lang]} w.r.t. the combined features are:")
+            sorted_by = "closest" if not find_furthest else "furthest"
+            print(f"{k} {sorted_by} languages to {self.iso_to_fullname[lang]} w.r.t. the combined features are:")
             for result in results:
                 try:
                     print(self.iso_to_fullname[result])
@@ -182,7 +183,8 @@ class SimilaritySolver():
         # sort results by distance and only keep the first k entries
         results = dict(sorted(langs_to_dist.items(), key=lambda x: x[1], reverse=find_furthest)[:k])
         if verbose:
-            print(f"{k} closest languages to {self.iso_to_fullname[lang]} w.r.t. {feature} are:")
+            sorted_by = "closest" if not find_furthest else "furthest"            
+            print(f"{k} {sorted_by} languages to {self.iso_to_fullname[lang]} w.r.t. {feature} are:")
             for result in results:
                 try:
                     print(self.iso_to_fullname[result])
@@ -274,7 +276,9 @@ def load_json_from_path(path):
 if __name__ == '__main__':
     if not (os.path.exists("lang_1_to_lang_2_to_map_dist.json") and \
             os.path.exists("lang_1_to_lang_2_to_tree_dist.json") and \
-            os.path.exists("lang_1_to_lang_2_to_oracle_dist.json")):
+            os.path.exists("lang_1_to_lang_2_to_oracle_dist.json") and \
+            os.path.exists("lang_1_to_lang_2_to_learned_dist.json") and \
+            os.path.exists("asp_dict.pkl")):
         CacheCreator()
 
     ss = SimilaritySolver()
@@ -328,7 +332,7 @@ if __name__ == '__main__':
                                       k=5, 
                                       verbose=True)
 
-    ss.find_closest("tree", "aym", ["dga",
+    ss.find_closest("map", "aym", ["dga",
                                       "dgb",
                                       "dgc",
                                       "dgd",
@@ -350,22 +354,11 @@ if __name__ == '__main__':
                                       "dih",
                                       "dii",
                                       "dij",
-                                      "dik",
-                                      "dil",
-                                      "dim",
-                                      "din",
-                                      "dio",
-                                      "dip",
                                       "diq",
                                       "dir",
                                       "dis",
                                       "dit",
                                       "diu",
-                                      "div",
-                                      "diw",
-                                      "dix",
-                                      "diy",
-                                      "diz",
                                       "djb",
                                       "djl",
                                       "djm",
@@ -379,7 +372,7 @@ if __name__ == '__main__':
                                       "dkr",
                                       "dks",
                                       "dkx",
-                                      "vie"], k=5, find_furthest=True)
+                                      "vie"], k=5)
 
     ss.find_closest("tree", "aym", ["dga",
                                       "dgb",
@@ -420,11 +413,6 @@ if __name__ == '__main__':
                                       "diw",
                                       "dix",
                                       "diy",
-                                      "diz",
-                                      "djb",
-                                      "djc",
-                                      "djd",
-                                      "dje",
                                       "djf",
                                       "dji",
                                       "djj",

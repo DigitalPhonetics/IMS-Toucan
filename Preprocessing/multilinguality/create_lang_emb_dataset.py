@@ -23,7 +23,7 @@ NUM_LANGS = 463
 LOSS_TYPE = "with_less_loss_fixed_tree_distance"
 LANG_EMBS_PATH = f"LangEmbs/final_model_{LOSS_TYPE}.pt"
 
-LANG_EMBS_MAPPING_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
+SUPVERVISED_LANGUAGES_PATH = f"LangEmbs/mapping_lang_embs_{NUM_LANGS}_langs.yaml"
 # TODO: get lang_embs in a nicer way than from this mapping
 
 DATASET_SAVE_DIR = "new_datasets/"
@@ -36,7 +36,7 @@ class LangDistDatasetCreator():
          self.lang_pairs_asp, 
          self.lang_pairs_learned_dist,
          self.lang_embs, 
-         self.lang_embs_mapping, # only keys are used to get all supervised languages, no mapping to langembs
+         self.supervised_langs, # only keys are used to get all supervised languages, no mapping to langembs
          self.iso_lookup) = load_feature_and_embedding_data(learned_dist_path=learned_dist_path)
 
     def create_csv(self, 
@@ -53,7 +53,7 @@ class LangDistDatasetCreator():
             raise ValueError(f"Invalid feature: {feature}. Expected one of: {features}")
         dataset_dict = dict()
         sim_solver = SimilaritySolver(tree_dist=self.lang_pairs_tree, map_dist=self.lang_pairs_map, asp_dict=self.lang_pairs_asp)
-        supervised_langs = sorted(self.lang_embs_mapping)
+        supervised_langs = sorted(self.supervised_langs)
         remove_langs_suffix = ""
         if len(excluded_languages) > 0:
             remove_langs_suffix = "_no-illegal-langs"
@@ -124,6 +124,8 @@ class LangDistDatasetCreator():
                     close_lang_feature_list = [close_lang, dist]
                 # column order: compared close language, {feature}_dist (plus optionally indiv dists)
                 dataset_dict[lang].extend(close_lang_feature_list)
+        
+        # prepare df columns
         dataset_columns = ["target_lang"]
         for i in range(n_closest):
             dataset_columns.extend([f"closest_lang_{i}", f"{feature}_dist_{i}"])
@@ -136,6 +138,8 @@ class LangDistDatasetCreator():
                     dataset_columns.append(f"tree_dist_{i}")
         df = pd.DataFrame.from_dict(dataset_dict, orient="index")
         df.columns = dataset_columns
+
+        # write to file
         out_path = os.path.join(DATASET_SAVE_DIR, f"dataset_{feature}_top{n_closest}{zero_shot_suffix}{remove_langs_suffix}{excluded_feat_suffix}{individual_dist_suffix}" + ".csv")
         os.makedirs(DATASET_SAVE_DIR, exist_ok=True)
         df.to_csv(out_path, sep="|", index=False)
@@ -156,13 +160,13 @@ def load_feature_and_embedding_data(learned_dist_path=None):
     with open(LANG_PAIRS_ASP_PATH, "rb") as f:
         lang_pairs_asp = pickle.load(f)
     lang_embs = torch.load(LANG_EMBS_PATH)
-    with open(LANG_EMBS_MAPPING_PATH, "r") as f:
-        lang_embs_mapping = yaml.safe_load(f)
+    with open(SUPVERVISED_LANGUAGES_PATH, "r") as f:
+        supervised_langs = yaml.safe_load(f)
     with open(ISO_LOOKUP_PATH, "r") as f:
         iso_lookup = json.load(f)
 
 
-    return (lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_pairs_learned_dist, lang_embs, lang_embs_mapping, 
+    return (lang_pairs_map, lang_pairs_tree, lang_pairs_asp, lang_pairs_learned_dist, lang_embs, supervised_langs, 
             iso_lookup)
 
 
