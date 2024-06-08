@@ -2,16 +2,15 @@ import torch
 import os
 import numpy as np
 import pandas as pd
-import json
 import argparse
 import matplotlib
 matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
 matplotlib.rcParams['font.size'] = 7
 import matplotlib.pyplot as plt
+from Preprocessing.TextFrontend import load_json_from_path
 
-
-def compute_mse_for_averaged_embeddings(csv_path, iso_lookup, language_embeddings, weighted_avg=False, min_n_langs=5, max_n_langs=30, threshold_percentile=95, loss_fn="MSE"):
+def compute_loss_for_approximated_embeddings(csv_path, iso_lookup, language_embeddings, weighted_avg=False, min_n_langs=5, max_n_langs=30, threshold_percentile=95, loss_fn="MSE"):
     df = pd.read_csv(csv_path, sep="|")
 
     if loss_fn == "L1":
@@ -48,13 +47,11 @@ def compute_mse_for_averaged_embeddings(csv_path, iso_lookup, language_embedding
 
     closest_lang_columns = [f"closest_lang_{i}" for i in range(n_closest)]
     closest_dist_columns = [f"{distance_type}_dist_{i}" for i in range(n_closest)]
-
     closest_lang_columns = closest_lang_columns[:max_n_langs]
     closest_dist_columns = closest_dist_columns[:max_n_langs]
 
     threshold = np.percentile(df[closest_dist_columns[-1]], threshold_percentile)
     print(f"threshold: {threshold}")
-
     all_losses = []
 
     for row in df.itertuples():
@@ -83,8 +80,8 @@ def compute_mse_for_averaged_embeddings(csv_path, iso_lookup, language_embedding
 
     return all_losses
 
+
 if __name__ == "__main__":
-    print("starting")
     parser = argparse.ArgumentParser()
     parser.add_argument("--min_n_langs", type=int, default=5, help="minimum amount of languages used for averaging")
     parser.add_argument("--max_n_langs", type=int, default=30, help="maximum amount of languages used for averaging")
@@ -93,37 +90,18 @@ if __name__ == "__main__":
     parser.add_argument("--loss_fn", choices=["MSE", "L1"], type=str, default="MSE", help="loss function used")
     args = parser.parse_args()
     csv_paths = [
-        # DATASETS FOR PAPER BOXPLOT
-        #"datasets/dataset_learned_dist_463_with_less_loss_fixed_tree_distance_top50furthest_.csv",
-        #"datasets/dataset_random_463_with_less_loss_fixed_tree_distance_random30.csv",
-        #"datasets/dataset_asp_463_with_less_loss_fixed_tree_distance_top50.csv",
-        #"datasets/dataset_tree_463_with_less_loss_fixed_tree_distance_top50.csv",        
-        #"datasets/dataset_map_463_with_less_loss_fixed_tree_distance_top50.csv",
-        #"datasets/dataset_COMBINED_463_with_less_loss_fixed_tree_distance_top50_average_individual_dists.csv",
-        #"datasets/dataset_learned_dist_463_with_less_loss_fixed_tree_distance_top50_4.csv",
-        #"datasets/dataset_lang_emb_dist_463_with_less_loss_fixed_tree_distance_top50.csv", # ORACLE
-############################
-
-        "new_datasets/dataset_random_top30_no-illegal-langs.csv",
-        "new_datasets/dataset_asp_top30.csv",
-        "new_datasets/dataset_tree_top30.csv",
-        "new_datasets/dataset_map_top30_no-illegal-langs.csv",
-        "new_datasets/dataset_combined_top30_no-illegal-langs_indiv-dists.csv",
-        "new_datasets/dataset_learned_top30.csv",
-        "new_datasets/dataset_oracle_top30.csv",
-        
+        "distance_datasets/dataset_random_top30.csv",
+        "distance_datasets/dataset_asp_top30.csv",
+        "distance_datasets/dataset_tree_top30.csv",
+        "distance_datasets/dataset_map_top30.csv",
+        "distance_datasets/dataset_combined_top30_indiv-dists.csv",
+        "distance_datasets/dataset_learned_top30.csv",
+        "distance_datasets/dataset_oracle_top30.csv",
     ]
-    # weighted = [True, False]
     weighted = [False]
     lang_embs_path = "LangEmbs/final_model_with_less_loss_fixed_tree_distance.pt"
     language_embeddings = torch.load(lang_embs_path)
-
-
-
-    ISO_LOOKUP_PATH = "iso_lookup.json"
-    with open(ISO_LOOKUP_PATH, "r") as f:
-        iso_lookup = json.load(f)
-    
+    iso_lookup = load_json_from_path("iso_lookup.json")
     losses_of_multiple_datasets = []
 
     fig, ax = plt.subplots(figsize=(3.15022, 3.15022*(2/3)), constrained_layout=True)
@@ -131,7 +109,7 @@ if __name__ == "__main__":
     for i, csv_path in enumerate(csv_paths):
         print(f"csv_path: {os.path.basename(csv_path)}")
         for condition in weighted:
-            losses = compute_mse_for_averaged_embeddings(csv_path, 
+            losses = compute_loss_for_approximated_embeddings(csv_path, 
                                                          iso_lookup, 
                                                          language_embeddings, 
                                                          condition, 
@@ -162,14 +140,10 @@ if __name__ == "__main__":
     # major ticks every 0.1, minor ticks every 0.05, between 0.0 and 0.6
     major_ticks = np.arange(0, 0.6, 0.1)
     minor_ticks = np.arange(0, 0.6, 0.05)
-
-    
     ax.set_yticks(major_ticks)
     ax.set_yticks(minor_ticks, minor=True)
-
     # horizontal grid lines for minor and major ticks
     ax.grid(which='both', linestyle='-', color='lightgray', linewidth=0.3, axis='y')
-
     ax.set_aspect(4.5)
     plt.title(f"min. {args.min_n_langs} kNN, max. {args.max_n_langs}\nthreshold: {args.threshold_percentile}th-percentile distance of {args.max_n_langs}th-closest language")
     plt.xticks(rotation=45)
