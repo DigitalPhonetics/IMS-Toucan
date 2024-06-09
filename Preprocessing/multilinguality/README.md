@@ -12,7 +12,7 @@ Note: **The learned distances are (obviously) only useful for the model it was t
 Use `run_zero_shot_lang_emb_injection.py` to update the language embeddings of a trained model for all languages that were *not* seen during training (by default, `supervised_languages.json` is used to determine which languages *were* seen).
 See the script for arguments that can be passed (e.g. to use a custom model path). Here is an example:
 ```
-python run_zero_shot_lang_emb_injection.py --model_path <model_path> --distance_type <distance_type> --n_closest <number_of_nearest_neighbors>
+python run_zero_shot_lang_emb_injection.py -m <model_path> -d <distance_type> -k <number_of_nearest_neighbors>
 ```
 
 By default, the updated model is saved with a modified filename in the same directory.
